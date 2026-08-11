@@ -1,0 +1,295 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Building a ChatGPT Ads Campaign with an Agent · SkillCloud Academy</title>
+  <meta name="description" content="A step by step SOP for using a Claude Cowork agent to build a full ChatGPT Ads campaign, spreadsheet and all, in one afternoon.">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/guide.css">
+</head>
+<body class="gd-page">
+
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html"><img src="../assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+    <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+    <div class="menu">
+      <a class="navlink" href="../index.html">Home</a>
+      <a class="navlink" href="../ai.html">Introduction</a>
+      <a class="navlink" href="../index.html#roles">Roles</a>
+    </div>
+    <span class="spacer"></span>
+    <a class="pill" href="../index.html#roles">Start Practicing</a>
+    <a class="user-chip" href="../account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
+  </div>
+</nav>
+
+<header class="ai-hero">
+  <div class="ai-hero-inner">
+    <a class="ai-back" href="../ai-lab.html">Back to AI Lab</a>
+    <p class="gd-eyebrow">AI Lab guide &middot; Advertising</p>
+    <h1 class="disp">Building a ChatGPT Ads Campaign with an Agent</h1>
+    <p class="lead">People are already asking ChatGPT who they should hire to buy or sell a home. This walks through setting up an AI agent that builds a full, ready to upload ad campaign around exactly that moment.</p>
+    <ul class="gd-meta">
+      <li><span class="k">Tool</span><span class="v">Claude and ChatGPT Ads</span></li>
+      <li><span class="k">Steps</span><span class="v">Seven</span></li>
+      <li><span class="k">Includes</span><span class="v">Agent prompt and bulk template</span></li>
+    </ul>
+  </div>
+</header>
+
+<div class="ai-content">
+  <div class="ai-article">
+
+    <h2>What this actually does</h2>
+    <p>OpenAI now lets advertisers run ads inside ChatGPT conversations, and this guide sets up a Claude agent that builds a complete campaign for that platform in one sitting instead of a week. You answer a short set of questions once, the agent audits your website and recommends three ad groups built around the moments you most want to be found in, and you walk away with a spreadsheet ready to upload, plus two supporting documents that close the gaps the upload template leaves open.</p>
+    <p>It is worth knowing upfront that this is not a single click solution. There is real work to do inside Ads Manager after the upload, since the platform's targeting field, called a context hint, has to be pasted in by hand for each ad group. The agent handles the strategy, the copywriting, and the targeting language. You handle the parts that genuinely need a person.</p>
+
+    <h2>Before you start</h2>
+    <div class="ps-card cyan">
+      <div class="lbl">Prerequisites</div>
+      <ul>
+        <li>A ChatGPT Ads account. Head to ads.openai.com, log in with your existing ChatGPT account, and apply. Approval typically takes 2–4 business days, so start the application now if you haven't already.</li>
+        <li>3–6 square images you own or have permission to use. Headshots, neighborhood landmarks, sold-and-closed homes, lifestyle shots. Square ratio (1:1), at least 640×640, no larger than 1200×1200. PNG or JPG. More on image strategy in Step 4.</li>
+        <li>Your website URL and a clear sense of your business. The agent will audit your site, but the intake questions ask about your market, niches, price range, and goals. Have your numbers handy.</li>
+      </ul>
+    </div>
+
+    <h2>How ChatGPT Ads work</h2>
+    <p>Two minutes of background so the rest of this guide makes sense.</p>
+    <p>Three objectives — you pick one per campaign:</p>
+    <ul style="margin:0 0 18px; padding-left:20px;">
+      <li class="sub-list" style="list-style:disc; font-size:16.5px; line-height:1.75; color:#253545; margin-bottom:8px;"><strong>Clicks (CPC)</strong> — you pay when someone clicks. Recommended starting max bid: $3–5 per click. This is the default we recommend for most agents because it ties spend to measurable engagement.</li>
+      <li class="sub-list" style="list-style:disc; font-size:16.5px; line-height:1.75; color:#253545; margin-bottom:8px;"><strong>Reach (CPM)</strong> — you pay per 1,000 impressions. Default max bid is $60 CPM. Use this when the goal is brand exposure — getting your name in front of people, not chasing clicks today.</li>
+      <li class="sub-list" style="list-style:disc; font-size:16.5px; line-height:1.75; color:#253545; margin-bottom:8px;"><strong>Conversions (CPC)</strong> — like Clicks, but optimized toward specific actions on your site (form fills, page views, etc.). Requires installing OpenAI's tracking pixel on your website first, similar to a Facebook pixel. Worth it if you have conversion events worth optimizing toward and can install the snippet — but installation is on you.</li>
+    </ul>
+    <p>The structure: campaign &rarr; ad groups &rarr; ads. One campaign holds your objective, budget, dates, and country targeting. Inside that campaign you build ad groups — each ad group is a different moment you want to show up in (a first-time buyer searching for an agent, a luxury seller researching marketing approaches, an investor sourcing deals). Inside each ad group you build the actual ads — title, copy, image, landing page URL.</p>
+    <p>Targeting is different. The only targeting input is what OpenAI calls a context hint — a plain-language description of the conversations and moments where your ad should appear. The system reads your context hint, your ad copy, and your landing page, then decides whether to show your ad alongside a live ChatGPT conversation. That's it.</p>
+
+    <h2>The bulk template has a flaw</h2>
+    <p>This is the part nobody tells you. The bulk upload template OpenAI provides (currently) has a keywords field at the ad group level — but there's no such thing as keywords inside the actual Ads Manager. The platform runs entirely on context hints. The keywords field on the spreadsheet is a vestigial leftover that doesn't map cleanly to what you'll see in the UI.</p>
+    <p>So the play is two layers:</p>
+    <ul style="margin:0 0 18px; padding-left:20px;">
+      <li style="list-style:disc; font-size:16.5px; line-height:1.75; color:#253545; margin-bottom:8px;">The Cowork agent fills the keywords field with strong, ad-group-specific keyword arrays derived from each context hint. This gets the upload through and gives the matcher something to read on import.</li>
+      <li style="list-style:disc; font-size:16.5px; line-height:1.75; color:#253545; margin-bottom:8px;">You paste the context hint into each ad group in Ads Manager after upload. This is the real targeting input — the field the platform actually uses. Takes about 90 seconds per ad group.</li>
+    </ul>
+    <p>The agent delivers both layers — the spreadsheet ready for upload, and a separate document with the context hints ready to paste. Keywords get the campaign imported. Context hints make it work.</p>
+
+    <h2>Running it</h2>
+    <ol class="ai-steps">
+      <li>
+        <div class="ai-step-body">
+          <h4>Download the working folder</h4>
+          <p>The whole bundle is a single zip download. Inside, you'll find a CLAUDE.md orchestrator (the agent's instructions), a skills/ folder with the three skills it uses, a blank market-config.md shell file you'll fill in during Step 2, an empty images/ folder where you'll drop your photos in Step 4, and an empty outputs/ folder where the agent will write your deliverables. Unzip it somewhere you can find it later — your Desktop, Documents, or a dedicated marketing folder.</p>
+          <div class="dl-card">
+            <div class="dl-txt">
+              <h5>ChatGPT Ads Bulk Builder — Cowork Working Folder</h5>
+              <p>The Cowork agent, its three skills, and the blank market config shell.</p>
+            </div>
+            <a class="dl-btn" href="../assets/downloads/chatgpt-ads-bulk-builder.zip" download>Download</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Customize the agent in a Claude chat</h4>
+          <p>Before the agent runs, it needs to know who you are, where you work, and what your business looks like. You'll do this once, in a regular Claude chat — not in Cowork. The output is your filled-in market-config.md, which you'll save back into the working folder. After that, the agent is permanently set up for your business and you can re-run it whenever you want a new campaign without re-answering the questions.</p>
+          <p>Here's the flow:</p>
+          <ol class="sub-list">
+            <li>Open a fresh Claude chat at claude.ai.</li>
+            <li>Attach the blank market-config.md file from your unzipped working folder to the chat (drag and drop, or use the paperclip / attach button). This gives Claude the exact structure it should fill in.</li>
+            <li>Paste the intake prompt below into the chat.</li>
+            <li>Answer the five rounds of questions as Claude asks them — your business, your market, your specializations, your positioning, and your campaign settings. Takes 15–20 minutes if you have your numbers ready.</li>
+            <li>When Claude finishes, it'll produce a fully-filled-in version of market-config.md. Copy that output, open the blank market-config.md in your working folder, delete everything in it, and paste the filled-in version. Save.</li>
+          </ol>
+          <div class="long-prompt">
+            <span class="plbl">Intake prompt — paste this into Claude with the market-config.md attached</span>
+            <pre>You are helping a real estate agent customize a Claude Cowork agent that will build their ChatGPT Ads campaign in bulk. I've attached a blank shell file called market-config.md. Your job in this conversation is intake — gather everything the agent needs to know, then output a filled-in version of that exact shell.
+
+Walk the user through five rounds of questions. Ask each round as a group, wait for the answers, then move to the next round. Be conversational — if an answer is unclear or missing context, ask a quick follow-up before moving on. Don't info-dump; ask, listen, probe lightly, advance.
+
+ROUND 1 — The Agent and the Business
+- Your name, brokerage, and the email or phone you want associated with leads.
+- How long you've been in real estate and roughly how many transactions you close per year.
+- Designations or specializations you've earned (CRS, ABR, SRES, GRI, military relocation specialist, etc.).
+- Languages you speak well enough to do business in.
+- Your primary website URL, plus any additional URLs (separate landing pages, IDX site, About page if it's hosted elsewhere).
+
+ROUND 2 — Your Market
+- Your primary city or metro.
+- The specific neighborhoods you actively work (named).
+- Zip codes if you think in those terms.
+- Country and state or province (this drives both the ad campaign's country targeting and which advertising laws apply).
+- Anything unique about your market (military base nearby, college town, vacation destination, historic district, rapid growth, recent decline).
+- What's the local market doing right now in your own words — seller's market, buyer's market, balanced?
+- Days on market trend (rising, falling, flat) and inventory level (tight, normal, oversupplied).
+
+ROUND 3 — Specializations and Who You Want to Attract
+- Buyer-side, seller-side, or both — and roughly the split if both.
+- Which niches do you actively work today? Examples: first-time buyers, luxury, relocation, military/VA, new construction, investors, 55+/active adult, FSBO conversion, expired listings, distressed sales, probate, condo/townhome, land, vacation/second-home, historic homes, rightsizing.
+- Which niches do you want MORE of? (Different from the above — what you currently do vs. what you want to grow.)
+- Which niches do you want to avoid? (Some agents won't touch FSBO, some won't touch distressed, etc.)
+- Your typical price range as a buyer agent or listing agent.
+- If you do luxury, what's the luxury threshold in your market — $1.5M? $3M? $5M?
+- The average home price in your primary market (so ad copy can reference real local numbers).
+
+ROUND 4 — Positioning and Competition
+- Who do you typically lose business to? (Big-team agents, discount brokerages, FSBO platforms, iBuyers, specific competitors by name.)
+- What do you want to be known for? (Marketing, negotiation, hyper-local expertise, white-glove service, data-driven approach, speed, calm under pressure.)
+- Of these landing pages, which do you have on your website? Homepage, About/Bio, Buyer Services, Seller Services, Home Valuation, and any specialization pages (luxury, first-time, military, relocation, new construction, investor, etc.).
+- Optional: paste a paragraph or two of your existing marketing copy or social bio so the agent can match your voice. If you don't have anything handy, describe how you'd want to come across — warm, direct, expert, conversational, no-nonsense, etc.
+
+ROUND 5 — Campaign Goals and Budget
+- Your goal for this campaign — leads, brand awareness, or specific conversion events on your website?
+  - Leads/clicks → Clicks objective (CPC, $3-5 starting bid). This is the default we recommend.
+  - Brand awareness → Reach objective (CPM).
+  - Specific actions on your site → Conversions objective (requires installing OpenAI's tracking pixel on your site first).
+- Total campaign budget — lifetime or daily?
+- Campaign start and end dates.
+- How aggressive are you on bids? The CPC floor is $3, $3-5 is the recommended range, but you can bid higher to win impressions in competitive moments.
+- Does your brokerage require ad review before publishing? If yes, that's a step after the agent's draft.
+
+AFTER ROUND 5
+Once all five rounds are answered, output a complete filled-in version of the attached market-config.md shell. Use the EXACT same structure and section headers as the attached file. Fill in every field with the user's specific answers — no placeholders left empty, no generic filler. If the user didn't answer a field directly, infer a reasonable value from context or note "Not specified" — but don't leave anything blank.
+
+For the Compliance Notes section at the bottom, based on the user's country and state/province, list the major advertising rules they should keep in mind (Fair Housing in the US, CREA/provincial rules in Canada, REA rules in NZ, etc.) referencing their specific jurisdiction.
+
+Output the complete filled-in markdown in a single code block so the user can copy it cleanly. Tell the user to paste it into the blank market-config.md in their working folder, replacing the existing contents.
+
+Now begin Round 1.</pre>
+          </div>
+          <p style="margin-top:14px;">Once market-config.md is filled in and saved, your one-time setup is done. You won't need to redo this even when you build future campaigns.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Install the skills in Claude</h4>
+          <p>The working folder ships with three skills the agent uses — marketing-psychology, chatgpt-ads-copywriter, and chatgpt-ads-workbook-builder. You need to install these in Claude before running the agent. For each of the three skills in the skills/ folder of your unzipped working folder:</p>
+          <ol class="sub-list">
+            <li>In Claude, go to Settings &rarr; Capabilities &rarr; Skills (or use the skill upload option in your account).</li>
+            <li>Click Add Skill or Upload Skill.</li>
+            <li>Upload the entire skill folder — not just the SKILL.md file. Two of the skills include subfolders (marketing-psychology/references/ and chatgpt-ads-copywriter/reference/) that contain reference files the skill needs. If you only upload the SKILL.md and leave the subfolder behind, the skill won't work. Drag the whole folder, or zip the skill folder first and upload that.</li>
+            <li>Confirm the upload — Claude will show the skill as installed.</li>
+            <li>Repeat for all three skills.</li>
+          </ol>
+          <p>You only have to install the skills once per account. They'll be available to all your future Cowork tasks, not just this one.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Drop your images into the working folder</h4>
+          <p>Put 3–6 square images into the images/ folder inside the working folder. The agent will look at each image (yes, actually look — it uses vision to recognize what's in the photo) and recommend which image goes with which ad group.</p>
+          <p><strong>What works:</strong> your professional headshot (works for almost any ad group), recognizable neighborhood landmarks, sold-and-closed homes (with prior client's permission), and lifestyle shots that anchor your market — main street, well-known restaurant, downtown skyline.</p>
+          <p><strong>What to avoid:</strong> current active listings. If you use a photo of a home that's still on the market and that home goes under contract or sells while your ad is running, you may be misrepresenting current availability. That's a Fair Housing and consumer protection problem. Stick to sold-and-closed homes if you want to feature property photos, or use neighborhood and lifestyle shots that aren't tied to a specific transaction.</p>
+          <p>The bulk template requires an image URL, not a file upload. That means each image needs to live somewhere public on the internet — your website, Google Drive (set to "anyone with the link"), Dropbox, or a CDN. The agent will recommend the image mapping; you'll still need to host the images and paste the URLs into Ads Manager after upload. The setup checklist explains exactly how to do this.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Run the Cowork agent</h4>
+          <p>Open Claude, switch to Cowork mode, and point it at your working folder. Tell the agent: "Build my ChatGPT Ads campaign."</p>
+          <p>The agent will: read your market-config.md to load your business context; audit your website (homepage plus any specialization pages it can find); look at each image in your images/ folder and identify what's in it; recommend three ad groups based on your specializations, the landing pages you actually have, and the moments most worth your spend — it'll show you the picks and explain the rationale; wait for your approval (you can swap, edit, or accept); write three ads per ad group — title (24 character max), copy (48 character max), landing page URL, image mapping; generate the context hint for each ad group plus a strong keyword array for the bulk upload; and produce three files in the outputs/ folder.</p>
+          <p>End to end, about 15–25 minutes depending on how chatty you are during the approval step.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>What you'll get back</h4>
+          <p>Three files in the outputs/ folder:</p>
+          <ul class="sub-list">
+            <li><strong>campaign_workbook.xlsx</strong> — the bulk upload spreadsheet. Three sheets (campaigns, adgroups, ads), populated and ready to upload at ads.openai.com.</li>
+            <li><strong>context-hints-to-paste.docx</strong> — a Word document with one section per ad group. Each section has the context hint paragraph in a styled callout, ready to copy and paste into Ads Manager after the upload imports.</li>
+            <li><strong>setup-checklist.docx</strong> — a Word document with everything you do after upload: budget split, recommended bids, image-to-ad-group mapping with hosting instructions, landing page warnings, launch order, and the post-upload checklist.</li>
+          </ul>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Upload and launch in Ads Manager</h4>
+          <p>Log into ads.openai.com. Create a new campaign using the bulk upload option. Drag in your campaign_workbook.xlsx. Wait for it to import — usually under a minute.</p>
+          <p>Then, for each ad group:</p>
+          <ol class="sub-list">
+            <li>Open the ad group in Ads Manager.</li>
+            <li>Open context-hints-to-paste.docx. Copy the context hint paragraph for that ad group.</li>
+            <li>Paste it into the ad group's targeting field. Save.</li>
+            <li>For each ad in that ad group, upload the image you mapped to it. Paste the hosted URL into the ad's image field.</li>
+            <li>Confirm the landing page URL is correct.</li>
+            <li>Confirm your max bid is set ($3–5 CPC if you're going with Clicks objective).</li>
+          </ol>
+          <p>Repeat for all three ad groups. Then review the campaign once at the top level, confirm budget and dates, and launch.</p>
+        </div>
+      </li>
+    </ol>
+
+    <h2>Your website is doing half the work</h2>
+    <p>Your ad is the doorway. Your website is the room. If the room is messy, you're paying for clicks that bounce.</p>
+    <p>The matcher reads your landing page as a signal — if the page doesn't reinforce the context hint, match quality drops and your ad gets served less. Before you spend a dollar on ChatGPT ads, make sure every landing page the agent recommends has:</p>
+    <ul style="margin:0 0 18px; padding-left:20px;">
+      <li style="list-style:disc; font-size:16.5px; line-height:1.75; color:#253545; margin-bottom:6px;">A clear value proposition above the fold (someone should know what you do in five seconds)</li>
+      <li style="list-style:disc; font-size:16.5px; line-height:1.75; color:#253545; margin-bottom:6px;">A single primary call-to-action — book a call, request a valuation, contact me — not five competing options</li>
+      <li style="list-style:disc; font-size:16.5px; line-height:1.75; color:#253545; margin-bottom:6px;">Your contact info visible without scrolling</li>
+      <li style="list-style:disc; font-size:16.5px; line-height:1.75; color:#253545; margin-bottom:6px;">A page that loads in under 3 seconds (test it at pagespeed.web.dev)</li>
+      <li style="list-style:disc; font-size:16.5px; line-height:1.75; color:#253545; margin-bottom:6px;">A mobile experience that doesn't break</li>
+    </ul>
+    <p>The agent's audit will flag missing specialization pages and downshift to the best available alternative. But if your homepage is also weak, the downshift won't save you. Every missing page is a conversion drag — and it has nothing to do with ChatGPT Ads. Fix the room before you build more doorways.</p>
+
+    <h2>Compliance: know the laws of your land</h2>
+    <p>Real estate advertising is regulated, and the rules differ by country and even by state or province. The agent is built with compliance guardrails — it won't target or reference protected classes, won't make claims it can't substantiate, and won't omit required disclosures. But the final responsibility is yours. A quick reminder of the major regimes:</p>
+    <ul style="margin:0 0 18px; padding-left:20px;">
+      <li style="list-style:disc; font-size:16.5px; line-height:1.75; color:#253545; margin-bottom:8px;"><strong>United States:</strong> Fair Housing Act (no targeting or implied preference for protected classes — race, color, religion, national origin, sex, familial status, disability), RESPA (no referral kickbacks for settlement services), state-level advertising rules (brokerage name often required in ads, team vs. individual agent rules vary).</li>
+      <li style="list-style:disc; font-size:16.5px; line-height:1.75; color:#253545; margin-bottom:8px;"><strong>Canada:</strong> CREA Code of Ethics and provincial real estate council rules (RECO in Ontario, OACIQ in Qu&eacute;bec, etc.), anti-discrimination provisions in provincial human rights codes, Competition Act on misleading advertising.</li>
+      <li style="list-style:disc; font-size:16.5px; line-height:1.75; color:#253545; margin-bottom:8px;"><strong>Australia:</strong> state-specific real estate licensing acts (NSW Property and Stock Agents Act, Victorian Estate Agents Act, etc.), Australian Consumer Law (no misleading or deceptive conduct), anti-discrimination acts at federal and state level.</li>
+      <li style="list-style:disc; font-size:16.5px; line-height:1.75; color:#253545; margin-bottom:8px;"><strong>New Zealand:</strong> Real Estate Authority (REA) rules of conduct, Fair Trading Act, Human Rights Act anti-discrimination provisions.</li>
+    </ul>
+    <p>If your brokerage has an ad review process, run your final copy through that before launching. The agent's output is a strong starting draft — your compliance officer is the final word.</p>
+
+    <div class="guide-nav">
+      <a class="btn v-outline" href="../ai-lab.html">&larr; Back to AI Lab</a>
+      <a class="btn v-cyan" href="../index.html#roles">Choose Your Role</a>
+    </div>
+
+  </div>
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="../index.html#roles">Choose Your Role</a>
+        <a class="fl" href="../index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="../roles/transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="../roles/listing-coordinator.html">Listing Coordinator</a>
+        <a class="fl" href="../roles/leasing-coordinator.html">Leasing Coordinator</a>
+        <a class="fl" href="../roles/lead-manager.html">Lead Manager</a>
+        <a class="fl" href="../roles/operations-manager.html">Operations</a>
+        <a class="fl" href="../roles/cfo-bookkeeper.html">CFO / Bookkeeper</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="../assets/js/app-core.js"></script>
+<script>SCApp.requireAuth();</script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/guide.js"></script>
+</body>
+</html>

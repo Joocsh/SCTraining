@@ -1,0 +1,291 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Lab · SkillCloud Academy</title>
+  <meta name="description" content="Practical, step-by-step guides for getting real work done with AI. Resources you can follow anytime, no grading required.">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <style>
+    :root {
+      --v-navy: #0a2647;
+      --v-navy2: #0f3460;
+      --v-cyan: #17c3d4;
+      --v-cyan-d: #0fa6b6;
+      --v-ink: #0c1e33;
+      --v-muted: #5b6b7e;
+      --v-bg: #f6f9fc;
+      --v-line: #e3eaf1;
+    }
+    * { box-sizing: border-box }
+
+    .disp {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-weight: 900;
+      letter-spacing: -1px;
+      line-height: 1.05;
+    }
+
+    /* HERO */
+    .ai-hero {
+      position: relative;
+      background: linear-gradient(165deg, var(--v-navy) 0%, var(--v-navy2) 60%, #123a63 100%);
+      color: #fff;
+      overflow: hidden;
+      padding: 56px 24px 78px;
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 0 96%);
+    }
+    .ai-hero:before {
+      content: "";
+      position: absolute;
+      left: -8%;
+      top: -25%;
+      width: 46%;
+      height: 65%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(23,195,212,.18), transparent 72%);
+      pointer-events: none;
+    }
+    .ai-hero-inner { max-width: 1080px; margin: 0 auto; position: relative; z-index: 2; }
+    .ai-back {
+      display: inline-flex; align-items: center; gap: 7px;
+      color: rgba(255,255,255,.5); font-size: 13.5px; font-weight: 700;
+      margin-bottom: 26px; margin-right: 18px; transition: color .2s;
+    }
+    .ai-back::before { content: '\2190'; font-size: 15px; }
+    .ai-back:hover { color: #fff; text-decoration: none; }
+
+    .ai-hero h1 { font-size: clamp(30px, 4.6vw, 46px); margin: 0 0 16px; }
+    .ai-hero h1 .cy { color: var(--v-cyan) }
+    .ai-hero p.lead {
+      font-size: 18px; color: #fff; max-width: 620px; margin: 0;
+      line-height: 1.65; text-shadow: 0 1px 3px rgba(10,38,71,.4);
+    }
+
+    /* CONTENT */
+    .lab-content { max-width: 1080px; margin: 0 auto; padding: 64px 24px 90px; }
+    .lab-intro { max-width: 640px; margin: 0 0 44px; }
+    .lab-intro h2 {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 24px; font-weight: 900; color: var(--v-navy); margin: 0 0 10px;
+    }
+    .lab-intro p { font-size: 16px; line-height: 1.65; color: var(--v-muted); margin: 0; }
+
+    /* GRID */
+    .lab-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+    .lab-card {
+      position: relative;
+      background: #fff;
+      border: 1px solid var(--v-line);
+      border-radius: 18px;
+      padding: 26px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 30px rgba(10,38,71,.03);
+      transition: transform .3s cubic-bezier(.25,1,.5,1), box-shadow .3s cubic-bezier(.25,1,.5,1);
+    }
+    a.lab-card { text-decoration: none; color: inherit; }
+    a.lab-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(10,38,71,.09); text-decoration: none; }
+    .lab-card.locked { opacity: .6; }
+    .lab-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: rgba(23,195,212,.1);
+      color: var(--v-cyan-d);
+      display: grid; place-items: center;
+      margin-bottom: 18px;
+      flex: none;
+    }
+    .lab-icon svg { width: 22px; height: 22px; }
+    .lab-badge {
+      position: absolute; top: 22px; right: 22px;
+      font-size: 10px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 999px;
+    }
+    .lab-badge.available { background: rgba(23,195,212,.1); color: var(--v-cyan-d); border: 1px solid rgba(23,195,212,.25); }
+    .lab-badge.soon { background: rgba(91,107,126,.08); color: var(--v-muted); border: 1px solid rgba(91,107,126,.18); }
+    .lab-card h3 {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 17px; font-weight: 800; color: var(--v-navy);
+      margin: 0 0 8px; padding-right: 60px;
+    }
+    .lab-card p { font-size: 14px; line-height: 1.55; color: var(--v-muted); margin: 0 0 20px; flex: 1; }
+    .lab-cta {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 13.5px; font-weight: 800; color: var(--v-cyan-d);
+    }
+    .lab-card.locked .lab-cta { color: var(--v-muted); }
+
+    @media(max-width:920px) {
+      .lab-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media(max-width:640px) {
+      .lab-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html"><img src="assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+    <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+    <div class="menu">
+      <a class="navlink" href="index.html">Home</a>
+      <a class="navlink" href="ai.html">Introduction</a>
+      <a class="navlink" href="index.html#roles">Roles</a>
+    </div>
+    <span class="spacer"></span>
+    <a class="pill" href="index.html#roles">Start Practicing</a>
+    <a class="user-chip" href="account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header class="ai-hero">
+  <div class="ai-hero-inner">
+    <a class="ai-back" href="ai.html">Back to Introduction</a>
+    <h1 class="disp">AI <span class="cy">Lab</span></h1>
+    <p class="lead">Practical, step-by-step guides for getting real work done with AI. No grading, no login, just the how-to. Practice for your specific role still happens one on one in your role's dashboard.</p>
+  </div>
+</header>
+
+<div class="lab-content">
+  <div class="lab-intro">
+    <h2>Pick a task, follow the steps</h2>
+    <p>Each guide below is a short SOP: a real task, broken into steps, with an example prompt you can copy and adjust. New guides are added regularly.</p>
+  </div>
+
+  <div class="lab-grid">
+
+    <a class="lab-card" href="guides/room-to-reel-video.html">
+      <span class="lab-badge available">Available</span>
+      <div class="lab-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg>
+      </div>
+      <h3>Turning Listing Photos into Walkthrough Video</h3>
+      <p>Set up an automation that turns the photos you already have into short AI walkthrough clips, no filming required.</p>
+      <span class="lab-cta">Read the guide &rarr;</span>
+    </a>
+
+    <a class="lab-card" href="guides/caption-signoff-generator.html">
+      <span class="lab-badge available">Available</span>
+      <div class="lab-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>
+      </div>
+      <h3>Building a Custom Caption Sign Off Tool</h3>
+      <p>A short interview builds you a personal AI tool that writes fresh, varied caption sign offs for every post.</p>
+      <span class="lab-cta">Read the guide &rarr;</span>
+    </a>
+
+    <a class="lab-card" href="guides/review-interview-bot.html">
+      <span class="lab-badge available">Available</span>
+      <div class="lab-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17.3l-5.7 3 1.1-6.3L2.8 9.3l6.4-.9L12 2.7l2.8 5.7 6.4.9-4.6 4.7 1.1 6.3z"/></svg>
+      </div>
+      <h3>Helping Past Clients Write Honest Reviews</h3>
+      <p>Build a tool that interviews a past client and hands back a genuine review draft in their own words.</p>
+      <span class="lab-cta">Read the guide &rarr;</span>
+    </a>
+
+    <a class="lab-card" href="guides/heygen-hook-writer.html">
+      <span class="lab-badge available">Available</span>
+      <div class="lab-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      </div>
+      <h3>Writing HeyGen Video Hooks with AI</h3>
+      <p>Use an AI creative director to brainstorm and write production ready prompts for HeyGen avatar video hooks.</p>
+      <span class="lab-cta">Read the guide &rarr;</span>
+    </a>
+
+    <a class="lab-card" href="guides/persuasion-skill-claude.html">
+      <span class="lab-badge available">Available</span>
+      <div class="lab-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A5.5 5.5 0 0 0 4 7.5c0 1.5.6 2.5 1.5 3.5-.9 1-1.5 2-1.5 3.5A5.5 5.5 0 0 0 9.5 20"/><path d="M14.5 2A5.5 5.5 0 0 1 20 7.5c0 1.5-.6 2.5-1.5 3.5.9 1 1.5 2 1.5 3.5a5.5 5.5 0 0 1-5.5 5.5"/><path d="M9.5 2v18M14.5 2v18"/></svg>
+      </div>
+      <h3>Teaching Claude to Diagnose Before It Writes</h3>
+      <p>Install a persuasion skill so Claude reads the reader first, before it writes a single line of marketing copy.</p>
+      <span class="lab-cta">Read the guide &rarr;</span>
+    </a>
+
+    <a class="lab-card" href="guides/chatgpt-ads-agent.html">
+      <span class="lab-badge available">Available</span>
+      <div class="lab-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+      </div>
+      <h3>Building a ChatGPT Ads Campaign with an Agent</h3>
+      <p>Set up a Claude agent that audits your site and builds a full, ready to upload ChatGPT Ads campaign in one sitting.</p>
+      <span class="lab-cta">Read the guide &rarr;</span>
+    </a>
+
+    <a class="lab-card" href="guides/hyperlocal-market-emails.html">
+      <span class="lab-badge available">Available</span>
+      <div class="lab-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 6l8 7 8-7"/></svg>
+      </div>
+      <h3>Turning CRM Data into Local Market Report Emails</h3>
+      <p>Set up an agent that reads your contacts and MLS data, then writes a branded market update for every segment.</p>
+      <span class="lab-cta">Read the guide &rarr;</span>
+    </a>
+
+    <a class="lab-card" href="guides/chatgpt-ads-targeting-playbook.html">
+      <span class="lab-badge available">Available</span>
+      <div class="lab-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      </div>
+      <h3>Writing Targeting Hints for ChatGPT Ads</h3>
+      <p>Learn the pattern behind the plain language targeting hints ChatGPT Ads uses instead of keywords.</p>
+      <span class="lab-cta">Read the guide &rarr;</span>
+    </a>
+
+    <a class="lab-card" href="guides/crm-health-call-list.html">
+      <span class="lab-badge available">Available</span>
+      <div class="lab-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a8 3 0 0 0 16 0 8 3 0 0 0-16 0z"/><path d="M4 5v6a8 3 0 0 0 16 0V5"/><path d="M4 11v6a8 3 0 0 0 16 0v-6"/></svg>
+      </div>
+      <h3>Turning a CRM Export into a Call List</h3>
+      <p>Run a single prompt that reads a full CRM export and hands back a scorecard plus a prioritized call list.</p>
+      <span class="lab-cta">Read the guide &rarr;</span>
+    </a>
+
+  </div>
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="index.html#roles">Choose Your Role</a>
+        <a class="fl" href="index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="roles/transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="roles/leasing-coordinator.html">Leasing Coordinator</a>
+        <a class="fl" href="roles/operations-manager.html">Operations</a>
+        <a class="fl" href="roles/cfo-bookkeeper.html">CFO / Bookkeeper</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY &middot; FL</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/app-core.js"></script>
+<script>SCApp.requireAuth();</script>
+<script src="assets/js/site.js"></script>
+</body>
+</html>

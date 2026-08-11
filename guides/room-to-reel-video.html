@@ -1,0 +1,162 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Turning Listing Photos into Walkthrough Video · SkillCloud Academy</title>
+  <meta name="description" content="A step by step SOP for turning listing photos into AI walkthrough video clips using an n8n automation, no filming required.">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/guide.css">
+</head>
+<body class="gd-page">
+
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html"><img src="../assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+    <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+    <div class="menu">
+      <a class="navlink" href="../index.html">Home</a>
+      <a class="navlink" href="../ai.html">Introduction</a>
+      <a class="navlink" href="../index.html#roles">Roles</a>
+    </div>
+    <span class="spacer"></span>
+    <a class="pill" href="../index.html#roles">Start Practicing</a>
+    <a class="user-chip" href="../account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
+  </div>
+</nav>
+
+<header class="ai-hero">
+  <div class="ai-hero-inner">
+    <a class="ai-back" href="../ai-lab.html">Back to AI Lab</a>
+    <p class="gd-eyebrow">AI Lab guide &middot; Video</p>
+    <h1 class="disp">Turning Listing Photos into Walkthrough Video</h1>
+    <p class="lead">An automation that takes the photos you already shot and hands back short walkthrough clips, ready for a Reel or a Short. No camera, no editing software.</p>
+    <ul class="gd-meta">
+      <li><span class="k">Tool</span><span class="v">n8n and Claude</span></li>
+      <li><span class="k">Steps</span><span class="v">Six</span></li>
+      <li><span class="k">Includes</span><span class="v">n8n workflow file</span></li>
+    </ul>
+  </div>
+</header>
+
+<div class="ai-content">
+  <div class="ai-article">
+
+    <h2>What this actually does</h2>
+    <p>Every listing benefits from video, but filming a walkthrough and editing it before the photos go stale rarely happens. This tool skips that entirely. You feed it the listing photos you already have, and it hands back a short clip per photo, with the camera moving through the room like someone is walking in. Drop the clip into a Reel, a Short, or your listing rollout.</p>
+    <p>It runs inside n8n, a visual tool for automating tasks between apps without writing code. The actual video generation happens through an AI video model reached through a service called OpenRouter, which gives you access to many AI models under one account. You do not need to understand any of that. You import one file, connect two accounts, and run everything from a simple upload form.</p>
+
+    <h2>What you will need</h2>
+    <div class="ps-card cyan">
+      <div class="lbl">Before you start</div>
+      <ul>
+        <li>An n8n account. The free cloud trial works fine to test this</li>
+        <li>An OpenRouter account with a small amount of credit loaded. Each five second clip costs roughly fifty five cents at current pricing</li>
+        <li>A Google account, since finished clips save straight to Google Drive</li>
+        <li>Optional: CapCut or a similar app to crop the clip to a vertical frame for Reels</li>
+      </ul>
+    </div>
+
+    <h2>Setting it up</h2>
+    <ol class="ai-steps">
+      <li>
+        <div class="ai-step-body">
+          <h4>Download the template</h4>
+          <p>Grab the file below and unzip it. Inside is a single n8n template, a .json file. Nothing to configure yet. No keys or passwords are baked into this file. You will connect your own accounts in the steps that follow.</p>
+          <div class="dl-card">
+            <div class="dl-txt">
+              <h5>Room to Reel n8n Workflow</h5>
+              <p>The complete n8n workflow, ready to import.</p>
+            </div>
+            <a class="dl-btn" href="../assets/downloads/room-to-reel-workflow-improved.json" download>Download</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Import it into n8n</h4>
+          <p>In n8n, start a new workflow. Open the three-dot menu in the top-right corner and choose Import from File. Select the .json file you unzipped. The full workflow drops onto the canvas, including a "Setup — read me first" note that mirrors these steps right inside n8n.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Connect OpenRouter</h4>
+          <p>In OpenRouter, create an API key — a private password that lets the workflow use your account on your behalf — and add a few dollars of credit. Five to ten dollars covers a lot of testing. Each five second clip runs roughly $0.55 at current pricing.</p>
+          <p>Back in n8n, open the Submit Video node. Under Credential, choose to create a new Header Auth credential. Set the Name field to <strong>Authorization</strong> and the Value field to <strong>Bearer YOUR_KEY</strong> — paste your actual key in place of YOUR_KEY, keeping the space after Bearer. Save it. Then open the Poll node and the Download mp4 node and select that same credential on each. Three nodes, one credential.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Connect Google Drive</h4>
+          <p>Open the Save to Drive node, create a Google Drive credential, and sign in with the Google account where you want your videos to land. The finished clips save to the main folder of that Drive.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Run it</h4>
+          <p>Toggle the workflow Active in the top-right corner, then open the Form node and copy its form URL. Paste that URL into your browser. You will see a clean upload form — no n8n knowledge required from here on.</p>
+          <p>Upload one or more listing photos. Leave the Motion prompt blank to use the built-in walkthrough prompt, or write your own camera direction. Choose whether to add background music, and how many versions you want per photo. Hit submit. Each clip takes a minute or two — the workflow waits and checks until the video is ready, then saves it. When it is done, every photo has become a 5-second walkthrough clip sitting in your Google Drive.</p>
+          <p>Curious what that default prompt actually says? Here it is exactly. Leave the form's Motion prompt box blank and it fires automatically. Copy it in only when you want to adjust the camera movement yourself.</p>
+          <div class="prompt-box">
+            <span class="plbl">The default motion prompt</span>
+            <p>Generate a video walkthrough based strictly on the provided reference photo. Move the camera as if a person is physically walking forward through the room at a natural pace — a first-person walking point of view at standing eye level. Include the subtle, organic motion of human walking: a gentle vertical bob with each step, slight natural sway from side to side, and small handheld variations, so the movement feels alive rather than a smooth mechanical slide on rails. Keep advancing forward the entire time; do not hold static, and do not move in a perfectly straight, rigid line. Keep all motion smooth enough to feel real and physically plausible, never shaky or disorienting. Preserve every object, color, material, and lighting detail exactly as it appears in the reference image, and do not add, remove, or alter anything. Do not invent or imply any unseen elements, including windows, doors, railings, openings, adjacent spaces, or light sources. If something isn't clearly visible in the photo, it must not appear in the video. As the camera moves forward it may bring more of this same room into view, but it must stay anchored to the visual information in the reference image, and the structure of the room must not change.</p>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Finish for social (optional)</h4>
+          <p>The clips come out in your photo's native shape at 720p. For Reels and Shorts, drop a clip into a 9:16 CapCut project — CapCut fills the vertical frame for you. Add your hook, your captions, and your call to action, and post it.</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="guide-nav">
+      <a class="btn v-outline" href="../ai-lab.html">&larr; Back to AI Lab</a>
+      <a class="btn v-cyan" href="../index.html#roles">Choose Your Role</a>
+    </div>
+
+  </div>
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="../index.html#roles">Choose Your Role</a>
+        <a class="fl" href="../index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="../roles/transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="../roles/listing-coordinator.html">Listing Coordinator</a>
+        <a class="fl" href="../roles/leasing-coordinator.html">Leasing Coordinator</a>
+        <a class="fl" href="../roles/lead-manager.html">Lead Manager</a>
+        <a class="fl" href="../roles/operations-manager.html">Operations</a>
+        <a class="fl" href="../roles/cfo-bookkeeper.html">CFO / Bookkeeper</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="../assets/js/app-core.js"></script>
+<script>SCApp.requireAuth();</script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/guide.js"></script>
+</body>
+</html>

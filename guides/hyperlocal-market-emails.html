@@ -1,0 +1,352 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Turning CRM Data into Local Market Report Emails · SkillCloud Academy</title>
+  <meta name="description" content="A step by step SOP for using a Claude Cowork agent to turn contacts and MLS data into branded, hyperlocal market report emails.">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/guide.css">
+</head>
+<body class="gd-page">
+
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html"><img src="../assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+    <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+    <div class="menu">
+      <a class="navlink" href="../index.html">Home</a>
+      <a class="navlink" href="../ai.html">Introduction</a>
+      <a class="navlink" href="../index.html#roles">Roles</a>
+    </div>
+    <span class="spacer"></span>
+    <a class="pill" href="../index.html#roles">Start Practicing</a>
+    <a class="user-chip" href="../account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
+  </div>
+</nav>
+
+<header class="ai-hero">
+  <div class="ai-hero-inner">
+    <a class="ai-back" href="../ai-lab.html">Back to AI Lab</a>
+    <p class="gd-eyebrow">AI Lab guide &middot; Email</p>
+    <h1 class="disp">Turning CRM Data into Local Market Report Emails</h1>
+    <p class="lead">An agent that reads your contact list and your MLS data, then writes a separate branded market update for every ZIP code, city, or neighborhood in your database, so nobody gets a report that does not actually apply to them.</p>
+    <ul class="gd-meta">
+      <li><span class="k">Tool</span><span class="v">Claude</span></li>
+      <li><span class="k">Steps</span><span class="v">Six</span></li>
+      <li><span class="k">Includes</span><span class="v">Agent prompt and campaign files</span></li>
+    </ul>
+  </div>
+</header>
+
+<div class="ai-content">
+  <div class="ai-article">
+
+    <h2>What this actually does</h2>
+    <p>Sellers consistently choose the agent who understands their specific market, not a generic overview of the whole metro. The trouble is that writing a separate, accurate email for every ZIP code in your database by hand does not scale past a handful of contacts. This agent does the segmenting and the writing for you. It reads a contact export from your CRM, figures out which geographies your contacts actually live in or are searching in, tells you exactly which MLS data to pull, and then writes one branded email per segment with real numbers pulled from that data.</p>
+    <p>Every email covers both sides of the conversation in one piece: a seller angle for someone who might list, and a buyer angle for someone searching in that area, since the same market data supports both. You review the finished emails, then copy each one into your email platform and send it yourself. Nothing sends automatically.</p>
+
+    <h2>One AI agent, one campaign</h2>
+    <p>This agent is built around a deliberate constraint: one Cowork AI agent runs one focused campaign. When you set it up, you pick a single segmentation method (ZIP, city, county, subdivision, or neighborhood) and optionally layer on filters — property type, price range, contact source, buyer-leaning vs. seller-leaning emphasis.</p>
+    <p>If you want to run multiple campaigns — say, Brentwood sellers and Williamson County luxury buyers — you simply spin up multiple AI agents. Each one stays focused. None of them blow up into 90 emails you'd never actually send.</p>
+
+    <h2>Why "knowledge broker" marketing wins</h2>
+    <p>The National Association of REALTORS&reg; Profile of Home Buyers and Sellers tells us the same thing every year: sellers hire the knowledge broker. The agent who understands the market, who can speak fluently about pricing, timing, inventory, and competitive dynamics in their specific area.</p>
+    <p>Hyperlocal market reports are the single most effective way to demonstrate that knowledge consistently. The reason most market emails fall flat is they're too broad — "Nashville market update" means nothing to someone in Brentwood. This engine fixes that by going granular, by ZIP or subdivision or neighborhood, so every contact gets data that's actually about their patch of the world.</p>
+
+    <h2>How to use it</h2>
+    <p>Setup takes about 10–15 minutes. Six steps.</p>
+    <ol class="ai-steps">
+      <li>
+        <div class="ai-step-body">
+          <h4>Download the files</h4>
+          <p>Download the zip below. It contains your CLAUDE.md file and the market-report-campaign-builder skill — the two files that make the AI agent work.</p>
+          <div class="dl-card">
+            <div class="dl-txt">
+              <h5>Hyperlocal Market Report Campaigns</h5>
+              <p>The agent instructions (CLAUDE.md) and the market-report-campaign-builder skill.</p>
+            </div>
+            <a class="dl-btn" href="../assets/downloads/hyperlocal-market-report-campaigns.zip" download>Download</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Install the skill</h4>
+          <p>Unzip the download. You'll see two things: a CLAUDE.md file and a market-report-campaign-builder folder containing a SKILL.md.</p>
+          <ol class="sub-list">
+            <li>Open Claude Desktop &rarr; Customize &rarr; Skills &rarr; Add Skill</li>
+            <li>Add the market-report-campaign-builder skill from the unzipped folder</li>
+            <li>Make sure it's toggled on</li>
+          </ol>
+          <p>Set the CLAUDE.md file aside — you'll place it in your Cowork task folder in Step 4.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Run the intake prompt</h4>
+          <p>This is a conversation you have with Claude in a regular chat — not Cowork. Claude asks you about your campaign scope, your CRM, your sender info, your branding, your design choices, your images, and your email platform. Then it generates two files: a personalized campaign-config.md and a copyable kickoff prompt for Cowork. Takes about 5–10 minutes.</p>
+          <p>Before you start, do one quick export of your contacts from your CRM as a CSV. During intake, Claude will ask you to attach the CSV (or paste the column headers) so it can analyze your CRM's exact column names and build a precise mapping.</p>
+          <p>Copy and paste the full intake prompt below into Claude:</p>
+          <div class="long-prompt">
+            <span class="plbl">Intake prompt — paste this into a regular Claude chat</span>
+            <pre># Hyperlocal Market Report Campaigns — Intake Prompt
+
+You are setting up a personalized Hyperlocal Market Report Campaigns for a real estate professional. The member has already downloaded a zip file from the AiM library containing:
+
+- **CLAUDE.md** — the system prompt (goes in their Claude Cowork task folder)
+- **market-report-campaign-builder** skill (already installed in their Claude Cowork skill library)
+
+Your job is to ask the right questions, then generate two personalized outputs:
+
+1. A completed **`campaign-config.md`** file — the member's specific campaign scope, sender info, branding, and design choices
+2. A **kickoff prompt** — what the member pastes into Claude Cowork to start a run
+
+Be conversational. Don't ask everything at once. Ask one group of questions at a time, confirm the answers, and move on. If a question doesn't apply to them, skip it. Use voice-dictation-friendly framing — let them context-dump answers, you parse them.
+
+Important: this Hyperlocal Market Report Campaigns runs **one focused campaign**. The member is configuring a single agent with a single segmentation strategy and single set of filters. If they want to run multiple campaigns (e.g., one for sellers, one for buyers; or one for Brentwood, one for Franklin), they spin up multiple agents. Don't try to bake multiple campaigns into one config.
+
+---
+
+## Group 1: The Campaign Scope
+
+Ask, in one multi-part question:
+
+> *Let's define the scope of this campaign. A few quick questions:*
+>
+> *1. What do you want to call this campaign? Something short — like "Brentwood Sellers" or "Williamson Buyers." I'll use it to name folders and files.*
+>
+> *2. How do you want to segment your emails? Pick one: ZIP code, city, county, subdivision/neighborhood, or something custom your MLS exports as a field.*
+>
+> *3. Do you want any filters layered on top? Optional — you can pick price range, property type, contact source, or skip filters entirely.*
+>
+> *4. Whose perspective are you writing for? Seller-leaning, buyer-leaning, or balanced (both sides equally)?*
+
+Confirm what they said before moving on.
+
+---
+
+## Group 2: Your Contacts
+
+### Step 2a: Basics
+
+Ask:
+
+> *Two quick questions about your contacts:*
+>
+> *1. Which CRM are you using?*
+>
+> *2. Does your CRM track "areas of interest" or "search areas" for your buyer-side contacts — places they're looking to buy? If yes, what's that field called in your CRM? Or maybe you tag buyer-side contacts with tags like `looking-in-37027`? Whatever you do, just tell me. If your CRM doesn't track that, no problem — your campaign will be seller-focused.*
+
+### Step 2b: Analyze a sample export
+
+Ask them to share an actual export:
+
+> *Now I need to see what your CRM actually exports.*
+>
+> *Option A (recommended): Export your contacts from your CRM right now as a CSV and attach it here. I'll only look at the columns and a couple of rows to build the right mapping — no contact details get logged or remembered. This becomes the same file you'll use when you run the agent later.*
+>
+> *Option B: If you can't attach a CSV, just paste the column headers (the first row of the CSV). That's enough for me to work with.*
+
+When the member attaches a CSV or pastes headers, analyze the columns, identify which map to first name, last name, email, home address, tags, source, and any buyer search area field, then propose a mapping. Confirm with the member before moving on.
+
+Note CRM quirks: Follow Up Boss uses `Email 1` (not `Email`) and splits address across `Address 1 - Street`, `Address 1 - City`, `Address 1 - State`, `Address 1 - Zip`. Lofty typically exports a single `Address` column. Sierra Interactive uses separate Street/City/State/Zip columns.
+
+After they confirm the mapping:
+
+> *When it's time to run the AI agent, you'll do another fresh export from your CRM and drop the file in your Cowork task folder named `contacts.csv`. The mapping I just captured will tell the agent exactly how to read it — no guessing at runtime.*
+
+---
+
+## Group 3: Sender Info
+
+Ask, in one multi-part question:
+
+> *Now for your sender info — what the email signs off as:*
+>
+> *1. Your full name as you want it to appear?*
+> *2. Your title or designation? (e.g., "REALTOR®", "Associate Broker," "REALTOR®, ABR, CRS")*
+> *3. Your brokerage name?*
+> *4. Phone number for replies?*
+> *5. The email address the CTA button should send replies to?*
+> *6. License number if your state or province requires it in the footer?*
+> *7. How do you like to sign off? "Talk soon," "Best," "Cheers," "Sincerely," — what feels like you?*
+
+---
+
+## Group 4: Branding
+
+Ask, in one multi-part question:
+
+> *Brand details next:*
+>
+> *1. What are your brand colors? Ideally hex codes — primary, secondary, and any accent. If you don't know hex codes, describe them and I'll suggest values to confirm.*
+> *2. What font do you use for headings? And for body text? If you don't have a brand font, I'll default to clean sans-serif.*
+> *3. Any design motifs or style notes? Open-ended — things like "clean and modern," "warm and traditional," "luxury minimalist."*
+> *4. Is there specific legal disclaimer language your brokerage requires? If yes, paste it — I'll use yours verbatim. If no, I'll use the standard one.*
+
+---
+
+## Group 5: Design Choices
+
+Ask, in one multi-part question:
+
+> *Let's nail down the visual style. Quick answers — I'll fill in the rest with sensible defaults.*
+>
+> *1. Corner style: sharp / soft 8px / rounded 16px / pill?*
+> *2. Button shape: pill / rounded rectangle / square?*
+> *3. Density: compact / standard / airy?*
+> *4. Header treatment: solid color block / gradient between two brand colors / image background (you'll provide a URL)?*
+> *5. Metric box style: bordered cards / borderless cards / inline stats?*
+> *6. Divider style: hairline rules / spacing only / accent color bars?*
+
+---
+
+## Group 6: Images (Optional)
+
+Ask:
+
+> *Do you want to include any images in the emails? Logo, headshot, brokerage badge, equal housing logo, anything like that?*
+
+If yes, explain that images need a public URL — they can't live on the user's computer. Walk them through hosting in Mailchimp (Content Studio), Constant Contact (Library), ActiveCampaign (Manage Files), or HubSpot (Marketing → Files).
+
+For each image, ask: (a) a label (logo, headshot), (b) where it should appear (header, footer, inline), and (c) the rough shape/aspect ratio.
+
+---
+
+## Group 7: Email Service Provider & Tagging
+
+Ask:
+
+> *Two last questions:*
+>
+> *1. Which email platform do you use to send mass emails? Mailchimp, Constant Contact, ActiveCampaign, HubSpot, SendGrid, Flodesk, or something else?*
+>
+> *2. How do you organize recipients in that platform? Tags / separate lists per segment / a custom field / something else?*
+
+---
+
+## After All Questions: Generate the Outputs
+
+When you have all the answers, produce two things:
+
+**Output 1: campaign-config.md** — a filled-in configuration file covering the campaign scope, contact source, CSV column mapping, sender info, branding, design choices, images, and email service provider settings. Generate this as a downloadable file. Tell the member to place it in `their-task-folder/references/campaign-config.md`.
+
+**Output 2: Kickoff Prompt** — generate this as copyable text in a code block:
+
+```
+Run the Hyperlocal Market Report Campaigns for my campaign. Follow the six-phase workflow in your CLAUDE.md.
+
+Start with Phase 1: read references/campaign-config.md in full before doing anything else.
+
+Then run Phase 2: read contacts.csv from the task folder. Tell me how you mapped my columns before proceeding.
+
+Then Phase 3: identify the geographies and apply my filters. Show me the breakdown before continuing.
+
+Then Phase 4: tell me what MLS data you need so I can drop the files in the folder.
+
+Once I confirm the MLS files are in place, run Phase 5 (generate emails using the market-report-campaign-builder skill) and Phase 6 (write outputs to the campaigns folder).
+
+When you're done, give me a one-paragraph summary and point me to the README in the output folder.
+```
+
+Tell the member: "Copy this kickoff prompt and save it somewhere handy. To run the engine: place CLAUDE.md at the root of your Cowork task folder, place campaign-config.md at references/campaign-config.md, export your contacts as contacts.csv into the root folder, open a new Cowork task using that folder, and paste this kickoff prompt as your first message."
+
+---
+
+## Tone Notes
+
+Don't pile every question into the first message. Walk them through groups. After each group, confirm in plain language before moving on. If the member skips a question or gives vague answers, propose a sensible default and ask if it works. Assume they know their business — you're just gathering inputs.</pre>
+          </div>
+          <p style="margin-top:14px;">After you answer Claude's questions, save the two outputs: <strong>campaign-config.md</strong> (download the file) and the <strong>kickoff prompt</strong> (copy it and save somewhere handy). You'll use both in the steps below.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Set up your Cowork task folder</h4>
+          <ol class="sub-list">
+            <li>Open Claude Desktop &rarr; click Cowork (top, center menu)</li>
+            <li>Start a new task</li>
+            <li>Pick a working folder — create a new folder on your Desktop or in Documents. Call it something like market-report-engine or after your campaign name (e.g., brentwood-sellers). This is where contacts, MLS data, and your generated campaign emails will live.</li>
+            <li>Drop your CLAUDE.md file (from the Step 1 download) into the root of that folder</li>
+            <li>Create a references subfolder inside it, then place your campaign-config.md (from Step 3) inside that subfolder. The full path should look like: your-folder/references/campaign-config.md</li>
+          </ol>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Place your contacts CSV in the task folder</h4>
+          <p>Do a fresh export of your contacts from your CRM (or reuse the export from Step 3). Save the file as <strong>contacts.csv</strong> and place it at the root of your Cowork task folder — not inside references/. The AI agent will read it automatically when you run.</p>
+          <p>Because you already walked Claude through your CSV's column structure during intake, the AI agent knows exactly which columns to read and how to interpret them. No renaming, no reformatting, no manual mapping at runtime.</p>
+          <p>Tip: re-exporting your CSV right before each campaign keeps the contact list current — new leads added, old contacts removed.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Run the engine</h4>
+          <p>Paste your kickoff prompt (from Step 3) into the Cowork task as your first message. The engine then walks you through the rest:</p>
+          <ol class="sub-list">
+            <li>Confirms your campaign scope and reads your contacts CSV</li>
+            <li>Reports back how it mapped your CSV columns and which geographies are in scope after filters</li>
+            <li>Tells you exactly which MLS data to pull — you do a manual export from your MLS and drop the file(s) in the task folder</li>
+            <li>Generates one HTML email per segment plus a master tagged recipient CSV</li>
+            <li>Writes everything to a timestamped campaigns/[date]-[campaign-name]/ folder</li>
+          </ol>
+          <p>Open the README.md in that campaigns folder for ESP-specific import instructions. The README walks you through importing the recipient CSV and pasting each HTML email into a new campaign in Mailchimp, Constant Contact, ActiveCampaign, HubSpot, or SendGrid.</p>
+        </div>
+      </li>
+    </ol>
+
+    <h2>Re-running your campaign</h2>
+    <p>Each run is independent. Run it monthly, quarterly, or whenever your market data justifies a fresh send. The engine timestamps every campaigns folder so you have a clean history of every send.</p>
+    <p>If your campaign config ever needs to change — new branding, different filters, different segmentation — just edit the campaign-config.md file directly. You don't need to redo the intake unless you want to build a completely separate AI agent for a different campaign.</p>
+
+    <div class="guide-nav">
+      <a class="btn v-outline" href="../ai-lab.html">&larr; Back to AI Lab</a>
+      <a class="btn v-cyan" href="../index.html#roles">Choose Your Role</a>
+    </div>
+
+  </div>
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="../index.html#roles">Choose Your Role</a>
+        <a class="fl" href="../index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="../roles/transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="../roles/listing-coordinator.html">Listing Coordinator</a>
+        <a class="fl" href="../roles/leasing-coordinator.html">Leasing Coordinator</a>
+        <a class="fl" href="../roles/lead-manager.html">Lead Manager</a>
+        <a class="fl" href="../roles/operations-manager.html">Operations</a>
+        <a class="fl" href="../roles/cfo-bookkeeper.html">CFO / Bookkeeper</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="../assets/js/app-core.js"></script>
+<script>SCApp.requireAuth();</script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/guide.js"></script>
+</body>
+</html>

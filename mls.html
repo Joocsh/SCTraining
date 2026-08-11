@@ -1,0 +1,284 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MLS Entry Practice · SkillCloud Academy</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+  :root{--v-navy:#0a2647;--v-navy2:#0f3460;--v-cyan:#17c3d4;--v-cyan-d:#0fa6b6}
+
+  .mls-hero{
+    background:linear-gradient(135deg,var(--v-navy),var(--v-navy2));
+    color:#fff;border-radius:20px;padding:36px 32px;margin:24px 0 24px;
+    position:relative;overflow:hidden;
+  }
+  .mls-hero::after{
+    content:'';position:absolute;inset:auto -6% -80% auto;width:260px;height:260px;
+    border-radius:50%;background:radial-gradient(circle at 30% 30%, rgba(23,195,212,.22), transparent 70%);
+  }
+  .mls-hero .crumb{position:relative;font-size:13px;color:#c8d7e6;margin-bottom:12px}
+  .mls-hero .crumb a{color:#c8d7e6}
+  .mls-hero h1{position:relative;margin:0 0 8px;font-size:clamp(22px,4vw,28px);font-weight:900;letter-spacing:-.4px}
+  .mls-hero p{position:relative;margin:0;color:#c8d7e6;font-size:14.5px;max-width:640px;line-height:1.6}
+
+  #ms-tabs.tabs{margin-bottom:18px}
+  #ms-tabs .tab{
+    padding:9px 18px;border-radius:999px;border:1.5px solid var(--line);background:#fff;
+    cursor:pointer;font-weight:700;font-size:13.5px;color:var(--v-navy2);
+    transition:background .16s ease,color .16s ease,border-color .16s ease,transform .16s ease;
+  }
+  #ms-tabs .tab:hover{transform:translateY(-2px);border-color:rgba(23,195,212,.4)}
+  #ms-tabs .tab.active{background:var(--v-navy);color:#fff;border-color:var(--v-navy)}
+
+  #ms-form fieldset{
+    opacity:0;transform:translateY(8px);animation:msIn .4s ease forwards;
+    border-radius:14px;
+  }
+  #ms-form fieldset:nth-of-type(1){animation-delay:.03s}
+  #ms-form fieldset:nth-of-type(2){animation-delay:.08s}
+  #ms-form fieldset:nth-of-type(3){animation-delay:.13s}
+  #ms-form fieldset:nth-of-type(4){animation-delay:.18s}
+  #ms-form fieldset:nth-of-type(5){animation-delay:.23s}
+  @keyframes msIn{to{opacity:1;transform:none}}
+
+  @media(max-width:640px){
+    .mls-hero{padding:26px 20px;border-radius:16px}
+  }
+</style>
+</head>
+<body>
+<nav class="nav" id="nav"><div class="nav-inner">
+  <a class="brand" href="index.html"><img src="assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+  <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+  <div class="menu">
+    <a class="navlink" href="index.html">Home</a>
+    <a class="navlink" href="ai.html">Introduction</a>
+    <a class="navlink" href="index.html#roles">Roles</a>
+  </div>
+  <span class="spacer"></span>
+  <a class="pill" href="index.html#roles">Start Practicing</a>
+  <a class="user-chip" href="account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
+</div></nav>
+
+<div class="wrap">
+  <div class="mls-hero">
+    <div class="crumb"><a href="index.html">Home</a> &rsaquo; MLS Entry Basics</div>
+    <h1>MLS Entry Basics</h1>
+    <p>A quick, single form warm up across four states before you open a role's full MLS Practice panel. Fields are seeded from real listing files, complete the blanks, then validate your entry and draft the public remarks.</p>
+  </div>
+
+  <div class="callout warn"><h4>Training only</h4>This is a practice form, it does not connect to any live MLS. Never enter real client financial data into a training tool.</div>
+
+  <div class="tabs" id="ms-tabs"></div>
+  <form id="ms-form" onsubmit="return false"></form>
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="index.html#roles">Choose Your Role</a>
+        <a class="fl" href="index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="roles/transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="roles/listing-coordinator.html">Listing Coordinator</a>
+        <a class="fl" href="roles/leasing-coordinator.html">Leasing Coordinator</a>
+        <a class="fl" href="roles/lead-manager.html">Lead Manager</a>
+        <a class="fl" href="roles/operations-manager.html">Operations</a>
+        <a class="fl" href="roles/cfo-bookkeeper.html">CFO / Bookkeeper</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/app-core.js"></script>
+<script src="assets/js/site.js"></script>
+<script>
+const msMe = SCApp.requireAuth();
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const MLS = {
+  tx:{ flag:"TX", state:"Texas", form:"HAR / TREC listing input",
+    sampleRemarks:"Stunning two-story home in the master-planned Tamarron community of Katy! Light-filled open floor plan, island kitchen, spacious primary suite, and a covered patio perfect for entertaining. Zoned to highly rated schools with resort-style amenities, lakes, and trails. Easy access to the Grand Parkway. Schedule your private showing today!",
+    fields:{
+      status:"Active", price:"359900",
+      type:"Single-Family Detached", street:"2931 McDonough Way", city:"Katy", st:"TX", zip:"77494",
+      county:"Fort Bend", subdivision:"Tamarron Sec 9", parcel:"Lot 11, Block 1",
+      beds:"", bathsF:"", bathsH:"", sqft:"", lot:"", year:"", garage:"", stories:"",
+      schools:"Lamar Consolidated ISD", hoa:"Yes", hoafee:"", terms:"Conventional / Cash",
+      seller:"Steven Burdick", buyers:"Joseph & Deanna Whempner", remarks:""
+    },
+    blanks:["beds","bathsF","bathsH","sqft","year","garage","hoafee","remarks"] },
+
+  ca:{ flag:"CA", state:"California", form:"CRMLS / TheMLS listing input",
+    sampleRemarks:"Rare opportunity in prime Beverly Grove! This character-rich residence blends classic Spanish details with modern updates, moments from The Grove, Beverly Hills, and the city's best dining. Generous living spaces, abundant natural light, and a private outdoor retreat. A landmark location for the discerning buyer. Shown by appointment only.",
+    fields:{
+      status:"Active", price:"3995000",
+      type:"Single-Family Residence", street:"139 S Edinburgh Ave", city:"Los Angeles", st:"CA", zip:"90048",
+      county:"Los Angeles", subdivision:"Beverly Grove", parcel:"APN 5511-023-009",
+      beds:"", bathsF:"", bathsH:"", sqft:"", lot:"", year:"", garage:"", stories:"",
+      schools:"Los Angeles Unified", hoa:"No", hoafee:"0", terms:"Cash (no loan contingency)",
+      seller:"The Randall Trust", buyers:"Eli Levy & Michael Zargarian", remarks:""
+    },
+    blanks:["beds","bathsF","bathsH","sqft","year","stories","remarks"] },
+
+  va:{ flag:"VA", state:"Virginia", form:"REIN MLS listing input",
+    sampleRemarks:"Welcome to 4232 Maplehurst Road in the established Timberlake community of Virginia Beach! This well-kept home offers comfortable living spaces, a flexible layout, and a convenient location near shopping, dining, and major routes. Community-maintained grounds and a low-maintenance lifestyle. Schedule your private tour today — bring your pickiest buyers!",
+    fields:{
+      status:"Active", price:"299900",
+      type:"Single-Family Residence (CIC/POA)", street:"4232 Maplehurst Road", city:"Virginia Beach", st:"VA", zip:"23462",
+      county:"Virginia Beach (city)", subdivision:"Timberlake Sec 5", parcel:"Block A, Lot 15",
+      beds:"", bathsF:"", bathsH:"", sqft:"", lot:"", year:"", garage:"", stories:"",
+      schools:"Virginia Beach City Public Schools", hoa:"Yes", hoafee:"", terms:"Conventional / Cash",
+      seller:"Jemal Tamem", buyers:"Diane Nwaonicha", remarks:""
+    },
+    blanks:["beds","bathsF","bathsH","sqft","year","garage","stories","hoafee","remarks"] },
+
+  ny:{ flag:"NY", state:"New York", form:"NYS Alliance / UNYREIS listing input",
+    sampleRemarks:"Charming move-in-ready townhouse in sought-after Beacon Hills, Penfield. Two bedrooms, an updated half bath on the main level, and a bright open layout. Low-maintenance living with HOA-managed exterior and grounds, zoned to Webster schools. Estate sale — sold as-is. Delayed negotiations; please include proof of funds or lender pre-approval with offers.",
+    fields:{
+      status:"Active", price:"179900",
+      type:"Condo / Townhouse", street:"15 Braintree Crescent", city:"Penfield", st:"NY", zip:"14526",
+      county:"Monroe", subdivision:"Beacon Hills Townhouses", parcel:"264200-109-050-0003-036-000-000B",
+      beds:"2", bathsF:"1", bathsH:"1", sqft:"1301", lot:"0.04 ac", year:"1979", garage:"1 / Attached", stories:"1",
+      schools:"Webster CSD", hoa:"Yes", hoafee:"", terms:"Conventional / Cash",
+      seller:"Estate of Adele Elizabeth Shepard", buyers:"Olivia Pitton", remarks:""
+    },
+    blanks:["hoafee","remarks"] }
+};
+
+let mKey='tx';
+function tabs(){
+  const t=document.getElementById('ms-tabs'); t.innerHTML='';
+  Object.entries(MLS).forEach(([k,d])=>{
+    const b=document.createElement('button'); b.type='button';
+    b.className='tab'+(k===mKey?' active':''); b.textContent=d.state;
+    b.onclick=()=>{mKey=k; tabs(); render();}; t.appendChild(b);
+  });
+}
+function F(id,label,val,hint,blank,opts){
+  const isSel=Array.isArray(opts);
+  let input;
+  if(isSel){
+    input=`<select id="f-${id}">`+opts.map(o=>`<option ${o===val?'selected':''}>${esc(o)}</option>`).join('')+`</select>`;
+  }else{
+    input=`<input id="f-${id}" value="${esc(val)}" placeholder="${blank?'— enter from listing —':''}">`;
+  }
+  return `<div class="field ${blank?'':''}"><label>${label}${blank?' <span class="hint">(complete this)</span>':''}</label>${input}${hint?`<span class="hint">${hint}</span>`:''}</div>`;
+}
+function render(){
+  const d=MLS[mKey], f=d.fields, B=id=>d.blanks.includes(id);
+  let h=`<div class="scorebar"><span class="chip">${d.flag} · ${d.state}</span><span class="chip">${esc(d.form)}</span>
+    <span class="chip" id="ms-comp">Completeness: —</span></div>`;
+
+  h+=`<fieldset><legend>Listing Status &amp; Price</legend><div class="form-grid">
+    ${F('status','Status',f.status,'',false,['Active','Coming Soon','Pending','Under Contract'])}
+    ${F('price','List Price ($)',f.price,'Whole dollars, no commas',B('price'))}
+    ${F('terms','Acceptable Terms',f.terms,'',false)}
+    ${F('type','Property Type',f.type,'',false)}
+  </div></fieldset>`;
+
+  h+=`<fieldset><legend>Location</legend><div class="form-grid">
+    <div class="field full"><label>Street Address</label><input id="f-street" value="${esc(f.street)}"></div>
+    ${F('city','City',f.city,'',false)}
+    ${F('st','State',f.st,'',false)}
+    ${F('zip','Zip',f.zip,'',false)}
+    ${F('county','County',f.county,'',false)}
+    ${F('subdivision','Subdivision / Community',f.subdivision,'',false)}
+    ${F('parcel','Parcel / Legal / Tax ID',f.parcel,'',false)}
+    ${F('schools','School District',f.schools,'',false)}
+  </div></fieldset>`;
+
+  h+=`<fieldset><legend>Property Details</legend><div class="form-grid">
+    ${F('beds','Bedrooms',f.beds,'',B('beds'))}
+    ${F('bathsF','Full Baths',f.bathsF,'',B('bathsF'))}
+    ${F('bathsH','Half Baths',f.bathsH,'',B('bathsH'))}
+    ${F('sqft','Living Area (sqft)',f.sqft,'',B('sqft'))}
+    ${F('lot','Lot Size',f.lot,'',B('lot'))}
+    ${F('year','Year Built',f.year,'',B('year'))}
+    ${F('garage','Garage',f.garage,'',B('garage'))}
+    ${F('stories','Stories',f.stories,'',B('stories'))}
+    ${F('hoa','HOA?',f.hoa,'',false,['Yes','No'])}
+    ${F('hoafee','HOA Fee ($/mo)',f.hoafee,'Enter 0 if none',B('hoafee'))}
+  </div></fieldset>`;
+
+  h+=`<fieldset><legend>Transaction Parties (training reference)</legend><div class="form-grid">
+    ${F('seller','Seller',f.seller,'',false)}
+    ${F('buyers','Buyer(s) under contract',f.buyers,'',false)}
+  </div></fieldset>`;
+
+  h+=`<fieldset><legend>Public Remarks</legend>
+    <p class="small muted">Write a compelling listing description (no fair-housing-sensitive language, no contact info in public remarks).</p>
+    <textarea class="answer" id="f-remarks" placeholder="Describe the home's best features...">${esc(f.remarks)}</textarea>
+    <div style="margin-top:10px"><button type="button" class="btn sm outline" onclick="msSample()">Reveal a sample description</button></div>
+    <div id="ms-sample" class="reveal"></div>
+  </fieldset>`;
+
+  h+=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+    <button type="button" class="btn" onclick="msValidate()">Validate listing</button>
+    <button type="button" class="btn outline" onclick="msFill()">Auto-fill blanks (demo)</button>
+  </div><div id="ms-result" style="margin-top:12px"></div>`;
+
+  document.getElementById('ms-form').innerHTML=h;
+  document.getElementById('ms-form').setAttribute('data-k',mKey);
+}
+function msSample(){
+  document.getElementById('ms-sample').innerHTML=
+    `<div class="prompt"><span class="lbl">SAMPLE PUBLIC REMARKS</span>${esc(MLS[mKey].sampleRemarks)}</div>
+     <p class="small muted">Tip: ask Claude — "Write MLS public remarks for this ${MLS[mKey].state} listing in under 400 characters, highlighting [features]. Avoid fair-housing-sensitive language."</p>`;
+}
+function msFill(){
+  const d=MLS[mKey];
+  const demo={beds:'4',bathsF:'3',bathsH:'1',sqft:'2450',lot:'6,000 sqft',year:'2019',garage:'2 / Attached',stories:'2',hoafee:'95'};
+  d.blanks.forEach(id=>{
+    if(id==='remarks'){document.getElementById('f-remarks').value=d.sampleRemarks; return;}
+    const el=document.getElementById('f-'+id); if(el&&!el.value&&demo[id]!==undefined) el.value=demo[id];
+  });
+  document.getElementById('ms-result').innerHTML=`<div class="callout"><b>Demo values added</b> for any blanks. In real practice you'd pull these from the seller disclosure, appraisal, or public records — then validate.</div>`;
+  msValidate();
+}
+function msValidate(){
+  const ids=['status','price','type','street','city','st','zip','county','beds','bathsF','sqft','year','remarks'];
+  let filled=0, missing=[];
+  ids.forEach(id=>{const el=document.getElementById('f-'+id); const v=(el&&el.value||'').trim(); if(v) filled++; else missing.push(id);});
+  const price=(document.getElementById('f-price').value||'').trim();
+  let warn=[];
+  if(price && !/^\d+$/.test(price)) warn.push('List Price should be whole dollars with no commas or $ sign.');
+  const rem=(document.getElementById('f-remarks').value||'').trim();
+  if(rem && rem.length<40) warn.push('Public remarks look short — aim for a few descriptive sentences.');
+  const pct=Math.round(filled/ids.length*100);
+  document.getElementById('ms-comp').textContent='Completeness: '+pct+'%';
+  let h=`<div class="callout ${pct===100&&!warn.length?'':'warn'}">
+    <b>${pct}% of required fields complete.</b>`;
+  if(missing.length) h+=`<br>Still needed: ${missing.map(m=>`<span class="kbd">${m}</span>`).join(' ')}`;
+  if(warn.length) h+=`<br>${warn.join('<br>')}`;
+  if(pct===100&&!warn.length) h+=`<br>Listing is ready to submit. Nicely done!`;
+  h+=`</div>`;
+  document.getElementById('ms-result').innerHTML=h;
+  if(msMe) SCApp.setModeScore(msMe.id,'general','mls',filled,ids.length);
+}
+/* deep-link #tx/#ca/#ny */
+const hash=location.hash.replace('#','');
+if(MLS[hash]) mKey=hash;
+tabs(); render();
+</script>
+</body>
+</html>

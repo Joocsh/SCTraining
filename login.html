@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log In · Skill Cloud Academy</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<nav class="nav" id="nav"><div class="nav-inner">
+  <a class="brand" href="index.html"><img src="assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+  <span class="spacer"></span>
+</div></nav>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1>Welcome back</h1>
+    <p class="sub">Log in to pick up your training right where you left off.</p>
+
+    <div class="auth-err" id="authErr">That email or password doesn't match an account.</div>
+
+    <form id="loginForm">
+      <div class="auth-field">
+        <label for="email">Email</label>
+        <input type="email" id="email" autocomplete="username" placeholder="you@demo" required>
+      </div>
+      <div class="auth-field">
+        <label for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn v-cyan auth-submit">Log In</button>
+    </form>
+
+    <div class="auth-demo">
+      <b>Demo accounts</b><br>
+      Associate: maria@demo / demo123 (Transaction Coordinator)<br>
+      Associate: jose@demo / demo123 (Listing Coordinator)<br>
+      Admin: admin@demo / admin123
+    </div>
+  </div>
+</div>
+
+<script src="assets/js/app-core.js"></script>
+<script>
+(function(){
+  var params = new URLSearchParams(location.search);
+  var next = params.get('next');
+
+  // already logged in? go straight where they belong
+  var existing = SCApp.currentUser();
+  if(existing){
+    redirectFor(existing);
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var email = document.getElementById('email').value;
+    var pass = document.getElementById('password').value;
+    var user = SCApp.login(email, pass);
+    var err = document.getElementById('authErr');
+    if(!user){
+      err.classList.add('show');
+      return;
+    }
+    err.classList.remove('show');
+    redirectFor(user);
+  });
+
+  function redirectFor(user){
+    if(user.role === 'admin'){
+      window.location.href = 'admin.html';
+      return;
+    }
+    if(next){ window.location.href = next; return; }
+    var last = SCApp.getLastPage(user.id);
+    window.location.href = last || 'account.html';
+  }
+})();
+</script>
+</body>
+</html>

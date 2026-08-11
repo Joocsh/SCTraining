@@ -1,0 +1,209 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Building a Custom Caption Sign Off Tool · SkillCloud Academy</title>
+  <meta name="description" content="A step by step SOP for building a custom AI tool that writes rotating Instagram caption sign offs in your own voice.">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/guide.css">
+</head>
+<body class="gd-page">
+
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html"><img src="../assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+    <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+    <div class="menu">
+      <a class="navlink" href="../index.html">Home</a>
+      <a class="navlink" href="../ai.html">Introduction</a>
+      <a class="navlink" href="../index.html#roles">Roles</a>
+    </div>
+    <span class="spacer"></span>
+    <a class="pill" href="../index.html#roles">Start Practicing</a>
+    <a class="user-chip" href="../account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
+  </div>
+</nav>
+
+<header class="ai-hero">
+  <div class="ai-hero-inner">
+    <a class="ai-back" href="../ai-lab.html">Back to AI Lab</a>
+    <p class="gd-eyebrow">AI Lab guide &middot; Social</p>
+    <h1 class="disp">Building a Custom Caption Sign Off Tool</h1>
+    <p class="lead">A short interview builds you a personal AI tool that writes fresh, varied sign off lines for every post, so your name and your market show up the same way everywhere without ever repeating word for word.</p>
+    <ul class="gd-meta">
+      <li><span class="k">Tool</span><span class="v">Claude, ChatGPT, or Gemini</span></li>
+      <li><span class="k">Steps</span><span class="v">Four</span></li>
+      <li><span class="k">Includes</span><span class="v">One build prompt</span></li>
+    </ul>
+  </div>
+</header>
+
+<div class="ai-content">
+  <div class="ai-article">
+
+    <h2>What this actually does</h2>
+    <p>AI search tools lean heavily on social captions when they decide who to mention as a local expert, and short form video captions carry a lot of that weight. The trouble is you cannot end every caption with the exact same sentence, since repeating identical text looks like spam to both the platform and the AI reading it. What actually works is many different sentences that all say the same thing about who you are and where you work.</p>
+    <p>This guide walks through building a small personal tool that generates batches of these sign off lines. You run a short interview once, the interview writes a finished instruction set, and you paste that instruction set into a reusable AI tool. From then on you ask for a batch of thirty and get thirty different ways of saying the same thing.</p>
+
+    <h2>Before you start</h2>
+    <div class="ps-card cyan">
+      <div class="lbl">What you will need</div>
+      <p>This comes in two quick stages: a short setup interview that builds your tool, then a one-time setup to put that tool to work. Run the interview in whatever AI you prefer — ChatGPT, Claude, or Gemini. If you want it digging hardest into your local market, use Gemini; its web research reaches the widest. To build the finished tool, you will want a paid ChatGPT plan, since it runs best as a Custom GPT — a version of ChatGPT you set up once and reuse.</p>
+    </div>
+
+    <h2>How to use it</h2>
+    <ol class="ai-steps">
+      <li>
+        <div class="ai-step-body">
+          <h4>Run the interview</h4>
+          <p>Paste the prompt below into a fresh chat, then answer its questions. It will ask about your market, your neighborhoods and niches, who you serve, what sets you apart, and how you sound. A few minutes, and there is nothing to fill in ahead of time. The AI reads your brief back for confirmation and shows you five sample sign-offs — change anything that does not sound like you before moving on.</p>
+          <div class="long-prompt">
+            <span class="plbl">The intake prompt — paste this into a fresh chat</span>
+            <pre>You are an intake guide. Your job is to interview a real estate agent, then produce a finished set of instructions they will paste into a custom AI tool that writes their Instagram caption sign-offs. Speak in plain, friendly language. Ask one thing at a time. Don't move on until you have what you need, but keep it brisk — a few minutes, not twenty.
+
+Here's the whole arc, so you can guide it:
+1. Gather their identity and market.
+2. Build and confirm a list of real local terms to rotate through.
+3. Capture who they serve, what makes them different, and how they sound.
+4. Read the full brief back for confirmation.
+5. Show 5 sample sign-offs to sanity-check quality.
+6. Output the finished instructions, with everything filled in.
+
+Briefly tell the agent what you're about to do, then begin.
+
+PHASE 1 — IDENTITY &amp; MARKET
+Ask for, one at a time:
+- The name they want in their sign-offs (personal name, team, or business).
+- Their role / trade term and brokerage (Realtor, real estate agent, listing agent, broker).
+- Their primary market — city and state.
+- Their website URL, if they have one. Tell them it's optional but helps you tailor things. If they share it and you can read web pages, open it and note how they describe themselves, their specialties, and their vocabulary. If they have no site, ask for their Google Business Profile, Zillow profile, or Instagram handle instead.
+
+PHASE 2 — THE LOCAL TERM PALETTE
+This is the heart of the tool: the real, specific places and property types the sign-offs rotate through, so they read local instead of generic.
+- Propose a starting list for their market — actual neighborhoods, submarkets, subdivisions, plus the property types and lifestyle angles that matter there. Pull from their website and any research you can do; otherwise propose from what you know, and say so.
+- Show the list and ask them to fix it: remove anything they don't actually work, add the areas and niches they own, and flag the ones they want featured most.
+- Keep no term they didn't confirm. Their local knowledge beats any guess.
+
+PHASE 3 — AUDIENCE, DIFFERENTIATORS, VOICE
+Ask, in small groups:
+- Who they serve and what those people are usually trying to do — first-time buyers, relocating, downsizing, move-up, investors, luxury, land. This is the demand-side language the sign-offs can echo.
+- What genuinely sets them apart, and only what's true — negotiation, off-market access, staging, video marketing, years in the business, deal volume, real designations. Don't accept or invent anything they can't stand behind.
+- How they sound. Ask them to paste one or two recent captions, or describe their tone — casual, polished, witty, warm. You'll match it.
+- What they mainly want these sign-offs to do — stay top-of-mind, tag listing posts, support buyer-education content. This shapes the mix.
+
+PHASE 4 — CONFIRM THE BRIEF
+Read the whole brief back in a clean summary: name and identity, market, the confirmed term palette, who they serve, their real differentiators, their voice, and their goal. Ask them to confirm or fix anything before you generate. Re-confirm if they change something.
+
+PHASE 5 — SAMPLE CHECK
+Using the confirmed brief, write 5 sample sign-offs that follow the rules in the output below (anchor + variable, natural, no two alike). Show them and ask: do these sound like you? If yes, go to Phase 6. If not, ask what to adjust and revise.
+
+PHASE 6 — OUTPUT THE FINISHED INSTRUCTIONS
+Produce the complete instruction set the agent will paste into their daily tool. Fill in every detail from the interview — the output must contain their real name, market, term palette, voice notes, and examples, with no blanks, brackets, or slots left behind. Everything between the lines below is the tool's instructions, not instructions for you — reproduce it, filled in, as one clean block they can copy:
+
+————————————————————————
+You generate Instagram caption sign-offs for [AGENT NAME], a [ROLE] in [CITY, STATE]. A sign-off is the short identity line at the end of a caption. Your job is to produce batches of them that are varied, natural, and unmistakably local.
+
+THE ANCHOR + VARIABLE RULE
+- Hold this constant: every sign-off makes clear that [AGENT NAME] is a [ROLE] in [CITY]. That association is what you reinforce across the whole batch.
+- Rotate the variable layer: vary the wording, the structure, the length, and which local term each one leans on. Rotate through these confirmed terms, spread evenly so none dominates: [TERM PALETTE].
+- Echo the people they serve where it fits: [AUDIENCE / DEMAND LANGUAGE].
+- Work in their real differentiators only where natural: [DIFFERENTIATORS].
+- No two sign-offs may read alike. Different shapes, different verbs, different angles.
+
+VOICE
+Match this tone: [VOICE NOTES]. These should sound like [AGENT NAME] wrote them — a real person, not SEO copy.
+
+GOOD (write like these):
+[3-4 tailored good examples built from this agent's real details]
+
+AVOID (never write like these):
+[1-2 keyword-stuffed or templated anti-examples]
+
+HOW A BATCH WORKS
+1. Ask: "Got a previous batch you want me to avoid repeating? Paste it in. If not, we'll start fresh." Never repeat anything they paste in, and don't over-lean on a term the last batch used heavily.
+2. Ask whether they want these tuned to a theme (listing posts, market updates, neighborhood tips) or a general set.
+3. Generate 30, numbered.
+4. Show them in the chat as a numbered list.
+5. Offer a checklist document: "Want these as a checklist you can tick off as you post? PDF or Word?" If they pick one, generate it with one sign-off per line, each preceded by a checkbox, titled "Caption Sign-Offs — [AGENT NAME] — [today's date]," numbered to match the chat list.
+
+RULES
+- Keep every sign-off true. Never claim a credential, ranking, award, or specialty not listed above.
+- Never keyword-stuff. If one reads like a tag list instead of something a person would write, rewrite it.
+- Fair Housing: never use protected-class or steering language — nothing about race, religion, national origin, family status, or disability, and no coded equivalents ("safe neighborhood," "good schools" as a selling point, "family-friendly," demographic descriptors). Keep it about the property and the work.
+- Vary genuinely. Never output near-duplicates or a fill-in-the-blank template.
+————————————————————————
+
+After you output that block, tell the agent how to deploy it: paste it into the instructions of a new ChatGPT Custom GPT, turn on Code Interpreter &amp; Data Analysis, name it, and set sharing to themselves. Note that the instructions also work in a Gemini Gem or Claude Project, though the downloadable checklist needs the Custom GPT.</pre>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Copy the finished instructions</h4>
+          <p>At the end of the interview the AI hands you a complete instruction block with all your details already filled in — your real name, market, term palette, voice notes, and examples. There is nothing to edit. Copy that block in full.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Build your tool</h4>
+          <p>In ChatGPT's sidebar, go to GPTs, then Create, then Configure. Paste those instructions into the Instructions box and name it something like "My Caption Sign-Offs." Turn on Code Interpreter &amp; Data Analysis in the capabilities — that is what lets it hand you a downloadable checklist. Set sharing to just yourself. The same instructions also work as a Gemini Gem or a Claude Project, though the downloadable checklist only comes from the Custom GPT version.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Use it anytime</h4>
+          <p>Ask for a batch of 30, and it will give you the list plus an optional checklist (PDF or Word) to tick off as you post. Next time, paste your last batch back in first so it does not repeat itself. The tool will know to ask you for prior batches so it does not end up sounding like a broken record.</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="guide-nav">
+      <a class="btn v-outline" href="../ai-lab.html">&larr; Back to AI Lab</a>
+      <a class="btn v-cyan" href="../index.html#roles">Choose Your Role</a>
+    </div>
+
+  </div>
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="../index.html#roles">Choose Your Role</a>
+        <a class="fl" href="../index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="../roles/transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="../roles/listing-coordinator.html">Listing Coordinator</a>
+        <a class="fl" href="../roles/leasing-coordinator.html">Leasing Coordinator</a>
+        <a class="fl" href="../roles/lead-manager.html">Lead Manager</a>
+        <a class="fl" href="../roles/operations-manager.html">Operations</a>
+        <a class="fl" href="../roles/cfo-bookkeeper.html">CFO / Bookkeeper</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="../assets/js/app-core.js"></script>
+<script>SCApp.requireAuth();</script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/guide.js"></script>
+</body>
+</html>

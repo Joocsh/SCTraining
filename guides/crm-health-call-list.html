@@ -1,0 +1,194 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Turning a CRM Export into a Call List · SkillCloud Academy</title>
+  <meta name="description" content="A step by step SOP for using a Claude prompt that reads a full CRM export and produces a scorecard plus a prioritized call list.">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/guide.css">
+</head>
+<body class="gd-page">
+
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html"><img src="../assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+    <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+    <div class="menu">
+      <a class="navlink" href="../index.html">Home</a>
+      <a class="navlink" href="../ai.html">Introduction</a>
+      <a class="navlink" href="../index.html#roles">Roles</a>
+    </div>
+    <span class="spacer"></span>
+    <a class="pill" href="../index.html#roles">Start Practicing</a>
+    <a class="user-chip" href="../account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
+  </div>
+</nav>
+
+<header class="ai-hero">
+  <div class="ai-hero-inner">
+    <a class="ai-back" href="../ai-lab.html">Back to AI Lab</a>
+    <p class="gd-eyebrow">AI Lab guide &middot; Database</p>
+    <h1 class="disp">Turning a CRM Export into a Call List</h1>
+    <p class="lead">A single prompt that reads a full lead export, flags where the pipeline is actually stuck, and hands back the specific leads worth calling today, with a script for each one.</p>
+    <ul class="gd-meta">
+      <li><span class="k">Tool</span><span class="v">Claude</span></li>
+      <li><span class="k">Steps</span><span class="v">Seven</span></li>
+      <li><span class="k">Includes</span><span class="v">One analysis prompt</span></li>
+    </ul>
+  </div>
+</header>
+
+<div class="ai-content">
+  <div class="ai-article">
+
+    <h2>What this actually does</h2>
+    <p>A large CRM database is overwhelming to look at cold. Most agents end up either ignoring it or calling whoever happens to come to mind, not whoever the data actually says is closest to converting. This prompt fixes that by reading an entire export at once, cross referencing activity, tags, and notes on its own, and producing a short report with three parts: a scorecard of the pipeline's health, a ranked list of the leads most likely to convert soon, and a ready to use script for each one of those leads based on their real history.</p>
+    <p>It takes about five minutes to run and works with any CRM's export, not just one specific platform.</p>
+
+    <h2>What you will need</h2>
+    <div class="ps-card cyan">
+      <div class="lbl">Before you start</div>
+      <ul>
+        <li>A full CSV export of one agent's leads from your CRM, with every column included and nothing pre filtered</li>
+        <li>Access to Claude with Cowork, since the file needs to be read with code rather than eyeballed</li>
+        <li>A few minutes to answer two or three quick questions before the report runs</li>
+      </ul>
+    </div>
+
+    <h2>How to use it</h2>
+    <ol class="ai-steps">
+      <li>
+        <div class="ai-step-body">
+          <h4>Log into your CRM</h4>
+          <p>Open Sierra Interactive, Follow Up Boss, kvCORE, or whichever platform the agent uses. You'll be exporting their lead list in the next step.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Pull a full CSV export of the agent's leads</h4>
+          <p>Include every column your CRM gives you — status, source, last activity, history, visits, properties viewed, tags, notes, dialer activity, all of it. Don't clean or trim anything. One agent per export; mixing two agents' data into one file muddies the results.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Open a fresh Claude Cowork chat</h4>
+          <p>Start a new Cowork task — not an existing conversation. One agent per chat for clean results.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Drag the CSV file into the chat</h4>
+          <p>Drop the export file directly into the Cowork conversation. Claude will read the full file when you send the prompt.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Paste this prompt</h4>
+          <p>Copy the full prompt below and paste it into the chat. If your CRM isn't Sierra Interactive, swap the platform name in the first paragraph and adjust the Part 1 metrics to match what your system exports. The structure — scorecard, hottest leads, scripts — works the same way regardless of platform.</p>
+          <div class="long-prompt">
+            <span class="plbl">Agent Roadblock Report prompt — paste this into Cowork</span>
+            <pre>You are my real estate operations analyst. I just uploaded a CSV. It is a full lead export from Sierra Interactive for one of my agents. I have not cleaned or filtered it. Read every row. Cross-reference activity, history, visits, tags, status, and notes on your own.
+
+Produce an Agent Roadblock Report. Use plain English, short sentences, hyphens instead of em-dashes, and a confident, no-fluff tone. Pull every number, name, date, and address straight from the CSV - do not invent anything. If a field is missing, mark it as Unknown rather than skipping it.
+
+The report should be organized into three parts. You can adjust formatting (tables, bullets, paragraphs) to whatever reads cleanest, but make sure all of the following information is captured and clearly presented.
+
+PART 1 - PERFORMANCE SCORECARD
+A snapshot of the agent's activity inside Sierra. Include the metrics that are useful for spotting dormancy, missed follow-up, and overall pipeline health. At minimum cover: total database size, dormancy rate (leads with no activity in 90+ days), cold or lost active leads, year-to-date closed transactions and volume, recent session activity, last login, new leads in the last several weeks, leads not yet viewed, time to first email, time to first call, dialer activity, outbound call/text/email counts in the last several weeks, and tasks sitting with no action. Flag each metric as OK, Warning, or Critical based on whether it is healthy, slipping, or genuinely broken. Use your judgment on thresholds based on what looks normal vs. neglected in the data.
+
+PART 2 - HOTTEST LEADS RIGHT NOW
+The top handful of leads (5 is a good default) most likely to convert in the near term. For each one, capture name, status, days since last touch, and source. Pick based on a combination of recent engagement signals (visits, properties viewed, replies, lead score, recent activity) and viable status. Rank them in priority order.
+
+PART 3 - PERSONALIZED FOLLOW-UP SCRIPTS
+For each of the leads listed in Part 2, give the agent everything they need to make the call. Capture:
+Lead name, type (buyer, seller, nurture), and source.
+- Phone, email, and location.
+- Price band, visit count, and properties viewed.
+- Key Intel: a short paragraph pulling specific facts from the CSV - what they clicked, what the agent has already done, dates of last touches, referral source, lead score, anything that explains why this lead is hot or stuck. Use real dates and real properties from the data.
+- A recommended script or approach the agent can read off their phone. Reference the last specific interaction. Sound human, not corporate. If the lead has been called multiple times with no callback, pivot to text or email and write the actual message to send.
+
+ASK ME FIRST
+Before producing the report, ask:
+1. Agent's first and last name.
+2. Their role (listing, buyer, dual).
+3. Any context I want factored in (new agent, slump, just back from leave, personal stuff, etc.).
+
+Then read the CSV and produce the report.</pre>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Answer the clarifying questions about the agent</h4>
+          <p>Before producing the report, Claude asks three questions: the agent's full name, their role (listing, buyer, or dual), and any context worth factoring in — new agent, slump, just back from leave. Answer honestly. The tone of the scripts depends on it.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Claude reads the entire export and produces your report</h4>
+          <p>The finished report has three parts. Part 1 is the Performance Scorecard — each metric flagged OK, Warning, or Critical. Part 2 is the five hottest leads ranked by conversion likelihood. Part 3 is a personalized follow-up script for each of those five leads, referencing their real CRM history. If a lead has been called multiple times with no callback, the script pivots to a text or email and writes the actual message to send.</p>
+        </div>
+      </li>
+    </ol>
+
+    <h2>Using this with a different CRM</h2>
+    <p>This prompt is built for Sierra Interactive, but works with any CRM. Swap "Sierra Interactive" for your platform name in the first paragraph and adjust the metrics in Part 1 to match what your system exports. The structure — scorecard, hottest leads, scripts — works the same way.</p>
+
+    <h2>Tips</h2>
+    <ul class="ai-tips">
+      <li>Run one agent per chat for clean results. Don't mix two agents' data into one report</li>
+      <li>Don't pre-filter the data — let Claude spot the patterns in the full, unedited export</li>
+      <li>Use the OK / Warning / Critical flags to prioritize coaching conversations, rather than guessing at what the real problem is</li>
+      <li>The personalized scripts reference real interactions from the CRM, so they sound natural instead of generic — that's only possible if the data going in is complete</li>
+    </ul>
+
+    <div class="guide-nav">
+      <a class="btn v-outline" href="../ai-lab.html">&larr; Back to AI Lab</a>
+      <a class="btn v-cyan" href="../index.html#roles">Choose Your Role</a>
+    </div>
+
+  </div>
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="../index.html#roles">Choose Your Role</a>
+        <a class="fl" href="../index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="../roles/transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="../roles/listing-coordinator.html">Listing Coordinator</a>
+        <a class="fl" href="../roles/leasing-coordinator.html">Leasing Coordinator</a>
+        <a class="fl" href="../roles/lead-manager.html">Lead Manager</a>
+        <a class="fl" href="../roles/operations-manager.html">Operations</a>
+        <a class="fl" href="../roles/cfo-bookkeeper.html">CFO / Bookkeeper</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="../assets/js/app-core.js"></script>
+<script>SCApp.requireAuth();</script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/guide.js"></script>
+</body>
+</html>

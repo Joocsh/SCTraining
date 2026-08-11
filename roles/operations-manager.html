@@ -1,0 +1,626 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Operations Manager · SkillCloud Academy</title>
+  <meta name="description" content="Practice operations management: SOPs, 90-day reviews, client reporting, process improvement and meeting facilitation using Claude.">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/role-dash.css">
+  <link rel="stylesheet" href="../assets/css/workflow.css">
+<style>
+  .rd-modes-grid{align-items:stretch}
+  .rd-mode-card{
+    opacity:0;transform:translateY(10px);animation:rdxIn .45s ease forwards;
+    transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+  }
+  .rd-mode-card:hover{transform:translateY(-3px);box-shadow:0 16px 36px rgba(10,38,71,.1);border-color:rgba(23,195,212,.4)}
+  .rd-mode-card:nth-child(1){animation-delay:.04s}
+  .rd-mode-card:nth-child(2){animation-delay:.1s}
+  .rd-mode-card:nth-child(3){animation-delay:.16s}
+  .rd-mode-card:nth-child(4){animation-delay:.22s}
+  @keyframes rdxIn{to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){.rd-mode-card{animation:none;opacity:1;transform:none}}
+
+  .rd-mode-card.rdx-featured{grid-column:1 / -1;border-color:rgba(23,195,212,.35);background:linear-gradient(180deg,#fff, #f8fdfe)}
+  .rdx-ordinal{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--v-cyan-d,#0fa6b6)}
+
+  .rdx-ledger{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:14px}
+  .rdx-ledger-item{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .rdx-ledger-item b{color:var(--navy,#0a2647);font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="nav-inner">
+  <a class="brand" href="../index.html"><img src="../assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+  <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+  <div class="menu">
+    <a class="navlink" href="../index.html">Home</a>
+    <a class="navlink" href="../ai.html">Introduction</a>
+    <a class="navlink" href="../index.html#roles">Roles</a>
+  </div>
+  <span class="spacer"></span>
+  <a class="pill" href="../index.html#roles">Start Practicing</a>
+  <a class="user-chip" href="../account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
+</div></nav>
+
+<div class="fund-nudge">
+  <p><strong>New here?</strong> Complete the Introduction first. It only takes a few minutes and covers what Claude, ChatGPT, and Manus can do before you jump into role practice.</p>
+  <a href="../ai.html">Go to Introduction &rarr;</a>
+</div>
+
+<!-- HERO -->
+<section class="rd-hero">
+  <div class="orb orb-1" aria-hidden="true"></div>
+  <div class="orb orb-2" aria-hidden="true"></div>
+  <div class="orb orb-3" aria-hidden="true"></div>
+  <div class="orb orb-4" aria-hidden="true"></div>
+  <div class="orb orb-5" aria-hidden="true"></div>
+  <div class="rd-hero-inner">
+    <a class="rd-back" href="../index.html#roles">All Roles</a>
+    <h1>Operations Manager</h1>
+    <p class="rd-hero-desc">Practice operations scenarios to fix agency bottlenecks, creating onboarding SOPs, 90-day reviews, and client reporting with Claude as your strategic partner.</p>
+  </div>
+</section>
+
+<!-- PROGRESS STATS -->
+<section class="rd-stats-section">
+  <div class="rd-stats-inner">
+    <div class="rd-stats-overall">
+      <div class="rd-stats-meta">
+        <span class="rd-stats-label">Your overall progress</span>
+        <span class="rd-stats-pct" id="overall-pct-num">0% Completed</span>
+      </div>
+      <div class="rd-stats-track">
+        <div class="rd-stats-fill" id="overall-bar-fill"></div>
+      </div>
+      <div class="rdx-ledger">
+        <span class="rdx-ledger-item">Case Simulator <b id="rdx-sim">0/1</b></span>
+        <span class="rdx-ledger-item">Prompt Practice <b id="rdx-prompt">0/8</b></span>
+        <span class="rdx-ledger-item">Deadline Quiz <b id="rdx-quiz">0/6</b></span>
+      </div>
+      <div class="rd-stats-footer">
+        <button class="rd-reset-btn" onclick="resetProgress('ops')">Reset progress</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRACTICE MODES -->
+<section class="rd-modes-section" id="practice">
+  <div class="rd-modes-inner">
+    <div class="rd-section-header">
+      <p class="rd-eyebrow">Practice Modes</p>
+      <h2 class="rd-section-title">Choose your training</h2>
+      <p class="rd-section-sub">Start with the Case Simulator, then come back to the others.</p>
+    </div>
+    <div class="rd-modes-grid">
+
+      <div class="rd-mode-card rdx-featured">
+        <div class="rd-mode-top">
+          <div class="rd-mode-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><line x1="12" y1="7.5" x2="12" y2="12.5"/><line x1="10.5" y1="13.8" x2="6" y2="16.7"/><line x1="13.5" y1="13.8" x2="18" y2="16.7"/></svg></div>
+          <span class="rdx-ordinal">Module 01</span>
+        </div>
+        <div class="rd-mode-name">Case Simulator</div>
+        <p class="rd-mode-desc">A full real operations workflow end to end: a bottleneck escalation, SOP documentation, a real vendor RFP decision, and a leadership status report.</p>
+        <div class="rd-mode-footer">
+          <span class="rd-mode-count"><strong>1</strong> full case, escalation to resolution</span>
+          <a class="rd-mode-cta" href="#" onclick="openPanel('sim'); return false;">Launch &rarr;</a>
+        </div>
+      </div>
+
+
+      <div class="rd-mode-card">
+        <div class="rd-mode-top">
+          <div class="rd-mode-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+          <span class="rdx-ordinal">Module 02</span>
+        </div>
+        <div class="rd-mode-name">Prompt Practice</div>
+        <p class="rd-mode-desc">Build onboarding SOPs, write 90-day performance reviews, create client reports, analyze process bottlenecks, and draft meeting agendas using Claude. Customize real parameters and copy the finished prompt.</p>
+        <div class="rd-mode-footer">
+          <span class="rd-mode-count"><strong>8</strong> interactive prompts</span>
+          <a class="rd-mode-cta" href="#" onclick="openPanel('prompt'); return false;">Practice &rarr;</a>
+        </div>
+      </div>
+
+      <div class="rd-mode-card">
+        <div class="rd-mode-top">
+          <div class="rd-mode-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></div>
+          <span class="rdx-ordinal">Module 03</span>
+        </div>
+        <div class="rd-mode-name">Deadline Quiz</div>
+        <p class="rd-mode-desc">Test your operations knowledge: onboarding timelines, review cycle benchmarks, SOP structure, and team accountability frameworks.</p>
+        <div class="rd-mode-footer">
+          <span class="rd-mode-count"><strong>6</strong> questions</span>
+          <a class="rd-mode-cta" href="#" onclick="openPanel('quiz'); return false;">Start &rarr;</a>
+        </div>
+      </div>
+
+
+      <div class="rd-mode-card rd-mode-resources" onclick="toggleResources(this)" role="button" tabindex="0">
+        <div class="rd-mode-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+        </div>
+        <div class="rd-res-body">
+          <div class="rd-mode-name">Resources</div>
+          <p class="rd-mode-desc">Prompt library and role playbooks. Study before practicing or keep open during your sessions.</p>
+        </div>
+        <span class="rd-mode-cta">View Prompts <svg class="res-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 6 8 10 12 6"/></svg></span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     PANEL: CASE SIMULATOR
+     ══════════════════════════════════════════════════════════ -->
+<div class="lc-panel" id="panel-sim">
+  <div class="lc-panel-header">
+    <button class="lc-panel-back" onclick="simPanelBack()">Back</button>
+    <span class="lc-panel-title">Case Simulator &mdash; Operations Manager</span>
+  </div>
+  <div class="lc-panel-body">
+    <div class="lc-state-bar" id="sim-state-bar" style="display:none"></div>
+    <div id="sim-pick">
+      <p style="font-size:14px;color:var(--v-muted);margin:0 0 20px">Run the full operations workflow end to end, with embedded decision points and a real evaluation score.</p>
+      <div class="lc-sc-grid" id="sim-cards"></div>
+    </div>
+    <div id="sim-play" class="lc-play">
+      <div class="lc-progress-track"><div class="lc-progress-fill" id="sim-prog"></div></div>
+      <div class="lc-scorebar">
+        <span class="lc-chip" id="sim-step-chip"></span>
+        <span class="lc-chip" id="sim-score-chip"></span>
+      </div>
+      <div id="sim-head"></div>
+      <div class="lc-scenario-box" id="sim-body"></div>
+    </div>
+    <div id="sim-workflow" style="display:none">
+      <div class="lc-progress-track"><div class="lc-progress-fill" id="wf-prog"></div></div>
+      <div class="lc-scorebar">
+        <span class="lc-chip" id="wf-step-chip"></span>
+        <span class="lc-chip" id="wf-label-chip"></span>
+      </div>
+      <div id="wf-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PANEL: PROMPT PRACTICE
+     ══════════════════════════════════════════════════════════ -->
+<div class="lc-panel" id="panel-prompt">
+  <div class="lc-panel-header">
+    <button class="lc-panel-back" onclick="closePanel('prompt')">Back</button>
+    <span class="lc-panel-title">Prompt Practice &mdash; Operations Manager</span>
+  </div>
+  <div class="lc-panel-body" style="max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px;">
+    <div class="lc-callout-info" style="margin-bottom: 24px;">
+      <strong>Prompt Practice Playground:</strong> Select an operations task from the sidebar, customize its parameters, and watch the prompt update live. Copy the final prompt straight into Claude.
+    </div>
+    <div class="prompt-layout">
+      <div class="prompt-sidebar">
+        <div class="prompt-search-wrap">
+          <span class="prompt-search-icon">&#128269;</span>
+          <input type="text" id="prompt-search" class="prompt-search-input" placeholder="Search prompts..." oninput="filterPrompts()">
+        </div>
+        <div class="prompt-list-scroll" id="prompt-list-scroll"></div>
+      </div>
+      <div class="prompt-detail-panel" id="prompt-detail-view"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PANEL: DEADLINE QUIZ
+     ══════════════════════════════════════════════════════════ -->
+<div class="lc-panel" id="panel-quiz">
+  <div class="lc-panel-header">
+    <button class="lc-panel-back" onclick="closePanel('quiz')">Back</button>
+    <span class="lc-panel-title">Deadline Quiz &mdash; Operations Manager</span>
+  </div>
+  <div class="lc-panel-body">
+    <div id="quiz-intro" class="lc-quiz-intro">
+      <div class="lc-quiz-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="13" r="8" stroke="#fff" stroke-width="1.8"/><path d="M12 9v4l2.5 2.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 2.5h5M12 2.5v2.2" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+      <h2>Operations Knowledge Quiz</h2>
+      <p>Test your knowledge of SOP structure, KPI cadence, and vendor evaluation practices. The clock runs while you answer.</p>
+      <div class="lc-quiz-meta"><span id="quiz-meta-count">Questions</span><span>Timed</span></div>
+      <p class="lc-quiz-study">Need to review first? <a href="../study-guide.html#ops" style="color:var(--v-cyan-d);font-weight:700">Open the Study Guide &rarr;</a></p>
+      <button class="lc-quiz-start-btn" onclick="quizStart()">Start the clock &rarr;</button>
+    </div>
+    <div id="quiz-play" style="display:none">
+      <div class="lc-progress-track"><div class="lc-progress-fill" id="quiz-prog"></div></div>
+      <div class="lc-scorebar">
+        <span class="lc-chip" id="quiz-num-chip"></span>
+        <span class="lc-chip" id="quiz-time-chip">0:00</span>
+        <span class="lc-chip" id="quiz-score-chip">Score: 0</span>
+      </div>
+      <div class="lc-scenario-box" id="quiz-body"></div>
+    </div>
+    <div id="quiz-done" style="display:none"></div>
+  </div>
+</div>
+
+<div class="rd-resources-panel" id="resources-panel">
+  <div class="rd-materials-inner">
+
+    <div class="rd-glance">
+      <h4>Your role at a glance</h4>
+      <p>Design and optimize workflows and SOPs · Manage team performance and accountability · Oversee client relationships and service delivery · Build operational dashboards and reports · Identify bottlenecks and implement solutions.</p>
+    </div>
+
+    <details class="mod" open><summary><span class="num">1</span>Building &amp; improving SOPs</summary><div class="body">
+      <div class="prompt"><span class="lbl">ONBOARDING SOP</span>Create a detailed SOP for onboarding a new virtual real estate assistant: pre-start prep, Day 1 orientation, Week 1 training milestones, tool access setup (CRM, email, PM), 30-day benchmarks, escalation contacts.</div>
+    </div></details>
+
+    <details class="mod"><summary><span class="num">2</span>Team performance reviews</summary><div class="body">
+      <div class="prompt"><span class="lbl">90 DAY REVIEW</span>Write a 90-day performance review template for a virtual TC: core competencies, KPIs, communication skills, client feedback, areas of excellence, areas for improvement, 90-day goals. Include a 1 to 5 rating scale.</div>
+    </div></details>
+
+    <details class="mod"><summary><span class="num">3</span>Client reporting</summary><div class="body">
+      <div class="prompt"><span class="lbl">MONTHLY REPORT</span>Write a monthly client performance report narrative. Our VA handled 12 transactions, 100% deadline compliance, 87 emails sent, 4 positive feedback mentions. Last month: 10 transactions. 200-word executive summary.</div>
+    </div></details>
+
+    <details class="mod"><summary><span class="num">4</span>Process improvement analysis</summary><div class="body">
+      <div class="prompt"><span class="lbl">BOTTLENECKS</span>I identified 3 bottlenecks: (1) agents slow to respond to document requests, (2) title companies miss deadline reminders, (3) new TCs take too long to learn intake. For each, suggest 3 actionable solutions a virtual team could implement.</div>
+    </div></details>
+
+    <details class="mod"><summary><span class="num">5</span>Meeting facilitation</summary><div class="body">
+      <div class="prompt"><span class="lbl">OPS REVIEW</span>Create a 60-minute agenda for a monthly operations review. Attendees: Ops Manager, Team Leads, HR. Topics: KPI review, client feedback, staffing updates, process improvement, Q&amp;A. Include time allocations.</div>
+    </div></details>
+
+  </div>
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="../index.html#roles">Choose Your Role</a>
+        <a class="fl" href="../index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="leasing-coordinator.html">Leasing Coordinator</a>
+        <a class="fl" href="operations-manager.html">Operations</a>
+        <a class="fl" href="cfo-bookkeeper.html">CFO / Bookkeeper</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="../assets/js/app-core.js"></script>
+<script src="../assets/js/workflow.js"></script>
+<script src="../assets/js/site.js"></script>
+<script>
+      const ROLE = 'ops';
+  window.SC_ROLE = ROLE;
+  const rpMe = SCApp.requireAuth();
+  const MODES = [
+    { id: 'sim', total: 1, active: true },
+    { id: 'prompt', total: 8, active: true },
+    { id: 'quiz', total: 6, active: true }
+  ];
+  
+  function loadProgress() {
+    let completedSum = 0;
+    let totalMax = 0;
+    
+    MODES.forEach(m => {
+      if (!m.active) return;
+      const val = parseInt(localStorage.getItem(`sc_${ROLE}_${m.id}`) || '0');
+      completedSum += val;
+      totalMax += m.total;
+    });
+    
+    const overallPct = totalMax > 0 ? Math.round((completedSum / totalMax) * 100) : 0;
+    const overallNum = document.getElementById('overall-pct-num');
+    const overallBar = document.getElementById('overall-bar-fill');
+    
+    if (overallNum) overallNum.textContent = overallPct + '% Completed';
+    if (overallBar) setTimeout(() => overallBar.style.width = overallPct + '%', 200);
+
+    MODES.forEach(m => {
+      const el = document.getElementById('rdx-' + m.id);
+      if (!el) return;
+      const val = parseInt(localStorage.getItem(`sc_${ROLE}_${m.id}`) || '0');
+      el.textContent = val + '/' + m.total;
+    });
+  }
+
+  function resetProgress(role) {
+    if (!confirm('Reset all progress for this role?')) return;
+    MODES.forEach(m => {
+      if (m.active) localStorage.removeItem(`sc_${role}_${m.id}`);
+    });
+    loadProgress();
+  }
+  
+  loadProgress();
+
+  /* ══════════════════════════════════════════════════════════
+     CASE SIMULATOR: bottleneck escalation to resolution, general workflow
+     ══════════════════════════════════════════════════════════ */
+  window.SIM_DATA = [
+    { type: 'workflow', tag: 'Operations · Full Case', title: 'Bottleneck to Resolution: Full Operations Workflow',
+      desc: 'A real process bottleneck escalation moves from intake through SOP documentation, a vendor RFP decision, and a leadership status report.',
+      stepCount: 7,
+      wfLabels: ['Escalation Intake', 'Process Documentation', 'KPI Review', 'Vendor Decision', 'Vendor RFP', 'Status Report', 'Wrap-Up'],
+      wfSteps: [ opsStep0, opsStep1, opsStep2, opsStep3, opsStep4, opsStep5, opsStep6 ],
+      wfAfterRender: { 3: function () { opsVendorDecision(); }, 6: function () { wfRenderFinalScore('wf-eval-container', 'ops', 'general', 1); } } }
+  ];
+  window.PANEL_ON_OPEN = window.PANEL_ON_OPEN || {};
+  window.PANEL_ON_OPEN.sim = simInit;
+  window.PANEL_ON_OPEN.prompt = initPromptPlayground;
+  window.PANEL_ON_OPEN.quiz = quizReset;
+
+  function opsStep0() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 1: Escalation Intake</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        A team lead just flagged a recurring bottleneck. Read the escalation before deciding how to respond.
+      </p>
+      <div class="wf-email">
+        <div class="wf-email-header">
+          <div class="wf-email-subject">Bottleneck: New TC Onboarding Taking Too Long</div>
+          <div class="wf-email-meta">
+            <div class="wf-email-row"><span class="wf-email-row-lbl">From:</span> Dana Fields, Team Lead</div>
+            <div class="wf-email-row"><span class="wf-email-row-lbl">To:</span> Operations Manager</div>
+          </div>
+        </div>
+        <div class="wf-email-body">
+          <p>Hi,</p>
+          <p>Our last two new transaction coordinators took almost 3 weeks to get comfortable running a file independently, it should be closer to 1 week. They're all learning intake differently depending on who trains them. We don't have a written process, just tribal knowledge. Can we fix this before the next hire starts?</p>
+          <p>Dana</p>
+        </div>
+      </div>
+      <div class="lc-callout-warn">No documented SOP exists for this process today. That's the root cause worth addressing, not just the current hire's ramp time.</div>
+      ${wfNav(false)}
+    </div>`;
+  }
+
+  function opsStep1() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 2: Process Documentation</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        Document the file-intake process as a repeatable SOP before the next hire starts.
+      </p>
+      <div class="wf-form-section">
+        <h4>SOP Draft: TC File-Opening Process</h4>
+        ${wfField('wf-ops-step1', 'Step 1', 'text', '', 'Receive ratified contract, verify all signature pages present', false)}
+        ${wfField('wf-ops-step2', 'Step 2', 'text', '', 'Create file in the file management system with standardized naming', false)}
+        ${wfField('wf-ops-step3', 'Step 3', 'text', '', 'Distribute contract to all parties (compliance, title, agents)', false)}
+        ${wfField('wf-ops-step4', 'Step 4', 'text', '', 'Log key dates (EMD, inspection, closing) into the deadline tracker', false)}
+        ${wfField('wf-ops-benchmark', '30-Day Benchmark', 'text', '', 'New TC should run a file independently within 5 business days', true)}
+      </div>
+      <div class="lc-callout-info">A written SOP means every new hire learns the same process the same way, instead of whatever their specific trainer happened to do.</div>
+      ${wfNav(true)}
+    </div>`;
+  }
+
+  function opsStep2() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 3: KPI Review</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        Review this week's team KPIs before deciding what else might be contributing to the slow ramp-up.
+      </p>
+      <div class="wf-form-section">
+        <h4>Weekly KPI Snapshot</h4>
+        ${wfField('wf-ops-kpi1', 'Active Files per TC', 'text', '', '14 average', true)}
+        ${wfField('wf-ops-kpi2', 'On-Time Deadline Rate', 'text', '', '96%', true)}
+        ${wfField('wf-ops-kpi3', 'New Hire Ramp Time', 'text', '', '18 to 21 days (target: 5 to 7 days)', true)}
+        ${wfField('wf-ops-kpi4', 'Client Satisfaction Score', 'text', '', '4.6 / 5', true)}
+      </div>
+      <div class="lc-callout-warn">Ramp time is the clear outlier here. The rest of the team's metrics are healthy, this points squarely at the missing onboarding SOP.</div>
+      ${wfNav(true)}
+    </div>`;
+  }
+
+  function opsStep3() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 4: Vendor Decision</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        While reviewing onboarding tools, a CRM vendor pitches a training-tracking add-on. Make the right call.
+      </p>
+      <div id="wf-vendor-decision"></div>
+      ${wfNav(true)}
+    </div>`;
+  }
+
+  function opsVendorDecision() {
+    wfDecision('wf-vendor-decision',
+      "The vendor rep is persuasive and offers a discount if you sign this week. You haven't compared any other options. What do you do?",
+      [
+        { t: "Thank them for the offer, but run a proper RFP comparing at least 2 to 3 vendor options before committing to any new tool.", ok: true },
+        { t: "Sign now to lock in the discount, you can always compare options later.", ok: false },
+        { t: "Ask the vendor to just extend the discount indefinitely so there's no rush.", ok: false }
+      ],
+      "A time-limited discount is a pressure tactic, not a reason to skip due diligence. Committing to a new tool without comparing alternatives risks locking the team into something that doesn't actually fit, once the discount expires you're often stuck with ongoing costs and a tool nobody properly vetted."
+    );
+  }
+
+  function opsStep4() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 5: Vendor RFP</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        Draft a proper RFP to compare training-tracking tools before making a decision.
+      </p>
+      <div class="wf-form-section">
+        <h4>RFP Requirements</h4>
+        ${wfField('wf-ops-rfp-need', 'Need', 'text', '', 'Track new hire training milestones and completion status', false)}
+        ${wfField('wf-ops-rfp-vendors', 'Vendors to Compare', 'text', '', '3 options minimum', true)}
+        ${wfField('wf-ops-rfp-deadline', 'Decision Deadline', 'text', '', '2 weeks from today', false)}
+      </div>
+      ${wfNav(true)}
+    </div>`;
+  }
+
+  function opsStep5() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 6: Status Report</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        Report the resolution plan to leadership.
+      </p>
+      <div class="wf-compose">
+        <div class="wf-compose-header">
+          <div class="wf-compose-field">
+            <span class="wf-compose-lbl">To:</span>
+            <input type="text" value="Leadership Team" readonly>
+          </div>
+          <div class="wf-compose-field">
+            <span class="wf-compose-lbl">Subject:</span>
+            <input type="text" id="wf-ops-report-subj" value="Resolved: New Hire Onboarding Bottleneck">
+          </div>
+        </div>
+        <div class="wf-compose-body">
+          <textarea id="wf-ops-report-body" data-role="ops" data-scenario="ops-incident-report" placeholder="Summarize the root cause (no written SOP), the fix (documented SOP + 5-7 day benchmark), and the RFP in progress for a training-tracking tool."></textarea>
+          <div style="margin-top:10px"><button class="btn sm" id="wf-ops-report-body-btn" onclick="SCApp.submitEmailStep({textareaId:'wf-ops-report-body', statusElId:'wf-ops-report-body-status', btnId:'wf-ops-report-body-btn', role:'ops', scenarioId:'ops-incident-report', scenarioPrompt:'Incident/root-cause report email', maxScore:5})">Submit for grading</button></div>
+          <div id="wf-ops-report-body-status" class="small" style="margin-top:6px"></div>
+        </div>
+      </div>
+      ${wfNav(true)}
+    </div>`;
+  }
+
+  function opsStep6() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 7: Wrap-Up</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        Review the workflow validation below.
+      </p>
+      <div id="wf-eval-container"></div>
+      <div class="wf-score-card">
+        <div class="wf-score-header">Workflow Validation: Onboarding Bottleneck</div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Reviewed the escalation and identified the root cause</span></div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Documented a repeatable SOP for file intake</span></div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Reviewed team KPIs to confirm the scope of the issue</span></div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Handled the vendor pressure tactic correctly</span></div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Drafted a proper vendor RFP</span></div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Reported the resolution plan to leadership</span></div>
+      </div>
+      <div class="lc-result" style="margin-top:16px">
+        <div class="lc-result-pct" style="font-size:36px">&#10003;</div>
+        <p><strong>Full Operations Workflow Complete.</strong></p>
+        <p style="font-size:13.5px;color:var(--v-muted)">You took a real bottleneck from escalation to a documented fix, including a real vendor-pressure decision along the way.</p>
+        <div class="lc-result-actions">
+          <button class="lc-result-btn primary" onclick="wfRestart()">Restart Workflow</button>
+          <button class="lc-result-btn outline" onclick="wfReset()">Back to Scenarios</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     DEADLINE QUIZ
+     ══════════════════════════════════════════════════════════ */
+  window.QUIZ_DATA = [
+    { q: 'What is an SOP?',
+      a: ['A one-time memo', 'A documented, repeatable procedure for a process', 'A performance review form', 'A vendor contract'], c: 1 },
+    { q: 'How many vendor options should a proper RFP process compare, at minimum, before a decision?',
+      a: ['1', '2 to 3', 'Whatever the first vendor recommends', 'None, go with the best pitch'], c: 1 },
+    { q: 'A vendor offers a discount if you sign this week without comparing alternatives. What should you do?',
+      a: ['Sign immediately to lock in the discount', 'Run the RFP process regardless of the deadline pressure', 'Ask a teammate to decide instead', 'Ignore the vendor entirely'], c: 1 },
+    { q: 'What is the purpose of a 90-day new hire review?',
+      a: ['To decide whether to terminate every new hire', 'To formally assess competencies, KPIs, and set goals for the next period', 'To renegotiate salary only', 'It has no real purpose'], c: 1 },
+    { q: 'If most team KPIs are healthy except one clear outlier, what does that suggest?',
+      a: ['All processes are broken', 'The outlier likely points to a specific, addressable root cause', 'The KPI dashboard is wrong', 'Nothing, ignore outliers'], c: 1 },
+    { q: 'What should a written SOP achieve for new hires?',
+      a: ['Replace the need for any training', 'Ensure every new hire learns the same process the same way', 'Make onboarding take longer', 'Only apply to senior staff'], c: 1 }
+  ];
+
+  /* ══════════════════════════════════════════════════════════
+     PROMPT PRACTICE
+     ══════════════════════════════════════════════════════════ */
+  window.PROMPT_TEMPLATES = [
+    { title: 'Onboarding SOP', badge: 'SOP', category: 'Documentation',
+      desc: 'Document a new hire onboarding process as a repeatable SOP.',
+      tip: "Asking for specific sections (pre-start prep, Day 1, Week 1 milestones, tool access, benchmarks, escalation contacts) rather than a general outline is what makes the SOP something a new hire can actually follow solo.",
+      template: 'Create a detailed SOP for onboarding a new [Role_Type]: pre-start prep, Day 1 orientation, Week 1 training milestones, tool access setup (CRM, email, PM), [Benchmark_Days]-day benchmarks, escalation contacts.',
+      vars: [
+        { id: 'Role_Type', label: 'Role Being Onboarded', type: 'text', default: 'virtual real estate assistant' },
+        { id: 'Benchmark_Days', label: 'Benchmark Period (days)', type: 'text', default: '30' }
+      ] },
+    { title: '90-Day Performance Review', badge: 'Review', category: 'Documentation',
+      desc: 'Build a structured performance review template for a team member.',
+      tip: "Including a numeric rating scale alongside qualitative sections gives you both a trackable score over time and the narrative context behind it.",
+      template: 'Write a 90-day performance review template for a [Role_Type]: core competencies, KPIs, communication skills, client feedback, areas of excellence, areas for improvement, 90-day goals. Include a 1 to 5 rating scale.',
+      vars: [ { id: 'Role_Type', label: 'Role', type: 'text', default: 'virtual transaction coordinator' } ] },
+    { title: 'Monthly Client Report', badge: 'Report', category: 'Documentation',
+      desc: 'Write a client-facing monthly performance report narrative.',
+      tip: "Comparing this month's numbers to last month's, in the same short executive summary, gives the client an immediate sense of trend, not just a snapshot.",
+      template: 'Write a monthly client performance report narrative. Our VA handled [Transactions] transactions, [Compliance_Pct]% deadline compliance, [Emails] emails sent, [Feedback_Count] positive feedback mentions. Last month: [Last_Month_Transactions] transactions. 200-word executive summary.',
+      vars: [
+        { id: 'Transactions', label: 'Transactions This Month', type: 'text', default: '12' },
+        { id: 'Compliance_Pct', label: 'Deadline Compliance %', type: 'text', default: '100' },
+        { id: 'Emails', label: 'Emails Sent', type: 'text', default: '87' },
+        { id: 'Feedback_Count', label: 'Positive Feedback Mentions', type: 'text', default: '4' },
+        { id: 'Last_Month_Transactions', label: 'Last Month Transactions', type: 'text', default: '10' }
+      ] },
+    { title: 'Process Bottleneck Analysis', badge: 'Analysis', category: 'Documentation',
+      desc: 'Turn a list of identified bottlenecks into actionable solutions.',
+      tip: "Asking for 3 actionable solutions PER bottleneck, rather than general advice, forces the output into something you can actually assign and track, instead of vague recommendations.",
+      template: 'I identified these bottlenecks: [Bottleneck_List]. For each, suggest 3 actionable solutions a virtual team could implement.',
+      vars: [ { id: 'Bottleneck_List', label: 'Bottlenecks (describe)', type: 'textarea', default: '(1) agents slow to respond to document requests, (2) title companies miss deadline reminders, (3) new TCs take too long to learn intake' } ] },
+    { title: 'Meeting Agenda', badge: 'Agenda', category: 'Documentation',
+      desc: 'Build a time-boxed agenda for a recurring operations review meeting.',
+      tip: "Time-allocating each topic keeps a review meeting from running long on the first item and rushing through the rest, which is the most common way status meetings go off the rails.",
+      template: 'Create a [Duration]-minute agenda for a [Meeting_Type]. Attendees: [Attendees]. Topics: [Topics]. Include time allocations.',
+      vars: [
+        { id: 'Duration', label: 'Meeting Length (minutes)', type: 'text', default: '60' },
+        { id: 'Meeting_Type', label: 'Meeting Type', type: 'text', default: 'monthly operations review' },
+        { id: 'Attendees', label: 'Attendees', type: 'text', default: 'Ops Manager, Team Leads, HR' },
+        { id: 'Topics', label: 'Topics', type: 'text', default: 'KPI review, client feedback, staffing updates, process improvement, Q&A' }
+      ] },
+    { title: 'Vendor RFP Draft', badge: 'RFP', category: 'Vendor Management',
+      desc: 'Draft a request for proposal to compare vendor options fairly.',
+      tip: "Naming the comparison criteria up front (not just 'send us your pricing') is what lets you evaluate every vendor response on the same basis instead of comparing apples to oranges.",
+      template: 'Draft an RFP for a new [Tool_Type] vendor. We need it to compare [Vendor_Count] options by [Deadline]. Include sections for: functional requirements, pricing structure, implementation timeline, and references.',
+      vars: [
+        { id: 'Tool_Type', label: 'Tool/Vendor Type', type: 'text', default: 'CRM' },
+        { id: 'Vendor_Count', label: 'Number of Vendors to Compare', type: 'text', default: '3' },
+        { id: 'Deadline', label: 'Decision Deadline', type: 'text', default: 'next Friday' }
+      ] },
+    { title: 'Weekly KPI Dashboard Template', badge: 'Dashboard', category: 'Vendor Management',
+      desc: 'Build a KPI dashboard template for tracking team performance weekly.',
+      tip: "Specifying the team size and a fixed set of metrics up front keeps the dashboard consistent week over week, which is what makes trend-spotting possible in the first place.",
+      template: 'Create a weekly KPI dashboard template for a [Team_Size]-person real estate ops team. Include metrics for: active files per person, on-time deadline rate, client satisfaction, and new hire ramp time.',
+      vars: [ { id: 'Team_Size', label: 'Team Size', type: 'text', default: '5' } ] },
+    { title: 'Escalation Summary', badge: 'Summary', category: 'Vendor Management',
+      desc: 'Summarize a team escalation and flag any issues for leadership.',
+      tip: "Structuring the summary around what happened, root cause, and proposed fix (rather than a narrative retelling) is what makes an escalation summary useful to leadership skimming multiple issues at once.",
+      template: 'Summarize this escalation and flag any issues: [Escalation_Notes]. Structure the output as: What Happened, Root Cause, Proposed Fix, Owner, Target Date.',
+      vars: [ { id: 'Escalation_Notes', label: 'Escalation Notes', type: 'textarea', default: 'New TCs are taking 3 weeks to ramp up instead of 1 week, no written onboarding SOP exists today' } ] }
+  ];
+
+  function toggleResources(card) {
+    var panel = document.getElementById('resources-panel');
+    var isOpen = panel.classList.toggle('open');
+    card.classList.toggle('open', isOpen);
+    if (isOpen) setTimeout(function(){ panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 40);
+  }
+  function openResources() {
+    var card = document.querySelector('.rd-mode-resources');
+    var panel = document.getElementById('resources-panel');
+    if (!panel.classList.contains('open')) { panel.classList.add('open'); if(card) card.classList.add('open'); }
+    setTimeout(function(){ panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 40);
+  }
+</script>
+</body>
+</html>

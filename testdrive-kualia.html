@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test Drive: Kualia · SkillCloud Academy</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+  :root{--v-navy:#0a2647;--v-navy2:#0f3460;--v-cyan:#17c3d4;--v-cyan-d:#0fa6b6}
+
+  .td-hero{background:linear-gradient(135deg,var(--v-navy),var(--v-navy2));color:#fff;border-radius:20px;padding:34px 32px;margin:24px 0 20px;position:relative;overflow:hidden}
+  .td-hero::after{content:'';position:absolute;inset:auto -6% -80% auto;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle at 30% 30%, rgba(23,195,212,.22), transparent 70%)}
+  .td-hero .crumb{position:relative;font-size:13px;color:#c8d7e6;margin-bottom:12px}
+  .td-hero .crumb a{color:#c8d7e6}
+  .td-hero .row{position:relative;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .td-logo-chip{width:46px;height:46px;border-radius:12px;background:#fff;display:grid;place-items:center;font-weight:900;color:#3f2f78;font-size:16px;letter-spacing:-.5px;flex:none}
+  .td-hero h1{margin:0 0 6px;font-size:clamp(22px,4vw,28px);font-weight:900;letter-spacing:-.4px}
+  .td-hero p{margin:0;color:#c8d7e6;font-size:14.5px;max-width:640px;line-height:1.6}
+
+  .td-warn{border-left:5px solid #d98a14;background:#fff7ea;padding:14px 18px;border-radius:0 10px 10px 0;margin:0 0 22px}
+  .td-warn h4{margin:0 0 4px;color:#7a5106}
+  .td-warn p{margin:0;font-size:14px;color:#5b4a2a}
+
+  /* ===================== KUALIA APP FRAME ===================== */
+  .ku{
+    --knavy:#241b3d; --kpurple:#6c4fd1; --kpurple-d:#5638b3; --kline:#e6e2f2; --kbg:#f7f6fb; --ktext:#241c33; --kmuted:#847ba0;
+    border:1px solid #e0dcf0; border-radius:14px; overflow:hidden; box-shadow:0 20px 50px rgba(30,15,60,.14);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:var(--ktext); background:#fff;
+  }
+  .ku *{box-sizing:border-box}
+  .ku a{color:var(--kpurple-d)}
+
+  .ku-topbar{background:var(--knavy);color:#fff;display:flex;align-items:center;gap:24px;padding:0 20px;height:54px}
+  .ku-brand{font-weight:900;font-size:16px;letter-spacing:-.3px}
+  .ku-brand span{color:var(--kpurple)}
+  .ku-tabs{display:flex;gap:20px;font-size:13.5px;font-weight:600;color:#b3a9d6}
+  .ku-tabs span{cursor:pointer;padding:6px 2px;border-bottom:2px solid transparent}
+  .ku-tabs span.active{color:#fff;border-color:var(--kpurple)}
+  .ku-tabs span:hover{color:#fff}
+  .ku-avatar{width:28px;height:28px;border-radius:50%;background:var(--kpurple);display:grid;place-items:center;font-size:11px;font-weight:800;margin-left:auto}
+
+  .ku-body{background:var(--kbg);min-height:560px}
+  .ku-view{display:none;padding:22px}
+  .ku-view.active{display:block}
+  .ku-listhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+  .ku-listhead h2{margin:0;font-size:20px;font-weight:800}
+  .ku-listhead .sub{font-size:12.5px;color:var(--kmuted)}
+
+  /* Kanban intake board */
+  .ku-board{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start}
+  .ku-col{background:#fff;border:1px solid var(--kline);border-radius:12px;padding:12px}
+  .ku-col h3{margin:0 0 10px;font-size:12.5px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--kmuted);display:flex;justify-content:space-between}
+  .ku-col h3 .n{background:#f0edfa;color:var(--kpurple-d);border-radius:999px;padding:1px 8px;font-size:11px}
+  .ku-card{background:#faf9fd;border:1px solid var(--kline);border-radius:10px;padding:10px 12px;margin-bottom:10px;cursor:pointer}
+  .ku-card:hover{border-color:var(--kpurple)}
+  .ku-card b{display:block;font-size:13px}
+  .ku-card span{display:block;font-size:11.5px;color:var(--kmuted);margin-top:3px}
+
+  /* Clients */
+  table.ku-tbl{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--kline);border-radius:10px;overflow:hidden;font-size:13.5px}
+  table.ku-tbl th{background:#fafafc;color:var(--kmuted);font-weight:700;text-align:left;padding:9px 12px;border-bottom:1px solid var(--kline);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}
+  table.ku-tbl td{padding:10px 12px;border-bottom:1px solid var(--kline)}
+  table.ku-tbl tr:last-child td{border-bottom:none}
+
+  /* Detail panel (shared by board cards + client rows) */
+  .ku-detail{display:none;grid-template-columns:1fr 280px;gap:20px}
+  .ku-detail.active{display:grid}
+  .ku-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--kpurple-d);cursor:pointer;margin-bottom:14px}
+  .ku-panel{background:#fff;border:1px solid var(--kline);border-radius:10px;padding:18px;margin-bottom:16px}
+  .ku-panel h4{margin:0 0 10px;font-size:11.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--kmuted)}
+  .ku-panel .kv{font-size:13.5px;margin-bottom:8px;display:flex;gap:8px}
+  .ku-panel .kv b{color:var(--kmuted);font-weight:600;flex:none;min-width:100px}
+  .ku-checklist div{font-size:13px;padding:5px 0;display:flex;align-items:center;gap:8px}
+  .ku-checklist input{width:15px;height:15px}
+  .ku-notebox textarea{width:100%;border:1px solid var(--kline);border-radius:8px;padding:12px;font-size:13.5px;font-family:inherit;min-height:70px;resize:vertical}
+  .ku-notebox button{margin-top:8px;background:var(--kpurple);color:#fff;font-weight:700;font-size:12.5px;border:none;padding:9px 16px;border-radius:7px;cursor:pointer}
+
+  /* Admin */
+  .ku-admin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+  .ku-admin-card{background:#fff;border:1px solid var(--kline);border-radius:10px;padding:16px}
+  .ku-admin-card .ic{width:30px;height:30px;border-radius:8px;background:#f0edfa;color:var(--kpurple-d);display:grid;place-items:center;margin-bottom:10px;font-weight:800}
+  .ku-admin-card b{display:block;font-size:14px;margin-bottom:4px}
+  .ku-admin-card p{margin:0;font-size:12.5px;color:var(--kmuted);line-height:1.5}
+  .ku-admin-sec h5{margin:18px 0 10px;font-size:12px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--kmuted)}
+
+  @media(max-width:980px){ .ku-board{grid-template-columns:1fr 1fr} .ku-detail.active{grid-template-columns:1fr} .ku-admin-grid{grid-template-columns:1fr 1fr} }
+  @media(max-width:640px){ .td-hero{padding:26px 20px;border-radius:16px} .ku-board{grid-template-columns:1fr} .ku-admin-grid{grid-template-columns:1fr} .ku-tabs{overflow-x:auto} }
+</style>
+</head>
+<body>
+<nav class="nav" id="nav"><div class="nav-inner">
+  <a class="brand" href="index.html"><img src="assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+  <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+  <div class="menu">
+    <a class="navlink" href="index.html">Home</a>
+    <a class="navlink" href="ai.html">Introduction</a>
+    <a class="navlink" href="index.html#roles">Roles</a>
+  </div>
+  <span class="spacer"></span>
+  <a class="pill" href="index.html#test-drive">Test Drive</a>
+  <a class="user-chip" href="account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
+</div></nav>
+
+<div class="wrap">
+  <div class="td-hero">
+    <div class="crumb"><a href="index.html">Home</a> &rsaquo; Test Drive &rsaquo; Kualia</div>
+    <div class="row">
+      <div class="td-logo-chip">KU</div>
+      <div>
+        <h1>Kualia Test Drive</h1>
+        <p>A practice copy of a client intake board. See how a new file request moves from first contact to being ready for assignment, and check the basic admin settings, no real account needed.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="td-warn">
+    <h4>Training only</h4>
+    <p>This is a simulated interface built for practice. It is not connected to any live account and nothing you do here saves, sends, or changes anything real.</p>
+  </div>
+
+  <div class="ku" id="kuApp">
+    <div class="ku-topbar">
+      <div class="ku-brand">Ku<span>alia</span></div>
+      <div class="ku-tabs">
+        <span class="active" data-view="board">Intake Board</span>
+        <span data-view="clients">Clients</span>
+        <span data-view="admin">Admin</span>
+      </div>
+      <div class="ku-avatar">PA</div>
+    </div>
+
+    <div class="ku-body">
+      <!-- BOARD -->
+      <div class="ku-view active" id="kv-board">
+        <div id="kuBoardWrap">
+          <div class="ku-listhead"><div><h2>Intake Board</h2><div class="sub">New client requests, tracked from first contact to assignment</div></div></div>
+          <div class="ku-board" id="kuBoard"></div>
+        </div>
+        <div class="ku-detail" id="kuBoardDetail"></div>
+      </div>
+
+      <!-- CLIENTS -->
+      <div class="ku-view" id="kv-clients">
+        <div class="ku-listhead"><div><h2>Clients</h2><div class="sub">Everyone currently in an active file</div></div></div>
+        <table class="ku-tbl">
+          <thead><tr><th>Name</th><th>File Type</th><th>Status</th><th>Assigned To</th></tr></thead>
+          <tbody id="kuClientRows"></tbody>
+        </table>
+      </div>
+
+      <!-- ADMIN -->
+      <div class="ku-view" id="kv-admin">
+        <div class="ku-listhead"><div><h2>Admin</h2><div class="sub">Account level settings for this workspace</div></div></div>
+
+        <div class="ku-admin-sec">
+          <h5>Intake Settings</h5>
+          <div class="ku-admin-grid">
+            <div class="ku-admin-card"><div class="ic">&#8635;</div><b>Assignment Rules</b><p>New requests route to the next available coordinator.</p></div>
+            <div class="ku-admin-card"><div class="ic">&#128203;</div><b>Checklists</b><p>The standard document checklist attached to every new file.</p></div>
+            <div class="ku-admin-card"><div class="ic">&#9993;</div><b>Notification Templates</b><p>Automated emails sent as a file moves between stages.</p></div>
+          </div>
+        </div>
+
+        <div class="ku-admin-sec">
+          <h5>Team</h5>
+          <div class="ku-admin-grid">
+            <div class="ku-admin-card"><div class="ic">&#128100;</div><b>Users</b><p>Add and manage the coordinators with access to this workspace.</p></div>
+            <div class="ku-admin-card"><div class="ic">&#128274;</div><b>Permissions</b><p>Control who can view, edit, or close out a client file.</p></div>
+            <div class="ku-admin-card"><div class="ic">&#127970;</div><b>Company</b><p>Office details and business hours shown on client emails.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="index.html#test-drive">Test Drive</a>
+        <a class="fl" href="index.html#roles">Choose Your Role</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="roles/transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="roles/lead-manager.html">Lead Manager</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/app-core.js"></script>
+<script src="assets/js/site.js"></script>
+<script>
+const tdMe = SCApp.requireAuth();
+const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&lt;','<':'&lt;','>':'&gt;'}[c]));
+
+const STAGES=['New Request','Docs Requested','In Review','Ready to Assign'];
+
+const CASES=[
+  {id:1,name:'Emily Carter',type:'Buyer File',stage:'New Request',agent:'Paula Aragone',last:'20 minutes ago',checklist:[['Signed contract received',true],['ID verification',false],['Initial deposit confirmation',false]],note:'Submitted through the buyer portal this morning.'},
+  {id:2,name:'Marcus Webb',type:'Buyer File',stage:'New Request',agent:'Dana Ruiz',last:'1 hour ago',checklist:[['Signed contract received',true],['ID verification',false],['Initial deposit confirmation',false]],note:'Waiting on lender contact info before requesting docs.'},
+  {id:3,name:'Trevor Boyd',type:'Seller File',stage:'Docs Requested',agent:'Paula Aragone',last:'3 hours ago',checklist:[['Signed listing agreement',true],['Property disclosure',true],['HOA documents',false]],note:'HOA documents requested from the management company.'},
+  {id:4,name:'Priya Natarajan',type:'Buyer File',stage:'Docs Requested',agent:'Dana Ruiz',last:'Yesterday',checklist:[['Signed contract received',true],['ID verification',true],['Initial deposit confirmation',false]],note:'Waiting on proof of deposit from the buyer\'s bank.'},
+  {id:5,name:'Lena Ostrowski',type:'Buyer File',stage:'In Review',agent:'Paula Aragone',last:'Yesterday',checklist:[['Signed contract received',true],['ID verification',true],['Initial deposit confirmation',true]],note:'Coordinator reviewing file for completeness before assignment.'},
+  {id:6,name:'Chloe Bennett',type:'Buyer File',stage:'In Review',agent:'Dana Ruiz',last:'2 days ago',checklist:[['Signed contract received',true],['ID verification',true],['Initial deposit confirmation',true]],note:'One outstanding signature, following up today.'},
+  {id:7,name:'Nathaniel Price',type:'Seller File',stage:'Ready to Assign',agent:'Paula Aragone',last:'2 days ago',checklist:[['Signed listing agreement',true],['Property disclosure',true],['HOA documents',true]],note:'File is complete and ready for a coordinator to take over.'},
+  {id:8,name:'Grace Whitfield',type:'Buyer File',stage:'Ready to Assign',agent:'Dana Ruiz',last:'3 days ago',checklist:[['Signed contract received',true],['ID verification',true],['Initial deposit confirmation',true]],note:'Complete, waiting on next available coordinator.'}
+];
+
+function kuBoard(){
+  document.getElementById('kuBoard').innerHTML=STAGES.map(st=>{
+    const items=CASES.filter(c=>c.stage===st);
+    return '<div class="ku-col"><h3>'+esc(st)+' <span class="n">'+items.length+'</span></h3>'+
+      items.map(c=>'<div class="ku-card" onclick="kuOpen('+c.id+')"><b>'+esc(c.name)+'</b><span>'+esc(c.type)+' &middot; '+esc(c.last)+'</span></div>').join('')+
+      '</div>';
+  }).join('');
+}
+function kuClientRows(){
+  document.getElementById('kuClientRows').innerHTML=CASES.map(c=>
+    '<tr><td>'+esc(c.name)+'</td><td>'+esc(c.type)+'</td><td>'+esc(c.stage)+'</td><td>'+esc(c.agent)+'</td></tr>').join('');
+}
+function kuShowBoard(){
+  document.getElementById('kuBoardWrap').style.display='block';
+  document.getElementById('kuBoardDetail').classList.remove('active');
+}
+function kuOpen(id){
+  const c=CASES.filter(x=>x.id===id)[0]; if(!c) return;
+  document.getElementById('kuBoardWrap').style.display='none';
+  const wrap=document.getElementById('kuBoardDetail');
+  wrap.classList.add('active');
+  wrap.innerHTML=
+    '<div>'+
+      '<span class="ku-back" onclick="kuShowBoard()">&larr; Intake Board</span>'+
+      '<div class="ku-panel">'+
+        '<h4>File Details</h4>'+
+        '<div class="kv"><b>Client</b> '+esc(c.name)+'</div>'+
+        '<div class="kv"><b>File Type</b> '+esc(c.type)+'</div>'+
+        '<div class="kv"><b>Stage</b> '+esc(c.stage)+'</div>'+
+        '<div class="kv"><b>Assigned To</b> '+esc(c.agent)+'</div>'+
+      '</div>'+
+      '<div class="ku-panel">'+
+        '<h4>Document Checklist</h4>'+
+        '<div class="ku-checklist">'+c.checklist.map(item=>'<div><input type="checkbox" '+(item[1]?'checked':'')+' onclick="return false"> '+esc(item[0])+'</div>').join('')+'</div>'+
+      '</div>'+
+      '<div class="ku-panel ku-notebox">'+
+        '<h4>Add a Note</h4>'+
+        '<textarea>'+esc(c.note)+'</textarea>'+
+        '<button type="button" onclick="alert(\'Training only, this does not save anywhere real.\')">Save Note</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="ku-panel">'+
+      '<h4>Next Step</h4>'+
+      '<p class="small muted">'+(c.stage==='Ready to Assign' ? 'This file is complete. Assign it to a transaction coordinator to begin the case.' : 'Keep following up until every item on the checklist is confirmed, then move this file to the next stage.')+'</p>'+
+    '</div>';
+}
+
+document.querySelectorAll('.ku-tabs span[data-view]').forEach(tab=>{
+  tab.onclick=()=>{
+    document.querySelectorAll('.ku-tabs span[data-view]').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelectorAll('.ku-view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('kv-'+tab.dataset.view).classList.add('active');
+  };
+});
+
+kuBoard(); kuClientRows();
+</script>
+</body>
+</html>

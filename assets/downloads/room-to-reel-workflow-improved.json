@@ -1,0 +1,269 @@
+{
+  "name": "Room-to-Reel n8n Workflow (improved)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 🎬 Room-to-Reel (improved)\nTurns listing photos into AI walkthrough clips (Kling O1 via OpenRouter), saved to Google Drive.\n\n### ⚙️ Before you run — connect 2 credentials:\n**1. OpenRouter** — on the **Submit Video**, **Poll**, and **Download mp4** nodes.\n- Create a credential of type *Header Auth*\n- Name: `Authorization`\n- Value: `Bearer YOUR_OPENROUTER_API_KEY`\n\n**2. Google Drive** — on the **Save to Drive** node.\n- Connect your own Google account (OAuth)\n- Clips save to *My Drive* root\n\n### ▶️ How to use\nOpen the Form URL → upload photos → leave **Motion prompt** blank for the optimized walkthrough default (or write your own) → each photo becomes a **5-second 720p** clip.\n\n### 🔧 What changed in this version\nIn the original file, a generation that comes back with status \"failed\" was routed straight back into the loop with no record of what happened. The photo silently disappears, the loop keeps going, and you find out something is missing only when you count clips at the end. This version adds a **Log Failure** step: it records the photo name, the variant number, and whatever the API returned, so a failed generation shows up in the execution log with a reason instead of vanishing.\n\n*Tip: drop the native clip into a 9:16 CapCut project to crop for Reels.*",
+        "height": 620,
+        "width": 400,
+        "color": 4
+      },
+      "id": "setup_note",
+      "name": "Setup — read me first",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -440,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "formTitle": "Listing Walkthrough Video Generator",
+        "formDescription": "Upload your listing photos. Leave the Motion prompt blank to use our optimized walkthrough prompt automatically — or write your own to customize the camera movement.",
+        "formFields": {
+          "values": [
+            {
+              "acceptFileTypes": ".jpg,.jpeg,.png,.webp",
+              "fieldLabel": "Photos",
+              "fieldType": "file",
+              "multipleFiles": true,
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Motion prompt",
+              "fieldType": "textarea",
+              "placeholder": "Leave blank for the optimized walkthrough default, or describe your own camera movement.",
+              "requiredField": false
+            },
+            {
+              "fieldLabel": "Background music",
+              "fieldOptions": {
+                "values": [
+                  { "option": "No" },
+                  { "option": "Yes" }
+                ]
+              },
+              "fieldType": "dropdown",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Generations per photo",
+              "fieldType": "number",
+              "requiredField": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "form_trigger",
+      "name": "Form",
+      "position": [0, 304],
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "jsCode": "// Split the form's photos into one item per photo, carry params + binary. Kling O1 only (720p).\nconst items = $input.all();\nconst out = [];\n\nfor (let idx = 0; idx < items.length; idx++) {\n  const item = items[idx];\n  const p = item.json;\n  let pin = p['Motion prompt'];\n  if (pin && typeof pin === 'object') { pin = pin['Motion prompt'] || Object.values(pin)[0]; }\n  const prompt = (pin && String(pin).trim()) || 'Generate a video walkthrough based strictly on the provided reference photo. Move the camera as if a person is physically walking forward through the room at a natural pace — a first-person walking point of view at standing eye level. Include the subtle, organic motion of human walking: a gentle vertical bob with each step, slight natural sway from side to side, and small handheld variations, so the movement feels alive rather than a smooth mechanical slide on rails. Keep advancing forward the entire time; do not hold static, and do not move in a perfectly straight, rigid line. Keep all motion smooth enough to feel real and physically plausible, never shaky or disorienting. Preserve every object, color, material, and lighting detail exactly as it appears in the reference image, and do not add, remove, or alter anything. Do not invent or imply any unseen elements, including windows, doors, railings, openings, adjacent spaces, or light sources. If something isn’t clearly visible in the photo, it must not appear in the video. As the camera moves forward it may bring more of this same room into view, but it must stay anchored to the visual information in the reference image, and the structure of the room must not change.';\n  const resolution = '720p';\n  const music = String(p['Background music'] || 'No').toLowerCase() === 'yes';\n  const gens = Math.max(1, Number(p['Generations per photo'] || 1));\n  const model = 'kwaivgi/kling-video-o1';\n  const duration = 5;\n\n  const bin = item.binary || {};\n  for (const key of Object.keys(bin)) {\n    const meta = bin[key];\n    for (let v = 1; v <= gens; v++) {\n      out.push({\n        json: { photo: meta.fileName || key, variant: v, apiBase: 'https://openrouter.ai/api/v1', prompt, model, duration, resolution, generate_audio: music },\n        binary: { data: bin[key] }\n      });\n    }\n  }\n}\n\nreturn out;"
+      },
+      "id": "prep_items",
+      "name": "Prep Items",
+      "position": [240, 304],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "parameters": { "options": {} },
+      "id": "loop",
+      "name": "Loop Over Items",
+      "position": [480, 304],
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "jsCode": "// Kling O1 image-to-video using the photo as the first frame (faithful anchor).\n// Motion is driven by the prompt.\nconst items = $input.all();\nconst out = [];\n\nfor (let idx = 0; idx < items.length; idx++) {\n  const it = items[idx];\n  const j = it.json;\n  const meta = (it.binary && it.binary.data) || {};\n  const mime = meta.mimeType || 'image/jpeg';\n  const buffer = await this.helpers.getBinaryDataBuffer(idx, 'data');\n  const dataUri = `data:${mime};base64,${buffer.toString('base64')}`;\n  out.push({ json: {\n    photo: j.photo, variant: j.variant, apiBase: j.apiBase,\n    requestBody: {\n      model: j.model || 'kwaivgi/kling-video-o1',\n      prompt: j.prompt,\n      frame_images: [ { type: 'image_url', image_url: { url: dataUri }, frame_type: 'first_frame' } ],\n      duration: j.duration,\n      resolution: j.resolution,\n      generate_audio: j.generate_audio\n    }\n  } });\n}\n\nreturn out;"
+      },
+      "id": "build_body",
+      "name": "Build Body",
+      "position": [704, 384],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.apiBase }}/videos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.requestBody }}",
+        "options": {}
+      },
+      "id": "submit",
+      "name": "Submit Video",
+      "position": [928, 384],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": { "amount": 30 },
+      "id": "wait",
+      "name": "Wait",
+      "position": [1152, 384],
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.polling_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "poll",
+      "name": "Poll",
+      "position": [1360, 384],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "operator": { "operation": "equals", "type": "string" },
+                    "rightValue": "completed"
+                  }
+                ],
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 }
+              },
+              "renameOutput": true,
+              "outputKey": "completed"
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.status }}",
+                    "operator": { "operation": "equals", "type": "string" },
+                    "rightValue": "failed"
+                  }
+                ],
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 }
+              },
+              "renameOutput": true,
+              "outputKey": "failed"
+            }
+          ]
+        },
+        "options": { "fallbackOutput": "extra", "renameFallbackOutput": "loop" }
+      },
+      "id": "status_switch",
+      "name": "Status Switch",
+      "position": [1584, 384],
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.unsigned_urls[0] }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": { "response": { "response": { "responseFormat": "file" } } }
+      },
+      "id": "download",
+      "name": "Download mp4",
+      "position": [1808, 288],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1",
+              "name": "failed_photo",
+              "type": "string",
+              "value": "={{ $('Loop Over Items').item.json.photo }}"
+            },
+            {
+              "id": "f2",
+              "name": "failed_variant",
+              "type": "number",
+              "value": "={{ $('Loop Over Items').item.json.variant }}"
+            },
+            {
+              "id": "f3",
+              "name": "failure_reason",
+              "type": "string",
+              "value": "={{ $json.error || $json.status_reason || 'No reason returned by the API' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log_failure",
+      "name": "Log Failure",
+      "position": [1808, 480],
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {},
+      "id": "done",
+      "name": "Done",
+      "position": [720, 192],
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "name": "={{ $('Loop Over Items').item.json.photo }}-v{{ $('Loop Over Items').item.json.variant }}.mp4",
+        "driveId": { "__rl": true, "mode": "list", "value": "My Drive", "cachedResultName": "My Drive" },
+        "folderId": { "__rl": true, "mode": "list", "value": "root", "cachedResultName": "/ (Drive root)" },
+        "options": {}
+      },
+      "id": "save_to_drive",
+      "name": "Save to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2032, 288]
+    }
+  ],
+  "connections": {
+    "Build Body": { "main": [[{ "index": 0, "node": "Submit Video", "type": "main" }]] },
+    "Form": { "main": [[{ "index": 0, "node": "Prep Items", "type": "main" }]] },
+    "Loop Over Items": {
+      "main": [
+        [{ "index": 0, "node": "Done", "type": "main" }],
+        [{ "index": 0, "node": "Build Body", "type": "main" }]
+      ]
+    },
+    "Poll": { "main": [[{ "index": 0, "node": "Status Switch", "type": "main" }]] },
+    "Prep Items": { "main": [[{ "index": 0, "node": "Loop Over Items", "type": "main" }]] },
+    "Status Switch": {
+      "main": [
+        [{ "index": 0, "node": "Download mp4", "type": "main" }],
+        [{ "index": 0, "node": "Log Failure", "type": "main" }],
+        [{ "index": 0, "node": "Wait", "type": "main" }]
+      ]
+    },
+    "Submit Video": { "main": [[{ "index": 0, "node": "Wait", "type": "main" }]] },
+    "Wait": { "main": [[{ "index": 0, "node": "Poll", "type": "main" }]] },
+    "Download mp4": { "main": [[{ "node": "Save to Drive", "type": "main", "index": 0 }]] },
+    "Log Failure": { "main": [[{ "node": "Loop Over Items", "type": "main", "index": 0 }]] },
+    "Save to Drive": { "main": [[{ "node": "Loop Over Items", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

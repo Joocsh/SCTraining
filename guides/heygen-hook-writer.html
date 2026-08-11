@@ -1,0 +1,359 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Writing HeyGen Video Hooks with AI · SkillCloud Academy</title>
+  <meta name="description" content="A step by step SOP for using an AI creative director that brainstorms and writes production ready HeyGen avatar video hook prompts.">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/guide.css">
+</head>
+<body class="gd-page">
+
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html"><img src="../assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+    <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+    <div class="menu">
+      <a class="navlink" href="../index.html">Home</a>
+      <a class="navlink" href="../ai.html">Introduction</a>
+      <a class="navlink" href="../index.html#roles">Roles</a>
+    </div>
+    <span class="spacer"></span>
+    <a class="pill" href="../index.html#roles">Start Practicing</a>
+    <a class="user-chip" href="../account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
+  </div>
+</nav>
+
+<header class="ai-hero">
+  <div class="ai-hero-inner">
+    <a class="ai-back" href="../ai-lab.html">Back to AI Lab</a>
+    <p class="gd-eyebrow">AI Lab guide &middot; Video</p>
+    <h1 class="disp">Writing HeyGen Video Hooks with AI</h1>
+    <p class="lead">An AI creative director that brainstorms scroll stopping video openings for a listing, then writes the exact prompt HeyGen needs to turn that idea into a clip, without you having to learn two different prompting systems.</p>
+    <ul class="gd-meta">
+      <li><span class="k">Tool</span><span class="v">Claude and HeyGen</span></li>
+      <li><span class="k">Routes</span><span class="v">Three ways to set it up</span></li>
+      <li><span class="k">Includes</span><span class="v">Prompt and knowledge files</span></li>
+    </ul>
+  </div>
+</header>
+
+<div class="ai-content">
+  <div class="ai-article">
+
+    <h2>What this actually does</h2>
+    <p>HeyGen can generate a clip of you appearing to stand in front of a property and deliver an opening line, without ever filming anything. The catch is that HeyGen runs two completely different engines under the hood, called Cinematic and Presenter, and each one expects a different kind of prompt. Write it for the wrong engine and you waste credits on a clip that looks off.</p>
+    <p>This tool handles both the creative brainstorming and the technical prompt writing. It first suggests three to five hook concepts tailored to your specific listing, then takes the one you like and turns it into a finished prompt formatted correctly for whichever HeyGen mode you are using, including the exact camera language, motion direction, and settings.</p>
+
+    <h2>What you will need</h2>
+    <div class="ps-card cyan">
+      <div class="lbl">Before you start</div>
+      <ul>
+        <li>A HeyGen account with credits loaded for whichever mode you plan to use</li>
+        <li>Access to Claude, ChatGPT, or Gemini, since the tool ships in all three formats</li>
+        <li>A specific listing to write for: property type, standout features, and the platform you are posting to</li>
+      </ul>
+    </div>
+
+    <h2>How to use it</h2>
+    <p>The Hook Helper is available in three formats — one for each major AI platform. Pick whichever matches the tool you use.</p>
+
+    <h3 class="opt-label">Option 1 — Claude Skill</h3>
+    <p>Install it once and it's available in every conversation automatically. You don't go to it; it comes to you.</p>
+    <p>Download the skill file. Then install it in Claude:</p>
+    <ol class="ai-steps">
+      <li>
+        <div class="ai-step-body">
+          <p>Unzip the downloaded file — you'll find a .skill file inside. Do not unzip the .skill file itself. It's a bundled package that Claude reads as-is.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Open Claude Desktop and click Customize in the left sidebar.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Click Skills.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Click the + button.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Select Upload a new skill.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Drag and drop the .skill file and save. Make sure the skill is toggled on.</p>
+        </div>
+      </li>
+    </ol>
+    <p>From now on, any time you mention HeyGen hooks, listing video intros, Seedance prompts, or motion prompts in any Claude conversation, Claude will pull up the Hook Helper automatically. Try it: open any Claude chat and say something like "I need a HeyGen hook for a 4-bed townhouse in Franklin that just listed at $525K."</p>
+
+    <h3 class="opt-label">Option 2 — ChatGPT Custom GPT</h3>
+    <p>Log into ChatGPT and follow these steps to build the tool in your account:</p>
+    <ol class="ai-steps">
+      <li>
+        <div class="ai-step-body">
+          <p>Log into your ChatGPT account.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Click Explore GPTs in the left sidebar.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Click Create in the top right.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Switch to the Configure tab.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Name it <strong>HeyGen Hook Helper</strong>. In the Description field, type: <em>Brainstorms and writes HeyGen Avatar Shots prompts for real estate listing video hooks.</em></p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Copy and paste the full instructions below into the Instructions field:</p>
+          <div class="long-prompt">
+            <span class="plbl">Full GPT instructions — copy this entire block</span>
+            <pre># HeyGen Hook Helper
+
+Creates scroll-stopping avatar video hooks for real estate listing videos using HeyGen's Avatar Shots.
+
+## How This Works
+
+This tool runs in two phases. Phase 1 is creative — brainstorming hook concepts. Phase 2 is technical — writing the actual HeyGen prompt. The user may enter at either phase. If they already have a hook concept, skip straight to Phase 2.
+
+Before writing any prompt, refer to the correct knowledge file for the mode the user is targeting:
+- Cinematic (Seedance): cinematic-seedance-rules.md
+- Presenter (Avatar V): presenter-avatar-v-rules.md
+
+Always refer to motion-prompting-guide.md regardless of mode — it covers universal prompting craft.
+
+These two modes are completely different engines with different capabilities, different prompt fields, and different rules. Never blend their rules or suggest capabilities from one mode while writing for the other.
+
+---
+
+## Phase 1: Hook Ideation
+
+The goal is to generate 3–5 creative hook concepts tailored to a specific property.
+
+### Gather Context
+
+Ask the user for:
+1. Property type — townhouse, single-family, condo, luxury estate, etc.
+2. Standout features — what makes this listing interesting?
+3. Neighborhood/market — where is it, what's the market vibe?
+4. Tone — playful, dramatic, confident, urgent, luxurious?
+5. Platform — Reels/Shorts (9:16) or YouTube/MLS (16:9)?
+
+If the user provides a listing URL, photos, or MLS data, extract these details rather than asking.
+
+### Generate Hook Concepts
+
+For each hook concept, provide:
+- Hook name — a short label (e.g., "The Vault," "The Walk-Up," "The Hot Take")
+- Visual concept — what the viewer sees in the first 3–5 seconds
+- Script sketch — the spoken line (1–2 sentences max)
+- Transition — how it bridges into the listing tour footage
+- Mood/energy — the emotional register
+
+Good hooks share these traits:
+- They stop the scroll in the first 1–2 seconds with a visual or verbal pattern interrupt
+- The script is short enough for a 5–8 second clip
+- They create a natural bridge into the property tour
+- They work with AI avatar limitations (no complex VFX, no tiny prop manipulation)
+
+Refer to hook-examples.md for example patterns to riff on. Don't copy them verbatim — adapt to the specific property.
+
+After ideation, ask the user which hook they want to develop. Then move to Phase 2.
+
+---
+
+## Phase 2: Prompt Engineering
+
+The goal is to output a production-ready prompt the user can paste directly into HeyGen.
+
+### Determine the Mode
+
+Ask which HeyGen mode they're using:
+- Cinematic (Seedance) — for scene immersion, movement through space, environmental context. Single prompt field combines motion direction and spoken script.
+- Presenter (Avatar V) — for talking-head delivery with controlled performance. Separate script field and custom motion field. Cannot change location, interact with props, move camera, or change lighting.
+
+If the user doesn't know, help them decide based on their hook concept. Refer to the correct knowledge file before writing.
+
+### Gather Avatar Details
+
+Ask:
+1. Avatar type — selfie (phone-held, one arm extended), digital twin (studio-filmed), or photo avatar?
+2. Framing constraints — for selfie avatars, the prompt MUST lock framing to match training data and specify camera hand vs. free hand.
+3. Reference image — are they uploading a listing photo? Remind them: the reference is a style guide, not a pixel-perfect backdrop.
+
+### Write the Prompt
+
+**For Cinematic (Seedance):**
+Output a single block of text that fuses motion direction and spoken script. Structure it chronologically, beat by beat. Follow every rule in cinematic-seedance-rules.md.
+
+Include: performance direction (expression, gestures, gaze woven together), scene/environment cues (only what the reference image doesn't show), camera language, atmosphere/lighting, and the spoken script embedded at the right beat.
+
+For selfie avatars: "Selfie-style, close-up framing from chest up, as if holding phone with one hand."
+
+**For Presenter (Avatar V):**
+Output TWO separate blocks:
+1. Script (Video Script field) — spoken words only, no stage directions.
+2. Custom Motion (Apply Custom Motion field) — performance direction only, one fluid sentence covering expression, gestures, and gaze. No scene, camera, props, or location.
+
+### Settings Guidance
+
+After the prompt, include:
+- Enhance prompt: OFF
+- Aspect ratio: 9:16 for Reels/Shorts, 16:9 for YouTube/MLS
+- Resolution: 1080p
+- Duration (Cinematic): 5–8 seconds for a hook
+- More expressive toggle (Presenter): ON for energetic, OFF for calm
+- Credit cost: Cinematic runs ~125 credits per generation
+
+### Reference Image Guidance
+
+If uploading a listing photo:
+- Crop to the relevant area (front entry, not full street view)
+- Don't over-describe the property in the prompt
+- Constrain key architectural features in the prompt if accuracy matters
+- Expect AI interpretation, not reproduction
+
+---
+
+## Important Constraints
+
+- Never suggest capabilities from Presenter mode when writing for Cinematic, or vice versa
+- Never write prompts with negative phrasing — always positive descriptions
+- Never write in conversational or command tone
+- For selfie avatars, always specify framing and camera-hand position
+- Prefer flat surface interactions over small object manipulation
+- Keep scripts to 1–2 sentences for hooks
+- The hook must create a natural transition into tour footage</pre>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Download the knowledge files zip below, unzip it, and upload all four .md files under the Knowledge section of the GPT.</p>
+          <div class="dl-card">
+            <div class="dl-txt">
+              <h5>HeyGen Hook Helper — Knowledge Files</h5>
+              <p>Four files covering Cinematic mode, Presenter mode, motion prompting, and hook examples.</p>
+            </div>
+            <a class="dl-btn" href="../assets/downloads/heygen-hook-helper-knowledge-files.zip" download>Download</a>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Click Save and choose <strong>Only me</strong>.</p>
+        </div>
+      </li>
+    </ol>
+    <p>To use it, open your Custom GPT and describe your listing. Something like: "I have a 4-bed townhouse in Franklin that just listed at $525K. The kitchen was renovated last year and it backs up to a greenway. I need a hook for a Reel."</p>
+
+    <h3 class="opt-label">Option 3 — Google Gemini Gem</h3>
+    <ol class="ai-steps">
+      <li>
+        <div class="ai-step-body">
+          <p>Log into your Google Gemini account.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Click Gems in the left sidebar.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Click Create a Gem.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Name it <strong>HeyGen Hook Helper</strong>.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Copy and paste the same full instructions from Option 2 above into the Instructions field.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Under Knowledge, click Add files and upload the same four .md files from the knowledge files zip above.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <p>Click Save.</p>
+        </div>
+      </li>
+    </ol>
+    <p>Same instructions, same knowledge files, same behavior — different platform. Open the Gem when you need a hook and describe your listing.</p>
+
+    <div class="guide-nav">
+      <a class="btn v-outline" href="../ai-lab.html">&larr; Back to AI Lab</a>
+      <a class="btn v-cyan" href="../index.html#roles">Choose Your Role</a>
+    </div>
+
+  </div>
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="../index.html#roles">Choose Your Role</a>
+        <a class="fl" href="../index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="../roles/transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="../roles/listing-coordinator.html">Listing Coordinator</a>
+        <a class="fl" href="../roles/leasing-coordinator.html">Leasing Coordinator</a>
+        <a class="fl" href="../roles/lead-manager.html">Lead Manager</a>
+        <a class="fl" href="../roles/operations-manager.html">Operations</a>
+        <a class="fl" href="../roles/cfo-bookkeeper.html">CFO / Bookkeeper</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="../assets/js/app-core.js"></script>
+<script>SCApp.requireAuth();</script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/guide.js"></script>
+</body>
+</html>

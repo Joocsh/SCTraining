@@ -1,0 +1,2145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sierra Test Drive — New Hire Training</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy-1:#46599B;      /* utility bar */
+  --navy-2:#2B3862;      /* nav tabs bar / dark chrome */
+  --navy-3:#1C2540;      /* deepest navy */
+  --orange:#F5A522;      /* Sierra orange */
+  --orange-dim:#C97E12;
+  --teal:#3E6B63;
+  --rust:#B14B32;
+  --slate:#5B6774;
+  --white:#FFFFFF;
+  --app-bg:#EEF1F8;
+  --line:#E1E5F0;
+  --link-blue:#3B7DC4;   /* "Source:" / platform links in lead profile */
+  --verified-green:#2FA84F;
+  --profile-band:#E9EDF7; /* light band behind avatar in profile card */
+  --shadow:0 12px 30px rgba(28,37,64,0.16);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--navy-3);color:var(--navy-3);-webkit-font-smoothing:antialiased;}
+h1,h2,h3,.display{font-family:'Fraunces',serif;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+button{font-family:'Inter',sans-serif;cursor:pointer;}
+a{color:inherit;}
+::selection{background:var(--orange);color:var(--navy-3);}
+.screen{display:none;}
+.screen.active{display:block;}
+
+/* ============ LANDING ============ */
+#landing{background:radial-gradient(1200px 600px at 15% -10%, rgba(245,165,34,0.16), transparent 60%), var(--navy-2); color:#EDEFF6; min-height:100vh; position:relative; overflow:hidden;}
+.land-wrap{max-width:1040px;margin:0 auto;padding:64px 28px 100px;position:relative;z-index:2;}
+.land-eyebrow{display:flex;align-items:center;gap:10px;text-transform:uppercase;letter-spacing:.14em;font-size:12px;color:var(--orange);font-weight:700;margin-bottom:28px;}
+.land-eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--orange);}
+.land-title{font-size:clamp(38px,6.6vw,72px);line-height:1.05;font-weight:600;margin:0 0 22px;max-width:820px;}
+.land-title em{font-style:italic;font-weight:500;color:var(--orange);}
+.land-sub{font-size:18px;line-height:1.6;color:rgba(237,239,246,0.72);max-width:560px;margin:0 0 42px;}
+.land-cta-row{display:flex;align-items:center;gap:22px;flex-wrap:wrap;margin-bottom:80px;}
+.btn-primary{background:var(--orange);color:var(--navy-3);border:none;padding:16px 30px;border-radius:4px;font-weight:700;font-size:15px;display:inline-flex;align-items:center;gap:10px;transition:transform .15s ease, background .15s ease;}
+.btn-primary:hover{background:#FFB84A;transform:translateY(-1px);}
+.land-cta-note{font-size:13px;color:rgba(237,239,246,0.5);}
+.route{border-top:1px solid rgba(237,239,246,0.15);padding-top:44px;}
+.route-label{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:rgba(237,239,246,0.5);margin-bottom:26px;}
+.route-track{position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:6px;}
+.route-track::before{content:'';position:absolute;top:9px;left:14px;right:14px;height:2px;background:repeating-linear-gradient(90deg, rgba(245,165,34,0.55) 0 10px, transparent 10px 20px);}
+.route-stop{position:relative;z-index:1;flex:1;text-align:left;}
+.route-pin{width:19px;height:19px;border-radius:50%;background:var(--navy-2);border:2px solid var(--orange-dim);margin-bottom:14px;}
+.route-mile{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--orange);margin-bottom:6px;}
+.route-name{font-size:14px;font-weight:600;color:#EDEFF6;max-width:130px;line-height:1.3;}
+.route-desc{font-size:12.5px;color:rgba(237,239,246,0.5);max-width:140px;line-height:1.5;margin-top:6px;}
+@media (max-width:820px){.route-track{flex-direction:column;gap:22px;}.route-track::before{display:none;}.route-desc{max-width:none;}}
+
+/* ============ APP SHELL ============ */
+#app{min-height:100vh;background:var(--app-bg);}
+.hud{background:var(--navy-3);color:#EDEFF6;display:flex;align-items:center;justify-content:space-between;padding:9px 22px;gap:20px;flex-wrap:wrap;border-bottom:2px solid var(--orange);position:sticky;top:0;z-index:60;font-size:12px;}
+.hud-left{display:flex;align-items:center;gap:14px;}
+.hud-tag{background:var(--orange);color:var(--navy-3);font-weight:800;font-size:10px;letter-spacing:.08em;padding:3px 8px;border-radius:3px;text-transform:uppercase;}
+.hud-stop{color:rgba(237,239,246,0.65);}
+.hud-stop b{color:#EDEFF6;font-weight:600;}
+.hud-right{display:flex;align-items:center;gap:18px;}
+.odometer{display:flex;align-items:center;gap:8px;background:#141B30;border:1px solid rgba(245,165,34,0.35);padding:5px 12px;border-radius:4px;}
+.odometer .label{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:rgba(237,239,246,0.45);}
+.odometer .digits{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:var(--orange);letter-spacing:2px;}
+.hud-progress{color:rgba(237,239,246,0.55);font-family:'IBM Plex Mono',monospace;}
+
+/* Sierra chrome — utility bar */
+.sierra-utility{background:var(--navy-1);display:flex;align-items:center;gap:18px;padding:11px 22px;flex-wrap:wrap;}
+.s-logo{width:34px;height:34px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;color:var(--navy-3);font-family:'Fraunces',serif;font-weight:700;font-size:16px;flex-shrink:0;}
+.s-search{display:flex;align-items:center;background:#fff;border-radius:20px;overflow:hidden;flex:0 1 260px;min-width:160px;}
+.s-search input{border:none;outline:none;padding:8px 14px;font-size:13px;flex:1;min-width:0;color:var(--navy-3);}
+.s-search button{background:var(--orange);border:none;width:32px;height:32px;border-radius:50%;margin:2px;display:flex;align-items:center;justify-content:center;color:var(--navy-3);flex-shrink:0;}
+.ask-sierra{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:7px 14px;border-radius:20px;font-size:12.5px;font-weight:600;flex-shrink:0;}
+.ask-sierra .kbd{background:rgba(255,255,255,0.22);padding:2px 6px;border-radius:3px;font-size:10px;font-family:'IBM Plex Mono',monospace;}
+.s-util-right{display:flex;align-items:center;gap:16px;margin-left:auto;color:#fff;}
+.s-ic{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;background:rgba(255,255,255,0.08);flex-shrink:0;}
+.s-ic:hover{background:rgba(255,255,255,0.18);}
+.s-inbox{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;position:relative;cursor:pointer;}
+.s-inbox .badge{background:var(--orange);color:var(--navy-3);font-size:9.5px;font-weight:800;padding:1px 5px;border-radius:8px;}
+.s-avatar{width:32px;height:32px;border-radius:50%;background:var(--orange-dim);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;cursor:pointer;}
+
+/* Sierra chrome — nav tabs */
+.sierra-nav{background:var(--navy-2);display:flex;padding:0 22px;flex-wrap:wrap;}
+.snav-tab{background:none;border:none;color:rgba(237,239,246,0.7);font-weight:700;font-size:12.5px;letter-spacing:.03em;padding:13px 18px;border-bottom:3px solid transparent;text-transform:uppercase;}
+.snav-tab.active{color:#fff;border-bottom-color:var(--orange);}
+.snav-tab:hover{color:#fff;}
+
+.app-body{display:flex;min-height:calc(100vh - 55px);}
+.main-wrap{flex:1;display:flex;min-width:0;}
+.main{flex:1;padding:26px 30px 80px;min-width:0;}
+.coach{width:310px;flex-shrink:0;background:var(--white);border-left:1px solid var(--line);padding:22px 22px 40px;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.coach-eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--orange-dim);font-weight:700;margin-bottom:6px;}
+.coach h3{font-size:19px;margin:0 0 10px;}
+.coach-copy{font-size:13.5px;line-height:1.6;color:var(--slate);margin-bottom:18px;}
+.task{display:flex;gap:11px;padding:12px 0;border-top:1px solid var(--line);}
+.task:first-of-type{border-top:none;}
+.task-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--slate);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;}
+.task.done .task-check{background:var(--teal);border-color:var(--teal);color:#fff;}
+.task.active .task-check{border-color:var(--orange);box-shadow:0 0 0 4px rgba(245,165,34,0.15);}
+.task-body .t-title{font-size:13.5px;font-weight:600;line-height:1.4;}
+.task.done .t-title{color:var(--slate);text-decoration:line-through;text-decoration-color:rgba(91,103,116,0.5);}
+.task-body .t-hint{font-size:12px;color:var(--slate);margin-top:3px;line-height:1.5;}
+.coach-btn{margin-top:16px;width:100%;background:var(--navy-2);color:#fff;border:none;border-radius:4px;padding:12px;font-weight:700;font-size:13px;}
+.coach-btn:disabled{opacity:.35;cursor:not-allowed;}
+.coach-btn:not(:disabled):hover{background:var(--navy-3);}
+
+.pulse{position:relative;}
+.pulse::after{content:'';position:absolute;inset:-4px;border:2px solid var(--orange);border-radius:6px;animation:pulseGlow 1.4s ease-in-out infinite;pointer-events:none;}
+@keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(245,165,34,0.35);}50%{box-shadow:0 0 0 7px rgba(245,165,34,0);}}
+
+/* ============ SHARED UI ============ */
+.card{background:var(--white);border:1px solid var(--line);border-radius:6px;}
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+.section-head h2{font-size:25px;margin:0;color:var(--navy-3);}
+.section-sub{color:var(--slate);font-size:13.5px;margin-top:4px;}
+.pill{display:inline-flex;align-items:center;padding:3px 9px;border-radius:4px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;}
+.pill.type{background:var(--navy-1);color:#fff;}
+.pill.hot{background:#FCEBE5;color:var(--rust);}
+.pill.warm{background:#FCF1DC;color:var(--orange-dim);}
+.pill.new{background:var(--orange);color:var(--navy-3);}
+.pill.nurture{background:#E7E9EF;color:var(--slate);}
+.pill.closed{background:#E1EFEA;color:var(--teal);}
+.pill.under-contract{background:#E4E8F2;color:var(--navy-1);}
+
+.orient-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:28px;margin-top:22px;}
+@media(max-width:900px){.orient-grid{grid-template-columns:1fr;}}
+.orient-card{padding:22px;}
+.orient-card h3{font-size:16px;margin:0 0 8px;color:var(--navy-3);}
+.orient-card p{font-size:13.5px;line-height:1.65;color:var(--slate);margin:0;}
+.orient-list{list-style:none;padding:0;margin:14px 0 0;}
+.orient-list li{font-size:13.5px;padding:9px 0;border-top:1px solid var(--line);color:var(--navy-3);display:flex;gap:10px;}
+.orient-list li:first-child{border-top:none;}
+.orient-list b{font-weight:800;color:var(--orange-dim);min-width:20px;}
+
+/* Dashboard */
+.dash-title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.dash-title-row h1{font-size:24px;margin:0;color:var(--navy-3);font-family:'Fraunces',serif;font-weight:600;}
+.mgr-toggle{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--navy-1);font-weight:600;}
+.toggle{width:38px;height:21px;border-radius:20px;background:var(--line);position:relative;border:none;flex-shrink:0;}
+.toggle.on{background:var(--teal);}
+.toggle .knob{position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:white;transition:left .15s ease;box-shadow:0 1px 3px rgba(0,0,0,0.3);}
+.toggle.on .knob{left:19px;}
+
+.stat-row{display:flex;gap:16px;margin-bottom:28px;flex-wrap:wrap;}
+.stat-card{flex:1;min-width:200px;display:flex;align-items:center;gap:16px;padding:20px 22px;}
+.stat-ic{width:38px;height:38px;flex-shrink:0;color:var(--navy-1);display:flex;align-items:center;justify-content:center;font-size:26px;}
+.stat-num{font-size:28px;font-weight:700;color:var(--navy-3);font-family:'IBM Plex Mono',monospace;}
+.stat-lab{font-size:12.5px;color:var(--slate);line-height:1.3;margin-left:6px;}
+
+.leads-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.leads-head h3{font-size:17px;margin:0;color:var(--navy-3);text-transform:uppercase;letter-spacing:.02em;}
+.leads-head .count{color:var(--orange-dim);}
+.leads-head .view-all{font-size:12.5px;color:var(--navy-1);font-weight:600;margin-left:10px;}
+.filter-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.filter-pills{display:flex;gap:8px;flex-wrap:wrap;}
+.f-pill{border:none;padding:8px 16px;border-radius:20px;font-size:12.5px;font-weight:700;background:#E4E8F2;color:var(--navy-1);}
+.f-pill.active{background:var(--navy-2);color:#fff;}
+.select, .search-box{border:1px solid var(--line);background:var(--white);border-radius:4px;padding:9px 12px;font-size:13px;}
+
+.lead-card{padding:16px 18px;margin-bottom:12px;cursor:pointer;transition:box-shadow .12s ease, border-color .12s ease;}
+.lead-card:hover{border-color:var(--navy-1);box-shadow:var(--shadow);}
+.lc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.lc-id{display:flex;gap:12px;}
+.lc-avatar{width:38px;height:38px;border-radius:50%;background:#E4E8F2;color:var(--navy-1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.lc-name{font-weight:700;font-size:15px;color:var(--navy-3);}
+.lc-source{font-size:12px;color:var(--slate);margin-top:2px;}
+.lc-tags{display:flex;gap:6px;flex-shrink:0;}
+.lc-meta{display:flex;gap:22px;flex-wrap:wrap;font-size:12.5px;color:var(--slate);margin:12px 0 0 50px;}
+.lc-meta span{display:flex;align-items:center;gap:5px;}
+.lc-divider{border-top:1px solid var(--line);margin:12px 0 0 50px;padding-top:10px;font-size:12px;color:var(--slate);}
+.lc-agent{display:flex;align-items:center;gap:8px;margin:10px 0 0 50px;font-size:12.5px;color:var(--navy-3);font-weight:600;}
+.lc-agent-avatar{width:20px;height:20px;border-radius:50%;background:var(--navy-1);color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+tbody tr.dimmed, .lead-card.dimmed{display:none;}
+
+/* Lead detail */
+.ld-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:14px;}
+.ld-back{font-size:12.5px;color:var(--navy-1);display:flex;align-items:center;gap:6px;margin-bottom:14px;cursor:pointer;width:fit-content;font-weight:600;}
+.ld-back:hover{color:var(--navy-3);}
+.ld-identity{display:flex;gap:16px;align-items:center;}
+.avatar{width:54px;height:54px;border-radius:50%;background:var(--navy-2);color:var(--orange);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:600;font-size:20px;flex-shrink:0;}
+.ld-identity h2{margin:0 0 6px;font-size:22px;color:var(--navy-3);}
+.ld-meta{font-size:12.5px;color:var(--slate);display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.ld-actions{display:flex;gap:8px;}
+.call-btn{display:flex;align-items:center;gap:8px;background:var(--teal);color:#fff;border:none;border-radius:4px;padding:10px 16px;font-weight:700;font-size:12.5px;}
+.call-btn:hover{background:#345953;}
+.fish-menu{width:38px;height:38px;border-radius:50%;background:var(--white);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:16px;}
+
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:22px;flex-wrap:wrap;}
+.tab-btn{background:none;border:none;padding:11px 18px;font-size:13.5px;font-weight:700;color:var(--slate);border-bottom:2px solid transparent;margin-bottom:-1px;}
+.tab-btn.active{color:var(--navy-3);border-bottom-color:var(--orange);}
+.tab-btn:hover{color:var(--navy-3);}
+
+.ld-layout{display:grid;grid-template-columns:320px 1fr;gap:22px;align-items:flex-start;}
+@media(max-width:980px){.ld-layout{grid-template-columns:1fr;}}
+.ld-panel{padding:20px;}
+.ld-panel h4{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);margin:0 0 14px;}
+.kv{display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-top:1px solid var(--line);}
+.kv:first-of-type{border-top:none;}
+.kv .k{color:var(--slate);}
+.kv .v{font-weight:600;text-align:right;color:var(--navy-3);}
+
+.consent-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:13px;}
+.consent-row:first-of-type{border-top:none;}
+
+.tags-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.tag-chip{background:#E4E8F2;border:1px solid var(--line);font-size:11.5px;padding:4px 10px;border-radius:20px;font-weight:600;color:var(--navy-3);}
+.tag-add{display:flex;gap:6px;}
+.tag-add input{flex:1;border:1px solid var(--line);border-radius:4px;padding:8px 10px;font-size:12.5px;}
+.tag-add button{border:1px solid var(--navy-2);background:var(--navy-2);color:#fff;border-radius:4px;padding:0 12px;font-size:12px;font-weight:700;}
+
+.status-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line);}
+.status-row:first-of-type{border-top:none;}
+
+.timeline-toolbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.mini-btn{border:1px solid var(--line);background:var(--white);border-radius:4px;padding:7px 12px;font-size:12px;font-weight:600;}
+.mini-btn:hover{border-color:var(--orange);}
+.note-box{display:flex;gap:8px;margin-bottom:20px;}
+.note-box textarea{flex:1;border:1px solid var(--line);border-radius:4px;padding:10px 12px;font-size:13px;resize:vertical;min-height:44px;font-family:'Inter',sans-serif;}
+.note-box button{border:none;background:var(--orange);color:var(--navy-3);font-weight:700;border-radius:4px;padding:0 16px;font-size:12.5px;}
+.t-item{display:flex;gap:12px;padding:14px 0;border-top:1px solid var(--line);}
+.t-item:first-of-type{border-top:none;}
+.t-ic{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;background:#E4E8F2;}
+.t-ic.call{background:rgba(62,107,99,0.14);color:var(--teal);}
+.t-ic.email{background:rgba(245,165,34,0.18);color:var(--orange-dim);}
+.t-ic.note{background:rgba(91,103,116,0.12);color:var(--slate);}
+.t-ic.site{background:rgba(177,75,50,0.1);color:var(--rust);}
+.t-ic.text{background:rgba(70,89,155,0.14);color:var(--navy-1);}
+.t-top{display:flex;justify-content:space-between;font-size:12.5px;color:var(--slate);margin-bottom:3px;}
+.t-title2{font-weight:700;font-size:13.5px;color:var(--navy-3);}
+.t-body{font-size:13px;color:var(--navy-3);line-height:1.5;margin-top:2px;}
+
+.plan-card{padding:20px;margin-bottom:16px;}
+.plan-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.plan-top h4{margin:0;font-size:15px;color:var(--navy-3);}
+.plan-steps{list-style:none;padding:0;margin:0;}
+.plan-steps li{display:flex;gap:12px;padding:10px 0;border-top:1px dashed var(--line);font-size:13px;align-items:flex-start;}
+.plan-steps li:first-child{border-top:none;}
+.step-dot{width:9px;height:9px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+.step-dot.done{background:var(--teal);}
+.step-dot.next{background:var(--orange);}
+.step-dot.pending{background:var(--line);}
+.step-day{color:var(--slate);font-size:11.5px;min-width:56px;font-family:'IBM Plex Mono',monospace;}
+
+.prop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;}
+.prop-card{overflow:hidden;}
+.prop-img{height:120px;background:linear-gradient(135deg,var(--navy-1),var(--navy-3));display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.6);font-size:11px;letter-spacing:.08em;text-transform:uppercase;}
+.prop-body{padding:14px;}
+.prop-price{font-weight:700;font-size:15px;color:var(--navy-3);}
+.prop-addr{font-size:12.5px;color:var(--slate);margin:3px 0 8px;}
+.prop-tags{display:flex;gap:6px;flex-wrap:wrap;}
+.prop-tag{font-size:10.5px;background:#E4E8F2;padding:2px 7px;border-radius:20px;font-weight:600;}
+
+.search-card{padding:18px;margin-bottom:14px;}
+.search-card .sc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.search-card h4{margin:0;font-size:14.5px;color:var(--navy-3);}
+.crit{font-size:12.5px;color:var(--slate);}
+
+.suggest-pool{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px;}
+.pool-card{padding:12px;display:flex;gap:10px;align-items:center;cursor:pointer;}
+.pool-card.picked{border-color:var(--orange);background:rgba(245,165,34,0.08);}
+.pool-check{width:18px;height:18px;border:2px solid var(--slate);border-radius:4px;flex-shrink:0;}
+.pool-card.picked .pool-check{background:var(--orange);border-color:var(--orange);color:var(--navy-3);}
+.pool-info b{font-size:12.5px;display:block;color:var(--navy-3);}
+.pool-info span{font-size:11px;color:var(--slate);}
+
+/* dialer */
+.dial-status{font-size:12.5px;font-weight:700;color:var(--teal);}
+.dial-tabs{display:flex;gap:4px;background:var(--app-bg);border:1px solid var(--line);border-radius:6px;padding:4px;margin-bottom:18px;flex-wrap:wrap;}
+.dial-tab{flex:1;min-width:90px;background:none;border:none;padding:9px 10px;font-size:12px;font-weight:700;color:var(--slate);border-radius:4px;text-align:center;}
+.dial-tab.active{background:var(--white);color:var(--navy-3);box-shadow:0 1px 4px rgba(28,37,64,0.14);}
+.dial-tab:hover:not(.active){color:var(--navy-3);}
+.rec-banner{display:flex;align-items:center;gap:8px;background:rgba(177,75,50,0.09);border:1px solid rgba(177,75,50,0.28);color:var(--rust);font-size:12px;font-weight:600;padding:8px 12px;border-radius:4px;margin-bottom:16px;}
+.rec-banner .rec-dot{width:8px;height:8px;border-radius:50%;background:var(--rust);flex-shrink:0;animation:recPulse 1.4s infinite;}
+@keyframes recPulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+.tmpl-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+.tmpl-chip{border:1px solid var(--line);background:var(--white);border-radius:20px;padding:6px 13px;font-size:11.5px;font-weight:600;color:var(--navy-1);}
+.tmpl-chip:hover{border-color:var(--orange);background:rgba(245,165,34,0.1);}
+.vm-lib{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.vm-item{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:6px;padding:10px 14px;font-size:12.5px;}
+.vm-item .vname{font-weight:700;color:var(--navy-3);}
+.vm-item .vlen{color:var(--slate);font-family:'IBM Plex Mono',monospace;font-size:11px;margin-left:8px;}
+.xfer-list{display:flex;flex-direction:column;gap:8px;margin-bottom:6px;}
+.xfer-row{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:6px;padding:10px 14px;}
+.xfer-who{display:flex;align-items:center;gap:10px;font-size:12.5px;font-weight:600;color:var(--navy-3);}
+.xfer-dot{width:8px;height:8px;border-radius:50%;background:var(--teal);}
+.xfer-dot.busy{background:var(--slate);}
+.dialer-id-card{display:flex;align-items:center;gap:12px;background:var(--app-bg);border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin-top:14px;}
+.dialer-id-card .did-num{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:14px;color:var(--navy-3);}
+.dialer-id-card .did-lab{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);margin-bottom:2px;}
+
+/* tags manager */
+.tag-chip{display:inline-flex;align-items:center;gap:5px;}
+.tag-chip .tswatch{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.tag-chip .tlock{font-size:10px;opacity:.65;}
+.tag-chip .tx{cursor:pointer;opacity:.55;font-weight:800;margin-left:2px;}
+.tag-chip .tx:hover{opacity:1;}
+.tags-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.tags-mgr-link{font-size:11.5px;font-weight:700;color:var(--navy-1);cursor:pointer;}
+.tags-mgr-link:hover{color:var(--navy-3);text-decoration:underline;}
+.tags-mgr-panel{border:1px solid var(--line);border-radius:6px;padding:14px;margin-top:12px;background:var(--app-bg);}
+.tmgr-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.tmgr-row input, .tmgr-row select{border:1px solid var(--line);border-radius:4px;padding:7px 10px;font-size:12px;flex:1;min-width:120px;}
+.tmgr-list{display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;}
+.tmgr-item{display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--line);border-radius:5px;padding:8px 12px;font-size:12px;}
+.tmgr-item .tswatch{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.tmgr-item .tname{font-weight:700;color:var(--navy-3);flex:1;}
+.tmgr-item .tcat{color:var(--slate);font-size:11px;}
+.tmgr-item .tcount{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--navy-1);font-weight:700;}
+.color-swatch-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.color-swatch{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;}
+.color-swatch.selected{border-color:var(--navy-3);}
+
+/* lead source reporting / transactions */
+.txn-item{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:5px;padding:9px 12px;font-size:12.5px;margin-bottom:8px;}
+.txn-item .tamt{font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--teal);}
+.txn-form{border:1px dashed var(--orange-dim);border-radius:6px;padding:14px;margin-top:12px;background:rgba(245,165,34,0.06);}
+.txn-form .frow{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.txn-form input, .txn-form select{border:1px solid var(--line);border-radius:4px;padding:8px 10px;font-size:12.5px;flex:1;min-width:130px;}
+
+/* ============ LEAD SUMMARY — 3 COLUMN MATCH ============ */
+.sum-grid{display:grid;grid-template-columns:250px 1fr 250px;gap:18px;align-items:flex-start;}
+@media(max-width:1180px){.sum-grid{grid-template-columns:1fr;}}
+
+/* profile card (left) */
+.pf-card{background:var(--white);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
+.pf-band{background:var(--profile-band);padding:20px 18px 16px;}
+.pf-avatar{width:52px;height:52px;border-radius:50%;background:#C9D0E4;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--navy-2);font-size:18px;margin-bottom:10px;}
+.pf-name{font-size:16px;font-weight:700;color:var(--navy-3);margin-bottom:4px;}
+.pf-source{font-size:12px;color:var(--slate);}
+.pf-source a, .pf-link{color:var(--link-blue);font-weight:600;cursor:pointer;}
+.pf-link:hover{text-decoration:underline;}
+.pf-pills{display:flex;gap:6px;margin-top:12px;}
+.pf-pill{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:3px 9px;border-radius:4px;}
+.pf-pill.buy{background:var(--navy-2);color:#fff;}
+.pf-pill.status{background:var(--orange);color:var(--navy-3);cursor:pointer;border:none;}
+.pf-body{padding:16px 18px;}
+.pf-sec-lab{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--slate);font-weight:700;margin:16px 0 8px;}
+.pf-sec-lab:first-child{margin-top:0;}
+.pf-row{display:flex;justify-content:space-between;align-items:flex-start;font-size:12.5px;padding:7px 0;border-top:1px solid var(--line);gap:10px;}
+.pf-row:first-of-type{border-top:none;}
+.pf-row .pk{color:var(--slate);flex-shrink:0;}
+.pf-row .pv{color:var(--navy-3);font-weight:600;text-align:right;}
+.pf-agent-tag{font-size:9px;font-weight:800;color:var(--slate);background:var(--app-bg);border-radius:3px;padding:1px 5px;margin-right:5px;}
+.pf-phone-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--line);}
+.pf-ic-circle{width:24px;height:24px;border-radius:50%;background:var(--app-bg);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+.pf-ic-circle.verified{background:rgba(47,168,79,0.14);color:var(--verified-green);}
+.pf-phone-main{font-weight:700;color:var(--navy-3);font-size:13px;}
+.pf-sub-link{font-size:11px;color:var(--slate);cursor:pointer;}
+.pf-consent-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid var(--line);}
+.pf-consent-history{font-size:10.5px;background:var(--app-bg);border-radius:12px;padding:3px 10px;color:var(--slate);font-weight:600;cursor:pointer;}
+
+/* history feed (middle) */
+.hist-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.hist-title{font-size:13px;font-weight:800;color:var(--navy-3);text-transform:uppercase;letter-spacing:.05em;}
+.hist-count{color:var(--slate);font-weight:600;margin-left:4px;}
+.hist-filters{display:flex;gap:14px;align-items:center;font-size:12px;color:var(--slate);}
+.hist-filters span{cursor:pointer;}
+.hist-filters span:hover{color:var(--navy-3);}
+.hist-card{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:12px;}
+.hist-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+.hist-card-title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:var(--navy-3);}
+.hist-ic{width:20px;height:20px;border-radius:50%;background:var(--app-bg);color:var(--navy-1);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+.hist-card-meta{font-size:11px;color:var(--slate);display:flex;align-items:center;gap:10px;}
+.hist-card-body{font-size:12.5px;color:var(--link-blue);line-height:1.5;}
+.hist-quicklog{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px;}
+
+/* right sidebar */
+.side-card{background:var(--white);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px;}
+.side-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.side-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--navy-3);}
+.side-add{width:22px;height:22px;border-radius:50%;background:var(--app-bg);color:var(--link-blue);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;cursor:pointer;flex-shrink:0;}
+.side-add:hover{background:var(--line);}
+.applied-toggle{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--slate);cursor:pointer;margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;}
+.summ-tag-chip{display:inline-flex;align-items:center;gap:5px;background:var(--app-bg);border-radius:14px;padding:4px 10px 4px 8px;font-size:11.5px;font-weight:600;color:var(--navy-3);margin:0 6px 6px 0;}
+.summ-tag-chip .tx2{color:var(--rust);cursor:pointer;font-weight:800;}
+.tag-history-link{display:block;font-size:11px;color:var(--link-blue);font-weight:600;cursor:pointer;margin-top:4px;}
+.data-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px 8px;}
+.data-cell .dnum{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:15px;color:var(--navy-3);}
+.data-cell .dlab{font-size:10.5px;color:var(--slate);margin-top:2px;line-height:1.25;}
+.recent-date{font-size:11px;color:var(--slate);display:flex;justify-content:space-between;margin-bottom:4px;}
+.recent-cat{font-weight:700;font-size:13px;color:var(--navy-3);}
+.recent-count{font-size:11.5px;color:var(--slate);}
+.pa-tabs{display:flex;gap:10px;font-size:11px;font-weight:700;color:var(--slate);}
+.pa-tabs span{cursor:pointer;}
+.pa-tabs span.active{color:var(--link-blue);}
+.pa-table{width:100%;font-size:11px;border-collapse:collapse;margin-top:8px;}
+.pa-table th{text-align:left;color:var(--slate);font-weight:700;padding-bottom:6px;border-bottom:1px solid var(--line);}
+.pa-table td{padding:7px 0;border-bottom:1px solid var(--line);color:var(--navy-3);}
+.pa-table tr:last-child td{border-bottom:none;}
+
+/* funnel */
+.funnel-row{display:grid;grid-template-columns:150px 1fr 50px;align-items:center;gap:14px;padding:10px 0;border-top:1px solid var(--line);cursor:pointer;}
+.funnel-row:first-of-type{border-top:none;}
+.funnel-row:hover .funnel-bar{background:var(--orange-dim);}
+.funnel-label{font-size:13px;font-weight:600;color:var(--navy-3);}
+.funnel-track{height:10px;background:#E4E8F2;border-radius:20px;overflow:hidden;}
+.funnel-bar{height:100%;background:var(--navy-1);border-radius:20px;transition:width .3s ease;}
+.funnel-count{font-size:13px;text-align:right;color:var(--navy-3);}
+.funnel-detail{font-size:12.5px;color:var(--slate);padding:0 0 14px 164px;margin-top:-4px;}
+@media(max-width:600px){.funnel-detail{padding-left:0;}}
+.score-row{display:flex;justify-content:center;gap:40px;margin:24px 0;flex-wrap:wrap;}
+.score-item .num{font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:600;color:var(--navy-3);}
+.score-item .lab{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--slate);margin-top:4px;}
+
+/* content sub-tabs */
+.subtabs{display:flex;gap:8px;margin-bottom:18px;}
+.subtab{border:1px solid var(--line);background:var(--white);padding:8px 16px;border-radius:20px;font-size:12.5px;font-weight:700;color:var(--navy-1);}
+.subtab.active{background:var(--navy-2);color:#fff;border-color:var(--navy-2);}
+
+.roster-row{display:grid;grid-template-columns:40px 1.4fr 1fr 1fr 1fr;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line);font-size:13px;}
+.roster-row:first-of-type{border-top:none;}
+.roster-row.head{color:var(--slate);font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;}
+.roster-avatar{width:30px;height:30px;border-radius:50%;background:var(--navy-1);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+
+/* Leads sub-nav (Leads → Lead Ponds) */
+.leads-subnav{display:flex;gap:4px;margin:-4px 0 20px;}
+.lsub-tab{font-size:12.5px;font-weight:700;color:var(--slate);padding:6px 4px;margin-right:18px;border-bottom:2px solid transparent;cursor:pointer;}
+.lsub-tab.active{color:var(--navy-3);border-bottom-color:var(--orange);cursor:default;}
+.lsub-tab:not(.active):hover{color:var(--navy-3);}
+
+/* Lead Ponds */
+.pond-card{padding:18px 20px;margin-bottom:14px;}
+.pond-top{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;cursor:pointer;flex-wrap:wrap;}
+.pond-name{font-weight:700;font-size:15.5px;color:var(--navy-3);}
+.pond-desc{font-size:12.5px;color:var(--slate);margin-top:3px;max-width:420px;}
+.pond-counts{display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0;}
+.pcount{font-size:11px;font-weight:700;padding:5px 10px;border-radius:20px;white-space:nowrap;}
+.pcount.not{background:#E4E8F2;color:var(--navy-1);}
+.pcount.working{background:rgba(62,107,99,0.14);color:var(--teal);}
+.pcount.pending{background:#FCF1DC;color:var(--orange-dim);}
+.pond-meta{display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:var(--slate);margin-top:12px;padding-top:12px;border-top:1px solid var(--line);}
+.pond-meta b{color:var(--navy-3);font-weight:700;}
+.pond-leads{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line);}
+.pond-lead-row{display:grid;grid-template-columns:1.4fr 130px 1fr auto;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13px;}
+.pond-lead-row:first-of-type{border-top:none;}
+.pond-agent{font-size:12px;color:var(--slate);}
+.pond-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;}
+@media(max-width:760px){.pond-lead-row{grid-template-columns:1fr;gap:6px;} .pond-actions{justify-content:flex-start;}}
+.pond-add-select{border:1px solid var(--line);background:var(--white);border-radius:4px;padding:9px 12px;font-size:12.5px;font-weight:600;color:var(--navy-1);}
+
+.hint-banner{background:rgba(245,165,34,0.12);border:1px solid rgba(245,165,34,0.4);border-radius:5px;padding:12px 16px;font-size:13px;color:var(--orange-dim);margin-bottom:18px;display:flex;gap:10px;align-items:flex-start;}
+
+/* toast */
+#toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy-3);color:#EDEFF6;padding:13px 22px;border-radius:5px;font-size:13.5px;border-left:4px solid var(--orange);opacity:0;pointer-events:none;transition:all .25s ease;z-index:200;box-shadow:var(--shadow);max-width:90vw;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* quiz / cert */
+.quiz-card{padding:24px;margin-bottom:16px;}
+.quiz-q{font-weight:700;font-size:15px;margin-bottom:14px;color:var(--navy-3);}
+.quiz-opt{display:block;width:100%;text-align:left;background:var(--white);border:1px solid var(--line);border-radius:5px;padding:12px 16px;font-size:13.5px;margin-bottom:9px;}
+.quiz-opt:hover{border-color:var(--orange);}
+.quiz-opt.correct{border-color:var(--teal);background:rgba(62,107,99,0.1);}
+.quiz-opt.wrong{border-color:var(--rust);background:rgba(177,75,50,0.08);}
+.quiz-opt[disabled]{cursor:default;}
+.quiz-fb{font-size:12.5px;color:var(--slate);margin-top:6px;display:none;}
+.quiz-fb.show{display:block;}
+.cert{padding:48px;text-align:center;border:2px solid var(--orange);position:relative;background:var(--white);}
+.cert::before{content:'';position:absolute;inset:8px;border:1px solid rgba(245,165,34,0.4);}
+.cert-eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--orange-dim);font-weight:700;margin-bottom:10px;}
+.cert h2{font-size:32px;margin:0 0 6px;color:var(--navy-3);}
+.cert-name-input{font-family:'Fraunces',serif;font-style:italic;font-size:22px;text-align:center;border:none;border-bottom:2px solid var(--orange);background:transparent;padding:6px;min-width:280px;color:var(--navy-3);}
+.cert-meta{font-size:12.5px;color:var(--slate);margin-top:18px;}
+</style>
+</head>
+<body>
+
+<!-- SkillCloud Test Drive back strip (added for the Academy site) -->
+<div style="background:#0a2647;color:#fff;display:flex;align-items:center;gap:12px;padding:0 22px;height:36px;font-size:12.5px;font-family:'Inter',sans-serif;position:relative;z-index:70">
+  <a href="index.html#test-drive" style="color:#d3e2f0;font-weight:700;text-decoration:none">&larr; Test Drive</a>
+  <span style="width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.35)"></span>
+  <span style="font-weight:800">Zierra <b style="color:#17c3d4">Test Drive</b></span>
+  <span style="color:#9fb4c9;margin-left:auto;font-size:12px">Practice copy only. Nothing here is saved or connected to a real account.</span>
+</div>
+
+<!-- ============ LANDING ============ -->
+<div id="landing" class="screen active">
+  <div class="land-wrap">
+    <div class="land-eyebrow"><span class="dot"></span>New Hire Onboarding · Sierra Interactive Simulator</div>
+    <h1 class="land-title">Before you drive it<br>with a real lead, <em>take it for a spin.</em></h1>
+    <p class="land-sub">This is a hands-on test drive of Sierra Interactive — the CRM your team runs on every day. Built to match the real dashboard and navigation, so what you practice here transfers directly. No real leads, no real emails, no way to break anything.</p>
+    <div class="land-cta-row">
+      <button class="btn-primary" onclick="startDrive()">Start the test drive →</button>
+      <span class="land-cta-note">~18 minutes · 8 stops · ends with your license to drive</span>
+    </div>
+    <div class="route">
+      <div class="route-label">Your route today</div>
+      <div class="route-track" id="landingRoute"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="screen">
+  <div class="hud">
+    <div class="hud-left">
+      <span class="hud-tag">Test Drive</span>
+      <span class="hud-stop">Stop <b id="stopNum">1</b> of <b id="stopTotal">8</b> — <b id="stopName">Orientation</b></span>
+    </div>
+    <div class="hud-right">
+      <span class="hud-progress" id="tbProgress">0 / 10 tasks</span>
+      <div class="odometer"><span class="label">Odometer</span><span class="digits mono" id="odoDigits">000000</span><span class="label">mi</span></div>
+    </div>
+  </div>
+
+  <div class="sierra-utility">
+    <div class="s-logo">S</div>
+    <div class="s-search"><input placeholder="Search Leads" disabled><button>🔍</button></div>
+    <div class="ask-sierra">💡 Ask Sierra <span class="kbd">Ctrl + K</span></div>
+    <div class="s-util-right">
+      <div class="s-ic" title="Resources">📖</div>
+      <div class="s-ic" onclick="goFreeform('users')" title="Users">👥</div>
+      <div class="s-ic" onclick="goFreeform('settings')" title="Account Settings">⚙️</div>
+      <div class="s-inbox" title="Inbox"><span style="font-size:16px;">🔔</span> Inbox <span class="badge">12</span></div>
+      <div class="s-avatar" onclick="goFreeform('settings')">VA</div>
+    </div>
+  </div>
+  <div class="sierra-nav" id="sierraNav"></div>
+
+  <div class="app-body">
+    <div class="main-wrap">
+      <div class="main" id="main"></div>
+      <div class="coach" id="coach"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ================= DATA ================= */
+const leads = [
+  {id:1, name:"Marcus Whitfield", initials:"MW", status:"Hot", type:"Buy",
+    price:"$450K – $550K", source:"Zillow Preferred", area:"Riverside Heights, CA",
+    phone:"(555) 213-9087", email:"marcus.whitfield@example.com",
+    registered:"7/2/2026 09:14 AM", landing:"/riverside-heights-homes", lastActive:"2 hours ago",
+    agent:"Jordan Blake", tags:["First-Time Buyer"],
+    buyAgent:"Jordan Blake", sellAgent:"None", lender:"None", collaborators:"None",
+    connectedPlatform:"Follow Up Boss", emailVerified:true,
+    stats:{avgPrice:"$492K", visits:4, properties:3, inquiries:1, favorites:1, ealerts:1}, zip:"85234",
+    recentActivity:{date:"Wed, Jul 8, 2026 9:14 AM", location:"Riverside Heights, AZ", category:"Properties", count:3},
+    consent:{text:true, email:true, call:false},
+    timeline:[
+      {type:"site", who:"System", when:"2 hrs ago", body:"Saved a listing at 214 Alder Ct — $489,000."},
+      {type:"email", who:"Sierra AI", when:"1 day ago", body:"Sent: \"3 new matches near Riverside Heights.\" Opened, 1 click."},
+      {type:"note", who:"You", when:"3 days ago", body:"Left a voicemail introducing myself, mentioned open house this weekend."}
+    ],
+    plan:{name:"New Buyer Lead — 12 Touch", status:"Active",
+      steps:[
+        {label:"Day 0 — Welcome text", day:"Day 0", state:"done"},
+        {label:"Day 0 — Intro email", day:"Day 0", state:"done"},
+        {label:"Day 3 — Neighborhood guide email", day:"Day 3", state:"next"},
+        {label:"Day 5 — Check-in call (manual)", day:"Day 5", state:"pending"},
+        {label:"Day 9 — New listings digest", day:"Day 9", state:"pending"}
+      ]},
+    properties:[
+      {addr:"214 Alder Ct", price:"$489,000", tag:"Saved"},
+      {addr:"88 Windham Row", price:"$462,500", tag:"Viewed"},
+      {addr:"1220 Birchwood Ln", price:"$525,000", tag:"Info Request"}
+    ],
+    searches:[{name:"Riverside Heights, 3+bd", crit:"$400K–$550K · 3 bed · 2 bath · Riverside Heights"}]
+  },
+  {id:2, name:"Priya Anand", initials:"PA", status:"Warm", type:"Sell",
+    price:"Est. $610K", source:"Facebook Ad", area:"Maple Crest, CA",
+    phone:"(555) 402-7761", email:"priya.anand@example.com",
+    registered:"6/28/2026 03:40 PM", landing:"/whats-my-home-worth", lastActive:"1 day ago",
+    agent:"Unassigned", tags:["Seller Lead","Downsizing"],
+    buyAgent:"None", sellAgent:"Jordan Blake", lender:"None", collaborators:"Marisol Vega (ISA)",
+    connectedPlatform:"Follow Up Boss", emailVerified:true,
+    stats:{avgPrice:"$610K", visits:2, properties:1, inquiries:0, favorites:0, ealerts:0}, zip:"85251",
+    recentActivity:{date:"Tue, Jul 7, 2026 3:40 PM", location:"Maple Crest, AZ", category:"Home Valuation", count:1},
+    consent:{text:true, email:true, call:true},
+    timeline:[
+      {type:"call", who:"You", when:"1 day ago", body:"Talked for 8 min. Considering listing after kids finish school in June."},
+      {type:"site", who:"System", when:"2 days ago", body:"Requested a home valuation report for 44 Maple Crest Dr."}
+    ],
+    plan:{name:"Seller Nurture — Home Value", status:"Active",
+      steps:[
+        {label:"Day 0 — Valuation report sent", day:"Day 0", state:"done"},
+        {label:"Day 2 — Market update email", day:"Day 2", state:"done"},
+        {label:"Day 7 — Call to discuss timeline", day:"Day 7", state:"next"},
+        {label:"Day 14 — CMA follow-up", day:"Day 14", state:"pending"}
+      ]},
+    properties:[{addr:"44 Maple Crest Dr (own home)", price:"Est. $610,000", tag:"Valuation"}],
+    searches:[]
+  },
+  {id:3, name:"Devon Ruiz", initials:"DR", status:"New", type:"Buy",
+    price:"$300K – $360K", source:"Website Registration", area:"Downtown Loft District, CA",
+    phone:"(555) 118-4420", email:"devon.ruiz@example.com",
+    registered:"7/8/2026 09:14 AM", landing:"/downtown-condos", lastActive:"5 minutes ago",
+    agent:"Unassigned", tags:[],
+    buyAgent:"Unassigned", sellAgent:"None", lender:"None", collaborators:"None",
+    connectedPlatform:"Not Connected", emailVerified:false,
+    stats:{avgPrice:"$339K", visits:1, properties:1, inquiries:0, favorites:0, ealerts:1}, zip:"85004",
+    recentActivity:{date:"Wed, Jul 8, 2026 9:14 AM", location:"Downtown Loft District, AZ", category:"Properties", count:2},
+    consent:{text:false, email:true, call:false},
+    timeline:[{type:"site", who:"System", when:"5 min ago", body:"Registered on site and viewed 2 condo listings downtown."}],
+    plan:{name:"No plan assigned yet", status:"Not Started", steps:[]},
+    properties:[{addr:"310 Union Lofts #4B", price:"$339,000", tag:"Viewed"}],
+    searches:[{name:"Downtown Condos", crit:"$300K–$360K · 1+ bed · Downtown Loft District"}]
+  },
+  {id:4, name:"Helen Brooks", initials:"HB", status:"Nurture", type:"Buy",
+    price:"$700K+", source:"Open House Sign-In", area:"Lakeview Estates, CA",
+    phone:"(555) 998-3312", email:"helen.brooks@example.com",
+    registered:"3/14/2026 11:02 AM", landing:"/open-house/812-lakeview", lastActive:"3 weeks ago",
+    agent:"Jordan Blake", tags:["Luxury","Long-Term"],
+    buyAgent:"Jordan Blake", sellAgent:"None", lender:"Dana Cho (Preferred Lender)", collaborators:"None",
+    connectedPlatform:"Follow Up Boss", emailVerified:true,
+    stats:{avgPrice:"$700K", visits:1, properties:0, inquiries:0, favorites:0, ealerts:0}, zip:"85253",
+    recentActivity:{date:"Fri, Jun 19, 2026 11:02 AM", location:"Lakeview Estates, AZ", category:"Open House", count:1},
+    consent:{text:false, email:true, call:true},
+    timeline:[{type:"email", who:"Sierra AI", when:"3 weeks ago", body:"Sent monthly market update. No opens in 60 days."}],
+    plan:{name:"Long-Term Drip", status:"Active", steps:[{label:"Monthly market update", day:"Monthly", state:"next"}]},
+    properties:[], searches:[{name:"Lakeview Luxury", crit:"$700K+ · 4+ bed · Lakeview Estates"}]
+  },
+  {id:5, name:"Sam Okafor", initials:"SO", status:"Hot", type:"Buy",
+    price:"$380K – $420K", source:"Referral", area:"Cedar Grove, CA",
+    phone:"(555) 671-2298", email:"sam.okafor@example.com",
+    registered:"7/5/2026 08:00 AM", landing:"/cedar-grove-homes", lastActive:"38 minutes ago",
+    agent:"Unassigned", tags:["Pre-Approved"],
+    buyAgent:"Jordan Blake", sellAgent:"None", lender:"Dana Cho (Preferred Lender)", collaborators:"None",
+    connectedPlatform:"Follow Up Boss", emailVerified:true,
+    stats:{avgPrice:"$399K", visits:5, properties:1, inquiries:1, favorites:1, ealerts:1}, zip:"85355",
+    recentActivity:{date:"Wed, Jul 8, 2026 6:42 AM", location:"Cedar Grove, AZ", category:"Showing Request", count:1},
+    consent:{text:true, email:true, call:true},
+    timeline:[
+      {type:"call", who:"You", when:"40 min ago", body:"Pre-approved for $420K. Wants a showing on Elm St this weekend."},
+      {type:"note", who:"You", when:"38 min ago", body:"Very motivated — relocating for work, needs to close in 45 days."}
+    ],
+    plan:{name:"Hot Buyer — Fast Track", status:"Active",
+      steps:[{label:"Day 0 — Showing scheduled", day:"Day 0", state:"done"},{label:"Day 1 — Send comparable listings", day:"Day 1", state:"next"}]},
+    properties:[{addr:"71 Elm St", price:"$399,900", tag:"Showing Requested"}],
+    searches:[{name:"Cedar Grove Fast Move", crit:"$380K–$420K · Cedar Grove · Move-in ready"}]
+  },
+  {id:6, name:"Tanya Fitch", initials:"TF", status:"Warm", type:"Buy",
+    price:"$500K – $600K", source:"Google Ads", area:"North Ridge, CA",
+    phone:"(555) 803-5541", email:"tanya.fitch@example.com",
+    registered:"6/30/2026 01:12 PM", landing:"/north-ridge-homes", lastActive:"6 hours ago",
+    agent:"Jordan Blake", tags:["Relocation"],
+    buyAgent:"Jordan Blake", sellAgent:"None", lender:"None", collaborators:"None",
+    connectedPlatform:"Not Connected", emailVerified:true,
+    stats:{avgPrice:"$549K", visits:2, properties:1, inquiries:0, favorites:1, ealerts:0}, zip:"85268",
+    recentActivity:{date:"Wed, Jul 8, 2026 1:12 AM", location:"North Ridge, AZ", category:"Email Engagement", count:1},
+    consent:{text:true, email:true, call:false},
+    timeline:[{type:"email", who:"You", when:"6 hrs ago", body:"Sent a curated list of 4 North Ridge homes matching her criteria."}],
+    plan:{name:"New Buyer Lead — 12 Touch", status:"Active",
+      steps:[{label:"Day 0 — Welcome email", day:"Day 0", state:"done"},{label:"Day 3 — Suggested list", day:"Day 3", state:"done"},{label:"Day 6 — Follow-up call", day:"Day 6", state:"next"}]},
+    properties:[{addr:"92 North Ridge Ter", price:"$549,000", tag:"Saved"}],
+    searches:[{name:"North Ridge", crit:"$500K–$600K · North Ridge"}]
+  }
+];
+
+/* ================= TAGS MANAGER DATA ================= */
+let tagCategories = [
+  {id:"buyer-seller", name:"Buyer/Seller", color:"#46599B"},
+  {id:"priority", name:"Priority", color:"#B14B32"},
+  {id:"lifecycle", name:"Lifecycle", color:"#3E6B63"}
+];
+let tagLibrary = [
+  {name:"First-Time Buyer", category:"buyer-seller", color:"#46599B", locked:false},
+  {name:"Seller Lead", category:"buyer-seller", color:"#46599B", locked:false},
+  {name:"Investor", category:"buyer-seller", color:"#46599B", locked:false},
+  {name:"Pre-Approved", category:"lifecycle", color:"#3E6B63", locked:false},
+  {name:"Downsizing", category:"lifecycle", color:"#3E6B63", locked:false},
+  {name:"Relocation", category:"lifecycle", color:"#3E6B63", locked:false},
+  {name:"Long-Term", category:"lifecycle", color:"#3E6B63", locked:false},
+  {name:"Hot Lead", category:"priority", color:"#B14B32", locked:true},
+  {name:"Luxury", category:"priority", color:"#F5A522", locked:false}
+];
+function tagMeta(name){
+  return tagLibrary.find(t=>t.name===name) || {name, category:null, color:"#5B6774", locked:false};
+}
+function leadsWithTag(name){ return leads.filter(l=>l.tags.includes(name)).length; }
+let tagsMgrOpen = false;
+let tagsMgrSearch = "";
+let tagsMgrCategory = "";
+
+/* ================= LEAD SOURCE REPORTING DATA ================= */
+leads.forEach(l=>{ if(!l.transactions) l.transactions = []; });
+let showTxnForm = false;
+
+
+let ponds = [
+  {
+    id:"unclaimed", name:"Unclaimed Inbound",
+    description:"Nobody's claimed these yet — first agent to work one gets first shot at claiming it.",
+    agentsAccess:"All Agents", defaultManager:"Jordan Blake", timeLimitHours:4,
+    inboundAction:"Assign to next agent",
+    leads:[
+      {id:"p1", name:"Jordan Lee", source:"Zillow Preferred", state:"Not Working", agent:null},
+      {id:"p2", name:"Priya Anand", source:"Facebook Ad", state:"Pending Approval", agent:"Marisol Vega", note:"Already spoke by phone twice — she's asked for Marisol specifically."},
+      {id:"p3", name:"Casey Nguyen", source:"Google Ads", state:"Working", agent:"Chris Delgado"}
+    ]
+  },
+  {
+    id:"nurture", name:"Long-Term Nurture",
+    description:"Not ready to transact yet. Kept warm with drips until they re-engage on their own.",
+    agentsAccess:"Marisol Vega, Chris Delgado", defaultManager:"Jordan Blake", timeLimitHours:120,
+    inboundAction:"Do nothing",
+    leads:[
+      {id:"p4", name:"Riley Chen", source:"Google Ads", state:"Not Working", agent:null},
+      {id:"p5", name:"Sam Patel", source:"Open House Sign-In", state:"Working", agent:"Marisol Vega"}
+    ]
+  }
+];
+
+let pondSettings = {
+  maxWorking:10,
+  requireApproval:true,
+  allowTags:true,
+  allowAlerts:false,
+  allowBulkCallList:false,
+  contact:{call:true, text:true, email:true, onsite:true, voicemail:false},
+  incomingRouting:"broadcast" // default | broadcast | both
+};
+
+const stopsMeta = [
+  {mile:"MI 0", name:"Orientation", desc:"Know the lot before you drive.", nav:null},
+  {mile:"MI 1", name:"Leads Dashboard", desc:"Where every lead lives.", nav:"LEADS"},
+  {mile:"MI 2", name:"Lead Detail — Summary", desc:"Status, consent, tags & tasks.", nav:"LEADS"},
+  {mile:"MI 3", name:"Under the Hood", desc:"Plans, Properties, Searches, Suggest.", nav:"LEADS"},
+  {mile:"MI 4", name:"Sierra Dialer", desc:"Call, text, voicemail-drop, or transfer straight from the lead record.", nav:"LEADS"},
+  {mile:"MI 5", name:"Lead Ponds", desc:"Share leads, keep accountability.", nav:"LEADS"},
+  {mile:"MI 6", name:"Reporting", desc:"Funnel and response-time metrics.", nav:"REPORTING"},
+  {mile:"MI 7", name:"License to Drive", desc:"Show what you've learned.", nav:null}
+];
+
+const topTabs = ["LEADS","SAVED SEARCHES","LISTINGS","CONTENT","BLOG","USERS","REPORTING"];
+
+/* ================= STATE ================= */
+let currentStop = 1;
+let selectedLeadId = null;
+let activeTab = "summary";
+let dashboardFilter = "all";
+let managerView = false;
+let suggestPicks = new Set();
+let freeform = null; // savedsearches | listings | content | blog | users | settings
+let contentSub = "pages";
+let pondView = "ponds"; // ponds | settings | activity
+let openPondId = null;
+let quizIndex = 0;
+let quizScore = 0;
+
+const tasksByStop = {
+  2: [
+    {id:"filterHot", title:"Filter the dashboard to Hot leads", hint:"Use the status filter above the lead list.", done:false},
+    {id:"openLead", title:"Open Marcus Whitfield's lead record", hint:"Click his card to open the Lead Detail Page.", done:false}
+  ],
+  3: [
+    {id:"toggleConsent", title:"Turn on call consent for Marcus", hint:"In the Summary tab, flip the Call toggle under Communication Preferences.", done:false},
+    {id:"addTag", title:"Add the tag \u201CPre-Approved\u201D", hint:"Type it into the tag field and click Add.", done:false},
+    {id:"logNote", title:"Log a note in the Communication Timeline", hint:"Type anything in the note box and click Log.", done:false},
+    {id:"changeStatus", title:"Move Marcus's status to Under Contract", hint:"Use the Pipeline Status dropdown in the sidebar.", done:false},
+    {id:"addTask", title:"Create a follow-up task", hint:"Fill in the task field under Pipeline Status and click Create Task.", done:false}
+  ],
+  4: [
+    {id:"viewPlans", title:"Open the Plans tab", hint:"See the active Action Plan and its next step.", done:false},
+    {id:"viewProps", title:"Open the Properties tab", hint:"See what listings Marcus has engaged with.", done:false},
+    {id:"viewSearches", title:"Open the Searches tab", hint:"Review his saved search criteria.", done:false},
+    {id:"sendSuggest", title:"Build a Suggest list and send it", hint:"Pick at least 2 homes in the Suggest tab, then click Send List.", done:false}
+  ],
+  5: [
+    {id:"placeCall", title:"Call Marcus from the dialer", hint:"Click the Call button next to his number.", done:false},
+    {id:"logDisposition", title:"Log the call outcome", hint:"Pick a disposition and save your notes before hanging up.", done:false}
+  ],
+  6: [
+    {id:"moveToPond", title:"Move Marcus Whitfield into the Unclaimed Inbound pond", hint:"Open his lead record, use the \u201CAdd to Pond\u201D dropdown next to Call, and choose Unclaimed Inbound.", done:false},
+    {id:"approveClaim", title:"Approve Priya Anand's pending claim request", hint:"Open the Unclaimed Inbound pond and click Approve on her Pending Approval row.", done:false},
+    {id:"setMaxWorking", title:"Set the global Max Working Leads limit to 5", hint:"In Lead Pond Settings, change \u201CMaximum Leads an Agent Can Work\u201D to 5.", done:false}
+  ],
+  7: [
+    {id:"viewFunnel", title:"Open a funnel stage's detail", hint:"Click any stage in the conversion funnel to expand it.", done:false},
+    {id:"changeRange", title:"Change the report date range", hint:"Switch the range selector to \"Last 90 days\".", done:false}
+  ]
+};
+
+function allTasksFlat(){ return Object.values(tasksByStop).flat(); }
+function completedCount(){ return allTasksFlat().filter(t=>t.done).length; }
+function totalTasks(){ return allTasksFlat().length; }
+
+/* ================= INIT ================= */
+function buildLandingRoute(){
+  document.getElementById('landingRoute').innerHTML = stopsMeta.map(s=>`
+    <div class="route-stop"><div class="route-pin"></div><div class="route-mile">${s.mile}</div>
+      <div class="route-name">${s.name}</div><div class="route-desc">${s.desc}</div></div>`).join('');
+}
+buildLandingRoute();
+
+function startDrive(){
+  document.getElementById('landing').classList.remove('active');
+  document.getElementById('app').classList.add('active');
+  goStop(1);
+}
+
+function updateTopbar(){
+  if(freeform){
+    document.getElementById('stopNum').textContent = '—';
+    document.getElementById('stopName').textContent = freeformLabel(freeform) + ' (free roam)';
+  } else {
+    document.getElementById('stopNum').textContent = currentStop;
+    document.getElementById('stopName').textContent = stopsMeta[currentStop-1].name;
+  }
+  document.getElementById('tbProgress').textContent = `${completedCount()} / ${totalTasks()} tasks`;
+  const miles = completedCount() * 90 + (currentStop-1) * 45;
+  document.getElementById('odoDigits').textContent = String(miles).padStart(6,'0');
+}
+
+function freeformLabel(id){
+  return {savedsearches:"Saved Searches", listings:"Listings", content:"Content", blog:"Blog", users:"Users", settings:"Account Settings"}[id] || id;
+}
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(window._toastT);
+  window._toastT = setTimeout(()=>t.classList.remove('show'), 2400);
+}
+
+function markTask(id){
+  const t = allTasksFlat().find(t=>t.id===id);
+  if(t && !t.done){ t.done = true; toast("✓ Task logged"); updateTopbar(); renderCoach(); }
+}
+
+/* ================= ROUTER ================= */
+function goStop(n){
+  if(n!==5 && callTimer){ clearInterval(callTimer); callTimer=null; callState='idle'; }
+  freeform = null;
+  currentStop = n;
+  if(n===2){ selectedLeadId = null; }
+  updateTopbar(); renderMain(); renderCoach(); renderNav();
+  document.getElementById('main').scrollTop = 0;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function goFreeform(id){
+  if(callTimer){ clearInterval(callTimer); callTimer=null; callState='idle'; }
+  freeform = id;
+  updateTopbar(); renderMain(); renderCoach(); renderNav();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function renderMain(){
+  const main = document.getElementById('main');
+  if(freeform==='savedsearches'){ main.innerHTML = viewSavedSearches(); return; }
+  if(freeform==='listings'){ main.innerHTML = viewListings(); return; }
+  if(freeform==='content'){ main.innerHTML = viewContent(); return; }
+  if(freeform==='blog'){ main.innerHTML = viewBlog(); return; }
+  if(freeform==='users'){ main.innerHTML = viewUsers(); return; }
+  if(freeform==='settings'){ main.innerHTML = viewSettings(); return; }
+  if(currentStop===1) main.innerHTML = viewOrientation();
+  else if(currentStop===2) main.innerHTML = viewDashboard();
+  else if(currentStop===3) main.innerHTML = viewLeadDetail('summary');
+  else if(currentStop===4) main.innerHTML = viewLeadDetail(activeTab==='summary'?'plans':activeTab);
+  else if(currentStop===5) main.innerHTML = viewDialer();
+  else if(currentStop===6) main.innerHTML = viewLeadPonds();
+  else if(currentStop===7) main.innerHTML = viewReports();
+  else if(currentStop===8) main.innerHTML = viewFinal();
+}
+
+function renderNav(){
+  const nav = document.getElementById('sierraNav');
+  const activeTabName = freeform ? navTabForFreeform(freeform) : (stopsMeta[currentStop-1].nav);
+  nav.innerHTML = topTabs.map(t=>{
+    const cls = t===activeTabName ? 'active' : '';
+    return `<button class="snav-tab ${cls}" onclick="clickTopTab('${t}')">${t}</button>`;
+  }).join('');
+}
+
+function navTabForFreeform(id){
+  return {savedsearches:"SAVED SEARCHES", listings:"LISTINGS", content:"CONTENT", blog:"BLOG"}[id] || null;
+}
+
+function clickTopTab(t){
+  if(t==='LEADS') goStop(2);
+  else if(t==='SAVED SEARCHES') goFreeform('savedsearches');
+  else if(t==='LISTINGS') goFreeform('listings');
+  else if(t==='CONTENT') goFreeform('content');
+  else if(t==='BLOG') goFreeform('blog');
+  else if(t==='USERS') goFreeform('users');
+  else if(t==='REPORTING') goStop(7);
+}
+
+/* ================= COACH PANEL ================= */
+function renderCoach(){
+  const coach = document.getElementById('coach');
+
+  if(freeform){
+    coach.innerHTML = `
+      <div class="coach-eyebrow">Free roam</div>
+      <h3>${freeformLabel(freeform)}</h3>
+      <p class="coach-copy">${freeformCoachCopy(freeform)}</p>
+      <button class="coach-btn" onclick="goStop(${currentStop})">← Back to the test drive</button>
+    `;
+    return;
+  }
+
+  const tasks = tasksByStop[currentStop];
+  const stopInfo = stopsMeta[currentStop-1];
+
+  if(!tasks){
+    const isFinal = currentStop===stopsMeta.length;
+    coach.innerHTML = `
+      <div class="coach-eyebrow">Trainer notes</div>
+      <h3>${stopInfo.name}</h3>
+      <p class="coach-copy">${coachIntroFor(currentStop)}</p>
+      ${isFinal ? '' : `<button class="coach-btn" onclick="advanceFromNoTask()">Continue →</button>`}
+    `;
+    return;
+  }
+
+  const done = tasks.filter(t=>t.done).length;
+  const firstUndone = tasks.find(t=>!t.done);
+  coach.innerHTML = `
+    <div class="coach-eyebrow">Trainer notes</div>
+    <h3>${stopInfo.name}</h3>
+    <p class="coach-copy">${coachIntroFor(currentStop)}</p>
+    ${tasks.map(t=>`
+      <div class="task ${t.done?'done':(firstUndone&&firstUndone.id===t.id?'active':'')}">
+        <div class="task-check">${t.done?'✓':''}</div>
+        <div class="task-body"><div class="t-title">${t.title}</div><div class="t-hint">${t.hint}</div></div>
+      </div>`).join('')}
+    <button class="coach-btn" ${done<tasks.length?'disabled':''} onclick="goStop(${currentStop+1})">
+      ${done<tasks.length? `Complete all tasks to continue (${done}/${tasks.length})` : 'Next stop →'}
+    </button>
+  `;
+}
+
+function freeformCoachCopy(id){
+  return {
+    savedsearches:"Every saved search across your leads lands here. Converting one into an E-Alert means the lead gets notified the moment a new match hits the market — no manual work required.",
+    listings:"Every active listing your team represents, pulled straight from the MLS feed. Useful when a lead asks about a property you don't recognize by address.",
+    content:"Website Pages controls what leads see when they land on your site. Campaigns is where one-off marketing sends live — separate from the automated Action Plan touches.",
+    blog:"Blog posts feed your site's SEO and give you something fresh to share with nurture leads who aren't ready for a call yet.",
+    users:"Every teammate with CRM access — agents, ISAs, and VAs — along with their role and last login. Useful for admin tasks like confirming who owns a lead.",
+    settings:"Personal preferences: how you're notified about new leads, your email signature, and your working hours."
+  }[id];
+}
+
+function coachIntroFor(stop){
+  switch(stop){
+    case 1: return "Every new hire starts here. Sierra is where your leads, listings, and follow-up all live — read the map, then hit the road.";
+    case 2: return "The Leads Dashboard is the lot: every lead your team has, filterable by status, source, and activity. Fast filtering is how top agents avoid working the wrong lead first.";
+    case 3: return "The Summary tab is command central for a lead — contact info, consent, tags, pipeline status, tasks, and the full communication timeline all live here.";
+    case 4: return "Four more tabs round out the lead record. Each one answers a different question: what are they doing (Properties), what are they looking for (Searches), and how do you stay in front of them (Plans, Suggest).";
+    case 5: return "The Dialer lets you call, text, drop a voicemail, or transfer a lead straight from their record — using your assigned Dialer number so your personal cell stays private. Every outcome logs automatically to the timeline.";
+    case 6: return "Lead Ponds share leads across the team instead of assigning them one-by-one. Agents work a lead before they own it, limits and timeouts keep leads circulating, and you keep full visibility as the manager.";
+    case 7: return "Reports turn all that activity into numbers your team lead actually looks at — response time and funnel conversion above all else.";
+    case 8: return "One last checkpoint before you're cleared to work real leads.";
+    default: return "";
+  }
+}
+
+function advanceFromNoTask(){ if(currentStop===stopsMeta.length) return; goStop(currentStop+1); }
+
+/* ================= VIEW: ORIENTATION ================= */
+function viewOrientation(){
+  return `
+    <div class="section-head"><div><h2 class="display">Welcome to Sierra</h2>
+      <div class="section-sub">Your real estate team's CRM — leads, listings, websites, and follow-up automation in one place.</div></div></div>
+    <div class="orient-grid">
+      <div class="card orient-card">
+        <h3>What Sierra actually is</h3>
+        <p>Sierra Interactive is the CRM and website platform your brokerage runs on. Leads come in from your website, ads, and referrals — Sierra captures them, and it's your job to work them well.</p>
+        <ul class="orient-list">
+          <li><b>01</b><span>Leads land in the <b>Leads Dashboard</b>, tagged with a source and a status.</span></li>
+          <li><b>02</b><span>Each lead has a <b>Lead Detail Page</b> — the single place you'll spend most of your day.</span></li>
+          <li><b>03</b><span><b>Action Plans</b> automate the first several touches so no lead goes cold on day one.</span></li>
+          <li><b>04</b><span>You layer in the personal touch: calls, notes, curated listings, and timely follow-up.</span></li>
+          <li><b>05</b><span><b>Lead Ponds</b> let managers share leads across a team before anyone owns them outright.</span></li>
+        </ul>
+      </div>
+      <div class="card orient-card">
+        <h3>How this test drive works</h3>
+        <p>You'll move through 8 stops. Trainer notes on the right tell you exactly what to click. The top navigation matches the real platform — LEADS, SAVED SEARCHES, LISTINGS, CONTENT, BLOG, USERS, REPORTING — and every tab is unlocked, so feel free to explore beyond the guided stops.</p>
+        <p style="margin-top:12px;">Nothing here touches a real lead or sends a real message — it's a safe sandbox built to mirror Sierra's actual layout, so what you learn transfers directly to your real dashboard on day one.</p>
+      </div>
+    </div>
+  `;
+}
+
+/* ================= VIEW: DASHBOARD ================= */
+function viewDashboard(){
+  const filterTask = tasksByStop[2][0];
+  const openTask = tasksByStop[2][1];
+  const filtered = leads.filter(l=>{
+    if(dashboardFilter==='all') return true;
+    if(dashboardFilter==='new') return l.status==='New' || l.status==='Hot';
+    if(dashboardFilter==='returning') return l.status==='Warm' || l.status==='Nurture';
+    return true;
+  });
+
+  return `
+    <div class="dash-title-row">
+      <h1>Dashboard</h1>
+      <div class="mgr-toggle">Manager View
+        <button class="toggle ${managerView?'on':''}" onclick="toggleManager()"><span class="knob"></span></button>
+        Agent View
+      </div>
+    </div>
+
+    <div class="leads-subnav">
+      <span class="lsub-tab active">All Leads</span>
+      <span class="lsub-tab" onclick="goStop(6)">Lead Ponds</span>
+    </div>
+
+    <div class="stat-row">
+      <div class="card stat-card"><div class="stat-ic">🏠</div><div class="stat-num">72</div><div class="stat-lab">Pending<br>Inquiries</div></div>
+      <div class="card stat-card"><div class="stat-ic">✉️</div><div class="stat-num">51</div><div class="stat-lab">Pending<br>Emails</div></div>
+    </div>
+
+    ${!filterTask.done ? `<div class="hint-banner pulse" style="width:fit-content">↓ Try a filter pill below — set it to <b>New</b> leads (Marcus is Hot, which counts as New here).</div>` : ''}
+
+    <div class="leads-head">
+      <h3>Leads <span class="count">${leads.length}</span></h3>
+      <span class="view-all">View All</span>
+    </div>
+    <div class="filter-row">
+      <div class="filter-pills ${!filterTask.done?'pulse':''}">
+        <button class="f-pill ${dashboardFilter==='new'?'active':''}" onclick="setFilter('new')">${leads.filter(l=>l.status==='New'||l.status==='Hot').length} New</button>
+        <button class="f-pill ${dashboardFilter==='returning'?'active':''}" onclick="setFilter('returning')">${leads.filter(l=>l.status==='Warm'||l.status==='Nurture').length} Returning</button>
+        <button class="f-pill ${dashboardFilter==='all'?'active':''}" onclick="setFilter('all')">All</button>
+      </div>
+      <select class="select" disabled><option>Past Day</option></select>
+    </div>
+
+    ${filtered.map(l=>{
+      const isTarget = l.id===1 && filterTask.done && !openTask.done;
+      return `
+      <div class="card lead-card ${isTarget?'pulse':''}" onclick="clickLead(${l.id})">
+        <div class="lc-top">
+          <div class="lc-id">
+            <div class="lc-avatar">👤</div>
+            <div><div class="lc-name">${l.name}</div><div class="lc-source">Lead Source: ${l.source}</div></div>
+          </div>
+          <div class="lc-tags"><span class="pill type">${l.type}</span><span class="pill ${statusClass(l.status)}">${l.status}</span></div>
+        </div>
+        <div class="lc-meta">
+          <span>📍 ${l.area}</span>
+          <span>💲 ${l.price}</span>
+          <span>🕑 ${l.lastActive}</span>
+        </div>
+        <div class="lc-divider">Registered: ${l.registered}</div>
+        <div class="lc-agent"><span class="lc-agent-avatar">${l.agent==='Unassigned'?'—':l.agent.split(' ').map(w=>w[0]).join('')}</span> ${l.agent}</div>
+      </div>`;
+    }).join('')}
+  `;
+}
+
+function toggleManager(){ managerView = !managerView; renderMain(); }
+
+function setFilter(v){
+  dashboardFilter = v;
+  if(v==='new') markTask('filterHot');
+  renderMain(); renderCoach();
+}
+
+function clickLead(id){
+  selectedLeadId = id;
+  activeTab = 'summary';
+  if(currentStop===2){ markTask('openLead'); goStop(3); return; }
+  renderMain();
+}
+
+/* ================= VIEW: LEAD DETAIL ================= */
+function getLead(){ return leads.find(l=>l.id===(selectedLeadId||1)); }
+function statusClass(s){ return s.toLowerCase().replace(/\s+/g,'-'); }
+
+function viewLeadDetail(tab){
+  activeTab = tab;
+  const l = getLead();
+  const tabs = [
+    {id:'summary', label:'Summary'},{id:'plans', label:'Plans'},{id:'properties', label:'Properties'},
+    {id:'searches', label:'Searches'},{id:'suggest', label:'Suggest'}
+  ];
+  const s4 = tasksByStop[4];
+  const needsTab = {plans:s4[0], properties:s4[1], searches:s4[2], suggest:s4[3]};
+
+  return `
+    <div class="ld-back" onclick="goStop(2)">← Leads Dashboard</div>
+    <div class="ld-head">
+      <div class="ld-identity">
+        <div class="avatar">${l.initials}</div>
+        <div>
+          <h2 class="display">${l.name}</h2>
+          <div class="ld-meta"><span class="pill type">${l.type}</span><span class="pill ${statusClass(l.status)}">${l.status}</span>
+            <span>${l.price}</span> · <span>${l.area}</span></div>
+        </div>
+      </div>
+      <div class="ld-actions">
+        <span class="pf-link" style="font-size:12.5px;margin-right:6px;" onclick="goStop(2)">Lead Dashboard</span>
+        <button class="call-btn" onclick="goStop(5)">📞 Call</button>
+        <select class="pond-add-select" onchange="moveToPond(this.value, this)">
+          <option value="">🌊 Add to Pond…</option>
+          ${ponds.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}
+        </select>
+        <div class="fish-menu" title="Quick actions">⋯</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      ${tabs.map(t=>{
+        const targetTask = needsTab[t.id];
+        const shouldPulse = currentStop===4 && targetTask && !targetTask.done && tab!==t.id && isFirstUnfinishedTab(t.id);
+        return `<button class="tab-btn ${tab===t.id?'active':''} ${shouldPulse?'pulse':''}" onclick="switchTab('${t.id}')">${t.label}</button>`;
+      }).join('')}
+    </div>
+
+    ${tab==='summary' ? renderSummaryTab(l) : ''}
+    ${tab==='plans' ? renderPlansTab(l) : ''}
+    ${tab==='properties' ? renderPropertiesTab(l) : ''}
+    ${tab==='searches' ? renderSearchesTab(l) : ''}
+    ${tab==='suggest' ? renderSuggestTab(l) : ''}
+  `;
+}
+
+function isFirstUnfinishedTab(id){
+  const order = ['plans','properties','searches','suggest'];
+  const s4 = tasksByStop[4];
+  const map = {plans:s4[0], properties:s4[1], searches:s4[2], suggest:s4[3]};
+  const firstUndone = order.find(o=>!map[o].done);
+  return firstUndone===id;
+}
+
+function switchTab(id){
+  activeTab = id;
+  if(currentStop===4){
+    if(id==='plans') markTask('viewPlans');
+    if(id==='properties') markTask('viewProps');
+    if(id==='searches') markTask('viewSearches');
+  }
+  renderMain(); renderCoach();
+}
+
+function renderSummaryTab(l){
+  const s3 = tasksByStop[3];
+  const histTitle = {call:'Call Logged', text:'Text Sent', email:'Email Activity', note:'Note Added', site:'Site Activity'};
+  const callCount = l.timeline.filter(t=>t.type==='call').length;
+  const emailCount = l.timeline.filter(t=>t.type==='email').length;
+  const noteCount = l.timeline.filter(t=>t.type==='note').length;
+  return `
+  <div class="sum-grid">
+    <div class="pf-card">
+      <div class="pf-band">
+        <div class="pf-avatar">${l.initials}</div>
+        <div class="pf-name">${l.name}</div>
+        <div class="pf-source">Source: <span class="pf-link">${l.source}</span></div>
+        <div class="pf-pills">
+          <span class="pf-pill buy">${l.type==='Buy'?'BUY':'SELL'}</span>
+          <select class="pf-pill status ${currentStop===3 && !s3[3].done?'pulse':''}" onchange="changeStatus(this.value)" style="border:none;appearance:none;-webkit-appearance:none;">
+            <option value="" disabled selected style="display:none;">${l.status}</option>
+            <option value="Hot">Hot</option>
+            <option value="Warm">Warm</option>
+            <option value="New">New</option>
+            <option value="Under Contract">Under Contract</option>
+            <option value="Closed">Closed</option>
+          </select>
+        </div>
+      </div>
+      <div class="pf-body">
+        <div class="pf-sec-lab">Summary</div>
+        <div class="pf-sec-lab" style="margin-top:14px;">Agents</div>
+        <div class="pf-row" style="border-top:none;"><span class="pk"><span class="pf-agent-tag">BUY</span></span><span class="pv">${l.buyAgent}</span></div>
+        <div class="pf-row"><span class="pk"><span class="pf-agent-tag">SELL</span></span><span class="pv">${l.sellAgent}</span></div>
+        <div class="pf-row"><span class="pk">Lender</span><span class="pv">${l.lender}</span></div>
+        <div class="pf-row"><span class="pk">Collaborators</span><span class="pv">${l.collaborators}</span></div>
+
+        <div class="pf-phone-row"><div class="pf-ic-circle">📞</div><div><div class="pf-phone-main">${l.phone}</div><div class="pf-sub-link" onclick="toast('Custom label editor is admin-only in this simulator')">+ Custom Label</div></div></div>
+        <div class="pf-phone-row"><div class="pf-ic-circle ${l.emailVerified?'verified':''}">${l.emailVerified?'✓':'✉'}</div><div class="pf-sub-link" style="color:var(--navy-3);font-weight:600;">${l.email}</div></div>
+        <div class="pf-phone-row"><div class="pf-ic-circle">🔗</div><div class="pf-link" onclick="toast('Would open lead in '+'${l.connectedPlatform}'+' (external, disabled in this simulator)')">View on ${l.connectedPlatform}</div></div>
+
+        <div class="pf-sec-lab">Overview</div>
+        <div class="pf-consent-row"><span class="pk" style="font-size:12.5px;color:var(--slate);">Comms Consent</span><span class="pf-consent-history" onclick="toast('Opens the full consent change log')">Comms Consent History</span></div>
+        <div class="consent-row" style="padding:6px 0;"><span style="font-size:12px;">Text messages</span><button class="toggle ${l.consent.text?'on':''}" onclick="toggleConsent('text')"><span class="knob"></span></button></div>
+        <div class="consent-row" style="padding:6px 0;"><span style="font-size:12px;">Email</span><button class="toggle ${l.consent.email?'on':''}" onclick="toggleConsent('email')"><span class="knob"></span></button></div>
+        <div class="consent-row ${currentStop===3 && !s3[0].done ? 'pulse':''}" style="padding:6px 0;"><span style="font-size:12px;">Phone calls</span><button class="toggle ${l.consent.call?'on':''}" onclick="toggleConsent('call')"><span class="knob"></span></button></div>
+
+        <div class="pf-sec-lab">Pipeline &amp; Tasks</div>
+        <div class="note-box" style="margin-top:4px;">
+          <textarea id="taskInput" placeholder="Create a follow-up task…" class="${currentStop===3 && !s3[4].done?'pulse':''}"></textarea>
+          <button onclick="createTask()">Create Task</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="hist-head">
+        <div><span class="hist-title">History</span><span class="hist-count">${l.timeline.length}</span></div>
+        <div class="hist-filters">
+          <span>≡ All</span><span>⭐ 0</span><span>✉ ${emailCount}</span><span>📞 ${callCount}</span><span>📝 ${noteCount}</span>
+        </div>
+      </div>
+      <div class="hist-quicklog">
+        <div class="note-box" style="margin:0;">
+          <textarea id="noteInput" placeholder="Log a note about this lead…" class="${currentStop===3 && !s3[2].done?'pulse':''}"></textarea>
+          <button onclick="logNote()">Log</button>
+        </div>
+      </div>
+      ${l.timeline.map(t=>`
+        <div class="hist-card">
+          <div class="hist-card-top">
+            <div class="hist-card-title"><span class="hist-ic">${iconFor(t.type)}</span>${histTitle[t.type]||'Activity'}</div>
+            <div class="hist-card-meta"><span>${t.when}</span><span>☆</span></div>
+          </div>
+          <div class="hist-card-body">${t.body}</div>
+        </div>`).join('')}
+
+      <div class="side-card" style="margin-top:4px;">
+        <div class="side-head"><span class="side-title">Lead Source Reporting</span></div>
+        <p style="font-size:12px;color:var(--slate);margin:0 0 10px;">Transactions logged here roll up into Reporting by Lead Source.</p>
+        ${l.transactions.length ? l.transactions.map(tx=>`
+          <div class="txn-item"><span>${tx.date} · ${tx.leadType}</span><span class="tamt">$${Number(tx.amount).toLocaleString()}</span></div>`).join('')
+          : '<p style="font-size:12px;color:var(--slate);">No transactions logged for this lead yet.</p>'}
+        ${!showTxnForm ? `<button class="mini-btn" onclick="openTxnForm()">+ Add Transaction</button>` : renderTxnForm(l)}
+      </div>
+    </div>
+
+    <div>
+      <div class="side-card">
+        <div class="side-head"><span class="side-title">Tags</span><span class="side-add" onclick="toggleTagAdd()" title="Add a tag">+</span></div>
+        <div class="applied-toggle">Applied (${l.tags.length}) ${l.tags.length?'⌃':''}</div>
+        <div>${l.tags.map(t=>{
+          const meta = tagMeta(t);
+          return `<span class="summ-tag-chip">${meta.locked?'🔒':''}${t}${meta.locked?'':`<span class="tx2" onclick="removeTag('${t.replace(/'/g,"")}')">×</span>`}</span>`;
+        }).join('') || '<span style="color:var(--slate);font-size:12px;">No tags yet</span>'}</div>
+        ${tagAddOpen ? `
+          <div class="tag-add" style="margin-top:8px;">
+            <input id="tagInput" list="tagLibraryList" placeholder="Add a tag (try Pre-Approved)" class="${currentStop===3 && !s3[1].done?'pulse':''}">
+            <datalist id="tagLibraryList">${tagLibrary.map(t=>`<option value="${t.name}">`).join('')}</datalist>
+            <button onclick="addTag()">Add</button>
+          </div>` : ''}
+        <span class="tag-history-link" onclick="toast('Opens the full tag change log for this lead')">Tag History</span>
+        <span class="tag-history-link" onclick="toggleTagsMgr()">${tagsMgrOpen?'Close Manage Tags':'Manage Tags (categories & colors)'}</span>
+        ${tagsMgrOpen ? renderTagsManager() : ''}
+      </div>
+
+      <div class="side-card">
+        <div class="side-head"><span class="side-title">Data</span></div>
+        <div class="data-grid">
+          <div class="data-cell"><div class="dnum">${l.stats.avgPrice}</div><div class="dlab">Avg Price</div></div>
+          <div class="data-cell"><div class="dnum">${l.stats.visits}</div><div class="dlab">Visits</div></div>
+          <div class="data-cell"><div class="dnum">${l.stats.properties}</div><div class="dlab">Properties</div></div>
+          <div class="data-cell"><div class="dnum">${l.stats.inquiries}</div><div class="dlab">Inquiries</div></div>
+          <div class="data-cell"><div class="dnum">${l.stats.favorites}</div><div class="dlab">Favorites</div></div>
+          <div class="data-cell"><div class="dnum">${l.stats.ealerts}</div><div class="dlab">E-Alerts</div></div>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <div class="side-head"><span class="side-title">Recent Activity</span></div>
+        <div class="recent-date"><span>${l.recentActivity.date}</span><span>${l.recentActivity.location}</span></div>
+        <div class="recent-cat">${l.recentActivity.category}</div>
+        <div class="recent-count">${l.recentActivity.count} Viewed</div>
+      </div>
+
+      <div class="side-card">
+        <div class="side-head"><span class="side-title">Property Analysis</span>
+          <div class="pa-tabs"><span class="active">All</span><span>Saved</span></div>
+        </div>
+        <table class="pa-table">
+          <tr><th>Price</th><th>City</th><th>Zip</th><th>Source</th></tr>
+          ${l.properties.length ? l.properties.map(p=>`
+            <tr><td>${p.price}</td><td>${l.area.split(',')[0]}</td><td>${l.zip}</td><td>${l.source}</td></tr>`).join('')
+            : `<tr><td colspan="4" style="color:var(--slate);">No properties yet</td></tr>`}
+        </table>
+      </div>
+    </div>
+  </div>
+  `;
+}
+
+function iconFor(type){ return {call:'📞', email:'✉', note:'📝', site:'🌐', text:'💬'}[type] || '•'; }
+let tagAddOpen = false;
+function toggleTagAdd(){ tagAddOpen = !tagAddOpen; renderMain(); }
+
+function toggleConsent(channel){
+  const l = getLead(); l.consent[channel] = !l.consent[channel];
+  if(channel==='call' && currentStop===3) markTask('toggleConsent');
+  renderMain(); renderCoach();
+}
+
+function addTag(){
+  const input = document.getElementById('tagInput'); const val = input.value.trim();
+  if(!val) return;
+  const l = getLead();
+  if(l.tags.includes(val)){ toast("That tag is already applied"); return; }
+  l.tags.push(val);
+  input.value = "";
+  if(currentStop===3) markTask('addTag');
+  renderMain(); renderCoach();
+}
+
+function removeTag(name){
+  const l = getLead();
+  const meta = tagMeta(name);
+  if(meta.locked){ toast("🔒 Agents can't un-apply this tag"); return; }
+  l.tags = l.tags.filter(t=>t!==name);
+  renderMain(); renderCoach();
+}
+
+function toggleTagsMgr(){ tagsMgrOpen = !tagsMgrOpen; renderMain(); }
+
+function renderTagsManager(){
+  const filtered = tagLibrary.filter(t=>
+    (!tagsMgrSearch || t.name.toLowerCase().includes(tagsMgrSearch.toLowerCase())) &&
+    (!tagsMgrCategory || t.category===tagsMgrCategory)
+  );
+  return `
+    <div class="tags-mgr-panel">
+      <div class="tmgr-row">
+        <input placeholder="Search lead tags…" value="${tagsMgrSearch}" oninput="setTagSearch(this.value)">
+        <select onchange="setTagCategoryFilter(this.value)">
+          <option value="">All Categories</option>
+          ${tagCategories.map(c=>`<option value="${c.id}" ${tagsMgrCategory===c.id?'selected':''}>${c.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="tmgr-list">
+        ${filtered.map(t=>`
+          <div class="tmgr-item">
+            <span class="tswatch" style="background:${t.color};"></span>
+            <span class="tname">${t.name}${t.locked?' 🔒':''}</span>
+            <span class="tcat">${tagCategories.find(c=>c.id===t.category)?.name || '—'}</span>
+            <span class="tcount">${leadsWithTag(t.name)} leads</span>
+          </div>`).join('') || '<p style="font-size:12px;color:var(--slate);margin:0;">No tags match.</p>'}
+      </div>
+      <div class="tmgr-row" style="margin-top:12px;">
+        <input id="newTagName" placeholder="New tag name">
+        <select id="newTagCategory">
+          <option value="">No category</option>
+          ${tagCategories.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')}
+        </select>
+        <button class="mini-btn" onclick="createLibraryTag()">+ Add Lead Tag</button>
+      </div>
+      <div class="color-swatch-row" id="newTagColors">
+        ${["#46599B","#B14B32","#3E6B63","#F5A522","#5B6774"].map((c,i)=>`
+          <span class="color-swatch ${i===0?'selected':''}" style="background:${c};" onclick="pickNewTagColor('${c}', this)"></span>`).join('')}
+      </div>
+      <p style="font-size:11px;color:var(--slate);margin:0;">New tags apply to all leads in this account and can be reused from the search box above.</p>
+    </div>`;
+}
+
+function setTagSearch(v){ tagsMgrSearch = v; renderMain(); }
+function setTagCategoryFilter(v){ tagsMgrCategory = v; renderMain(); }
+let newTagColor = "#46599B";
+function pickNewTagColor(c, el){
+  newTagColor = c;
+  document.querySelectorAll('#newTagColors .color-swatch').forEach(s=>s.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function createLibraryTag(){
+  const nameInput = document.getElementById('newTagName');
+  const catSelect = document.getElementById('newTagCategory');
+  const name = nameInput.value.trim();
+  if(!name){ toast("Give the tag a name first"); return; }
+  if(tagLibrary.some(t=>t.name.toLowerCase()===name.toLowerCase())){ toast("A tag with that name already exists"); return; }
+  tagLibrary.push({name, category:catSelect.value||null, color:newTagColor, locked:false});
+  toast(`✓ "${name}" added to Lead Tags`);
+  renderMain();
+}
+
+function logNote(){
+  const input = document.getElementById('noteInput'); const val = input.value.trim();
+  if(!val) return;
+  getLead().timeline.unshift({type:'note', who:'You', when:'just now', body:val});
+  if(currentStop===3) markTask('logNote');
+  renderMain(); renderCoach();
+}
+
+function changeStatus(val){
+  if(!val) return;
+  const l = getLead();
+  l.status = val;
+  toast(`Status updated to "${val}"`);
+  if(currentStop===3) markTask('changeStatus');
+  if(val==='Closed'){ showTxnForm = true; }
+  renderMain(); renderCoach();
+}
+
+function openTxnForm(){ showTxnForm = true; renderMain(); }
+function cancelTxnForm(){ showTxnForm = false; renderMain(); }
+
+function renderTxnForm(l){
+  return `
+    <div class="txn-form">
+      <div class="frow">
+        <input type="date" id="txnDate" value="${new Date().toISOString().slice(0,10)}">
+        <input type="number" id="txnAmount" placeholder="Transaction amount ($)">
+        <select id="txnType">
+          <option value="Buyer" ${l.type==='Buy'?'selected':''}>Buyer</option>
+          <option value="Seller" ${l.type==='Sell'?'selected':''}>Seller</option>
+        </select>
+      </div>
+      <button class="mini-btn" onclick="saveTransaction()">Save Transaction</button>
+      <button class="mini-btn" style="border-color:transparent;background:none;" onclick="cancelTxnForm()">Cancel</button>
+      <p style="font-size:11px;color:var(--slate);margin:10px 0 0;">Saved transactions appear here and roll up into Reporting by Lead Source — Source Reporting, All Transactions, and All Agents tabs.</p>
+    </div>`;
+}
+
+function saveTransaction(){
+  const l = getLead();
+  const date = document.getElementById('txnDate').value;
+  const amount = document.getElementById('txnAmount').value;
+  const leadType = document.getElementById('txnType').value;
+  if(!date || !amount){ toast("Add a date and amount first"); return; }
+  l.transactions.unshift({date, amount, leadType});
+  l.timeline.unshift({type:'note', who:'You', when:'just now', body:`Transaction logged — $${Number(amount).toLocaleString()} (${leadType}), reflected in Lead Source Reporting.`});
+  showTxnForm = false;
+  toast("✓ Transaction saved — reflected in Lead Source Reporting");
+  renderMain(); renderCoach();
+}
+
+function createTask(){
+  const val = document.getElementById('taskInput').value.trim();
+  if(!val){ toast("Write a task first"); return; }
+  toast("✓ Task created and assigned to you");
+  if(currentStop===3) markTask('addTask');
+  renderMain(); renderCoach();
+}
+
+function renderPlansTab(l){
+  return `
+  <div class="ld-layout">
+    <div class="card ld-panel">
+      <h4>Snapshot</h4>
+      <div class="kv"><span class="k">Status</span><span class="v">${l.status}</span></div>
+      <div class="kv"><span class="k">Type</span><span class="v">${l.type}</span></div>
+      <div class="kv"><span class="k">Assigned</span><span class="v">${l.agent}</span></div>
+    </div>
+    <div>
+      <div class="card plan-card">
+        <div class="plan-top"><h4>${l.plan.name}</h4><span class="pill ${l.plan.status==='Active'?'new':'nurture'}">${l.plan.status}</span></div>
+        ${l.plan.steps.length ? `<ul class="plan-steps">${l.plan.steps.map(s=>`
+          <li><span class="step-dot ${s.state}"></span><span class="step-day">${s.day}</span><span>${s.label}${s.state==='next'?' — up next':''}</span></li>`).join('')}</ul>`
+          : `<p style="font-size:13px;color:var(--slate);">No action plan has been assigned to this lead yet.</p>`}
+      </div>
+      <p class="section-sub">Best practice: let automation carry routine touches, but assign yourself the manual steps — like calls — so the personal moments never get missed.</p>
+    </div>
+  </div>`;
+}
+
+function renderPropertiesTab(l){
+  return `
+  <div class="ld-layout">
+    <div class="card ld-panel">
+      <h4>Filter</h4>
+      <div class="kv"><span class="k">All</span><span class="v">${l.properties.length}</span></div>
+      <div class="kv"><span class="k">Saved</span><span class="v">${l.properties.filter(p=>p.tag==='Saved').length}</span></div>
+      <div class="kv"><span class="k">Info Requests</span><span class="v">${l.properties.filter(p=>p.tag==='Info Request').length}</span></div>
+      <div class="kv"><span class="k">Showing Requests</span><span class="v">${l.properties.filter(p=>p.tag==='Showing Requested').length}</span></div>
+    </div>
+    <div>${l.properties.length ? `<div class="prop-grid">${l.properties.map(p=>`
+        <div class="card prop-card"><div class="prop-img">Listing photo</div>
+          <div class="prop-body"><div class="prop-price">${p.price}</div><div class="prop-addr">${p.addr}</div>
+            <div class="prop-tags"><span class="prop-tag">${p.tag}</span></div></div></div>`).join('')}</div>`
+      : `<div class="card ld-panel"><p style="font-size:13px;color:var(--slate);margin:0;">No property activity logged yet.</p></div>`}
+    </div>
+  </div>`;
+}
+
+function renderSearchesTab(l){
+  return `
+  <div class="ld-layout">
+    <div class="card ld-panel"><h4>Why this matters</h4>
+      <p style="font-size:12.5px;color:var(--slate);line-height:1.6;margin:0;">Saved searches show intent. Convert one into an E-Alert so the lead gets notified automatically the moment a new match hits the market.</p></div>
+    <div>${l.searches.length ? l.searches.map(s=>`
+        <div class="card search-card"><div class="sc-top"><h4>${s.name}</h4><button class="mini-btn">Convert to E-Alert</button></div>
+          <div class="crit">${s.crit}</div></div>`).join('')
+      : `<div class="card ld-panel"><p style="font-size:13px;color:var(--slate);margin:0;">No saved searches yet.</p></div>`}
+    </div>
+  </div>`;
+}
+
+function renderSuggestTab(l){
+  const pool = [
+    {id:'a', addr:'214 Alder Ct', price:'$489,000'},{id:'b', addr:'88 Windham Row', price:'$462,500'},
+    {id:'c', addr:'1220 Birchwood Ln', price:'$525,000'},{id:'d', addr:'56 Fernwood Ave', price:'$471,000'}
+  ];
+  return `
+  <div class="ld-layout">
+    <div class="card ld-panel"><h4>New Suggest List</h4>
+      <p style="font-size:12.5px;color:var(--slate);line-height:1.6;">Pick homes below, then send. This goes straight to ${l.name.split(' ')[0]}'s inbox as a curated list.</p>
+      <div class="kv"><span class="k">Selected</span><span class="v">${suggestPicks.size}</span></div></div>
+    <div>
+      <div class="suggest-pool">${pool.map(p=>`
+        <div class="card pool-card ${suggestPicks.has(p.id)?'picked':''}" onclick="togglePick('${p.id}')">
+          <div class="pool-check">${suggestPicks.has(p.id)?'✓':''}</div>
+          <div class="pool-info"><b>${p.addr}</b><span>${p.price}</span></div></div>`).join('')}</div>
+      <button class="coach-btn" style="width:auto;padding:12px 22px;" onclick="sendSuggestList()">Send List</button>
+    </div>
+  </div>`;
+}
+
+function togglePick(id){ if(suggestPicks.has(id)) suggestPicks.delete(id); else suggestPicks.add(id); renderMain(); }
+
+function sendSuggestList(){
+  if(suggestPicks.size < 2){ toast("Pick at least 2 homes first"); return; }
+  toast(`✓ List sent to ${getLead().name}`);
+  if(currentStop===4) markTask('sendSuggest');
+  renderCoach();
+}
+
+/* ================= VIEW: SIERRA DIALER (STOP 5) ================= */
+let callState = "idle";
+let selectedDisposition = "";
+let callSeconds = 0;
+let callTimer = null;
+let dialerTab = "call";
+let recordingOn = true;
+let dialerDraftText = "";
+let vmDropSent = false;
+let transferTarget = "";
+
+const dialerNumber = "(555) 010-2277";
+const smsTemplates = [
+  {name:"Quick intro", body:"Hi {first}, this is Alex with Your Team Realty — got a minute to chat about your search?"},
+  {name:"Missed you", body:"Hi {first}, sorry I missed you! Call or text back whenever works for you."},
+  {name:"Showing follow-up", body:"Hi {first}, following up on the showing — any thoughts or questions on the property?"}
+];
+const voicemailDrops = [
+  {name:"General intro drop", len:"0:18"},
+  {name:"Following up on inquiry", len:"0:22"},
+  {name:"Checking in — no rush", len:"0:14"}
+];
+const dialerTeammates = [
+  {name:"Marisol Vega", role:"ISA", busy:false},
+  {name:"Chris Delgado", role:"Agent", busy:true},
+  {name:"Preferred Lender — Dana Cho", role:"Lending Partner", busy:false}
+];
+
+function viewDialer(){
+  const l = getLead();
+  const s5 = tasksByStop[5];
+  return `
+    <div class="ld-back" onclick="goStop(3)">← Back to lead</div>
+    <div class="section-head"><div><h2 class="display">Sierra Dialer</h2>
+      <div class="section-sub">Call, text, drop a voicemail, or transfer — straight from the lead record. Every outcome logs itself to the timeline.</div></div></div>
+    ${recordingOn ? `<div class="rec-banner"><span class="rec-dot"></span>Call recording is ON for this account — leads may hear a brief recording disclosure. Manage this under Account Settings → Dialer.</div>` : ''}
+    <div class="ld-layout">
+      <div class="card ld-panel"><h4>Calling</h4>
+        <div class="kv"><span class="k">Lead</span><span class="v">${l.name}</span></div>
+        <div class="kv"><span class="k">Number</span><span class="v">${l.phone}</span></div>
+        <div class="kv"><span class="k">Call consent</span><span class="v">${l.consent.call?'Granted':'Not granted'}</span></div>
+        <div class="kv"><span class="k">Text consent</span><span class="v">${l.consent.text?'Granted':'Not granted'}</span></div>
+        <div class="kv"><span class="k">Status</span><span class="v dial-status">${callLabel()}</span></div>
+        <div class="dialer-id-card">
+          <div>
+            <div class="did-lab">Your Dialer Number (Caller ID)</div>
+            <div class="did-num">${dialerNumber}</div>
+          </div>
+        </div>
+        <p style="font-size:11.5px;color:var(--slate);margin:10px 0 0;line-height:1.5;">This is the number leads see and text back — your personal cell stays private.</p>
+      </div>
+      <div class="card ld-panel">
+        <div class="dial-tabs">
+          ${[["call","📞 Call"],["text","💬 Text"],["voicemail","🔊 Voicemail Drop"],["transfer","↪ Transfer"]].map(([k,label])=>`
+            <button class="dial-tab ${dialerTab===k?'active':''}" onclick="setDialerTab('${k}')">${label}</button>`).join('')}
+        </div>
+
+        ${dialerTab==='call' ? `
+          ${callState==='idle' ? `
+            <h4>Dial pad</h4>
+            <p style="font-size:13px;color:var(--slate);margin:0 0 18px;">Ready to call ${l.name.split(' ')[0]} at ${l.phone}.</p>
+            <button class="coach-btn ${!s5[0].done?'pulse':''}" style="width:auto;padding:13px 26px;background:var(--teal);" onclick="placeCall()">📞 Call ${l.name.split(' ')[0]}</button>` : ''}
+          ${callState==='ringing' ? `<h4>Ringing…</h4><p style="font-size:13px;color:var(--slate);">Connecting to ${l.phone} from ${dialerNumber}</p>` : ''}
+          ${callState==='connected' ? `
+            <h4>Call connected — 00:${String(callSeconds).padStart(2,'0')}</h4>
+            <p style="font-size:13px;color:var(--slate);margin:0 0 16px;">Wrap up the conversation, then end the call to log a disposition.</p>
+            <button class="coach-btn" style="width:auto;padding:12px 22px;background:var(--rust);" onclick="endCall()">End Call</button>` : ''}
+          ${callState==='wrapped' ? `
+            <h4>Log this call</h4>
+            <p style="font-size:12.5px;color:var(--slate);margin:0 0 12px;">Every call needs a disposition — it's what makes the timeline and reports accurate.</p>
+            <div class="toolbar" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+              ${["Connected","Voicemail","No Answer","Busy"].map(d=>`
+                <button class="mini-btn" style="${selectedDisposition===d?'border-color:var(--orange);background:rgba(245,165,34,0.14);':''}" onclick="pickDisposition('${d}')">${d}</button>`).join('')}
+            </div>
+            <div class="note-box"><textarea id="callNote" placeholder="What did you talk about?"></textarea><button onclick="saveDisposition()">Save Call</button></div>` : ''}
+        ` : ''}
+
+        ${dialerTab==='text' ? `
+          <h4>Send a text</h4>
+          <p style="font-size:12.5px;color:var(--slate);margin:0 0 12px;">Texts send from your Dialer number and log to the timeline automatically.</p>
+          ${!l.consent.text ? `<p style="font-size:12px;color:var(--rust);font-weight:600;margin:0 0 12px;">This lead hasn't granted text consent — texting is disabled until that's turned on in Summary.</p>` : ''}
+          <div class="tmpl-row">
+            ${smsTemplates.map((t,i)=>`<button class="tmpl-chip" onclick="useSmsTemplate(${i})">${t.name}</button>`).join('')}
+          </div>
+          <div class="note-box"><textarea id="dialerTextInput" placeholder="Type a message…" ${!l.consent.text?'disabled':''}>${dialerDraftText}</textarea><button ${!l.consent.text?'disabled':''} onclick="sendDialerText()">Send</button></div>
+        ` : ''}
+
+        ${dialerTab==='voicemail' ? `
+          <h4>Voicemail Drop</h4>
+          <p style="font-size:12.5px;color:var(--slate);margin:0 0 14px;">Drop a pre-recorded voicemail without the phone ever ringing — it logs to the timeline just like a live call.</p>
+          <div class="vm-lib">
+            ${voicemailDrops.map(v=>`<div class="vm-item"><span><span class="vname">${v.name}</span><span class="vlen">${v.len}</span></span><button class="mini-btn" onclick="dropVoicemail('${v.name.replace(/'/g,"")}')">Drop</button></div>`).join('')}
+          </div>
+          ${vmDropSent ? `<p style="font-size:12px;color:var(--teal);font-weight:600;">✓ Voicemail dropped and logged to the timeline.</p>` : ''}
+        ` : ''}
+
+        ${dialerTab==='transfer' ? `
+          <h4>Transfer this call</h4>
+          <p style="font-size:12.5px;color:var(--slate);margin:0 0 14px;">Hand off to a teammate or lending partner — you can merge in or complete a full handoff. All transfer activity is logged.</p>
+          <div class="xfer-list">
+            ${dialerTeammates.map(t=>`
+              <div class="xfer-row"><div class="xfer-who"><span class="xfer-dot ${t.busy?'busy':''}"></span>${t.name} <span style="color:var(--slate);font-weight:500;">— ${t.role}</span></div>
+                <button class="mini-btn" ${t.busy?'disabled':''} onclick="startTransfer('${t.name.replace(/'/g,"")}')">${t.busy?'Busy':'Transfer'}</button></div>`).join('')}
+          </div>
+          ${transferTarget ? `<p style="font-size:12px;color:var(--teal);font-weight:600;">✓ Transfer to ${transferTarget} logged.</p>` : ''}
+        ` : ''}
+      </div>
+    </div>
+    <div class="stat-row" style="margin-top:22px;">
+      <div class="card stat-card"><div class="stat-ic">📞</div><div class="stat-num">18</div><div class="stat-lab">Calls<br>Today</div></div>
+      <div class="card stat-card"><div class="stat-ic">✅</div><div class="stat-num">61%</div><div class="stat-lab">Connect<br>Rate</div></div>
+      <div class="card stat-card"><div class="stat-ic">⏱</div><div class="stat-num">3:42</div><div class="stat-lab">Avg Call<br>Length</div></div>
+      <div class="card stat-card"><div class="stat-ic">💬</div><div class="stat-num">9</div><div class="stat-lab">Texts<br>Sent</div></div>
+    </div>
+    <p style="font-size:11.5px;color:var(--slate);margin-top:10px;">Full team dialer stats — call volume, recordings, response times — live on the Dialer Dashboard for managers.</p>`;
+}
+
+function setDialerTab(t){ dialerTab = t; renderMain(); }
+
+function callLabel(){ return {idle:"Not on a call", ringing:"Ringing", connected:"Connected", wrapped:"Wrapping up"}[callState]; }
+
+function placeCall(){
+  callState = "ringing"; renderMain();
+  setTimeout(()=>{
+    callState = "connected"; callSeconds = 0; renderMain();
+    callTimer = setInterval(()=>{ callSeconds++; if(currentStop===5) renderMain(); }, 1000);
+  }, 1200);
+  if(currentStop===5) markTask('placeCall');
+  renderCoach();
+}
+
+function endCall(){ clearInterval(callTimer); callState = "wrapped"; renderMain(); }
+function pickDisposition(d){ selectedDisposition = d; renderMain(); }
+
+function saveDisposition(){
+  if(!selectedDisposition){ toast("Pick a disposition first"); return; }
+  const note = document.getElementById('callNote').value.trim();
+  getLead().timeline.unshift({type:'call', who:'You', when:'just now', body:`${selectedDisposition}${note?' — '+note:''}`});
+  toast("✓ Call logged to timeline");
+  callState = "idle";
+  if(currentStop===5) markTask('logDisposition');
+  renderMain(); renderCoach();
+}
+
+function useSmsTemplate(i){
+  const l = getLead();
+  dialerDraftText = smsTemplates[i].body.replace('{first}', l.name.split(' ')[0]);
+  renderMain();
+}
+
+function sendDialerText(){
+  const l = getLead();
+  const box = document.getElementById('dialerTextInput');
+  const msg = box ? box.value.trim() : '';
+  if(!msg){ toast("Write a message first"); return; }
+  l.timeline.unshift({type:'text', who:'You', when:'just now', body:msg});
+  dialerDraftText = "";
+  toast("✓ Text sent and logged to timeline");
+  renderMain(); renderCoach();
+}
+
+function dropVoicemail(name){
+  const l = getLead();
+  l.timeline.unshift({type:'call', who:'You', when:'just now', body:`Voicemail Drop — "${name}"`});
+  vmDropSent = true;
+  toast("✓ Voicemail dropped");
+  renderMain(); renderCoach();
+}
+
+function startTransfer(name){
+  const l = getLead();
+  l.timeline.unshift({type:'call', who:'You', when:'just now', body:`Call transferred to ${name}`});
+  transferTarget = name;
+  toast(`✓ Transferred to ${name}`);
+  renderMain(); renderCoach();
+}
+
+/* ================= VIEW: LEAD PONDS (STOP 6) ================= */
+function viewLeadPonds(){
+  return `
+    <div class="section-head"><div><h2 class="display">Lead Ponds</h2>
+      <div class="section-sub">Share leads across your team while keeping control, fairness, and accountability — found under Leads → Lead Ponds.</div></div></div>
+
+    <div class="leads-subnav">
+      <span class="lsub-tab" onclick="goStop(2)">All Leads</span>
+      <span class="lsub-tab active">Lead Ponds</span>
+    </div>
+
+    <div class="subtabs">
+      <button class="subtab ${pondView==='ponds'?'active':''}" onclick="setPondView('ponds')">Individual Ponds</button>
+      <button class="subtab ${pondView==='settings'?'active':''}" onclick="setPondView('settings')">Lead Pond Settings</button>
+      <button class="subtab ${pondView==='activity'?'active':''}" onclick="setPondView('activity')">Agent Activity</button>
+    </div>
+
+    ${pondView==='ponds' ? renderPondsList() : ''}
+    ${pondView==='settings' ? renderPondSettings() : ''}
+    ${pondView==='activity' ? renderPondActivity() : ''}
+  `;
+}
+
+function setPondView(v){ pondView = v; renderMain(); }
+function togglePond(id){ openPondId = openPondId===id ? null : id; renderMain(); }
+
+function renderPondsList(){
+  const s6 = tasksByStop[6];
+  return `
+    <div class="section-head" style="margin-bottom:14px;">
+      <div class="section-sub" style="margin:0;">Leads enter a pond via routing rules, manual assignment from a lead record, or bulk actions from the dashboard.</div>
+      <button class="mini-btn" onclick="createPond()">+ New Pond</button>
+    </div>
+    ${ponds.map(p=>{
+      const notWorking = p.leads.filter(l=>l.state==='Not Working').length;
+      const working = p.leads.filter(l=>l.state==='Working').length;
+      const pending = p.leads.filter(l=>l.state==='Pending Approval').length;
+      const open = openPondId===p.id;
+      const hasPendingTask = pending>0 && !s6[1].done;
+      return `
+      <div class="card pond-card">
+        <div class="pond-top" onclick="togglePond('${p.id}')">
+          <div><div class="pond-name">${p.name}</div><div class="pond-desc">${p.description}</div></div>
+          <div class="pond-counts">
+            <span class="pcount not">${notWorking} Not Working</span>
+            <span class="pcount working">${working} Working</span>
+            <span class="pcount pending ${hasPendingTask?'pulse':''}">${pending} Pending Approval</span>
+          </div>
+        </div>
+        <div class="pond-meta">
+          <span><b>Assigned Agents:</b> ${p.agentsAccess}</span>
+          <span><b>Default Manager:</b> ${p.defaultManager}</span>
+          <span><b>Time Limit to Claim:</b> ${p.timeLimitHours} hrs</span>
+          <span><b>Inbound Action:</b> ${p.inboundAction}</span>
+        </div>
+        ${open ? `
+          <div class="pond-leads">
+            ${p.leads.length ? p.leads.map(l=>`
+              <div class="pond-lead-row">
+                <div><b>${l.name}</b><div class="lc-source">${l.source}${l.note?` · <span style="color:var(--orange-dim);">${l.note}</span>`:''}</div></div>
+                <span class="pill ${l.state==='Working'?'hot':l.state==='Pending Approval'?'warm':l.state==='Claimed'?'new':'nurture'}">${l.state}</span>
+                <span class="pond-agent">${l.agent?l.agent:'—'}</span>
+                <div class="pond-actions">
+                  ${l.state==='Pending Approval'? `<button class="mini-btn" onclick="approveClaim('${p.id}','${l.id}')">Approve</button><button class="mini-btn" onclick="denyClaim('${p.id}','${l.id}')">Deny</button>` : ''}
+                  ${l.state==='Working'? `<button class="mini-btn" onclick="returnToPond('${p.id}','${l.id}')">Return to Pond</button>` : ''}
+                </div>
+              </div>`).join('') : `<p style="font-size:12.5px;color:var(--slate);">No leads currently in this pond.</p>`}
+          </div>` : ''}
+      </div>`;
+    }).join('')}
+  `;
+}
+
+function renderPondSettings(){
+  const s6 = tasksByStop[6];
+  const contactLabels = {call:'Call', text:'Text', email:'Email', onsite:'Onsite Message', voicemail:'Voicemail'};
+  return `
+  <div class="ld-layout">
+    <div class="card ld-panel">
+      <h4>Why this matters</h4>
+      <p style="font-size:12.5px;color:var(--slate);line-height:1.6;">These are global defaults — they apply to every pond unless a pond overrides them. Get these right first, then create individual ponds.</p>
+      <p style="font-size:12.5px;color:var(--slate);line-height:1.6;">Low limits and short timeouts keep leads circulating. High limits and long timeouts let leads stagnate invisibly.</p>
+    </div>
+    <div>
+      <div class="card ld-panel" style="margin-bottom:16px;">
+        <h4>Maximum Leads an Agent Can Work (per Pond)</h4>
+        <p style="font-size:12.5px;color:var(--slate);margin:0 0 10px;">A user's own "Max Working Leads" profile setting overrides this global value if one is set.</p>
+        <input type="number" min="1" max="50" class="select ${!s6[2].done?'pulse':''}" style="width:100px;" value="${pondSettings.maxWorking}" onchange="setMaxWorking(this.value)">
+      </div>
+      <div class="card ld-panel" style="margin-bottom:16px;">
+        <div class="consent-row" style="border-top:none;"><span><b>Require Manager Approval to Claim</b><br><span style="color:var(--slate);font-size:11.5px;">Agents submit a claim request with a reason instead of claiming directly.</span></span>
+          <button class="toggle ${pondSettings.requireApproval?'on':''}" onclick="togglePondSetting('requireApproval')"><span class="knob"></span></button></div>
+        <div class="consent-row"><span>Allow Agent-Level Users to Manage Tags</span><button class="toggle ${pondSettings.allowTags?'on':''}" onclick="togglePondSetting('allowTags')"><span class="knob"></span></button></div>
+        <div class="consent-row"><span>Allow Agent-Level Users to Manage Listing Alerts</span><button class="toggle ${pondSettings.allowAlerts?'on':''}" onclick="togglePondSetting('allowAlerts')"><span class="knob"></span></button></div>
+        <div class="consent-row"><span>Allow Bulk Add to Call List</span><button class="toggle ${pondSettings.allowBulkCallList?'on':''}" onclick="togglePondSetting('allowBulkCallList')"><span class="knob"></span></button></div>
+      </div>
+      <div class="card ld-panel" style="margin-bottom:16px;">
+        <h4>Allow Agent-Level Users to Contact Pond Leads By</h4>
+        ${Object.keys(contactLabels).map(ch=>`
+          <div class="consent-row"><span>${contactLabels[ch]}</span>
+            <button class="toggle ${pondSettings.contact[ch]?'on':''}" onclick="toggleContactMethod('${ch}')"><span class="knob"></span></button></div>`).join('')}
+        <p style="font-size:11.5px;color:var(--slate);margin-top:10px;">Any permitted channel moves the lead into Working status the moment it's used.</p>
+      </div>
+      <div class="card ld-panel">
+        <h4>Incoming Calls from Unworked Pond Leads</h4>
+        <select class="select" onchange="pondSettings.incomingRouting=this.value; toast('✓ Setting saved')">
+          <option value="default" ${pondSettings.incomingRouting==='default'?'selected':''}>Route to the default user</option>
+          <option value="broadcast" ${pondSettings.incomingRouting==='broadcast'?'selected':''}>Broadcast to pond agents</option>
+          <option value="both" ${pondSettings.incomingRouting==='both'?'selected':''}>Broadcast to pond agents and the default user</option>
+        </select>
+      </div>
+    </div>
+  </div>`;
+}
+
+const pondActivity = [
+  {agent:"Chris Delgado", pond:"Unclaimed Inbound", working:2, claims:3},
+  {agent:"Marisol Vega", pond:"Long-Term Nurture", working:1, claims:1},
+  {agent:"Jordan Blake", pond:"All Ponds (Manager)", working:0, claims:5}
+];
+
+function renderPondActivity(){
+  return `
+  <div class="card ld-panel">
+    <h4>Agent Activity</h4>
+    <div class="roster-row head"><span></span><span>Agent</span><span>Pond</span><span>Working</span><span>Claims (30d)</span></div>
+    ${pondActivity.map(a=>`
+      <div class="roster-row"><span class="roster-avatar">${a.agent.split(' ').map(w=>w[0]).slice(0,2).join('')}</span>
+        <span>${a.agent}</span><span>${a.pond}</span><span>${a.working}</span><span>${a.claims}</span></div>`).join('')}
+    <p style="font-size:11.5px;color:var(--slate);margin-top:14px;">This is your operational dashboard — working counts, claims, approvals, and transfers, filterable by agent, pond, or timeframe.</p>
+  </div>`;
+}
+
+function moveToPond(pondId, selectEl){
+  if(!pondId) return;
+  const l = getLead();
+  const pond = ponds.find(p=>p.id===pondId);
+  pond.leads.push({id:'p'+Date.now(), name:l.name, source:l.source, state:'Not Working', agent:null});
+  toast(`✓ ${l.name} moved to ${pond.name}`);
+  if(selectEl) selectEl.value = '';
+  if(currentStop===6 && l.id===1 && pondId==='unclaimed') markTask('moveToPond');
+  renderCoach();
+}
+
+function approveClaim(pondId, leadId){
+  const pond = ponds.find(p=>p.id===pondId);
+  const pl = pond.leads.find(l=>l.id===leadId);
+  pl.state = 'Claimed';
+  toast(`✓ Approved — ${pl.name} is now owned by ${pl.agent}`);
+  if(currentStop===6 && leadId==='p2') markTask('approveClaim');
+  renderMain(); renderCoach();
+}
+
+function denyClaim(pondId, leadId){
+  const pond = ponds.find(p=>p.id===pondId);
+  const pl = pond.leads.find(l=>l.id===leadId);
+  pl.state = 'Not Working'; pl.agent = null; pl.note = '';
+  toast("Claim denied — returned to Not Working");
+  renderMain(); renderCoach();
+}
+
+function returnToPond(pondId, leadId){
+  const pond = ponds.find(p=>p.id===pondId);
+  const pl = pond.leads.find(l=>l.id===leadId);
+  pl.state = 'Not Working'; pl.agent = null;
+  toast("Lead returned to the pond — visible to all agents with access again");
+  renderMain(); renderCoach();
+}
+
+function createPond(){
+  const n = ponds.length + 1;
+  ponds.push({
+    id:'pond'+n, name:'New Pond '+n, description:"Describe this pond's purpose — e.g. \u201CHot Inbound\u201D or \u201CSphere of Influence.\u201D",
+    agentsAccess:'All Agents', defaultManager:'Jordan Blake', timeLimitHours:24, inboundAction:'Do nothing', leads:[]
+  });
+  toast('✓ New pond created — customize its settings');
+  renderMain();
+}
+
+function togglePondSetting(key){ pondSettings[key] = !pondSettings[key]; renderMain(); }
+function toggleContactMethod(ch){ pondSettings.contact[ch] = !pondSettings.contact[ch]; renderMain(); }
+
+function setMaxWorking(v){
+  pondSettings.maxWorking = Math.max(1, parseInt(v)||1);
+  toast('✓ Max working leads updated');
+  if(currentStop===6 && pondSettings.maxWorking===5) markTask('setMaxWorking');
+  renderMain(); renderCoach();
+}
+
+/* ================= VIEW: REPORTS (STOP 7) ================= */
+let reportRange = "Last 30 days";
+let openFunnelStage = null;
+const funnelStages = [
+  {id:'visits', label:'Site Visits', count:2140, byline:'unique visitors this range'},
+  {id:'registered', label:'Registered Leads', count:186, byline:'became a lead in Sierra'},
+  {id:'contacted', label:'Contacted', count:129, byline:'received a call, text, or reply'},
+  {id:'appt', label:'Appointment Set', count:41, byline:'showings or listing consults booked'},
+  {id:'closed', label:'Closed', count:9, byline:'transactions closed'}
+];
+
+function viewReports(){
+  const s6 = tasksByStop[7];
+  return `
+    <div class="section-head"><div><h2 class="display">Reports</h2>
+      <div class="section-sub">The numbers your team lead checks every Monday morning.</div></div></div>
+    <div class="filter-row">
+      <select class="select ${!s6[1].done?'pulse':''}" onchange="changeReportRange(this.value)">
+        <option ${reportRange==='Last 30 days'?'selected':''}>Last 30 days</option>
+        <option ${reportRange==='Last 90 days'?'selected':''}>Last 90 days</option>
+        <option ${reportRange==='Year to date'?'selected':''}>Year to date</option>
+      </select>
+      <span style="font-size:12.5px;color:var(--slate);">Showing: ${reportRange}</span>
+    </div>
+    <div class="card ld-panel" style="margin-bottom:18px;">
+      <h4>Response Time</h4>
+      <div class="score-row" style="margin:6px 0 0;">
+        <div class="score-item"><div class="num mono">4m 12s</div><div class="lab">Avg. first response</div></div>
+        <div class="score-item"><div class="num mono">96%</div><div class="lab">Leads contacted &lt; 1hr</div></div>
+        <div class="score-item"><div class="num mono">2.3</div><div class="lab">Touches per lead / week</div></div>
+      </div>
+    </div>
+    <div class="card ld-panel">
+      <h4>Conversion Funnel — click a stage for the breakdown</h4>
+      ${funnelStages.map((s,i)=>{
+        const pct = Math.round((s.count/funnelStages[0].count)*100);
+        return `
+        <div class="funnel-row ${!s6[0].done?'pulse':''}" onclick="toggleFunnelStage('${s.id}')">
+          <div class="funnel-label">${s.label}</div><div class="funnel-track"><div class="funnel-bar" style="width:${pct}%"></div></div>
+          <div class="funnel-count mono">${s.count}</div></div>
+        ${openFunnelStage===s.id ? `<div class="funnel-detail">${s.byline}. ${i>0?`That's a ${Math.round((s.count/funnelStages[i-1].count)*100)}% carry-through from ${funnelStages[i-1].label}.`:''}</div>` : ''}`;
+      }).join('')}
+    </div>`;
+}
+
+function toggleFunnelStage(id){
+  openFunnelStage = openFunnelStage===id ? null : id;
+  if(currentStop===7) markTask('viewFunnel');
+  renderMain(); renderCoach();
+}
+
+function changeReportRange(v){
+  reportRange = v;
+  if(currentStop===7 && v!=='Last 30 days') markTask('changeRange');
+  renderMain(); renderCoach();
+}
+
+/* ================= FREEFORM: SAVED SEARCHES ================= */
+function viewSavedSearches(){
+  const all = leads.flatMap(l=>l.searches.map(s=>({...s, lead:l.name})));
+  return `
+    <div class="section-head"><div><h2 class="display">Saved Searches</h2>
+      <div class="section-sub">Every saved search across all leads, in one place.</div></div></div>
+    ${all.map(s=>`
+      <div class="card search-card"><div class="sc-top"><h4>${s.name} <span style="color:var(--slate);font-weight:500;font-size:12px;">— ${s.lead}</span></h4>
+        <button class="mini-btn">Convert to E-Alert</button></div><div class="crit">${s.crit}</div></div>`).join('')}
+  `;
+}
+
+/* ================= FREEFORM: LISTINGS ================= */
+function viewListings(){
+  const all = [
+    {addr:"214 Alder Ct", price:"$489,000", status:"Active"},{addr:"88 Windham Row", price:"$462,500", status:"Active"},
+    {addr:"1220 Birchwood Ln", price:"$525,000", status:"Pending"},{addr:"71 Elm St", price:"$399,900", status:"Active"},
+    {addr:"92 North Ridge Ter", price:"$549,000", status:"Active"},{addr:"310 Union Lofts #4B", price:"$339,000", status:"Sold"}
+  ];
+  return `
+    <div class="section-head"><div><h2 class="display">Listings</h2>
+      <div class="section-sub">Active MLS-fed listings your team represents.</div></div></div>
+    <div class="prop-grid">${all.map(p=>`
+      <div class="card prop-card"><div class="prop-img">Listing photo</div>
+        <div class="prop-body"><div class="prop-price">${p.price}</div><div class="prop-addr">${p.addr}</div>
+          <div class="prop-tags"><span class="prop-tag">${p.status}</span></div></div></div>`).join('')}
+    </div>`;
+}
+
+/* ================= FREEFORM: CONTENT (Website + Marketing) ================= */
+let sitePages = [
+  {name:"Home", url:"/", published:true},{name:"Search / IDX", url:"/search", published:true},
+  {name:"Featured Listings", url:"/featured", published:true},{name:"Riverside Heights Homes", url:"/riverside-heights-homes", published:true},
+  {name:"Buyer's Guide", url:"/buyers-guide", published:false},{name:"Meet the Team", url:"/about", published:true}
+];
+let selectedTemplate = null;
+let selectedAudience = "Warm";
+const templates = [
+  {id:'digest', name:'New Listings Digest', desc:'Auto-curated homes matching saved criteria.'},
+  {id:'market', name:'Market Update', desc:'Monthly stats on the local market.'},
+  {id:'justsold', name:'Just Sold Announcement', desc:'Social proof from a recent close nearby.'},
+  {id:'openhouse', name:'Open House Invite', desc:'Promote an upcoming open house.'}
+];
+
+function viewContent(){
+  return `
+    <div class="section-head"><div><h2 class="display">Content</h2>
+      <div class="section-sub">What leads see on your site, and what you send them directly.</div></div></div>
+    <div class="subtabs">
+      <button class="subtab ${contentSub==='pages'?'active':''}" onclick="setContentSub('pages')">Website Pages</button>
+      <button class="subtab ${contentSub==='campaigns'?'active':''}" onclick="setContentSub('campaigns')">Campaigns</button>
+    </div>
+    ${contentSub==='pages' ? `
+      <div class="ld-layout">
+        <div class="card ld-panel"><h4>Site Health</h4>
+          <div class="kv"><span class="k">Status</span><span class="v">Live</span></div>
+          <div class="kv"><span class="k">Domain</span><span class="v">yourteam.sierrasites.com</span></div>
+          <div class="kv"><span class="k">Visits (30d)</span><span class="v">2,140</span></div></div>
+        <div class="card ld-panel"><h4>Pages</h4>
+          ${sitePages.map((p,i)=>`
+            <div class="consent-row"><span><b>${p.name}</b><br><span style="color:var(--slate);font-size:11.5px;">${p.url}</span></span>
+              <button class="toggle ${p.published?'on':''}" onclick="togglePage(${i})"><span class="knob"></span></button></div>`).join('')}
+        </div>
+      </div>` : `
+      <div class="ld-layout">
+        <div class="card ld-panel"><h4>Campaign Summary</h4>
+          <div class="kv"><span class="k">Template</span><span class="v">${selectedTemplate ? templates.find(t=>t.id===selectedTemplate).name : '— none —'}</span></div>
+          <div class="kv"><span class="k">Audience</span><span class="v">${selectedAudience}</span></div>
+          <div class="kv"><span class="k">Recipients</span><span class="v">${leads.filter(l=>selectedAudience==='All'|| l.status===selectedAudience).length} leads</span></div></div>
+        <div>
+          <div class="card ld-panel" style="margin-bottom:16px;"><h4>1. Choose a template</h4>
+            <div class="suggest-pool">${templates.map(t=>`
+              <div class="card pool-card ${selectedTemplate===t.id?'picked':''}" onclick="pickTemplate('${t.id}')">
+                <div class="pool-check">${selectedTemplate===t.id?'✓':''}</div>
+                <div class="pool-info"><b>${t.name}</b><span>${t.desc}</span></div></div>`).join('')}</div></div>
+          <div class="card ld-panel"><h4>2. Confirm audience &amp; send</h4>
+            <div class="status-row" style="margin-bottom:14px;border-top:none;">
+              <select class="select" onchange="setAudience(this.value)">
+                <option value="All">All Leads</option><option value="Hot">Hot</option><option value="Warm" selected>Warm</option>
+                <option value="New">New</option><option value="Nurture">Nurture</option>
+              </select></div>
+            <button class="coach-btn" style="width:auto;padding:12px 22px;" onclick="sendCampaign()">Send Campaign</button></div>
+        </div>
+      </div>`}
+  `;
+}
+
+function setContentSub(s){ contentSub = s; renderMain(); }
+function togglePage(i){ sitePages[i].published = !sitePages[i].published; renderMain(); }
+function pickTemplate(id){ selectedTemplate = id; renderMain(); }
+function setAudience(v){ selectedAudience = v; renderMain(); }
+function sendCampaign(){
+  if(!selectedTemplate){ toast("Choose a template first"); return; }
+  const count = leads.filter(l=>selectedAudience==='All'|| l.status===selectedAudience).length;
+  toast(`✓ Campaign sent to ${count} leads`);
+}
+
+/* ================= FREEFORM: BLOG ================= */
+const blogPosts = [
+  {title:"5 Signs It's Time to Sell Your Home", date:"Jun 28, 2026", status:"Published"},
+  {title:"First-Time Buyer's Guide to Riverside Heights", date:"Jun 14, 2026", status:"Published"},
+  {title:"What Rising Rates Mean for Local Buyers", date:"Draft", status:"Draft"}
+];
+function viewBlog(){
+  return `
+    <div class="section-head"><div><h2 class="display">Blog</h2>
+      <div class="section-sub">SEO content and something fresh to share with nurture leads.</div></div></div>
+    ${blogPosts.map(p=>`
+      <div class="card search-card"><div class="sc-top"><h4>${p.title}</h4><span class="pill ${p.status==='Published'?'new':'nurture'}">${p.status}</span></div>
+        <div class="crit">${p.date}</div></div>`).join('')}
+  `;
+}
+
+/* ================= FREEFORM: USERS ================= */
+const teamUsers = [
+  {name:"Jordan Blake", role:"Team Lead / Agent", status:"Active", login:"2 hrs ago"},
+  {name:"You (VA Trainee)", role:"Virtual Assistant", status:"Active", login:"Now"},
+  {name:"Marisol Vega", role:"ISA", status:"Active", login:"20 min ago"},
+  {name:"Chris Delgado", role:"Agent", status:"Active", login:"1 day ago"},
+  {name:"Priya Nair", role:"Admin", status:"Inactive", login:"3 weeks ago"}
+];
+function viewUsers(){
+  return `
+    <div class="section-head"><div><h2 class="display">Users</h2>
+      <div class="section-sub">Everyone with access to this CRM account — useful for confirming lead ownership on admin tasks.</div></div></div>
+    <div class="card ld-panel">
+      <div class="roster-row head"><span></span><span>Name</span><span>Role</span><span>Status</span><span>Last Login</span></div>
+      ${teamUsers.map(u=>`
+        <div class="roster-row"><span class="roster-avatar">${u.name.split(' ').map(w=>w[0]).slice(0,2).join('')}</span>
+          <span>${u.name}</span><span>${u.role}</span><span>${u.status}</span><span>${u.login}</span></div>`).join('')}
+    </div>`;
+}
+
+/* ================= FREEFORM: ACCOUNT SETTINGS ================= */
+let notifPrefs = {newLeadEmail:true, newLeadText:true, newLeadCall:false, dailyDigest:true};
+let signature = "Best,\nAlex Rivera\nYour Team Realty | (555) 010-2200";
+let workingHours = "8:00 AM – 6:00 PM";
+function viewSettings(){
+  return `
+    <div class="section-head"><div><h2 class="display">Account Settings</h2>
+      <div class="section-sub">Your personal preferences — these don't affect anyone else on the team.</div></div></div>
+    <div class="ld-layout">
+      <div class="card ld-panel"><h4>New Lead Alerts</h4>
+        <div class="consent-row"><span>Email me</span><button class="toggle ${notifPrefs.newLeadEmail?'on':''}" onclick="toggleNotif('newLeadEmail')"><span class="knob"></span></button></div>
+        <div class="consent-row"><span>Text me</span><button class="toggle ${notifPrefs.newLeadText?'on':''}" onclick="toggleNotif('newLeadText')"><span class="knob"></span></button></div>
+        <div class="consent-row"><span>Call me</span><button class="toggle ${notifPrefs.newLeadCall?'on':''}" onclick="toggleNotif('newLeadCall')"><span class="knob"></span></button></div>
+        <div class="consent-row"><span>Daily digest email</span><button class="toggle ${notifPrefs.dailyDigest?'on':''}" onclick="toggleNotif('dailyDigest')"><span class="knob"></span></button></div>
+      </div>
+      <div>
+        <div class="card ld-panel" style="margin-bottom:16px;"><h4>Email Signature</h4>
+          <div class="note-box"><textarea id="sigInput" style="min-height:90px;">${signature}</textarea><button onclick="saveSignature()">Save</button></div></div>
+        <div class="card ld-panel"><h4>Working Hours</h4>
+          <p style="font-size:12.5px;color:var(--slate);margin:0 0 10px;">Sierra won't route auto-dial reminders to you outside this window.</p>
+          <select class="select" onchange="workingHours=this.value; toast('Working hours updated')">
+            <option ${workingHours==='8:00 AM – 6:00 PM'?'selected':''}>8:00 AM – 6:00 PM</option>
+            <option ${workingHours==='9:00 AM – 5:00 PM'?'selected':''}>9:00 AM – 5:00 PM</option>
+            <option ${workingHours==='7:00 AM – 7:00 PM'?'selected':''}>7:00 AM – 7:00 PM</option>
+          </select></div>
+      </div>
+    </div>`;
+}
+function toggleNotif(key){ notifPrefs[key] = !notifPrefs[key]; renderMain(); }
+function saveSignature(){ signature = document.getElementById('sigInput').value; toast("✓ Signature saved"); }
+
+/* ================= VIEW: FINAL / QUIZ ================= */
+const quiz = [
+  {q:"A new lead just registered on the site and hasn't been contacted. Where do you look first?", opts:["The Suggest tab","The Leads Dashboard","Account Settings"], correct:1, why:"The Leads Dashboard is where every incoming lead surfaces, filterable by status and source."},
+  {q:"Which tab stays pinned as your command center on a lead?", opts:["Plans","Summary","Searches"], correct:1, why:"Summary is home base — contact info, consent, status, tasks, and the timeline all live there."},
+  {q:"A lead has text consent turned off. What should you do?", opts:["Text them anyway, it's faster","Respect it — use email or a call instead","Turn it back on yourself"], correct:1, why:"Consent toggles exist for compliance. Never override a lead's stated preference."},
+  {q:"Where do you convert a lead's saved search into an automatic E-Alert?", opts:["Searches tab","Properties tab","Plans tab"], correct:0, why:"The Searches tab shows saved criteria and lets you convert it into an E-Alert."},
+  {q:"Where would an admin confirm who currently owns a lead on the team?", opts:["The Users page","The Blog","Account Settings"], correct:0, why:"Users lists every teammate with CRM access and their role — the right place for admin/ownership questions."},
+  {q:"An agent starts calling a lead sitting in a Lead Pond. What happens to that lead?", opts:["Nothing changes","It moves to Working status and is hidden from other agents","It's automatically claimed and owned"], correct:1, why:"Working is temporary and exclusive — it locks the lead from other agents, but ownership only transfers when it's actually claimed or approved."},
+  {q:"A claim request has been sitting in a pond for two days. What's really going on?", opts:["The timeout is paused until a manager approves, denies, or the agent returns it","The lead has already been auto-assigned","Nothing — timeouts don't apply to claim requests"], correct:0, why:"Pending Approval pauses the timeout. The lead stays locked until you act on the request or the agent returns it."}
+];
+
+function viewFinal(){
+  if(quizIndex < quiz.length){
+    const q = quiz[quizIndex];
+    return `
+      <div class="section-head"><div><h2 class="display">License to Drive</h2>
+        <div class="section-sub">Question ${quizIndex+1} of ${quiz.length}</div></div></div>
+      <div class="card quiz-card"><div class="quiz-q">${q.q}</div>
+        ${q.opts.map((o,i)=>`<button class="quiz-opt" onclick="answerQuiz(${i})">${o}</button>`).join('')}
+        <div class="quiz-fb" id="quizFb"></div></div>`;
+  }
+  return `
+    <div class="cert">
+      <div class="cert-eyebrow">Sierra Test Drive — Certificate of Completion</div>
+      <h2 class="display">You've earned your license to drive.</h2>
+      <input class="cert-name-input" id="certName" placeholder="Type your name">
+      <div class="score-row">
+        <div class="score-item"><div class="num mono">${quizScore}/${quiz.length}</div><div class="lab">Quiz Score</div></div>
+        <div class="score-item"><div class="num mono">${totalTasks()}/${totalTasks()}</div><div class="lab">Tasks Completed</div></div>
+        <div class="score-item"><div class="num mono">${document.getElementById('odoDigits')?document.getElementById('odoDigits').textContent:'000000'}</div><div class="lab">Miles Driven</div></div>
+      </div>
+      <div class="cert-meta">Completed ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})} · Sierra CRM Onboarding Simulator</div>
+      <div style="margin-top:26px;"><button class="btn-primary" style="color:var(--navy-3)" onclick="window.print()">Print certificate</button></div>
+    </div>`;
+}
+
+function answerQuiz(i){
+  const q = quiz[quizIndex];
+  const buttons = document.querySelectorAll('.quiz-opt');
+  buttons.forEach((b,idx)=>{ b.disabled = true; if(idx===q.correct) b.classList.add('correct'); if(idx===i && i!==q.correct) b.classList.add('wrong'); });
+  if(i===q.correct) quizScore++;
+  const fb = document.getElementById('quizFb');
+  fb.textContent = (i===q.correct?"Correct — ":"Not quite — ") + q.why;
+  fb.classList.add('show');
+  setTimeout(()=>{ quizIndex++; renderMain(); }, 1600);
+}
+
+/* ================= START ================= */
+updateTopbar();
+</script>
+</body>
+</html>

@@ -1,0 +1,652 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CFO &amp; Bookkeeper · SkillCloud Academy</title>
+  <meta name="description" content="Practice CFO and bookkeeping tasks: variance memos, financial templates, vendor communications, and investor reporting using Claude.">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/role-dash.css">
+  <link rel="stylesheet" href="../assets/css/workflow.css">
+<style>
+  .rd-modes-grid{align-items:stretch}
+  .rd-mode-card{
+    opacity:0;transform:translateY(10px);animation:rdxIn .45s ease forwards;
+    transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+  }
+  .rd-mode-card:hover{transform:translateY(-3px);box-shadow:0 16px 36px rgba(10,38,71,.1);border-color:rgba(23,195,212,.4)}
+  .rd-mode-card:nth-child(1){animation-delay:.04s}
+  .rd-mode-card:nth-child(2){animation-delay:.1s}
+  .rd-mode-card:nth-child(3){animation-delay:.16s}
+  .rd-mode-card:nth-child(4){animation-delay:.22s}
+  @keyframes rdxIn{to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){.rd-mode-card{animation:none;opacity:1;transform:none}}
+
+  .rd-mode-card.rdx-featured{grid-column:1 / -1;border-color:rgba(23,195,212,.35);background:linear-gradient(180deg,#fff, #f8fdfe)}
+  .rdx-ordinal{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--v-cyan-d,#0fa6b6)}
+
+  .rdx-ledger{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:14px}
+  .rdx-ledger-item{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .rdx-ledger-item b{color:var(--navy,#0a2647);font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="nav-inner">
+  <a class="brand" href="../index.html"><img src="../assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+  <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+  <div class="menu">
+    <a class="navlink" href="../index.html">Home</a>
+    <a class="navlink" href="../ai.html">Introduction</a>
+    <a class="navlink" href="../index.html#roles">Roles</a>
+  </div>
+  <span class="spacer"></span>
+  <a class="pill" href="../index.html#roles">Start Practicing</a>
+  <a class="user-chip" href="../account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
+</div></nav>
+
+<div class="fund-nudge">
+  <p><strong>New here?</strong> Complete the Introduction first. It only takes a few minutes and covers what Claude, ChatGPT, and Manus can do before you jump into role practice.</p>
+  <a href="../ai.html">Go to Introduction &rarr;</a>
+</div>
+
+<!-- HERO -->
+<section class="rd-hero">
+  <div class="orb orb-1" aria-hidden="true"></div>
+  <div class="orb orb-2" aria-hidden="true"></div>
+  <div class="orb orb-3" aria-hidden="true"></div>
+  <div class="orb orb-4" aria-hidden="true"></div>
+  <div class="orb orb-5" aria-hidden="true"></div>
+  <div class="rd-hero-inner">
+    <a class="rd-back" href="../index.html#roles">All Roles</a>
+    <h1>CFO &amp; Bookkeeper</h1>
+    <p class="rd-hero-desc">Practice month-end bookkeeping and reporting, drafting variance memos, AR explanations, and vendor emails, with Claude as your financial writing partner.</p>
+  </div>
+</section>
+
+<!-- PROGRESS STATS -->
+<section class="rd-stats-section">
+  <div class="rd-stats-inner">
+    <div class="rd-stats-overall">
+      <div class="rd-stats-meta">
+        <span class="rd-stats-label">Your overall progress</span>
+        <span class="rd-stats-pct" id="overall-pct-num">0% Completed</span>
+      </div>
+      <div class="rd-stats-track">
+        <div class="rd-stats-fill" id="overall-bar-fill"></div>
+      </div>
+      <div class="rdx-ledger">
+        <span class="rdx-ledger-item">Case Simulator <b id="rdx-sim">0/1</b></span>
+        <span class="rdx-ledger-item">Prompt Practice <b id="rdx-prompt">0/8</b></span>
+        <span class="rdx-ledger-item">Deadline Quiz <b id="rdx-quiz">0/6</b></span>
+      </div>
+      <div class="rd-stats-footer">
+        <button class="rd-reset-btn" onclick="resetProgress('cfo')">Reset progress</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRACTICE MODES -->
+<section class="rd-modes-section" id="practice">
+  <div class="rd-modes-inner">
+    <div class="rd-section-header">
+      <p class="rd-eyebrow">Practice Modes</p>
+      <h2 class="rd-section-title">Choose your training</h2>
+      <p class="rd-section-sub">Start with the Case Simulator, then come back to the others.</p>
+    </div>
+    <div class="rd-modes-grid">
+
+      <div class="rd-mode-card rdx-featured">
+        <div class="rd-mode-top">
+          <div class="rd-mode-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><line x1="12" y1="7.5" x2="12" y2="12.5"/><line x1="10.5" y1="13.8" x2="6" y2="16.7"/><line x1="13.5" y1="13.8" x2="18" y2="16.7"/></svg></div>
+          <span class="rdx-ordinal">Module 01</span>
+        </div>
+        <div class="rd-mode-name">Case Simulator</div>
+        <p class="rd-mode-desc">A full real bookkeeping workflow end to end: a commission log reconciliation with a seeded discrepancy, a P&amp;L narrative, and vendor communication.</p>
+        <div class="rd-mode-footer">
+          <span class="rd-mode-count"><strong>1</strong> full case, reconciliation to report</span>
+          <a class="rd-mode-cta" href="#" onclick="openPanel('sim'); return false;">Launch &rarr;</a>
+        </div>
+      </div>
+
+
+      <div class="rd-mode-card">
+        <div class="rd-mode-top">
+          <div class="rd-mode-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+          <span class="rdx-ordinal">Module 02</span>
+        </div>
+        <div class="rd-mode-name">Prompt Practice</div>
+        <p class="rd-mode-desc">Draft variance memos, explain financial concepts, create bookkeeping checklists, write vendor communications, and produce investor update narratives using Claude. Customize real parameters and copy the finished prompt.</p>
+        <div class="rd-mode-footer">
+          <span class="rd-mode-count"><strong>8</strong> interactive prompts</span>
+          <a class="rd-mode-cta" href="#" onclick="openPanel('prompt'); return false;">Practice &rarr;</a>
+        </div>
+      </div>
+
+      <div class="rd-mode-card">
+        <div class="rd-mode-top">
+          <div class="rd-mode-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></div>
+          <span class="rdx-ordinal">Module 03</span>
+        </div>
+        <div class="rd-mode-name">Deadline Quiz</div>
+        <p class="rd-mode-desc">Test your bookkeeping knowledge: month-end close timelines, AR aging action windows, reconciliation checkpoints, and reporting cycles.</p>
+        <div class="rd-mode-footer">
+          <span class="rd-mode-count"><strong>6</strong> questions</span>
+          <a class="rd-mode-cta" href="#" onclick="openPanel('quiz'); return false;">Start &rarr;</a>
+        </div>
+      </div>
+
+
+      <div class="rd-mode-card rd-mode-resources" onclick="toggleResources(this)" role="button" tabindex="0">
+        <div class="rd-mode-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+        </div>
+        <div class="rd-res-body">
+          <div class="rd-mode-name">Resources</div>
+          <p class="rd-mode-desc">Prompt library and role playbooks. Study before practicing or keep open during your sessions.</p>
+        </div>
+        <span class="rd-mode-cta">View Prompts <svg class="res-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 6 8 10 12 6"/></svg></span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     PANEL: CASE SIMULATOR
+     ══════════════════════════════════════════════════════════ -->
+<div class="lc-panel" id="panel-sim">
+  <div class="lc-panel-header">
+    <button class="lc-panel-back" onclick="simPanelBack()">Back</button>
+    <span class="lc-panel-title">Case Simulator &mdash; CFO &amp; Bookkeeper</span>
+  </div>
+  <div class="lc-panel-body">
+    <div class="lc-state-bar" id="sim-state-bar" style="display:none"></div>
+    <div id="sim-pick">
+      <p style="font-size:14px;color:var(--v-muted);margin:0 0 20px">Run the full month-end reconciliation workflow end to end, with an embedded decision point and a real evaluation score.</p>
+      <div class="lc-sc-grid" id="sim-cards"></div>
+    </div>
+    <div id="sim-play" class="lc-play">
+      <div class="lc-progress-track"><div class="lc-progress-fill" id="sim-prog"></div></div>
+      <div class="lc-scorebar">
+        <span class="lc-chip" id="sim-step-chip"></span>
+        <span class="lc-chip" id="sim-score-chip"></span>
+      </div>
+      <div id="sim-head"></div>
+      <div class="lc-scenario-box" id="sim-body"></div>
+    </div>
+    <div id="sim-workflow" style="display:none">
+      <div class="lc-progress-track"><div class="lc-progress-fill" id="wf-prog"></div></div>
+      <div class="lc-scorebar">
+        <span class="lc-chip" id="wf-step-chip"></span>
+        <span class="lc-chip" id="wf-label-chip"></span>
+      </div>
+      <div id="wf-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PANEL: PROMPT PRACTICE
+     ══════════════════════════════════════════════════════════ -->
+<div class="lc-panel" id="panel-prompt">
+  <div class="lc-panel-header">
+    <button class="lc-panel-back" onclick="closePanel('prompt')">Back</button>
+    <span class="lc-panel-title">Prompt Practice &mdash; CFO &amp; Bookkeeper</span>
+  </div>
+  <div class="lc-panel-body" style="max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px;">
+    <div class="lc-callout-info" style="margin-bottom: 24px;">
+      <strong>Prompt Practice Playground:</strong> Select a financial task from the sidebar, customize its parameters, and watch the prompt update live. Copy the final prompt straight into Claude.
+    </div>
+    <div class="prompt-layout">
+      <div class="prompt-sidebar">
+        <div class="prompt-search-wrap">
+          <span class="prompt-search-icon">&#128269;</span>
+          <input type="text" id="prompt-search" class="prompt-search-input" placeholder="Search prompts..." oninput="filterPrompts()">
+        </div>
+        <div class="prompt-list-scroll" id="prompt-list-scroll"></div>
+      </div>
+      <div class="prompt-detail-panel" id="prompt-detail-view"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PANEL: DEADLINE QUIZ
+     ══════════════════════════════════════════════════════════ -->
+<div class="lc-panel" id="panel-quiz">
+  <div class="lc-panel-header">
+    <button class="lc-panel-back" onclick="closePanel('quiz')">Back</button>
+    <span class="lc-panel-title">Deadline Quiz &mdash; CFO &amp; Bookkeeper</span>
+  </div>
+  <div class="lc-panel-body">
+    <div id="quiz-intro" class="lc-quiz-intro">
+      <div class="lc-quiz-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="13" r="8" stroke="#fff" stroke-width="1.8"/><path d="M12 9v4l2.5 2.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 2.5h5M12 2.5v2.2" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+      <h2>Bookkeeping Knowledge Quiz</h2>
+      <p>Test your knowledge of reconciliation practices, AR aging, and month-end close cadence. The clock runs while you answer.</p>
+      <div class="lc-quiz-meta"><span id="quiz-meta-count">Questions</span><span>Timed</span></div>
+      <p class="lc-quiz-study">Need to review first? <a href="../study-guide.html#cfo" style="color:var(--v-cyan-d);font-weight:700">Open the Study Guide &rarr;</a></p>
+      <button class="lc-quiz-start-btn" onclick="quizStart()">Start the clock &rarr;</button>
+    </div>
+    <div id="quiz-play" style="display:none">
+      <div class="lc-progress-track"><div class="lc-progress-fill" id="quiz-prog"></div></div>
+      <div class="lc-scorebar">
+        <span class="lc-chip" id="quiz-num-chip"></span>
+        <span class="lc-chip" id="quiz-time-chip">0:00</span>
+        <span class="lc-chip" id="quiz-score-chip">Score: 0</span>
+      </div>
+      <div class="lc-scenario-box" id="quiz-body"></div>
+    </div>
+    <div id="quiz-done" style="display:none"></div>
+  </div>
+</div>
+
+<div class="rd-resources-panel" id="resources-panel">
+  <div class="rd-materials-inner">
+
+    <div class="rd-warn">
+      <h4>Important reminder</h4>
+      <p>Claude is not a licensed accountant, CPA, or financial advisor. A qualified professional should review all financial outputs before official use. Never enter banking credentials, tax ID numbers, or proprietary financial data into Claude.</p>
+    </div>
+
+    <div class="rd-glance">
+      <h4>Your role at a glance</h4>
+      <p>Manage month-end bookkeeping and reconciliation · Draft financial memos and narratives · Communicate with vendors and investors · Build financial templates and checklists · Explain financial concepts to stakeholders.</p>
+    </div>
+
+    <details class="mod" open><summary><span class="num">1</span>Financial document drafting</summary><div class="body">
+      <div class="prompt"><span class="lbl">VARIANCE MEMO</span>Draft a Q1 budget variance memo. Budgeted $45,000 revenue, achieved $52,000 (15.6% above). OpEx $38,000 vs $35,000 budget (8.6% over). 200-word executive summary.</div>
+    </div></details>
+
+    <details class="mod"><summary><span class="num">2</span>Explaining financial concepts</summary><div class="body">
+      <div class="prompt"><span class="lbl">EXPLAIN</span>Explain accounts receivable aging in plain English for a new bookkeeper. Include what it is, why it matters in real estate, and what action to take at 30, 60, and 90+ days overdue.</div>
+    </div></details>
+
+    <details class="mod"><summary><span class="num">3</span>Creating financial templates</summary><div class="body">
+      <div class="prompt"><span class="lbl">MONTHLY CHECKLIST</span>Create a monthly bookkeeping task checklist. Week 1: reconcile bank accounts, review AP. Week 2: payroll, expense categorization. Week 3: AR follow-ups, vendor invoices. Week 4: month-end close, statement review.</div>
+    </div></details>
+
+    <details class="mod"><summary><span class="num">4</span>Vendor &amp; client communication</summary><div class="body">
+      <div class="prompt"><span class="lbl">PAYMENT EMAIL</span>Write a professional email to a vendor with an outstanding invoice of $3,200 from 45 days ago. Acknowledge the oversight, confirm details, provide a payment date within 10 business days. Professional, apologetic tone.</div>
+    </div></details>
+
+    <details class="mod"><summary><span class="num">5</span>Financial report narratives</summary><div class="body">
+      <div class="prompt"><span class="lbl">INVESTOR UPDATE</span>Write a brief investor update: NOI this quarter $128,000, up from $112,000. Occupancy 96%. One property had a $8,500 HVAC repair. Expect Q3 NOI between $130,000 to 135,000.</div>
+    </div></details>
+
+  </div>
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="../index.html#roles">Choose Your Role</a>
+        <a class="fl" href="../index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="leasing-coordinator.html">Leasing Coordinator</a>
+        <a class="fl" href="operations-manager.html">Operations</a>
+        <a class="fl" href="cfo-bookkeeper.html">CFO / Bookkeeper</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="../assets/js/app-core.js"></script>
+<script src="../assets/js/workflow.js"></script>
+<script src="../assets/js/site.js"></script>
+<script>
+      const ROLE = 'cfo';
+  window.SC_ROLE = ROLE;
+  const rpMe = SCApp.requireAuth();
+  const MODES = [
+    { id: 'sim', total: 1, active: true },
+    { id: 'prompt', total: 8, active: true },
+    { id: 'quiz', total: 6, active: true }
+  ];
+  
+  function loadProgress() {
+    let completedSum = 0;
+    let totalMax = 0;
+    
+    MODES.forEach(m => {
+      if (!m.active) return;
+      const val = parseInt(localStorage.getItem(`sc_${ROLE}_${m.id}`) || '0');
+      completedSum += val;
+      totalMax += m.total;
+    });
+    
+    const overallPct = totalMax > 0 ? Math.round((completedSum / totalMax) * 100) : 0;
+    const overallNum = document.getElementById('overall-pct-num');
+    const overallBar = document.getElementById('overall-bar-fill');
+    
+    if (overallNum) overallNum.textContent = overallPct + '% Completed';
+    if (overallBar) setTimeout(() => overallBar.style.width = overallPct + '%', 200);
+
+    MODES.forEach(m => {
+      const el = document.getElementById('rdx-' + m.id);
+      if (!el) return;
+      const val = parseInt(localStorage.getItem(`sc_${ROLE}_${m.id}`) || '0');
+      el.textContent = val + '/' + m.total;
+    });
+  }
+
+  function resetProgress(role) {
+    if (!confirm('Reset all progress for this role?')) return;
+    MODES.forEach(m => {
+      if (m.active) localStorage.removeItem(`sc_${role}_${m.id}`);
+    });
+    loadProgress();
+  }
+  
+  loadProgress();
+
+  /* ══════════════════════════════════════════════════════════
+     CASE SIMULATOR: commission reconciliation with a seeded
+     discrepancy, general workflow
+     ══════════════════════════════════════════════════════════ */
+  window.SIM_DATA = [
+    { type: 'workflow', tag: 'CFO/Bookkeeper · Full Case', title: 'Month-End Reconciliation: Full Bookkeeping Workflow',
+      desc: 'A commission log reconciliation with a real seeded discrepancy, a P&L narrative, and vendor communication.',
+      stepCount: 7,
+      wfLabels: ['Commission Log', 'Bank Reconciliation', 'Discrepancy Decision', 'Corrected Summary', 'P&amp;L Narrative', 'Vendor Email', 'Wrap-Up'],
+      wfSteps: [ cfoStep0, cfoStep1, cfoStep2, cfoStep3, cfoStep4, cfoStep5, cfoStep6 ],
+      wfAfterRender: { 2: function () { cfoDiscrepancyDecision(); }, 6: function () { wfRenderFinalScore('wf-eval-container', 'cfo', 'general', 1); } } }
+  ];
+  window.PANEL_ON_OPEN = window.PANEL_ON_OPEN || {};
+  window.PANEL_ON_OPEN.sim = simInit;
+  window.PANEL_ON_OPEN.prompt = initPromptPlayground;
+  window.PANEL_ON_OPEN.quiz = quizReset;
+
+  function cfoStep0() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 1: Commission Log</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        Month-end close is due. Review this month's commission log before reconciling it against the bank deposits.
+      </p>
+      <div class="wf-form-section">
+        <h4>March Commission Log</h4>
+        ${wfField('wf-cfo-a1', 'Agent A. Reyes, Closing #4412', 'text', '', '$4,850.00', true)}
+        ${wfField('wf-cfo-a2', 'Agent A. Reyes, Closing #4438', 'text', '', '$4,850.00', true)}
+        ${wfField('wf-cfo-a3', 'Agent T. Nolan, Closing #4419', 'text', '', '$6,120.00', true)}
+        ${wfField('wf-cfo-a4', 'Agent M. Ibarra, Closing #4427', 'text', '', '$3,975.00', true)}
+        ${wfField('wf-cfo-total', 'Log Total', 'text', '', '$19,795.00', true)}
+      </div>
+      <div class="lc-callout-warn">Look closely, closings #4412 and #4438 are both billed to A. Reyes for the same $4,850.00 amount. Confirm whether that's two real closings or a duplicate entry before moving on.</div>
+      ${wfNav(false)}
+    </div>`;
+  }
+
+  function cfoStep1() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 2: Bank Reconciliation</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        Compare the commission log against the actual bank deposits for the month.
+      </p>
+      <div class="wf-form-section">
+        <h4>Bank Deposits (Commission Income)</h4>
+        ${wfField('wf-cfo-bank1', 'Deposit, A. Reyes #4412', 'text', '', '$4,850.00', true)}
+        ${wfField('wf-cfo-bank2', 'Deposit, T. Nolan #4419', 'text', '', '$6,120.00', true)}
+        ${wfField('wf-cfo-bank3', 'Deposit, M. Ibarra #4427', 'text', '', '$3,975.00', true)}
+        ${wfField('wf-cfo-banktotal', 'Bank Total', 'text', '', '$14,945.00', true)}
+      </div>
+      <div class="lc-callout-warn">The commission log shows $19,795.00 but the bank only shows $14,945.00 in actual deposits, a $4,850.00 gap. That matches the suspected duplicate entry from Step 1.</div>
+      ${wfNav(true)}
+    </div>`;
+  }
+
+  function cfoStep2() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 3: Discrepancy Decision</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        You've confirmed closing #4438 was entered by mistake, it's the same closing as #4412 with a typo'd closing number. Make the right call.
+      </p>
+      <div id="wf-discrepancy-decision"></div>
+      ${wfNav(true)}
+    </div>`;
+  }
+
+  function cfoDiscrepancyDecision() {
+    wfDecision('wf-discrepancy-decision',
+      "You're confident #4438 is a duplicate of #4412. What's the correct way to handle it?",
+      [
+        { t: "Correct the log with a documented adjusting entry noting the duplicate and the reason, so there's a clear audit trail.", ok: true },
+        { t: "Just delete the duplicate row silently so the totals match.", ok: false },
+        { t: "Leave both entries in and adjust the bank total instead to make the numbers agree.", ok: false }
+      ],
+      "Every correction to a financial record needs a documented trail explaining what was wrong and why it was changed. Silently deleting an entry or adjusting the wrong side of the reconciliation to force a match erases the evidence of what actually happened, which is exactly what an audit or a future discrepancy would need."
+    );
+  }
+
+  function cfoStep3() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 4: Corrected Summary</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        Finalize the corrected commission summary with the adjustment documented.
+      </p>
+      <div class="wf-form-section">
+        <h4>Corrected Commission Summary</h4>
+        ${wfField('wf-cfo-corrected-total', 'Corrected Total', 'text', '', '$14,945.00', true)}
+        ${wfField('wf-cfo-adjustment', 'Adjustment Note', 'text', '', 'Removed duplicate entry #4438 (data entry error, same closing as #4412)', false)}
+      </div>
+      <div class="wf-signed-banner">&#10003; Corrected commission log now matches bank deposits exactly: $14,945.00</div>
+      ${wfNav(true)}
+    </div>`;
+  }
+
+  function cfoStep4() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 5: P&amp;L Narrative</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        Draft the month-end P&amp;L narrative using the corrected figures.
+      </p>
+      <div class="wf-compose">
+        <div class="wf-compose-header">
+          <div class="wf-compose-field">
+            <span class="wf-compose-lbl">To:</span>
+            <input type="text" value="Leadership Team" readonly>
+          </div>
+          <div class="wf-compose-field">
+            <span class="wf-compose-lbl">Subject:</span>
+            <input type="text" id="wf-cfo-pl-subj" value="March P&amp;L Narrative">
+          </div>
+        </div>
+        <div class="wf-compose-body">
+          <textarea id="wf-cfo-pl-body" data-role="cfo" data-scenario="cfo-pl-summary" placeholder="Summarize March commission income ($14,945.00 corrected), note the data entry correction, and flag anything unusual for leadership review."></textarea>
+          <div style="margin-top:10px"><button class="btn sm" id="wf-cfo-pl-body-btn" onclick="SCApp.submitEmailStep({textareaId:'wf-cfo-pl-body', statusElId:'wf-cfo-pl-body-status', btnId:'wf-cfo-pl-body-btn', role:'cfo', scenarioId:'cfo-pl-summary', scenarioPrompt:'P&L summary to leadership, March commission income', maxScore:5})">Submit for grading</button></div>
+          <div id="wf-cfo-pl-body-status" class="small" style="margin-top:6px"></div>
+        </div>
+      </div>
+      ${wfNav(true)}
+    </div>`;
+  }
+
+  function cfoStep5() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 6: Vendor Email</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        A vendor invoice is 45 days overdue. Address it before closing the books for the month.
+      </p>
+      <div class="wf-compose">
+        <div class="wf-compose-header">
+          <div class="wf-compose-field">
+            <span class="wf-compose-lbl">To:</span>
+            <input type="text" value="Accounts Payable, Summit Office Supply" readonly>
+          </div>
+          <div class="wf-compose-field">
+            <span class="wf-compose-lbl">Subject:</span>
+            <input type="text" id="wf-cfo-vendor-subj" value="Invoice #8823, Payment Confirmation">
+          </div>
+        </div>
+        <div class="wf-compose-body">
+          <textarea id="wf-cfo-vendor-body" data-role="cfo" data-scenario="cfo-vendor-payment" placeholder="Acknowledge the oversight on the $3,200 invoice from 45 days ago, confirm the details, and provide a payment date within 10 business days. Professional, apologetic tone."></textarea>
+          <div style="margin-top:10px"><button class="btn sm" id="wf-cfo-vendor-body-btn" onclick="SCApp.submitEmailStep({textareaId:'wf-cfo-vendor-body', statusElId:'wf-cfo-vendor-body-status', btnId:'wf-cfo-vendor-body-btn', role:'cfo', scenarioId:'cfo-vendor-payment', scenarioPrompt:'Vendor payment/apology email, $3,200 overdue invoice', maxScore:5})">Submit for grading</button></div>
+          <div id="wf-cfo-vendor-body-status" class="small" style="margin-top:6px"></div>
+        </div>
+      </div>
+      ${wfNav(true)}
+    </div>`;
+  }
+
+  function cfoStep6() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 7: Wrap-Up</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        Review the workflow validation below.
+      </p>
+      <div id="wf-eval-container"></div>
+      <div class="wf-score-card">
+        <div class="wf-score-header">Workflow Validation: March Month-End Close</div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Reviewed the commission log for discrepancies</span></div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Reconciled the log against actual bank deposits</span></div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Handled the duplicate entry with a documented correction</span></div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Finalized the corrected commission summary</span></div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Drafted the P&amp;L narrative</span></div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Addressed the overdue vendor invoice</span></div>
+      </div>
+      <div class="lc-result" style="margin-top:16px">
+        <div class="lc-result-pct" style="font-size:36px">&#10003;</div>
+        <p><strong>Full Bookkeeping Workflow Complete.</strong></p>
+        <p style="font-size:13.5px;color:var(--v-muted)">You reconciled a real seeded discrepancy with zero errors, and handled the correction the right way.</p>
+        <div class="lc-result-actions">
+          <button class="lc-result-btn primary" onclick="wfRestart()">Restart Workflow</button>
+          <button class="lc-result-btn outline" onclick="wfReset()">Back to Scenarios</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     DEADLINE QUIZ
+     ══════════════════════════════════════════════════════════ */
+  window.QUIZ_DATA = [
+    { q: 'What is the primary purpose of reconciling a commission log against bank deposits?',
+      a: ['To make the numbers look better for investors', 'To confirm the recorded income actually matches what was received', 'It is optional if the log looks correct', 'To calculate agent bonuses'], c: 1 },
+    { q: 'You find a duplicate entry in a financial log. What is the correct first action?',
+      a: ['Delete it silently so totals match', 'Document a corrected, adjusting entry explaining the error', 'Adjust the bank total instead to force a match', 'Ignore it if the amount is small'], c: 1 },
+    { q: 'What does an account receivable aging past 90 days typically require?',
+      a: ['No action, it will resolve itself', 'Escalated collection follow-up', 'Automatic write-off with no review', 'A discount offer only'], c: 1 },
+    { q: 'What does NOI (Net Operating Income) represent?',
+      a: ['Total revenue before any expenses', 'Revenue minus operating expenses, before debt service', 'Only the commission portion of revenue', 'A tax filing category'], c: 1 },
+    { q: 'What should never happen when correcting a bookkeeping discrepancy?',
+      a: ['Documenting the reason for the correction', 'Making the correction without any documentation or audit trail', 'Reviewing the correction with a second person', 'Keeping the original entry visible with a note'], c: 1 },
+    { q: 'Which week of a standard month-end close cycle typically includes final financial statement review?',
+      a: ['Week 1', 'Week 2', 'Week 3', 'Week 4'], c: 3 }
+  ];
+
+  /* ══════════════════════════════════════════════════════════
+     PROMPT PRACTICE
+     ══════════════════════════════════════════════════════════ */
+  window.PROMPT_TEMPLATES = [
+    { title: 'Budget Variance Memo', badge: 'Memo', category: 'Reporting',
+      desc: 'Draft a variance memo comparing budgeted vs actual figures.',
+      tip: "Giving both the dollar and percentage variance lets the reader judge materiality immediately, a 15% swing on a small budget line reads very differently from the same percentage on a major expense category.",
+      template: 'Draft a [Period] budget variance memo. Budgeted [Budget_Revenue] revenue, achieved [Actual_Revenue] ([Revenue_Variance]% above/below). OpEx [Actual_OpEx] vs [Budget_OpEx] budget ([OpEx_Variance]% over/under). 200-word executive summary.',
+      vars: [
+        { id: 'Period', label: 'Period', type: 'text', default: 'Q1' },
+        { id: 'Budget_Revenue', label: 'Budgeted Revenue', type: 'text', default: '$45,000' },
+        { id: 'Actual_Revenue', label: 'Actual Revenue', type: 'text', default: '$52,000' },
+        { id: 'Revenue_Variance', label: 'Revenue Variance %', type: 'text', default: '15.6' },
+        { id: 'Actual_OpEx', label: 'Actual OpEx', type: 'text', default: '$38,000' },
+        { id: 'Budget_OpEx', label: 'Budgeted OpEx', type: 'text', default: '$35,000' },
+        { id: 'OpEx_Variance', label: 'OpEx Variance %', type: 'text', default: '8.6' }
+      ] },
+    { title: 'Explain a Financial Concept', badge: 'Explain', category: 'Reporting',
+      desc: 'Explain a financial concept in plain English for a new team member.',
+      tip: "Asking for the definition AND the concrete action thresholds (30/60/90 days) turns a textbook explanation into something a new bookkeeper can actually apply the same day.",
+      template: 'Explain [Concept] in plain English for a new bookkeeper. Include what it is, why it matters in real estate, and what action to take at 30, 60, and 90+ days overdue.',
+      vars: [ { id: 'Concept', label: 'Concept', type: 'text', default: 'accounts receivable aging' } ] },
+    { title: 'Monthly Bookkeeping Checklist', badge: 'Checklist', category: 'Reporting',
+      desc: 'Build a week-by-week monthly bookkeeping task checklist.',
+      tip: "Breaking the month into weekly phases (reconciliation, payroll, AR follow-up, close) instead of one long list is what keeps month-end from turning into a last-minute scramble.",
+      template: 'Create a monthly bookkeeping task checklist. Week 1: [Week1_Tasks]. Week 2: [Week2_Tasks]. Week 3: [Week3_Tasks]. Week 4: [Week4_Tasks].',
+      vars: [
+        { id: 'Week1_Tasks', label: 'Week 1 Tasks', type: 'text', default: 'reconcile bank accounts, review AP' },
+        { id: 'Week2_Tasks', label: 'Week 2 Tasks', type: 'text', default: 'payroll, expense categorization' },
+        { id: 'Week3_Tasks', label: 'Week 3 Tasks', type: 'text', default: 'AR follow-ups, vendor invoices' },
+        { id: 'Week4_Tasks', label: 'Week 4 Tasks', type: 'text', default: 'month-end close, statement review' }
+      ] },
+    { title: 'Vendor Payment Email', badge: 'Email', category: 'Communications',
+      desc: 'Address an overdue vendor invoice professionally.',
+      tip: "Leading with acknowledgment of the oversight and a firm payment date (not a vague 'soon') is what keeps a vendor relationship intact after a real billing delay.",
+      template: 'Write a professional email to a vendor with an outstanding invoice of [Invoice_Amount] from [Days_Overdue] days ago. Acknowledge the oversight, confirm details, provide a payment date within [Payment_Days] business days. Professional, apologetic tone.',
+      vars: [
+        { id: 'Invoice_Amount', label: 'Invoice Amount', type: 'text', default: '$3,200' },
+        { id: 'Days_Overdue', label: 'Days Overdue', type: 'text', default: '45' },
+        { id: 'Payment_Days', label: 'Payment Timeline (business days)', type: 'text', default: '10' }
+      ] },
+    { title: 'Investor Update Narrative', badge: 'Report', category: 'Communications',
+      desc: 'Write a brief quarterly investor update.',
+      tip: "Naming a specific one-off event (like an HVAC repair) alongside the topline numbers gives investors context for a variance, instead of leaving them to wonder why a number moved.",
+      template: 'Write a brief investor update: NOI this quarter [Current_NOI], up/down from [Prior_NOI]. Occupancy [Occupancy]%. [Notable_Event]. Expect next quarter NOI between [NOI_Low] to [NOI_High].',
+      vars: [
+        { id: 'Current_NOI', label: 'This Quarter NOI', type: 'text', default: '$128,000' },
+        { id: 'Prior_NOI', label: 'Prior Quarter NOI', type: 'text', default: '$112,000' },
+        { id: 'Occupancy', label: 'Occupancy %', type: 'text', default: '96' },
+        { id: 'Notable_Event', label: 'Notable One-Off Event', type: 'text', default: 'One property had an $8,500 HVAC repair' },
+        { id: 'NOI_Low', label: 'Next Quarter NOI (Low)', type: 'text', default: '$130,000' },
+        { id: 'NOI_High', label: 'Next Quarter NOI (High)', type: 'text', default: '$135,000' }
+      ] },
+    { title: 'Commission Reconciliation Summary', badge: 'Reconciliation', category: 'Communications',
+      desc: 'Summarize a commission log reconciliation against bank deposits.',
+      tip: "Stating the log total, the bank total, and the exact gap between them up front is what makes a reconciliation summary scannable instead of requiring the reader to do the subtraction themselves.",
+      template: 'Summarize this commission reconciliation: log total [Log_Total], bank deposits [Bank_Total]. Discrepancy found: [Discrepancy_Description]. State the corrected total and the resolution.',
+      vars: [
+        { id: 'Log_Total', label: 'Commission Log Total', type: 'text', default: '$19,795.00' },
+        { id: 'Bank_Total', label: 'Bank Deposit Total', type: 'text', default: '$14,945.00' },
+        { id: 'Discrepancy_Description', label: 'Discrepancy Description', type: 'text', default: 'duplicate entry for the same closing, entered twice under two closing numbers' }
+      ] },
+    { title: 'Discrepancy Flag Note', badge: 'Flag', category: 'Communications',
+      desc: 'Document a financial discrepancy for the audit trail.',
+      tip: "A documented flag note (what was found, why, and how it was corrected) is what protects you if the same question comes up again in a future audit or review.",
+      template: 'Draft a discrepancy flag note for the file. Issue: [Issue_Description]. Amount: [Amount]. Resolution: [Resolution]. Include the date discovered and who to notify.',
+      vars: [
+        { id: 'Issue_Description', label: 'Issue Description', type: 'text', default: 'Duplicate commission entry for the same closing under two closing numbers' },
+        { id: 'Amount', label: 'Amount', type: 'text', default: '$4,850.00' },
+        { id: 'Resolution', label: 'Resolution', type: 'text', default: 'Removed the duplicate entry, corrected total now matches bank deposits' }
+      ] },
+    { title: 'Cash Flow Forecast', badge: 'Forecast', category: 'Communications',
+      desc: 'Draft a forward-looking cash flow forecast based on a growth assumption.',
+      tip: "Naming the specific growth assumption (15% over Q2) in the prompt itself means the forecast's logic is transparent and easy to challenge or adjust, instead of a black-box number.",
+      template: 'Draft a cash flow forecast for [Period] assuming [Growth_Pct]% growth over [Base_Period].',
+      vars: [
+        { id: 'Period', label: 'Forecast Period', type: 'text', default: 'Q3' },
+        { id: 'Growth_Pct', label: 'Growth Assumption %', type: 'text', default: '15' },
+        { id: 'Base_Period', label: 'Base Period', type: 'text', default: 'Q2' }
+      ] }
+  ];
+
+  function toggleResources(card) {
+    var panel = document.getElementById('resources-panel');
+    var isOpen = panel.classList.toggle('open');
+    card.classList.toggle('open', isOpen);
+    if (isOpen) setTimeout(function(){ panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 40);
+  }
+  function openResources() {
+    var card = document.querySelector('.rd-mode-resources');
+    var panel = document.getElementById('resources-panel');
+    if (!panel.classList.contains('open')) { panel.classList.add('open'); if(card) card.classList.add('open'); }
+    setTimeout(function(){ panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 40);
+  }
+</script>
+</body>
+</html>

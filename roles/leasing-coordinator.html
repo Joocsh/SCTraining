@@ -1,0 +1,676 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Leasing Coordinator · SkillCloud Academy</title>
+  <meta name="description" content="Practice leasing scenarios: rental inquiries, application communications, lease summaries, move-in coordination and renewal outreach.">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/role-dash.css">
+  <link rel="stylesheet" href="../assets/css/workflow.css">
+<style>
+  .rd-modes-grid{align-items:stretch}
+  .rd-mode-card{
+    opacity:0;transform:translateY(10px);animation:rdxIn .45s ease forwards;
+    transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+  }
+  .rd-mode-card:hover{transform:translateY(-3px);box-shadow:0 16px 36px rgba(10,38,71,.1);border-color:rgba(23,195,212,.4)}
+  .rd-mode-card:nth-child(1){animation-delay:.04s}
+  .rd-mode-card:nth-child(2){animation-delay:.1s}
+  .rd-mode-card:nth-child(3){animation-delay:.16s}
+  .rd-mode-card:nth-child(4){animation-delay:.22s}
+  @keyframes rdxIn{to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){.rd-mode-card{animation:none;opacity:1;transform:none}}
+
+  .rd-mode-card.rdx-featured{grid-column:1 / -1;border-color:rgba(23,195,212,.35);background:linear-gradient(180deg,#fff, #f8fdfe)}
+  .rdx-ordinal{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--v-cyan-d,#0fa6b6)}
+
+  .rdx-ledger{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:14px}
+  .rdx-ledger-item{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .rdx-ledger-item b{color:var(--navy,#0a2647);font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="nav-inner">
+  <a class="brand" href="../index.html"><img src="../assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+  <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+  <div class="menu">
+    <a class="navlink" href="../index.html">Home</a>
+    <a class="navlink" href="../ai.html">Introduction</a>
+    <a class="navlink" href="../index.html#roles">Roles</a>
+  </div>
+  <span class="spacer"></span>
+  <a class="pill" href="../index.html#roles">Start Practicing</a>
+  <a class="user-chip" href="../account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
+</div></nav>
+
+<div class="fund-nudge">
+  <p><strong>New here?</strong> Complete the Introduction first. It only takes a few minutes and covers what Claude, ChatGPT, and Manus can do before you jump into role practice.</p>
+  <a href="../ai.html">Go to Introduction &rarr;</a>
+</div>
+
+<!-- HERO -->
+<section class="rd-hero">
+  <div class="orb orb-1" aria-hidden="true"></div>
+  <div class="orb orb-2" aria-hidden="true"></div>
+  <div class="orb orb-3" aria-hidden="true"></div>
+  <div class="orb orb-4" aria-hidden="true"></div>
+  <div class="orb orb-5" aria-hidden="true"></div>
+  <div class="rd-hero-inner">
+    <a class="rd-back" href="../index.html#roles">All Roles</a>
+    <h1>Leasing Coordinator</h1>
+    <p class="rd-hero-desc">Practice application to move-in workflows, writing inquiry replies, processing conditional approvals, denials, and lease renewals.</p>
+  </div>
+</section>
+
+<!-- PROGRESS STATS -->
+<section class="rd-stats-section">
+  <div class="rd-stats-inner">
+    <div class="rd-stats-overall">
+      <div class="rd-stats-meta">
+        <span class="rd-stats-label">Your overall progress</span>
+        <span class="rd-stats-pct" id="overall-pct-num">0% Completed</span>
+      </div>
+      <div class="rd-stats-track">
+        <div class="rd-stats-fill" id="overall-bar-fill"></div>
+      </div>
+      <div class="rdx-ledger">
+        <span class="rdx-ledger-item">Case Simulator <b id="rdx-sim">0/1</b></span>
+        <span class="rdx-ledger-item">Prompt Practice <b id="rdx-prompt">0/8</b></span>
+        <span class="rdx-ledger-item">Deadline Quiz <b id="rdx-quiz">0/6</b></span>
+      </div>
+      <div class="rd-stats-footer">
+        <button class="rd-reset-btn" onclick="resetProgress('lc')">Reset progress</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRACTICE MODES -->
+<section class="rd-modes-section" id="practice">
+  <div class="rd-modes-inner">
+    <div class="rd-section-header">
+      <p class="rd-eyebrow">Practice Modes</p>
+      <h2 class="rd-section-title">Choose your training</h2>
+      <p class="rd-section-sub">Each mode sharpens a different skill. Start with the Case Simulator, then come back to the others.</p>
+    </div>
+    <div class="rd-modes-grid">
+
+      <!-- Case Simulator -->
+      <div class="rd-mode-card rdx-featured">
+        <div class="rd-mode-top">
+          <div class="rd-mode-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><line x1="12" y1="7.5" x2="12" y2="12.5"/><line x1="10.5" y1="13.8" x2="6" y2="16.7"/><line x1="13.5" y1="13.8" x2="18" y2="16.7"/></svg></div>
+          <span class="rdx-ordinal">Module 01</span>
+        </div>
+        <div class="rd-mode-name">Case Simulator</div>
+        <p class="rd-mode-desc">A full real leasing workflow end to end: an inbound inquiry, application screening with a real fair housing decision point, lease drafting, and move-in coordination.</p>
+        <div class="rd-mode-footer">
+          <span class="rd-mode-count"><strong>1</strong> full case, application to move-in</span>
+          <a class="rd-mode-cta" href="#" onclick="openPanel('sim'); return false;">Launch &rarr;</a>
+        </div>
+      </div>
+
+      <!-- Prompt Practice -->
+      <div class="rd-mode-card">
+        <div class="rd-mode-top">
+          <div class="rd-mode-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+          <span class="rdx-ordinal">Module 02</span>
+        </div>
+        <div class="rd-mode-name">Prompt Practice</div>
+        <p class="rd-mode-desc">Draft inquiry replies, conditional approval letters, denials, move-in instructions, and renewal offers using Claude. Customize real parameters and copy the finished prompt.</p>
+        <div class="rd-mode-footer">
+          <span class="rd-mode-count"><strong>8</strong> interactive prompts</span>
+          <a class="rd-mode-cta" href="#" onclick="openPanel('prompt'); return false;">Practice &rarr;</a>
+        </div>
+      </div>
+
+      <!-- Deadline Quiz -->
+      <div class="rd-mode-card">
+        <div class="rd-mode-top">
+          <div class="rd-mode-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></div>
+          <span class="rdx-ordinal">Module 03</span>
+        </div>
+        <div class="rd-mode-name">Deadline Quiz</div>
+        <p class="rd-mode-desc">Test your knowledge of fair housing rules, application processing timelines, adverse action notice requirements, and lease compliance checkpoints.</p>
+        <div class="rd-mode-footer">
+          <span class="rd-mode-count"><strong>6</strong> questions</span>
+          <a class="rd-mode-cta" href="#" onclick="openPanel('quiz'); return false;">Start &rarr;</a>
+        </div>
+      </div>
+
+
+      <div class="rd-mode-card rd-mode-resources" onclick="toggleResources(this)" role="button" tabindex="0">
+        <div class="rd-mode-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+        </div>
+        <div class="rd-res-body">
+          <div class="rd-mode-name">Resources</div>
+          <p class="rd-mode-desc">Prompt library and role playbooks. Study before practicing or keep open during your sessions.</p>
+        </div>
+        <span class="rd-mode-cta">View Prompts <svg class="res-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 6 8 10 12 6"/></svg></span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     PANEL: CASE SIMULATOR
+     ══════════════════════════════════════════════════════════ -->
+<div class="lc-panel" id="panel-sim">
+  <div class="lc-panel-header">
+    <button class="lc-panel-back" onclick="simPanelBack()">Back</button>
+    <span class="lc-panel-title">Case Simulator &mdash; Leasing Coordinator</span>
+  </div>
+  <div class="lc-panel-body">
+    <div class="lc-state-bar" id="sim-state-bar" style="display:none"></div>
+    <div id="sim-pick">
+      <p style="font-size:14px;color:var(--v-muted);margin:0 0 20px">Run the full leasing workflow end to end, with embedded decision points and a real evaluation score.</p>
+      <div class="lc-sc-grid" id="sim-cards"></div>
+    </div>
+    <div id="sim-play" class="lc-play">
+      <div class="lc-progress-track"><div class="lc-progress-fill" id="sim-prog"></div></div>
+      <div class="lc-scorebar">
+        <span class="lc-chip" id="sim-step-chip"></span>
+        <span class="lc-chip" id="sim-score-chip"></span>
+      </div>
+      <div id="sim-head"></div>
+      <div class="lc-scenario-box" id="sim-body"></div>
+    </div>
+    <div id="sim-workflow" style="display:none">
+      <div class="lc-progress-track"><div class="lc-progress-fill" id="wf-prog"></div></div>
+      <div class="lc-scorebar">
+        <span class="lc-chip" id="wf-step-chip"></span>
+        <span class="lc-chip" id="wf-label-chip"></span>
+      </div>
+      <div id="wf-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PANEL: PROMPT PRACTICE
+     ══════════════════════════════════════════════════════════ -->
+<div class="lc-panel" id="panel-prompt">
+  <div class="lc-panel-header">
+    <button class="lc-panel-back" onclick="closePanel('prompt')">Back</button>
+    <span class="lc-panel-title">Prompt Practice &mdash; Leasing Coordinator</span>
+  </div>
+  <div class="lc-panel-body" style="max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px;">
+    <div class="lc-callout-info" style="margin-bottom: 24px;">
+      <strong>Prompt Practice Playground:</strong> Select a leasing task from the sidebar, customize its parameters, and watch the prompt update live. Copy the final prompt straight into Claude.
+    </div>
+    <div class="prompt-layout">
+      <div class="prompt-sidebar">
+        <div class="prompt-search-wrap">
+          <span class="prompt-search-icon">&#128269;</span>
+          <input type="text" id="prompt-search" class="prompt-search-input" placeholder="Search prompts..." oninput="filterPrompts()">
+        </div>
+        <div class="prompt-list-scroll" id="prompt-list-scroll"></div>
+      </div>
+      <div class="prompt-detail-panel" id="prompt-detail-view"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PANEL: DEADLINE QUIZ
+     ══════════════════════════════════════════════════════════ -->
+<div class="lc-panel" id="panel-quiz">
+  <div class="lc-panel-header">
+    <button class="lc-panel-back" onclick="closePanel('quiz')">Back</button>
+    <span class="lc-panel-title">Deadline Quiz &mdash; Leasing Coordinator</span>
+  </div>
+  <div class="lc-panel-body">
+    <div id="quiz-intro" class="lc-quiz-intro">
+      <div class="lc-quiz-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="13" r="8" stroke="#fff" stroke-width="1.8"/><path d="M12 9v4l2.5 2.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 2.5h5M12 2.5v2.2" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+      <h2>Leasing Compliance Quiz</h2>
+      <p>Test your knowledge of fair housing law, application screening rules, and lease compliance timelines. The clock runs while you answer.</p>
+      <div class="lc-quiz-meta"><span id="quiz-meta-count">Questions</span><span>Timed</span></div>
+      <p class="lc-quiz-study">Need to review first? <a href="../study-guide.html#leasing" style="color:var(--v-cyan-d);font-weight:700">Open the Study Guide &rarr;</a></p>
+      <button class="lc-quiz-start-btn" onclick="quizStart()">Start the clock &rarr;</button>
+    </div>
+    <div id="quiz-play" style="display:none">
+      <div class="lc-progress-track"><div class="lc-progress-fill" id="quiz-prog"></div></div>
+      <div class="lc-scorebar">
+        <span class="lc-chip" id="quiz-num-chip"></span>
+        <span class="lc-chip" id="quiz-time-chip">0:00</span>
+        <span class="lc-chip" id="quiz-score-chip">Score: 0</span>
+      </div>
+      <div class="lc-scenario-box" id="quiz-body"></div>
+    </div>
+    <div id="quiz-done" style="display:none"></div>
+  </div>
+</div>
+
+<div class="rd-resources-panel" id="resources-panel">
+  <div class="rd-materials-inner">
+
+    <div class="rd-glance">
+      <h4>Your role at a glance</h4>
+      <p>Respond to inquiries and schedule showings · Screen applicants and verify documentation · Draft, review and manage leases · Coordinate move-ins and move-outs · Handle renewals and communicate with property managers.</p>
+    </div>
+
+    <details class="mod" open><summary><span class="num">1</span>Responding to rental inquiries</summary><div class="body">
+      <div class="prompt"><span class="lbl">EXAMPLE PROMPT</span>Write a professional response to a rental inquiry for a 2 bedroom apartment at 1204 Atlantic Ave, Virginia Beach. Monthly rent $1,850. Available June 1. Include a placeholder application link and note showings are by appointment.</div>
+    </div></details>
+
+    <details class="mod"><summary><span class="num">2</span>Applicant communication</summary><div class="body">
+      <div class="prompt"><span class="lbl">CONDITIONAL APPROVAL</span>Write an email to a rental applicant letting them know their application is approved pending verification of employment. Ask for last two pay stubs and an offer letter within 48 hours.</div>
+      <div class="prompt"><span class="lbl">DENIAL LETTER</span>Write a professional denial letter for a rental application. Reason: insufficient income (did not meet 3x monthly rent). Be polite and do not elaborate on specifics.</div>
+      <div class="callout warn"><h4>Stay compliant</h4>Denial letters touch fair housing and adverse action rules. Keep them factual, consistent, and reviewed by your manager before sending.</div>
+    </div></details>
+
+    <details class="mod"><summary><span class="num">3</span>Lease summaries &amp; review prep</summary><div class="body">
+      <div class="prompt"><span class="lbl">EXAMPLE PROMPT</span>Summarize the key tenant obligations in the following residential lease. Highlight: rent due date, late fee policy, pet policy, maintenance responsibilities, and notice period for non-renewal. [Paste lease text]</div>
+    </div></details>
+
+    <details class="mod"><summary><span class="num">4</span>Move-in &amp; move-out communication</summary><div class="body">
+      <div class="prompt"><span class="lbl">EXAMPLE PROMPT</span>Draft a move-in instruction email for a new tenant moving in June 1. Include placeholder for key pickup location/time, utility setup reminder, and a note about the move-in inspection checklist due within 48 hours.</div>
+    </div></details>
+
+    <details class="mod"><summary><span class="num">5</span>Lease renewal outreach</summary><div class="body">
+      <div class="prompt"><span class="lbl">EXAMPLE PROMPT</span>Write a lease renewal offer to a tenant whose lease expires August 31. Offer a 12-month renewal at $1,950/month (up from $1,850). Friendly tone; emphasize the value of renewing.</div>
+    </div></details>
+
+  </div>
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="../index.html#roles">Choose Your Role</a>
+        <a class="fl" href="../index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="leasing-coordinator.html">Leasing Coordinator</a>
+        <a class="fl" href="operations-manager.html">Operations</a>
+        <a class="fl" href="cfo-bookkeeper.html">CFO / Bookkeeper</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="../assets/js/app-core.js"></script>
+<script src="../assets/js/workflow.js"></script>
+<script src="../assets/js/site.js"></script>
+<script>
+      const ROLE = 'lc';
+  window.SC_ROLE = ROLE;
+  const rpMe = SCApp.requireAuth();
+  const MODES = [
+    { id: 'sim', total: 1, active: true },
+    { id: 'prompt', total: 8, active: true },
+    { id: 'quiz', total: 6, active: true }
+  ];
+  
+  function loadProgress() {
+    let completedSum = 0;
+    let totalMax = 0;
+    
+    MODES.forEach(m => {
+      if (!m.active) return;
+      const val = parseInt(localStorage.getItem(`sc_${ROLE}_${m.id}`) || '0');
+      completedSum += val;
+      totalMax += m.total;
+    });
+    
+    const overallPct = totalMax > 0 ? Math.round((completedSum / totalMax) * 100) : 0;
+    const overallNum = document.getElementById('overall-pct-num');
+    const overallBar = document.getElementById('overall-bar-fill');
+    
+    if (overallNum) overallNum.textContent = overallPct + '% Completed';
+    if (overallBar) setTimeout(() => overallBar.style.width = overallPct + '%', 200);
+
+    MODES.forEach(m => {
+      const el = document.getElementById('rdx-' + m.id);
+      if (!el) return;
+      const val = parseInt(localStorage.getItem(`sc_${ROLE}_${m.id}`) || '0');
+      el.textContent = val + '/' + m.total;
+    });
+  }
+
+  function resetProgress(role) {
+    if (!confirm('Reset all progress for this role?')) return;
+    MODES.forEach(m => {
+      if (m.active) localStorage.removeItem(`sc_${role}_${m.id}`);
+    });
+    loadProgress();
+  }
+  
+  loadProgress();
+
+  /* ══════════════════════════════════════════════════════════
+     CASE SIMULATOR: application to move-in, general workflow
+     ══════════════════════════════════════════════════════════ */
+  window.SIM_DATA = [
+    { type: 'workflow', tag: 'Leasing · Full Case', title: 'Application to Move-In: Full Leasing Workflow',
+      desc: 'A rental inquiry moves from first contact through screening, a real fair housing decision, lease drafting, and move-in coordination.',
+      stepCount: 7,
+      wfLabels: ['Rental Inquiry', 'Application Intake', 'Screening Decision', 'Conditional Approval', 'Lease Terms', 'Move-In Coordination', 'Wrap-Up'],
+      wfSteps: [ lcStep0, lcStep1, lcStep2, lcStep3, lcStep4, lcStep5, lcStep6 ],
+      wfAfterRender: { 2: function () { lcFairHousingDecision(); }, 6: function () { wfRenderFinalScore('wf-eval-container', 'lc', 'general', 1); } } }
+  ];
+  window.PANEL_ON_OPEN = window.PANEL_ON_OPEN || {};
+  window.PANEL_ON_OPEN.sim = simInit;
+  window.PANEL_ON_OPEN.prompt = initPromptPlayground;
+  window.PANEL_ON_OPEN.quiz = quizReset;
+
+  function lcStep0() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 1: Rental Inquiry</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        A prospective tenant just inquired about a vacant unit. Read the inquiry, then draft your reply.
+      </p>
+      <div class="wf-email">
+        <div class="wf-email-header">
+          <div class="wf-email-subject">Interested in the listing at 1204 Atlantic Ave</div>
+          <div class="wf-email-meta">
+            <div class="wf-email-row"><span class="wf-email-row-lbl">From:</span> Marcus Webb &lt;mwebb@email.com&gt;</div>
+            <div class="wf-email-row"><span class="wf-email-row-lbl">To:</span> Leasing Coordinator</div>
+          </div>
+        </div>
+        <div class="wf-email-body">
+          <p>Hi, I saw your listing for the 2 bedroom at 1204 Atlantic Ave, Virginia Beach. Is it still available? I'd love to see it and get an application if possible.</p>
+          <p>Marcus Webb</p>
+        </div>
+      </div>
+      <div class="wf-form-section">
+        <h4>Listing Reference</h4>
+        ${wfField('wf-lc-addr', 'Unit', 'text', '', '1204 Atlantic Ave, Virginia Beach, VA, 2BR/1BA', true)}
+        ${wfField('wf-lc-rent', 'Monthly Rent', 'text', '', '$1,850', true)}
+        ${wfField('wf-lc-avail', 'Available Date', 'text', '', 'June 1', true)}
+      </div>
+      <div class="wf-compose">
+        <div class="wf-compose-header">
+          <div class="wf-compose-field">
+            <span class="wf-compose-lbl">To:</span>
+            <input type="text" value="Marcus Webb &lt;mwebb@email.com&gt;" readonly>
+          </div>
+          <div class="wf-compose-field">
+            <span class="wf-compose-lbl">Subject:</span>
+            <input type="text" id="wf-lc-reply-subj" value="RE: 1204 Atlantic Ave, still available">
+          </div>
+        </div>
+        <div class="wf-compose-body">
+          <textarea id="wf-lc-reply-body" data-role="lc" data-scenario="lc-rental-inquiry-reply" placeholder="Compose your reply here...&#10;&#10;Confirm availability, invite them to schedule a showing, and attach or link the application."></textarea>
+          <div style="margin-top:10px"><button class="btn sm" id="wf-lc-reply-body-btn" onclick="SCApp.submitEmailStep({textareaId:'wf-lc-reply-body', statusElId:'wf-lc-reply-body-status', btnId:'wf-lc-reply-body-btn', role:'lc', scenarioId:'lc-rental-inquiry-reply', scenarioPrompt:'Rental inquiry reply, 1204 Atlantic Ave', maxScore:5})">Submit for grading</button></div>
+          <div id="wf-lc-reply-body-status" class="small" style="margin-top:6px"></div>
+        </div>
+      </div>
+      ${wfNav(false)}
+    </div>`;
+  }
+
+  function lcStep1() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 2: Application Intake &amp; Screening</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        Marcus toured the unit and submitted an application. Review the intake checklist before making a screening decision.
+      </p>
+      <div class="wf-form-section">
+        <h4>Application Checklist</h4>
+        ${wfField('wf-lc-income', 'Stated Monthly Income', 'text', '', '$6,200', true)}
+        ${wfField('wf-lc-ratio', 'Income-to-Rent Ratio', 'text', '', '3.35x (meets the standard 3x minimum)', true)}
+        ${wfField('wf-lc-credit', 'Credit Check', 'text', '', 'Completed, no adverse findings', true)}
+        ${wfField('wf-lc-background', 'Background Check', 'text', '', 'Completed, no adverse findings', true)}
+        ${wfField('wf-lc-refs', 'Rental References', 'text', '', 'Previous landlord confirmed, no issues', true)}
+      </div>
+      <div class="lc-callout-info">Real checklist item: income, credit, background, and rental history all need to be verified and documented before any approval decision, whether conditional, approved, or denied.</div>
+      ${wfNav(true)}
+    </div>`;
+  }
+
+  function lcStep2() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 3: Screening Decision</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        The property owner calls with a request. Make the right call before moving forward.
+      </p>
+      <div id="wf-fair-housing-decision"></div>
+      ${wfNav(true)}
+    </div>`;
+  }
+
+  function lcFairHousingDecision() {
+    wfDecision('wf-fair-housing-decision',
+      "The property owner calls and says: \"I noticed on the application that they have two young kids. I'd rather rent to someone without children, this is a quiet building.\" What do you do?",
+      [
+        { t: "Explain that rejecting an applicant based on familial status is illegal under the Fair Housing Act, and proceed with screening based only on income, credit, and background.", ok: true },
+        { t: "Tell the owner you'll quietly note it and find another reason to deny the application if needed.", ok: false },
+        { t: "Agree, since it's the owner's property and their decision to make.", ok: false }
+      ],
+      "Familial status is a protected class under the federal Fair Housing Act. An owner's preference cannot override that, and a leasing coordinator who helps construct a pretextual denial is participating in the violation, not just following instructions. Screening criteria have to be applied the same way to every applicant."
+    );
+  }
+
+  function lcStep3() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 4: Conditional Approval Email</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        Screening is complete and clean. Send the conditional approval and request final documentation.
+      </p>
+      <div class="wf-compose">
+        <div class="wf-compose-header">
+          <div class="wf-compose-field">
+            <span class="wf-compose-lbl">To:</span>
+            <input type="text" value="Marcus Webb &lt;mwebb@email.com&gt;" readonly>
+          </div>
+          <div class="wf-compose-field">
+            <span class="wf-compose-lbl">Subject:</span>
+            <input type="text" id="wf-lc-approval-subj" value="Your Application: Conditionally Approved">
+          </div>
+        </div>
+        <div class="wf-compose-body">
+          <textarea id="wf-lc-approval-body" data-role="lc" data-scenario="lc-conditional-approval" placeholder="Confirm the application is conditionally approved pending final employment verification, and request the last two pay stubs plus an offer letter within 48 hours."></textarea>
+          <div style="margin-top:10px"><button class="btn sm" id="wf-lc-approval-body-btn" onclick="SCApp.submitEmailStep({textareaId:'wf-lc-approval-body', statusElId:'wf-lc-approval-body-status', btnId:'wf-lc-approval-body-btn', role:'lc', scenarioId:'lc-conditional-approval', scenarioPrompt:'Conditional approval email, 1204 Atlantic Ave applicant', maxScore:5})">Submit for grading</button></div>
+          <div id="wf-lc-approval-body-status" class="small" style="margin-top:6px"></div>
+        </div>
+      </div>
+      <div class="lc-callout-warn">Keep denial and approval language factual and consistent every time. Any adverse decision needs a compliant adverse action notice, not an informal email.</div>
+      ${wfNav(true)}
+    </div>`;
+  }
+
+  function lcStep4() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 5: Lease Terms</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        Employment verification came back clean. Draft the key lease terms before sending the lease for signature.
+      </p>
+      <div class="wf-form-section">
+        <h4>Lease Terms</h4>
+        ${wfField('wf-lc-term', 'Lease Term', 'text', '', '12 months, June 1 to May 31', false)}
+        ${wfField('wf-lc-rentfinal', 'Monthly Rent', 'text', '', '$1,850', false)}
+        ${wfField('wf-lc-deposit', 'Security Deposit', 'text', '', '$1,850 (one month rent)', false)}
+        ${wfField('wf-lc-pets', 'Pet Policy', 'text', '', 'One cat, $300 pet deposit, no additional pet rent', false)}
+        ${wfField('wf-lc-latefee', 'Late Fee Policy', 'text', '', '$75 if rent is not received by the 5th', false)}
+      </div>
+      ${wfNav(true)}
+    </div>`;
+  }
+
+  function lcStep5() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 6: Move-In Coordination</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        The lease is signed. Coordinate the move-in details before June 1.
+      </p>
+      <div class="wf-form-section">
+        <h4>Move-In Checklist</h4>
+        ${wfField('wf-lc-keys', 'Key Pickup', 'text', '', 'Leasing office, June 1, 9am to 5pm', false)}
+        ${wfField('wf-lc-utilities', 'Utility Transfer', 'text', '', 'Reminder sent to set up electric and water in tenant name before move-in', false)}
+        ${wfField('wf-lc-inspection', 'Move-In Inspection', 'text', '', 'Checklist due back within 48 hours of move-in', true)}
+      </div>
+      <div class="lc-callout-info">A documented move-in inspection protects both the tenant and the owner when it comes time to return the security deposit.</div>
+      ${wfNav(true)}
+    </div>`;
+  }
+
+  function lcStep6() {
+    return `<div class="wf-step-wrap">
+      <div class="wf-step-label-row">Step 7: Wrap-Up</div>
+      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
+        Compose the move-in confirmation, then review the workflow validation below.
+      </p>
+      <div class="wf-compose">
+        <div class="wf-compose-header">
+          <div class="wf-compose-field">
+            <span class="wf-compose-lbl">To:</span>
+            <input type="text" value="Marcus Webb &lt;mwebb@email.com&gt;" readonly>
+          </div>
+          <div class="wf-compose-field">
+            <span class="wf-compose-lbl">Subject:</span>
+            <input type="text" id="wf-lc-close-subj" value="Welcome Home: Move-In Details for 1204 Atlantic Ave">
+          </div>
+        </div>
+        <div class="wf-compose-body">
+          <textarea id="wf-lc-close-body" data-role="lc" data-scenario="lc-move-in-email" placeholder="Confirm key pickup details, the utility transfer reminder, and the move-in inspection deadline."></textarea>
+          <div style="margin-top:10px"><button class="btn sm" id="wf-lc-close-body-btn" onclick="SCApp.submitEmailStep({textareaId:'wf-lc-close-body', statusElId:'wf-lc-close-body-status', btnId:'wf-lc-close-body-btn', role:'lc', scenarioId:'lc-move-in-email', scenarioPrompt:'Move-in details email, 1204 Atlantic Ave', maxScore:5})">Submit for grading</button></div>
+          <div id="wf-lc-close-body-status" class="small" style="margin-top:6px"></div>
+        </div>
+      </div>
+      <div id="wf-eval-container"></div>
+      <div class="wf-score-card">
+        <div class="wf-score-header">Workflow Validation: 1204 Atlantic Ave</div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Responded to the rental inquiry and scheduled a showing</span></div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Completed income, credit, background, and reference screening</span></div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Handled the fair housing question correctly</span></div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Sent the conditional approval and collected final documentation</span></div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Drafted the key lease terms</span></div>
+        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Coordinated move-in and the inspection deadline</span></div>
+      </div>
+      <div class="lc-result" style="margin-top:16px">
+        <div class="lc-result-pct" style="font-size:36px">&#10003;</div>
+        <p><strong>Full Leasing Workflow Complete.</strong></p>
+        <p style="font-size:13.5px;color:var(--v-muted)">You guided an applicant from first inquiry through move-in, including a real fair housing decision along the way.</p>
+        <div class="lc-result-actions">
+          <button class="lc-result-btn primary" onclick="wfRestart()">Restart Workflow</button>
+          <button class="lc-result-btn outline" onclick="wfReset()">Back to Scenarios</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     DEADLINE QUIZ
+     ══════════════════════════════════════════════════════════ */
+  window.QUIZ_DATA = [
+    { q: 'What federal law prohibits rental discrimination based on race, religion, national origin, sex, disability, and familial status?',
+      a: ['The Truth in Lending Act', 'The Fair Housing Act', 'The Fair Credit Reporting Act', 'RESPA'], c: 1 },
+    { q: 'Refusing to rent to a family because they have young children is discrimination based on which protected class?',
+      a: ['Familial status', 'National origin', 'Religion', 'Disability'], c: 0 },
+    { q: 'If you deny an applicant partly because of information in a credit report, what does the FCRA require you to send them?',
+      a: ['A rent increase notice', 'An adverse action notice', 'A lease renewal offer', 'A move-in checklist'], c: 1 },
+    { q: 'What income-to-rent ratio do most landlords require as a standard screening threshold?',
+      a: ['1.5x monthly rent', '2x monthly rent', '3x monthly rent', '5x monthly rent'], c: 2 },
+    { q: 'Per this workflow, how many hours after move-in is the move-in inspection checklist typically due back?',
+      a: ['24 hours', '48 hours', '5 business days', '30 days'], c: 1 },
+    { q: 'What should happen every time screening criteria are applied to an applicant?',
+      a: ["Criteria can flex based on the owner's personal preference", 'Criteria must be applied consistently to every applicant', 'Criteria only apply to applicants without references', 'Criteria are optional once income is verified'], c: 1 }
+  ];
+
+  /* ══════════════════════════════════════════════════════════
+     PROMPT PRACTICE
+     ══════════════════════════════════════════════════════════ */
+  window.PROMPT_TEMPLATES = [
+    { title: 'Rental Inquiry Reply', badge: 'Email', category: 'Communications',
+      desc: 'Respond to a prospective tenant inquiring about a vacant unit.',
+      tip: "Confirming availability and giving a clear next step (schedule a showing, here's the application) in the same email keeps a warm lead from going cold while they wait for a reply.",
+      template: 'Write a professional response to a rental inquiry for a [Beds] bedroom, [Baths] bathroom unit at [Address]. Monthly rent [Rent]. Available [Date]. Include a placeholder application link and note that showings are by appointment.',
+      vars: [
+        { id: 'Beds', label: 'Bedrooms', type: 'text', default: '2' },
+        { id: 'Baths', label: 'Bathrooms', type: 'text', default: '1' },
+        { id: 'Address', label: 'Address', type: 'text', default: '1204 Atlantic Ave, Virginia Beach' },
+        { id: 'Rent', label: 'Monthly Rent', type: 'text', default: '$1,850' },
+        { id: 'Date', label: 'Available Date', type: 'text', default: 'June 1' }
+      ] },
+    { title: 'Conditional Approval Email', badge: 'Email', category: 'Communications',
+      desc: 'Notify an applicant their application is approved pending final verification.',
+      tip: "Naming the exact documents needed and a firm deadline (48 hours) turns a vague 'we need more info' into something the applicant can act on immediately.",
+      template: 'Write an email to a rental applicant, [Applicant_Name], letting them know their application is approved pending verification of employment. Ask for the last two pay stubs and an offer letter within [Deadline_Hours] hours.',
+      vars: [
+        { id: 'Applicant_Name', label: 'Applicant Name', type: 'text', default: 'Marcus Webb' },
+        { id: 'Deadline_Hours', label: 'Deadline (hours)', type: 'text', default: '48' }
+      ] },
+    { title: 'Denial Letter', badge: 'Compliance', category: 'Communications',
+      desc: 'Draft a compliant denial letter after a failed screening criterion.',
+      tip: "Denial letters are a fair housing and adverse-action risk if they're vague, inconsistent, or over-explain. Stating the factual reason plainly, without elaboration, is what keeps them defensible.",
+      template: "Write a professional denial letter for a rental application. Reason: [Denial_Reason]. Be polite and do not elaborate beyond the stated reason.",
+      vars: [ { id: 'Denial_Reason', label: 'Denial Reason', type: 'text', default: 'insufficient income (did not meet 3x monthly rent)' } ] },
+    { title: 'Lease Summary', badge: 'Summary', category: 'Communications',
+      desc: 'Summarize the key tenant obligations in a lease before a renewal or review conversation.',
+      tip: "Asking for specific fields (rent due date, late fee, pet policy, notice period) instead of a general summary is what makes the output something you can actually act on in a tenant conversation.",
+      template: "Summarize the key tenant obligations in the following residential lease. Highlight: rent due date, late fee policy, pet policy, maintenance responsibilities, and notice period for non-renewal.\n\n[Lease_Text]",
+      vars: [ { id: 'Lease_Text', label: 'Paste Lease Text', type: 'textarea', default: '[Paste lease text here]' } ] },
+    { title: 'Move-In Instructions', badge: 'Email', category: 'Communications',
+      desc: 'Send a new tenant everything they need to know before move-in day.',
+      tip: "Bundling key pickup, utility setup, and the inspection deadline into one email means the tenant only has one place to look, instead of three separate messages to track.",
+      template: 'Draft a move-in instruction email for a new tenant moving in [Move_In_Date]. Include a placeholder for key pickup location and time, a utility setup reminder, and a note about the move-in inspection checklist due within [Inspection_Hours] hours.',
+      vars: [
+        { id: 'Move_In_Date', label: 'Move-In Date', type: 'text', default: 'June 1' },
+        { id: 'Inspection_Hours', label: 'Inspection Deadline (hours)', type: 'text', default: '48' }
+      ] },
+    { title: 'Lease Renewal Offer', badge: 'Email', category: 'Communications',
+      desc: 'Offer a lease renewal with an adjusted rent amount.',
+      tip: "Leading with a friendly, appreciative tone before the rent increase, and being specific about the new amount, reads as a genuine offer rather than a notice, which improves renewal rates.",
+      template: 'Write a lease renewal offer to a tenant whose lease expires [Expiration_Date]. Offer a [Term_Months] month renewal at [New_Rent]/month (up from [Old_Rent]). Friendly tone, emphasize the value of renewing.',
+      vars: [
+        { id: 'Expiration_Date', label: 'Lease Expiration Date', type: 'text', default: 'August 31' },
+        { id: 'Term_Months', label: 'Renewal Term (months)', type: 'text', default: '12' },
+        { id: 'New_Rent', label: 'New Rent', type: 'text', default: '$1,950' },
+        { id: 'Old_Rent', label: 'Current Rent', type: 'text', default: '$1,850' }
+      ] },
+    { title: 'Maintenance Request Acknowledgment', badge: 'Email', category: 'Operations',
+      desc: 'Acknowledge a tenant maintenance request and set expectations.',
+      tip: "Confirming receipt and giving a realistic timeframe immediately reduces follow-up calls and keeps the tenant relationship from souring while a repair is scheduled.",
+      template: 'Write an email acknowledging a maintenance request from a tenant about [Issue_Description]. Confirm a technician will be scheduled within [Response_Days] business days and ask for their preferred access times.',
+      vars: [
+        { id: 'Issue_Description', label: 'Issue Description', type: 'text', default: 'a leaking kitchen faucet' },
+        { id: 'Response_Days', label: 'Response Time (business days)', type: 'text', default: '2' }
+      ] },
+    { title: 'Security Deposit Itemization', badge: 'Compliance', category: 'Operations',
+      desc: 'Draft the itemized deposit accounting sent after a tenant moves out.',
+      tip: "Most states require an itemized, documented list of deposit deductions within a set number of days after move-out. Naming the deadline in the letter itself protects the file if it's ever disputed.",
+      template: 'Draft a security deposit itemization letter for a tenant who moved out on [Move_Out_Date]. Original deposit was [Deposit_Amount]. Deductions: [Deductions]. State the remaining balance being refunded and the applicable state deadline for sending this notice.',
+      vars: [
+        { id: 'Move_Out_Date', label: 'Move-Out Date', type: 'text', default: 'May 31' },
+        { id: 'Deposit_Amount', label: 'Original Deposit', type: 'text', default: '$1,850' },
+        { id: 'Deductions', label: 'Deductions (describe)', type: 'text', default: '$120 for carpet cleaning, $75 for a damaged blind' }
+      ] }
+  ];
+
+  function toggleResources(card) {
+    var panel = document.getElementById('resources-panel');
+    var isOpen = panel.classList.toggle('open');
+    card.classList.toggle('open', isOpen);
+    if (isOpen) setTimeout(function(){ panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 40);
+  }
+  function openResources() {
+    var card = document.querySelector('.rd-mode-resources');
+    var panel = document.getElementById('resources-panel');
+    if (!panel.classList.contains('open')) { panel.classList.add('open'); if(card) card.classList.add('open'); }
+    setTimeout(function(){ panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 40);
+  }
+</script>
+</body>
+</html>

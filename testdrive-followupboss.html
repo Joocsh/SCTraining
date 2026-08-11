@@ -1,0 +1,2273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test Drive: FollowUpBoss · SkillCloud Academy</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+  :root{--v-navy:#0a2647;--v-navy2:#0f3460;--v-cyan:#17c3d4;--v-cyan-d:#0fa6b6}
+
+  /* ===================== FULL SCREEN SHELL ===================== */
+  html,body{height:100%}
+  body.td-fullscreen{display:flex;flex-direction:column;height:100vh;overflow:hidden;margin:0}
+
+  .td-strip{flex:none;background:var(--v-navy);color:#fff;display:flex;align-items:center;gap:12px;padding:0 22px;height:36px;font-size:12.5px}
+  .td-strip-back{color:#d3e2f0;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:5px;flex:none}
+  .td-strip-back:hover{color:#fff;text-decoration:none}
+  .td-strip-dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.35);flex:none}
+  .td-strip-app{font-weight:800;flex:none}
+  .td-strip-app b{color:var(--v-cyan)}
+  .td-strip-msg{color:#9fb4c9;margin-left:auto;font-size:12px}
+  @media(max-width:640px){.td-strip-msg{display:none}}
+
+  /* ===================== FUB APP FRAME (matches the real FollowUpBoss UI) ===================== */
+  .fub{
+    --fnav:#364650; --fnav2:#425560; --fblue:#4eaddd; --fblue-d:#0076a4;
+    --fline:#e2e7eb; --fbg:#f1f4f8; --ftext:#33424c; --fmuted:#7c8b96; --forange:#e8862b;
+    flex:1; min-height:0; display:flex; flex-direction:column; position:relative;
+    font-family:proxima-nova,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ftext); background:#fff;
+  }
+  .fub *{box-sizing:border-box}
+  .fub a{color:var(--fblue-d)}
+
+  .fub-topbar{flex:none;background:var(--fnav);color:#fff;display:flex;align-items:center;gap:22px;padding:0 18px;height:52px}
+  .fub-topbar .fmark{width:26px;height:26px;border-radius:6px;background:var(--fblue);display:grid;place-items:center;font-weight:900;font-size:12px;flex:none;color:#123}
+  .fub-tabs{display:flex;align-items:center;gap:20px;font-size:13.5px;font-weight:600;color:#b7c2c9}
+  .fub-tabs span{cursor:pointer;padding:6px 2px;border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .fub-tabs span.active{color:#fff;border-color:var(--fblue)}
+  .fub-tabs span:hover{color:#fff}
+  .fub-tabs .ct{background:#d2452f;color:#fff;font-size:10px;font-weight:800;border-radius:999px;padding:1px 6px;line-height:1.4}
+  .fub-search{flex:1;max-width:280px}
+  .fub-search input{width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);border-radius:8px;color:#fff;padding:7px 12px;font-size:13px}
+  .fub-search input::placeholder{color:#a7b3ba}
+  .fub-topbar-right{display:flex;align-items:center;gap:2px;margin-left:auto;flex:none}
+  .fub-dd-wrap{position:relative}
+  .fub-icon-btn{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;color:#c7d2d7;cursor:pointer;position:relative;background:none;border:none}
+  .fub-icon-btn:hover{background:rgba(255,255,255,.09);color:#fff}
+  .fub-icon-btn svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .fub-badge-dot{position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:#d2452f;border:2px solid var(--fnav)}
+  .fub-badge-dot.hide{display:none}
+  .fub-profile-btn{display:flex;align-items:center;gap:4px;cursor:pointer;padding:4px 6px 4px 8px;border-radius:20px}
+  .fub-profile-btn:hover{background:rgba(255,255,255,.09)}
+  .fub-profile-btn svg{width:12px;height:12px;fill:none;stroke:#b7c2c9;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .fub-avatar{width:27px;height:27px;border-radius:50%;background:var(--fblue);display:grid;place-items:center;font-size:11px;font-weight:800;flex:none;color:#123}
+
+  .fub-dropdown{position:absolute;top:44px;right:0;background:#fff;border:1px solid var(--fline);border-radius:10px;box-shadow:0 16px 36px rgba(20,35,45,.24);min-width:250px;z-index:60;display:none;color:var(--ftext)}
+  .fub-dropdown.open{display:block}
+  .fub-dd-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--fline);font-weight:800;font-size:13.5px}
+  .fub-dd-head a{font-size:12px;font-weight:700;color:var(--fblue-d);cursor:pointer}
+  .fub-notif-list{max-height:360px;overflow-y:auto}
+  .fub-notif{display:flex;gap:10px;padding:11px 14px;border-bottom:1px solid var(--fline);cursor:pointer}
+  .fub-notif:last-child{border-bottom:none}
+  .fub-notif:hover{background:#f6f9fb}
+  .fub-notif .av{width:30px;height:30px;border-radius:50%;color:#fff;display:grid;place-items:center;font-size:11px;font-weight:800;flex:none}
+  .fub-notif .body{flex:1;min-width:0}
+  .fub-notif .top{display:flex;justify-content:space-between;gap:6px;font-size:11px;color:var(--fmuted)}
+  .fub-notif .ttl{font-weight:700;font-size:12.5px;color:var(--ftext);margin-top:2px}
+  .fub-notif .prev{font-size:12px;color:var(--fmuted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fub-notif .dot{width:7px;height:7px;border-radius:50%;background:var(--fblue-d);flex:none;margin-top:5px}
+  .fub-notif.read .dot{visibility:hidden}
+  .fub-profile-menu{min-width:210px}
+  .fub-profile-menu .item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13.5px;font-weight:600;color:var(--ftext);cursor:pointer}
+  .fub-profile-menu .item:hover{background:#f4f7fa}
+  .fub-profile-menu .divider{height:1px;background:var(--fline);margin:4px 0}
+  .fub-profile-menu .ic{width:16px;text-align:center;color:var(--fmuted);flex:none}
+  .fub-profile-menu .ic svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px}
+
+  .fub-body{flex:1;min-height:0;display:flex;background:var(--fbg)}
+
+  /* ---- People: left rail ---- */
+  #view-people{display:flex;flex:1;min-width:0;min-height:0}
+  .fub-rail{width:212px;flex:none;background:#fff;border-right:1px solid var(--fline);padding:12px 0;overflow-y:auto;height:100%}
+  .fub-rail .rail-h{padding:4px 16px 8px;font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--fmuted)}
+  .fub-rail .rail-title{display:flex;align-items:center;justify-content:space-between;padding:2px 16px 10px;font-weight:800;font-size:14px;color:var(--ftext)}
+  .fub-rail a{display:flex;justify-content:space-between;align-items:center;padding:6.5px 16px;font-size:13.5px;font-weight:600;color:var(--ftext);text-decoration:none;cursor:pointer;gap:6px}
+  .fub-rail a:hover{background:#f2f6f8}
+  .fub-rail a.active{background:#eaf4fa;color:var(--fblue-d);border-right:3px solid var(--fblue)}
+  .fub-rail a .lbl{display:flex;align-items:center;gap:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fub-rail a .lbl svg{width:12px;height:12px;flex:none;color:var(--fmuted)}
+  .fub-rail a .n{color:var(--fmuted);font-size:11.5px;font-weight:700;flex:none}
+  .fub-rail .divider{height:1px;background:var(--fline);margin:8px 16px}
+
+  /* ---- People: list ---- */
+  .fub-main{flex:1;min-width:0;min-height:0;padding:18px 22px;overflow-y:auto}
+  .fub-listhead{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px}
+  .fub-listhead h2{margin:0;font-size:19px;font-weight:800;color:var(--ftext)}
+  .fub-listhead .sub{font-size:12.5px;color:var(--fmuted);margin-top:2px}
+  .fub-toolbar{display:flex;align-items:center;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+  .fub-bulk{display:flex;gap:2px}
+  .fub-bulk button{width:30px;height:30px;border-radius:7px;border:1px solid var(--fline);background:#fff;color:var(--fmuted);cursor:pointer;display:grid;place-items:center}
+  .fub-bulk button:hover{border-color:var(--fblue);color:var(--fblue-d)}
+  .fub-bulk button svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .fub-pill-btn{background:#fff;border:1px solid var(--fline);color:var(--fblue-d);font-weight:700;font-size:12px;padding:6px 14px;border-radius:999px;cursor:pointer;white-space:nowrap}
+  .fub-pill-btn:hover{border-color:var(--fblue)}
+  .fub-spacer{flex:1}
+  .fub-dd-btn{background:#fff;border:1px solid var(--fline);color:var(--ftext);font-weight:700;font-size:13px;padding:7px 13px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .fub-dd-btn:hover{border-color:var(--fblue)}
+  .fub-dd-btn svg{width:12px;height:12px}
+  .fub-newlist{background:var(--fblue-d);color:#fff;font-weight:700;font-size:13px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer}
+  .fub-newlist:hover{background:#005e83}
+
+  .fub-cols-dd,.fub-agent-dd{position:absolute;top:38px;right:0;background:#fff;border:1px solid var(--fline);border-radius:10px;box-shadow:0 14px 32px rgba(20,35,45,.2);min-width:190px;z-index:40;display:none;padding:8px 0}
+  .fub-cols-dd.open,.fub-agent-dd.open{display:block}
+  .fub-cols-dd label{display:flex;align-items:center;gap:9px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer}
+  .fub-cols-dd label:hover{background:#f4f7fa}
+  .fub-agent-dd a{display:block;padding:8px 14px;font-size:13px;font-weight:600;color:var(--ftext);cursor:pointer}
+  .fub-agent-dd a:hover{background:#f4f7fa}
+  .fub-agent-dd a.active{color:var(--fblue-d);font-weight:800}
+
+  .fub-list-row{display:flex;gap:18px;align-items:flex-start}
+  .fub-table-wrap{flex:1;min-width:0;overflow-x:auto;border:1px solid var(--fline);border-radius:10px;background:#fff}
+  table.fub-tbl{width:100%;min-width:760px;border-collapse:collapse;font-size:13.5px}
+  table.fub-tbl th{background:#fafbfc;color:var(--fmuted);font-weight:700;text-align:left;padding:9px 12px;border-bottom:1px solid var(--fline);font-size:11px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+  table.fub-tbl td{padding:10px 12px;border-bottom:1px solid var(--fline);vertical-align:middle;white-space:nowrap}
+  table.fub-tbl tr:last-child td{border-bottom:none}
+  table.fub-tbl tr.rowlink{cursor:pointer}
+  table.fub-tbl tr.rowlink:hover{background:#f6f9fb}
+  table.fub-tbl tr.rowsel{background:#eaf4fa}
+  table.fub-tbl td:first-child,table.fub-tbl th:first-child{white-space:nowrap}
+  table.fub-tbl .col-hide{display:none}
+  .lead-name{display:flex;align-items:center;gap:10px}
+  .lead-name .av{width:30px;height:30px;border-radius:50%;color:#fff;display:grid;place-items:center;font-size:11.5px;font-weight:800;flex:none}
+  .lead-name .who b{display:block;font-size:13.5px;color:var(--ftext)}
+  .lead-name .who span{display:block;font-size:12px;color:var(--fmuted)}
+  .stage-pill{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;white-space:nowrap}
+
+  .fub-filter-panel{width:230px;flex:none;background:#fff;border:1px solid var(--fline);border-radius:10px;padding:14px}
+  .fub-filter-panel .ttl{font-weight:800;font-size:12.5px;margin-bottom:10px}
+  .fub-filter-panel select{width:100%;border:1px solid var(--fline);border-radius:8px;padding:8px 9px;font-size:13px;font-family:inherit;margin-bottom:8px}
+  .fub-filter-chip{display:flex;align-items:center;justify-content:space-between;background:#eaf4fa;color:var(--fblue-d);font-size:12px;font-weight:700;padding:6px 10px;border-radius:8px;margin-top:6px}
+  .fub-filter-chip span.x{cursor:pointer;font-weight:900}
+  .fub-filter-empty{text-align:center;color:var(--fmuted);font-size:12px;padding:18px 4px}
+  .fub-filter-empty svg{width:26px;height:26px;color:#c7d2d7;margin-bottom:6px}
+
+  /* ---- Person detail ---- */
+  .fub-detail{display:none;flex-direction:column;gap:14px}
+  .fub-detail.active{display:flex}
+  .fub-pager{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--fmuted);font-weight:700}
+  .fub-pager .arrows{display:flex;gap:6px}
+  .fub-pager button{width:26px;height:26px;border-radius:6px;border:1px solid var(--fline);background:#fff;cursor:pointer;display:grid;place-items:center;color:var(--ftext)}
+  .fub-pager button:hover{border-color:var(--fblue)}
+  .fub-pager button:disabled{opacity:.4;cursor:default}
+  .fub-detail-grid{display:grid;grid-template-columns:250px 1fr 250px;gap:20px}
+  .fub-col{background:#fff;border:1px solid var(--fline);border-radius:10px;padding:16px}
+  .fub-detail .mid{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .fub-back{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--fblue-d);cursor:pointer;margin-bottom:14px}
+  .p-name{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .p-name .av{width:44px;height:44px;border-radius:50%;color:#fff;display:grid;place-items:center;font-size:15px;font-weight:800;flex:none}
+  .p-name b{display:block;font-size:16px}
+  .p-name span{display:block;font-size:12px;color:var(--fmuted)}
+  .fub-col h4{margin:0 0 8px;font-size:11.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--fmuted);display:flex;align-items:center;justify-content:space-between;cursor:default}
+  .fub-col h4.collapsible{cursor:pointer}
+  .fub-col h4 .chev{transition:transform .15s;color:var(--fmuted)}
+  .fub-col h4.collapsible.open .chev{transform:rotate(90deg)}
+  .fub-collapse-body{display:none;font-size:12.5px;color:var(--fmuted);line-height:1.6;padding-top:2px}
+  .fub-collapse-body.open{display:block}
+  .fub-col .kv{font-size:13px;margin-bottom:7px;display:flex;gap:6px;align-items:center}
+  .fub-col .kv b{color:var(--fmuted);font-weight:600;flex:none;min-width:70px}
+  .fub-stage-select{border:1px solid var(--fline);border-radius:7px;padding:4px 8px;font-size:12px;font-weight:700;font-family:inherit;background:#fff;color:var(--ftext);cursor:pointer}
+  .fub-tagrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;align-items:center}
+  .fub-tag{background:#eef2f6;color:#5b6b7e;font-size:11px;font-weight:600;padding:3px 6px 3px 9px;border-radius:999px;display:inline-flex;align-items:center;gap:5px}
+  .fub-tag .rm{cursor:pointer;font-weight:900;color:#9aa7b0;font-size:11px}
+  .fub-tag .rm:hover{color:#c0392b}
+  .fub-tag-add{width:22px;height:22px;border-radius:50%;background:var(--fblue-d);color:#fff;display:grid;place-items:center;cursor:pointer;font-weight:900;font-size:13px;border:none}
+  .fub-block{margin-bottom:14px}
+  .fub-composer{border:1px solid var(--fline);border-radius:10px;overflow:hidden}
+  .fub-composer .ctabs{display:flex;border-bottom:1px solid var(--fline);background:#fafbfc}
+  .fub-composer .ctabs span{padding:10px 14px;font-size:13px;font-weight:700;color:var(--fmuted);cursor:pointer}
+  .fub-composer .ctabs span.active{color:var(--ftext);background:#fff;border-bottom:2px solid var(--fblue)}
+  .fub-composer .ctop{display:flex;justify-content:flex-end;padding:8px 12px 0}
+  .fub-composer textarea{width:100%;border:none;padding:14px;font-size:13.5px;font-family:inherit;resize:vertical;min-height:70px;color:var(--ftext)}
+  .fub-composer textarea:focus{outline:none}
+  .fub-composer .cfoot{padding:10px 14px;border-top:1px solid var(--fline);display:flex;justify-content:flex-end}
+  .fub-composer .cfoot button{background:#e8a63b;color:#4a3308;font-weight:800;font-size:12.5px;border:none;padding:8px 16px;border-radius:7px;cursor:pointer}
+  .fub-feed-filters{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+  .fub-feed-filters span{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--fmuted);padding:6px 10px;border-radius:7px;cursor:pointer}
+  .fub-feed-filters span:hover{background:#eef2f5}
+  .fub-feed-filters span.active{background:#eaf4fa;color:var(--fblue-d)}
+  .fub-feed-filters svg{width:13px;height:13px}
+  .fub-timeline{display:flex;flex-direction:column;gap:12px}
+  .fub-tlitem{border:1px solid var(--fline);border-radius:10px;padding:12px 14px;display:flex;gap:10px}
+  .fub-tlitem .av{width:30px;height:30px;border-radius:50%;color:#fff;display:grid;place-items:center;font-size:11px;font-weight:800;flex:none}
+  .fub-tlitem .content{flex:1;min-width:0}
+  .fub-tlitem .thead{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--fmuted);margin-bottom:4px}
+  .fub-tlitem .thead b{color:var(--ftext)}
+  .fub-tlitem p{margin:0;font-size:13.5px;line-height:1.55}
+  .fub-tlitem .via{display:inline-block;background:#eaf4fa;color:var(--fblue-d);font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:999px;margin-left:6px}
+  .fub-side-card{margin-bottom:16px}
+  .fub-side-card h4{display:flex;justify-content:space-between;margin:0 0 8px;font-size:11.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--fmuted)}
+  .fub-side-card .add{color:var(--fblue-d);font-weight:800;cursor:pointer}
+  .fub-empty{font-size:12.5px;color:var(--fmuted);border:1px dashed var(--fline);border-radius:8px;padding:10px;text-align:center}
+  .fub-task{font-size:13px;padding:8px 0;border-bottom:1px solid var(--fline)}
+  .fub-task:last-child{border-bottom:none}
+  .fub-task b{display:block;color:var(--ftext)}
+  .fub-task span{color:var(--fmuted);font-size:11.5px}
+  .fub-plan-active{border:1px solid var(--fline);border-radius:8px;padding:10px 12px}
+  .fub-plan-active b{display:block;font-size:12.5px;color:var(--ftext);margin-bottom:2px}
+  .fub-plan-active span{display:block;font-size:11.5px;color:var(--fmuted)}
+  .fub-plan-active a{font-size:11.5px;font-weight:700;display:inline-block;margin-top:6px;cursor:pointer}
+  .fub-source-card{font-size:12.5px;color:var(--fmuted);line-height:1.7}
+  .fub-source-card b{color:var(--ftext)}
+
+  /* ---- Inbox ---- */
+  .fub-inbox{display:none;grid-template-columns:190px 260px 1fr 250px}
+  .fub-inbox.active{display:grid;flex:1;min-height:0}
+  .fub-msgcol{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--fline);background:#fbfcfd}
+  .fub-msg-tabs{flex:none;display:flex;gap:4px;padding:10px 12px;border-bottom:1px solid var(--fline);background:#fff}
+  .fub-msg-tabs span{font-size:12px;font-weight:700;color:var(--fmuted);padding:5px 14px;border-radius:999px;cursor:pointer;border:1px solid transparent}
+  .fub-msg-tabs span.active{background:#eaf4fa;color:var(--fblue-d);border-color:#cfe6f4}
+  .fub-thread-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .fub-thread-head .btns{display:flex;gap:8px}
+  .fub-thread-head .btns button{border:1px solid var(--fline);background:#fff;color:var(--ftext);font-weight:700;font-size:12.5px;padding:7px 14px;border-radius:8px;cursor:pointer}
+  .fub-thread-head .btns button:hover{border-color:var(--fblue)}
+  .fub-inbox-contact{background:#fff;border-left:1px solid var(--fline);padding:18px 16px;overflow-y:auto;height:100%}
+  .fub-inbox-contact .p-name .av{width:38px;height:38px;font-size:13px}
+  .fub-inbox-contact h4{margin:16px 0 8px;font-size:11.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--fmuted)}
+  .fub-inbox-contact .kv{font-size:12.5px;margin-bottom:6px;display:flex;gap:6px}
+  .fub-inbox-contact .kv b{color:var(--fmuted);font-weight:600;flex:none;min-width:52px}
+  .fub-inbox-contact .conv{font-size:12px;color:var(--fblue-d);font-weight:600;padding:5px 0;border-bottom:1px solid var(--fline);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fub-inbox-contact .conv:last-child{border-bottom:none}
+  .fub-inbox-contact .profile-link{display:inline-block;margin-top:12px;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--fblue-d)}
+  .fub-inbox-rail{background:#fff;border-right:1px solid var(--fline);padding:14px 0;overflow-y:auto;height:100%}
+  .fub-inbox-rail a{display:block;padding:6.5px 18px;font-size:13.5px;font-weight:600;color:var(--ftext);cursor:pointer}
+  .fub-inbox-rail a.active{background:#eaf4fa;color:var(--fblue-d);border-right:3px solid var(--fblue)}
+  .fub-msglist{background:#fbfcfd;border-right:1px solid var(--fline);overflow-y:auto;height:100%}
+  .fub-msg{padding:12px 16px;border-bottom:1px solid var(--fline);cursor:pointer}
+  .fub-msg:hover{background:#f2f6f8}
+  .fub-msg.active{background:#eaf4fa}
+  .fub-msg b{display:block;font-size:13px;color:var(--ftext)}
+  .fub-msg .prev{font-size:12px;color:var(--fmuted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fub-msg .ts{font-size:11px;color:var(--fmuted);float:right}
+  .fub-thread{padding:20px 24px;background:#fff;overflow-y:auto;height:100%}
+  .fub-thread h3{margin:0 0 4px}
+  .fub-thread .sub{font-size:12.5px;color:var(--fmuted);margin-bottom:16px}
+  .fub-bubble{background:#f4f7fa;border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.6;margin-bottom:14px}
+
+  /* ---- Tasks ---- */
+  .fub-tasks,.fub-calendar,.fub-reporting{display:none}
+  .fub-tasks.active,.fub-calendar.active,.fub-reporting.active{display:block;flex:1;min-height:0;overflow-y:auto;padding:22px}
+  .fub-tasks #taskTabs{margin-top:4px}
+
+  /* ---- Calendar ---- */
+  .fub-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-top:16px}
+  .fub-cal-grid.mode-day{grid-template-columns:1fr;max-width:520px}
+  .fub-cal-grid.mode-month{gap:6px}
+  .fub-cal-grid.mode-month .cal-day{min-height:86px;padding:7px}
+  .fub-cal-grid.mode-month .cal-item{padding:3px 6px;font-size:10.5px;margin-bottom:4px}
+  .fub-cal-grid.mode-month .cal-empty{display:none}
+  .cal-day.other-month{opacity:.45}
+  .cal-mode{display:flex;border:1px solid var(--fline);border-radius:8px;overflow:hidden;background:#fff}
+  .cal-mode span{font-size:12.5px;font-weight:700;color:var(--fmuted);padding:7px 16px;cursor:pointer;border-right:1px solid var(--fline)}
+  .cal-mode span:last-child{border-right:none}
+  .cal-mode span.active{background:#eaf4fa;color:var(--fblue-d)}
+  .cal-day{border:1px solid var(--fline);border-radius:10px;background:#fff;min-height:160px;padding:10px}
+  .cal-day.today{border-color:var(--fblue);box-shadow:0 0 0 1px var(--fblue)}
+  .cal-day-head{font-size:12px;font-weight:700;color:var(--fmuted);margin-bottom:8px}
+  .cal-day.today .cal-day-head{color:var(--fblue-d)}
+  .cal-day-head b{color:var(--ftext);font-size:14px;margin-left:4px}
+  .cal-item{background:#eaf4fa;border-left:3px solid var(--fblue);border-radius:0 6px 6px 0;padding:6px 8px;font-size:11.5px;margin-bottom:6px;cursor:pointer;line-height:1.4}
+  .cal-item:hover{background:#dcecf8}
+  .cal-item b{display:block;font-size:11px;color:var(--fblue-d)}
+  .cal-empty{font-size:11.5px;color:var(--fmuted)}
+  @media(max-width:900px){ .fub-cal-grid{grid-template-columns:repeat(2,1fr)} }
+
+  /* ---- Reporting ---- */
+  .rep-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0 26px}
+  .rep-tile{background:#fff;border:1px solid var(--fline);border-radius:10px;padding:16px}
+  .rep-tile-label{font-size:11.5px;font-weight:700;color:var(--fmuted);text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px}
+  .rep-tile-val{font-size:26px;font-weight:800;color:var(--ftext)}
+  .rep-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .rep-block{background:#fff;border:1px solid var(--fline);border-radius:10px;padding:16px}
+  .rep-block h4{margin:0 0 12px;font-size:12.5px;font-weight:800;color:var(--fmuted);text-transform:uppercase;letter-spacing:.3px}
+  .rep-row{display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:12.5px}
+  .rep-row-lbl{width:92px;flex:none;color:var(--ftext);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rep-row-bar{flex:1;height:8px;background:#eef2f5;border-radius:999px;overflow:hidden}
+  .rep-row-bar i{display:block;height:100%;border-radius:999px}
+  .rep-row-val{width:20px;flex:none;text-align:right;font-weight:700;color:var(--ftext)}
+  @media(max-width:900px){ .rep-tiles{grid-template-columns:1fr 1fr} .rep-cols{grid-template-columns:1fr} }
+  .fub-task-row{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--fline);border-radius:10px;padding:12px 16px;margin-bottom:10px}
+  .fub-task-row input{width:16px;height:16px}
+  .fub-task-row .t-name{font-weight:700;font-size:13.5px}
+  .fub-task-row .t-sub{font-size:12px;color:var(--fmuted)}
+  .fub-task-row .t-due{margin-left:auto;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px}
+
+  /* ---- Admin ---- */
+  .fub-admin{display:none}
+  .fub-admin.active{display:block;flex:1;min-height:0;overflow-y:auto;padding:22px}
+  .fub-admin-tabs{display:flex;gap:18px;border-bottom:1px solid var(--fline);margin-bottom:20px;flex-wrap:wrap}
+  .fub-admin-tabs span{font-size:13px;font-weight:700;color:var(--fmuted);padding:0 0 10px;cursor:pointer;white-space:nowrap}
+  .fub-admin-tabs span.active{color:var(--fblue-d);border-bottom:2px solid var(--fblue)}
+  .fub-admin-panel{display:none}
+  .fub-admin-panel.active{display:block}
+  .fub-admin-sec{margin-bottom:26px}
+  .fub-admin-sec h5{margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--fmuted)}
+  .fub-admin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .fub-admin-card{background:#fff;border:1px solid var(--fline);border-radius:10px;padding:16px;cursor:pointer;transition:border-color .15s}
+  .fub-admin-card:hover{border-color:var(--fblue)}
+  .fub-admin-card .ic{width:30px;height:30px;border-radius:8px;background:#eaf4fa;color:var(--fblue-d);display:grid;place-items:center;margin-bottom:10px;font-size:14px;font-weight:800}
+  .fub-admin-card b{display:block;font-size:14px;margin-bottom:4px;color:var(--ftext)}
+  .fub-admin-card p{margin:0;font-size:12.5px;color:var(--fmuted);line-height:1.5}
+  .fub-admin-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;gap:10px;flex-wrap:wrap}
+  .fub-admin-head h3{margin:0;font-size:18px;color:var(--ftext)}
+  .fub-admin-head p{margin:2px 0 0;font-size:12.5px;color:var(--fmuted)}
+  .fub-admin-head input.search{border:1px solid var(--fline);border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;width:220px}
+  .fub-placeholder{border:1px dashed var(--fline);border-radius:10px;padding:32px;text-align:center;color:var(--fmuted);font-size:13.5px;max-width:460px}
+
+  table.fub-admin-tbl{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--fline);border-radius:10px;overflow:hidden;font-size:13.5px}
+  table.fub-admin-tbl th{background:#fafbfc;color:var(--fmuted);font-weight:700;text-align:left;padding:9px 12px;border-bottom:1px solid var(--fline);font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+  table.fub-admin-tbl td{padding:10px 12px;border-bottom:1px solid var(--fline);vertical-align:middle}
+  table.fub-admin-tbl tr:last-child td{border-bottom:none}
+  table.fub-admin-tbl tr.rowlink{cursor:pointer}
+  table.fub-admin-tbl tr.rowlink:hover{background:#f6f9fb}
+  .fub-row-actions{display:flex;gap:6px;justify-content:flex-end}
+  .fub-row-actions button{width:26px;height:26px;border-radius:6px;border:1px solid var(--fline);background:#fff;color:var(--fmuted);cursor:pointer;display:grid;place-items:center}
+  .fub-row-actions button:hover{border-color:var(--fblue);color:var(--fblue-d)}
+  .fub-row-actions svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .fub-toggle{width:38px;height:21px;border-radius:999px;border:none;position:relative;cursor:pointer;background:#d7dee4}
+  .fub-toggle.on{background:#1e8449}
+  .fub-toggle i{position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#fff;transition:transform .15s}
+  .fub-toggle.on i{transform:translateX(17px)}
+  .fub-companycard{background:#fff;border:1px solid var(--fline);border-radius:10px;padding:20px;max-width:480px}
+  .fub-companycard .kv{display:flex;gap:10px;font-size:13.5px;padding:8px 0;border-bottom:1px solid var(--fline)}
+  .fub-companycard .kv:last-child{border-bottom:none}
+
+  /* ---- Lead Flow ---- */
+  .lf-row{background:#fff;border:1px solid var(--fline);border-radius:10px;padding:14px 18px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+  .lf-main b{font-size:14px;color:var(--ftext);margin-right:8px}
+  .lf-type,.lf-contact{font-size:12px;color:var(--fmuted)}
+  .lf-last{font-size:12px;color:var(--fmuted);margin-top:4px}
+  .lf-cols{display:flex;gap:24px}
+  .lf-lbl{display:block;font-size:10.5px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--fmuted)}
+  .lf-val{font-size:12.5px;color:var(--ftext);font-weight:600;margin-top:2px}
+  .mini-av{width:24px;height:24px;border-radius:50%;color:#fff;font-size:10px;font-weight:800;display:inline-grid;place-items:center;margin-right:4px}
+  .fub-companycard .kv b{min-width:110px;color:var(--fmuted);font-weight:600}
+
+  /* ---- flow visuals (action plan steps / automation trigger-action) ---- */
+  .flow{display:flex;flex-direction:column;align-items:center;padding:8px 0}
+  .flow-node{width:100%;max-width:420px;border:1px solid var(--fline);border-radius:10px;padding:12px 16px;margin-bottom:6px;background:#fff;display:flex;gap:10px;align-items:flex-start}
+  .flow-node .fic{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:12px;flex:none;margin-top:1px}
+  .flow-node.email .fic{background:var(--fblue-d)}
+  .flow-node.task .fic{background:#8e44ad}
+  .flow-node .txt{font-size:13px;line-height:1.5}
+  .flow-node .txt b{display:block;font-size:12.5px;margin-bottom:2px}
+  .flow-delay{color:var(--fmuted);font-size:12px;font-weight:700;padding:4px 0 8px;display:flex;align-items:center;gap:8px}
+  .flow-delay::before,.flow-delay::after{content:'';flex:1;height:1px;background:var(--fline)}
+  .flow-step{width:100%;max-width:420px}
+  .flow-when{font-size:11px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--fmuted);margin:8px 0 4px}
+
+  /* ---- Action Plan builder (create flow) ---- */
+  .ap-check{display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:8px;cursor:pointer;color:var(--ftext)}
+  .ap-steps{counter-reset:apstep;margin:14px 0 10px}
+  .ap-step{counter-increment:apstep;border:1px solid var(--fline);border-radius:10px;padding:14px 16px;margin-bottom:10px;position:relative}
+  .ap-step-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .ap-step-top::before{content:counter(apstep);width:24px;height:24px;border-radius:50%;background:var(--fblue-d);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center;flex:none}
+  .ap-step-when{font-weight:700;font-size:13px;color:var(--ftext);min-width:76px}
+  .ap-step-run{font-size:12.5px;color:var(--fmuted);display:flex;align-items:center;gap:6px}
+  .ap-step-run input{width:46px;border:1px solid var(--fline);border-radius:6px;padding:4px 6px;font-size:12.5px;text-align:center;font-family:inherit}
+  .ap-step-del{margin-left:auto;background:none;border:1px solid var(--fline);border-radius:6px;width:26px;height:26px;cursor:pointer;color:var(--fmuted);font-weight:900;flex:none}
+  .ap-step-del:hover{border-color:#c0392b;color:#c0392b}
+  .ap-step-body{padding-left:34px}
+  .ap-step-body>label{display:block;font-size:12px;font-weight:700;color:var(--fmuted);margin-bottom:5px}
+  .ap-step-body>select{width:100%;border:1px solid var(--fline);border-radius:8px;padding:8px 10px;font-size:13px;margin-bottom:10px;font-family:inherit}
+  .ap-step-fields .fub-field{margin-bottom:8px}
+
+  /* ---- Automation builder (create flow) ---- */
+  .auto-build-label{text-align:center;font-size:13px;color:var(--ftext);margin-bottom:10px}
+  .auto-card-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:440px}
+  .auto-card{border:1px solid var(--fline);border-radius:10px;padding:14px 8px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .auto-card:hover{border-color:var(--fblue)}
+  .auto-card.disabled{opacity:.45;cursor:not-allowed}
+  .auto-card .dot{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:14px}
+  .auto-card span{font-size:11.5px;font-weight:700;color:var(--ftext);line-height:1.3}
+  .auto-value-pick{background:#f6f8fa;border:1px solid var(--fline);border-radius:10px;padding:14px;max-width:320px;text-align:left}
+  .auto-value-pick label{display:block;font-size:12px;font-weight:700;color:var(--fmuted);margin-bottom:6px}
+  .auto-value-pick select,.auto-value-pick input{width:100%;border:1px solid var(--fline);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit}
+  @media(max-width:520px){ .auto-card-grid{grid-template-columns:repeat(2,1fr)} }
+
+  .auto-flow{display:flex;flex-direction:column;align-items:center;padding:10px 0}
+  .auto-node{display:flex;flex-direction:column;align-items:center}
+  .auto-node .dot{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:15px;margin-bottom:8px}
+  .auto-node .box{border:1px solid var(--fline);border-radius:10px;padding:10px 20px;text-align:center;min-width:260px;background:#fff}
+  .auto-node .lbl{font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--fmuted);margin-bottom:2px}
+  .auto-node .val{font-size:13px;color:var(--ftext);font-weight:600}
+  .auto-connector{width:2px;height:22px;background:var(--fline);margin:2px 0}
+
+  /* ---- generic modal ---- */
+  .fub-modal-overlay{display:none;position:absolute;inset:0;background:rgba(20,35,45,.5);z-index:100;align-items:center;justify-content:center;padding:20px}
+  .fub-modal-overlay.open{display:flex}
+  .fub-modal{background:#fff;border-radius:14px;max-width:560px;width:100%;max-height:86vh;overflow-y:auto;padding:26px 28px;position:relative;box-shadow:0 30px 70px rgba(20,35,45,.3);color:var(--ftext)}
+  .fub-modal h3{margin:0 0 4px;font-size:18px}
+  .fub-modal .sub{font-size:12.5px;color:var(--fmuted);margin-bottom:18px}
+  .fub-modal-close{position:absolute;top:16px;right:16px;width:30px;height:30px;border-radius:50%;border:1px solid var(--fline);background:#fff;cursor:pointer;display:grid;place-items:center;font-size:16px;color:var(--fmuted)}
+  .fub-field{margin-bottom:14px}
+  .fub-field label{display:block;font-size:12px;font-weight:700;color:var(--fmuted);margin-bottom:5px}
+  .fub-field input,.fub-field select,.fub-field textarea{width:100%;border:1px solid var(--fline);border-radius:8px;padding:9px 11px;font-size:13.5px;font-family:inherit}
+  .fub-modal .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+  .fub-modal .modal-actions button{border:none;border-radius:8px;padding:9px 18px;font-weight:700;font-size:13px;cursor:pointer}
+  .fub-modal .btn-save{background:var(--fblue-d);color:#fff}
+  .fub-modal .btn-cancel{background:#eef2f6;color:var(--ftext)}
+  .fub-plan-pick{border:1px solid var(--fline);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer}
+  .fub-plan-pick:hover{border-color:var(--fblue)}
+  .fub-plan-pick b{display:block;font-size:13.5px}
+  .fub-plan-pick span{font-size:12px;color:var(--fmuted)}
+
+  .fub-toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#33424c;color:#fff;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:120;box-shadow:0 10px 24px rgba(0,0,0,.25);max-width:80%;text-align:center}
+  .fub-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media(max-width:980px){
+    .fub-rail{display:none}
+    .fub-list-row{flex-direction:column}
+    .fub-filter-panel{width:100%}
+    .fub-detail-grid{grid-template-columns:1fr}
+    .fub-inbox.active{grid-template-columns:1fr}
+    .fub-inbox-rail,.fub-msgcol,.fub-inbox-contact{display:none}
+    .fub-admin-grid{grid-template-columns:1fr 1fr}
+    .fub-tabs{overflow-x:auto}
+  }
+  @media(max-width:640px){
+    .fub-admin-grid{grid-template-columns:1fr}
+  }
+
+  /* ===== Exact FollowUpBoss palette & box shape (values measured from the real app) ===== */
+  .fub{
+    --fline:#e8ecf0;      /* real panel border */
+    --ftext:#415662;      /* real heading/body text */
+    --fmuted:#6d8291;     /* real muted/label text */
+  }
+  /* boxes: square with just a little rounding (real FUB panels are 5px) */
+  .fub .fub-col, .fub .fub-table-wrap, .fub table.fub-admin-tbl, .fub .fub-filter-panel,
+  .fub .fub-composer, .fub .fub-tlitem, .fub .fub-admin-card, .fub .cal-day,
+  .fub .rep-tile, .fub .rep-block, .fub .lf-row, .fub .fub-companycard, .fub .fub-placeholder,
+  .fub .auto-node .box, .fub .flow-node, .fub .ap-step, .fub .auto-card, .fub .fub-plan-pick,
+  .fub .fub-plan-active, .fub .fub-task-row, .fub .fub-bubble, .fub .fub-empty,
+  .fub .fub-dropdown, .fub .fub-cols-dd, .fub .fub-agent-dd, .fub .fub-modal,
+  .fub .cal-mode, .fub .cal-item{border-radius:5px}
+  /* real FUB panel shadow: 0 0 3px of the border color */
+  .fub .fub-col, .fub .fub-table-wrap, .fub table.fub-admin-tbl, .fub .fub-admin-card,
+  .fub .rep-tile, .fub .rep-block, .fub .fub-filter-panel, .fub .lf-row,
+  .fub .fub-companycard, .fub .cal-day{box-shadow:0 0 3px #e8ecf0}
+  /* inputs & small controls */
+  .fub .fub-field input, .fub .fub-field select, .fub .fub-field textarea,
+  .fub .fub-filter-panel select, .fub .fub-stage-select, .fub .fub-dd-btn,
+  .fub .fub-admin-head input.search, .fub .fub-notebox textarea{border-radius:5px}
+  /* solid action buttons: real FUB blue pill, white text */
+  .fub .fub-newlist{background:#4eaddd;color:#fff;border-radius:20px}
+  .fub .fub-newlist:hover{background:#3d9ecf}
+  .fub .fub-modal .btn-save{background:#4eaddd;border-radius:20px}
+  .fub .fub-modal .btn-save:hover{background:#3d9ecf}
+  .fub .fub-modal .btn-cancel{border-radius:20px}
+  /* light-blue helper pills, exactly like "How X works" in the real app */
+  .fub .fub-pill-btn{background:#f5fafd;border-color:#cfe6f4;color:#4eaddd}
+  /* topbar search is white in the real app */
+  .fub .fub-search input{background:#fff;border:1px solid #d7dee2;color:#354650;border-radius:20px}
+  .fub .fub-search input::placeholder{color:#6d8291}
+
+  /* ===== Person view (matches the real FUB lead profile) ===== */
+  .fub .fub-detail-grid{grid-template-columns:minmax(280px,360px) minmax(0,1fr) minmax(240px,320px);gap:16px;align-items:start}
+  .pv-left,.pv-right{background:#fff;border:1px solid var(--fline);border-radius:5px;box-shadow:0 0 3px #e8ecf0;padding:0;overflow:hidden}
+  .pv-head{display:flex;align-items:center;gap:12px;padding:18px 16px 10px}
+  .pv-head .av{width:48px;height:48px;border-radius:50%;color:#fff;display:grid;place-items:center;font-size:16px;font-weight:700;flex:none}
+  .pv-head b{display:block;font-size:17px;font-weight:600;color:#415662}
+  .pv-head span{display:block;font-size:12px;color:#6d8291;margin-top:2px}
+  .pv-contact{padding:2px 16px 14px}
+  .pv-crow{display:flex;align-items:center;gap:9px;font-size:13px;padding:3.5px 0;color:#415662}
+  .pv-crow a{color:#0076a4;cursor:pointer}
+  .pv-crow a:hover{text-decoration:underline}
+  .mut{color:#6d8291;font-size:12px}
+  .pvic{width:14px;height:14px;color:#8fa1ad;flex:none}
+  .pv-sec{border-top:1px solid #eef1f4;padding:11px 16px}
+  .pv-sec-h{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
+  .pv-sec-h b{font-size:13.5px;font-weight:600;color:#415662;flex:1}
+  .pv-sec-h .plus{width:19px;height:19px;border-radius:50%;background:#4eaddd;color:#fff;display:grid;place-items:center;font-weight:800;font-size:13px;line-height:1;flex:none;cursor:pointer}
+  .pv-sec-h .plus:hover{background:#3d9ecf}
+  .pv-sec-h .boltic .pvic{color:#4eaddd}
+  .pv-sec-h .chev{color:#8fa1ad;transition:transform .15s;flex:none}
+  .pv-sec.closed .chev{transform:rotate(-90deg)}
+  .pv-sec.closed .pv-sec-body{display:none}
+  .pv-sec-body{padding-top:9px}
+  .pv-row{display:flex;align-items:center;font-size:13px;margin:0 0 7px}
+  .pv-row:last-child{margin-bottom:0}
+  .pv-row>b{width:90px;flex:none;color:#415662;font-weight:600}
+  .pv-row .val{color:#415662;min-width:0}
+  .pv-empty,.pv-plain{font-size:12.5px;color:#6d8291;line-height:1.55}
+  .pv-plain{color:#415662}
+  .pv-addlink{font-size:13px;color:#0076a4;cursor:pointer}
+  .pv-addlink:hover{text-decoration:underline}
+  .pv-lbl{font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#8fa1ad;margin:10px 0 3px}
+  .pv-lbl:first-child{margin-top:0}
+  .pv-glance{font-size:12.5px;color:#415662;display:flex;align-items:center;gap:5px}
+  .pv-right .fub-task{padding:6px 0}
+  .pv-right .fub-empty,.pv-right .fub-plan-active{margin-top:2px}
+  /* details selects look like plain text until you interact, like the real app */
+  .fub .fub-stage-select{border:1px solid transparent;background:transparent;padding:2px 4px;margin-left:-4px;font-size:13px;color:#415662;border-radius:4px}
+  .fub .fub-stage-select:hover{border-color:#d7dee2;background:#fff}
+  /* composer: icon tabs, pale-yellow note area, footer like the real one */
+  .fub .fub-composer .ctabs{align-items:center;gap:0}
+  .fub .fub-composer .ctabs span{display:flex;align-items:center;gap:6px}
+  .fub .fub-composer .ctabs span .pvic{width:13px;height:13px}
+  .fub .fub-composer .ctabs span.active{color:#415662}
+  .fub .fub-composer .ctabs span.active .pvic{color:#4eaddd}
+  .fub .fub-composer .ctabs .howit{margin-left:auto;margin-right:10px;padding:4px 10px;font-size:11.5px;cursor:pointer}
+  .fub .fub-composer textarea.note-bg{background:#fffdf1}
+  .fub .fub-composer .cfoot{justify-content:space-between;align-items:center}
+  .fub .fub-composer .cfoot .fub-pill-btn{padding:4px 10px;font-size:11.5px;cursor:pointer}
+  .fub .fub-composer .cfoot button{background:#f7d774;color:#5c4a12;border-radius:4px}
+  .fub .fub-composer .cfoot button:hover{background:#f2cd55}
+  /* feed filter bar: icon chips with counts + Filters at right */
+  .fub .fub-feed-filters{background:#fff;border:1px solid var(--fline);border-radius:5px;padding:6px 10px;box-shadow:0 0 3px #e8ecf0}
+  .fub .fub-feed-filters span .ct{font-style:normal;font-size:11.5px;font-weight:700}
+  .fub .fub-feed-filters .filters-dd{margin-left:auto;display:flex;align-items:center;gap:5px;border:1px solid var(--fline);border-radius:4px;padding:5px 10px;background:#fff;color:#415662}
+  @media(max-width:980px){ .fub .fub-detail-grid{grid-template-columns:1fr} }
+</style>
+</head>
+<body class="h-body td-fullscreen">
+<div class="td-strip">
+  <a class="td-strip-back" href="index.html#test-drive-open">&larr; Test Drive</a>
+  <span class="td-strip-dot"></span>
+  <span class="td-strip-app">FollowUpBoss <b>Test Drive</b></span>
+  <span class="td-strip-msg">Practice copy only. Nothing here is saved or connected to a real account.</span>
+</div>
+
+<div class="fub" id="fubApp">
+  <div class="fub-topbar">
+    <div class="fmark">FB</div>
+    <div class="fub-tabs">
+      <span class="active" data-view="people">People</span>
+      <span data-view="inbox">Inbox <span class="ct">3</span></span>
+      <span data-view="tasks">Tasks</span>
+      <span data-view="calendar">Calendar</span>
+      <span data-view="reporting">Reporting</span>
+      <span data-view="admin">Admin</span>
+    </div>
+    <div class="fub-search"><input type="text" id="topSearch" placeholder="Search" onkeydown="if(event.key==='Enter') fubSearchGo()"></div>
+    <div class="fub-topbar-right">
+      <button type="button" class="fub-icon-btn" onclick="fubToast('Not included in this basic Test Drive.')" aria-label="Email"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></button>
+      <button type="button" class="fub-icon-btn" onclick="fubToast('Not included in this basic Test Drive.')" aria-label="Calling"><svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.4 2.1L8 10.3a16 16 0 0 0 6 6l1.5-1.5a2 2 0 0 1 2.1-.4c1 .4 2 .6 3 .7a2 2 0 0 1 1.7 2z"/></svg></button>
+      <button type="button" class="fub-icon-btn" onclick="fubToast('Not included in this basic Test Drive.')" aria-label="Chat"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-4-.9L3 21l1.9-5.5a8.4 8.4 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5z"/></svg></button>
+      <div class="fub-dd-wrap">
+        <button type="button" class="fub-icon-btn" onclick="toggleNotif(event)" aria-label="Notifications">
+          <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="fub-badge-dot" id="notifDot"></span>
+        </button>
+        <div class="fub-dropdown" id="notifDropdown">
+          <div class="fub-dd-head"><span>Notifications</span><a onclick="markAllRead()">Mark all as read</a></div>
+          <div class="fub-notif-list" id="notifList"></div>
+        </div>
+      </div>
+      <div class="fub-dd-wrap">
+        <div class="fub-profile-btn" onclick="toggleProfile(event)">
+          <span class="fub-avatar" id="fubAvatarInitials">PA</span>
+          <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="fub-dropdown fub-profile-menu" id="profileDropdown">
+          <div class="item" onclick="openSettingsModal()"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>My Settings</div>
+          <div class="item" onclick="fubToast('Not included in this basic Test Drive.')"><span class="ic"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg></span>My Devices</div>
+          <div class="item" onclick="fubToast('Not included in this basic Test Drive.')"><span class="ic"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h7l-1 8 11-14h-7z"/></svg></span>Power-Ups</div>
+          <div class="item" onclick="fubToast('Not included in this basic Test Drive.')"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 11l18-7-7 18-2-8-8-3z"/></svg></span>Product Changes</div>
+          <div class="item" onclick="fubToast('Not included in this basic Test Drive.')"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>System Status</div>
+          <div class="divider"></div>
+          <div class="item logout-btn"><span class="ic"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>Log Out</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fub-body">
+    <!-- ================= PEOPLE VIEW ================= -->
+    <div id="view-people">
+      <div class="fub-rail">
+        <div class="rail-title">People</div>
+        <a class="active" onclick="fubShowList(true)"><span class="lbl">All People</span><span class="n" id="cntAll"></span></a>
+        <div class="divider"></div>
+        <div class="rail-h">Smart Lists</div>
+        <a onclick="fubFilter(event,'today','Today\'s Leads')"><span class="lbl">Today's Leads</span><span class="n" id="cntToday"></span></a>
+        <a onclick="fubFilter(event,'stage','Attempted Contact')"><span class="lbl">Attempted Contact</span><span class="n" id="cntAC"></span></a>
+        <a onclick="fubFilter(event,'stage','Nurturing')"><span class="lbl">Nurturing</span><span class="n" id="cntNU"></span></a>
+        <a onclick="fubFilter(event,'stage','Hot Lead')"><span class="lbl">Hot Lead</span><span class="n" id="cntHL"></span></a>
+        <a onclick="fubFilter(event,'stage','Appointment Set')"><span class="lbl">Appointment Set</span><span class="n" id="cntAS"></span></a>
+        <a onclick="fubFilter(event,'pond','Website Leads Pond')"><span class="lbl">&#128167; Website Leads Pond</span><span class="n" id="cntPond"></span></a>
+        <span id="customLists"></span>
+        <a onclick="fubLocked('Past Clients')"><span class="lbl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Past Clients</span><span class="n" id="cntCL"></span></a>
+        <a onclick="fubLocked('Active Clients')"><span class="lbl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Active Clients</span><span class="n">0</span></a>
+      </div>
+
+      <div class="fub-main">
+        <div id="peopleList">
+          <div class="fub-listhead">
+            <div>
+              <h2>All People</h2>
+              <div class="sub" id="listSub">Showing 14 people</div>
+            </div>
+            <button class="fub-newlist" onclick="saveSmartList()">+ New List</button>
+          </div>
+
+          <div class="fub-toolbar">
+            <div class="fub-bulk">
+              <button type="button" onclick="fubBulkAction('email')" aria-label="Email"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></button>
+              <button type="button" onclick="fubBulkAction('call')" aria-label="Call"><svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.4 2.1L8 10.3a16 16 0 0 0 6 6l1.5-1.5a2 2 0 0 1 2.1-.4c1 .4 2 .6 3 .7a2 2 0 0 1 1.7 2z"/></svg></button>
+              <button type="button" onclick="fubBulkAction('group')" aria-label="Add to group"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg></button>
+              <button type="button" onclick="fubBulkAction('tag')" aria-label="Tag"><svg viewBox="0 0 24 24"><path d="M20.6 12.6 12 21.2a2 2 0 0 1-2.8 0L2 14V4a2 2 0 0 1 2-2h10z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg></button>
+              <button type="button" onclick="fubBulkAction('delete')" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>
+              <button type="button" onclick="fubBulkAction('export')" aria-label="Export"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></button>
+            </div>
+            <span class="fub-pill-btn" onclick="fubToast('Smart Lists are saved searches, like Today&#39;s Leads or Hot Lead, that update automatically.')">How Smart Lists work</span>
+            <span class="fub-spacer"></span>
+            <div class="fub-dd-wrap">
+              <button type="button" class="fub-dd-btn" onclick="toggleColsDD(event)">Columns <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg></button>
+              <div class="fub-cols-dd" id="colsDD">
+                <label><input type="checkbox" checked disabled> Name</label>
+                <label><input type="checkbox" checked onchange="toggleCol('pond',this.checked)"> Pond</label>
+                <label><input type="checkbox" checked onchange="toggleCol('source',this.checked)"> Source</label>
+                <label><input type="checkbox" checked onchange="toggleCol('lasttext',this.checked)"> Last Text</label>
+                <label><input type="checkbox" checked onchange="toggleCol('visits',this.checked)"> Visits</label>
+              </div>
+            </div>
+            <div class="fub-dd-wrap">
+              <button type="button" class="fub-dd-btn" onclick="toggleAgentDD(event)" id="agentBtn">Everyone <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg></button>
+              <div class="fub-agent-dd" id="agentDD">
+                <a class="active" onclick="fubAgentFilter(event,null)">Everyone</a>
+                <a onclick="fubAgentFilter(event,'Paula Aragone')">Paula Aragone</a>
+                <a onclick="fubAgentFilter(event,'Dana Ruiz')">Dana Ruiz</a>
+              </div>
+            </div>
+            <button type="button" class="fub-dd-btn" onclick="fubToast('Filters let you narrow the list, try the panel on the right.')">Filters</button>
+          </div>
+
+          <div class="fub-list-row">
+            <div class="fub-table-wrap">
+              <table class="fub-tbl" id="peopleTable">
+                <thead><tr>
+                  <th style="width:34px"><input type="checkbox" id="selectAllChk" onchange="toggleSelectAll(this.checked)"></th>
+                  <th>Name</th><th>Stage</th><th>Agent</th><th class="col-pond">Pond</th><th class="col-source">Source</th>
+                  <th>Last Email</th><th class="col-lasttext">Last Text</th><th>Last Visit</th><th class="col-visits">Visits</th>
+                </tr></thead>
+                <tbody id="peopleRows"></tbody>
+              </table>
+            </div>
+            <div class="fub-filter-panel">
+              <div class="ttl">Filters</div>
+              <select id="quickFilterField" onchange="fubQuickFilterFieldChange()">
+                <option value="">Add a filter&hellip;</option>
+                <option value="stage">Stage</option>
+                <option value="source">Source</option>
+              </select>
+              <select id="quickFilterValue" style="display:none" onchange="fubQuickFilterApply()"></select>
+              <div id="quickFilterChip"></div>
+              <div class="fub-filter-empty" id="quickFilterEmpty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h16l-6 8v6l-4-2v-4z"/></svg>
+                <div>No filters added yet</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="personDetailWrap" class="fub-detail"></div>
+      </div>
+    </div>
+
+    <!-- ================= INBOX VIEW ================= -->
+    <div class="fub-inbox" id="view-inbox">
+      <div class="fub-inbox-rail">
+        <div class="rail-title" style="padding:2px 18px 10px;font-weight:800;font-size:14px">My Inbox <span style="color:var(--fmuted);font-weight:700;font-size:12px" id="inboxCount"></span></div>
+        <a class="active" onclick="fubInboxFolder(event,'inbox')">Inbox</a>
+        <a onclick="fubToast('Not included in this basic Test Drive.')">Assigned</a>
+        <a onclick="fubToast('Not included in this basic Test Drive.')">Drafts</a>
+        <a onclick="fubToast('Not included in this basic Test Drive.')">Sent</a>
+        <a onclick="fubInboxFolder(event,'closed')">Closed</a>
+      </div>
+      <div class="fub-msgcol">
+        <div class="fub-msg-tabs">
+          <span class="active" data-mt="all" onclick="fubInboxTab(event,'all')">All</span>
+          <span data-mt="unread" onclick="fubInboxTab(event,'unread')">Unread</span>
+        </div>
+        <div class="fub-msglist" id="msgList"></div>
+      </div>
+      <div class="fub-thread" id="msgThread"></div>
+      <div class="fub-inbox-contact" id="inboxContact"></div>
+    </div>
+
+    <!-- ================= TASKS VIEW ================= -->
+    <div class="fub-tasks" id="view-tasks">
+      <div class="fub-listhead">
+        <div><h2 id="taskViewTitle">Today's Tasks</h2><div class="sub" id="taskViewSub">Follow ups your team owes leads today</div></div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <span class="fub-pill-btn" onclick="fubToast('Tasks are reminders you or an action plan create, so nothing falls through the cracks.')">How Tasks work</span>
+          <button type="button" class="fub-dd-btn" onclick="fubToast('Filtering by lead, type, or source isn\'t included in this basic Test Drive.')">Filters</button>
+        </div>
+      </div>
+      <div class="fub-admin-tabs" id="taskTabs">
+        <span class="active" data-t="today">Today's Tasks</span>
+        <span data-t="overdue">Overdue</span>
+        <span data-t="future">Future</span>
+      </div>
+      <div id="taskRows"></div>
+    </div>
+
+    <!-- ================= CALENDAR VIEW ================= -->
+    <div class="fub-calendar" id="view-calendar">
+      <div class="fub-listhead">
+        <div><h2 id="calTitle">Calendar</h2><div class="sub" id="calSub">Showings and appointments for this week</div></div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div class="cal-mode" id="calModeTabs">
+            <span data-cm="day" onclick="calSetMode('day')">Day</span>
+            <span class="active" data-cm="week" onclick="calSetMode('week')">Week</span>
+            <span data-cm="month" onclick="calSetMode('month')">Month</span>
+          </div>
+          <button type="button" class="fub-newlist" onclick="openCreateApptModal(null)">+ Add Appointment</button>
+        </div>
+      </div>
+      <div class="fub-cal-grid" id="calGrid"></div>
+    </div>
+
+    <!-- ================= REPORTING VIEW ================= -->
+    <div class="fub-reporting" id="view-reporting">
+      <div class="fub-listhead">
+        <div><h2>Reporting</h2><div class="sub">A snapshot of the numbers a Lead Manager watches every day</div></div>
+      </div>
+      <div id="reportBody"></div>
+    </div>
+
+    <!-- ================= ADMIN VIEW ================= -->
+    <div class="fub-admin" id="view-admin">
+      <div class="fub-admin-tabs" id="adminTabs">
+        <span class="active" data-sub="overview">Overview</span>
+        <span data-sub="leadflow">Lead Flow</span>
+        <span data-sub="groups">Groups</span>
+        <span data-sub="teams">Teams</span>
+        <span data-sub="ponds">Ponds</span>
+        <span data-sub="actionplans">Action Plans</span>
+        <span data-sub="automations">Automations</span>
+        <span data-sub="templates">Email Templates</span>
+        <span data-sub="stages">Stages</span>
+        <span data-sub="tags">Tags</span>
+        <span data-sub="fields">Custom Fields</span>
+        <span data-sub="company">Company</span>
+      </div>
+
+      <!-- OVERVIEW -->
+      <div class="fub-admin-panel active" id="admin-overview">
+        <div class="fub-admin-sec">
+          <h5>Lead Distribution</h5>
+          <div class="fub-admin-grid">
+            <div class="fub-admin-card" onclick="adminGo('leadflow')"><div class="ic">&#8635;</div><b>Lead Flow</b><p>See leads flowing in and choose how to assign them to associates.</p></div>
+            <div class="fub-admin-card" onclick="adminGo('groups')"><div class="ic">&#128101;</div><b>Groups</b><p>Distribute new leads round robin across a group of agents.</p></div>
+            <div class="fub-admin-card" onclick="adminGo('ponds')"><div class="ic">&#128230;</div><b>Ponds</b><p>Shared pools of leads any associate can claim and work.</p></div>
+          </div>
+        </div>
+
+        <div class="fub-admin-sec">
+          <h5>Follow Up</h5>
+          <div class="fub-admin-grid">
+            <div class="fub-admin-card" onclick="adminGo('actionplans')"><div class="ic">&#9654;</div><b>Action Plans</b><p>Automated task and email sequences triggered on a stage change.</p></div>
+            <div class="fub-admin-card" onclick="adminGo('automations')"><div class="ic">&#8635;</div><b>Automations</b><p>Rules that start an action plan or add a tag when something happens.</p></div>
+            <div class="fub-admin-card" onclick="adminGo('templates')"><div class="ic">&#9993;</div><b>Email Templates</b><p>Reusable email templates the team sends to leads.</p></div>
+          </div>
+        </div>
+
+        <div class="fub-admin-sec">
+          <h5>Customize</h5>
+          <div class="fub-admin-grid">
+            <div class="fub-admin-card" onclick="adminGo('stages')"><div class="ic">&#128202;</div><b>Stages</b><p>The pipeline stages every lead moves through.</p></div>
+            <div class="fub-admin-card" onclick="adminGo('tags')"><div class="ic">&#127991;</div><b>Tags</b><p>Labels your team uses to segment and filter the People list.</p></div>
+            <div class="fub-admin-card" onclick="adminGo('fields')"><div class="ic">&#9881;</div><b>Custom Fields</b><p>The fields that show up on every contact record.</p></div>
+          </div>
+        </div>
+
+        <div class="fub-admin-sec">
+          <h5>Account</h5>
+          <div class="fub-admin-grid">
+            <div class="fub-admin-card" onclick="adminGo('teams')"><div class="ic">&#128100;</div><b>Teams</b><p>Add, edit, and manage the associates on this account.</p></div>
+            <div class="fub-admin-card" onclick="adminGo('company')"><div class="ic">&#127970;</div><b>Company</b><p>Office address, business hours, and account level settings.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTION PLANS -->
+      <div class="fub-admin-panel" id="admin-actionplans">
+        <div class="fub-admin-head"><div><h3>Action Plans</h3><p>Automated sequences of emails, texts, and tasks sent to a lead over time.</p></div>
+          <button type="button" class="fub-newlist" onclick="openCreatePlanModal()">+ New Action Plan</button>
+        </div>
+        <table class="fub-admin-tbl">
+          <thead><tr><th>Name</th><th>Category</th><th>Steps</th></tr></thead>
+          <tbody id="planRows"></tbody>
+        </table>
+      </div>
+
+      <!-- AUTOMATIONS -->
+      <div class="fub-admin-panel" id="admin-automations">
+        <div class="fub-admin-head"><div><h3>Automations</h3><p>Rules that start an action plan or update a lead automatically when something happens.</p></div>
+          <button type="button" class="fub-newlist" onclick="openCreateAutoModal()">+ New Automation</button>
+        </div>
+        <table class="fub-admin-tbl">
+          <thead><tr><th>Name</th><th>Trigger &rarr; Action</th><th>Times Run</th><th>Enabled</th></tr></thead>
+          <tbody id="autoRows"></tbody>
+        </table>
+      </div>
+
+      <!-- EMAIL TEMPLATES -->
+      <div class="fub-admin-panel" id="admin-templates">
+        <div class="fub-admin-head"><div><h3>Email Templates</h3><p>Pre-written emails your team can send with one click or use inside an action plan.</p></div>
+          <button type="button" class="fub-newlist" onclick="openTemplateModal(null)">+ Email Template</button>
+        </div>
+        <table class="fub-admin-tbl">
+          <thead><tr><th>Template</th><th>Used In</th></tr></thead>
+          <tbody id="templateRows"></tbody>
+        </table>
+      </div>
+
+      <!-- STAGES -->
+      <div class="fub-admin-panel" id="admin-stages">
+        <div class="fub-admin-head"><div><h3>Stages</h3><p>The pipeline every lead in People moves through, from first contact to closed.</p></div>
+          <button type="button" class="fub-newlist" onclick="fubAddStage()">Add Stage</button>
+        </div>
+        <table class="fub-admin-tbl">
+          <thead><tr><th>Stage Name</th><th>People</th></tr></thead>
+          <tbody id="stageRows"></tbody>
+        </table>
+      </div>
+
+      <!-- LEAD FLOW -->
+      <div class="fub-admin-panel" id="admin-leadflow">
+        <div class="fub-admin-head"><div><h3>Lead Flow</h3><p>Every place a lead can come from, and what happens to it the moment it arrives.</p></div></div>
+        <div id="leadFlowRows"></div>
+      </div>
+
+      <!-- GROUPS -->
+      <div class="fub-admin-panel" id="admin-groups">
+        <div class="fub-admin-head"><div><h3>Groups</h3><p>New leads can be sent round robin to a group instead of a single agent.</p></div></div>
+        <table class="fub-admin-tbl">
+          <thead><tr><th>Name</th><th>Distribution Type</th><th>Members</th></tr></thead>
+          <tbody id="groupRows"></tbody>
+        </table>
+      </div>
+
+      <!-- TEAMS -->
+      <div class="fub-admin-panel" id="admin-teams">
+        <div class="fub-admin-head"><div><h3>Teams</h3><p>Everyone with access to this account and what they're allowed to do.</p></div>
+          <button type="button" class="fub-newlist" onclick="fubToast('Inviting new users isn\'t included in this basic Test Drive.')">+ Invite User</button>
+        </div>
+        <table class="fub-admin-tbl">
+          <thead><tr><th>User</th><th>Role</th><th>Leads</th><th>Status</th></tr></thead>
+          <tbody id="teamRows"></tbody>
+        </table>
+      </div>
+
+      <!-- PONDS -->
+      <div class="fub-admin-panel" id="admin-ponds">
+        <div class="fub-admin-head"><div><h3>Ponds</h3><p>A shared pool of leads with no individual owner, any agent in the pond can claim one to start working it.</p></div></div>
+        <table class="fub-admin-tbl">
+          <thead><tr><th>Name</th><th>Pond Lead</th><th>Team Members</th><th>Unclaimed Leads</th></tr></thead>
+          <tbody id="pondRows"></tbody>
+        </table>
+      </div>
+
+      <!-- TAGS -->
+      <div class="fub-admin-panel" id="admin-tags">
+        <div class="fub-admin-head">
+          <div><h3 id="tagsCount">Tags</h3><p>Labels your team adds to a contact to segment and filter the People list.</p></div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <input class="search" type="text" id="tagSearch" placeholder="Search tags" oninput="fubTagRows()">
+            <button type="button" class="fub-newlist" onclick="fubAddTagAdmin()">+ Tag</button>
+          </div>
+        </div>
+        <table class="fub-admin-tbl">
+          <thead><tr><th>Name</th><th>Used</th><th></th></tr></thead>
+          <tbody id="tagRows"></tbody>
+        </table>
+      </div>
+
+      <!-- CUSTOM FIELDS -->
+      <div class="fub-admin-panel" id="admin-fields">
+        <div class="fub-admin-head"><div><h3>Custom Fields</h3><p>The fields that show up in the Details section of every contact record.</p></div></div>
+        <table class="fub-admin-tbl">
+          <thead><tr><th>Field</th><th>Type</th></tr></thead>
+          <tbody id="fieldRows"></tbody>
+        </table>
+      </div>
+
+      <!-- COMPANY -->
+      <div class="fub-admin-panel" id="admin-company">
+        <div class="fub-admin-head"><div><h3>Company</h3><p>Office details shown on outgoing emails and used for business hours.</p></div></div>
+        <div class="fub-companycard">
+          <div class="kv"><b>Company Name</b> Aragone &amp; Associates</div>
+          <div class="kv"><b>Address</b> 4 Corporate Plaza #100, Newport Beach, CA 92660</div>
+          <div class="kv"><b>Business Hours</b> Mon&ndash;Fri, 9:00 AM &ndash; 6:00 PM</div>
+          <div class="kv"><b>Time Zone</b> Pacific Time (GMT-07:00)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fub-modal-overlay" id="fubModalOverlay" onclick="if(event.target===this) closeFubModal()">
+    <div class="fub-modal" id="fubModalBody"></div>
+  </div>
+</div>
+
+<script src="assets/js/app-core.js"></script>
+<script src="assets/js/site.js"></script>
+<script>
+const tdMe = SCApp.requireAuth();
+const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+const AV_COLORS=['#4eaddd','#8e44ad','#16a085','#d35400','#c0392b','#0076a4','#27ae60','#7f8c8d'];
+function initials(name){ return name.split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase(); }
+function avColor(i){ return AV_COLORS[i%AV_COLORS.length]; }
+
+const ALL_STAGES=['Lead','Attempted Contact','Nurturing','Hot Lead','Appointment Set','Under Contract','Closed','Unresponsive','Trash'];
+const STAGE_COLOR={
+  'Lead':['#eaf4fa','#0076a4'], 'Attempted Contact':['#fdf1e6','#a8631a'], 'Nurturing':['#eef2f6','#5b6b7e'],
+  'Hot Lead':['#fdeceb','#c0392b'], 'Appointment Set':['#eafaf1','#1e8449'], 'Under Contract':['#fff7de','#9a7a08'],
+  'Closed':['#f4ecfb','#7d3c98'], 'Unresponsive':['#f1f2f4','#68727c'], 'Trash':['#f1f2f4','#68727c']
+};
+
+const LEADS=[
+  {id:1,name:'Emily Carter',stage:'Hot Lead',source:'Zillow',agent:'Paula Aragone',pond:'',last:'2 hours ago',phone:'(555) 201-4482',phoneType:'mobile',email:'emily.carter@example.com',price:'$420,000',timeframe:'0-3 Months',tags:['Buyer','Pre-Approved'],note:'Looking in the Heights, wants a 3 bed with a yard for the dogs.',plan:null,financing:'Pre-approved with First National Mortgage.',background:'',social:null},
+  {id:2,name:'Marcus Webb',stage:'Lead',source:'Website',agent:'Paula Aragone',pond:'',last:'6 hours ago',phone:'(555) 340-1122',phoneType:'mobile',email:'marcus.webb@example.com',price:'$310,000',timeframe:'3-6 Months',tags:['Buyer'],note:'First time buyer, still gathering pre-approval documents.',plan:null,financing:'',background:'',social:null},
+  {id:3,name:'Priya Natarajan',stage:'Appointment Set',source:'Referral',agent:'Dana Ruiz',pond:'',last:'Yesterday',phone:'(555) 552-8890',phoneType:'mobile',email:'priya.n@example.com',price:'$650,000',timeframe:'0-3 Months',tags:['Buyer','Relocation'],note:'Relocating for work, showing scheduled for Thursday at 10am.',plan:null,financing:'',background:'Referred by past client Trevor Boyd.',social:null},
+  {id:4,name:'Diego Fuentes',stage:'Attempted Contact',source:'Facebook Ad',agent:null,pond:'Website Leads Pond',last:'2 days ago',phone:'(555) 662-3341',phoneType:'mobile',email:'diego.fuentes@example.com',price:'$275,000',timeframe:'6-12 Months',tags:['Buyer'],note:'Called twice, no answer, left a voicemail Monday.',plan:null,financing:'',background:'',social:null},
+  {id:5,name:'Hannah Cole',stage:'Nurturing',source:'Open House',agent:'Paula Aragone',pond:'',last:'3 days ago',phone:'(555) 771-9034',phoneType:'mobile',email:'hannah.cole@example.com',price:'$395,000',timeframe:'12+ Months',tags:['Buyer'],note:'Not ready yet, wants a check-in every month.',plan:null,financing:'',background:'',social:null},
+  {id:6,name:'Trevor Boyd',stage:'Closed',source:'Referral',agent:'Paula Aragone',pond:'',last:'2 weeks ago',phone:'(555) 448-0921',phoneType:'mobile',email:'trevor.boyd@example.com',price:'$510,000 sold',timeframe:'Closed',tags:['Seller','Closed 2025','Past Client'],note:'Closed on Maple Ridge Dr, great review left on Google.',plan:null,financing:'',background:'',social:{google:true}},
+  {id:7,name:'Lena Ostrowski',stage:'Hot Lead',source:'Realtor.com',agent:'Dana Ruiz',pond:'',last:'4 hours ago',phone:'(555) 900-2231',phoneType:'mobile',email:'lena.o@example.com',price:'$480,000',timeframe:'0-3 Months',tags:['Buyer','Cash Buyer'],note:'Cash buyer, wants to see the Willowbrook listing this weekend.',plan:null,financing:'Cash purchase, proof of funds on file.',background:'',social:null},
+  {id:8,name:'Samuel Ortiz',stage:'Lead',source:'Zillow',agent:null,pond:'Website Leads Pond',last:'1 hour ago',phone:'(555) 113-7765',phoneType:'mobile',email:'samuel.ortiz@example.com',price:'$360,000',timeframe:'3-6 Months',tags:['Buyer'],note:'Submitted an inquiry on a listing, has not been contacted yet.',plan:null,financing:'',background:'',social:null},
+  {id:9,name:'Grace Whitfield',stage:'Nurturing',source:'Sphere',agent:'Dana Ruiz',pond:'',last:'5 days ago',phone:'(555) 226-4470',phoneType:'mobile',email:'grace.w@example.com',price:'$290,000',timeframe:'12+ Months',tags:['Buyer'],note:'Long term nurture, checking in quarterly.',plan:null,financing:'',background:'',social:null},
+  {id:10,name:'Omar Haddad',stage:'Attempted Contact',source:'Website',agent:'Paula Aragone',pond:'',last:'3 days ago',phone:'(555) 884-2201',phoneType:'mobile',email:'omar.haddad@example.com',price:'$425,000',timeframe:'0-3 Months',tags:['Buyer'],note:'Texted twice, waiting to hear back before another call attempt.',plan:null,financing:'',background:'',social:null},
+  {id:11,name:'Chloe Bennett',stage:'Appointment Set',source:'Referral',agent:'Dana Ruiz',pond:'',last:'Yesterday',phone:'(555) 337-5528',phoneType:'mobile',email:'chloe.bennett@example.com',price:'$530,000',timeframe:'0-3 Months',tags:['Buyer','Pre-Approved'],note:'Showing set for Saturday, already pre-approved with lender.',plan:null,financing:'Pre-approved with Coastal Credit Union.',background:'',social:null},
+  {id:12,name:'Nathaniel Price',stage:'Closed',source:'Referral',agent:'Paula Aragone',pond:'',last:'1 month ago',phone:'(555) 660-9182',phoneType:'mobile',email:'nate.price@example.com',price:'$475,000 sold',timeframe:'Closed',tags:['Buyer','Closed 2025','Past Client'],note:'Closed last quarter, added to the past client drip campaign.',plan:null,financing:'',background:'',social:null},
+  {id:13,name:'Isabela Cruz',stage:'Hot Lead',source:'Facebook Ad',agent:'Dana Ruiz',pond:'',last:'30 minutes ago',phone:'(555) 774-3392',phoneType:'mobile',email:'isabela.cruz@example.com',price:'$399,000',timeframe:'0-3 Months',tags:['Buyer'],note:'Very responsive, asking about financing options today.',plan:null,financing:'',background:'',social:null},
+  {id:14,name:'Ben Kowalski',stage:'Lead',source:'Open House',agent:'Paula Aragone',pond:'',last:'8 hours ago',phone:'(555) 502-1187',phoneType:'mobile',email:'ben.kowalski@example.com',price:'$340,000',timeframe:'6-12 Months',tags:['Buyer'],note:'Signed in at the Oakwood open house Saturday.',plan:null,financing:'',background:'',social:null}
+];
+
+const TASKS=[
+  {who:'Emily Carter',what:'Call to confirm Saturday showing time',due:'Today, 2:00 PM',state:'due'},
+  {who:'Marcus Webb',what:'Send pre-approval checklist email',due:'Today, 4:30 PM',state:'due'},
+  {who:'Diego Fuentes',what:'Second follow up call attempt',due:'Yesterday',state:'overdue'},
+  {who:'Lena Ostrowski',what:'Text Willowbrook listing details',due:'Today, 11:00 AM',state:'done'},
+  {who:'Grace Whitfield',what:'Quarterly check in email',due:'Tomorrow',state:'upcoming'}
+];
+
+const PONDS=[
+  {id:1,name:'Website Leads Pond',lead:'Paula Aragone',members:['Paula Aragone','Dana Ruiz']}
+];
+
+const GROUPS=[
+  {id:1,name:'Buyer Leads',type:'Round Robin',members:['Paula Aragone','Dana Ruiz']},
+  {id:2,name:'Seller Leads',type:'Round Robin',members:['Paula Aragone']},
+  {id:3,name:'VIP Program',type:'Round Robin',members:['Paula Aragone','Dana Ruiz']}
+];
+
+const LEAD_SOURCES=[
+  {name:'aragoneassociates.com',type:'Buyers',contact:'Joshua Rodríguez (API)',lastLead:'Donald Sheetz',lastWhen:'15 hours ago',count:87,distribution:null,actionPlan:null},
+  {name:'Website',type:'Buyers',contact:'Joshua Rodríguez',lastLead:'Asif',lastWhen:'2 days ago',count:3,distribution:'Website Leads Pond',actionPlan:'New Buyer Lead — 5 Day Intro'},
+  {name:'Zillow',type:'Buyers',contact:'Paula Aragone',lastLead:'Samuel Ortiz',lastWhen:'1 hour ago',count:14,distribution:'Website Leads Pond',actionPlan:'New Buyer Lead — 5 Day Intro'},
+  {name:'Facebook Ad',type:'Buyers',contact:'Dana Ruiz',lastLead:'Isabela Cruz',lastWhen:'30 minutes ago',count:9,distribution:'Buyer Leads (group)',actionPlan:'Hot Lead — Fast Response'},
+  {name:'Referral',type:'Buyers &amp; Sellers',contact:'Paula Aragone (default)',lastLead:'Priya Natarajan',lastWhen:'Yesterday',count:11,distribution:'Paula Aragone (default)',actionPlan:'No action plan'}
+];
+
+/* Appointments use dayOffset (0 = today) instead of a fixed date, so the demo week always
+   lines up with whatever day the trainee opens the Test Drive. */
+const APPOINTMENTS=[
+  {id:1,leadId:1,title:'Call to confirm showing time',dayOffset:0,time:'2:00 PM'},
+  {id:2,leadId:7,title:'Private showing — Willowbrook listing',dayOffset:1,time:'11:00 AM'},
+  {id:3,leadId:3,title:'Showing — Birchwood Lane',dayOffset:2,time:'10:00 AM'},
+  {id:4,leadId:11,title:'Showing — pre-approved buyer',dayOffset:5,time:'1:00 PM'}
+];
+
+const THREADS=[
+  {leadId:3,name:'Priya Natarajan',subj:'Re: Thursday showing confirmation',prev:'Yes, 10am works great, see you then!',ts:'9:14 AM',unread:true,closed:false,body:'Hi Priya,\n\nJust confirming our showing this Thursday at 10:00 AM for the property on Birchwood Lane. Let me know if anything changes on your end.\n\nBest,\nDana'},
+  {leadId:7,name:'Lena Ostrowski',subj:'Willowbrook listing photos',prev:'These look great, can we see it Saturday?',ts:'Yesterday',unread:true,closed:false,body:'Hi Lena,\n\nAttached are the additional photos for the Willowbrook property you asked about. Let me know if Saturday morning works for a private showing.\n\nBest,\nDana'},
+  {leadId:11,name:'Chloe Bennett',subj:'Pre-approval letter received',prev:'Got it, thank you for sending that over.',ts:'2 days ago',unread:true,closed:false,body:'Hi Chloe,\n\nThanks for sending your pre-approval letter, everything looks good on our end. We are all set for your showing Saturday at 1:00 PM.\n\nBest,\nDana'}
+];
+
+const TEMPLATES=[
+  {id:1,name:'First Contact — Buyer',subject:'Thanks for reaching out!',preview:"Hi %contact_first_name%, thanks for connecting with us. We'd love to help you find the right home...",usedIn:2},
+  {id:2,name:'First Contact — Seller',subject:"Let's get your home ready to list",preview:"Hi %contact_first_name%, congratulations on making the decision to sell! Here's what happens next...",usedIn:1},
+  {id:3,name:'Showing Confirmation',subject:'You’re confirmed for %appointment_date%',preview:'Hi %contact_first_name%, just confirming your showing, see you then!',usedIn:1},
+  {id:4,name:'Post-Showing Follow Up',subject:'What did you think of the property?',preview:"Hi %contact_first_name%, would love to hear your thoughts on the showing earlier...",usedIn:0},
+  {id:5,name:'Closed - Thank You',subject:'It was a pleasure working with you!',preview:'Hi %contact_first_name%, congratulations again on your new home...',usedIn:1},
+  {id:6,name:'Past Client - Market Update',subject:"Here's what homes are selling for in your area",preview:'Hi %contact_first_name%, thought you might like a quick market update...',usedIn:1},
+  {id:7,name:'Buyer Check-In',subject:'Still exploring homes in the area?',preview:"Hi %contact_first_name%, just checking in, would a personalized list of new listings be helpful while you look?",usedIn:1},
+  {id:8,name:'Hot Lead Quick Reply',subject:'Great talking with you!',preview:"Hi %contact_first_name%, it was great connecting just now. Here's my direct contact info if you have any questions.",usedIn:1}
+];
+
+/* Action Plan steps mirror the real builder: every step has "days" (Run N days after the
+   previous step, 0 = Immediately) and an "action" type with its own fields, instead of a
+   separate delay step. */
+const ACTION_PLANS=[
+  {id:1,name:'New Buyer Lead — 5 Day Intro',category:'Buyer Leads',steps:[
+    {days:0,action:'email',templateId:1,from:'Agent assigned to the contact'},
+    {days:0,action:'task',taskName:'Call or text the new lead within 15 minutes',taskType:'Follow Up',assignTo:'Agent assigned to the contact'},
+    {days:1,action:'email',templateId:7,from:'Agent assigned to the contact'},
+    {days:3,action:'task',taskName:'Second follow up call',taskType:'Call',assignTo:'Agent assigned to the contact'}
+  ]},
+  {id:2,name:'Hot Lead — Fast Response',category:'Buyer Leads',steps:[
+    {days:0,action:'task',taskName:'Call the lead immediately',taskType:'Follow Up',assignTo:'Agent assigned to the contact'},
+    {days:0,action:'email',templateId:8,from:'Agent assigned to the contact'},
+    {days:0,action:'tag',tag:'Hot Lead'},
+    {days:1,action:'task',taskName:'Confirm showing details by text',taskType:'Follow Up',assignTo:'Agent assigned to the contact'}
+  ]},
+  {id:3,name:'Past Client — Stay In Touch',category:'Past Clients',steps:[
+    {days:0,action:'email',templateId:5,from:'Agent assigned to the contact'},
+    {days:30,action:'email',templateId:6,from:'Agent assigned to the contact'},
+    {days:30,action:'task',taskName:'Call to ask for a referral',taskType:'Call',assignTo:'Agent assigned to the contact'}
+  ]}
+];
+
+/* Automation triggers/actions mirror the real card picker: trigger cards are Stage Changed,
+   Tag Added, Deal Stage Changed, New Inquiry, Property Saved, Property Viewed, Calendar Date,
+   and action cards are Action Plan, Reassign, Add Note. */
+const AUTO_TRIGGERS=[
+  {key:'stage',label:'Stage Changed',icon:'&#128640;',color:'#1e8449',needsValue:true,valueLabel:'Stage',options:function(){return ALL_STAGES;}},
+  {key:'tag',label:'Tag Added',icon:'&#127991;',color:'#6c5ce7',needsValue:true,valueLabel:'Tag',options:function(){return TAGS.map(function(t){return t.name;});}},
+  {key:'dealstage',label:'Deal Stage Changed',icon:'&#128176;',color:'#8592a0',disabled:true,disabledMsg:'This basic Test Drive does not include Deals.'},
+  {key:'inquiry',label:'New Inquiry',icon:'&#128172;',color:'#0076a4',needsValue:false},
+  {key:'propsaved',label:'Property Saved',icon:'&#10084;',color:'#c0392b',needsValue:false},
+  {key:'propviewed',label:'Property Viewed',icon:'&#128065;',color:'#7c8b96',needsValue:false},
+  {key:'calendar',label:'Calendar Date',icon:'&#128197;',color:'#a8631a',disabled:true,disabledMsg:"Calendar-based automations aren't included in this basic Test Drive."}
+];
+const AUTO_ACTIONS=[
+  {key:'plan',label:'Action Plan',icon:'&#9654;',color:'#1e8449',needsValue:true,valueLabel:'Action Plan',options:function(){return ACTION_PLANS.map(function(p){return p.name;});}},
+  {key:'reassign',label:'Reassign',icon:'&#8635;',color:'#0076a4',needsValue:true,valueLabel:'Agent',options:function(){return ['Paula Aragone','Dana Ruiz'];}},
+  {key:'note',label:'Add Note',icon:'&#128204;',color:'#a8631a',needsValue:true,valueLabel:'Note',isText:true}
+];
+
+const AUTOMATIONS=[
+  {id:1,name:'New Lead Auto-Start',triggerType:'Stage Changed',triggerVal:'Lead',actionType:'Action Plan',actionVal:'New Buyer Lead — 5 Day Intro',timesRun:24,enabled:true},
+  {id:2,name:'Hot Lead Fast Response',triggerType:'Tag Added',triggerVal:'Hot Lead',actionType:'Action Plan',actionVal:'Hot Lead — Fast Response',timesRun:9,enabled:true},
+  {id:3,name:'Closed to Past Client Care',triggerType:'Stage Changed',triggerVal:'Closed',actionType:'Action Plan',actionVal:'Past Client — Stay In Touch',timesRun:6,enabled:true},
+  {id:4,name:'Referral Auto-Assign',triggerType:'Tag Added',triggerVal:'Referral',actionType:'Reassign',actionVal:'Paula Aragone',timesRun:14,enabled:true},
+  {id:5,name:'New Inquiry Note',triggerType:'New Inquiry',triggerVal:'',actionType:'Add Note',actionVal:'New inquiry received, review and reach out within 15 minutes.',timesRun:31,enabled:false}
+];
+
+const TAGS=[
+  {name:'Buyer',used:9},{name:'Seller',used:2},{name:'Pre-Approved',used:3},{name:'Cash Buyer',used:1},
+  {name:'Past Client',used:2},{name:'Relocation',used:1},{name:'Investor',used:0},{name:'VIP',used:0},
+  {name:'Referral',used:5},{name:'Do Not Contact',used:0},{name:'Website Lead',used:4},{name:'Closed 2025',used:2},
+  {name:'First Time Buyer',used:3},{name:'Nurture List',used:2}
+];
+
+const CUSTOM_FIELDS=[
+  {name:'Stage',type:'Stage'},{name:'Assigned to',type:'Agent'},{name:'Source',type:'Text'},
+  {name:'Price',type:'Currency'},{name:'Timeframe',type:'Dropdown'},{name:'Property Type',type:'Dropdown'},
+  {name:'Bedrooms Wanted',type:'Number'},{name:'Pre-Approval Amount',type:'Currency'},{name:'Anniversary Date',type:'Date'}
+];
+
+const NOTIFS=[
+  {who:'Isabela Cruz',type:'New Lead',detail:'via Facebook Ad',preview:'Submitted an inquiry on 218 Birchwood Lane.',ts:'30 minutes ago',unread:true,leadId:13},
+  {who:'Samuel Ortiz',type:'New Lead',detail:'via Zillow',preview:'Submitted an inquiry, not yet contacted.',ts:'1 hour ago',unread:true,leadId:8},
+  {who:'Marcus Webb',type:'Text Reply',detail:'(555) 340-1122',preview:'"Yes, still looking, can we talk tomorrow?"',ts:'2 hours ago',unread:true,leadId:2},
+  {who:'Lena Ostrowski',type:'Task Due',detail:'Today, 11:00 AM',preview:'Text Willowbrook listing details.',ts:'Today',unread:false,leadId:7},
+  {who:'Priya Natarajan',type:'Appointment',detail:'Thursday, 10:00 AM',preview:'Showing confirmed on Birchwood Lane.',ts:'Yesterday',unread:false,leadId:3},
+  {who:'Diego Fuentes',type:'Email Opened',detail:'aragoneassociates.com',preview:'Opened "Still exploring homes in the area?"',ts:'2 days ago',unread:false,leadId:4}
+];
+
+let curFilter=null, curAgent=null, curView='people', curLeadId=null, curSearch='';
+let hiddenCols={};
+let selectedLeads=new Set();
+
+/* ---------------- People ---------------- */
+function fubVisibleList(){
+  let list=LEADS;
+  if(curFilter && curFilter.type==='stage') list=list.filter(l=>l.stage===curFilter.value);
+  else if(curFilter && curFilter.type==='source') list=list.filter(l=>l.source===curFilter.value);
+  else if(curFilter && curFilter.type==='pond') list=list.filter(l=>l.pond===curFilter.value);
+  else if(curFilter && curFilter.type==='today') list=list.filter(l=>/hour|minute/.test(l.last));
+  if(curAgent) list=list.filter(l=>l.agent===curAgent);
+  if(curSearch) list=list.filter(l=>(l.name+' '+l.email).toLowerCase().indexOf(curSearch)>=0);
+  return list;
+}
+function fubRows(){
+  const list=fubVisibleList();
+  let label='';
+  if(curFilter && curFilter.type==='stage') label=' · '+curFilter.value;
+  else if(curFilter && curFilter.type==='source') label=' · Source: '+curFilter.value;
+  else if(curFilter && curFilter.type==='pond') label=' · '+curFilter.value;
+  else if(curFilter && curFilter.type==='today') label=" · Today's Leads";
+  if(curAgent) label+=' · '+curAgent;
+  if(curSearch) label+=' · Search: "'+curSearch+'"';
+  if(selectedLeads.size>0){
+    document.getElementById('listSub').textContent='Selected '+selectedLeads.size+' '+(selectedLeads.size===1?'person':'people')+' — Select all '+list.length;
+  } else {
+    document.getElementById('listSub').textContent='Showing '+list.length+' '+(list.length===1?'person':'people')+label;
+  }
+  document.getElementById('peopleRows').innerHTML=list.map(l=>{
+    const sc=STAGE_COLOR[l.stage]||['#eef2f6','#5b6b7e'];
+    const sel=selectedLeads.has(l.id);
+    return '<tr class="rowlink'+(sel?' rowsel':'')+'"><td onclick="event.stopPropagation()"><input type="checkbox" '+(sel?'checked':'')+' onchange="toggleRowSelect('+l.id+',this.checked)"></td>'+
+      '<td onclick="fubOpen('+l.id+')"><div class="lead-name"><span class="av" style="background:'+avColor(l.id)+'">'+initials(l.name)+'</span>'+
+        '<span class="who"><b>'+esc(l.name)+'</b><span>'+esc(l.email)+'</span></span></div></td>'+
+      '<td onclick="fubOpen('+l.id+')"><span class="stage-pill" style="background:'+sc[0]+';color:'+sc[1]+'">'+esc(l.stage)+'</span></td>'+
+      '<td onclick="fubOpen('+l.id+')">'+(l.agent?esc(l.agent):'<span style="color:var(--fmuted);font-style:italic">Unassigned</span>')+'</td>'+
+      '<td class="col-pond" onclick="fubOpen('+l.id+')">'+esc(l.pond||'')+'</td>'+
+      '<td class="col-source" onclick="fubOpen('+l.id+')">'+esc(l.source)+'</td>'+
+      '<td onclick="fubOpen('+l.id+')">'+(l.plan?'<span style="color:var(--fmuted)">&mdash;</span>':'')+'</td>'+
+      '<td class="col-lasttext" onclick="fubOpen('+l.id+')"></td>'+
+      '<td onclick="fubOpen('+l.id+')">'+esc(l.last)+'</td>'+
+      '<td class="col-visits" onclick="fubOpen('+l.id+')">'+(1+ (l.id%3))+'</td></tr>';
+  }).join('');
+  document.getElementById('selectAllChk').checked = list.length>0 && list.every(l=>selectedLeads.has(l.id));
+}
+function toggleRowSelect(id,checked){
+  if(checked) selectedLeads.add(id); else selectedLeads.delete(id);
+  fubRows();
+}
+function toggleSelectAll(checked){
+  const list=fubVisibleList();
+  if(checked) list.forEach(l=>selectedLeads.add(l.id));
+  else list.forEach(l=>selectedLeads.delete(l.id));
+  fubRows();
+}
+function fubBulkAction(kind){
+  if(selectedLeads.size===0){ fubToast('Select people first.'); return; }
+  const ids=Array.from(selectedLeads);
+  const names=ids.map(id=>LEADS.filter(l=>l.id===id)[0]).filter(Boolean).map(l=>l.name);
+  if(kind==='tag'){
+    const tag=prompt('Add a tag to '+ids.length+' selected people:');
+    if(!tag) return;
+    ids.forEach(id=>{ const l=LEADS.filter(x=>x.id===id)[0]; if(l && l.tags.indexOf(tag)===-1) l.tags.push(tag); });
+    fubToast('Added "'+tag+'" to '+ids.length+' people. Training only, this does not save anywhere real.');
+    fubRows();
+    return;
+  }
+  if(kind==='email') fubToast('Would open a bulk email to: '+names.slice(0,3).join(', ')+(names.length>3?' +'+(names.length-3)+' more':'')+'. Training only.');
+  else if(kind==='call') fubToast('Would start a call session with '+ids.length+' selected people. Training only.');
+  else if(kind==='group') fubToast('Would add '+ids.length+' people to a group or pond. Training only.');
+  else if(kind==='delete') fubToast('Deleting people is not included in this basic Test Drive.');
+  else if(kind==='export') fubToast('Not included in this basic Test Drive.');
+}
+function fubSmartCounts(){
+  document.getElementById('cntAll').textContent=LEADS.length;
+  document.getElementById('cntToday').textContent=LEADS.filter(l=>/hour|minute/.test(l.last)).length;
+  document.getElementById('cntAC').textContent=LEADS.filter(l=>l.stage==='Attempted Contact').length;
+  document.getElementById('cntNU').textContent=LEADS.filter(l=>l.stage==='Nurturing').length;
+  document.getElementById('cntHL').textContent=LEADS.filter(l=>l.stage==='Hot Lead').length;
+  document.getElementById('cntAS').textContent=LEADS.filter(l=>l.stage==='Appointment Set').length;
+  document.getElementById('cntCL').textContent=LEADS.filter(l=>l.stage==='Closed').length;
+  document.getElementById('cntPond').textContent=LEADS.filter(l=>l.pond==='Website Leads Pond').length;
+}
+function fubFilter(e,type,value){
+  curFilter={type:type,value:value};
+  document.querySelectorAll('.fub-rail a').forEach(a=>a.classList.remove('active'));
+  e.currentTarget.classList.add('active');
+  document.getElementById('quickFilterField').value='';
+  document.getElementById('quickFilterValue').style.display='none';
+  document.getElementById('quickFilterChip').innerHTML='';
+  document.getElementById('quickFilterEmpty').style.display= 'block';
+  fubShowList(false);
+}
+function fubSearchGo(){
+  const q=(document.getElementById('topSearch').value||'').trim().toLowerCase();
+  curSearch=q;
+  showView('people');
+  fubShowList(false);
+}
+function fubLocked(name){
+  fubToast('"'+name+'" is a locked Smart List in the real account, restricted lists like this aren\'t included in this basic Test Drive.');
+}
+function fubAgentFilter(e,agent){
+  curAgent=agent;
+  document.querySelectorAll('#agentDD a').forEach(a=>a.classList.remove('active'));
+  e.currentTarget.classList.add('active');
+  document.getElementById('agentBtn').firstChild.textContent=(agent||'Everyone')+' ';
+  closeAllDropdowns();
+  fubRows();
+}
+function fubQuickFilterFieldChange(){
+  const field=document.getElementById('quickFilterField').value;
+  const valSel=document.getElementById('quickFilterValue');
+  if(!field){ valSel.style.display='none'; return; }
+  let opts=[];
+  if(field==='stage') opts=Array.from(new Set(LEADS.map(l=>l.stage)));
+  if(field==='source') opts=Array.from(new Set(LEADS.map(l=>l.source)));
+  valSel.innerHTML='<option value="">Choose a value&hellip;</option>'+opts.map(o=>'<option value="'+esc(o)+'">'+esc(o)+'</option>').join('');
+  valSel.style.display='block';
+}
+function fubQuickFilterApply(){
+  const field=document.getElementById('quickFilterField').value;
+  const val=document.getElementById('quickFilterValue').value;
+  if(!field||!val) return;
+  curFilter={type:field,value:val};
+  document.querySelectorAll('.fub-rail a').forEach(a=>a.classList.remove('active'));
+  document.getElementById('quickFilterChip').innerHTML='<div class="fub-filter-chip">'+(field==='stage'?'Stage':'Source')+': '+esc(val)+'<span class="x" onclick="fubQuickFilterClear()">&times;</span></div>';
+  document.getElementById('quickFilterEmpty').style.display='none';
+  fubRows();
+}
+function fubQuickFilterClear(){
+  curFilter=null;
+  document.getElementById('quickFilterField').value='';
+  document.getElementById('quickFilterValue').style.display='none';
+  document.getElementById('quickFilterChip').innerHTML='';
+  document.getElementById('quickFilterEmpty').style.display='block';
+  document.querySelector('.fub-rail a').classList.add('active');
+  fubRows();
+}
+function toggleColsDD(e){ e.stopPropagation(); const d=document.getElementById('colsDD'); const w=d.classList.contains('open'); closeAllDropdowns(); if(!w) d.classList.add('open'); }
+function toggleAgentDD(e){ e.stopPropagation(); const d=document.getElementById('agentDD'); const w=d.classList.contains('open'); closeAllDropdowns(); if(!w) d.classList.add('open'); }
+function toggleCol(name,checked){
+  const table=document.getElementById('peopleTable');
+  table.querySelectorAll('.col-'+name).forEach(el=>el.classList.toggle('col-hide',!checked));
+}
+function fubShowList(resetFilter){
+  document.getElementById('peopleList').style.display='block';
+  document.querySelector('#view-people .fub-rail').style.display='';
+  document.getElementById('personDetailWrap').classList.remove('active');
+  if(resetFilter){
+    curFilter=null; curAgent=null; curSearch=''; selectedLeads.clear();
+    document.getElementById('topSearch').value='';
+    document.querySelectorAll('.fub-rail a').forEach(a=>a.classList.remove('active'));
+    document.querySelector('.fub-rail a').classList.add('active');
+    document.getElementById('quickFilterField').value='';
+    document.getElementById('quickFilterValue').style.display='none';
+    document.getElementById('quickFilterChip').innerHTML='';
+    document.getElementById('quickFilterEmpty').style.display='block';
+    document.querySelectorAll('#agentDD a').forEach(a=>a.classList.remove('active'));
+    document.querySelector('#agentDD a').classList.add('active');
+    document.getElementById('agentBtn').firstChild.textContent='Everyone ';
+  }
+  fubRows();
+}
+function fubOpen(id){
+  const list=fubVisibleList();
+  curLeadId=id;
+  const l=LEADS.filter(x=>x.id===id)[0]; if(!l) return;
+  document.getElementById('peopleList').style.display='none';
+  document.querySelector('#view-people .fub-rail').style.display='none';
+  const wrap=document.getElementById('personDetailWrap');
+  wrap.classList.add('active');
+  const idx=list.findIndex(x=>x.id===id);
+  const total=list.length;
+  wrap.innerHTML=
+    '<div class="fub-pager">'+
+      '<span class="fub-back" style="margin:0" onclick="fubShowList(false)">&larr; All People</span>'+
+      '<span class="arrows">Person '+(idx+1)+' of '+total+
+        '<button type="button" '+(idx<=0?'disabled':'')+' onclick="fubOpen('+(idx>0?list[idx-1].id:id)+')">&lsaquo;</button>'+
+        '<button type="button" '+(idx>=total-1?'disabled':'')+' onclick="fubOpen('+(idx<total-1?list[idx+1].id:id)+')">&rsaquo;</button>'+
+      '</span>'+
+    '</div>'+
+    '<div class="fub-detail-grid">'+
+
+    /* ===== LEFT COLUMN — one continuous card with icon sections, like the real person view ===== */
+    '<div class="pv-left">'+
+      '<div class="pv-head"><span class="av" style="background:'+avColor(l.id)+'">'+initials(l.name)+'</span>'+
+        '<div><b>'+esc(l.name)+'</b><span>Last Communication '+esc(l.last)+'</span></div></div>'+
+      '<div class="pv-contact">'+
+        '<div class="pv-crow">'+pvIcon('phone')+'<a onclick="fubToast(\'Calling is not included in this basic Test Drive.\')">'+esc(l.phone)+'</a> <span class="mut">('+esc(l.phoneType)+')</span></div>'+
+        '<div class="pv-crow">'+pvIcon('mail')+'<a onclick="fubToast(\'Use Send Email in the middle panel.\')">'+esc(l.email)+'</a></div>'+
+        '<div class="pv-crow">'+pvIcon('home')+'<a onclick="fubToast(\'Training only, this does not save anywhere real.\')">Add address</a></div>'+
+      '</div>'+
+      pvSec('people','Relationships','<div class="pv-empty">No relationships</div>',{add:'fubToast(\'Training only, this does not save anywhere real.\')'})+
+      pvSec('list','Details',
+        '<div class="pv-row"><b>Stage</b><span class="val">'+fubStageSelect(l)+'</span></div>'+
+        '<div class="pv-row"><b>Assigned to</b><span class="val">'+fubAgentField(l)+'</span></div>'+
+        '<div class="pv-row"><b>Source</b><span class="val">'+esc(l.source)+'<span class="mut">, '+esc(l.last)+'</span></span></div>'+
+        '<div class="pv-row"><b>Price</b><span class="val">'+esc(l.price)+'</span></div>'+
+        '<div class="pv-row"><b>Timeframe</b><span class="val">'+esc(l.timeframe)+'</span></div>'+
+        '<div class="pv-row" style="align-items:flex-start"><b>Tags</b><span class="val"><span class="fub-tagrow" id="tagRow'+l.id+'">'+fubTagRowHtml(l)+'</span></span></div>')+
+      pvSec('bank','Financing', l.financing?('<div class="pv-plain">'+esc(l.financing)+'</div>'):'<div class="pv-empty">No financing info yet</div>', {closed:true})+
+      pvSec('info','Background', l.background?('<div class="pv-plain">'+esc(l.background)+'</div>'):'<a class="pv-addlink" onclick="fubToast(\'Training only, this does not save anywhere real.\')">Add background</a>')+
+      pvSec('user','Social Profile', l.social?('<div class="pv-row"><b>Google</b><span class="val"><a onclick="fubToast(\'External search is not included in this Test Drive.\')">Search '+esc(l.name)+'</a></span></div>'):'<div class="pv-empty">Social not found</div>')+
+      pvSec('edit','Custom Fields','<div class="pv-empty">No custom fields filled in</div>',{closed:true})+
+    '</div>'+
+
+    /* ===== MIDDLE — composer + activity feed ===== */
+    '<div class="mid">'+
+      '<div class="fub-composer">'+
+        '<div class="ctabs" id="composerTabs">'+
+          '<span class="active" data-c="note">'+pvIcon('pin')+'Create Note</span>'+
+          '<span data-c="email">'+pvIcon('mail')+'Send Email</span>'+
+          '<span data-c="text">'+pvIcon('chat')+'Text</span>'+
+          '<span data-c="call">'+pvIcon('phone')+'Log Call</span>'+
+          '<span class="fub-pill-btn howit" onclick="fubToast(\'This walks you through notes, emails, texts, and call logs, all saved to the lead\\\'s timeline.\')">&#9432; How it works</span>'+
+        '</div>'+
+        '<textarea id="composerBox" class="note-bg" placeholder="Add notes or type @name to notify"></textarea>'+
+        '<div class="cfoot"><span class="fub-pill-btn" onclick="fubToast(\'Team Mentions let you notify a teammate with @name inside a note.\')">&#9432; Try Team Mentions</span>'+
+        '<button type="button" id="composerSaveBtn" onclick="composerPost('+l.id+')">Create Note</button></div>'+
+      '</div>'+
+      '<div class="fub-feed-filters" id="feedFilters">'+
+        '<span class="active" data-t="all">'+pvIcon('list')+'All</span>'+
+        '<span data-t="email">'+pvIcon('mail')+'<i class="ct">'+countTimeline(l,'email')+'</i></span>'+
+        '<span data-t="note">'+pvIcon('pin')+'<i class="ct">'+countTimeline(l,'note')+'</i></span>'+
+        '<span data-t="text">'+pvIcon('chat')+'<i class="ct">'+countTimeline(l,'text')+'</i></span>'+
+        '<span data-t="call">'+pvIcon('phone')+'<i class="ct">'+countTimeline(l,'call')+'</i></span>'+
+        '<span data-t="system">'+pvIcon('home')+'<i class="ct">'+countTimeline(l,'system')+'</i></span>'+
+        '<span class="filters-dd" onclick="fubToast(\'Use the icons to filter the feed by type.\')">Filters <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg></span>'+
+      '</div>'+
+      '<div class="fub-timeline" id="fubTimeline"></div>'+
+    '</div>'+
+
+    /* ===== RIGHT COLUMN — stacked sections like the real person view ===== */
+    '<div class="pv-right">'+
+      pvSec('task','Tasks', fubLeadTasksHtml(l), {add:'openCreateTaskModal('+l.id+')', bolt:true})+
+      pvSec('cal','Appointments', fubLeadApptsHtml(l), {add:'openCreateApptModal('+l.id+')'})+
+      pvSec('file','Files','<div class="pv-empty">No files</div>',{add:'fubToast(\'Training only, this does not save anywhere real.\')'})+
+      pvSec('people','Collaborators','<div class="pv-empty">No collaborators</div>',{add:'fubToast(\'Training only, this does not save anywhere real.\')'})+
+      pvSec('play','Action Plans', fubPlanCard(l), {add:'openStartPlanModal('+l.id+')'})+
+      pvSec('chart','Activity',
+        '<div class="pv-lbl">Marketing Source</div><div class="pv-plain">'+esc(l.source)+'</div>'+
+        '<div class="pv-lbl">At a Glance</div><div class="pv-glance">'+pvIcon('home')+' '+(1+(l.id%4))+' visits &nbsp; '+pvIcon('file')+' '+(l.id%2===0?'1':'0')+' form</div>',
+        {right:'Seen '+esc(l.last)})+
+    '</div>'+
+    '</div>';
+  renderTimeline(l,'all');
+  wireComposerTabs(l);
+  wireFeedFilters(l);
+}
+/* small inline icon set (matches the real app's outline icons) */
+function pvIcon(name){
+  const paths={
+    phone:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.4 2.1L8 10.3a16 16 0 0 0 6 6l1.5-1.5a2 2 0 0 1 2.1-.4c1 .4 2 .6 3 .7a2 2 0 0 1 1.7 2z"/>',
+    mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+    home:'<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+    people:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+    list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+    bank:'<path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/>',
+    info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+    user:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+    pin:'<path d="M4 5h16v11H8l-4 4z"/>',
+    chat:'<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-4-.9L3 21l1.9-5.5a8.4 8.4 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5z"/>',
+    task:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+    cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+    file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+    play:'<circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4z"/>',
+    chart:'<path d="M18 20V10M12 20V4M6 20v-6"/>',
+    bolt:'<path d="M13 2 3 14h7l-1 8 11-14h-7z"/>'
+  };
+  return '<svg class="pvic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(paths[name]||'')+'</svg>';
+}
+/* one section of the person view: icon + title + optional (+) + chevron, collapsible */
+function pvSec(icon,title,bodyHtml,opts){
+  opts=opts||{};
+  return '<div class="pv-sec'+(opts.closed?' closed':'')+'">'+
+    '<div class="pv-sec-h" onclick="if(event.target.closest(\'.plus\'))return; this.parentElement.classList.toggle(\'closed\')">'+
+      pvIcon(icon)+'<b>'+title+'</b>'+
+      (opts.right?'<span class="mut" style="font-size:11.5px">'+opts.right+'</span>':'')+
+      (opts.bolt?'<span class="boltic">'+pvIcon('bolt')+'</span>':'')+
+      (opts.add?'<span class="plus" onclick="'+opts.add+'">+</span>':'')+
+      '<svg class="chev" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>'+
+    '</div>'+
+    '<div class="pv-sec-body">'+bodyHtml+'</div>'+
+  '</div>';
+}
+function countTimeline(l,type){
+  let n=(l.activity||[]).filter(a=>a.type===type).length;
+  if(type==='note') n+=1;               /* seeded note */
+  if(type==='system') n+=1;             /* lead-created entry */
+  if(type==='email' && l.plan) n+=1;    /* action-plan email */
+  return n;
+}
+function fubStageSelect(l){
+  return '<select class="fub-stage-select" onchange="fubChangeStage('+l.id+',this.value)">'+
+    ALL_STAGES.map(s=>'<option value="'+esc(s)+'" '+(s===l.stage?'selected':'')+'>'+esc(s)+'</option>').join('')+
+    '</select>';
+}
+function fubChangeStage(id,newStage){
+  const l=LEADS.filter(x=>x.id===id)[0]; if(!l) return;
+  l.stage=newStage;
+  fubSmartCounts();
+  fubToast('Moved '+l.name+' to "'+newStage+'". Training only, this does not save anywhere real.');
+}
+const AGENTS=['Paula Aragone','Dana Ruiz'];
+function fubAgentField(l){
+  if(!l.agent){
+    return '<span style="color:var(--fmuted);font-style:italic">Unassigned &middot; '+esc(l.pond||'Pond')+'</span> '+
+      '<button type="button" class="fub-dd-btn" style="padding:4px 10px;font-size:11.5px;color:var(--fblue-d);border-color:var(--fblue)" onclick="claimLead('+l.id+')">Claim this lead</button>';
+  }
+  return '<select class="fub-stage-select" onchange="fubReassign('+l.id+',this.value)">'+
+    AGENTS.map(a=>'<option '+(a===l.agent?'selected':'')+'>'+esc(a)+'</option>').join('')+
+    '<option value="__pond__">Send to Pond&hellip;</option>'+
+    '</select>';
+}
+function claimLead(id){
+  const l=LEADS.filter(x=>x.id===id)[0]; if(!l) return;
+  const me=tdMe?tdMe.name:'You';
+  l.agent=me; l.pond='';
+  fubRows(); fubSmartCounts();
+  if(document.getElementById('admin-ponds')) fubPondRows();
+  fubOpen(id);
+  fubToast('Claimed '+l.name+' for '+me+'. Training only, this does not save anywhere real.');
+}
+function fubReassign(id,val){
+  const l=LEADS.filter(x=>x.id===id)[0]; if(!l) return;
+  if(val==='__pond__'){
+    l.agent=null; l.pond='Website Leads Pond';
+    fubToast('Sent '+l.name+' back to the Website Leads Pond. Training only, this does not save anywhere real.');
+  } else {
+    l.agent=val; l.pond='';
+    fubToast('Reassigned '+l.name+' to '+val+'. Training only, this does not save anywhere real.');
+  }
+  fubRows(); fubSmartCounts();
+  if(document.getElementById('admin-ponds')) fubPondRows();
+  fubOpen(id);
+}
+function fubTagRowHtml(l){
+  return l.tags.map(t=>'<span class="fub-tag">'+esc(t)+'<span class="rm" onclick="fubRemoveTag('+l.id+',\''+esc(t).replace(/'/g,"\\'")+'\')">&times;</span></span>').join('')+
+    '<button type="button" class="fub-tag-add" onclick="fubAddTagPrompt('+l.id+')">+</button>';
+}
+function fubRemoveTag(id,tag){
+  const l=LEADS.filter(x=>x.id===id)[0]; if(!l) return;
+  l.tags=l.tags.filter(t=>t!==tag);
+  document.getElementById('tagRow'+id).innerHTML=fubTagRowHtml(l);
+}
+function fubAddTagPrompt(id){
+  const l=LEADS.filter(x=>x.id===id)[0]; if(!l) return;
+  const tag=prompt('Add a tag to '+l.name+':');
+  if(!tag) return;
+  if(l.tags.indexOf(tag)===-1) l.tags.push(tag);
+  document.getElementById('tagRow'+id).innerHTML=fubTagRowHtml(l);
+}
+function renderTimeline(l,filter){
+  curFeedFilter=filter;
+  const items=(l.activity||[]).concat([
+    {type:'system',av:'#e8862b',ic:'GI',head:'General Inquiry',sub:'via '+l.source,body:esc(l.name)+' was added to the People list and '+(l.agent?('assigned to '+esc(l.agent)+'.'):('sent to the '+esc(l.pond||'pond')+' for an agent to claim.'))},
+    {type:'note',av:avColor(l.id),ic:initials(l.name),head:'Note',sub:l.last,body:esc(l.note)}
+  ]);
+  if(l.plan){
+    const plan=ACTION_PLANS.filter(p=>p.id===l.plan)[0];
+    if(plan){
+      const step=plan.steps.filter(s=>s.action==='email')[0];
+      const tpl=step?TEMPLATES.filter(t=>t.id===step.templateId)[0]:null;
+      items.unshift({type:'email',av:'#0076a4',ic:'AP',head:esc(l.agent||'Unassigned')+' &rsaquo; '+esc(l.name),sub:'just now',body:(tpl?('<b>'+esc(tpl.subject)+'</b><br>'+esc(tpl.preview).replace(/%contact_first_name%/g,esc(l.name.split(' ')[0]))):'Action plan started.'),via:'via action plan'});
+    }
+  }
+  const list=filter==='all'?items:items.filter(i=>i.type===filter);
+  const el=document.getElementById('fubTimeline');
+  if(!el) return;
+  el.innerHTML= list.length ? list.map(i=>
+    '<div class="fub-tlitem"><span class="av" style="background:'+i.av+'">'+i.ic+'</span>'+
+    '<div class="content"><div class="thead"><b>'+i.head+(i.via?'<span class="via">'+i.via+'</span>':'')+'</b><span>'+i.sub+'</span></div><p>'+i.body+'</p></div></div>'
+  ).join('') : '<div class="fub-empty">No activity of this type yet.</div>';
+}
+function wireFeedFilters(l){
+  document.querySelectorAll('#feedFilters span[data-t]').forEach(s=>{
+    s.onclick=()=>{
+      document.querySelectorAll('#feedFilters span[data-t]').forEach(x=>x.classList.remove('active'));
+      s.classList.add('active');
+      renderTimeline(l, s.dataset.t);
+    };
+  });
+}
+let curComposerMode='note', curFeedFilter='all';
+function wireComposerTabs(l){
+  curComposerMode='note';
+  const cfg={
+    note:{label:'Create Note',ph:'Add notes or type @name to notify',btn:'Create Note',val:''},
+    email:{label:'Send Email',ph:'Write an email to '+l.name+'...',btn:'Send Email',val:''},
+    text:{label:'Text',ph:'Write a text message to '+l.name+'...',btn:'Send Text',val:''},
+    call:{label:'Log Call',ph:'What did you talk about?',btn:'Log Call',val:''}
+  };
+  document.querySelectorAll('#composerTabs span[data-c]').forEach(s=>{
+    s.onclick=()=>{
+      document.querySelectorAll('#composerTabs span[data-c]').forEach(x=>x.classList.remove('active'));
+      s.classList.add('active');
+      curComposerMode=s.dataset.c;
+      const c=cfg[s.dataset.c];
+      const box=document.getElementById('composerBox');
+      box.placeholder=c.ph;
+      box.value=c.val;
+      box.classList.toggle('note-bg', s.dataset.c==='note');
+      document.getElementById('composerSaveBtn').textContent=c.btn;
+    };
+  });
+}
+function composerPost(id){
+  const l=LEADS.filter(x=>x.id===id)[0]; if(!l) return;
+  const box=document.getElementById('composerBox');
+  const text=(box.value||'').trim();
+  if(!text){ fubToast('Write something first.'); return; }
+  const me=tdMe?tdMe.name:'You';
+  const meIc=tdMe?(tdMe.avatar||tdMe.name.charAt(0)).toUpperCase():'ME';
+  const heads={note:'Note',email:me+' &rsaquo; '+esc(l.name),text:'Text to '+esc(l.name),call:'Call logged'};
+  l.activity=l.activity||[];
+  l.activity.unshift({type:curComposerMode,av:'#0076a4',ic:meIc,head:heads[curComposerMode],sub:'Just now',body:esc(text)});
+  const verbs={note:'Note created',email:'Email sent',text:'Text sent',call:'Call logged'};
+  box.value='';
+  renderTimeline(l,curFeedFilter);
+  fubToast(verbs[curComposerMode]+' and added to the timeline. Training only, nothing is sent anywhere real.');
+}
+function fubPlanCard(l){
+  if(!l.plan){
+    return '<div class="fub-empty">No active action plan.</div>'+
+      '<a onclick="openStartPlanModal('+l.id+')" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700;cursor:pointer">+ Start a plan</a>';
+  }
+  const plan=ACTION_PLANS.filter(p=>p.id===l.plan)[0];
+  return '<div class="fub-plan-active"><b>'+esc(plan.name)+'</b><span>Step 1 of '+plan.steps.length+' &middot; started today</span>'+
+    '<a onclick="openPlanModal('+plan.id+')">View full plan &rarr;</a></div>';
+}
+function openStartPlanModal(leadId){
+  const l=LEADS.filter(x=>x.id===leadId)[0]; if(!l) return;
+  let h='<button class="fub-modal-close" onclick="closeFubModal()">&times;</button>'+
+    '<h3>Start an Action Plan</h3><div class="sub">Choose a plan to start for '+esc(l.name)+'.</div>';
+  ACTION_PLANS.forEach(p=>{
+    h+='<div class="fub-plan-pick" onclick="assignPlan('+l.id+','+p.id+')"><b>'+esc(p.name)+'</b><span>'+esc(p.category)+' &middot; '+p.steps.length+' steps</span></div>';
+  });
+  openFubModal(h);
+}
+function assignPlan(leadId,planId){
+  const l=LEADS.filter(x=>x.id===leadId)[0]; const p=ACTION_PLANS.filter(x=>x.id===planId)[0];
+  if(!l||!p) return;
+  l.plan=planId;
+  closeFubModal();
+  fubOpen(leadId);
+  fubToast('Started "'+p.name+'" for '+l.name+'. Training only, this does not run anywhere real.');
+}
+
+/* ---------------- Lead sidebar: Tasks & Appointments ---------------- */
+function fubTasksForLead(l){ return TASKS.filter(t=>t.who===l.name); }
+function fubApptsForLead(l){ return APPOINTMENTS.filter(a=>a.leadId===l.id); }
+function fubLeadTasksHtml(l){
+  const ts=fubTasksForLead(l);
+  if(!ts.length) return '<div class="fub-empty">No open tasks for this lead.</div>';
+  return ts.map(t=>'<div class="fub-task"><b>'+esc(t.what)+'</b><span>'+esc(t.due)+'</span></div>').join('');
+}
+function fubLeadApptsHtml(l){
+  const as=fubApptsForLead(l);
+  if(!as.length) return '<div class="fub-empty">No appointments scheduled.</div>';
+  return as.map(a=>'<div class="fub-task"><b>'+esc(a.title)+'</b><span>'+esc(calDayLabel(a.dayOffset))+' &middot; '+esc(a.time)+'</span></div>').join('');
+}
+function openCreateTaskModal(leadId){
+  const l=leadId?LEADS.filter(x=>x.id===leadId)[0]:null;
+  const h='<button class="fub-modal-close" onclick="closeFubModal()">&times;</button>'+
+    '<h3>Add Task</h3><div class="sub">'+(l?('For '+esc(l.name)):'Pick who this task is for')+'</div>'+
+    (l?'':'<div class="fub-field"><label>Lead</label><select id="taskLeadSel">'+LEADS.map(x=>'<option value="'+x.id+'">'+esc(x.name)+'</option>').join('')+'</select></div>')+
+    '<div class="fub-field"><label>Task Name</label><input id="taskNameInput" placeholder="e.g. Call to confirm details"></div>'+
+    '<div class="fub-field"><label>Due</label><select id="taskDueSel">'+
+      '<option value="due">Today</option><option value="overdue">Yesterday (overdue)</option><option value="upcoming">Next week</option></select></div>'+
+    '<div class="modal-actions"><button class="btn-cancel" type="button" onclick="closeFubModal()">Cancel</button>'+
+    '<button class="btn-save" type="button" onclick="createTaskFromModal('+(leadId||'null')+')">Add Task</button></div>';
+  openFubModal(h);
+}
+function createTaskFromModal(leadId){
+  const name=(document.getElementById('taskNameInput').value||'').trim();
+  if(!name){ fubToast('Give the task a name first.'); return; }
+  const targetId=leadId||parseInt(document.getElementById('taskLeadSel').value,10);
+  const l=LEADS.filter(x=>x.id===targetId)[0];
+  const state=document.getElementById('taskDueSel').value;
+  const dueLabel=state==='due'?'Today':state==='overdue'?'Yesterday':'Next week';
+  TASKS.push({who:l?l.name:'Unassigned',what:name,due:dueLabel,state:state});
+  fubTasksRenderCurrent();
+  if(curLeadId) fubOpen(curLeadId);
+  closeFubModal();
+  fubToast('Task added. Training only, this does not save anywhere real.');
+}
+function openCreateApptModal(leadId){
+  const l=leadId?LEADS.filter(x=>x.id===leadId)[0]:null;
+  const days=calDays();
+  const h='<button class="fub-modal-close" onclick="closeFubModal()">&times;</button>'+
+    '<h3>Add Appointment</h3><div class="sub">'+(l?('For '+esc(l.name)):'Pick who this appointment is for')+'</div>'+
+    (l?'':'<div class="fub-field"><label>Lead</label><select id="apptLeadSel">'+LEADS.map(x=>'<option value="'+x.id+'">'+esc(x.name)+'</option>').join('')+'</select></div>')+
+    '<div class="fub-field"><label>Title</label><input id="apptTitleInput" placeholder="e.g. Showing at 218 Birchwood Lane"></div>'+
+    '<div class="fub-field"><label>Day</label><select id="apptDaySel">'+days.map(d=>'<option value="'+d.offset+'">'+d.label+' '+d.num+'</option>').join('')+'</select></div>'+
+    '<div class="fub-field"><label>Time</label><input id="apptTimeInput" placeholder="e.g. 2:00 PM"></div>'+
+    '<div class="modal-actions"><button class="btn-cancel" type="button" onclick="closeFubModal()">Cancel</button>'+
+    '<button class="btn-save" type="button" onclick="createApptFromModal('+(leadId||'null')+')">Add Appointment</button></div>';
+  openFubModal(h);
+}
+function createApptFromModal(leadId){
+  const title=(document.getElementById('apptTitleInput').value||'').trim();
+  if(!title){ fubToast('Give the appointment a title first.'); return; }
+  const targetId=leadId||parseInt(document.getElementById('apptLeadSel').value,10);
+  const dayOffset=parseInt(document.getElementById('apptDaySel').value,10);
+  const time=(document.getElementById('apptTimeInput').value||'TBD').trim();
+  const id=Math.max(0,APPOINTMENTS.reduce((m,a)=>Math.max(m,a.id),0))+1;
+  APPOINTMENTS.push({id:id,leadId:targetId,title:title,dayOffset:dayOffset,time:time});
+  if(curView==='calendar') renderCalendar();
+  if(curLeadId) fubOpen(curLeadId);
+  closeFubModal();
+  fubToast('Appointment added. Training only, this does not save anywhere real.');
+}
+
+/* ---------------- Inbox ---------------- */
+let curInboxFolder='inbox', curInboxTab='all', curThreadIdx=0;
+function fubInboxThreads(){
+  let list=THREADS.filter(t=>curInboxFolder==='closed'?t.closed:!t.closed);
+  if(curInboxTab==='unread') list=list.filter(t=>t.unread);
+  return list;
+}
+function fubInbox(){
+  const list=fubInboxThreads();
+  document.getElementById('inboxCount').textContent='('+THREADS.filter(t=>t.unread&&!t.closed).length+')';
+  const unreadCt=THREADS.filter(t=>t.unread&&!t.closed).length;
+  const ctEl=document.querySelector('.fub-tabs span[data-view="inbox"] .ct');
+  if(ctEl){ ctEl.textContent=unreadCt; ctEl.style.display=unreadCt?'':'none'; }
+  document.getElementById('msgList').innerHTML= list.length ? list.map((t,i)=>
+    '<div class="fub-msg'+(i===curThreadIdx?' active':'')+'" onclick="fubThread('+i+')">'+
+      '<span class="ts">'+esc(t.ts)+'</span><b>'+esc(t.name)+(t.unread?' <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--fblue-d);vertical-align:2px"></span>':'')+'</b>'+
+      '<div class="prev">'+esc(t.subj)+' — '+esc(t.prev)+'</div></div>').join('')
+    : '<div class="fub-empty" style="margin:16px">No conversations here.</div>';
+  if(list.length){ fubThread(Math.min(curThreadIdx,list.length-1)); }
+  else { document.getElementById('msgThread').innerHTML=''; document.getElementById('inboxContact').innerHTML=''; }
+}
+function fubThread(i){
+  curThreadIdx=i;
+  const list=fubInboxThreads();
+  const t=list[i]; if(!t) return;
+  t.unread=false;
+  document.querySelectorAll('.fub-msg').forEach((m,j)=>m.classList.toggle('active',j===i));
+  const realIdx=THREADS.indexOf(t);
+  document.getElementById('msgThread').innerHTML=
+    '<div class="fub-thread-head"><div><h3 style="margin:0 0 2px">'+esc(t.name)+'</h3><div class="sub" style="margin:0">'+esc(t.subj)+'</div></div>'+
+    '<div class="btns"><button type="button" onclick="fubToast(\'Reply below, then press Send.\')">&#8617; Reply</button>'+
+    '<button type="button" onclick="fubCloseThread('+realIdx+')">'+(t.closed?'Reopen':'Close')+'</button></div></div>'+
+    '<div class="fub-bubble">'+esc(t.body).replace(/\n/g,'<br>')+'</div>'+
+    '<div class="fub-composer"><textarea placeholder="Reply to '+esc(t.name)+'..."></textarea><div class="cfoot"><button type="button" onclick="fubToast(\'Training only, this does not send anywhere real.\')">Send</button></div></div>';
+  fubInboxContact(t);
+  fubInbox0Counts();
+}
+function fubInbox0Counts(){
+  const unreadCt=THREADS.filter(x=>x.unread&&!x.closed).length;
+  document.getElementById('inboxCount').textContent='('+unreadCt+')';
+  const ctEl=document.querySelector('.fub-tabs span[data-view="inbox"] .ct');
+  if(ctEl){ ctEl.textContent=unreadCt; ctEl.style.display=unreadCt?'':'none'; }
+}
+function fubInboxContact(t){
+  const l=LEADS.filter(x=>x.id===t.leadId)[0];
+  if(!l){ document.getElementById('inboxContact').innerHTML=''; return; }
+  const sc=STAGE_COLOR[l.stage]||['#eef2f6','#5b6b7e'];
+  document.getElementById('inboxContact').innerHTML=
+    '<div class="p-name"><span class="av" style="background:'+avColor(l.id)+'">'+initials(l.name)+'</span><div><b style="font-size:14px">'+esc(l.name)+'</b><span>Last communication '+esc(t.ts)+'</span></div></div>'+
+    '<div class="kv"><b>Phone</b> '+esc(l.phone)+'</div>'+
+    '<div class="kv"><b>Email</b> '+esc(l.email)+'</div>'+
+    '<h4>Details</h4>'+
+    '<div class="kv"><b>Stage</b> <span class="stage-pill" style="background:'+sc[0]+';color:'+sc[1]+'">'+esc(l.stage)+'</span></div>'+
+    '<div class="kv"><b>Agent</b> '+(l.agent?esc(l.agent):'<i style="color:var(--fmuted)">Unassigned</i>')+'</div>'+
+    '<h4>Recent Conversations</h4>'+
+    THREADS.filter(x=>x.leadId===l.id).map(x=>'<div class="conv">&#9993; '+esc(x.subj)+'</div>').join('')+
+    '<span class="profile-link" onclick="fubOpenFromCalendar('+l.id+')">View full profile &rarr;</span>';
+}
+function fubCloseThread(realIdx){
+  const t=THREADS[realIdx]; if(!t) return;
+  t.closed=!t.closed;
+  curThreadIdx=0;
+  fubInbox();
+  fubToast(t.closed?'Conversation closed. Find it under the Closed folder.':'Conversation reopened.');
+}
+function fubInboxFolder(e,folder){
+  curInboxFolder=folder; curThreadIdx=0;
+  document.querySelectorAll('.fub-inbox-rail a').forEach(a=>a.classList.remove('active'));
+  e.currentTarget.classList.add('active');
+  fubInbox();
+}
+function fubInboxTab(e,tab){
+  curInboxTab=tab; curThreadIdx=0;
+  document.querySelectorAll('.fub-msg-tabs span').forEach(s=>s.classList.remove('active'));
+  e.currentTarget.classList.add('active');
+  fubInbox();
+}
+
+/* ---------------- Tasks ---------------- */
+let curTaskTab='today';
+const TASK_TAB_STATES={today:['due','done'],overdue:['overdue'],future:['upcoming']};
+function fubTasksRenderCurrent(){ fubTasks(curTaskTab); }
+function fubTasks(tab){
+  curTaskTab=tab||curTaskTab;
+  document.querySelectorAll('#taskTabs span').forEach(s=>s.classList.toggle('active',s.dataset.t===curTaskTab));
+  document.querySelector('#taskTabs span[data-t="future"]').textContent='Future ('+TASKS.filter(t=>t.state==='upcoming').length+')';
+  document.querySelector('#taskTabs span[data-t="overdue"]').textContent='Overdue ('+TASKS.filter(t=>t.state==='overdue').length+')';
+  const states=TASK_TAB_STATES[curTaskTab];
+  const list=TASKS.filter(t=>states.indexOf(t.state)>=0);
+  document.getElementById('taskViewTitle').textContent=curTaskTab==='today'?"Today's Tasks":curTaskTab==='overdue'?'Overdue':'Future';
+  document.getElementById('taskViewSub').textContent=list.length+' task'+(list.length===1?'':'s');
+  if(!list.length){
+    document.getElementById('taskRows').innerHTML='<div class="fub-empty" style="padding:30px;text-align:center">No tasks found, nice work!</div>';
+    return;
+  }
+  document.getElementById('taskRows').innerHTML=list.map(t=>{
+    const idx=TASKS.indexOf(t);
+    const colors={due:['#eaf4fa','#0076a4'],overdue:['#fdeceb','#c0392b'],done:['#eafaf1','#1e8449'],upcoming:['#eef2f6','#5b6b7e']}[t.state];
+    return '<div class="fub-task-row"><input type="checkbox" '+(t.state==='done'?'checked':'')+' onchange="toggleTaskDone('+idx+')">'+
+      '<div><div class="t-name" style="'+(t.state==='done'?'text-decoration:line-through;color:var(--fmuted)':'')+'">'+esc(t.what)+'</div><div class="t-sub">'+esc(t.who)+'</div></div>'+
+      '<span class="t-due" style="background:'+colors[0]+';color:'+colors[1]+'">'+esc(t.due)+'</span></div>';
+  }).join('');
+}
+function toggleTaskDone(idx){
+  const t=TASKS[idx]; if(!t) return;
+  if(t.state==='done'){ t.state=t._prevState||'due'; }
+  else { t._prevState=t.state; t.state='done'; }
+  fubTasksRenderCurrent();
+  fubToast((t.state==='done'?'Marked done: ':'Reopened: ')+t.what+'. Training only.');
+}
+
+/* ---------------- Admin: Action Plans ---------------- */
+function fubPlanRows(){
+  document.getElementById('planRows').innerHTML=ACTION_PLANS.map(p=>
+    '<tr class="rowlink" onclick="openPlanModal('+p.id+')"><td><b>'+esc(p.name)+'</b></td><td>'+esc(p.category)+'</td><td>'+p.steps.length+'</td></tr>').join('');
+}
+function stepWhenLabel(days){ return days===0 ? 'Immediately' : ('Run '+days+' day'+(days===1?'':'s')+' after the previous step'); }
+function stepDesc(s){
+  if(s.action==='email'){ const t=TEMPLATES.filter(x=>x.id===s.templateId)[0]; return {icon:'&#9993;',cls:'email',label:'Send Email',detail:t?t.name:'(template removed)'}; }
+  if(s.action==='task'){ return {icon:'&#9776;',cls:'task',label:'Create Task',detail:s.taskName}; }
+  if(s.action==='stage'){ return {icon:'&#8635;',cls:'task',label:'Change Stage',detail:s.stage}; }
+  if(s.action==='note'){ return {icon:'&#128204;',cls:'task',label:'Add Note',detail:s.note}; }
+  if(s.action==='tag'){ return {icon:'&#127991;',cls:'task',label:'Add Tag',detail:s.tag}; }
+  return {icon:'',cls:'',label:'',detail:''};
+}
+function openPlanModal(planId){
+  const p=ACTION_PLANS.filter(x=>x.id===planId)[0]; if(!p) return;
+  let h='<button class="fub-modal-close" onclick="closeFubModal()">&times;</button>'+
+    '<h3>'+esc(p.name)+'</h3><div class="sub">'+esc(p.category)+' &middot; '+p.steps.length+' steps</div><div class="flow">';
+  p.steps.forEach(s=>{
+    const d=stepDesc(s);
+    h+='<div class="flow-step"><div class="flow-when">'+stepWhenLabel(s.days)+'</div>'+
+      '<div class="flow-node '+d.cls+'"><span class="fic">'+d.icon+'</span><div class="txt"><b>'+d.label+'</b>'+esc(d.detail)+'</div></div></div>';
+  });
+  h+='</div>';
+  openFubModal(h);
+}
+
+/* ---------------- Admin: Automations ---------------- */
+function findTrigger(label){ return AUTO_TRIGGERS.filter(function(t){return t.label===label;})[0]; }
+function findAction(label){ return AUTO_ACTIONS.filter(function(a){return a.label===label;})[0]; }
+function fubAutoRows(){
+  document.getElementById('autoRows').innerHTML=AUTOMATIONS.map(a=>
+    '<tr><td class="rowlink" onclick="openAutoModal('+a.id+')" style="cursor:pointer;color:var(--fblue-d);font-weight:700">'+esc(a.name)+'</td>'+
+    '<td>'+esc(a.triggerType)+(a.triggerVal?' <b>'+esc(a.triggerVal)+'</b>':'')+' &rarr; '+esc(a.actionType)+' <b>'+esc(a.actionVal)+'</b></td>'+
+    '<td>'+a.timesRun+'</td>'+
+    '<td><button type="button" class="fub-toggle'+(a.enabled?' on':'')+'" id="autoToggle'+a.id+'" onclick="toggleAuto('+a.id+')"><i></i></button></td></tr>').join('');
+}
+function toggleAuto(id){
+  const a=AUTOMATIONS.filter(x=>x.id===id)[0]; if(!a) return;
+  a.enabled=!a.enabled;
+  document.getElementById('autoToggle'+id).classList.toggle('on',a.enabled);
+  fubToast(a.name+' turned '+(a.enabled?'on':'off')+'. Training only.');
+}
+function openAutoModal(id){
+  const a=AUTOMATIONS.filter(x=>x.id===id)[0]; if(!a) return;
+  const t=findTrigger(a.triggerType), ac=findAction(a.actionType);
+  let h='<button class="fub-modal-close" onclick="closeFubModal()">&times;</button>'+
+    '<h3>'+esc(a.name)+'</h3><div class="sub">Start automation when this event occurs</div>'+
+    '<div class="auto-flow">'+
+      autoNodeHtml(t?t.icon:'&#9889;', t?t.color:'#6c5ce7', a.triggerType.toUpperCase(), a.triggerVal||'Any')+
+      '<div class="auto-connector"></div>'+
+      autoNodeHtml(ac?ac.icon:'&#9654;', ac?ac.color:'#1e8449', a.actionType.toUpperCase(), (a.actionType==='Action Plan'?'Start ':'')+a.actionVal)+
+      '<div class="auto-connector"></div>'+
+      autoNodeHtml('&#10003;','#c0392b','COMPLETED','Run once per person')+
+    '</div>';
+  openFubModal(h);
+}
+function autoNodeHtml(icon,color,label,val){
+  return '<div class="auto-node"><div class="dot" style="background:'+color+'">'+icon+'</div><div class="box"><div class="lbl">'+label+'</div><div class="val">'+esc(val)+'</div></div></div>';
+}
+
+/* ---------------- Admin: Create Action Plan (simulated) ----------------
+   Mirrors the real "Add Action Plan" builder: every step has a "Run N days after the
+   previous step" number plus an Action type (Create task / Send email / Change stage /
+   Add note / Add tag(s)) with its own fields below it. */
+let apStepUid=0;
+function openCreatePlanModal(){
+  const h='<button class="fub-modal-close" onclick="closeFubModal()">&times;</button>'+
+    '<h3>Add Action Plan</h3><div class="sub">Build a sequence of steps, just like the real Action Plan builder.</div>'+
+    '<div class="fub-field"><label>Name</label><input id="planNameInput" placeholder="e.g. New Buyer Lead Follow Up"></div>'+
+    '<div class="fub-field"><label>Category</label><select id="planCategoryInput"><option>Buyer Leads</option><option>Seller Leads</option><option>Past Clients</option><option>Just Listed</option><option>General</option></select></div>'+
+    '<label class="ap-check"><input type="checkbox" checked> Automatically pause this action plan when the lead responds</label>'+
+    '<label class="ap-check"><input type="checkbox"> Include all email addresses for email steps</label>'+
+    '<label class="ap-check"><input type="checkbox" checked> Share with everyone</label>'+
+    '<div id="draftStepsContainer" class="ap-steps"></div>'+
+    '<button type="button" class="fub-dd-btn" onclick="apAddStep()">+ Add Step</button>'+
+    '<div class="modal-actions"><button class="btn-cancel" type="button" onclick="closeFubModal()">Cancel</button>'+
+    '<button class="btn-save" type="button" onclick="createPlanFromDraft()">Create Action Plan</button></div>';
+  openFubModal(h);
+  document.getElementById('draftStepsContainer').innerHTML='';
+  apAddStep();
+}
+function apStepActionFieldsHtml(action){
+  if(action==='email') return '<div class="fub-field"><label>Email Template</label><select data-f="templateId">'+TEMPLATES.map(t=>'<option value="'+t.id+'">'+esc(t.name)+'</option>').join('')+'</select></div>'+
+    '<div class="fub-field"><label>From</label><select data-f="from"><option>Agent assigned to the contact</option><option>Paula Aragone</option><option>Dana Ruiz</option></select></div>';
+  if(action==='task') return '<div class="fub-field"><label>Task Name</label><input data-f="taskName" placeholder="Task, e.g. Call the lead"></div>'+
+    '<div class="fub-field"><label>Task Type</label><select data-f="taskType"><option>Follow Up</option><option>Call</option><option>Email</option><option>Text</option></select></div>'+
+    '<div class="fub-field"><label>Assign To</label><select data-f="assignTo"><option>Agent assigned to the contact</option><option>Paula Aragone</option><option>Dana Ruiz</option></select></div>';
+  if(action==='stage') return '<div class="fub-field"><label>Stage</label><select data-f="stage">'+ALL_STAGES.map(s=>'<option>'+esc(s)+'</option>').join('')+'</select></div>';
+  if(action==='note') return '<div class="fub-field"><label>Note</label><textarea data-f="note" rows="2" placeholder="Note text"></textarea></div>';
+  if(action==='tag') return '<div class="fub-field"><label>Tag</label><input data-f="tag" placeholder="e.g. Hot Lead"></div>';
+  return '';
+}
+function apStepRowHtml(){
+  return '<div class="ap-step" data-action="task">'+
+    '<div class="ap-step-top">'+
+      '<span class="ap-step-when" data-when>Immediately</span>'+
+      '<span class="ap-step-run">Run <input type="number" min="0" data-f="days" value="0" oninput="apUpdateWhen(this)"> days after the previous step</span>'+
+      '<button type="button" class="ap-step-del" onclick="this.closest(\'.ap-step\').remove()" aria-label="Remove step">&times;</button>'+
+    '</div>'+
+    '<div class="ap-step-body">'+
+      '<label>Action</label>'+
+      '<select data-f-action onchange="apChangeAction(this)"><option value="task">Create task</option><option value="email">Send email</option><option value="stage">Change stage</option><option value="note">Add note</option><option value="tag">Add tag(s)</option></select>'+
+      '<div class="ap-step-fields">'+apStepActionFieldsHtml('task')+'</div>'+
+    '</div>'+
+  '</div>';
+}
+function apAddStep(){
+  document.getElementById('draftStepsContainer').insertAdjacentHTML('beforeend', apStepRowHtml());
+}
+function apUpdateWhen(input){
+  const days=parseInt(input.value,10)||0;
+  input.closest('.ap-step').querySelector('[data-when]').textContent=stepWhenLabel(days);
+}
+function apChangeAction(select){
+  const step=select.closest('.ap-step');
+  step.dataset.action=select.value;
+  step.querySelector('.ap-step-fields').innerHTML=apStepActionFieldsHtml(select.value);
+}
+function createPlanFromDraft(){
+  const name=(document.getElementById('planNameInput').value||'').trim();
+  if(!name){ fubToast('Give your action plan a name first.'); return; }
+  const rows=document.querySelectorAll('#draftStepsContainer .ap-step');
+  if(!rows.length){ fubToast('Add at least one step first.'); return; }
+  const category=document.getElementById('planCategoryInput').value;
+  const steps=[];
+  rows.forEach(row=>{
+    const action=row.dataset.action;
+    const days=parseInt(row.querySelector('[data-f="days"]').value,10)||0;
+    const step={days:days,action:action};
+    if(action==='email'){ step.templateId=parseInt(row.querySelector('[data-f="templateId"]').value,10); step.from=row.querySelector('[data-f="from"]').value; }
+    else if(action==='task'){ step.taskName=(row.querySelector('[data-f="taskName"]').value||'').trim()||'Follow up'; step.taskType=row.querySelector('[data-f="taskType"]').value; step.assignTo=row.querySelector('[data-f="assignTo"]').value; }
+    else if(action==='stage'){ step.stage=row.querySelector('[data-f="stage"]').value; }
+    else if(action==='note'){ step.note=(row.querySelector('[data-f="note"]').value||'').trim()||'Note'; }
+    else if(action==='tag'){ step.tag=(row.querySelector('[data-f="tag"]').value||'').trim()||'Tag'; }
+    steps.push(step);
+  });
+  const id=Math.max(0,ACTION_PLANS.reduce((m,p)=>Math.max(m,p.id),0))+1;
+  ACTION_PLANS.push({id:id,name:name,category:category,steps:steps});
+  fubPlanRows();
+  closeFubModal();
+  fubToast('Action plan "'+name+'" created. Training only, this teaches the real create flow but does not save anywhere real.');
+}
+
+/* ---------------- Admin: Create Automation (simulated) ----------------
+   Mirrors the real Automations builder: pick a trigger card, pick its value if it needs
+   one, then pick an action card and its value, building the same flow chart live. */
+let autoDraft={trigger:null,triggerVal:null,action:null,actionVal:null};
+function openCreateAutoModal(){
+  autoDraft={trigger:null,triggerVal:null,action:null,actionVal:null};
+  const h='<button class="fub-modal-close" onclick="closeFubModal()">&times;</button>'+
+    '<h3>New Automation</h3><div class="sub">Pick what should trigger this automation and what should happen, just like the real Automations builder.</div>'+
+    '<div class="fub-field"><label>Automation Name</label><input id="autoNameInput" placeholder="e.g. New Lead Auto-Start"></div>'+
+    '<div id="autoBuilderArea"></div>'+
+    '<div class="modal-actions"><button class="btn-cancel" type="button" onclick="closeFubModal()">Cancel</button>'+
+    '<button class="btn-save" type="button" id="autoSaveBtn" disabled onclick="createAutoFromDraft()">Save</button></div>';
+  openFubModal(h);
+  renderAutoBuilder();
+}
+function renderAutoBuilder(){
+  const area=document.getElementById('autoBuilderArea');
+  let h='<div class="auto-build-label">Start automation when any of these events occur</div><div class="auto-flow">';
+  if(!autoDraft.trigger){
+    h+='<div class="auto-card-grid">'+AUTO_TRIGGERS.map(t=>
+      '<div class="auto-card'+(t.disabled?' disabled':'')+'" onclick="'+(t.disabled?"fubToast('"+t.disabledMsg.replace(/'/g,"\\'")+"')":"apPickTrigger('"+t.key+"')")+'"><div class="dot" style="background:'+t.color+'">'+t.icon+'</div><span>'+t.label+'</span></div>').join('')+
+      '</div>';
+  } else {
+    const t=AUTO_TRIGGERS.filter(x=>x.key===autoDraft.trigger)[0];
+    if(t.needsValue && !autoDraft.triggerVal){
+      h+='<div class="auto-value-pick"><label>'+t.valueLabel+'</label><select onchange="apSetTriggerVal(this.value)"><option value="">Choose&hellip;</option>'+t.options().map(o=>'<option>'+esc(o)+'</option>').join('')+'</select></div>';
+    } else {
+      h+=autoNodeHtml(t.icon,t.color,t.label.toUpperCase(),autoDraft.triggerVal||'Any')+'<div class="auto-connector"></div>';
+      if(!autoDraft.action){
+        h+='<div class="auto-build-label">+ Add action</div><div class="auto-card-grid">'+AUTO_ACTIONS.map(a=>
+          '<div class="auto-card" onclick="apPickAction(\''+a.key+'\')"><div class="dot" style="background:'+a.color+'">'+a.icon+'</div><span>'+a.label+'</span></div>').join('')+'</div>';
+      } else {
+        const a=AUTO_ACTIONS.filter(x=>x.key===autoDraft.action)[0];
+        if(a.needsValue && !autoDraft.actionVal){
+          if(a.isText){
+            h+='<div class="auto-value-pick"><label>'+a.valueLabel+'</label><input id="autoActionValInput" placeholder="Note text">'+
+              '<button type="button" class="fub-dd-btn" style="margin-top:8px" onclick="apSetActionVal(document.getElementById(\'autoActionValInput\').value)">Set</button></div>';
+          } else {
+            h+='<div class="auto-value-pick"><label>'+a.valueLabel+'</label><select onchange="apSetActionVal(this.value)"><option value="">Choose&hellip;</option>'+a.options().map(o=>'<option>'+esc(o)+'</option>').join('')+'</select></div>';
+          }
+        } else {
+          h+=autoNodeHtml(a.icon,a.color,a.label.toUpperCase(),(a.key==='plan'?'Start ':'')+autoDraft.actionVal)+'<div class="auto-connector"></div>';
+          h+=autoNodeHtml('&#10003;','#c0392b','COMPLETED','Run once per person');
+        }
+      }
+    }
+  }
+  h+='</div>';
+  area.innerHTML=h;
+  document.getElementById('autoSaveBtn').disabled=!(autoDraft.trigger && autoDraft.action && autoDraft.actionVal && (!AUTO_TRIGGERS.filter(x=>x.key===autoDraft.trigger)[0].needsValue || autoDraft.triggerVal));
+}
+function apPickTrigger(key){ autoDraft.trigger=key; autoDraft.triggerVal=null; renderAutoBuilder(); }
+function apSetTriggerVal(v){ if(!v) return; autoDraft.triggerVal=v; renderAutoBuilder(); }
+function apPickAction(key){ autoDraft.action=key; autoDraft.actionVal=null; renderAutoBuilder(); }
+function apSetActionVal(v){ if(!v) return; autoDraft.actionVal=v; renderAutoBuilder(); }
+function createAutoFromDraft(){
+  const name=(document.getElementById('autoNameInput').value||'').trim()||'Untitled automation';
+  const t=AUTO_TRIGGERS.filter(x=>x.key===autoDraft.trigger)[0];
+  const a=AUTO_ACTIONS.filter(x=>x.key===autoDraft.action)[0];
+  const id=Math.max(0,AUTOMATIONS.reduce((m,x)=>Math.max(m,x.id),0))+1;
+  AUTOMATIONS.push({id:id,name:name,triggerType:t.label,triggerVal:autoDraft.triggerVal||'',actionType:a.label,actionVal:autoDraft.actionVal,timesRun:0,enabled:true});
+  fubAutoRows();
+  closeFubModal();
+  fubToast('Automation "'+name+'" created and turned on. Training only, this teaches the real create flow but does not save anywhere real.');
+}
+
+/* ---------------- Admin: Email Templates ---------------- */
+function fubTemplateRows(){
+  document.getElementById('templateRows').innerHTML=TEMPLATES.map(t=>
+    '<tr class="rowlink" onclick="openTemplateModal('+t.id+')"><td><b>'+esc(t.name)+'</b><div class="small muted">'+esc(t.subject)+'</div></td>'+
+    '<td>'+t.usedIn+' action plan'+(t.usedIn===1?'':'s')+'</td></tr>').join('');
+}
+function openTemplateModal(id){
+  const t=id?TEMPLATES.filter(x=>x.id===id)[0]:null;
+  if(id && !t) return;
+  let h='<button class="fub-modal-close" onclick="closeFubModal()">&times;</button>'+
+    '<h3>'+(t?'Edit Email Template':'New Email Template')+'</h3><div class="sub">'+(t?('Used in '+t.usedIn+' action plan'+(t.usedIn===1?'':'s')):'Use merge fields like %contact_first_name% to personalize it')+'</div>'+
+    '<div class="fub-field"><label>Name</label><input id="tplNameInput" value="'+(t?esc(t.name):'')+'" placeholder="e.g. Open House Follow Up"></div>'+
+    '<div class="fub-field"><label>Subject</label><input id="tplSubjInput" value="'+(t?esc(t.subject):'')+'" placeholder="e.g. Great meeting you, %contact_first_name%!"></div>'+
+    '<div class="fub-field"><label>Body</label><textarea id="tplBodyInput" rows="6" placeholder="Hi %contact_first_name%, ...">'+(t?esc(t.preview):'')+'</textarea></div>'+
+    '<div class="modal-actions"><button class="btn-cancel" type="button" onclick="closeFubModal()">Cancel</button>'+
+    '<button class="btn-save" type="button" onclick="saveTemplateFromModal('+(id||'null')+')">Save</button></div>';
+  openFubModal(h);
+}
+function saveTemplateFromModal(id){
+  const name=(document.getElementById('tplNameInput').value||'').trim();
+  const subj=(document.getElementById('tplSubjInput').value||'').trim();
+  const body=(document.getElementById('tplBodyInput').value||'').trim();
+  if(!name){ fubToast('Give the template a name first.'); return; }
+  if(id){
+    const t=TEMPLATES.filter(x=>x.id===id)[0];
+    if(t){ t.name=name; t.subject=subj; t.preview=body; }
+  } else {
+    const newId=Math.max(0,TEMPLATES.reduce((m,t)=>Math.max(m,t.id),0))+1;
+    TEMPLATES.push({id:newId,name:name,subject:subj,preview:body,usedIn:0});
+  }
+  fubTemplateRows();
+  closeFubModal();
+  fubToast('Template '+(id?'updated':'created')+'. Training only, this does not save anywhere real.');
+}
+
+/* ---------------- Admin: Stages ---------------- */
+function fubStageRows(){
+  document.getElementById('stageRows').innerHTML=ALL_STAGES.map(s=>{
+    const count=LEADS.filter(l=>l.stage===s).length;
+    const sc=STAGE_COLOR[s]||['#f1f2f4','#68727c'];
+    return '<tr><td><span class="stage-pill" style="background:'+sc[0]+';color:'+sc[1]+'">'+esc(s)+'</span></td><td>'+count+'</td></tr>';
+  }).join('');
+}
+function fubAddStage(){
+  const name=prompt('Name for the new stage:');
+  if(!name) return;
+  if(ALL_STAGES.indexOf(name)>=0){ fubToast('That stage already exists.'); return; }
+  ALL_STAGES.push(name);
+  STAGE_COLOR[name]=['#f1f2f4','#68727c'];
+  fubStageRows();
+  fubToast('Stage "'+name+'" added. It now shows up in every lead\'s Stage dropdown. Training only.');
+}
+
+/* ---------------- Admin: Teams ---------------- */
+function fubTeamRows(){
+  const meName=tdMe?tdMe.name:'You';
+  const users=[
+    {name:'Paula Aragone',role:'Owner',status:'Active'},
+    {name:'Dana Ruiz',role:'Agent',status:'Active'},
+    {name:meName,role:'Lead Manager (Test Drive)',status:'Active'}
+  ];
+  document.getElementById('teamRows').innerHTML=users.map(u=>{
+    const count=LEADS.filter(l=>l.agent===u.name).length;
+    return '<tr><td><div class="lead-name"><span class="av" style="background:'+avColor(u.name.length)+'">'+initials(u.name)+'</span>'+
+      '<span class="who"><b>'+esc(u.name)+'</b></span></div></td>'+
+      '<td>'+esc(u.role)+'</td><td>'+count+'</td><td><span class="stage-pill" style="background:#eafaf1;color:#1e8449">'+esc(u.status)+'</span></td></tr>';
+  }).join('');
+}
+
+/* ---------------- Admin: add Tag ---------------- */
+function fubAddTagAdmin(){
+  const name=prompt('Name for the new tag:');
+  if(!name) return;
+  if(TAGS.some(t=>t.name.toLowerCase()===name.toLowerCase())){ fubToast('That tag already exists.'); return; }
+  TAGS.push({name:name,used:0});
+  fubTagRows();
+  fubToast('Tag "'+name+'" created. Training only, this does not save anywhere real.');
+}
+
+/* ---------------- People: save current filter as a Smart List ---------------- */
+const CUSTOM_LISTS=[];
+function saveSmartList(){
+  if(!curFilter && !curAgent && !curSearch){
+    fubToast('Filter the list first (a stage, source, agent or search), then press + New List to save it as a Smart List.');
+    return;
+  }
+  const name=prompt('Name for your new Smart List:');
+  if(!name) return;
+  CUSTOM_LISTS.push({name:name,filter:curFilter?Object.assign({},curFilter):null,agent:curAgent,search:curSearch,count:fubVisibleList().length});
+  renderCustomLists();
+  fubToast('Smart List "'+name+'" saved to the sidebar. Training only, this does not save anywhere real.');
+}
+function renderCustomLists(){
+  document.getElementById('customLists').innerHTML=CUSTOM_LISTS.map((c,i)=>
+    '<a onclick="applyCustomList(event,'+i+')"><span class="lbl">&#9734; '+esc(c.name)+'</span><span class="n">'+c.count+'</span></a>').join('');
+}
+function applyCustomList(e,i){
+  const c=CUSTOM_LISTS[i]; if(!c) return;
+  curFilter=c.filter?Object.assign({},c.filter):null;
+  curAgent=c.agent; curSearch=c.search;
+  document.querySelectorAll('.fub-rail a').forEach(a=>a.classList.remove('active'));
+  e.currentTarget.classList.add('active');
+  fubShowList(false);
+}
+
+/* ---------------- Admin: Lead Flow ---------------- */
+function fubLeadFlowRows(){
+  document.getElementById('leadFlowRows').innerHTML=LEAD_SOURCES.map(s=>
+    '<div class="lf-row"><div class="lf-main"><b>'+esc(s.name)+'</b><span class="lf-type">'+s.type+'</span><span class="lf-contact">'+esc(s.contact)+'</span>'+
+      '<div class="lf-last">Last lead &middot; '+esc(s.lastLead)+' &middot; '+esc(s.lastWhen)+' &middot; '+s.count+' leads</div></div>'+
+      (s.distribution?'<div class="lf-cols"><div><span class="lf-lbl">Distribution</span><div class="lf-val">'+esc(s.distribution)+'</div></div>'+
+        '<div><span class="lf-lbl">Action Plan</span><div class="lf-val">'+esc(s.actionPlan||'No action plan')+'</div></div></div>':'')+
+    '</div>').join('');
+}
+
+/* ---------------- Admin: Groups ---------------- */
+function fubGroupRows(){
+  document.getElementById('groupRows').innerHTML=GROUPS.map(g=>
+    '<tr><td><b>'+esc(g.name)+'</b></td><td>'+esc(g.type)+'</td><td>'+g.members.map(m=>'<span class="mini-av" style="background:'+avColor(m.length)+'" title="'+esc(m)+'">'+initials(m)+'</span>').join('')+'</td></tr>').join('');
+}
+
+/* ---------------- Admin: Ponds ---------------- */
+function fubPondRows(){
+  document.getElementById('pondRows').innerHTML=PONDS.map(p=>{
+    const unclaimed=LEADS.filter(l=>l.pond===p.name).length;
+    return '<tr><td><b>'+esc(p.name)+'</b></td><td><span class="mini-av" style="background:'+avColor(3)+'" title="'+esc(p.lead)+'">'+initials(p.lead)+'</span></td>'+
+      '<td>'+p.members.map(m=>'<span class="mini-av" style="background:'+avColor(m.length)+'" title="'+esc(m)+'">'+initials(m)+'</span>').join('')+'</td>'+
+      '<td class="rowlink" style="cursor:pointer;color:var(--fblue-d);font-weight:700" onclick="fubGoToPond(\''+esc(p.name).replace(/'/g,"\\'")+'\')">'+unclaimed+' unclaimed &rarr;</td></tr>';
+  }).join('');
+}
+function fubGoToPond(pondName){
+  showView('people');
+  curFilter={type:'pond',value:pondName};
+  curAgent=null;
+  document.querySelectorAll('.fub-rail a').forEach(a=>a.classList.remove('active'));
+  const pondLink=Array.from(document.querySelectorAll('.fub-rail a')).filter(a=>a.textContent.indexOf('Website Leads Pond')>=0)[0];
+  if(pondLink) pondLink.classList.add('active');
+  fubShowList(false);
+}
+
+/* ---------------- Admin: Tags ---------------- */
+function fubTagRows(){
+  const q=(document.getElementById('tagSearch').value||'').toLowerCase();
+  const list=TAGS.filter(t=>t.name.toLowerCase().indexOf(q)>=0);
+  document.getElementById('tagsCount').textContent=TAGS.length+' Tags';
+  document.getElementById('tagRows').innerHTML=list.map(t=>
+    '<tr><td>'+esc(t.name)+'</td><td>'+t.used+'</td><td><div class="fub-row-actions">'+
+    '<button type="button" onclick="fubToast(\'Training only, this does not save anywhere real.\')" aria-label="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>'+
+    '<button type="button" onclick="fubToast(\'Training only, this does not save anywhere real.\')" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>'+
+    '</div></td></tr>').join('') || '<tr><td colspan="3" style="color:var(--fmuted);text-align:center">No tags match your search.</td></tr>';
+}
+
+/* ---------------- Admin: Custom Fields ---------------- */
+function fubFieldRows(){
+  document.getElementById('fieldRows').innerHTML=CUSTOM_FIELDS.map(f=>
+    '<tr><td><b>'+esc(f.name)+'</b></td><td>'+esc(f.type)+'</td></tr>').join('');
+}
+
+/* ---------------- Calendar ---------------- */
+function calDays(){
+  const days=[]; const base=new Date();
+  for(let i=0;i<7;i++){
+    const d=new Date(base.getFullYear(),base.getMonth(),base.getDate()+i);
+    days.push({offset:i,label:d.toLocaleDateString('en-US',{weekday:'short'}),num:d.getDate()});
+  }
+  return days;
+}
+function calDayLabel(offset){
+  const d=calDays().filter(x=>x.offset===offset)[0];
+  if(!d) return 'Day '+offset;
+  return offset===0?'Today':offset===1?'Tomorrow':(d.label+' '+d.num);
+}
+let calMode='week';
+function calSetMode(mode){
+  calMode=mode;
+  document.querySelectorAll('#calModeTabs span').forEach(s=>s.classList.toggle('active',s.dataset.cm===mode));
+  renderCalendar();
+}
+function calItemsHtml(offset){
+  const items=APPOINTMENTS.filter(a=>a.dayOffset===offset).slice().sort((a,b)=>a.time.localeCompare(b.time));
+  if(!items.length) return '<div class="cal-empty">No appointments</div>';
+  return items.map(a=>{
+    const l=LEADS.filter(x=>x.id===a.leadId)[0];
+    return '<div class="cal-item" onclick="fubOpenFromCalendar('+a.leadId+')"><b>'+esc(a.time)+'</b>'+esc(a.title)+(l?' &middot; '+esc(l.name):'')+'</div>';
+  }).join('');
+}
+function renderCalendar(){
+  const grid=document.getElementById('calGrid');
+  const now=new Date();
+  grid.className='fub-cal-grid'+(calMode==='day'?' mode-day':calMode==='month'?' mode-month':'');
+  document.getElementById('calTitle').textContent=now.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  if(calMode==='day'){
+    document.getElementById('calSub').textContent='Everything scheduled for today';
+    const d=calDays()[0];
+    grid.innerHTML='<div class="cal-day today"><div class="cal-day-head">'+d.label+' <b>'+d.num+'</b></div>'+calItemsHtml(0)+'</div>';
+    return;
+  }
+  if(calMode==='month'){
+    document.getElementById('calSub').textContent='Showings and appointments this month';
+    const first=new Date(now.getFullYear(),now.getMonth(),1);
+    const startDow=first.getDay();
+    const todayMid=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    const cells=[];
+    for(let i=0;i<42;i++){
+      const d=new Date(now.getFullYear(),now.getMonth(),1+i-startDow);
+      const offset=Math.round((d-todayMid)/86400000);
+      cells.push({date:d,offset:offset,inMonth:d.getMonth()===now.getMonth()});
+    }
+    while(cells.length>35 && cells.slice(35).every(c=>!c.inMonth)) cells.length=35;
+    grid.innerHTML=cells.map(c=>{
+      const isToday=c.offset===0;
+      const items=(c.offset>=0&&c.offset<7)?calItemsHtml(c.offset):'';
+      return '<div class="cal-day'+(isToday?' today':'')+(c.inMonth?'':' other-month')+'"><div class="cal-day-head"><b>'+c.date.getDate()+'</b></div>'+
+        (items==='<div class="cal-empty">No appointments</div>'?'':items)+
+      '</div>';
+    }).join('');
+    return;
+  }
+  document.getElementById('calSub').textContent='Showings and appointments for this week';
+  const days=calDays();
+  grid.innerHTML=days.map(d=>
+    '<div class="cal-day'+(d.offset===0?' today':'')+'"><div class="cal-day-head">'+d.label+' <b>'+d.num+'</b></div>'+calItemsHtml(d.offset)+'</div>'
+  ).join('');
+}
+function fubOpenFromCalendar(leadId){
+  showView('people');
+  fubShowList(true);
+  fubOpen(leadId);
+}
+
+/* ---------------- Reporting ---------------- */
+function renderReporting(){
+  const total=LEADS.length;
+  const bySource={}, byStage={}, byAgent={};
+  LEADS.forEach(l=>{
+    bySource[l.source]=(bySource[l.source]||0)+1;
+    byStage[l.stage]=(byStage[l.stage]||0)+1;
+    const ag=l.agent||'Unassigned (Pond)';
+    byAgent[ag]=(byAgent[ag]||0)+1;
+  });
+  const todays=LEADS.filter(l=>/hour|minute/.test(l.last)).length;
+  const hotOrAppt=LEADS.filter(l=>l.stage==='Hot Lead'||l.stage==='Appointment Set').length;
+  const convPct=total?Math.round(hotOrAppt/total*100):0;
+  let h='<div class="rep-tiles">'+
+    repTile('New Leads (Today)',todays)+
+    repTile('Total People',total)+
+    repTile('In the Pond',LEADS.filter(l=>!l.agent).length)+
+    repTile('Lead &rarr; Appointment',convPct+'%')+
+    '</div>';
+  h+='<div class="rep-cols">'+
+    repBarBlock('Leads by Source',bySource)+
+    repBarBlock('Leads by Stage',byStage,STAGE_COLOR)+
+    repBarBlock('Leads by Agent',byAgent)+
+    '</div>';
+  document.getElementById('reportBody').innerHTML=h;
+}
+function repTile(label,val){
+  return '<div class="rep-tile"><div class="rep-tile-label">'+label+'</div><div class="rep-tile-val">'+val+'</div></div>';
+}
+function repBarBlock(title,data,colorMap){
+  const entries=Object.keys(data).map(k=>[k,data[k]]).sort((a,b)=>b[1]-a[1]);
+  const max=Math.max.apply(null,entries.map(e=>e[1]))||1;
+  let h='<div class="rep-block"><h4>'+title+'</h4>';
+  entries.forEach(e=>{
+    const pct=Math.round(e[1]/max*100);
+    const color=(colorMap&&colorMap[e[0]])?colorMap[e[0]][1]:'#4eaddd';
+    h+='<div class="rep-row"><span class="rep-row-lbl" title="'+esc(e[0])+'">'+esc(e[0])+'</span><div class="rep-row-bar"><i style="width:'+pct+'%;background:'+color+'"></i></div><span class="rep-row-val">'+e[1]+'</span></div>';
+  });
+  h+='</div>';
+  return h;
+}
+
+/* ---------------- Notifications & profile dropdowns ---------------- */
+function fubNotifList(){
+  document.getElementById('notifList').innerHTML=NOTIFS.map((n,i)=>
+    '<div class="fub-notif'+(n.unread?'':' read')+'" onclick="openFromNotif('+i+')">'+
+      '<span class="av" style="background:'+avColor(n.leadId)+'">'+initials(n.who)+'</span>'+
+      '<div class="body"><div class="top"><b>'+esc(n.who)+'</b><span>'+esc(n.ts)+'</span></div>'+
+      '<div class="ttl">'+esc(n.type)+' &middot; '+esc(n.detail)+'</div><div class="prev">'+esc(n.preview)+'</div></div>'+
+      '<span class="dot"></span></div>').join('');
+  updateNotifDot();
+}
+function updateNotifDot(){
+  const anyUnread=NOTIFS.some(n=>n.unread);
+  document.getElementById('notifDot').classList.toggle('hide',!anyUnread);
+}
+function markAllRead(){ NOTIFS.forEach(n=>n.unread=false); fubNotifList(); }
+function openFromNotif(i){
+  const n=NOTIFS[i]; n.unread=false; fubNotifList();
+  closeAllDropdowns();
+  showView('people');
+  fubShowList(true);
+  fubOpen(n.leadId);
+}
+function toggleNotif(e){ e.stopPropagation(); const d=document.getElementById('notifDropdown'); const wasOpen=d.classList.contains('open'); closeAllDropdowns(); if(!wasOpen) d.classList.add('open'); }
+function toggleProfile(e){ e.stopPropagation(); const d=document.getElementById('profileDropdown'); const wasOpen=d.classList.contains('open'); closeAllDropdowns(); if(!wasOpen) d.classList.add('open'); }
+function closeAllDropdowns(){ document.querySelectorAll('.fub-dropdown.open, .fub-cols-dd.open, .fub-agent-dd.open').forEach(d=>d.classList.remove('open')); }
+document.addEventListener('click',function(e){ if(!e.target.closest('.fub-dd-wrap')) closeAllDropdowns(); });
+
+/* ---------------- Settings modal ---------------- */
+function openSettingsModal(){
+  closeAllDropdowns();
+  const meName = tdMe ? tdMe.name : 'Associate';
+  const meEmail = tdMe ? tdMe.email : '';
+  const h='<button class="fub-modal-close" onclick="closeFubModal()">&times;</button>'+
+    '<h3>Settings</h3><div class="sub">Your profile in this Test Drive account</div>'+
+    '<div class="fub-field"><label>Name</label><input value="'+esc(meName)+'"></div>'+
+    '<div class="fub-field"><label>Login Email</label><input value="'+esc(meEmail)+'"></div>'+
+    '<div class="fub-field"><label>Time Zone</label><select><option>Pacific Time (GMT-07:00)</option><option>Mountain Time (GMT-06:00)</option><option>Central Time (GMT-05:00)</option><option>Eastern Time (GMT-04:00)</option></select></div>'+
+    '<div class="modal-actions"><button class="btn-cancel" type="button" onclick="closeFubModal()">Cancel</button>'+
+    '<button class="btn-save" type="button" onclick="fubToast(\'Training only, this does not save anywhere real.\'); closeFubModal()">Save</button></div>';
+  openFubModal(h);
+}
+
+/* ---------------- generic modal + toast ---------------- */
+function openFubModal(html){
+  document.getElementById('fubModalBody').innerHTML=html;
+  document.getElementById('fubModalOverlay').classList.add('open');
+}
+function closeFubModal(){ document.getElementById('fubModalOverlay').classList.remove('open'); }
+document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ closeFubModal(); closeAllDropdowns(); } });
+function fubToast(msg){
+  let t=document.getElementById('fubToastEl');
+  if(!t){ t=document.createElement('div'); t.id='fubToastEl'; t.className='fub-toast'; document.getElementById('fubApp').appendChild(t); }
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(window.__fubToastT);
+  window.__fubToastT=setTimeout(function(){ t.classList.remove('show'); },2600);
+}
+
+/* ---------------- tab wiring ---------------- */
+function showView(view){
+  document.querySelectorAll('.fub-tabs span').forEach(t=>t.classList.toggle('active', t.dataset.view===view));
+  document.getElementById('view-people').style.display = (view==='people')?'flex':'none';
+  document.getElementById('view-inbox').classList.toggle('active', view==='inbox');
+  document.getElementById('view-tasks').classList.toggle('active', view==='tasks');
+  document.getElementById('view-calendar').classList.toggle('active', view==='calendar');
+  document.getElementById('view-reporting').classList.toggle('active', view==='reporting');
+  document.getElementById('view-admin').classList.toggle('active', view==='admin');
+  curView=view;
+  if(view==='inbox') fubInbox();
+  if(view==='tasks') fubTasksRenderCurrent();
+  if(view==='calendar') renderCalendar();
+  if(view==='reporting') renderReporting();
+}
+document.querySelectorAll('.fub-tabs span[data-view]').forEach(tab=>{
+  tab.onclick=()=>{
+    showView(tab.dataset.view);
+    if(tab.dataset.view==='people') fubShowList(false);
+  };
+});
+document.querySelectorAll('#taskTabs span').forEach(t=>{
+  t.onclick=()=>{ fubTasks(t.dataset.t); };
+});
+document.querySelectorAll('#adminTabs span').forEach(t=>{
+  t.onclick=()=>{ adminGo(t.dataset.sub, t.textContent); };
+});
+function adminGo(sub, label){
+  showView('admin');
+  document.querySelectorAll('#adminTabs span').forEach(t=>t.classList.toggle('active', t.dataset.sub===sub));
+  document.querySelectorAll('.fub-admin-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('admin-'+sub).classList.add('active');
+}
+
+/* ---------------- init ---------------- */
+if(tdMe){
+  document.getElementById('fubAvatarInitials').textContent=(tdMe.avatar||tdMe.name.charAt(0)).toUpperCase();
+}
+fubSmartCounts(); fubRows(); fubPlanRows(); fubAutoRows(); fubTemplateRows(); fubStageRows(); fubTagRows(); fubFieldRows();
+fubLeadFlowRows(); fubGroupRows(); fubPondRows(); fubTeamRows(); fubNotifList(); fubInbox0Counts();
+</script>
+</body>
+</html>

@@ -1,0 +1,554 @@
+/* ============================================================
+   SKILLCLOUD ACADEMY — ROLE TRACK LAYER
+   Loaded only by the four general-workflow role pages:
+   leasing coordinator, lead manager, operations manager,
+   CFO & bookkeeper.
+
+   Everything is scoped under body.rd-track, so the shared
+   role-dash.css / workflow.css components stay byte-identical
+   for every other page on the site.
+
+   Palette is limited to the brand variables already declared
+   in styles.css and role-dash.css. No new colors, no new fonts.
+   ============================================================ */
+
+body.rd-track {
+  --role-accent: var(--v-cyan);
+  --role-rgb: 23, 195, 212;
+}
+body.rd-track[data-track="leasing"] { --role-accent: var(--v-blue);   --role-rgb: 21, 101, 192; }
+body.rd-track[data-track="lead"]    { --role-accent: var(--v-cyan);   --role-rgb: 23, 195, 212; }
+body.rd-track[data-track="ops"]     { --role-accent: var(--v-sky);    --role-rgb: 90, 169, 230; }
+body.rd-track[data-track="finance"] { --role-accent: var(--v-cyan-d); --role-rgb: 15, 166, 182; }
+
+
+/* ════════════════════════════════════════════════════════════
+   1. HERO — calmer atmosphere, editorial kicker, course spine
+   ════════════════════════════════════════════════════════════ */
+.rd-track .rd-hero { padding: 74px 24px 54px; }
+
+/* Fewer, softer orbs: keep the signature motion, drop the clutter */
+.rd-track .orb-2,
+.rd-track .orb-4 { display: none; }
+.rd-track .orb    { filter: blur(30px); }
+
+.rd-track .rd-hero-kicker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .62);
+  margin: 0 0 16px;
+}
+.rd-track .rd-hero-kicker::before {
+  content: '';
+  width: 26px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--role-accent);
+  flex: none;
+}
+
+.rd-track .rd-hero-desc { margin-bottom: 32px; }
+
+/* Course spine: the shape of the track, stated as numbers */
+.rd-track .rd-spine {
+  display: flex;
+  flex-wrap: wrap;
+  border-top: 1px solid rgba(255, 255, 255, .15);
+  padding-top: 22px;
+  max-width: 620px;
+}
+.rd-track .rd-spine-item {
+  flex: 1 1 0;
+  min-width: 108px;
+  padding: 0 20px;
+  border-right: 1px solid rgba(255, 255, 255, .11);
+}
+.rd-track .rd-spine-item:first-child { padding-left: 0; }
+.rd-track .rd-spine-item:last-child  { border-right: none; }
+.rd-track .rd-spine-n {
+  display: block;
+  font-size: 25px;
+  font-weight: 900;
+  letter-spacing: -.9px;
+  line-height: 1.05;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.rd-track .rd-spine-l {
+  display: block;
+  margin-top: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .5);
+  line-height: 1.4;
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   2. PROGRESS — one live bar plus module milestones
+   ════════════════════════════════════════════════════════════ */
+.rd-track .rd-stats-section { padding: 30px 24px 28px; }
+.rd-track .rd-stats-label   { color: var(--v-muted); }
+.rd-track .rd-stats-pct     { font-variant-numeric: tabular-nums; }
+
+@keyframes rd-track-sheen {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(340%); }
+}
+.rd-track .rd-stats-fill { position: relative; overflow: hidden; }
+.rd-track .rd-stats-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 38%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .5), transparent);
+  animation: rd-track-sheen 2.8s ease-in-out 1.6s infinite;
+}
+
+.rd-track .rd-stats-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.rd-track .rd-milestones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+}
+.rd-track .rd-ms {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--v-muted);
+}
+.rd-track .rd-ms i {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--v-line);
+  background: #fff;
+  flex: none;
+  transition: background .35s, border-color .35s, box-shadow .35s;
+}
+.rd-track .rd-ms.done      { color: var(--v-ink); font-weight: 700; }
+.rd-track .rd-ms.done i    {
+  background: var(--v-cyan);
+  border-color: var(--v-cyan);
+  box-shadow: 0 0 0 3px rgba(23, 195, 212, .16);
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   3. PRACTICE MODES — real hierarchy instead of equal cards
+   ════════════════════════════════════════════════════════════ */
+.rd-track .rd-modes-section { padding: 56px 24px 66px; }
+.rd-track .rd-section-header { margin-bottom: 30px; }
+
+.rd-track .rd-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  color: var(--v-navy);
+}
+.rd-track .rd-eyebrow::before {
+  content: '';
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--role-accent);
+  flex: none;
+}
+
+.rd-track .rd-modes-grid { gap: 18px; }
+
+/* The flagship card: full width, two columns, phase list on the right */
+.rd-track .rd-mode-featured {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+  gap: 36px;
+  align-items: stretch;
+  padding: 32px 34px 30px;
+  border-color: rgba(var(--role-rgb), .3);
+}
+.rd-track .rd-mode-featured::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--role-accent);
+}
+.rd-track .rd-feat-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.rd-track .rd-mode-featured .rd-mode-name {
+  font-size: 24px;
+  letter-spacing: -.6px;
+  margin-bottom: 11px;
+}
+.rd-track .rd-mode-featured .rd-mode-desc {
+  font-size: 15px;
+  max-width: 48ch;
+  margin-bottom: 26px;
+}
+.rd-track .rd-mode-featured .rd-mode-count { display: none; }
+
+/* Phase list, generated from the workflow's own step labels */
+.rd-track .rd-phases { min-width: 0; }
+.rd-track .rd-phases-h {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--v-muted);
+  padding-bottom: 11px;
+}
+.rd-track .rd-phase {
+  display: flex;
+  gap: 13px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-top: 1px solid var(--v-line);
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--v-ink);
+}
+.rd-track .rd-phase-n {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--role-accent);
+  font-variant-numeric: tabular-nums;
+  min-width: 17px;
+  flex: none;
+}
+
+/* Secondary cards: counts back on, they read as curriculum */
+.rd-track .rd-mode-card:not(.rd-mode-featured):not(.rd-mode-resources) .rd-mode-count {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Interaction polish shared by every card */
+.rd-track .rd-mode-icon-wrap {
+  transition: transform .28s cubic-bezier(.16, 1, .3, 1), border-color .28s, background .28s;
+}
+.rd-track .rd-mode-card:hover .rd-mode-icon-wrap {
+  transform: translateY(-3px);
+  border-color: rgba(var(--role-rgb), .42);
+}
+.rd-track .rd-mode-card:focus-visible,
+.rd-track .lc-sc-card:focus-visible {
+  outline: 2px solid var(--v-cyan);
+  outline-offset: 3px;
+}
+.rd-track .rd-mode-cta:focus-visible,
+.rd-track .rd-reset-btn:focus-visible,
+.rd-track .lc-panel-back:focus-visible,
+.rd-track .lc-quiz-start-btn:focus-visible,
+.rd-track .wf-nav-btn:focus-visible,
+.rd-track .lc-choice:focus-visible {
+  outline: 2px solid var(--v-cyan);
+  outline-offset: 2px;
+}
+.rd-track .rd-mode-resources { align-items: center; }
+
+
+/* ════════════════════════════════════════════════════════════
+   4. PANEL CHROME
+   ════════════════════════════════════════════════════════════ */
+.rd-track .lc-panel-header { padding: 13px 24px; flex-wrap: wrap; }
+.rd-track .lc-panel-title  { font-size: 14.5px; }
+.rd-track .lc-panel-body   { max-width: 860px; }
+
+
+/* ════════════════════════════════════════════════════════════
+   5. CASE SIMULATOR — brief, stepper, step body
+   ════════════════════════════════════════════════════════════ */
+/* One case per page, so a two-up grid only leaves a hole */
+.rd-track .lc-sc-grid { grid-template-columns: 1fr; }
+.rd-track .lc-sc-card {
+  padding: 28px 28px 26px;
+  border-radius: 18px;
+}
+.rd-track .lc-sc-card-wf {
+  background: #fff;
+  border-color: rgba(var(--role-rgb), .3);
+  border-left: 3px solid var(--role-accent);
+}
+.rd-track .lc-sc-card h4 {
+  font-size: 19px;
+  letter-spacing: -.4px;
+  margin-bottom: 9px;
+}
+.rd-track .lc-sc-card p {
+  font-size: 14px;
+  max-width: 62ch;
+  margin-bottom: 14px;
+}
+.rd-track .lc-sc-steps-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.rd-track .lc-sc-steps-badge::before {
+  content: '';
+  width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--role-accent);
+}
+
+/* The segmented rail replaces the generic bar and the chip row.
+   Both stay in the DOM: the shared engine still writes to them. */
+.rd-track #sim-workflow > .lc-progress-track,
+.rd-track #sim-workflow > .lc-scorebar { display: none; }
+
+.rd-track .wf-stepper { margin: 2px 0 26px; }
+.rd-track .wf-stepper-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 13px;
+}
+.rd-track .wf-stepper-count {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--v-muted);
+  font-variant-numeric: tabular-nums;
+}
+.rd-track .wf-stepper-now {
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -.4px;
+  color: var(--v-ink);
+}
+.rd-track .wf-stepper-rail {
+  display: flex;
+  gap: 6px;
+}
+.rd-track .wf-stepper-node { flex: 1 1 0; min-width: 0; }
+.rd-track .wf-stepper-node i {
+  display: block;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--v-line);
+  transition: background .4s cubic-bezier(.16, 1, .3, 1);
+}
+.rd-track .wf-stepper-node span {
+  display: block;
+  margin-top: 9px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--v-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rd-track .wf-stepper-node.done i { background: rgba(var(--role-rgb), .42); }
+.rd-track .wf-stepper-node.now i  { background: var(--role-accent); }
+.rd-track .wf-stepper-node.now span { color: var(--v-ink); }
+
+.rd-track .wf-step-label-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  letter-spacing: 1.1px;
+  color: var(--v-muted);
+  margin-bottom: 13px;
+}
+.rd-track .wf-step-label-row::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--v-line);
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   6. PROMPT PRACTICE
+   ════════════════════════════════════════════════════════════ */
+.rd-track #panel-prompt .lc-callout-info {
+  background: none;
+  border: none;
+  border-left: 2px solid rgba(var(--role-rgb), .5);
+  border-radius: 0;
+  padding: 2px 0 2px 18px;
+  font-size: 14px;
+  color: var(--v-muted);
+  line-height: 1.65;
+}
+.rd-track #panel-prompt .lc-callout-info strong { color: var(--v-ink); }
+
+.rd-track .prompt-search-icon {
+  display: flex;
+  align-items: center;
+  color: var(--v-muted);
+}
+.rd-track .prompt-search-icon svg { width: 15px; height: 15px; display: block; }
+.rd-track .prompt-sidebar { padding: 16px; }
+
+
+/* ════════════════════════════════════════════════════════════
+   7. RESOURCES — editorial reference library, thin dividers
+   ════════════════════════════════════════════════════════════ */
+.rd-track .rd-resources-panel .rd-materials-inner {
+  max-width: 880px;
+  padding: 54px 24px 88px;
+}
+.rd-track .rd-res-head { margin-bottom: 26px; }
+.rd-track .rd-res-head h3 {
+  font-size: clamp(23px, 3.2vw, 31px);
+  font-weight: 900;
+  letter-spacing: -.7px;
+  line-height: 1.12;
+  color: var(--v-ink);
+  margin: 0 0 12px;
+  padding: 0;
+  border: none;
+}
+.rd-track .rd-res-head p {
+  font-size: 15px;
+  color: var(--v-muted);
+  line-height: 1.7;
+  margin: 0;
+  max-width: 58ch;
+}
+
+.rd-track .rd-glance {
+  background: none;
+  border: none;
+  border-left: 2px solid rgba(var(--role-rgb), .55);
+  border-radius: 0;
+  padding: 3px 0 3px 20px;
+  margin: 0;
+}
+.rd-track .rd-glance h4 { color: var(--v-muted); letter-spacing: 1.1px; }
+.rd-track .rd-glance p  { font-size: 15px; color: var(--v-ink); }
+
+.rd-track .rd-warn {
+  background: none;
+  border: none;
+  border-left: 2px solid var(--warn);
+  border-radius: 0;
+  padding: 3px 0 3px 20px;
+  margin: 0 0 26px;
+}
+.rd-track .rd-warn h4 { letter-spacing: 1.1px; }
+.rd-track .rd-warn p  { font-size: 14.5px; line-height: 1.7; }
+
+.rd-track .rd-resources-panel .mod {
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--v-line);
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+}
+.rd-track .rd-resources-panel .mod:first-of-type { margin-top: 34px; }
+.rd-track .rd-resources-panel .mod > summary {
+  background: transparent;
+  padding: 20px 0;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -.3px;
+  color: var(--v-ink);
+  gap: 14px;
+}
+.rd-track .rd-resources-panel .mod > summary:hover { color: var(--role-accent); }
+.rd-track .rd-resources-panel .mod > summary .num {
+  display: block;
+  width: auto;
+  height: auto;
+  min-width: 20px;
+  background: none;
+  border-radius: 0;
+  color: var(--role-accent);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+}
+.rd-track .rd-resources-panel .mod > summary::after {
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--v-muted);
+}
+.rd-track .rd-resources-panel .mod .body { padding: 0 0 28px 34px; }
+.rd-track .rd-resources-panel .mod .body .prompt {
+  border-radius: 12px;
+  padding: 16px 18px;
+  font-size: 13px;
+}
+.rd-track .rd-resources-panel .mod .body .callout {
+  border-left-width: 3px;
+  border-radius: 0;
+  background: none;
+  padding: 3px 0 3px 18px;
+}
+
+
+/* ════════════════════════════════════════════════════════════
+   8. RESPONSIVE
+   ════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .rd-track .rd-mode-featured {
+    grid-template-columns: 1fr;
+    gap: 26px;
+    padding: 28px 24px 26px;
+  }
+  .rd-track .rd-mode-featured .rd-mode-desc { margin-bottom: 22px; }
+}
+
+@media (max-width: 640px) {
+  .rd-track .rd-hero { padding: 54px 18px 40px; }
+  .rd-track .rd-spine { padding-top: 18px; row-gap: 18px; }
+  .rd-track .rd-spine-item {
+    flex: 1 1 42%;
+    min-width: 0;
+    padding: 0 16px;
+  }
+  .rd-track .rd-spine-item:nth-child(odd) { padding-left: 0; }
+  .rd-track .rd-spine-n { font-size: 22px; }
+  .rd-track .rd-modes-section { padding: 44px 18px 52px; }
+  .rd-track .rd-mode-featured .rd-mode-name { font-size: 21px; }
+  .rd-track .rd-stats-footer { justify-content: flex-start; }
+  .rd-track .rd-milestones { gap: 7px 18px; }
+  .rd-track .lc-panel-header { padding: 11px 16px; gap: 10px; }
+  .rd-track .lc-panel-title { font-size: 13px; }
+  .rd-track .lc-panel-body { padding: 26px 18px 72px; }
+  .rd-track .wf-stepper-node span { display: none; }
+  .rd-track .wf-stepper-now { font-size: 15.5px; }
+  .rd-track .lc-sc-card { padding: 24px 20px 22px; }
+  .rd-track .rd-resources-panel .rd-materials-inner { padding: 40px 18px 64px; }
+  .rd-track .rd-resources-panel .mod > summary { font-size: 16px; }
+  .rd-track .rd-resources-panel .mod .body { padding-left: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rd-track .rd-stats-fill::after { display: none; }
+  .rd-track .orb { animation: none; }
+  .rd-track .rd-mode-card:hover .rd-mode-icon-wrap { transform: none; }
+}

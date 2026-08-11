@@ -1,0 +1,1361 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Introduction · SkillCloud Academy</title>
+  <meta name="description" content="Learn the three AI tools used at SkillCloud: Claude, ChatGPT, and Manus. What each one is, what it does best, and when to use it in real estate work.">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <style>
+    :root {
+      --v-navy:#0a2647; --v-navy2:#0f3460; --v-cyan:#17c3d4; --v-cyan-d:#0fa6b6;
+      --v-ink:#0c1e33; --v-muted:#5b6b7e; --v-bg:#f6f9fc; --v-line:#e3eaf1;
+      --claude:#F97316; --claude-bg:#FFF4EB;
+      --chatgpt:#10a37f; --chatgpt-bg:#ecfdf5;
+      --manus:#4a6cf7; --manus-bg:#eff2ff;
+    }
+    * { box-sizing:border-box }
+    .disp { font-family:"Helvetica Neue",Arial,sans-serif; font-weight:900; letter-spacing:-1px; line-height:1.05; }
+
+    /* ===== HERO ===== */
+    .ai-hero {
+      position:relative; background:linear-gradient(165deg,var(--v-navy) 0%,var(--v-navy2) 60%,#123a63 100%);
+      color:#fff; overflow:hidden; padding:64px 24px 90px;
+    }
+    .ai-hero:before {
+      content:""; position:absolute; left:-8%; top:-25%; width:46%; height:65%;
+      border-radius:50%; background:radial-gradient(circle,rgba(23,195,212,.18),transparent 72%); pointer-events:none;
+    }
+    .ai-hero:after {
+      content:""; position:absolute; right:-4%; bottom:-10%; width:36%; height:55%;
+      border-radius:50%; background:radial-gradient(circle,rgba(74,108,247,.1),transparent 72%); pointer-events:none;
+    }
+    .ai-hero-inner { max-width:780px; margin:0 auto; position:relative; z-index:2; }
+    .ai-back {
+      display:inline-flex; align-items:center; gap:7px; color:rgba(255,255,255,.5);
+      font-size:13.5px; font-weight:700; margin-bottom:26px; margin-right:18px; transition:color .2s;
+    }
+    .ai-back::before { content:'\2190'; font-size:15px; }
+    .ai-back:hover { color:#fff; text-decoration:none; }
+    .ai-hero h1 { font-size:clamp(30px,4.6vw,50px); margin:0 0 16px; }
+    .ai-hero h1 .cy { color:var(--v-cyan) }
+    .ai-hero p.lead { font-size:18px; color:#fff; max-width:580px; margin:0 0 36px; line-height:1.65; text-shadow:0 1px 3px rgba(10,38,71,.4); }
+    .hero-tools { display:flex; flex-wrap:wrap; gap:12px; }
+    .tool-chip {
+      display:flex; align-items:center; gap:10px;
+      background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.18);
+      border-radius:999px; padding:8px 18px; font-size:14px; font-weight:700; color:#fff;
+    }
+    .tool-chip .tc-dot { width:8px; height:8px; border-radius:50%; flex:none; }
+    .tool-chip.cl .tc-dot { background:var(--claude); }
+    .tool-chip.cg .tc-dot { background:var(--chatgpt); }
+    .tool-chip.mn .tc-dot { background:#818cf8; }
+
+    /* ===== SHELL / SIDEBAR LAYOUT ===== */
+    .ai-shell { max-width:1120px; margin:0 auto; padding:64px 24px 100px; display:flex; align-items:flex-start; gap:44px; }
+    .ai-main { flex:1; min-width:0; max-width:740px; }
+
+    .ai-sidebar { width:224px; flex:none; position:sticky; top:104px; }
+    .ai-sidebar-inner {
+      display:flex; flex-direction:column;
+      background:#fff; border:1px solid var(--v-line); border-radius:18px;
+      padding:20px 14px; box-shadow:0 10px 34px rgba(10,38,71,.05);
+    }
+    .ai-sidebar-eyebrow { font-size:11px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--v-muted); margin:2px 0 12px; padding-left:12px; }
+    .side-link {
+      display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:10px;
+      font-size:14.5px; font-weight:700; color:var(--v-muted); text-decoration:none;
+      border-left:2px solid transparent; transition:color .2s,background .2s,border-color .2s;
+    }
+    .side-link:hover { color:var(--v-navy); background:rgba(10,38,71,.04); text-decoration:none; }
+    .side-dot { width:7px; height:7px; border-radius:50%; background:var(--v-line); flex:none; transition:background .2s,box-shadow .2s; }
+    .side-link.active { color:var(--v-navy); background:rgba(10,38,71,.05); border-left-color:var(--v-navy); }
+    .side-link.active .side-dot { background:var(--v-navy); box-shadow:0 0 0 3px rgba(10,38,71,.12); }
+    .side-link.cl.active { color:var(--claude); border-left-color:var(--claude); background:rgba(249,115,22,.07); }
+    .side-link.cl.active .side-dot { background:var(--claude); box-shadow:0 0 0 3px rgba(249,115,22,.18); }
+    .side-link.cg.active { color:var(--chatgpt); border-left-color:var(--chatgpt); background:rgba(16,163,127,.07); }
+    .side-link.cg.active .side-dot { background:var(--chatgpt); box-shadow:0 0 0 3px rgba(16,163,127,.18); }
+    .side-link.mn.active { color:var(--manus); border-left-color:var(--manus); background:rgba(74,108,247,.07); }
+    .side-link.mn.active .side-dot { background:var(--manus); box-shadow:0 0 0 3px rgba(74,108,247,.18); }
+    .ai-sidebar-divider { height:1px; background:var(--v-line); margin:14px 12px; }
+    .side-cta { color:var(--v-cyan-d); font-weight:800; }
+    .side-cta:hover { color:var(--v-cyan-d); background:rgba(23,195,212,.08); }
+
+    @media(max-width:960px) {
+      .ai-shell { display:block; padding:28px 20px 80px; }
+      .ai-sidebar {
+        position:sticky; top:76px; width:auto; z-index:40; margin:-28px -20px 24px;
+      }
+      .ai-sidebar-inner {
+        flex-direction:row; overflow-x:auto; scrollbar-width:none; padding:0 20px;
+        background:rgba(246,249,252,.97); backdrop-filter:blur(12px); border:none;
+        border-bottom:1px solid var(--v-line); border-radius:0; box-shadow:none;
+      }
+      .ai-sidebar-inner::-webkit-scrollbar { display:none; }
+      .ai-sidebar-eyebrow { display:none; }
+      .side-link { flex:none; white-space:nowrap; border-left:none; border-bottom:3px solid transparent; border-radius:0; padding:14px 14px; }
+      .side-link.active, .side-link.cl.active, .side-link.cg.active, .side-link.mn.active { border-left:none; }
+      .side-link.active { border-bottom-color:var(--v-navy); }
+      .side-link.cl.active { border-bottom-color:var(--claude); }
+      .side-link.cg.active { border-bottom-color:var(--chatgpt); }
+      .side-link.mn.active { border-bottom-color:var(--manus); }
+      .ai-sidebar-divider { display:none; }
+      .side-cta { display:none; }
+      .ai-main { max-width:100%; }
+    }
+
+    /* ===== EYEBROW ===== */
+    .h-eyebrow {
+      font-weight:800; color:var(--v-cyan-d); letter-spacing:1.2px; font-size:12.5px;
+      text-transform:uppercase; margin-bottom:10px; display:flex; align-items:center; gap:12px;
+    }
+    .h-eyebrow .rt { font-weight:600; color:var(--v-muted); text-transform:none; letter-spacing:0; font-size:12.5px; }
+    .h-eyebrow .rt:before { content:'\00b7'; margin-right:12px; }
+
+    /* ===== SECTION INTROS ===== */
+    .section-intro { padding-top:72px; }
+    .section-intro h2 {
+      font-family:"Helvetica Neue",Arial,sans-serif; font-size:clamp(26px,3.6vw,34px);
+      font-weight:900; color:var(--v-navy); margin:0 0 18px; letter-spacing:-0.5px;
+    }
+    .section-intro p { font-size:17.5px; line-height:1.78; color:#253545; margin:0 0 18px; }
+
+    /* ===== PHOTO BAND ===== */
+    .ai-photo { border-radius:20px; overflow:hidden; margin:36px 0; position:relative; box-shadow:0 10px 30px rgba(10,38,71,.06); }
+    .ai-photo img { width:100%; height:300px; object-fit:cover; display:block; }
+
+    /* ===== LLM DIAGRAM ===== */
+    .llm-diagram-wrap {
+      background:#fff; border:1px solid var(--v-line); border-radius:20px;
+      padding:32px; margin:32px 0 40px; box-shadow:0 10px 30px rgba(10,38,71,.04);
+      overflow:hidden;
+    }
+    .llm-diagram-label { font-size:11.5px; font-weight:700; color:var(--v-muted); letter-spacing:.5px; text-transform:uppercase; margin-bottom:20px; }
+    .llm-diagram-svg { width:100%; max-width:600px; display:block; margin:0 auto; }
+
+    /* ===== CONCEPT CARDS ===== */
+    .concept-card {
+      position:relative; border-radius:18px; padding:26px 30px;
+      border:1px solid var(--v-line); margin:24px 0; overflow:hidden;
+    }
+    .concept-card::before { content:""; position:absolute; top:0; left:0; bottom:0; width:5px; }
+    .concept-card.cyan { background:linear-gradient(135deg,#fff,#eefafe); border-color:#a8e6f0; }
+    .concept-card.cyan::before { background:linear-gradient(to bottom,var(--v-cyan),var(--v-cyan-d)); }
+    .concept-card.navy { background:linear-gradient(135deg,#fff,#f4f7fb); border-color:#c8d6e8; }
+    .concept-card.navy::before { background:linear-gradient(to bottom,#5aa9e6,var(--v-navy)); }
+    .concept-card.orange { background:linear-gradient(135deg,#fff,var(--claude-bg)); border-color:#FED7AA; }
+    .concept-card.orange::before { background:linear-gradient(to bottom,var(--claude),#C2410C); }
+    .concept-card .lbl {
+      display:inline-block; font-size:11px; font-weight:800; letter-spacing:1px;
+      text-transform:uppercase; padding:5px 12px; border-radius:999px; margin-bottom:12px;
+    }
+    .concept-card.cyan .lbl { background:rgba(23,195,212,.1); color:var(--v-cyan-d); border:1px solid rgba(23,195,212,.25); }
+    .concept-card.navy .lbl { background:rgba(10,38,71,.07); color:var(--v-navy); border:1px solid rgba(10,38,71,.18); }
+    .concept-card.orange .lbl { background:rgba(249,115,22,.1); color:#C2410C; border:1px solid rgba(249,115,22,.25); }
+    .concept-card p { font-size:16px; line-height:1.65; color:#1e3a50; margin:0; }
+    .concept-card p strong { color:var(--v-navy); }
+    .concept-card ul { margin:0; padding-left:18px; }
+    .concept-card li { font-size:15.5px; line-height:1.7; color:#1e3a50; }
+
+    /* ===== MODULE SECTIONS ===== */
+    .ai-module { padding-top:72px; }
+    .section-intro, .ai-module { scroll-margin-top:96px; }
+
+    /* Module header */
+    .mod-header { border-radius:22px; padding:40px 36px; margin:0 0 40px; position:relative; overflow:hidden; }
+    .mod-header::before {
+      content:''; position:absolute; right:-50px; top:-50px; width:240px; height:240px;
+      border-radius:50%; pointer-events:none;
+    }
+    .mod-header.claude { background:linear-gradient(165deg,var(--v-navy) 0%,#0f3b6a 100%); }
+    .mod-header.claude::before { background:radial-gradient(circle,rgba(249,115,22,.24),transparent 70%); }
+    .mod-header.chatgpt { background:linear-gradient(165deg,#0a2e22 0%,#0f4535 100%); }
+    .mod-header.chatgpt::before { background:radial-gradient(circle,rgba(16,163,127,.32),transparent 70%); }
+    .mod-header.manus { background:linear-gradient(165deg,#0f0c2e 0%,#1c1a5e 100%); }
+    .mod-header.manus::before { background:radial-gradient(circle,rgba(74,108,247,.34),transparent 70%); }
+    .mod-header-inner { position:relative; z-index:1; }
+    .mod-logo { height:48px; width:auto; display:block; margin-bottom:20px; filter:brightness(0) invert(1); opacity:.92; }
+    .mod-badge {
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 14px; border-radius:999px; font-size:11.5px; font-weight:800;
+      letter-spacing:.8px; text-transform:uppercase; margin-bottom:16px;
+    }
+    .mod-badge.claude { background:rgba(249,115,22,.16); color:#FDBA74; border:1px solid rgba(249,115,22,.35); }
+    .mod-badge.chatgpt { background:rgba(16,163,127,.14); color:#4ade80; border:1px solid rgba(16,163,127,.3); }
+    .mod-badge.manus { background:rgba(74,108,247,.14); color:#a5b4fc; border:1px solid rgba(74,108,247,.3); }
+    .mod-title { font-size:clamp(24px,3.6vw,32px); color:#fff; margin:0 0 8px; font-weight:900; letter-spacing:-0.5px; font-family:"Helvetica Neue",Arial,sans-serif; }
+    .mod-by { font-size:14.5px; color:rgba(255,255,255,.45); margin:0 0 16px; }
+    .mod-tagline { font-size:16.5px; color:rgba(255,255,255,.8); max-width:520px; line-height:1.62; margin:0; }
+
+    /* ===== ARTICLE TYPOGRAPHY ===== */
+    .ai-article h3 {
+      font-family:"Helvetica Neue",Arial,sans-serif; font-size:20px; font-weight:800;
+      color:var(--v-navy); margin:40px 0 12px; letter-spacing:-.2px;
+    }
+    .ai-article p { font-size:17px; line-height:1.78; color:#253545; margin:0 0 18px; }
+
+    /* ===== PRODUCT LIST (editorial, non-grid) ===== */
+    .product-list { border:1px solid var(--v-line); border-radius:18px; overflow:hidden; margin:22px 0 30px; background:#fff; }
+    .product-row { display:flex; gap:18px; padding:22px 24px; border-bottom:1px solid var(--v-line); align-items:flex-start; }
+    .product-row:last-child { border-bottom:none; }
+    .product-icon { width:38px; height:38px; border-radius:10px; display:grid; place-items:center; flex:none; margin-top:2px; }
+    .product-icon svg { width:18px; height:18px; }
+    .product-icon.cy { background:rgba(249,115,22,.1); color:#C2410C; }
+    .product-icon.gr { background:rgba(16,163,127,.1); color:#10a37f; }
+    .product-body { flex:1; min-width:0; }
+    .product-body h4 { display:flex; align-items:center; gap:9px; margin:0 0 6px; font-size:15.5px; font-weight:800; color:var(--v-navy); font-family:"Helvetica Neue",Arial,sans-serif; }
+    .product-tag { font-size:10px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; padding:3px 9px; border-radius:999px; }
+    .product-tag.cy { background:rgba(249,115,22,.1); color:#C2410C; border:1px solid rgba(249,115,22,.25); }
+    .product-tag.gr { background:rgba(16,163,127,.1); color:#0a8a68; border:1px solid rgba(16,163,127,.25); }
+    .product-body p { margin:0; font-size:14.5px; line-height:1.65; color:#253545; }
+
+    /* ===== FEATURE GRID ===== */
+    .feat-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin:28px 0; }
+    .feat-item {
+      background:#fff; border:1px solid var(--v-line); border-radius:16px; padding:22px;
+      transition:box-shadow .2s,transform .2s;
+    }
+    .feat-item:hover { box-shadow:0 8px 24px rgba(10,38,71,.07); transform:translateY(-2px); }
+    .feat-icon { width:42px; height:42px; border-radius:12px; display:grid; place-items:center; margin-bottom:14px; }
+    .feat-icon svg { width:20px; height:20px; }
+    .feat-icon.cy { background:rgba(249,115,22,.1); color:#C2410C; }
+    .feat-icon.nv { background:rgba(10,38,71,.08); color:var(--v-navy); }
+    .feat-icon.gr { background:rgba(16,163,127,.1); color:#10a37f; }
+    .feat-icon.pu { background:rgba(74,108,247,.1); color:#4a6cf7; }
+    .feat-item h4 { font-size:15.5px; font-weight:800; color:var(--v-navy); margin:0 0 7px; }
+    .feat-item p { font-size:14px; line-height:1.55; color:var(--v-muted); margin:0; }
+
+    /* ===== USE CASE GRID ===== */
+    .use-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:22px 0; }
+    .use-item { background:var(--v-bg); border:1px solid var(--v-line); border-radius:12px; padding:14px 16px; }
+    .use-tag { font-size:11px; font-weight:800; letter-spacing:.6px; text-transform:uppercase; margin-bottom:6px; display:block; }
+    .use-tag.cl { color:var(--claude); }
+    .use-tag.cg { color:var(--chatgpt); }
+    .use-tag.mn { color:var(--manus); }
+    .use-item p { font-size:14px; line-height:1.5; color:#253545; margin:0; }
+
+
+    /* ===== WHEN TO USE / NOT USE ===== */
+    .when-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin:24px 0; }
+    .when-card { border-radius:16px; padding:24px 26px; border:1px solid var(--v-line); }
+    .when-card.yes { background:linear-gradient(135deg,#fff,#eefafe); border-color:#a8e6f0; }
+    .when-card.no { background:linear-gradient(135deg,#fff,#f4f7fb); border-color:#c8d6e8; }
+    .when-card h4 { font-size:15px; font-weight:800; color:var(--v-navy); margin:0 0 14px; }
+    .when-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:9px; }
+    .when-list li { font-size:14px; line-height:1.5; color:#253545; padding-left:16px; position:relative; }
+    .when-list.yes li::before { content:''; position:absolute; left:0; top:8px; width:6px; height:6px; border-radius:50%; background:var(--v-cyan); }
+    .when-list.no li::before { content:''; position:absolute; left:0; top:8px; width:6px; height:6px; border-radius:50%; background:var(--v-navy); }
+
+    /* ===== REACH FRAMEWORK ===== */
+    .reach-wrap {
+      background:linear-gradient(165deg,var(--v-navy) 0%,#123a63 100%);
+      border-radius:22px; padding:36px; margin:32px 0 40px; position:relative; overflow:hidden;
+    }
+    .reach-wrap::before {
+      content:''; position:absolute; inset:0;
+      background-image:radial-gradient(circle,rgba(255,255,255,.03) 1px,transparent 1px);
+      background-size:26px 26px; pointer-events:none;
+    }
+    .reach-head { position:relative; z-index:1; margin-bottom:28px; }
+    .reach-eyebrow { display:block; font-size:11.5px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--claude); margin-bottom:8px; }
+    .reach-head h3 { font-family:"Helvetica Neue",Arial,sans-serif; color:#fff; font-size:22px; font-weight:900; margin:0 0 8px; letter-spacing:-.3px; }
+    .reach-head p { color:#a9c1d8; font-size:15px; line-height:1.6; margin:0; max-width:520px; }
+    .reach-row { position:relative; z-index:1; display:grid; grid-template-columns:repeat(5,1fr); gap:16px; }
+    .reach-item { text-align:left; }
+    .reach-badge { width:44px; height:44px; border-radius:50%; display:grid; place-items:center; font-family:"Helvetica Neue",Arial,sans-serif; font-size:18px; font-weight:900; margin-bottom:12px; }
+    .reach-badge.a { background:var(--claude); color:#fff; }
+    .reach-badge.b { background:rgba(249,115,22,.22); color:#FDBA74; border:1.5px solid rgba(249,115,22,.55); }
+    .reach-item h4 { color:#fff; font-size:14.5px; font-weight:800; margin:0 0 5px; letter-spacing:-.1px; }
+    .reach-item p { color:#96b2cb; font-size:12.5px; line-height:1.5; margin:0; }
+
+    /* ===== TOKEN WINDOW ===== */
+    .ai-token-window {
+      background:#fff; border:1px solid var(--v-line); border-radius:20px;
+      padding:28px; margin:24px 0; box-shadow:0 10px 30px rgba(10,38,71,.03);
+    }
+    .ai-token-win-label { font-size:11px; font-weight:700; color:var(--v-muted); letter-spacing:.5px; text-transform:uppercase; margin-bottom:14px; }
+    .ai-token-bar { height:38px; background:#eef2f7; border-radius:10px; overflow:hidden; display:flex; margin-bottom:16px; }
+    .ai-token-seg { height:100%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; }
+    .ai-token-seg.s1 { background:rgba(249,115,22,.28); color:#7C2D12; width:30%; }
+    .ai-token-seg.s2 { background:rgba(249,115,22,.6); color:#fff; width:22%; }
+    .ai-token-seg.s3 { background:rgba(249,115,22,.14); color:#9A3412; width:14%; }
+    .ai-token-seg.s4 { background:#eef2f7; color:var(--v-muted); width:34%; }
+    .ai-token-legend { display:flex; flex-wrap:wrap; gap:10px 22px; }
+    .ai-tleg { display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--v-muted); }
+    .ai-tleg-swatch { width:12px; height:12px; border-radius:4px; flex:none; }
+    .ai-tips { list-style:none; padding:0; margin:18px 0 0; display:flex; flex-direction:column; gap:11px; }
+    .ai-tips li { display:flex; align-items:flex-start; gap:12px; font-size:16px; line-height:1.55; color:#253545; }
+    .ai-tips li::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--claude); flex:none; margin-top:8px; }
+
+    /* ===== B.R.A.I.N. FRAMEWORK ===== */
+    .brain-wrap {
+      background:linear-gradient(165deg,#0f0c2e,#1c1a5e);
+      border-radius:22px; padding:36px; margin:28px 0 36px; position:relative; overflow:hidden;
+    }
+    .brain-wrap::before {
+      content:''; position:absolute; inset:0;
+      background-image:radial-gradient(circle,rgba(255,255,255,.025) 1px,transparent 1px);
+      background-size:24px 24px; pointer-events:none;
+    }
+    .brain-head { position:relative; z-index:1; margin-bottom:26px; }
+    .brain-eyebrow { display:block; font-size:11.5px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#a5b4fc; margin-bottom:8px; }
+    .brain-head h3 { color:#fff; font-size:22px; font-weight:900; margin:0 0 8px; font-family:"Helvetica Neue",Arial,sans-serif; letter-spacing:-.3px; }
+    .brain-head p { color:#c7d2fe; font-size:15px; line-height:1.6; margin:0; max-width:520px; }
+    .brain-row { position:relative; z-index:1; display:grid; grid-template-columns:repeat(5,1fr); gap:14px; }
+    .brain-item { text-align:left; }
+    .brain-badge { width:44px; height:44px; border-radius:50%; display:grid; place-items:center; font-family:"Helvetica Neue",Arial,sans-serif; font-size:18px; font-weight:900; margin-bottom:12px; }
+    .brain-badge.solid { background:#4a6cf7; color:#fff; }
+    .brain-badge.ghost { background:rgba(74,108,247,.2); color:#a5b4fc; border:1.5px solid rgba(74,108,247,.4); }
+    .brain-item h4 { color:#fff; font-size:14px; font-weight:800; margin:0 0 5px; }
+    .brain-item p { color:#a5b4fc; font-size:12px; line-height:1.5; margin:0; }
+
+    /* ===== MANUS CONCEPTS ===== */
+    .concept-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:24px 0; }
+    .concept-item { background:#fff; border:1px solid var(--v-line); border-radius:16px; padding:22px; }
+    .concept-icon { width:42px; height:42px; border-radius:12px; display:grid; place-items:center; margin-bottom:14px; background:rgba(74,108,247,.1); color:#4a6cf7; }
+    .concept-icon svg { width:20px; height:20px; }
+    .concept-item h4 { font-size:15.5px; font-weight:800; color:var(--v-navy); margin:0 0 8px; }
+    .concept-item p { font-size:14px; line-height:1.55; color:var(--v-muted); margin:0; }
+
+    /* ===== SERVICE PLAYBOOKS ===== */
+    .playbook-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin:22px 0; }
+    .playbook-item { background:#fff; border:1px solid var(--v-line); border-radius:14px; padding:18px 20px; }
+    .playbook-area { font-size:11.5px; font-weight:800; color:var(--manus); letter-spacing:.5px; text-transform:uppercase; margin-bottom:6px; display:block; }
+    .playbook-tasks { font-size:14px; color:#253545; line-height:1.5; margin:0 0 5px; }
+    .playbook-stack { font-size:12.5px; color:var(--v-muted); margin:0; }
+
+    /* ===== THREE GATES ===== */
+    .gates-strip { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:24px 0; }
+    .gate-item { background:linear-gradient(165deg,var(--v-navy),#123a63); border-radius:16px; padding:22px; }
+    .gate-num { font-size:11px; font-weight:800; color:var(--v-cyan); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+    .gate-name { font-size:15.5px; font-weight:800; color:#fff; margin:0 0 8px; }
+    p.gate-desc { font-size:13.5px; color:#a9c1d8; line-height:1.5; margin:0; }
+
+    /* ===== COMPARISON TABLE ===== */
+    .cmp-wrap { overflow-x:auto; margin:28px 0; border:1px solid var(--v-line); border-radius:16px; }
+    .cmp-table { width:100%; border-collapse:collapse; min-width:520px; }
+    .cmp-table th {
+      padding:14px 18px; text-align:left; font-size:12.5px; font-weight:800;
+      color:var(--v-muted); letter-spacing:.5px; text-transform:uppercase;
+      border-bottom:2px solid var(--v-line); background:var(--v-bg); white-space:nowrap;
+    }
+    .cmp-table th:first-child { border-radius:16px 0 0 0; }
+    .cmp-table th:last-child { border-radius:0 16px 0 0; }
+    .cmp-table th.col-cl { color:var(--claude); }
+    .cmp-table th.col-cg { color:var(--chatgpt); }
+    .cmp-table th.col-mn { color:var(--manus); }
+    .cmp-table td { padding:14px 18px; font-size:14.5px; color:#253545; border-bottom:1px solid var(--v-line); line-height:1.5; vertical-align:top; }
+    .cmp-table tr:last-child td { border-bottom:none; }
+    .cmp-table td:first-child { font-weight:700; color:var(--v-navy); white-space:nowrap; }
+    .cmp-table tr:hover td { background:#fafcff; }
+    .cmp-yes { color:#059669; font-weight:700; }
+    .cmp-no { color:var(--v-muted); }
+    .cmp-partial { color:#d97706; font-weight:600; }
+
+    /* ===== DIVIDER ===== */
+    .ai-divider { height:1px; background:var(--v-line); margin:72px 0; }
+
+    /* ===== COMPLETION / CTA ===== */
+    .ai-complete {
+      background:linear-gradient(135deg,var(--v-navy) 0%,#123a63 100%);
+      border-radius:22px; padding:56px 40px; text-align:center; margin-top:72px;
+      position:relative; overflow:hidden;
+    }
+    .orb { position:absolute; border-radius:50%; filter:blur(2px); pointer-events:none; }
+    .ai-complete .orb-1 { width:200px; height:200px; left:-60px; top:-60px; background:radial-gradient(circle,rgba(23,195,212,.22),transparent 70%); }
+    .ai-complete .orb-2 { width:140px; height:140px; right:-30px; bottom:-40px; background:radial-gradient(circle,rgba(90,169,230,.18),transparent 70%); }
+    .ai-complete-inner { position:relative; z-index:1; }
+    .ai-complete h3 { color:#fff; font-size:clamp(22px,3.2vw,28px); margin:0 0 12px; }
+    .ai-complete p { color:#d6e4f0; font-size:17px; line-height:1.6; margin:0 0 30px; max-width:460px; margin-left:auto; margin-right:auto; }
+    .ai-complete-btns { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+    .btn.v-cyan { background:var(--v-cyan); color:#03282c; border-radius:10px; font-weight:800; padding:14px 26px; box-shadow:0 10px 30px rgba(23,195,212,.3); display:inline-block; }
+    .btn.v-cyan:hover { background:#fff; color:var(--v-navy); text-decoration:none; }
+    .btn.v-ghost { background:transparent; border:1.5px solid rgba(255,255,255,.4); color:#fff; border-radius:10px; font-weight:800; padding:14px 26px; display:inline-block; }
+    .btn.v-ghost:hover { background:rgba(255,255,255,.1); border-color:#fff; text-decoration:none; }
+
+    /* ===== LAB TEASER ===== */
+    .lab-teaser { display:flex; align-items:center; gap:24px; background:#fff; border:1px solid var(--v-line); border-radius:20px; padding:28px 32px; margin:56px 0 0; box-shadow:0 10px 30px rgba(10,38,71,.03); }
+    .lab-teaser.top { margin:44px 0 8px; border-color:#a8e6f0; background:linear-gradient(135deg,#fff,#eefafe); }
+    .lab-teaser-icon { width:50px; height:50px; flex:none; border-radius:14px; background:rgba(23,195,212,.1); color:var(--v-cyan-d); display:grid; place-items:center; }
+    .lab-teaser-icon svg { width:24px; height:24px; }
+    .lab-teaser-body { flex:1; }
+    .lab-teaser-body h4 { font-family:"Helvetica Neue",Arial,sans-serif; font-size:16.5px; font-weight:800; color:var(--v-navy); margin:0 0 5px; }
+    .lab-teaser-body p { font-size:14px; line-height:1.5; color:var(--v-muted); margin:0; }
+    .lab-teaser-cta { flex:none; font-size:13.5px; font-weight:800; color:var(--v-cyan-d); white-space:nowrap; }
+
+    /* ===== STEPS ===== */
+    .ai-steps { counter-reset:step; list-style:none; padding:0; margin:4px 0 24px; display:flex; flex-direction:column; gap:14px; }
+    .ai-steps li { display:flex; gap:14px; align-items:flex-start; font-size:17px; line-height:1.65; color:#253545; counter-increment:step; }
+    .ai-steps li::before { content:counter(step); width:30px; height:30px; border-radius:50%; background:var(--v-navy); color:#fff; font-size:12.5px; font-weight:900; font-family:"Helvetica Neue",Arial,sans-serif; display:grid; place-items:center; flex:none; margin-top:1px; }
+
+    /* ===== RESPONSIVE ===== */
+    @media(max-width:960px) {
+      .feat-grid { grid-template-columns:1fr; }
+      .use-grid { grid-template-columns:repeat(2,1fr); }
+      .reach-row { grid-template-columns:repeat(2,1fr); gap:20px; }
+      .brain-row { grid-template-columns:repeat(2,1fr); gap:20px; }
+      .concept-grid { grid-template-columns:repeat(2,1fr); }
+      .gates-strip { grid-template-columns:1fr; }
+      .playbook-grid { grid-template-columns:1fr; }
+    }
+    @media(max-width:640px) {
+      .ai-complete { padding:40px 22px; }
+      .lab-teaser { flex-direction:column; align-items:flex-start; gap:14px; }
+      .when-grid { grid-template-columns:1fr; }
+      .use-grid { grid-template-columns:1fr; }
+      .concept-grid { grid-template-columns:1fr; }
+      .playbook-grid { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body data-page="fundamentals">
+
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="index.html"><img src="assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+    <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+    <div class="menu">
+      <a class="navlink" href="index.html">Home</a>
+      <a class="navlink" href="ai.html">Introduction</a>
+      <a class="navlink" href="index.html#roles">Roles</a>
+    </div>
+    <span class="spacer"></span>
+    <a class="pill" href="index.html#roles">Start Practicing</a>
+    <a class="user-chip" href="account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
+  </div>
+</nav>
+
+<header class="ai-hero">
+  <div class="ai-hero-inner">
+    <a class="ai-back" href="index.html">Back to Home</a>
+    <h1 class="disp">AI <span class="cy">Introduction</span></h1>
+    <p class="lead">Three tools. One foundation. Learn what Claude, ChatGPT, and Manus are, what each one does best, and how to choose the right tool for every task.</p>
+  </div>
+</header>
+
+<div class="ai-shell">
+
+  <aside class="ai-sidebar" id="ai-sidebar">
+    <nav class="ai-sidebar-inner">
+      <div class="ai-sidebar-eyebrow">On this page</div>
+      <a class="side-link" href="#what-is-ai"><span class="side-dot"></span>What Is AI</a>
+      <a class="side-link cl" href="#claude"><span class="side-dot"></span>Claude</a>
+      <a class="side-link cg" href="#chatgpt"><span class="side-dot"></span>ChatGPT</a>
+      <a class="side-link mn" href="#manus"><span class="side-dot"></span>Manus</a>
+      <a class="side-link" href="#compare"><span class="side-dot"></span>Compare All Three</a>
+      <div class="ai-sidebar-divider"></div>
+      <a class="side-link side-cta" href="ai-lab.html">Go to AI Lab &rarr;</a>
+    </nav>
+  </aside>
+
+  <div class="ai-main">
+
+  <a class="lab-teaser top" href="ai-lab.html">
+    <div class="lab-teaser-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6l-5 9a2 2 0 0 0 1.8 3h12.4a2 2 0 0 0 1.8-3l-5-9V2"/><path d="M9 2h6M6 15h12"/></svg>
+    </div>
+    <div class="lab-teaser-body">
+      <h4>Already know the basics? Jump to the AI Lab</h4>
+      <p>Step-by-step guides for real tasks: ads, emails, CRM audits, video hooks, and more.</p>
+    </div>
+    <span class="lab-teaser-cta">Browse guides &rarr;</span>
+  </a>
+
+  <!-- ========== WHAT IS AI ========== -->
+  <section class="section-intro" id="what-is-ai">
+    <span class="h-eyebrow">The Foundation <span class="rt">Start here</span></span>
+    <h2 class="disp">What Is AI and How Does It Work?</h2>
+
+    <div class="ai-article">
+      <p>Artificial intelligence, in the context of the tools you'll use every day, means software that understands language and generates responses. You type something in plain English, the model reads it, and writes back. That is the complete interaction: no code required, no special syntax, no buttons to configure.</p>
+      <p>The specific type of AI behind these tools is called a Large Language Model, or LLM. It was trained on an enormous body of text (books, websites, articles, code) and learned to predict what words follow what other words. From that training emerges something that can summarize a contract, draft a client email, debug code, and explain a zoning rule, all in the same conversation.</p>
+
+      <div class="ai-photo">
+        <img src="https://images.unsplash.com/photo-1772115428479-9045bc0c2a3d?fm=jpg&q=60&w=1400&auto=format&fit=crop" alt="Close-up of hands typing a prompt on a keyboard" loading="lazy">
+      </div>
+
+      <div class="llm-diagram-wrap">
+        <div class="llm-diagram-label">How a language model processes your request</div>
+        <svg class="llm-diagram-svg" viewBox="0 0 620 130" xmlns="http://www.w3.org/2000/svg">
+          <!-- Input box -->
+          <rect x="8" y="25" width="148" height="80" rx="12" fill="#eefafe" stroke="#17c3d4" stroke-width="1.5"/>
+          <text x="82" y="57" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="13" font-weight="800" fill="#0a2647">Your Prompt</text>
+          <text x="82" y="76" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="11.5" fill="#5b6b7e">Question + context</text>
+          <text x="82" y="92" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="11.5" fill="#5b6b7e">+ any details you add</text>
+          <!-- Arrow 1 -->
+          <path d="M158 65 L196 65" stroke="#c8d6e8" stroke-width="2" fill="none"/>
+          <polygon points="196,60 208,65 196,70" fill="#c8d6e8"/>
+          <!-- LLM box -->
+          <rect x="210" y="8" width="200" height="114" rx="16" fill="#0a2647"/>
+          <!-- Neural dots -->
+          <circle cx="268" cy="38" r="4.5" fill="#17c3d4" opacity=".7"/>
+          <circle cx="310" cy="32" r="4.5" fill="#17c3d4" opacity=".9"/>
+          <circle cx="352" cy="40" r="4.5" fill="#17c3d4" opacity=".5"/>
+          <circle cx="274" cy="72" r="4.5" fill="#17c3d4" opacity=".8"/>
+          <circle cx="310" cy="78" r="4.5" fill="#17c3d4"/>
+          <circle cx="346" cy="70" r="4.5" fill="#17c3d4" opacity=".6"/>
+          <circle cx="288" cy="55" r="3" fill="rgba(255,255,255,.25)"/>
+          <circle cx="332" cy="55" r="3" fill="rgba(255,255,255,.25)"/>
+          <line x1="268" y1="38" x2="310" y2="32" stroke="#17c3d4" stroke-width="1.2" opacity=".35"/>
+          <line x1="310" y1="32" x2="352" y2="40" stroke="#17c3d4" stroke-width="1.2" opacity=".35"/>
+          <line x1="268" y1="38" x2="274" y2="72" stroke="#17c3d4" stroke-width="1.2" opacity=".25"/>
+          <line x1="310" y1="32" x2="310" y2="78" stroke="#17c3d4" stroke-width="1.2" opacity=".25"/>
+          <line x1="352" y1="40" x2="346" y2="70" stroke="#17c3d4" stroke-width="1.2" opacity=".25"/>
+          <line x1="274" y1="72" x2="310" y2="78" stroke="#17c3d4" stroke-width="1.2" opacity=".35"/>
+          <line x1="310" y1="78" x2="346" y2="70" stroke="#17c3d4" stroke-width="1.2" opacity=".35"/>
+          <line x1="268" y1="38" x2="288" y2="55" stroke="#17c3d4" stroke-width="1" opacity=".2"/>
+          <line x1="310" y1="32" x2="288" y2="55" stroke="#17c3d4" stroke-width="1" opacity=".2"/>
+          <line x1="310" y1="78" x2="332" y2="55" stroke="#17c3d4" stroke-width="1" opacity=".2"/>
+          <text x="310" y="105" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="11.5" font-weight="700" fill="rgba(255,255,255,.5)">Language Model</text>
+          <!-- Arrow 2 -->
+          <path d="M412 65 L450 65" stroke="#c8d6e8" stroke-width="2" fill="none"/>
+          <polygon points="450,60 462,65 450,70" fill="#c8d6e8"/>
+          <!-- Output box -->
+          <rect x="464" y="25" width="148" height="80" rx="12" fill="#f4f7fb" stroke="#c8d6e8" stroke-width="1.5"/>
+          <text x="538" y="57" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="13" font-weight="800" fill="#0a2647">Response</text>
+          <text x="538" y="76" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="11.5" fill="#5b6b7e">Tailored to your exact</text>
+          <text x="538" y="92" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="11.5" fill="#5b6b7e">input, generated fresh</text>
+        </svg>
+      </div>
+
+      <div class="concept-card cyan">
+        <div class="lbl">Key distinction</div>
+        <p><strong>Automation follows fixed rules.</strong> An auto-reply, a form trigger, a calendar reminder: these do the same thing every time. <strong>AI reads your input and generates a response that fits your specific situation, every time.</strong> The two tools complement each other; they are not the same thing.</p>
+      </div>
+
+      <h3>The one rule that determines output quality</h3>
+      <p>The quality of what you get back depends almost entirely on what you put in. A vague question gets a vague answer. A specific, well-structured prompt with context, a clear goal, and the relevant details gets a response that is actually useful. Every technique in this training comes back to that principle.</p>
+      <p>You do not need to master these tools before you start. You learn them by using them. The goal of this module is to give you a clear mental model of what each tool is, where it fits, and how to get results from it on day one.</p>
+    </div>
+  </section>
+
+  <div class="ai-divider"></div>
+
+  <!-- ========== MODULE 1: CLAUDE ========== -->
+  <section class="ai-module" id="claude">
+    <span class="h-eyebrow">Module 01 <span class="rt">Claude by Anthropic</span></span>
+
+    <div class="mod-header claude">
+      <div class="mod-header-inner">
+        <img class="mod-logo" src="https://upload.wikimedia.org/wikipedia/commons/8/8a/Claude_AI_logo.svg" alt="Claude logo">
+        <div class="mod-badge claude">Anthropic · Constitutional AI</div>
+        <h2 class="mod-title disp">Claude</h2>
+        <p class="mod-by">Made by Anthropic &mdash; founded 2021, San Francisco</p>
+        <p class="mod-tagline">A writing and thinking partner built for nuance, long documents, and following complex instructions. The primary AI tool for SkillCloud work.</p>
+      </div>
+    </div>
+
+    <div class="ai-article">
+      <h3>What it is</h3>
+      <p>Claude was built by Anthropic, a company founded in 2021 by researchers who left OpenAI with a specific focus: making AI that is genuinely safe and useful rather than simply impressive. Their approach, called Constitutional AI, means Claude was trained with a clear set of principles: not just to be helpful, but to be honest about what it does not know and to avoid harm.</p>
+      <p>In practice, this means Claude is excellent at following complex, multi-part instructions without drifting from your request. It handles very long documents without losing track of earlier details. Its writing tends to feel more natural and less templated than other models. And it is careful: if it is uncertain about something, it says so rather than inventing a confident-sounding answer.</p>
+
+      <!-- SVG: Claude visual -->
+      <div class="llm-diagram-wrap" style="background:linear-gradient(135deg,var(--v-navy),#123a63);border-color:#1a3a5c;">
+        <svg viewBox="0 0 620 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+          <!-- Three pillars: Helpful / Honest / Harmless -->
+          <rect x="20" y="15" width="176" height="70" rx="12" fill="rgba(249,115,22,.1)" stroke="rgba(249,115,22,.3)" stroke-width="1.2"/>
+          <text x="108" y="46" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="18" font-weight="900" fill="#F97316">H</text>
+          <text x="108" y="66" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="12" font-weight="700" fill="rgba(255,255,255,.6)">Helpful</text>
+          <rect x="222" y="15" width="176" height="70" rx="12" fill="rgba(249,115,22,.15)" stroke="rgba(249,115,22,.35)" stroke-width="1.2"/>
+          <text x="310" y="46" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="18" font-weight="900" fill="#F97316">H</text>
+          <text x="310" y="66" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="12" font-weight="700" fill="rgba(255,255,255,.6)">Honest</text>
+          <rect x="424" y="15" width="176" height="70" rx="12" fill="rgba(249,115,22,.1)" stroke="rgba(249,115,22,.3)" stroke-width="1.2"/>
+          <text x="512" y="46" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="18" font-weight="900" fill="#F97316">H</text>
+          <text x="512" y="66" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="12" font-weight="700" fill="rgba(255,255,255,.6)">Harmless</text>
+        </svg>
+      </div>
+
+      <h3>What Claude does best</h3>
+      <div class="feat-grid">
+        <div class="feat-item">
+          <div class="feat-icon cy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </div>
+          <h4>Long document analysis</h4>
+          <p>Upload a full contract, listing agreement, or CRM export. Claude reads the whole thing and finds what you ask for.</p>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon cy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </div>
+          <h4>Nuanced writing</h4>
+          <p>Emails, listing descriptions, SOPs, client scripts: Claude writes in a natural voice that does not sound like a template.</p>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon cy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <h4>Complex instructions</h4>
+          <p>Give Claude a 10-step brief and it follows all 10 steps without losing track halfway through.</p>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon cy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h4>Honest uncertainty</h4>
+          <p>When Claude doesn't know something or can't verify a fact, it says so, rather than inventing a plausible-sounding answer.</p>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon cy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          </div>
+          <h4>Structured output</h4>
+          <p>Tables, checklists, bulleted lists, formatted reports: Claude produces clean structure you can copy directly into a doc.</p>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon cy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h4>200K token context</h4>
+          <p>Claude holds roughly 150,000 words in a single conversation, enough for a full client file, multiple documents, and your instructions.</p>
+        </div>
+      </div>
+
+      <div class="ai-photo">
+        <img src="https://images.unsplash.com/photo-1758873268745-dd2cf0d677b5?fm=jpg&q=60&w=1400&auto=format&fit=crop" alt="A team reviewing documents together around a computer in an office" loading="lazy">
+      </div>
+
+      <h3>Claude's tools beyond the chat window</h3>
+      <p>Claude.ai is the chat window most people picture, but that is one surface of a larger product. Anthropic ships several tools built on the same underlying model, each suited to a different kind of work.</p>
+
+      <div class="product-list">
+        <div class="product-row">
+          <div class="product-icon cy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div class="product-body">
+            <h4>Projects <span class="product-tag cy">Organize by client or task</span></h4>
+            <p>A Project keeps one client, campaign, or workflow together in its own space: custom instructions, uploaded reference files, and a running history that Claude can pull from automatically. Set the context once inside the Project, and every new conversation started there already has it loaded, instead of you re-explaining the same background every time.</p>
+          </div>
+        </div>
+        <div class="product-row">
+          <div class="product-icon cy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          </div>
+          <div class="product-body">
+            <h4>Artifacts <span class="product-tag cy">Live preview canvas</span></h4>
+            <p>When Claude produces something meant to be viewed rather than read (a webpage, a diagram, a working prototype, a formatted document) it opens in a separate live preview pane called an Artifact. You keep iterating on it inside the same conversation and can share the finished result as a link.</p>
+          </div>
+        </div>
+        <div class="product-row">
+          <div class="product-icon cy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </div>
+          <div class="product-body">
+            <h4>Skills <span class="product-tag cy">Reusable playbooks</span></h4>
+            <p>A Skill is a packaged, reusable set of instructions that teaches Claude exactly how your team wants a specific task done: the steps to follow, the format to use, the checks to run before calling it finished. Once a Skill exists, anyone on the team gets the same quality result by invoking it, instead of everyone writing their own prompt from scratch.</p>
+          </div>
+        </div>
+        <div class="product-row">
+          <div class="product-icon cy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="8.5" cy="16" r="1"/><circle cx="15.5" cy="16" r="1"/><path d="M12 11V7a4 4 0 0 1 8 0"/></svg>
+          </div>
+          <div class="product-body">
+            <h4>Cowork <span class="product-tag cy">Autonomous execution</span></h4>
+            <p>Cowork is Claude working as an autonomous operator instead of a chat partner. Hand it a folder of reference files and a task, and it works through a defined workflow end to end: reading files, producing drafts, checking its own output against a checklist, before handing back a finished deliverable. It is built for repeatable, multi-step business workflows, like the campaign engines referenced elsewhere in this training.</p>
+          </div>
+        </div>
+        <div class="product-row">
+          <div class="product-icon cy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          </div>
+          <div class="product-body">
+            <h4>Claude Code <span class="product-tag cy">Engineering agent</span></h4>
+            <p>Claude Code is Claude running inside a command line or code editor as an engineering agent. It reads a codebase, writes and edits files directly, runs commands, and can manage version control, all inside your own development environment. This is the kind of tool used to build and maintain a site like this one.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Real estate use cases</h3>
+      <div class="use-grid">
+        <div class="use-item"><span class="use-tag cl">Marketing</span><p>Listing descriptions, email campaigns, social captions, ad copy</p></div>
+        <div class="use-item"><span class="use-tag cl">Client Comms</span><p>Personalized emails, follow-up scripts, objection-handling templates</p></div>
+        <div class="use-item"><span class="use-tag cl">Documents</span><p>Contract summaries, disclosure summaries, inspection report highlights</p></div>
+        <div class="use-item"><span class="use-tag cl">Operations</span><p>SOPs, checklists, onboarding docs, training materials</p></div>
+        <div class="use-item"><span class="use-tag cl">Analysis</span><p>CRM export review, market summary from agent notes, lead scoring</p></div>
+        <div class="use-item"><span class="use-tag cl">Research</span><p>Explain industry concepts, summarize regulations, compare options</p></div>
+      </div>
+
+      <h3>When to use Claude, and when not to</h3>
+      <div class="when-grid">
+        <div class="when-card yes">
+          <h4>Use Claude for</h4>
+          <ul class="when-list yes">
+            <li>Writing anything that needs to sound human</li>
+            <li>Reading and summarizing long documents</li>
+            <li>Following complex, multi-step instructions</li>
+            <li>Drafting client-facing emails and scripts</li>
+            <li>Creating SOPs and training materials</li>
+            <li>Tasks where tone and nuance matter</li>
+          </ul>
+        </div>
+        <div class="when-card no">
+          <h4>Claude cannot</h4>
+          <ul class="when-list no">
+            <li>Access the internet or live market data</li>
+            <li>Send emails or take actions outside the chat</li>
+            <li>Verify legal requirements. Always cross-check</li>
+            <li>Give licensed real estate, legal, or financial advice</li>
+            <li>Remember previous conversations (unless Projects)</li>
+            <li>Guarantee factual accuracy. Verify critical details</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="concept-card navy">
+        <div class="lbl">Important</div>
+        <p><strong>Claude is not a licensed professional.</strong> It is not a real estate agent, attorney, or accountant. Any output that touches legal, financial, or compliance topics must be reviewed by a qualified person before you use it with a client or in an official document.</p>
+      </div>
+
+      <h3>Prompting Claude with the R.E.A.C.H. Framework</h3>
+      <p>Claude responds to what you give it. The single biggest improvement you can make to any prompt is adding more context. Use R.E.A.C.H. as a checklist before you send.</p>
+
+      <div class="reach-wrap">
+        <div class="reach-head">
+          <span class="reach-eyebrow">Prompt Framework</span>
+          <h3>Prompt with R.E.A.C.H.</h3>
+          <p>A repeatable structure for every prompt you write. It works whether you're drafting an email or building a checklist.</p>
+        </div>
+        <div class="reach-row">
+          <div class="reach-item">
+            <div class="reach-badge a">R</div>
+            <h4>Role</h4>
+            <p>What role you're in and what task you're doing.</p>
+          </div>
+          <div class="reach-item">
+            <div class="reach-badge b">E</div>
+            <h4>End goal</h4>
+            <p>What you're actually trying to accomplish.</p>
+          </div>
+          <div class="reach-item">
+            <div class="reach-badge a">A</div>
+            <h4>Audience</h4>
+            <p>Who will read or use the output.</p>
+          </div>
+          <div class="reach-item">
+            <div class="reach-badge b">C</div>
+            <h4>Context</h4>
+            <p>Key details, numbers, or constraints.</p>
+          </div>
+          <div class="reach-item">
+            <div class="reach-badge a">H</div>
+            <h4>How</h4>
+            <p>Tone, length, and format you need back.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Understanding the context window</h3>
+      <p>Every Claude conversation has a token limit: a ceiling on how much text it can hold at once. Tokens are roughly three-quarters of a word. The context window includes your messages, Claude's responses, and anything you paste in.</p>
+      <div class="ai-token-window">
+        <div class="ai-token-win-label">Context window example usage</div>
+        <div class="ai-token-bar">
+          <div class="ai-token-seg s1">Your prompt</div>
+          <div class="ai-token-seg s2">Response</div>
+          <div class="ai-token-seg s3">History</div>
+          <div class="ai-token-seg s4">Still available</div>
+        </div>
+        <div class="ai-token-legend">
+          <div class="ai-tleg"><div class="ai-tleg-swatch" style="background:rgba(249,115,22,.28)"></div>Your prompt (30%)</div>
+          <div class="ai-tleg"><div class="ai-tleg-swatch" style="background:rgba(249,115,22,.6)"></div>Claude's response (22%)</div>
+          <div class="ai-tleg"><div class="ai-tleg-swatch" style="background:rgba(249,115,22,.14)"></div>Conversation history (14%)</div>
+          <div class="ai-tleg"><div class="ai-tleg-swatch" style="background:#eef2f7"></div>Still available (34%)</div>
+        </div>
+      </div>
+      <ul class="ai-tips">
+        <li>Paste only the relevant section of a document, not the entire file</li>
+        <li>Focus on one task per conversation. Do not mix unrelated requests</li>
+        <li>Start a fresh chat when switching to a completely different topic</li>
+        <li>Keep your prompts specific. More detail does not always mean more words</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="ai-divider"></div>
+
+  <!-- ========== MODULE 2: CHATGPT ========== -->
+  <section class="ai-module" id="chatgpt">
+    <span class="h-eyebrow">Module 02 <span class="rt">ChatGPT by OpenAI</span></span>
+
+    <div class="mod-header chatgpt">
+      <div class="mod-header-inner">
+        <img class="mod-logo" src="https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg" alt="OpenAI logo">
+        <div class="mod-badge chatgpt">OpenAI · GPT Architecture</div>
+        <h2 class="mod-title disp">ChatGPT</h2>
+        <p class="mod-by">Made by OpenAI &mdash; founded 2015, launched publicly November 2022</p>
+        <p class="mod-tagline">The most widely-used AI assistant in the world, with web browsing, image generation, and a massive ecosystem of integrations built on top of it.</p>
+      </div>
+    </div>
+
+    <div class="ai-article">
+      <h3>What it is</h3>
+      <p>ChatGPT is built on OpenAI's GPT (Generative Pre-trained Transformer) models. When it launched in November 2022, it became the fastest-growing consumer application in history, reaching 100 million users in two months. That reach matters: because so many people use it, an enormous ecosystem of tools, integrations, and custom-built assistants has been built on top of it.</p>
+      <p>The biggest practical difference from Claude is internet access. ChatGPT can search the web in real time, which means it can look up current mortgage rates, today's local market stats, a recent news article, or a competitor's current pricing: things Claude cannot do from training data alone.</p>
+
+      <!-- ChatGPT visual -->
+      <div class="llm-diagram-wrap" style="background:linear-gradient(135deg,#0a2e22,#0f4535);border-color:#1a5c40;">
+        <svg viewBox="0 0 620 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+          <rect x="20" y="15" width="130" height="70" rx="12" fill="rgba(16,163,127,.08)" stroke="rgba(16,163,127,.3)" stroke-width="1.2"/>
+          <text x="85" y="53" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="12" font-weight="800" fill="#4ade80">Web</text>
+          <text x="85" y="70" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="12" font-weight="800" fill="#4ade80">Browsing</text>
+          <rect x="175" y="15" width="130" height="70" rx="12" fill="rgba(16,163,127,.12)" stroke="rgba(16,163,127,.35)" stroke-width="1.2"/>
+          <text x="240" y="53" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="12" font-weight="800" fill="#4ade80">Image</text>
+          <text x="240" y="70" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="12" font-weight="800" fill="#4ade80">Generation</text>
+          <rect x="330" y="15" width="130" height="70" rx="12" fill="rgba(16,163,127,.08)" stroke="rgba(16,163,127,.25)" stroke-width="1.2"/>
+          <text x="395" y="53" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="12" font-weight="800" fill="#4ade80">Deep</text>
+          <text x="395" y="70" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="12" font-weight="800" fill="#4ade80">Research</text>
+          <rect x="485" y="15" width="115" height="70" rx="12" fill="rgba(16,163,127,.06)" stroke="rgba(16,163,127,.2)" stroke-width="1.2"/>
+          <text x="542" y="53" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="12" font-weight="800" fill="#4ade80">Custom</text>
+          <text x="542" y="70" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="12" font-weight="800" fill="#4ade80">GPTs</text>
+        </svg>
+      </div>
+
+      <h3>What ChatGPT does best</h3>
+      <div class="feat-grid">
+        <div class="feat-item">
+          <div class="feat-icon gr">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          </div>
+          <h4>Web browsing &amp; live data</h4>
+          <p>Search the internet in real time: current rates, recent news, competitor listings, today's market data.</p>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon gr">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </div>
+          <h4>Image generation (DALL-E)</h4>
+          <p>Create property lifestyle images, social media graphics, banner art, and visual mockups from text descriptions.</p>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon gr">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21l-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0z"/></svg>
+          </div>
+          <h4>Deep Research</h4>
+          <p>Multi-step web research with cited sources: competitive analysis, neighborhood reports, vendor comparisons.</p>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon gr">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <h4>Huge ecosystem</h4>
+          <p>Thousands of integrations: ChatGPT Ads, Zapier, Make, HubSpot, and hundreds of custom GPTs for specific workflows.</p>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon gr">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h4>Advanced reasoning (o3)</h4>
+          <p>The o3 model uses extended thinking for complex analysis, multi-step math, and nuanced decision-making.</p>
+        </div>
+        <div class="feat-item">
+          <div class="feat-icon gr">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <h4>Data analysis</h4>
+          <p>Upload a spreadsheet and ask questions. ChatGPT runs the numbers, builds charts, and explains what it found.</p>
+        </div>
+      </div>
+
+      <div class="ai-photo">
+        <img src="https://images.unsplash.com/photo-1762330465857-07e4c81c0dfa?fm=jpg&q=60&w=1400&auto=format&fit=crop" alt="A person typing on a smartphone with an AI chatbot conversation on screen" loading="lazy">
+      </div>
+
+      <h3>ChatGPT's tools beyond the chat window</h3>
+      <p>chat.openai.com is the interface most people picture, but OpenAI ships several tools built on the same models, each suited to a different kind of work.</p>
+
+      <div class="product-list">
+        <div class="product-row">
+          <div class="product-icon gr">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v7"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="product-body">
+            <h4>Custom GPTs <span class="product-tag gr">Saved configurations</span></h4>
+            <p>A Custom GPT is a saved configuration of ChatGPT: fixed instructions, a specific tone, and optional reference files, packaged behind a single name so a team can reuse it without rebuilding the prompt from scratch every time.</p>
+          </div>
+        </div>
+        <div class="product-row">
+          <div class="product-icon gr">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          </div>
+          <div class="product-body">
+            <h4>Codex <span class="product-tag gr">Engineering agent</span></h4>
+            <p>Codex is OpenAI's coding agent: an autonomous engineer that reads a codebase, writes and edits code, runs tests, and opens changes for review, either from the command line or from inside ChatGPT. It fills the same role for OpenAI's ecosystem that Claude Code fills for Anthropic's.</p>
+          </div>
+        </div>
+        <div class="product-row">
+          <div class="product-icon gr">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+          </div>
+          <div class="product-body">
+            <h4>Canvas <span class="product-tag gr">Side-by-side editing</span></h4>
+            <p>Canvas opens a separate editing pane next to the conversation for long documents or code. Instead of regenerating the whole reply to fix one paragraph, you edit directly inside Canvas and ask ChatGPT to revise only the part you highlight.</p>
+          </div>
+        </div>
+        <div class="product-row">
+          <div class="product-icon gr">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8h20"/><circle cx="6" cy="6" r=".6" fill="currentColor" stroke="none"/></svg>
+          </div>
+          <div class="product-body">
+            <h4>Agent Mode <span class="product-tag gr">Operates a browser</span></h4>
+            <p>Agent Mode lets ChatGPT operate a web browser on its own: clicking, filling forms, and navigating multi-step tasks online, while you watch and can step in at any point. It is OpenAI's answer to tasks that need actual clicks on a real website, not just a written answer.</p>
+          </div>
+        </div>
+      </div>
+
+      <h3>Standout features for real estate work</h3>
+
+      <div class="concept-card cyan">
+        <div class="lbl">Web Browsing</div>
+        <p>When you need <strong>current information</strong>, such as today's mortgage rates, a recent news article about a market, a competitor's current pricing, or live MLS context, ChatGPT is the right tool. Claude does not have internet access; ChatGPT does.</p>
+      </div>
+
+      <div class="concept-card cyan">
+        <div class="lbl">DALL-E Image Generation</div>
+        <p>Generate <strong>property lifestyle visuals, social graphics, and banner images</strong> from a text description. Describe the scene (a modern open-plan kitchen, a family in a new home, a neighborhood aerial) and get a production-quality image. Available on Plus and Pro plans.</p>
+      </div>
+
+      <div class="concept-card cyan">
+        <div class="lbl">Deep Research</div>
+        <p>Give ChatGPT a research question and it spends 5-15 minutes reading dozens of web sources, then delivers a <strong>structured report with citations</strong>. Best for competitive market analysis, neighborhood deep-dives, vendor comparisons, and any research that normally takes hours.</p>
+      </div>
+
+      <div class="concept-card navy">
+        <div class="lbl">ChatGPT Ads</div>
+        <p>OpenAI runs an advertising platform at <strong>ads.openai.com</strong> that places ads alongside live ChatGPT conversations. Targeting uses context hints, plain-language descriptions of the person and moment, instead of keywords. This is covered in full in the AI Lab guide.</p>
+      </div>
+
+      <h3>Real estate use cases</h3>
+      <div class="use-grid">
+        <div class="use-item"><span class="use-tag cg">Research</span><p>Current market stats, neighborhood reports, interest rate summaries</p></div>
+        <div class="use-item"><span class="use-tag cg">Visuals</span><p>Property lifestyle images, social graphics, ad creative with DALL-E</p></div>
+        <div class="use-item"><span class="use-tag cg">Ads</span><p>ChatGPT Ads campaigns, context hints, ad copy via the AI Lab guides</p></div>
+        <div class="use-item"><span class="use-tag cg">Analysis</span><p>Upload CSV data, get instant charts and pattern summaries</p></div>
+        <div class="use-item"><span class="use-tag cg">Custom GPTs</span><p>Build a specialized GPT for one workflow and reuse it with a team</p></div>
+        <div class="use-item"><span class="use-tag cg">Deep dives</span><p>Competitive audits, vendor research, multi-source summaries with citations</p></div>
+      </div>
+
+      <h3>When to use ChatGPT, and when not to</h3>
+      <div class="when-grid">
+        <div class="when-card yes">
+          <h4>Use ChatGPT for</h4>
+          <ul class="when-list yes">
+            <li>Anything that requires current, real-time information</li>
+            <li>Generating images for social media or ads</li>
+            <li>Multi-source research reports with citations</li>
+            <li>Uploading spreadsheets for data analysis</li>
+            <li>Building a custom GPT for a repeated workflow</li>
+            <li>ChatGPT Ads campaigns and context hints</li>
+          </ul>
+        </div>
+        <div class="when-card no">
+          <h4>Where Claude is stronger</h4>
+          <ul class="when-list no">
+            <li>Very long documents (200K vs 128K token window)</li>
+            <li>Tasks requiring strict instruction-following</li>
+            <li>Writing that needs to sound more natural</li>
+            <li>Precise legal or contract document analysis</li>
+            <li>When you need Claude-specific features like Projects</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="ai-divider"></div>
+
+  <!-- ========== MODULE 3: MANUS ========== -->
+  <section class="ai-module" id="manus">
+    <span class="h-eyebrow">Module 03 <span class="rt">Manus, AI Agent</span></span>
+
+    <div class="mod-header manus">
+      <div class="mod-header-inner">
+        <img class="mod-logo" src="https://upload.wikimedia.org/wikipedia/en/f/f7/Manus_logo.svg" alt="Manus logo">
+        <div class="mod-badge manus">Autonomous Agent · Action Layer</div>
+        <h2 class="mod-title disp">Manus</h2>
+        <p class="mod-by">Built for executing multi-step tasks across systems, files, and integrations</p>
+        <p class="mod-tagline">Not a chatbot. An agent. Manus takes a goal, plans the steps, uses a browser and real integrations, and produces a deliverable autonomously.</p>
+      </div>
+    </div>
+
+    <div class="ai-article">
+      <h3>What it is</h3>
+      <p>Claude and ChatGPT answer your questions. Manus completes your tasks. The distinction matters: Manus operates inside a virtual computer, can use a web browser, read and write files, connect to your actual tools (Gmail, Google Drive, HubSpot, Canva, Meta Ads), and deliver a finished output like a spreadsheet, report, slide deck, or SOP document.</p>
+      <p>For VOOV VAs, this is the tool for work that crosses multiple systems and has more than three steps. Instead of doing each step yourself and pasting results between tools, you describe the goal to Manus and it coordinates the steps. The critical operating principle: <strong>Manus can do the work, but the VA is responsible for the judgment.</strong> The tool collects, organizes, drafts, and automates. The VA verifies facts, brand fit, client permission, compliance, and final readiness.</p>
+
+      <!-- Manus visual -->
+      <div class="llm-diagram-wrap" style="background:linear-gradient(135deg,#0f0c2e,#1c1a5e);border-color:#2a2860;">
+        <svg viewBox="0 0 620 110" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
+          <!-- Center: Manus Agent -->
+          <rect x="220" y="25" width="180" height="60" rx="14" fill="rgba(74,108,247,.15)" stroke="rgba(74,108,247,.4)" stroke-width="1.5"/>
+          <text x="310" y="55" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="14" font-weight="800" fill="#a5b4fc">Manus Agent</text>
+          <text x="310" y="73" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="11" fill="rgba(165,180,252,.6)">Plans · Executes · Delivers</text>
+          <!-- Left: Inputs -->
+          <text x="15" y="28" font-family="Helvetica Neue, Arial" font-size="11" font-weight="700" fill="rgba(165,180,252,.5)">INPUTS</text>
+          <rect x="10" y="35" width="88" height="22" rx="8" fill="rgba(74,108,247,.08)" stroke="rgba(74,108,247,.2)" stroke-width="1"/>
+          <text x="54" y="51" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="11" fill="#a5b4fc">Your Goal</text>
+          <rect x="10" y="63" width="88" height="22" rx="8" fill="rgba(74,108,247,.08)" stroke="rgba(74,108,247,.2)" stroke-width="1"/>
+          <text x="54" y="79" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="11" fill="#a5b4fc">Files / Data</text>
+          <path d="M100 46 L218 46" stroke="rgba(74,108,247,.3)" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+          <path d="M100 74 L218 63" stroke="rgba(74,108,247,.3)" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+          <!-- Right: Outputs -->
+          <text x="524" y="28" font-family="Helvetica Neue, Arial" font-size="11" font-weight="700" fill="rgba(165,180,252,.5)">OUTPUTS</text>
+          <rect x="522" y="35" width="88" height="22" rx="8" fill="rgba(74,108,247,.08)" stroke="rgba(74,108,247,.2)" stroke-width="1"/>
+          <text x="566" y="51" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="11" fill="#a5b4fc">Report / Doc</text>
+          <rect x="522" y="63" width="88" height="22" rx="8" fill="rgba(74,108,247,.08)" stroke="rgba(74,108,247,.2)" stroke-width="1"/>
+          <text x="566" y="79" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="11" fill="#a5b4fc">Spreadsheet</text>
+          <path d="M402 46 L520 46" stroke="rgba(74,108,247,.3)" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+          <path d="M402 63 L520 74" stroke="rgba(74,108,247,.3)" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+          <!-- Tools it uses -->
+          <text x="240" y="105" font-family="Helvetica Neue, Arial" font-size="11" fill="rgba(165,180,252,.4)">Browser · Files · Gmail · Drive · HubSpot · Canva · APIs</text>
+        </svg>
+      </div>
+
+      <h3>When Manus is the right tool</h3>
+      <div class="when-grid">
+        <div class="when-card yes">
+          <h4>Use Manus when</h4>
+          <ul class="when-list yes">
+            <li>The task has more than three steps coordinating multiple tools</li>
+            <li>The output should be a deliverable: spreadsheet, report, deck, SOP</li>
+            <li>The work benefits from a browser, code, or file transformations</li>
+            <li>The task is repeatable enough to build a Skill or template</li>
+            <li>You need to cross Gmail, Drive, CRM, and Canva in one workflow</li>
+          </ul>
+        </div>
+        <div class="when-card no">
+          <h4>Manus is not the best tool for</h4>
+          <ul class="when-list no">
+            <li>Final visual brand production. Use Canva or Adobe</li>
+            <li>Permanent automations. Build those in Zapier, Make, or n8n</li>
+            <li>Legal, financial, or compliance conclusions. Requires human review</li>
+            <li>Sending, deleting, or posting publicly without explicit approval</li>
+            <li>Bulk CRM changes without a backup and human sign-off</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>The B.R.A.I.N. Prompting Framework</h3>
+      <p>Manus responds to structure. Vague goals produce vague work. The MYFRND B.R.A.I.N. framework is a repeatable way to brief Manus, and any AI, before it executes a task. It prevents hallucinations, reduces brand risk, and makes outputs client-ready.</p>
+
+      <div class="brain-wrap">
+        <div class="brain-head">
+          <span class="brain-eyebrow">MYFRND B.R.A.I.N. Framework</span>
+          <h3>How to brief Manus before any task</h3>
+          <p>Fill in all five components before you ask Manus to do anything that involves client data, live systems, or deliverables.</p>
+        </div>
+        <div class="brain-row">
+          <div class="brain-item">
+            <div class="brain-badge solid">B</div>
+            <h4>Brand</h4>
+            <p>Client name, market, tone, offer, audience, assets to use.</p>
+          </div>
+          <div class="brain-item">
+            <div class="brain-badge ghost">R</div>
+            <h4>Role</h4>
+            <p>Assign Manus the expert role needed. "You are a CRM auditor specializing in real estate."</p>
+          </div>
+          <div class="brain-item">
+            <div class="brain-badge solid">A</div>
+            <h4>Audience</h4>
+            <p>Who the final output is for and what they need to decide or do.</p>
+          </div>
+          <div class="brain-item">
+            <div class="brain-badge ghost">I</div>
+            <h4>Instructions</h4>
+            <p>Exact steps, format, platforms, data sources, and output requirements.</p>
+          </div>
+          <div class="brain-item">
+            <div class="brain-badge solid">N</div>
+            <h4>Non-Negotiables</h4>
+            <p>What Manus must not do. "Do not send, delete, publish, or update live records."</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-photo">
+        <img src="https://images.unsplash.com/photo-1621569898825-ef12e7592f94?fm=jpg&q=60&w=1400&auto=format&fit=crop" alt="A person reviewing a workflow on a tablet screen" loading="lazy">
+      </div>
+
+      <h3>Core concepts: Projects, Skills, and Connectors</h3>
+
+      <div class="concept-grid">
+        <div class="concept-item">
+          <div class="concept-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <h4>Projects</h4>
+          <p>Keep each client organized. A Manus project holds the client B.R.A.I.N., brand assets, SOPs, recurring deliverables, connector rules, and approved Skills. Do not rely on scattered chat history for client-sensitive work.</p>
+        </div>
+        <div class="concept-item">
+          <div class="concept-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          </div>
+          <h4>Skills</h4>
+          <p>Reusable, file-based operating manuals for Manus. A "Weekly Real Estate Team Report" Skill defines exact data fields, report structure, tone, QA checklist, and delivery format, so the work is consistent every time, regardless of which VA runs it.</p>
+        </div>
+        <div class="concept-item">
+          <div class="concept-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </div>
+          <h4>Connectors</h4>
+          <p>The bridge between Manus and external systems. Gmail, Google Drive, HubSpot, Canva, Meta Ads, Zapier, Make, and dozens more. Treat every connector like a key to a client's office: use only the minimum access needed, only for the approved task.</p>
+        </div>
+      </div>
+
+      <div class="concept-card navy">
+        <div class="lbl">Browser Operator</div>
+        <p>Manus can operate a web browser in a logged-in session: useful for portal tasks, site audits, dashboard screenshots, and data exports from tools without a direct connector. <strong>Always run read-only first.</strong> For any irreversible action, require a screenshot, a confirmation summary, and explicit approval before Manus proceeds.</p>
+      </div>
+
+      <h3>VOOV service area playbooks</h3>
+      <p>Each VOOV service area has a recommended Manus stack and a quality rating. "A" means Manus is a primary tool; "B" means strong with review; "C or X" means use a native tool instead.</p>
+
+      <div class="playbook-grid">
+        <div class="playbook-item">
+          <span class="playbook-area">Marketing Production</span>
+          <p class="playbook-tasks">Content calendars, captions, ad briefs, design briefs, campaign reports, social listening, newsletter drafts.</p>
+          <p class="playbook-stack">Manus + Canva + Mailchimp + Meta Ads + Google Drive &nbsp;&middot;&nbsp; <strong>A for orchestration; B for final copy</strong></p>
+        </div>
+        <div class="playbook-item">
+          <span class="playbook-area">CRM Management</span>
+          <p class="playbook-tasks">Duplicate reports, stale lead lists, missing data flags, pipeline summaries, follow-up task generation.</p>
+          <p class="playbook-stack">Manus + Gmail/Sheets + HubSpot/Follow Up Boss &nbsp;&middot;&nbsp; <strong>A for reports; B for low-risk updates</strong></p>
+        </div>
+        <div class="playbook-item">
+          <span class="playbook-area">Email Management</span>
+          <p class="playbook-tasks">Inbox summaries, urgent flagging, draft replies, label plans, newsletter QA, follow-up task extraction.</p>
+          <p class="playbook-stack">Manus + Gmail/Outlook + Calendar + CRM &nbsp;&middot;&nbsp; <strong>A for triage; B for drafts; X for sending</strong></p>
+        </div>
+        <div class="playbook-item">
+          <span class="playbook-area">Administrative</span>
+          <p class="playbook-tasks">Meeting notes, SOPs, vendor comparisons, travel plans, file organization, recurring reports, task lists.</p>
+          <p class="playbook-stack">Manus + Calendar + Drive + Slack + Notion &nbsp;&middot;&nbsp; <strong>A for structured admin deliverables</strong></p>
+        </div>
+        <div class="playbook-item">
+          <span class="playbook-area">Sales &amp; Lead Management</span>
+          <p class="playbook-tasks">Prospect research, call prep, lead prioritization, follow-up sequences, pipeline summaries.</p>
+          <p class="playbook-stack">Manus + Apollo + HubSpot + Gmail + Calendar &nbsp;&middot;&nbsp; <strong>B+ for research and prep</strong></p>
+        </div>
+        <div class="playbook-item">
+          <span class="playbook-area">Web &amp; Development</span>
+          <p class="playbook-tasks">Site audits, wireframes, copy maps, SEO gap reports, lightweight prototypes, form QA.</p>
+          <p class="playbook-stack">Manus + Browser + Webflow/Wix + GitHub &nbsp;&middot;&nbsp; <strong>B for prototypes; C for production</strong></p>
+        </div>
+      </div>
+
+      <h3>The Three-Gate QA System</h3>
+      <p>Every Manus task should pass through three quality gates before a deliverable is sent to a client. Gate 1 happens before Manus starts. Gate 2 happens during execution. Gate 3 happens on the finished output.</p>
+
+      <div class="gates-strip">
+        <div class="gate-item">
+          <div class="gate-num">Gate 1</div>
+          <div class="gate-name">Input QA</div>
+          <p class="gate-desc">Confirm client, task owner, due date, source files, connector permissions, source of truth, and forbidden actions before Manus starts.</p>
+        </div>
+        <div class="gate-item">
+          <div class="gate-num">Gate 2</div>
+          <div class="gate-name">Execution QA</div>
+          <p class="gate-desc">Check the plan, selected connectors, read-only status, source citations, and whether Manus is asking before risky actions.</p>
+        </div>
+        <div class="gate-item">
+          <div class="gate-num">Gate 3</div>
+          <div class="gate-name">Output QA</div>
+          <p class="gate-desc">Check facts, names, dates, math, tone, formatting, links, compliance, privacy, and spelling before the deliverable leaves your hands.</p>
+        </div>
+      </div>
+
+      <div class="concept-card cyan">
+        <div class="lbl">Human Approval Required</div>
+        <ul>
+          <li>Sending emails, texts, DMs, newsletters, or calendar invites</li>
+          <li>Posting, editing, or deleting on social media</li>
+          <li>Changing ad budgets, billing, or payment information</li>
+          <li>Merging, deleting, or bulk-updating CRM records</li>
+          <li>Publishing website changes or deploying to production</li>
+          <li>Any claim involving legal, tax, financial, or compliance judgment</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="ai-divider"></div>
+
+  <!-- ========== COMPARISON ========== -->
+  <section class="ai-module" id="compare">
+    <span class="h-eyebrow">Quick Reference <span class="rt">All three tools</span></span>
+    <h2 class="disp" style="font-size:clamp(24px,3.4vw,32px);color:var(--v-navy);margin:0 0 28px;">Side-by-Side Comparison</h2>
+
+    <div class="cmp-wrap">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th class="col-cl">Claude</th>
+            <th class="col-cg">ChatGPT</th>
+            <th class="col-mn">Manus</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Made by</td>
+            <td>Anthropic</td>
+            <td>OpenAI</td>
+            <td>Monica / Butterfly Effect</td>
+          </tr>
+          <tr>
+            <td>Internet access</td>
+            <td class="cmp-no">No</td>
+            <td class="cmp-yes">Yes, real-time search</td>
+            <td class="cmp-yes">Yes, cloud browser</td>
+          </tr>
+          <tr>
+            <td>Image generation</td>
+            <td class="cmp-no">No</td>
+            <td class="cmp-yes">Yes, DALL-E 3</td>
+            <td class="cmp-partial">Via connectors (Flux, Kling)</td>
+          </tr>
+          <tr>
+            <td>Autonomous tasks</td>
+            <td class="cmp-no">No, answers questions</td>
+            <td class="cmp-partial">Limited (ChatGPT Agent)</td>
+            <td class="cmp-yes">Yes, core capability</td>
+          </tr>
+          <tr>
+            <td>Context window</td>
+            <td>200K tokens (~150K words)</td>
+            <td>128K tokens (~96K words)</td>
+            <td>Varies by task length</td>
+          </tr>
+          <tr>
+            <td>Best writing quality</td>
+            <td class="cmp-yes">Strongest, most natural voice</td>
+            <td class="cmp-partial">Strong, slightly more generic</td>
+            <td class="cmp-partial">Good, focused on deliverables</td>
+          </tr>
+          <tr>
+            <td>File integrations</td>
+            <td>Upload within chat</td>
+            <td>Upload + Code Interpreter</td>
+            <td class="cmp-yes">Native connectors: Drive, Gmail, HubSpot, Canva&hellip;</td>
+          </tr>
+          <tr>
+            <td>Free tier</td>
+            <td>Limited Sonnet access</td>
+            <td>GPT-4o mini access</td>
+            <td>Limited free tasks</td>
+          </tr>
+          <tr>
+            <td>Paid plans start</td>
+            <td>$20/mo (Pro)</td>
+            <td>$20/mo (Plus)</td>
+            <td>Varies by plan</td>
+          </tr>
+          <tr>
+            <td>Best for real estate</td>
+            <td>Writing, documents, long analysis, SOPs</td>
+            <td>Research, images, ads, data analysis</td>
+            <td>Multi-step workflows, CRM audits, content batches</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="concept-card cyan" style="margin-top:32px;">
+      <div class="lbl">Rule of thumb</div>
+      <p><strong>Claude</strong> when you need to write something or analyze a document. <strong>ChatGPT</strong> when you need current information, images, or research. <strong>Manus</strong> when the task crosses more than three tools or systems and the output is a file you can hand to a client.</p>
+    </div>
+  </section>
+
+  <!-- AI LAB TEASER -->
+  <a class="lab-teaser" href="ai-lab.html">
+    <div class="lab-teaser-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6l-5 9a2 2 0 0 0 1.8 3h12.4a2 2 0 0 0 1.8-3l-5-9V2"/><path d="M9 2h6M6 15h12"/></svg>
+    </div>
+    <div class="lab-teaser-body">
+      <h4>Ready to apply this? Visit the AI Lab</h4>
+      <p>Step-by-step SOP guides for real tasks: ChatGPT Ads, hyperlocal email campaigns, CRM audits, HeyGen hook writers, and more.</p>
+    </div>
+    <span class="lab-teaser-cta">Browse guides &rarr;</span>
+  </a>
+
+  <!-- CTA -->
+  <div class="ai-complete">
+    <div class="orb orb-1" aria-hidden="true"></div>
+    <div class="orb orb-2" aria-hidden="true"></div>
+    <div class="ai-complete-inner">
+      <h3 class="disp">Foundation complete. Now pick a role.</h3>
+      <p>You know what each tool is and when to use it. Choose a role and start applying these tools in real scenarios.</p>
+      <div class="ai-complete-btns">
+        <a class="btn v-cyan" href="index.html#roles">Choose Your Role</a>
+        <a class="btn v-ghost" href="ai-lab.html">Go to AI Lab</a>
+      </div>
+    </div>
+  </div>
+
+  </div>
+
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="index.html#roles">Choose Your Role</a>
+        <a class="fl" href="index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="roles/transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="roles/leasing-coordinator.html">Leasing Coordinator</a>
+        <a class="fl" href="roles/operations-manager.html">Operations</a>
+        <a class="fl" href="roles/cfo-bookkeeper.html">CFO / Bookkeeper</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY &middot; FL</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/app-core.js"></script>
+<script>SCApp.requireAuth();</script>
+<script src="assets/js/site.js"></script>
+<script>
+  // Sidebar active-link state on scroll
+  const sideSections = ['what-is-ai','claude','chatgpt','manus','compare'];
+  const sideLinks = {};
+  sideSections.forEach(id => {
+    sideLinks[id] = document.querySelector(`.side-link[href="#${id}"]`);
+  });
+
+  function updateActiveSideLink() {
+    let current = sideSections[0];
+    sideSections.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= 140) current = id;
+      }
+    });
+    document.querySelectorAll('.side-link').forEach(l => l.classList.remove('active'));
+    if (sideLinks[current]) sideLinks[current].classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveSideLink, {passive: true});
+  updateActiveSideLink();
+</script>
+</body>
+</html>

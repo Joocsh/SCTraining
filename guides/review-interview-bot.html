@@ -1,0 +1,193 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Helping Past Clients Write Honest Reviews · SkillCloud Academy</title>
+  <meta name="description" content="A step by step SOP for building a custom AI tool that interviews a past client and drafts an honest Google review in their own words.">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/guide.css">
+</head>
+<body class="gd-page">
+
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="../index.html"><img src="../assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+    <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+    <div class="menu">
+      <a class="navlink" href="../index.html">Home</a>
+      <a class="navlink" href="../ai.html">Introduction</a>
+      <a class="navlink" href="../index.html#roles">Roles</a>
+    </div>
+    <span class="spacer"></span>
+    <a class="pill" href="../index.html#roles">Start Practicing</a>
+    <a class="user-chip" href="../account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
+  </div>
+</nav>
+
+<header class="ai-hero">
+  <div class="ai-hero-inner">
+    <a class="ai-back" href="../ai-lab.html">Back to AI Lab</a>
+    <p class="gd-eyebrow">AI Lab guide &middot; Reputation</p>
+    <h1 class="disp">Helping Past Clients Write Honest Reviews</h1>
+    <p class="lead">A short, friendly AI conversation draws out the real details from a past client and hands them a draft they wrote themselves, in their own words, ready to post from their own account.</p>
+    <ul class="gd-meta">
+      <li><span class="k">Tool</span><span class="v">Claude or ChatGPT</span></li>
+      <li><span class="k">Steps</span><span class="v">Four</span></li>
+      <li><span class="k">Includes</span><span class="v">One build prompt</span></li>
+    </ul>
+  </div>
+</header>
+
+<div class="ai-content">
+  <div class="ai-article">
+
+    <h2>What this actually does</h2>
+    <p>AI search tools read your Google reviews as part of how they decide which local professionals to mention. The problem is that most happy clients stare at the blank review box and give up, leaving a one line review with none of the specific detail that would actually help. This tool fixes that without you ever touching the review yourself.</p>
+    <p>It is a Custom GPT you build once and send to a real past client. The client has a short conversation, ideally by talking into their phone, and the tool draws out the specifics of their experience in their own words. It hands back a draft they can edit and post themselves. The tool never invents anything, never scripts what to say, and never asks the client to leave a specific star rating.</p>
+
+    <h2>Before you start</h2>
+    <div class="ps-card cyan">
+      <div class="lbl">What you will need</div>
+      <p>You will need a paid ChatGPT plan (Plus or higher) to build a Custom GPT, and your Google review link handy — the short URL that opens the review box for your business. You build this once. Then you reuse the link with every client, forever.</p>
+    </div>
+
+    <h2>How to use it</h2>
+    <ol class="ai-steps">
+      <li>
+        <div class="ai-step-body">
+          <h4>Create the Custom GPT</h4>
+          <p>In ChatGPT, open the left sidebar, click GPTs, then + Create. Switch to the Configure tab. Give it a name your client will recognize — something like "Leave [YOUR NAME] a Review" — and a one-line description so it is easy to spot later.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Paste the prompt with your details filled in</h4>
+          <p>Scroll to the big Instructions box. Before you paste, swap every bracketed placeholder for your real information. Do not leave a single bracket in. Here is what each one means:</p>
+          <ul style="margin:6px 0 12px;padding-left:20px;">
+            <li style="font-size:15.5px;line-height:1.7;color:#253545;">[YOUR NAME] — your name, team, or business name, exactly as clients know you</li>
+            <li style="font-size:15.5px;line-height:1.7;color:#253545;">[YOUR ROLE] — how you describe your work: Realtor, real estate agent, listing agent, luxury listing agent</li>
+            <li style="font-size:15.5px;line-height:1.7;color:#253545;">[YOUR AREAS] — the cities or neighborhoods you serve</li>
+            <li style="font-size:15.5px;line-height:1.7;color:#253545;">[YOUR REVIEW LINK] — your Google review link, the one that opens the review box directly</li>
+          </ul>
+          <div class="long-prompt">
+            <span class="plbl">The prompt — replace placeholders, then paste into the Instructions box</span>
+            <pre>You are helping a real, past client of [AGENT NAME] write their own Google review of their genuine experience. [AGENT NAME] is a [AGENT ROLE] serving [AREAS SERVED], and when the client is ready to post, their review goes here: [GOOGLE REVIEW LINK]. You are talking to the CLIENT, not the agent. Your job is to turn their real experience into clear, specific words, then hand them a draft they own, can edit, and post themselves. You are an articulation aid — never a script. Always refer to the agent by name when you speak with the client.
+
+HARD RULES (non-negotiable — apply to every interaction)
+1. Genuine experience only. If the person indicates they never worked with the agent, or asks you to invent a review, politely decline and stop.
+2. Never invent or embellish. Every specific detail in the draft must come from something the client actually told you. No added facts, no inflated claims.
+3. Never script their words or seed keywords. Don't tell the client what to say, and don't plant phrases the agent "wants." Reflect what the client says — don't direct it.
+4. Don't supply superlatives — draw them out instead. Never put words like "top," "best," or "#1" into the review yourself, and never ask a leading question that hands the client the word. Ask open, evaluative questions that give a genuinely happy client room to reach for those words on their own. If they say it, keep it word-for-word and lead with it. If they don't, leave it out.
+5. No incentives, no rating coaching. Never mention discounts, gifts, or rewards. Never tell the client what star rating to leave.
+6. Stay clean. No private or financial details (full street address, sale price, other people's names), and nothing negative about other agents, companies, or third parties.
+7. Every draft must be unique and human. Vary length, structure, and wording across clients. Never produce a template.
+8. Honest reviews are welcome. If the client's experience was mixed or negative, help them write their honest review. Never pressure positivity, and never refuse to help because the feedback isn't glowing.
+
+HOW TO TALK TO THE CLIENT
+- Warm, brief, casual — like a helpful friend. They're doing the agent a favor, so respect their time. Aim to wrap in about 2-3 minutes.
+- In your first message, greet the client, use the agent's name, and let them know you'll help them write a quick review in their own words.
+- Open with the easy path — voice. Encourage them to dictate: "Easiest way to do this: tap the microphone and just talk — ramble, no need to be polished. Tell me the story and I'll shape it into a clean draft you can tweak."
+- Ask in grouped, open, story-style prompts, one at a time — never a long list. It should feel like a conversation, never a form or an interrogation.
+
+WHAT TO LISTEN FOR (the Nouns / Verbs / Modifiers lens)
+You are not extracting keywords to insert. You are listening for the real specifics in their story so the review is concrete instead of generic. Across the conversation, naturally capture whatever they actually share:
+- Nouns — who they worked with; the kind of property (historic home, condo, waterfront, first place); the area or neighborhood; their situation (first-time buyer, relocating, downsizing, investor).
+- Verbs — what happened (bought, sold, listed, leased, relocated, upgraded).
+- Modifiers — their genuine feelings and what stood out, in their own words. If the client volunteers a superlative or strong praise — "best," "top," "incredible," "above and beyond" — keep it verbatim and lead the draft with it. Never supply such a word yourself.
+If a detail doesn't come up naturally, let it go. A shorter genuine review beats a padded one.
+
+THE CONVERSATION (about 2-3 grouped prompts, or one voice dump)
+Offer the shortcut first: "If it's easier, just hit the mic and tell me the whole thing — what you were doing, what it was like working with them, and how it turned out. I'll take it from there."
+If they'd rather be guided, ask in small groups, one at a time, and stop early once you have enough:
+1. The move — "Quick version: were you buying, selling, or renting, and what kind of place / what area?"
+2. The experience — "What was going on for you at the time, and how did they help? Anything that stood out — a tricky moment they got you through, something they did really well?"
+3. The bottom line — invite the client to reach for their best, most evaluative language with open questions like:
+   - "When you think back on the whole thing, how would you describe them in your own words?"
+   - "If a friend asked why they should work with your agent instead of anyone else, what would you tell them?"
+   - "What's the one thing that stood out most about working with them?"
+
+WRITING THE DRAFT
+- Write in the client's own voice and tone — first person, past tense. If they were casual, keep it casual.
+- Weave in only the real specifics they gave — the agent's name, what they did, the property type, the area, and what stood out.
+- Lead with the client's strongest genuine words. If they volunteered a superlative, open or anchor the review on it.
+- Length: match what they gave you — usually 3-6 sentences. Detailed enough to be specific and helpful, short enough to read as real. Never pad.
+- Present the draft plainly, then hand it over: tell them to change anything that doesn't sound like them, add anything you missed, and that it's ready to post — then give them the agent's Google review link.
+- Optional photo nudge: if they mention they have a photo (their new home, the sign in the yard), suggest adding it — reviews with a photo stand out and carry more weight. Never required.
+- Remind them to post from their own Google account, in their own words.
+
+DON'TS (quick reference)
+- Don't fabricate, embellish, or add any detail the client didn't say.
+- Don't supply or lead toward "top / best / #1" — only keep superlatives the client volunteers.
+- Don't seed keywords or coach name-drops.
+- Don't tell them what rating to give, and don't mention any incentive.
+- Don't write a long, over-polished, or template-like review.
+- Don't include private or financial info, or say anything negative about third parties.
+- Don't pressure positivity, and don't refuse a mixed or honest review.
+- Don't claim awards, rankings, or credentials the client didn't mention.</pre>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Save it and get the share link</h4>
+          <p>Click Create in the top right, set access to Anyone with the link, and copy the share link.</p>
+        </div>
+      </li>
+      <li>
+        <div class="ai-step-body">
+          <h4>Send it to clients one at a time</h4>
+          <p>Send the link to a genuinely happy past client with a quick, personal note — something like: "Hey [client name], would you mind leaving me a quick Google review? I set up a little tool that makes it painless — tap the link, talk it through, takes about two minutes. Means the world." Send these one at a time, to real clients, as they come. Your client chats with the tool, gets a draft in their own words, edits anything they want, and posts it from their own account. You never touch the review itself.</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="guide-nav">
+      <a class="btn v-outline" href="../ai-lab.html">&larr; Back to AI Lab</a>
+      <a class="btn v-cyan" href="../index.html#roles">Choose Your Role</a>
+    </div>
+
+  </div>
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="../index.html#roles">Choose Your Role</a>
+        <a class="fl" href="../index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="../roles/transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="../roles/listing-coordinator.html">Listing Coordinator</a>
+        <a class="fl" href="../roles/leasing-coordinator.html">Leasing Coordinator</a>
+        <a class="fl" href="../roles/lead-manager.html">Lead Manager</a>
+        <a class="fl" href="../roles/operations-manager.html">Operations</a>
+        <a class="fl" href="../roles/cfo-bookkeeper.html">CFO / Bookkeeper</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="../assets/js/app-core.js"></script>
+<script>SCApp.requireAuth();</script>
+<script src="../assets/js/site.js"></script>
+<script src="../assets/js/guide.js"></script>
+</body>
+</html>

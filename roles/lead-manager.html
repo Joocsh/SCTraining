@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lead Manager · SkillCloud Academy</title>
+  <meta name="description" content="Practice lead management: cold outreach scripts, qualification calls, drip sequences, CRM notes, and lead reporting using Claude.">
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="../assets/css/role-dash.css">
+  <link rel="stylesheet" href="../assets/css/workflow.css">
+<style>
+  /* ── Role dashboard cards ── */
+  .rd-modes-grid{align-items:stretch}
+  .rd-mode-card{
+    opacity:0;transform:translateY(10px);animation:rdxIn .45s ease forwards;
+    transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+  }
+  .rd-mode-card:hover{transform:translateY(-3px);box-shadow:0 16px 36px rgba(10,38,71,.1);border-color:rgba(23,195,212,.4)}
+  .rd-mode-card:nth-child(1){animation-delay:.04s}
+  .rd-mode-card:nth-child(2){animation-delay:.1s}
+  .rd-mode-card:nth-child(3){animation-delay:.16s}
+  .rd-mode-card:nth-child(4){animation-delay:.22s}
+  @keyframes rdxIn{to{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){.rd-mode-card{animation:none;opacity:1;transform:none}}
+  .rd-mode-card.rdx-featured{grid-column:1/-1;border-color:rgba(23,195,212,.35);background:linear-gradient(180deg,#fff,#f8fdfe)}
+  .rdx-ordinal{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--v-cyan-d,#0fa6b6)}
+  .rdx-ledger{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:14px}
+  .rdx-ledger-item{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .rdx-ledger-item b{color:var(--navy,#0a2647);font-variant-numeric:tabular-nums}
+
+  /* ════════════════════════════════════════
+     LEAD MANAGER CASE SIMULATOR STYLES
+  ════════════════════════════════════════ */
+
+  /* Case list */
+  #lmsim-list{ padding:4px 0 24px }
+  .lmsim-list-intro{ font-size:14px;color:var(--v-muted,#6b7f99);margin:0 0 22px;line-height:1.6 }
+  #lmsim-case-grid{ display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px }
+  .lmsim-case-card{
+    border:1.5px solid #dde6ef;border-radius:16px;padding:24px;
+    background:#fff;transition:transform .18s,box-shadow .18s,border-color .18s;
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .lmsim-case-card:hover{transform:translateY(-3px);box-shadow:0 14px 32px rgba(10,38,71,.08);border-color:rgba(23,195,212,.5)}
+  .lmsim-case-badge{
+    display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.8px;
+    text-transform:uppercase;color:var(--v-cyan-d,#0fa6b6);
+    background:rgba(23,195,212,.1);border-radius:999px;padding:4px 10px;
+  }
+  .lmsim-case-title{margin:0;font-size:17px;font-weight:800;color:#0a2647;line-height:1.3}
+  .lmsim-case-sub{margin:0;font-size:13px;color:#6b7f99;line-height:1.5}
+  .lmsim-case-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+  .lmsim-meta-chip{
+    font-size:12px;font-weight:600;color:#0a2647;
+    background:#f0f4f8;border-radius:999px;padding:4px 10px;
+  }
+  .lmsim-start-btn{
+    margin-top:auto;padding:12px 20px;background:linear-gradient(135deg,#0a2647,#0f3460);
+    color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;
+    cursor:pointer;transition:opacity .16s,transform .16s;letter-spacing:.2px;
+  }
+  .lmsim-start-btn:hover{opacity:.9;transform:translateY(-1px)}
+
+  /* Intro screen */
+  .lmsim-intro-wrap{max-width:700px;margin:0 auto;padding:8px 0 32px}
+  .lmsim-intro-badge{
+    display:inline-block;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;
+    color:var(--v-cyan-d,#0fa6b6);background:rgba(23,195,212,.1);border-radius:999px;padding:5px 12px;margin-bottom:14px;
+  }
+  .lmsim-intro-title{font-size:clamp(20px,3.5vw,28px);font-weight:900;color:#0a2647;margin:0 0 12px;line-height:1.25}
+  .lmsim-intro-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+  .lmsim-intro-meta span{
+    font-size:13px;font-weight:600;color:#6b7f99;background:#f0f4f8;
+    border-radius:999px;padding:5px 12px;
+  }
+  .lmsim-intro-narrative{
+    background:#f8fbfd;border:1.5px solid #dde6ef;border-radius:14px;
+    padding:20px 22px;font-size:14.5px;line-height:1.7;color:#1e3050;margin-bottom:16px;
+  }
+  .lmsim-intro-sop{
+    background:rgba(23,195,212,.07);border:1.5px solid rgba(23,195,212,.25);
+    border-radius:12px;padding:14px 18px;font-size:13.5px;color:#0a2647;margin-bottom:24px;
+  }
+  .lmsim-begin-btn{
+    padding:14px 28px;background:linear-gradient(135deg,#17c3d4,#0fa6b6);
+    color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;
+    cursor:pointer;transition:opacity .16s,transform .16s;display:block;margin-bottom:12px;
+  }
+  .lmsim-begin-btn:hover{opacity:.9;transform:translateY(-1px)}
+  .lmsim-back-link{
+    background:none;border:none;color:#6b7f99;font-size:13.5px;
+    cursor:pointer;padding:0;text-decoration:underline;
+  }
+
+  /* Step screen */
+  .lmsim-step-wrap{display:flex;flex-direction:column;gap:0}
+  .lmsim-progress-bar-row{margin-bottom:16px}
+  .lmsim-progress-track{
+    height:6px;background:#e8eef5;border-radius:999px;overflow:hidden;margin-bottom:8px;
+  }
+  .lmsim-progress-fill{
+    height:100%;background:linear-gradient(90deg,#17c3d4,#0fa6b6);
+    border-radius:999px;transition:width .4s ease;
+  }
+  .lmsim-chips-row{display:flex;gap:8px;flex-wrap:wrap}
+  .lmsim-chip{
+    font-size:12px;font-weight:700;color:#0a2647;
+    background:#f0f4f8;border-radius:999px;padding:4px 12px;
+  }
+
+  .lmsim-phase-block{margin-bottom:14px}
+  .lmsim-phase-name{
+    font-size:12px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;
+    color:var(--v-cyan-d,#0fa6b6);margin-bottom:3px;
+  }
+  .lmsim-phase-sub{font-size:12px;color:#6b7f99;font-weight:500}
+
+  .lmsim-narrative{
+    font-size:14.5px;line-height:1.7;color:#1e3050;margin-bottom:16px;
+    border-left:3px solid rgba(23,195,212,.4);padding-left:14px;
+  }
+
+  /* Info cards */
+  .lmsim-cards-wrap{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+  .lmsim-info-card{
+    display:flex;align-items:flex-start;gap:12px;
+    background:#f8fbfd;border:1.5px solid #dde6ef;border-radius:12px;padding:13px 16px;
+  }
+  .lmsim-info-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+  .lmsim-info-label{font-size:12px;font-weight:700;color:#0a2647;margin-bottom:3px;letter-spacing:.2px}
+  .lmsim-info-text{font-size:13.5px;color:#374b63;line-height:1.5}
+
+  /* Decision block */
+  .lmsim-decision-block{
+    background:#fff;border:2px solid #dde6ef;border-radius:16px;
+    padding:22px;margin-top:4px;
+  }
+  .lmsim-decision-tag{
+    font-size:10.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;
+    color:#f59e0b;background:rgba(245,158,11,.1);border-radius:999px;
+    padding:3px 10px;display:inline-block;margin-bottom:12px;
+  }
+  .lmsim-decision-q{font-size:15.5px;font-weight:700;color:#0a2647;line-height:1.45;margin-bottom:16px}
+
+  /* Options */
+  .lmsim-options-wrap{display:flex;flex-direction:column;gap:10px}
+  .lmsim-option{
+    display:flex;align-items:flex-start;gap:12px;width:100%;text-align:left;
+    background:#f8fbfd;border:1.5px solid #dde6ef;border-radius:12px;
+    padding:13px 16px;cursor:pointer;font-size:14px;color:#1e3050;
+    transition:border-color .16s,background .16s,transform .12s;
+    font-family:inherit;line-height:1.5;
+  }
+  .lmsim-option:hover:not(:disabled){border-color:rgba(23,195,212,.5);background:#f0fafb;transform:translateX(2px)}
+  .lmsim-option:disabled{cursor:default}
+  .lmsim-opt-letter{
+    flex-shrink:0;width:26px;height:26px;border-radius:50%;
+    background:#e8eef5;color:#0a2647;font-size:12px;font-weight:800;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .lmsim-opt-text{flex:1}
+  .lmsim-opt-correct{background:rgba(16,185,129,.08)!important;border-color:rgba(16,185,129,.5)!important;color:#065f46!important}
+  .lmsim-opt-correct .lmsim-opt-letter{background:rgba(16,185,129,.2);color:#065f46}
+  .lmsim-opt-wrong{background:rgba(239,68,68,.07)!important;border-color:rgba(239,68,68,.4)!important;color:#991b1b!important}
+  .lmsim-opt-wrong .lmsim-opt-letter{background:rgba(239,68,68,.15);color:#991b1b}
+  .lmsim-opt-partial{background:rgba(245,158,11,.07)!important;border-color:rgba(245,158,11,.4)!important}
+  .lmsim-opt-partial .lmsim-opt-letter{background:rgba(245,158,11,.2);color:#92400e}
+
+  /* Feedback */
+  .lmsim-fb{
+    margin-top:14px;border-radius:12px;padding:14px 16px;
+    font-size:13.5px;line-height:1.6;display:none;
+  }
+  .lmsim-fb-good{background:rgba(16,185,129,.08);border:1.5px solid rgba(16,185,129,.3);color:#064e3b}
+  .lmsim-fb-partial{background:rgba(245,158,11,.08);border:1.5px solid rgba(245,158,11,.3);color:#78350f}
+  .lmsim-fb-bad{background:rgba(239,68,68,.07);border:1.5px solid rgba(239,68,68,.25);color:#7f1d1d}
+  .lmsim-fb-head{font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+  .lmsim-fb-pts{font-size:12px;font-weight:700;background:rgba(255,255,255,.6);border-radius:999px;padding:2px 9px}
+  .lmsim-fb-body{font-size:13.5px}
+
+  .lmsim-next-btn{
+    padding:12px 24px;background:linear-gradient(135deg,#0a2647,#0f3460);
+    color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;
+    cursor:pointer;transition:opacity .15s,transform .15s;
+  }
+  .lmsim-next-btn:hover{opacity:.88;transform:translateY(-1px)}
+  .lmsim-finish-btn{background:linear-gradient(135deg,#17c3d4,#0fa6b6)}
+
+  /* Results screen */
+  .lmsim-result-wrap{max-width:700px;margin:0 auto;padding:8px 0 40px;display:flex;flex-direction:column;align-items:center;text-align:center}
+  .lmsim-result-ring{
+    width:140px;height:140px;border-radius:50%;
+    background:linear-gradient(135deg,#0a2647,#17c3d4);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    margin-bottom:20px;box-shadow:0 8px 32px rgba(23,195,212,.3);
+  }
+  .lmsim-result-pct{font-size:38px;font-weight:900;color:#fff;line-height:1}
+  .lmsim-result-pts-label{font-size:13px;color:rgba(255,255,255,.8);margin-top:3px;font-weight:600}
+  .lmsim-result-band{font-size:20px;font-weight:800;color:#0a2647;margin-bottom:12px}
+  .lmsim-result-msg{font-size:14.5px;color:#374b63;line-height:1.7;max-width:560px;margin-bottom:28px}
+
+  .lmsim-missed-section{width:100%;text-align:left;margin-bottom:24px}
+  .lmsim-missed-title{font-size:13px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#6b7f99;margin-bottom:12px}
+  .lmsim-missed-card{
+    background:#fff;border:1.5px solid #dde6ef;border-radius:12px;
+    padding:16px 18px;margin-bottom:10px;
+  }
+  .lmsim-missed-phase{font-size:11px;font-weight:700;color:var(--v-cyan-d,#0fa6b6);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+  .lmsim-missed-q{font-size:13.5px;font-weight:700;color:#0a2647;margin-bottom:7px;line-height:1.4}
+  .lmsim-missed-chosen{font-size:12.5px;color:#6b7f99;margin-bottom:8px}
+  .lmsim-missed-fb{font-size:13px;color:#374b63;line-height:1.6;background:#f8fbfd;border-radius:8px;padding:10px 12px}
+
+  .lmsim-perfect-notice{
+    font-size:16px;font-weight:700;color:#065f46;
+    background:rgba(16,185,129,.1);border:1.5px solid rgba(16,185,129,.3);
+    border-radius:12px;padding:14px 20px;margin-bottom:24px;width:100%;
+  }
+
+  .lmsim-sop-reminder{
+    background:#f0f4f8;border-radius:14px;padding:18px 22px;
+    text-align:left;width:100%;margin-bottom:24px;
+  }
+  .lmsim-sop-reminder-title{font-size:13px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#0a2647;margin-bottom:12px}
+  .lmsim-sop-reminder ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px}
+  .lmsim-sop-reminder li{font-size:13.5px;color:#374b63;line-height:1.5}
+
+  .lmsim-result-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+  .lmsim-back-link-btn{
+    padding:12px 22px;border:1.5px solid #dde6ef;background:#fff;
+    color:#0a2647;border-radius:10px;font-size:14px;font-weight:700;
+    cursor:pointer;transition:border-color .15s;
+  }
+  .lmsim-back-link-btn:hover{border-color:rgba(23,195,212,.5)}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav"><div class="nav-inner">
+  <a class="brand" href="../index.html"><img src="../assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+  <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+  <div class="menu">
+    <a class="navlink" href="../index.html">Home</a>
+    <a class="navlink" href="../ai.html">Introduction</a>
+    <a class="navlink" href="../index.html#roles">Roles</a>
+  </div>
+  <span class="spacer"></span>
+  <a class="pill" href="../index.html#roles">Start Practicing</a>
+  <a class="user-chip" href="../account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
+</div></nav>
+
+<div class="fund-nudge">
+  <p><strong>New here?</strong> Complete the Introduction first. It only takes a few minutes and covers what Claude, ChatGPT, and Manus can do before you jump into role practice.</p>
+  <a href="../ai.html">Go to Introduction &rarr;</a>
+</div>
+
+<!-- HERO -->
+<section class="rd-hero">
+  <div class="orb orb-1" aria-hidden="true"></div>
+  <div class="orb orb-2" aria-hidden="true"></div>
+  <div class="orb orb-3" aria-hidden="true"></div>
+  <div class="orb orb-4" aria-hidden="true"></div>
+  <div class="orb orb-5" aria-hidden="true"></div>
+  <div class="rd-hero-inner">
+    <a class="rd-back" href="../index.html#roles">All Roles</a>
+    <h1>Lead Manager</h1>
+    <p class="rd-hero-desc">Practice cold lead to booked appointment scenarios, mastering outreach scripts, qualification, follow-up sequences, and clean CRM notes.</p>
+  </div>
+</section>
+
+<!-- PROGRESS STATS -->
+<section class="rd-stats-section">
+  <div class="rd-stats-inner">
+    <div class="rd-stats-overall">
+      <div class="rd-stats-meta">
+        <span class="rd-stats-label">Your overall progress</span>
+        <span class="rd-stats-pct" id="overall-pct-num">0% Completed</span>
+      </div>
+      <div class="rd-stats-track">
+        <div class="rd-stats-fill" id="overall-bar-fill"></div>
+      </div>
+      <div class="rdx-ledger">
+        <span class="rdx-ledger-item">Case Simulator <b id="rdx-sim">0/1</b></span>
+        <span class="rdx-ledger-item">Prompt Practice <b id="rdx-prompt">0/8</b></span>
+        <span class="rdx-ledger-item">Deadline Quiz <b id="rdx-quiz">0/6</b></span>
+      </div>
+      <div class="rd-stats-footer">
+        <button class="rd-reset-btn" onclick="resetProgress('lm')">Reset progress</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRACTICE MODES -->
+<section class="rd-modes-section" id="practice">
+  <div class="rd-modes-inner">
+    <div class="rd-section-header">
+      <p class="rd-eyebrow">Practice Modes</p>
+      <h2 class="rd-section-title">Choose your training</h2>
+      <p class="rd-section-sub">Start with the Case Simulator, then come back to the others.</p>
+    </div>
+    <div class="rd-modes-grid">
+
+      <div class="rd-mode-card rdx-featured">
+        <div class="rd-mode-top">
+          <div class="rd-mode-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><line x1="12" y1="7.5" x2="12" y2="12.5"/><line x1="10.5" y1="13.8" x2="6" y2="16.7"/><line x1="13.5" y1="13.8" x2="18" y2="16.7"/></svg></div>
+          <span class="rdx-ordinal">Module 01</span>
+        </div>
+        <div class="rd-mode-name">Case Simulator</div>
+        <p class="rd-mode-desc">A full real lead workflow end to end: a new inbound lead, CRM intake, a qualification decision, re-engagement, and a booked agent handoff.</p>
+        <div class="rd-mode-footer">
+          <span class="rd-mode-count"><strong>1</strong> full case, new lead to booked appointment</span>
+          <a class="rd-mode-cta" href="#" onclick="openPanel('sim'); return false;">Launch &rarr;</a>
+        </div>
+      </div>
+
+
+      <div class="rd-mode-card">
+        <div class="rd-mode-top">
+          <div class="rd-mode-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+          <span class="rdx-ordinal">Module 02</span>
+        </div>
+        <div class="rd-mode-name">Prompt Practice</div>
+        <p class="rd-mode-desc">Write outreach scripts, qualification call guides, drip sequences, clean CRM notes, and weekly performance summaries using Claude. Customize real parameters and copy the finished prompt.</p>
+        <div class="rd-mode-footer">
+          <span class="rd-mode-count"><strong>8</strong> interactive prompts</span>
+          <a class="rd-mode-cta" href="#" onclick="openPanel('prompt'); return false;">Practice &rarr;</a>
+        </div>
+      </div>
+
+      <div class="rd-mode-card">
+        <div class="rd-mode-top">
+          <div class="rd-mode-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></div>
+          <span class="rdx-ordinal">Module 03</span>
+        </div>
+        <div class="rd-mode-name">Deadline Quiz</div>
+        <p class="rd-mode-desc">Test your lead pipeline knowledge: follow-up timing, CRM update frequency, drip sequence benchmarks, and handoff checklists.</p>
+        <div class="rd-mode-footer">
+          <span class="rd-mode-count"><strong>6</strong> questions</span>
+          <a class="rd-mode-cta" href="#" onclick="openPanel('quiz'); return false;">Start &rarr;</a>
+        </div>
+      </div>
+
+
+      <div class="rd-mode-card rd-mode-resources" onclick="toggleResources(this)" role="button" tabindex="0">
+        <div class="rd-mode-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+        </div>
+        <div class="rd-res-body">
+          <div class="rd-mode-name">Resources</div>
+          <p class="rd-mode-desc">Prompt library and role playbooks. Study before practicing or keep open during your sessions.</p>
+        </div>
+        <span class="rd-mode-cta">View Prompts <svg class="res-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4 6 8 10 12 6"/></svg></span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     PANEL: CASE SIMULATOR — Lead Manager (Full SOP System)
+     ══════════════════════════════════════════════════════════ -->
+<div class="lc-panel" id="panel-sim">
+  <div class="lc-panel-header">
+    <button class="lc-panel-back" onclick="closePanel('sim')">Back</button>
+    <span class="lc-panel-title">Case Simulator &mdash; Lead Manager</span>
+  </div>
+  <div class="lc-panel-body">
+    <!-- Case selection list -->
+    <div id="lmsim-list">
+      <p class="lmsim-list-intro">Two complete simulation cases built from the real Lead Manager SOP. Choose one to start — each presents a different set of real-world decisions you will face on the job.</p>
+      <div id="lmsim-case-grid"></div>
+    </div>
+    <!-- Active simulation (intro + steps + results) -->
+    <div id="lmsim-play" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PANEL: PROMPT PRACTICE
+     ══════════════════════════════════════════════════════════ -->
+<div class="lc-panel" id="panel-prompt">
+  <div class="lc-panel-header">
+    <button class="lc-panel-back" onclick="closePanel('prompt')">Back</button>
+    <span class="lc-panel-title">Prompt Practice &mdash; Lead Manager</span>
+  </div>
+  <div class="lc-panel-body" style="max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px;">
+    <div class="lc-callout-info" style="margin-bottom: 24px;">
+      <strong>Prompt Practice Playground:</strong> Select a lead management task from the sidebar, customize its parameters, and watch the prompt update live. Copy the final prompt straight into Claude.
+    </div>
+    <div class="prompt-layout">
+      <div class="prompt-sidebar">
+        <div class="prompt-search-wrap">
+          <span class="prompt-search-icon">&#128269;</span>
+          <input type="text" id="prompt-search" class="prompt-search-input" placeholder="Search prompts..." oninput="filterPrompts()">
+        </div>
+        <div class="prompt-list-scroll" id="prompt-list-scroll"></div>
+      </div>
+      <div class="prompt-detail-panel" id="prompt-detail-view"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     PANEL: DEADLINE QUIZ
+     ══════════════════════════════════════════════════════════ -->
+<div class="lc-panel" id="panel-quiz">
+  <div class="lc-panel-header">
+    <button class="lc-panel-back" onclick="closePanel('quiz')">Back</button>
+    <span class="lc-panel-title">Deadline Quiz &mdash; Lead Manager</span>
+  </div>
+  <div class="lc-panel-body">
+    <div id="quiz-intro" class="lc-quiz-intro">
+      <div class="lc-quiz-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="13" r="8" stroke="#fff" stroke-width="1.8"/><path d="M12 9v4l2.5 2.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 2.5h5M12 2.5v2.2" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+      <h2>Lead Pipeline Quiz</h2>
+      <p>Test your knowledge of speed-to-lead benchmarks, CRM discipline, and handoff standards. The clock runs while you answer.</p>
+      <div class="lc-quiz-meta"><span id="quiz-meta-count">Questions</span><span>Timed</span></div>
+      <p class="lc-quiz-study">Need to review first? <a href="../study-guide.html#lead" style="color:var(--v-cyan-d);font-weight:700">Open the Study Guide &rarr;</a></p>
+      <button class="lc-quiz-start-btn" onclick="quizStart()">Start the clock &rarr;</button>
+    </div>
+    <div id="quiz-play" style="display:none">
+      <div class="lc-progress-track"><div class="lc-progress-fill" id="quiz-prog"></div></div>
+      <div class="lc-scorebar">
+        <span class="lc-chip" id="quiz-num-chip"></span>
+        <span class="lc-chip" id="quiz-time-chip">0:00</span>
+        <span class="lc-chip" id="quiz-score-chip">Score: 0</span>
+      </div>
+      <div class="lc-scenario-box" id="quiz-body"></div>
+    </div>
+    <div id="quiz-done" style="display:none"></div>
+  </div>
+</div>
+
+<div class="rd-resources-panel" id="resources-panel">
+  <div class="rd-materials-inner">
+
+    <div class="rd-glance">
+      <h4>Your role at a glance</h4>
+      <p>Manage inbound/outbound pipelines · Qualify leads via calls, texts, emails · Maintain CRM records and follow-ups · Coordinate handoffs to agents · Build and optimize nurture sequences.</p>
+    </div>
+
+    <details class="mod" open><summary><span class="num">1</span>Lead outreach scripts</summary><div class="body">
+      <div class="prompt"><span class="lbl">COLD OUTREACH</span>Write a cold outreach email to a homeowner who filled out a home valuation form on our site. Goal: get them on a call with one of our agents. Helpful, low pressure tone. Property in Virginia Beach, VA.</div>
+      <div class="prompt"><span class="lbl">FOLLOW UP TEXT</span>Write a follow-up text for a lead who hasn't responded in 3 days. Under 160 characters. Re-engage without being pushy.</div>
+    </div></details>
+
+    <details class="mod"><summary><span class="num">2</span>Lead qualification scripts</summary><div class="body">
+      <div class="prompt"><span class="lbl">QUALIFICATION CALL</span>Create a qualification script for discovery calls. Determine: timeline to buy/sell, motivation, financial pre-qualification status, current living situation, preferred neighborhoods. Format as a call guide with note fields.</div>
+    </div></details>
+
+    <details class="mod"><summary><span class="num">3</span>Drip email sequences</summary><div class="body">
+      <div class="prompt"><span class="lbl">5 EMAIL DRIP</span>Create a 5-email nurture sequence for buyer leads 3 to 6 months out. 1: Intro. 2: Market education. 3: Buying process. 4: Testimonial/social proof. 5: CTA to schedule. Each 150 to 200 words.</div>
+    </div></details>
+
+    <details class="mod"><summary><span class="num">4</span>CRM note writing</summary><div class="body">
+      <div class="prompt"><span class="lbl">CRM ENTRY</span>Clean up these call notes into a CRM entry: "talked to John, wants to sell in the fall, not sure about price, wife needs to agree, lives in Chesapeake, 3br 2ba, no agent yet." Format: Lead Summary, Key Details, Next Steps, Follow-up Date.</div>
+    </div></details>
+
+    <details class="mod"><summary><span class="num">5</span>Lead reporting</summary><div class="body">
+      <div class="prompt"><span class="lbl">WEEKLY SUMMARY</span>Write a performance summary: 42 new leads, 18 contacted, 6 qualified, 2 appointments, 1 referral. Last week: 38 / 15 / 4 / 1. Highlight wins and areas to improve.</div>
+    </div></details>
+
+  </div>
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="../index.html#roles">Choose Your Role</a>
+        <a class="fl" href="../index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="leasing-coordinator.html">Leasing Coordinator</a>
+        <a class="fl" href="operations-manager.html">Operations</a>
+        <a class="fl" href="cfo-bookkeeper.html">CFO / Bookkeeper</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="../assets/js/app-core.js"></script>
+<script src="../assets/js/workflow.js"></script>
+<script src="../assets/js/site.js"></script>
+<script src="lead-manager-sim.js"></script>
+<script>
+      const ROLE = 'lm';
+  window.SC_ROLE = ROLE;
+  const rpMe = SCApp.requireAuth();
+  const MODES = [
+    { id: 'sim', total: 1, active: true },
+    { id: 'prompt', total: 8, active: true },
+    { id: 'quiz', total: 6, active: true }
+  ];
+  
+  function loadProgress() {
+    let completedSum = 0;
+    let totalMax = 0;
+    
+    MODES.forEach(m => {
+      if (!m.active) return;
+      const val = parseInt(localStorage.getItem(`sc_${ROLE}_${m.id}`) || '0');
+      completedSum += val;
+      totalMax += m.total;
+    });
+    
+    const overallPct = totalMax > 0 ? Math.round((completedSum / totalMax) * 100) : 0;
+    const overallNum = document.getElementById('overall-pct-num');
+    const overallBar = document.getElementById('overall-bar-fill');
+    
+    if (overallNum) overallNum.textContent = overallPct + '% Completed';
+    if (overallBar) setTimeout(() => overallBar.style.width = overallPct + '%', 200);
+
+    MODES.forEach(m => {
+      const el = document.getElementById('rdx-' + m.id);
+      if (!el) return;
+      const val = parseInt(localStorage.getItem(`sc_${ROLE}_${m.id}`) || '0');
+      el.textContent = val + '/' + m.total;
+    });
+  }
+
+  function resetProgress(role) {
+    if (!confirm('Reset all progress for this role?')) return;
+    MODES.forEach(m => {
+      if (m.active) localStorage.removeItem(`sc_${role}_${m.id}`);
+    });
+    loadProgress();
+  }
+  
+  loadProgress();
+
+  /* ══════════════════════════════════════════════════════════
+     CASE SIMULATOR — initialize LMSim on panel open
+     ══════════════════════════════════════════════════════════ */
+  window.PANEL_ON_OPEN = window.PANEL_ON_OPEN || {};
+  window.PANEL_ON_OPEN.sim = function() {
+    if (window.LMSim) LMSim.init();
+  };
+  window.PANEL_ON_OPEN.prompt = initPromptPlayground;
+  window.PANEL_ON_OPEN.quiz = quizReset;
+
+  /* ══════════════════════════════════════════════════════════
+     DEADLINE QUIZ
+     ══════════════════════════════════════════════════════════ */
+  window.QUIZ_DATA = [
+    { q: 'What is the industry benchmark response time for contacting a new lead to maximize conversion?',
+      a: ['Within 5 minutes', 'Within 1 hour', 'Within 24 hours', 'Within 3 business days'], c: 0 },
+    { q: 'When should CRM notes be updated after a contact attempt?',
+      a: ['At the end of the month', 'Immediately or same day', 'Only if the lead converts', 'Only during weekly team meetings'], c: 1 },
+    { q: 'A lead says they are not ready to move for 6 months. What is the correct pipeline action?',
+      a: ['Mark the lead as dead', 'Move the lead to an appropriate longer-term nurture stage', 'Keep calling weekly until they book an appointment', 'Remove the lead from the CRM'], c: 1 },
+    { q: 'What should a complete agent handoff briefing note include at minimum?',
+      a: ['Only the lead\'s phone number', 'Timeline, motivation, appointment details, and communication preference', 'Just the appointment time', 'Nothing, the agent will ask directly'], c: 1 },
+    { q: 'A lead has gone cold for over 100 days. What is the appropriate next step?',
+      a: ['Delete the lead from the CRM', 'Send a low-pressure re-engagement message referencing their original timeline', 'Call every day until they respond', 'Ignore it, cold leads never convert'], c: 1 },
+    { q: 'Which pipeline stage typically indicates a lead has a scheduled appointment with an agent?',
+      a: ['New Lead', 'Nurture', 'Appointment Set', 'Cold'], c: 2 }
+  ];
+
+  /* ══════════════════════════════════════════════════════════
+     PROMPT PRACTICE
+     ══════════════════════════════════════════════════════════ */
+  window.PROMPT_TEMPLATES = [
+    { title: 'Cold Outreach Email', badge: 'Email', category: 'Outreach',
+      desc: 'Reach out to a lead who filled out a home valuation form.',
+      tip: "Naming the exact form they filled out and keeping the ask low-pressure (a quick call, not a listing appointment) matches the intent signal they actually gave you.",
+      template: 'Write a cold outreach email to a homeowner who filled out a home valuation form on our site. Goal: get them on a call with one of our agents. Helpful, low pressure tone. Property in [Location].',
+      vars: [ { id: 'Location', label: 'Property Location', type: 'text', default: 'Virginia Beach, VA' } ] },
+    { title: 'Follow-Up Text', badge: 'SMS', category: 'Outreach',
+      desc: 'Re-engage a lead who has gone quiet for a few days.',
+      tip: "Texts under 160 characters read as a quick, human check-in rather than a scripted sales message, which is exactly the tone that gets a reply from a lead who's gone quiet.",
+      template: "Write a follow-up text for a lead who hasn't responded in [Days_Silent] days. Under 160 characters. Re-engage without being pushy.",
+      vars: [ { id: 'Days_Silent', label: 'Days Since Last Contact', type: 'text', default: '3' } ] },
+    { title: 'Qualification Call Script', badge: 'Script', category: 'Outreach',
+      desc: 'Build a discovery call guide to qualify a new lead.',
+      tip: "A structured guide with note fields keeps every qualification call consistent, so nothing important (timeline, financing, motivation) gets missed just because the conversation went a different direction.",
+      template: 'Create a qualification script for discovery calls. Determine: timeline to buy/sell, motivation, financial pre-qualification status, current living situation, preferred neighborhoods. Format as a call guide with note fields.',
+      vars: [] },
+    { title: '5-Email Drip Sequence', badge: 'Sequence', category: 'Outreach',
+      desc: 'Build a nurture sequence for leads who are not ready to move yet.',
+      tip: "Structuring the 5 emails around a clear arc (intro, education, process, proof, ask) keeps a long nurture sequence from feeling repetitive to a lead who's on it for months.",
+      template: 'Create a [Email_Count]-email nurture sequence for buyer leads [Timeline] out. 1: Intro. 2: Market education. 3: Buying process. 4: Testimonial/social proof. 5: CTA to schedule. Each 150 to 200 words.',
+      vars: [
+        { id: 'Email_Count', label: 'Number of Emails', type: 'text', default: '5' },
+        { id: 'Timeline', label: 'Lead Timeline', type: 'text', default: '3 to 6 months' }
+      ] },
+    { title: 'CRM Note Cleanup', badge: 'CRM', category: 'Operations',
+      desc: 'Turn raw call notes into a structured, shareable CRM entry.',
+      tip: "Asking for a fixed format (Summary, Key Details, Next Steps, Follow-up Date) means every CRM entry looks the same, so any agent can scan it fast, not just the person who wrote it.",
+      template: 'Clean up these call notes into a CRM entry: "[Raw_Notes]". Format: Lead Summary, Key Details, Next Steps, Follow-up Date.',
+      vars: [ { id: 'Raw_Notes', label: 'Raw Call Notes', type: 'textarea', default: 'talked to John, wants to sell in the fall, not sure about price, wife needs to agree, lives in Chesapeake, 3br 2ba, no agent yet' } ] },
+    { title: 'Weekly Performance Summary', badge: 'Report', category: 'Operations',
+      desc: 'Summarize weekly lead pipeline numbers for leadership review.',
+      tip: "Comparing this week's numbers against last week's, and naming a specific win and a specific area to improve, turns a raw number dump into something leadership can actually act on.",
+      template: 'Write a performance summary: [This_Week_Stats]. Last week: [Last_Week_Stats]. Highlight wins and areas to improve.',
+      vars: [
+        { id: 'This_Week_Stats', label: "This Week's Stats", type: 'text', default: '42 new leads, 18 contacted, 6 qualified, 2 appointments, 1 referral' },
+        { id: 'Last_Week_Stats', label: "Last Week's Stats", type: 'text', default: '38 new leads, 15 contacted, 4 qualified, 1 appointment' }
+      ] },
+    { title: 'Re-Engagement Email for a Cold Lead', badge: 'Email', category: 'Operations',
+      desc: 'Reach back out to a lead who has gone quiet for an extended period.',
+      tip: "Referencing their original stated timeline shows the lead you actually remembered their situation, instead of sending the same generic 'just checking in' message everyone else does.",
+      template: 'Write a re-engagement email for a lead who last responded [Days_Cold] days ago and originally said they were [Original_Timeline]. Reference their original timeline and ask if now is a good time to reconnect.',
+      vars: [
+        { id: 'Days_Cold', label: 'Days Since Last Contact', type: 'text', default: '148' },
+        { id: 'Original_Timeline', label: 'Original Stated Timeline', type: 'text', default: 'not planning to sell for at least 6 months' }
+      ] },
+    { title: 'Agent Handoff Briefing Note', badge: 'Handoff', category: 'Operations',
+      desc: 'Brief an agent before a lead\'s first appointment.',
+      tip: "Handing the agent a complete picture (budget, timeline, motivation, and any preferences) before the first meeting means the agent doesn't waste the appointment re-asking questions the lead already answered.",
+      template: 'Create an agent briefing note for a [Lead_Type] with a [Budget] budget. Timeline: [Timeline]. Motivation: [Motivation]. Appointment: [Appointment_Details].',
+      vars: [
+        { id: 'Lead_Type', label: 'Lead Type', type: 'text', default: 'buyer relocating from Chicago' },
+        { id: 'Budget', label: 'Budget', type: 'text', default: '$450,000' },
+        { id: 'Timeline', label: 'Timeline', type: 'text', default: '60 days' },
+        { id: 'Motivation', label: 'Motivation', type: 'text', default: 'new job start date' },
+        { id: 'Appointment_Details', label: 'Appointment Details', type: 'text', default: 'Saturday 10am, 3 properties to view' }
+      ] }
+  ];
+
+  function toggleResources(card) {
+    var panel = document.getElementById('resources-panel');
+    var isOpen = panel.classList.toggle('open');
+    card.classList.toggle('open', isOpen);
+    if (isOpen) setTimeout(function(){ panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 40);
+  }
+  function openResources() {
+    var card = document.querySelector('.rd-mode-resources');
+    var panel = document.getElementById('resources-panel');
+    if (!panel.classList.contains('open')) { panel.classList.add('open'); if(card) card.classList.add('open'); }
+    setTimeout(function(){ panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 40);
+  }
+</script>
+</body>
+</html>

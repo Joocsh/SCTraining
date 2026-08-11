@@ -1,0 +1,428 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Real-Case Simulator · SkillCloud Academy</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+  :root{--v-navy:#0a2647;--v-navy2:#0f3460;--v-cyan:#17c3d4;--v-cyan-d:#0fa6b6}
+
+  .sim-hero{
+    background:linear-gradient(135deg,var(--v-navy),var(--v-navy2));
+    color:#fff;border-radius:20px;padding:40px 32px;margin:24px 0 28px;
+    position:relative;overflow:hidden;
+  }
+  .sim-hero::after{
+    content:'';position:absolute;inset:auto -8% -70% auto;width:280px;height:280px;
+    border-radius:50%;background:radial-gradient(circle at 30% 30%, rgba(23,195,212,.24), transparent 70%);
+  }
+  .sim-hero .crumb{position:relative;font-size:13px;color:#c8d7e6;margin-bottom:14px}
+  .sim-hero .crumb a{color:#c8d7e6}
+  .sim-hero h1{position:relative;margin:0 0 10px;font-size:clamp(24px,4vw,32px);font-weight:900;letter-spacing:-.5px}
+  .sim-hero p{position:relative;margin:0;color:#c8d7e6;font-size:15px;max-width:640px;line-height:1.6}
+
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+  .tab{
+    padding:10px 20px;border-radius:999px;border:1.5px solid var(--line);background:#fff;
+    cursor:pointer;font-weight:700;font-size:13.5px;color:var(--v-navy2);
+    transition:background .16s ease,color .16s ease,border-color .16s ease,transform .16s ease;
+  }
+  .tab:hover{transform:translateY(-2px);border-color:rgba(23,195,212,.4)}
+  .tab.active{background:var(--v-navy);color:#fff;border-color:var(--v-navy)}
+
+  .cat-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 18px}
+  .cat{padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:600;font-size:13.5px;color:var(--v-navy2);transition:background .16s ease,color .16s ease,border-color .16s ease}
+  .cat:hover{border-color:rgba(23,195,212,.4)}
+  .cat.active{background:var(--v-navy);color:#fff;border-color:var(--v-navy)}
+  .code-badge{display:inline-grid;place-items:center;min-width:42px;height:30px;padding:0 8px;border-radius:8px;background:var(--v-navy);color:#fff;font-weight:800;font-size:13px;letter-spacing:1px}
+  .scn-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--v-cyan-d);background:rgba(23,195,212,.1);padding:3px 9px;border-radius:999px}
+
+  .panel .card.link{
+    opacity:0;transform:translateY(8px);animation:simIn .45s ease forwards;
+    transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+  }
+  .panel .card.link:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(10,38,71,.1);border-color:rgba(23,195,212,.4)}
+  #sc-cards .card.link:nth-child(1),#sc-cards .card.link:nth-child(2){animation-delay:.04s}
+  #sc-cards .card.link:nth-child(3),#sc-cards .card.link:nth-child(4){animation-delay:.1s}
+  #sc-cards .card.link:nth-child(5),#sc-cards .card.link:nth-child(6){animation-delay:.16s}
+  @keyframes simIn{to{opacity:1;transform:none}}
+
+  @media(max-width:640px){
+    .sim-hero{padding:28px 20px;border-radius:16px}
+    .tabs{gap:6px}
+    .tab{padding:9px 14px;font-size:12.5px}
+  }
+</style>
+</head>
+<body>
+<nav class="nav" id="nav"><div class="nav-inner">
+  <a class="brand" href="index.html"><img src="assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+  <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+  <div class="menu">
+    <a class="navlink" href="index.html">Home</a>
+    <a class="navlink" href="ai.html">Introduction</a>
+    <a class="navlink" href="index.html#roles">Roles</a>
+  </div>
+  <span class="spacer"></span>
+  <a class="pill" href="index.html#roles">Start Practicing</a>
+  <a class="user-chip" href="account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
+</div></nav>
+
+<div class="wrap">
+  <div class="sim-hero">
+    <div class="crumb"><a href="index.html">Home</a> &rsaquo; Practice Sandbox</div>
+    <h1>General Practice Sandbox</h1>
+    <p>A warm up before you pick a role: branching scenarios, prompt practice, a timed quiz, and deadline drills across every market. For the full, real case simulations, head into a specific role's Case Simulator.</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-mode="scenario">Branching Scenarios</button>
+    <button class="tab" data-mode="sandbox">Prompt Practice</button>
+    <button class="tab" data-mode="quiz">Timed Quiz</button>
+    <button class="tab" data-mode="drill">Deadline Drills</button>
+  </div>
+
+  <!-- ============ SCENARIOS ============ -->
+  <section class="panel active" id="scenario">
+    <div id="sc-pick">
+      <div class="cat-tabs">
+        <button class="cat active" data-cat="deals">Transaction Deals</button>
+        <button class="cat" data-cat="roles">Role &amp; General Scenarios</button>
+      </div>
+      <div class="grid g3" id="sc-cards"></div>
+    </div>
+    <div id="sc-play" style="display:none">
+      <div id="sc-head"></div>
+      <div class="progress"><i id="sc-bar"></i></div>
+      <div class="scorebar"><span class="chip" id="sc-step"></span><span class="chip" id="sc-score"></span><button class="btn outline sm" onclick="scReset()">&larr; Back to scenarios</button></div>
+      <div class="scenario" id="sc-body"></div>
+    </div>
+  </section>
+
+  <!-- ============ SANDBOX ============ -->
+  <section class="panel" id="sandbox">
+    <h2>Prompt practice sandbox</h2>
+    <p class="muted">Read the scenario, write the best prompt you can, then reveal a model strong prompt and why it works. Score yourself honestly.</p>
+    <div class="scorebar"><span class="chip" id="sb-count"></span><span class="chip" id="sb-score">Self score: 0</span></div>
+    <div class="scenario" id="sb-body"></div>
+    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn outline sm" onclick="sbPrev()">&larr; Previous</button>
+      <button class="btn sm" onclick="sbNext()">Next &rarr;</button>
+    </div>
+  </section>
+
+  <!-- ============ QUIZ ============ -->
+  <section class="panel" id="quiz">
+    <div id="qz-intro">
+      <h2>Timed knowledge quiz</h2>
+      <p class="muted">Questions across every market and role in this practice library. The clock runs while you answer, aim for speed and accuracy.</p>
+      <button class="btn" onclick="qzStart()">Start the clock &rarr;</button>
+    </div>
+    <div id="qz-play" style="display:none">
+      <div class="scorebar"><span class="chip" id="qz-num"></span><span class="chip" id="qz-time">0:00</span><span class="chip" id="qz-score">Score: 0</span></div>
+      <div class="progress"><i id="qz-bar"></i></div>
+      <div class="scenario" id="qz-body"></div>
+    </div>
+    <div id="qz-done" style="display:none"></div>
+  </section>
+
+  <!-- ============ DRILLS ============ -->
+  <section class="panel" id="drill">
+    <h2>Deadline tracker drills</h2>
+    <p class="muted">Given the contract dates, fill in the correct deadline for each milestone. The tool checks every date against that state's rules.</p>
+    <div class="cat-tabs" id="dr-pick"></div>
+    <div class="scenario" id="dr-body"></div>
+  </section>
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="index.html#roles">Choose Your Role</a>
+        <a class="fl" href="index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="roles/transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="roles/listing-coordinator.html">Listing Coordinator</a>
+        <a class="fl" href="roles/leasing-coordinator.html">Leasing Coordinator</a>
+        <a class="fl" href="roles/lead-manager.html">Lead Manager</a>
+        <a class="fl" href="roles/operations-manager.html">Operations</a>
+        <a class="fl" href="roles/cfo-bookkeeper.html">CFO / Bookkeeper</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/app-core.js"></script>
+<script src="assets/js/site.js"></script>
+<script src="assets/js/sim-data.js"></script>
+<script>
+const scMe = SCApp.requireAuth();
+document.querySelectorAll('.tab[data-mode]').forEach(t=>{
+  t.onclick=()=>{
+    document.querySelectorAll('.tab[data-mode]').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById(t.dataset.mode).classList.add('active');
+  };
+});
+const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+/* ================= SCENARIOS (unified) ================= */
+let scCat='deals', scItem=null, scIdx=0, scRight=0, scAnswered=false;
+
+document.querySelectorAll('.cat[data-cat]').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.cat[data-cat]').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); scCat=b.dataset.cat; scCards();
+  };
+});
+
+function scCards(){
+  const c=document.getElementById('sc-cards'); c.innerHTML='';
+  if(scCat==='deals'){
+    Object.keys(DEALS).forEach(k=>{
+      const d=DEALS[k];
+      const el=document.createElement('div'); el.className='card link'; el.style.cursor='pointer';
+      el.onclick=()=>scStart(d,'deal');
+      el.innerHTML='<span class="code-badge">'+d.code+'</span><h3 style="margin:12px 0 4px">'+esc(d.state)+'</h3>'+
+        '<p class="small muted">'+esc(d.address)+'</p>'+
+        '<p class="small"><b>Buyers:</b> '+esc(d.buyers)+'<br><b>Price:</b> '+d.price+'</p>'+
+        '<span class="badge state">'+d.steps.length+' decisions</span>';
+      c.appendChild(el);
+    });
+  } else {
+    SCENARIOS.forEach(s=>{
+      const el=document.createElement('div'); el.className='card link'; el.style.cursor='pointer';
+      el.onclick=()=>scStart(s,'scn');
+      el.innerHTML='<span class="scn-tag">'+esc(s.cat)+'</span>'+
+        '<h3 style="margin:10px 0 4px">'+esc(s.title)+'</h3>'+
+        '<p class="small muted">'+esc(s.role)+'</p>'+
+        '<span class="badge state">'+s.steps.length+' decisions</span>';
+      c.appendChild(el);
+    });
+  }
+}
+
+function scStart(item,type){
+  scItem=item; scIdx=0; scRight=0;
+  document.getElementById('sc-pick').style.display='none';
+  document.getElementById('sc-play').style.display='block';
+  let head;
+  if(type==='deal'){
+    head='<h2>'+esc(item.state)+' — '+esc(item.address)+'</h2>'+
+      '<div class="callout info" style="margin-top:6px"><b>The file:</b> '+esc(item.buyers)+' (buyers) · '+esc(item.seller)+' (seller) · '+item.price+
+      '<br><span class="small muted">'+esc(item.form)+' · '+esc(item.facts)+'</span></div>';
+  } else {
+    head='<span class="scn-tag">'+esc(item.cat)+'</span>'+
+      '<h2 style="margin-top:8px">'+esc(item.title)+'</h2>'+
+      '<div class="callout info"><b>Scenario:</b> '+esc(item.context)+'</div>';
+  }
+  document.getElementById('sc-head').innerHTML=head;
+  scRender();
+}
+function scRender(){
+  const step=scItem.steps[scIdx]; scAnswered=false;
+  document.getElementById('sc-step').textContent='Step '+(scIdx+1)+' of '+scItem.steps.length;
+  document.getElementById('sc-score').textContent='Correct: '+scRight+'/'+scItem.steps.length;
+  document.getElementById('sc-bar').style.width=(scIdx/scItem.steps.length*100)+'%';
+  let h='<h3>'+esc(step.q)+'</h3>';
+  step.choices.forEach((ch,i)=>h+='<button class="choice" onclick="scPick('+i+')">'+esc(ch.t)+'</button>');
+  h+='<div class="fb" id="sc-fb"></div><div id="sc-next"></div>';
+  document.getElementById('sc-body').innerHTML=h;
+}
+function scPick(i){
+  if(scAnswered)return; scAnswered=true;
+  const step=scItem.steps[scIdx];
+  const btns=document.querySelectorAll('#sc-body .choice');
+  btns.forEach((b,j)=>{b.disabled=true; if(step.choices[j].ok)b.classList.add('correct'); if(j===i&&!step.choices[j].ok)b.classList.add('wrong');});
+  const ok=step.choices[i].ok; if(ok)scRight++;
+  const fb=document.getElementById('sc-fb'); fb.className='fb show '+(ok?'good':'bad');
+  fb.innerHTML='<b>'+(ok?'Right call.':'Not the best call.')+'</b> '+esc(step.fb);
+  document.getElementById('sc-score').textContent='Correct: '+scRight+'/'+scItem.steps.length;
+  const nx=document.getElementById('sc-next');
+  if(scIdx<scItem.steps.length-1) nx.innerHTML='<button class="btn" style="margin-top:14px" onclick="scAdvance()">Next decision &rarr;</button>';
+  else nx.innerHTML='<button class="btn gold" style="margin-top:14px" onclick="scFinish()">See results &rarr;</button>';
+}
+function scAdvance(){scIdx++; scRender();}
+function scFinish(){
+  const pct=Math.round(scRight/scItem.steps.length*100);
+  document.getElementById('sc-bar').style.width='100%';
+  if(scMe) SCApp.setModeScore(scMe.id,'general','scenario',scRight,scItem.steps.length);
+  let msg = pct>=80?'Excellent — you handled this like a seasoned pro.':pct>=50?'Solid. Review the feedback on the ones you missed.':'Keep practicing — revisit the playbook and try again.';
+  document.getElementById('sc-body').innerHTML=
+    '<div class="result"><div class="big">'+pct+'%</div>'+
+    '<p><b>'+scRight+' of '+scItem.steps.length+'</b> right calls.</p>'+
+    '<p class="muted">'+msg+'</p>'+
+    '<button class="btn" onclick="scStart(scItem,scItem.address?\'deal\':\'scn\')">Replay</button>'+
+    '<button class="btn outline" onclick="scReset()">Back to scenarios</button></div>';
+}
+function scReset(){
+  document.getElementById('sc-play').style.display='none';
+  document.getElementById('sc-pick').style.display='block';
+}
+
+/* ================= SANDBOX ================= */
+let sbIdx=0, sbScore=0;
+function sbRender(){
+  const p=PROMPTS[sbIdx];
+  document.getElementById('sb-count').textContent='Scenario '+(sbIdx+1)+' of '+PROMPTS.length;
+  document.getElementById('sb-body').innerHTML=
+    '<span class="badge">'+esc(p.role)+'</span>'+
+    '<h3 style="margin-top:8px">'+esc(p.task)+'</h3>'+
+    '<label class="small muted">Write your prompt:</label>'+
+    '<textarea class="answer" id="sb-input" placeholder="You are a... Draft/Write/Summarize..."></textarea>'+
+    '<button class="btn sm" style="margin-top:10px" onclick="sbReveal()">Reveal model answer</button>'+
+    '<div class="reveal" id="sb-reveal"></div>';
+}
+function sbReveal(){
+  const p=PROMPTS[sbIdx];
+  document.getElementById('sb-reveal').innerHTML=
+    '<div class="prompt"><span class="lbl">WEAK PROMPT</span>'+esc(p.weak)+'</div>'+
+    '<div class="prompt"><span class="lbl">STRONG PROMPT</span>'+esc(p.strong)+'</div>'+
+    '<div class="callout"><b>Why it works:</b> '+esc(p.why)+'</div>'+
+    '<p class="small muted">How did your prompt compare?</p>'+
+    '<button class="btn sm gold" onclick="sbRate(1)">Mine was just as strong (+1)</button> '+
+    '<button class="btn sm outline" onclick="sbRate(0)">I will tighten mine</button>';
+}
+function sbRate(n){sbScore+=n; document.getElementById('sb-score').textContent='Self-score: '+sbScore;
+  if(scMe) SCApp.setModeScore(scMe.id,'general','prompt',Math.min(sbScore,PROMPTS.length),PROMPTS.length);
+  sbNext();}
+function sbNext(){sbIdx=(sbIdx+1)%PROMPTS.length; sbRender();}
+function sbPrev(){sbIdx=(sbIdx-1+PROMPTS.length)%PROMPTS.length; sbRender();}
+
+/* ================= QUIZ ================= */
+let qzIdx=0, qzScore=0, qzT=null, qzSec=0;
+function qzStart(){
+  qzIdx=0; qzScore=0; qzSec=0;
+  document.getElementById('qz-intro').style.display='none';
+  document.getElementById('qz-done').style.display='none';
+  document.getElementById('qz-play').style.display='block';
+  clearInterval(qzT);
+  qzT=setInterval(function(){qzSec++; var m=Math.floor(qzSec/60),s=String(qzSec%60).padStart(2,'0'); document.getElementById('qz-time').textContent=m+':'+s;},1000);
+  qzRender();
+}
+function qzRender(){
+  const item=QUIZ[qzIdx];
+  document.getElementById('qz-num').textContent='Q '+(qzIdx+1)+' / '+QUIZ.length;
+  document.getElementById('qz-score').textContent='Score: '+qzScore;
+  document.getElementById('qz-bar').style.width=(qzIdx/QUIZ.length*100)+'%';
+  let h='<h3>'+esc(item.q)+'</h3>';
+  item.a.forEach((opt,i)=>h+='<button class="choice" onclick="qzPick('+i+')">'+esc(opt)+'</button>');
+  h+='<div class="fb" id="qz-fb"></div><div id="qz-next"></div>';
+  document.getElementById('qz-body').innerHTML=h;
+}
+function qzPick(i){
+  const item=QUIZ[qzIdx];
+  const btns=document.querySelectorAll('#qz-body .choice');
+  if(btns[0].disabled)return;
+  btns.forEach((b,j)=>{b.disabled=true; if(j===item.c)b.classList.add('correct'); if(j===i&&i!==item.c)b.classList.add('wrong');});
+  const ok=i===item.c; if(ok)qzScore++;
+  const fb=document.getElementById('qz-fb'); fb.className='fb show '+(ok?'good':'bad');
+  fb.innerHTML=ok?'<b>Correct.</b>':'<b>Correct answer:</b> '+esc(item.a[item.c]);
+  document.getElementById('qz-score').textContent='Score: '+qzScore;
+  document.getElementById('qz-next').innerHTML=
+    qzIdx<QUIZ.length-1?'<button class="btn" style="margin-top:14px" onclick="qzAdvance()">Next &rarr;</button>'
+    :'<button class="btn gold" style="margin-top:14px" onclick="qzFinish()">Finish &rarr;</button>';
+}
+function qzAdvance(){qzIdx++; qzRender();}
+function qzFinish(){
+  clearInterval(qzT);
+  const pct=Math.round(qzScore/QUIZ.length*100);
+  const m=Math.floor(qzSec/60),s=String(qzSec%60).padStart(2,'0');
+  document.getElementById('qz-play').style.display='none';
+  if(scMe) SCApp.setModeScore(scMe.id,'general','quiz',qzScore,QUIZ.length);
+  const dn=document.getElementById('qz-done'); dn.style.display='block';
+  let band=pct>=87?'SkillCloud Pro':pct>=67?'Solid Associate':'Keep Studying';
+  dn.innerHTML='<div class="scenario"><div class="result">'+
+    '<div class="big">'+pct+'%</div>'+
+    '<p><b>'+qzScore+' / '+QUIZ.length+'</b> correct in <b>'+m+':'+s+'</b></p>'+
+    '<p class="chip">'+band+'</p>'+
+    '<div style="margin-top:16px"><button class="btn" onclick="qzStart()">Retake quiz</button></div>'+
+    '</div></div>';
+}
+
+/* ================= DEADLINE DRILLS ================= */
+function addCal(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
+function addBiz(d,n){const x=new Date(d);let added=0;while(added<n){x.setDate(x.getDate()+1);const dow=x.getDay();if(dow!==0&&dow!==6)added++;}return x;}
+function subBiz(d,n){const x=new Date(d);let r=0;while(r<n){x.setDate(x.getDate()-1);const dow=x.getDay();if(dow!==0&&dow!==6)r++;}return x;}
+function iso(d){return d.toISOString().slice(0,10);}
+function pretty(d){return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});}
+function expected(row,startISO){
+  const start=new Date(startISO+'T00:00:00');
+  if(row.mode==='cal')return addCal(start,row.n);
+  if(row.mode==='biz')return addBiz(start,row.n);
+  if(row.mode==='bizBefore')return subBiz(new Date(row.ref+'T00:00:00'),row.n);
+  return start;
+}
+let drKey='tx';
+function drPickInit(){
+  const p=document.getElementById('dr-pick'); p.innerHTML='';
+  Object.keys(DRILLS).forEach(k=>{
+    const d=DRILLS[k];
+    const b=document.createElement('button'); b.className='cat'+(k===drKey?' active':'');
+    b.textContent=d.state; b.onclick=()=>{drKey=k; drPickInit(); drRender();};
+    p.appendChild(b);
+  });
+}
+function drRender(){
+  const d=DRILLS[drKey];
+  let h='<h3><span class="code-badge">'+d.code+'</span> &nbsp;'+esc(d.deal)+'</h3>'+
+    '<div class="callout info">'+esc(d.startLabel)+'</div>'+
+    '<table class="tbl"><tr><th>Milestone</th><th>Rule</th><th>Your deadline</th></tr>';
+  d.rows.forEach(r=>{
+    h+='<tr><td>'+esc(r.label)+'</td><td class="small muted">'+esc(r.rule)+'</td>'+
+      '<td><input type="date" id="dr-'+r.id+'" style="padding:7px;border:1px solid #c9d4df;border-radius:8px">'+
+      '<div class="small" id="drfb-'+r.id+'"></div></td></tr>';
+  });
+  h+='</table><button class="btn" onclick="drCheck()">Check my deadlines</button> '+
+     '<button class="btn outline" onclick="drShow()">Show answers</button>'+
+     '<div id="dr-result" style="margin-top:12px"></div>';
+  document.getElementById('dr-body').innerHTML=h;
+}
+function drCheck(){
+  const d=DRILLS[drKey]; let right=0;
+  d.rows.forEach(r=>{
+    const inp=document.getElementById('dr-'+r.id), fb=document.getElementById('drfb-'+r.id);
+    const exp=expected(r,d.start);
+    if(inp.value && inp.value===iso(exp)){right++; fb.innerHTML='<span style="color:var(--good)">Correct</span>'; inp.style.borderColor='var(--good)';}
+    else{fb.innerHTML='<span style="color:var(--bad)">Try again</span>'; inp.style.borderColor='var(--bad)';}
+  });
+  document.getElementById('dr-result').innerHTML=
+    '<div class="callout '+(right===d.rows.length?'':'warn')+'"><b>'+right+' / '+d.rows.length+' correct.</b> '+(right===d.rows.length?'Perfect deadline table.':'Use Show answers to learn the ones you missed.')+'</div>';
+  if(scMe) SCApp.setModeScore(scMe.id,'general','drill',right,d.rows.length);
+}
+function drShow(){
+  const d=DRILLS[drKey];
+  d.rows.forEach(r=>{
+    const exp=expected(r,d.start);
+    document.getElementById('dr-'+r.id).value=iso(exp);
+    document.getElementById('drfb-'+r.id).innerHTML='<span class="muted">'+pretty(exp)+'</span>';
+    document.getElementById('dr-'+r.id).style.borderColor='var(--teal)';
+  });
+  document.getElementById('dr-result').innerHTML='<div class="callout"><b>Answers filled in.</b> Each date follows the '+d.state+' rule shown in the middle column.</div>';
+}
+
+/* init */
+scCards(); sbRender(); drPickInit(); drRender();
+</script>
+</body>
+</html>

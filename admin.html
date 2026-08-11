@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supervisor Dashboard · Skill Cloud Academy</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+.adm-hero{background:linear-gradient(135deg,var(--v-navy),var(--v-navy2));color:#fff;padding:44px 24px 54px;position:relative;overflow:hidden}
+.adm-hero::after{content:'';position:absolute;inset:auto -10% -60% auto;width:340px;height:340px;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%,rgba(23,195,212,.22),transparent 70%)}
+.adm-hero .inner{max-width:1080px;margin:0 auto;position:relative}
+.adm-hero h1{margin:0 0 6px;font-size:clamp(22px,4vw,28px);font-weight:900;letter-spacing:-.4px}
+.adm-hero p{margin:0;color:#c8d7e6;font-size:14.5px}
+.empty-note{color:var(--muted);font-size:14px;padding:20px 0}
+.roster-row{cursor:pointer}
+.roster-row .chev{color:var(--muted);font-size:13px;transition:transform .15s;flex:none}
+.roster-row.open .chev{transform:rotate(90deg)}
+.roster-detail{display:none;background:#fbfcfe;border:1px solid var(--line);border-top:none;border-radius:0 0 12px 12px;
+  margin:-12px 0 12px;padding:6px 20px 14px}
+.roster-detail.open{display:block}
+.roster-detail .empty-note{padding:10px 0}
+</style>
+</head>
+<body>
+<nav class="nav" id="nav"><div class="nav-inner">
+  <a class="brand" href="index.html"><img src="assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+  <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+  <div class="menu">
+    <a class="navlink" href="index.html">Home</a>
+    <a class="navlink active" href="admin.html">Supervisor</a>
+  </div>
+  <span class="spacer"></span>
+  <a class="user-chip" href="admin.html" aria-label="My account"><span class="av">A</span><span class="uc-label">Admin</span></a>
+  <button class="logout-btn">Log Out</button>
+</div></nav>
+
+<header class="adm-hero">
+  <div class="inner">
+    <h1>Supervisor Dashboard</h1>
+    <p>Review associate progress and grade the emails they submit for practice.</p>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="section">
+    <h2>Associate roster</h2>
+    <div class="roster" id="roster"></div>
+  </div>
+
+  <div class="section">
+    <h2>Email inbox</h2>
+    <div class="inbox-tabs">
+      <button class="inbox-tab active" data-status="pending">Pending</button>
+      <button class="inbox-tab" data-status="graded">Graded</button>
+    </div>
+    <div id="inbox"></div>
+  </div>
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="index.html#roles">Choose Your Role</a>
+        <a class="fl" href="index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="roles/transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="roles/listing-coordinator.html">Listing Coordinator</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition · Claude AI</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>© 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/app-core.js"></script>
+<script src="assets/js/site.js"></script>
+<script>
+(function(){
+  var me = SCApp.requireAuth({adminOnly:true});
+  if(!me) return;
+
+  var activeStatus = 'pending';
+
+  function renderRoster(){
+    var users = SCApp.getUsers().filter(function(u){ return u.role==='user'; });
+    var el = document.getElementById('roster');
+    if(!users.length){ el.innerHTML = '<p class="empty-note">No associates yet.</p>'; return; }
+    el.innerHTML = users.map(function(u){
+      var pct = SCApp.getOverallPercent(u.id);
+      var roleLabel = SCApp.ROLE_LABELS[u.assignedRole] || 'Unassigned';
+      return '<div class="roster-row" data-uid="'+u.id+'">'+
+        '<div class="av">'+(u.avatar||u.name.charAt(0)).toUpperCase()+'</div>'+
+        '<div class="who"><div class="nm">'+u.name+'</div><div class="rl">'+roleLabel+' &middot; '+u.email+'</div></div>'+
+        '<div class="progress" style="max-width:160px"><i style="width:'+pct+'%"></i></div>'+
+        '<div class="pct">'+pct+'%</div>'+
+        '<span class="chev">&#9656;</span>'+
+      '</div>'+
+      '<div class="roster-detail" data-detail-for="'+u.id+'"></div>';
+    }).join('');
+
+    el.querySelectorAll('.roster-row').forEach(function(row){
+      row.addEventListener('click', function(){
+        var uid = row.dataset.uid;
+        var detail = el.querySelector('.roster-detail[data-detail-for="'+uid+'"]');
+        var opening = !detail.classList.contains('open');
+        el.querySelectorAll('.roster-detail.open').forEach(function(d){ d.classList.remove('open'); });
+        el.querySelectorAll('.roster-row.open').forEach(function(r){ r.classList.remove('open'); });
+        if(opening){
+          detail.innerHTML = renderRosterDetail(uid);
+          detail.classList.add('open');
+          row.classList.add('open');
+        }
+      });
+    });
+  }
+
+  function renderRosterDetail(uid){
+    var breakdown = SCApp.getRoleBreakdown(uid);
+    var rows = [];
+    Object.keys(breakdown).forEach(function(r){
+      var rb = breakdown[r];
+      Object.keys(rb.modes).forEach(function(m){
+        var mv = rb.modes[m];
+        var mpct = mv.max ? Math.round(mv.score/mv.max*100) : 0;
+        rows.push('<div class="mode-row"><div class="mname">'+(SCApp.ROLE_LABELS[r]||r)+' &middot; '+m+'</div>'+
+          '<div class="progress"><i style="width:'+mpct+'%"></i></div><div class="mpct">'+mpct+'%</div></div>');
+      });
+    });
+    if(!rows.length) return '<p class="empty-note">No modules recorded yet for this associate.</p>';
+    return rows.join('');
+  }
+
+  function renderInbox(){
+    var subs = SCApp.listSubmissions({status:activeStatus});
+    var el = document.getElementById('inbox');
+    if(!subs.length){
+      el.innerHTML = '<p class="empty-note">Nothing '+activeStatus+' right now.</p>';
+      return;
+    }
+    el.innerHTML = subs.map(function(s){
+      var u = SCApp.findUserById(s.userId) || {name:'Unknown'};
+      var roleLabel = SCApp.ROLE_LABELS[s.role] || s.role;
+      var date = new Date(s.ts).toLocaleDateString();
+      if(s.status==='graded'){
+        return '<div class="sub-card">'+
+          '<div class="meta"><b>'+u.name+'</b><span>'+roleLabel+'</span><span>'+date+'</span>'+
+          '<span class="graded-tag">Graded '+s.score+'/'+s.maxScore+'</span></div>'+
+          '<div class="scenario">'+s.scenarioPrompt+'</div>'+
+          '<div class="answer-text">'+escapeHtml(s.text)+'</div>'+
+          (s.feedback ? '<div class="callout"><h4>Your feedback</h4><p>'+escapeHtml(s.feedback)+'</p></div>' : '')+
+        '</div>';
+      }
+      return '<div class="sub-card" data-id="'+s.id+'">'+
+        '<div class="meta"><b>'+u.name+'</b><span>'+roleLabel+'</span><span>'+date+'</span></div>'+
+        '<div class="scenario">'+s.scenarioPrompt+'</div>'+
+        '<div class="answer-text">'+escapeHtml(s.text)+'</div>'+
+        '<div class="star-row" data-score="0">'+
+          [1,2,3,4,5].map(function(n){ return '<span class="star" data-n="'+n+'">&#9733;</span>'; }).join('')+
+        '</div>'+
+        '<textarea class="grade-feedback" placeholder="Feedback for '+u.name.split(' ')[0]+' (what worked, what to improve)"></textarea>'+
+        '<button class="btn v-cyan sm submit-grade" disabled>Submit Grade</button>'+
+      '</div>';
+    }).join('');
+
+    el.querySelectorAll('.star-row').forEach(function(row){
+      row.querySelectorAll('.star').forEach(function(star){
+        star.addEventListener('click', function(){
+          var n = parseInt(star.dataset.n, 10);
+          row.dataset.score = n;
+          row.querySelectorAll('.star').forEach(function(s2){
+            s2.classList.toggle('on', parseInt(s2.dataset.n,10) <= n);
+          });
+          var card = row.closest('.sub-card');
+          card.querySelector('.submit-grade').disabled = false;
+        });
+      });
+    });
+    el.querySelectorAll('.submit-grade').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var card = btn.closest('.sub-card');
+        var id = card.dataset.id;
+        var score = parseInt(card.querySelector('.star-row').dataset.score, 10) || 0;
+        var feedback = card.querySelector('.grade-feedback').value.trim();
+        if(!feedback){
+          card.querySelector('.grade-feedback').style.borderColor = 'var(--bad)';
+          return;
+        }
+        SCApp.gradeSubmission(id, score, feedback, me.id);
+        renderInbox();
+        renderRoster();
+      });
+    });
+  }
+
+  document.querySelectorAll('.inbox-tab').forEach(function(tab){
+    tab.addEventListener('click', function(){
+      document.querySelectorAll('.inbox-tab').forEach(function(t){ t.classList.remove('active'); });
+      tab.classList.add('active');
+      activeStatus = tab.dataset.status;
+      renderInbox();
+    });
+  });
+
+  function escapeHtml(str){
+    return (str||'').replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  renderRoster();
+  renderInbox();
+})();
+</script>
+</body>
+</html>

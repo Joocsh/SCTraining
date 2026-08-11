@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Account · Skill Cloud Academy</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<style>
+.acc-hero{
+  background:linear-gradient(135deg,var(--v-navy),var(--v-navy2));
+  color:#fff;
+  padding:60px 24px 68px;
+  position:relative;
+  overflow:hidden;
+}
+.acc-hero::after{
+  content:'';
+  position:absolute;
+  inset:auto -10% -60% auto;
+  width:340px;
+  height:340px;
+  border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, rgba(23,195,212,.22), transparent 70%);
+}
+.acc-hero .inner{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:22px;position:relative;flex-wrap:wrap}
+.acc-av{
+  width:68px;height:68px;border-radius:50%;
+  background:var(--v-cyan);color:#03282c;
+  display:grid;place-items:center;font-weight:900;font-size:27px;flex:none;
+  box-shadow:0 10px 26px rgba(23,195,212,.35);
+}
+.acc-hero h1{margin:0 0 5px;font-size:clamp(22px,4vw,28px);font-weight:900;letter-spacing:-.4px}
+.acc-hero p{margin:0;color:#c8d7e6;font-size:14.5px}
+.acc-hero .spacer{flex:1}
+.acc-hero .logout-btn{border-color:rgba(255,255,255,.35);color:#fff}
+.acc-hero .logout-btn:hover{border-color:#fff}
+
+.acc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:-34px;position:relative;z-index:2}
+.acc-card{
+  background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px 20px;
+  box-shadow:0 16px 40px rgba(10,38,71,.08);
+  opacity:0;transform:translateY(10px);
+  animation:accIn .5s ease forwards;
+}
+.acc-card:nth-child(1){animation-delay:.05s}
+.acc-card:nth-child(2){animation-delay:.12s}
+.acc-card:nth-child(3){animation-delay:.19s}
+@keyframes accIn{to{opacity:1;transform:none}}
+.acc-card .n{font-size:30px;font-weight:900;color:var(--v-navy);letter-spacing:-.5px}
+.acc-card .l{font-size:12.5px;color:var(--muted);font-weight:800;letter-spacing:.4px;text-transform:uppercase;margin-top:4px}
+
+.acc-continue{
+  margin-top:34px;background:linear-gradient(135deg,#fff,#eefafe);border:1px solid #a8e6f0;border-radius:16px;
+  padding:22px 24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+}
+.acc-continue h4{margin:0 0 4px;font-size:15px;font-weight:800;color:var(--v-navy)}
+.acc-continue p{margin:0;font-size:13.5px;color:var(--muted)}
+.acc-continue .btn{margin-left:auto}
+
+.acc-feedback-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow)}
+.acc-feedback-card .meta{font-size:12.5px;color:var(--muted);margin-bottom:6px}
+.acc-feedback-card .score{font-weight:800;color:var(--v-navy)}
+
+.acc-start-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+.acc-start-card{
+  display:block;background:#fff;border:1.5px solid var(--line);border-radius:14px;
+  padding:20px 20px 18px;text-decoration:none;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.acc-start-card:hover{transform:translateY(-3px);box-shadow:0 14px 34px rgba(10,38,71,.1);border-color:rgba(23,195,212,.4)}
+.acc-start-card h3{margin:0 0 4px;font-size:16px;color:var(--v-navy);font-weight:800}
+.acc-start-card p{margin:0;font-size:13px;color:var(--muted)}
+
+@media(max-width:820px){
+  .acc-grid{grid-template-columns:1fr;margin-top:20px}
+  .acc-start-grid{grid-template-columns:1fr}
+  .acc-continue .btn{margin-left:0}
+}
+</style>
+</head>
+<body>
+<nav class="nav" id="nav"><div class="nav-inner">
+  <a class="brand" href="index.html"><img src="assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+  <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+  <div class="menu">
+    <a class="navlink" href="index.html">Home</a>
+    <a class="navlink" href="ai.html">Introduction</a>
+    <a class="navlink" href="index.html#roles">Roles</a>
+  </div>
+  <span class="spacer"></span>
+  <a class="pill" href="index.html#roles">Start Practicing</a>
+  <a class="user-chip" href="account.html" aria-label="My account"><span class="av">A</span><span class="uc-label">Account</span></a>
+</div></nav>
+
+<header class="acc-hero">
+  <div class="inner">
+    <div class="acc-av" id="accAv">A</div>
+    <div>
+      <h1 id="accWelcome">Welcome</h1>
+      <p id="accSub">This is your personal progress space in Skill Cloud Academy.</p>
+    </div>
+    <span class="spacer"></span>
+    <button class="logout-btn" id="logoutTop">Log Out</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="acc-grid">
+    <div class="acc-card"><div class="n" id="statPct">0%</div><div class="l">Overall Progress</div></div>
+    <div class="acc-card"><div class="n" id="statRole">N/A</div><div class="l">Assigned Role</div></div>
+    <div class="acc-card"><div class="n" id="statCount">0</div><div class="l">Modules Recorded</div></div>
+  </div>
+
+  <div class="acc-continue" id="accContinue" style="display:none">
+    <div>
+      <h4>Continue where you left off</h4>
+      <p id="accContinueText">Pick up your last training page.</p>
+    </div>
+    <a class="btn v-cyan" id="accContinueBtn" href="#">Resume</a>
+  </div>
+
+  <div class="section">
+    <h2>Progress by module</h2>
+    <div class="card" id="modeBreakdown"><p class="muted small">Complete a simulator, quiz, MLS drill or email practice to see it here.</p></div>
+  </div>
+
+  <div class="section">
+    <h2>Supervisor feedback</h2>
+    <div id="feedbackList"><p class="muted small">No graded emails yet, submit one from your role's Email Practice module.</p></div>
+  </div>
+
+  <div class="section">
+    <h2>Start here</h2>
+    <div class="acc-start-grid">
+      <a class="acc-start-card" href="index.html#roles"><h3>Choose my role</h3><p>See all roles and find yours.</p></a>
+      <a class="acc-start-card" href="simulator.html"><h3>Prompt Practice Sandbox</h3><p>A general prompt writing warm up before you pick a role.</p></a>
+      <a class="acc-start-card" href="mls.html"><h3>MLS Entry Basics</h3><p>A quick, single form MLS entry warm up.</p></a>
+    </div>
+  </div>
+</div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="index.html#roles">Choose Your Role</a>
+        <a class="fl" href="index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Roles</h4>
+        <a class="fl" href="roles/transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="roles/listing-coordinator.html">Listing Coordinator</a>
+        <a class="fl" href="roles/leasing-coordinator.html">Leasing Coordinator</a>
+        <a class="fl" href="roles/lead-manager.html">Lead Manager</a>
+        <a class="fl" href="roles/operations-manager.html">Operations</a>
+        <a class="fl" href="roles/cfo-bookkeeper.html">CFO / Bookkeeper</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+<script src="assets/js/app-core.js"></script>
+<script src="assets/js/site.js"></script>
+<script>
+(function(){
+  var me = SCApp.requireAuth();
+  if(!me) return;
+
+  if(me.assignedRole) SCApp.syncLegacyProgress(me.id, me.assignedRole);
+
+  document.getElementById('accAv').textContent = (me.avatar||me.name.charAt(0)).toUpperCase();
+  document.getElementById('accWelcome').textContent = 'Welcome, '+me.name.split(' ')[0];
+  document.getElementById('accSub').textContent = 'This is your personal progress space in Skill Cloud Academy.';
+
+  document.getElementById('logoutTop').addEventListener('click', function(){
+    SCApp.logout();
+    window.location.href = 'login.html';
+  });
+
+  var pct = SCApp.getOverallPercent(me.id);
+  document.getElementById('statPct').textContent = pct+'%';
+  document.getElementById('statRole').textContent = SCApp.ROLE_LABELS[me.assignedRole] || 'N/A';
+
+  var breakdown = SCApp.getRoleBreakdown(me.id);
+  var modeCount = 0;
+  Object.keys(breakdown).forEach(function(r){ modeCount += Object.keys(breakdown[r].modes).length; });
+  document.getElementById('statCount').textContent = modeCount;
+
+  var lastPage = SCApp.getLastPage(me.id);
+  if(lastPage && lastPage !== 'account.html'){
+    document.getElementById('accContinue').style.display = 'flex';
+    document.getElementById('accContinueText').textContent = 'Jump back into ' + lastPage.replace(/\.html$/,'').replace(/^roles\//,'').replace(/-/g,' ') + '.';
+    document.getElementById('accContinueBtn').href = lastPage;
+  }
+
+  var modeEl = document.getElementById('modeBreakdown');
+  var rows = [];
+  Object.keys(breakdown).forEach(function(r){
+    var rb = breakdown[r];
+    Object.keys(rb.modes).forEach(function(m){
+      var mv = rb.modes[m];
+      var mpct = mv.max ? Math.round(mv.score/mv.max*100) : 0;
+      rows.push('<div class="mode-row"><div class="mname">'+(SCApp.ROLE_LABELS[r]||r)+' &middot; '+m+'</div>'+
+        '<div class="progress"><i style="width:'+mpct+'%"></i></div><div class="mpct">'+mpct+'%</div></div>');
+    });
+  });
+  if(rows.length) modeEl.innerHTML = rows.join('');
+
+  var fbEl = document.getElementById('feedbackList');
+  var graded = SCApp.listSubmissions({userId:me.id, status:'graded'});
+  if(graded.length){
+    fbEl.innerHTML = graded.map(function(s){
+      var date = new Date(s.gradedTs).toLocaleDateString();
+      return '<div class="acc-feedback-card"><div class="meta">'+(SCApp.ROLE_LABELS[s.role]||s.role)+' &middot; '+date+
+        ' &middot; <span class="score">'+s.score+'/'+s.maxScore+'</span></div><p>'+s.feedback+'</p></div>';
+    }).join('');
+  }
+})();
+</script>
+</body>
+</html>
