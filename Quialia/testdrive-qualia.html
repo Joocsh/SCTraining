@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Test Drive: Qualia · SkillCloud Academy</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link rel="stylesheet" href="qualia.css">
+  <style>
+    html, body { height: 100%; }
+    body.td-fullscreen { display: flex; flex-direction: column; height: 100vh; overflow: hidden; margin: 0; }
+
+    .td-strip { flex: none; background: var(--v-navy); color: #fff; display: flex; align-items: center; gap: 12px; padding: 0 22px; height: 36px; font-size: 12.5px; }
+    .td-strip-back { color: #d3e2f0; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 5px; flex: none; }
+    .td-strip-back:hover { color: #fff; text-decoration: none; }
+    .td-strip-dot { width: 4px; height: 4px; border-radius: 50%; background: rgba(255, 255, 255, .35); flex: none; }
+    .td-strip-app { font-weight: 800; flex: none; }
+    .td-strip-app b { color: var(--v-cyan); }
+    .td-strip-msg { color: #9fb4c9; margin-left: auto; font-size: 12px; }
+    @media (max-width: 640px) { .td-strip-msg { display: none; } }
+  </style>
+</head>
+
+<body class="h-body td-fullscreen">
+  <div class="td-strip">
+    <a class="td-strip-back" href="../index.html#test-drive-open">&larr; Test Drive</a>
+    <span class="td-strip-dot"></span>
+    <span class="td-strip-app">Qualia <b>Test Drive</b></span>
+    <span class="td-strip-msg">Practice copy only. Nothing here is saved or connected to a real account.</span>
+  </div>
+
+  <div class="qz-app" id="qzApp">
+    <div class="qz-topbar" id="qzTopbar" style="display:none">
+      <div class="qz-brand">
+        <span class="mark"><img src="Images-resourses/OIP.webp" alt="Qualia" style="height:28px;object-fit:contain;display:block;"></span>
+      </div>
+      <div class="qz-tabs">
+        <span class="active" data-view="dashboard" onclick="qzGoto('dashboard')">Dashboard</span>
+        <span data-view="orders" onclick="qzGoto('orders')">Orders</span>
+        <span data-view="scenarios" onclick="qzGoto('scenarios')">Scenarios</span>
+      </div>
+      <div class="qz-search">Find order&hellip; <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
+      <div class="qz-bell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="n">3</span></div>
+      <div class="qz-user"><span class="av" id="qzUserAvatar">VA</span><span id="qzUserLabel">Trainee</span></div>
+    </div>
+
+    <div class="qz-body">
+      <div id="qzLoginWrap"></div>
+      <div id="qzRoot" style="display:none"></div>
+    </div>
+  </div>
+
+  <script src="../assets/js/app-core.js"></script>
+  <script src="../assets/js/site.js"></script>
+  <script src="qualia-data.js"></script>
+  <script src="qualia-app.js"></script>
+  <script>
+    const tdMe = SCApp.requireAuth();
+  </script>
+</body>
+
+</html>
