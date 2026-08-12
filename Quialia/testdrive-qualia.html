@@ -51,6 +51,16 @@
     </div>
   </div>
 
+  <div class="qz-doc-modal" id="qzDocModal" onclick="if(event.target===this) qzCloseDoc()">
+    <div class="qz-doc-modal-card">
+      <div class="qz-doc-modal-head">
+        <span id="qzDocModalTitle">Document</span>
+        <button type="button" class="qz-doc-modal-close" onclick="qzCloseDoc()" aria-label="Close">&times;</button>
+      </div>
+      <iframe id="qzDocFrame" title="Document preview"></iframe>
+    </div>
+  </div>
+
   <script src="../assets/js/app-core.js"></script>
   <script src="../assets/js/site.js"></script>
   <script src="qualia-data.js"></script>

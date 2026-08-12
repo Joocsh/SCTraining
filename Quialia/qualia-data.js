@@ -200,6 +200,7 @@ const QZ_SCENARIOS = [
     explanation: 'Always verify data against the source document (the contract) before changing anything, then follow your company\'s procedure for corrections and escalation.',
     verifyDoc: {
       file: 'documents/purchase-agreement-1483.html',
+      title: 'Purchase Agreement',
       buttonLabel: 'View Purchase Agreement'
     },
     practice: {

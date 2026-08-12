@@ -343,7 +343,19 @@ function qzDataEntryHTML(o) {
 function qzUploadDoc(id) { qzStore.docStatus[id] = 'Received'; qzSave(); qzMark('docs-upload'); qzRenderRoot(); }
 function qzDownloadDoc() { qzMark('docs-download'); qzToast('Downloaded (training only, no real file was transferred).'); }
 function qzReviewDoc(id) { qzStore.docStatus[id] = 'Reviewed'; qzSave(); qzMark('docs-review'); qzRenderRoot(); }
-function qzViewDoc(file) { qzMark('docs-download'); window.open(file, '_blank'); }
+function qzViewDoc(file, title) {
+  qzMark('docs-download');
+  document.getElementById('qzDocModalTitle').textContent = title || 'Document';
+  document.getElementById('qzDocFrame').src = file;
+  document.getElementById('qzDocModal').classList.add('open');
+}
+function qzCloseDoc() {
+  document.getElementById('qzDocModal').classList.remove('open');
+  document.getElementById('qzDocFrame').src = 'about:blank';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') qzCloseDoc();
+});
 function qzDocumentsHTML(o) {
   const rows = qzDocsForOrder(o.id).map(d => {
     const st = qzDocStatus(d);
@@ -352,7 +364,7 @@ function qzDocumentsHTML(o) {
     if (st === 'Pending') actions = `<button class="qz-btn sm primary" onclick="qzUploadDoc(${d.id})">Upload</button>`;
     else {
       actions = d.file
-        ? `<button class="qz-btn sm" onclick="qzViewDoc('${d.file}')">View</button>`
+        ? `<button class="qz-btn sm" onclick="qzViewDoc('${d.file}','${esc(d.name)}')">View</button>`
         : `<button class="qz-btn sm" onclick="qzDownloadDoc()">Download</button>`;
       if (st === 'Received') actions += ` <button class="qz-btn sm" onclick="qzReviewDoc(${d.id})">Mark Reviewed</button>`;
     }
@@ -536,7 +548,7 @@ function qzScenarioDetailHTML() {
   const feedback = r ? `<div class="qz-feedback ${r.correct ? 'correct' : 'incorrect'}">
       <b>${r.correct ? 'Correct.' : 'Not quite.'}</b>${esc(s.explanation)}
       <div class="qz-feedback-actions">
-        ${r.correct && s.verifyDoc ? `<button class="qz-btn" onclick="qzViewDoc('${s.verifyDoc.file}')">${esc(s.verifyDoc.buttonLabel)}</button>` : ''}
+        ${r.correct && s.verifyDoc ? `<button class="qz-btn" onclick="qzViewDoc('${s.verifyDoc.file}','${esc(s.verifyDoc.title)}')">${esc(s.verifyDoc.buttonLabel)}</button>` : ''}
         ${r.correct && s.practice ? `<button class="qz-btn primary" onclick="qzPracticeAction('${s.id}')">${esc(s.practice.buttonLabel)} &rarr;</button>` : ''}
         <button class="qz-btn" onclick="qzRetakeScenario('${s.id}')">${r.correct ? 'Retake Scenario' : 'Try Again'}</button>
       </div>
