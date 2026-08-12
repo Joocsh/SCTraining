@@ -12,18 +12,20 @@ const QZ_ICONS = {
 };
 
 const QZ_LS_KEY = 'qz_va_training_v1';
-let qzStore = { checklist: {}, scenarios: {}, docStatus: {}, taskStatus: {} };
+const QZ_STORE_DEFAULTS = { checklist: {}, scenarios: {}, docStatus: {}, taskStatus: {}, tourSeen: false };
+let qzStore = Object.assign({}, QZ_STORE_DEFAULTS);
 let qzState = { view: 'dashboard', orderId: null, orderTab: 'overview', deTab: 'property', threadId: null, scenarioId: null, orderFilter: '' };
 
 function qzLoad() {
   try {
     const raw = localStorage.getItem(QZ_LS_KEY);
-    if (raw) qzStore = Object.assign({ checklist: {}, scenarios: {}, docStatus: {}, taskStatus: {} }, JSON.parse(raw));
+    if (raw) qzStore = Object.assign({}, QZ_STORE_DEFAULTS, JSON.parse(raw));
   } catch (e) { /* ignore corrupt local state */ }
 }
 function qzSave() { localStorage.setItem(QZ_LS_KEY, JSON.stringify(qzStore)); }
 function qzMark(id) { if (!qzStore.checklist[id]) { qzStore.checklist[id] = true; qzSave(); } }
 function qzToast(msg) { alert(msg); }
+function qzResetProgress() { localStorage.removeItem(QZ_LS_KEY); }
 
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
 function fmtMoney(n) { return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -71,6 +73,7 @@ function qzEnter() {
   document.getElementById('qzLoginWrap').style.display = 'none';
   document.getElementById('qzRoot').style.display = 'block';
   qzGoto('dashboard');
+  if (!qzStore.tourSeen && window.qzTourStart) setTimeout(qzTourStart, 350);
 }
 
 /* ---------- top-level navigation ---------- */

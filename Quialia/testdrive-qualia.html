@@ -24,7 +24,7 @@
 
 <body class="h-body td-fullscreen">
   <div class="td-strip">
-    <a class="td-strip-back" href="../index.html#test-drive-open">&larr; Test Drive</a>
+    <a class="td-strip-back" href="../index.html#test-drive-open" onclick="if(window.qzResetProgress) qzResetProgress()">&larr; Test Drive</a>
     <span class="td-strip-dot"></span>
     <span class="td-strip-app">Qualia <b>Test Drive</b></span>
     <span class="td-strip-msg">Practice copy only. Nothing here is saved or connected to a real account.</span>
@@ -61,10 +61,26 @@
     </div>
   </div>
 
+  <div class="qz-tour" id="qzTour">
+    <div class="qz-tour-highlight" id="qzTourHighlight"></div>
+    <div class="qz-tour-tip" id="qzTourTip">
+      <div class="qz-tour-tip-body" id="qzTourTipBody"></div>
+      <div class="qz-tour-tip-foot">
+        <span id="qzTourProgress"></span>
+        <div class="qz-tour-tip-btns">
+          <button type="button" onclick="qzTourSkip()">Skip</button>
+          <button type="button" id="qzTourBackBtn" onclick="qzTourBack()">Back</button>
+          <button type="button" id="qzTourNextBtn" class="primary" onclick="qzTourNext()">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="../assets/js/app-core.js"></script>
   <script src="../assets/js/site.js"></script>
   <script src="qualia-data.js"></script>
   <script src="qualia-app.js"></script>
+  <script src="qualia-tour.js"></script>
   <script>
     const tdMe = SCApp.requireAuth();
   </script>
