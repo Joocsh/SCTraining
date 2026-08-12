@@ -8,7 +8,8 @@ const QZ_ICONS = {
   parties: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M2.5 20c0-3.3 2.9-6 6.5-6s6.5 2.7 6.5 6"/><circle cx="17.5" cy="9" r="2.3"/><path d="M15.8 14.3c2.6.5 4.7 2.7 4.7 5.7"/></svg>',
   message: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-4-.9L3 21l1.9-5.5a8.4 8.4 0 0 1-.9-4A8.5 8.5 0 1 1 21 11.5z"/></svg>',
   cell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>',
-  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.4 2.1L8 10.3a16 16 0 0 0 6 6l1.5-1.5a2 2 0 0 1 2.1-.4c1 .4 2 .6 3 .7a2 2 0 0 1 1.7 2z"/></svg>'
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.4 2.1L8 10.3a16 16 0 0 0 6 6l1.5-1.5a2 2 0 0 1 2.1-.4c1 .4 2 .6 3 .7a2 2 0 0 1 1.7 2z"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-7.4 7-12a7 7 0 0 0-14 0c0 4.6 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>'
 };
 
 const QZ_LS_KEY = 'qz_va_training_v1';
@@ -86,7 +87,7 @@ function qzGoto(view) {
 function qzSyncTopTabs() {
   document.querySelectorAll('#qzTopbar .qz-tabs span[data-view]').forEach(el => {
     const v = el.dataset.view;
-    const active = v === qzState.view || (v === 'orders' && qzState.view === 'order') || (v === 'scenarios' && qzState.view === 'scenario');
+    const active = v === qzState.view || (v === 'orders' && qzState.view === 'order') || (v === 'dashboard' && qzState.view === 'scenario');
     el.classList.toggle('active', active);
   });
 }
@@ -96,7 +97,6 @@ function qzRenderRoot() {
   if (qzState.view === 'dashboard') html = qzDashboardHTML();
   else if (qzState.view === 'orders') html = qzOrdersHTML();
   else if (qzState.view === 'order') html = qzOrderHTML();
-  else if (qzState.view === 'scenarios') html = qzScenariosHTML();
   else if (qzState.view === 'scenario') html = qzScenarioDetailHTML();
   root.innerHTML = html;
 }
@@ -113,49 +113,77 @@ function qzDashboardHTML() {
     return `<div class="qz-progress-card"><div class="top"><b>${esc(cl.label)}</b><span class="frac">${done}/${total}</span></div><div class="qz-bar"><i style="width:${pct}%"></i></div></div>`;
   }).join('');
   const score = qzScenarioScore();
-  const scorePct = score.answered ? Math.round(score.correct / score.answered * 100) : 0;
+  const scenarioCards = QZ_SCENARIOS.map(s => {
+    const r = qzStore.scenarios[s.id];
+    const status = r ? (r.correct ? '<span class="qz-scenario-status correct">&#10003;</span>' : '<span class="qz-scenario-status incorrect">&#10007;</span>') : '';
+    return `<div class="qz-scenario-card" onclick="qzOpenScenario('${s.id}')"><div class="top"><b>${esc(s.title)}</b>${status}</div><p>${esc(s.situation)}</p></div>`;
+  }).join('');
   return `
     <div class="qz-welcome"><h2>Welcome back, ${esc(firstName)}</h2><p>This is your Qualia practice environment. Explore any module below in any order, nothing here is connected to a real account or real clients.</p></div>
     <div class="qz-listhead"><div><h2>Module Progress</h2><div class="sub">Each checklist item is marked complete automatically when you perform that action in the UI</div></div></div>
     <div class="qz-dash-grid">${cards}</div>
-    <div class="qz-score-card">
-      <div class="qz-score-num">${scorePct}%</div>
-      <div class="txt"><b>Scenario score</b><span>${score.correct} correct out of ${score.answered} answered &middot; ${score.total} scenarios total</span></div>
-      <button class="qz-btn primary" style="margin-left:auto" onclick="qzGoto('scenarios')">Go to Scenarios &rarr;</button>
+    <div class="qz-listhead"><div><h2>Scenarios</h2><div class="sub">"What should I do?" — practice recognizing when to verify and escalate</div></div>
+      <div class="sub" style="font-weight:700">${score.correct}/${score.answered} correct &middot; ${score.total} total</div>
     </div>
+    <div class="qz-scenario-grid">${scenarioCards}</div>
   `;
 }
 
 /* ---------- orders list ---------- */
+function qzOrderParty(o, role) {
+  const p = o.parties.find(x => x.role === role);
+  return p ? p.name : 'Not set';
+}
 function qzOrdersRowsHTML() {
   const filter = (qzState.orderFilter || '').toLowerCase().trim();
   const rows = QZ_ORDERS.filter(o => !filter
     || o.propertyAddress.toLowerCase().includes(filter)
     || o.id.toLowerCase().includes(filter)
     || o.parties.some(p => p.name.toLowerCase().includes(filter)));
-  if (!rows.length) return '<tr><td colspan="6" style="text-align:center;color:var(--qz-muted);padding:26px">No orders match that search.</td></tr>';
+  if (!rows.length) return '<tr><td colspan="9" style="text-align:center;color:var(--qz-muted);padding:26px">No orders match that search.</td></tr>';
   return rows.map(o => `<tr class="link" onclick="qzOpenOrder('${o.id}')">
-      <td class="addr">${esc(o.propertyAddress)}</td>
-      <td>${esc(o.id)}</td>
-      <td>${esc(o.type)}</td>
+      <td>${esc(o.status)}</td>
       <td>${esc(QZ_STAGES[o.stageIndex])}</td>
+      <td class="addr">${esc(o.id.replace('ORD-', ''))}</td>
+      <td>${esc(qzOrderParty(o, 'Buyer'))}</td>
+      <td>${esc(qzOrderParty(o, 'Seller'))}</td>
+      <td>${esc(o.propertyAddress)}</td>
+      <td>${esc(o.type)}</td>
+      <td>${esc(qzOrderParty(o, 'Settlement Agent'))}</td>
       <td>${fmtDate(o.closingDate)}</td>
-      <td>${o.flag ? '<span class="qz-badge flag">' + (o.flag === 'missing-document' ? 'Missing Doc' : 'Delayed') + '</span>' : '—'}</td>
     </tr>`).join('');
+}
+function qzOrdersStatsHTML() {
+  return QZ_STAGES.filter(stage => stage !== 'Closed').map(stage => {
+    const count = QZ_ORDERS.filter(o => QZ_STAGES[o.stageIndex] === stage).length;
+    return `<div class="stat"><span class="num">${count}</span><span class="lbl">${esc(stage)}</span></div>`;
+  }).join('');
 }
 function qzOrdersHTML() {
   return `
+    <div class="qz-orders-hero">
+      <div class="ic">${QZ_ICONS.pin}</div>
+      <h2>Skill Cloud Training</h2>
+      <div class="qz-orders-hero-btns">
+        <button class="qz-btn" type="button" onclick="qzToast('Training only, quotes are not available in this simulator.')">Get a Quote</button>
+        <button class="qz-btn primary" type="button" onclick="qzToast('Training only, creating new orders is not available in this simulator.')">Place Order</button>
+      </div>
+      <div class="qz-orders-stats">${qzOrdersStatsHTML()}</div>
+    </div>
     <div class="qz-listhead"><div><h2>Orders</h2><div class="sub">Search and open a file the way you would in a live queue</div></div></div>
-    <div class="qz-toolbar"><input type="text" id="qzOrderSearch" placeholder="Find order by address, order #, or name..." value="${esc(qzState.orderFilter || '')}" oninput="qzFilterOrders(this.value)"></div>
-    <table class="qz-tbl"><thead><tr><th>Property</th><th>Order #</th><th>Type</th><th>Stage</th><th>Closing Date</th><th>Flag</th></tr></thead>
+    <table class="qz-tbl"><thead><tr><th>Status</th><th>Stage</th><th>Order</th><th>Borrower</th><th>Seller</th><th>Property</th><th>Type</th><th>Agent</th><th>Closing</th></tr></thead>
     <tbody id="qzOrdersBody">${qzOrdersRowsHTML()}</tbody></table>
   `;
 }
-function qzFilterOrders(v) {
+function qzTopSearch(v) {
   qzState.orderFilter = v;
   if (v && v.trim()) qzMark('orders-search');
-  const body = document.getElementById('qzOrdersBody');
-  if (body) body.innerHTML = qzOrdersRowsHTML();
+  if (qzState.view !== 'orders') {
+    qzGoto('orders');
+  } else {
+    const body = document.getElementById('qzOrdersBody');
+    if (body) body.innerHTML = qzOrdersRowsHTML();
+  }
 }
 function qzOpenOrder(id) {
   qzState.view = 'order';
@@ -528,17 +556,6 @@ function qzPracticeAction(id) {
   qzRenderRoot();
   if (p.hint) qzToast(p.hint);
 }
-function qzScenariosHTML() {
-  const score = qzScenarioScore();
-  const cards = QZ_SCENARIOS.map(s => {
-    const r = qzStore.scenarios[s.id];
-    const status = r ? (r.correct ? '<span class="qz-scenario-status correct">&#10003;</span>' : '<span class="qz-scenario-status incorrect">&#10007;</span>') : '';
-    return `<div class="qz-scenario-card" onclick="qzOpenScenario('${s.id}')"><div class="top"><b>${esc(s.title)}</b>${status}</div><p>${esc(s.situation)}</p></div>`;
-  }).join('');
-  return `<div class="qz-listhead"><div><h2>Scenarios</h2><div class="sub">"What should I do?" — practice recognizing when to verify and escalate</div></div>
-    <div class="sub" style="font-weight:700">${score.correct}/${score.answered} correct &middot; ${score.total} total</div></div>
-    <div class="qz-scenario-grid">${cards}</div>`;
-}
 function qzScenarioDetailHTML() {
   const s = QZ_SCENARIOS.find(x => x.id === qzState.scenarioId);
   if (!s) return '<p>Scenario not found.</p>';
@@ -556,7 +573,7 @@ function qzScenarioDetailHTML() {
         <button class="qz-btn" onclick="qzRetakeScenario('${s.id}')">${r.correct ? 'Retake Scenario' : 'Try Again'}</button>
       </div>
     </div>` : '';
-  return `<span class="qz-back" onclick="qzGoto('scenarios')">&larr; Scenarios</span>
+  return `<span class="qz-back" onclick="qzGoto('dashboard')">&larr; Dashboard</span>
     <div class="qz-panel qz-scenario-detail"><div class="ph"><h4>${esc(s.title)}</h4></div>
       <p class="situation">${esc(s.situation)}</p>
       ${opts}

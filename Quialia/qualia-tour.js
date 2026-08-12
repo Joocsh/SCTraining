@@ -9,8 +9,8 @@ const QZ_TOUR_STEPS = [
     target: null
   },
   {
-    title: 'Three home views',
-    text: 'Dashboard tracks your training progress, Orders is where you will spend most of your time, and Scenarios test your judgment with real situations.',
+    title: 'Two home views',
+    text: 'Dashboard tracks your training progress and is where you will practice Scenarios. Orders is where you will spend most of your time working files.',
     target: '.qz-tabs'
   },
   {
@@ -23,6 +23,11 @@ const QZ_TOUR_STEPS = [
     text: 'Each card tracks one part of the job. Items check themselves off as you perform the real action in the UI, nothing to mark by hand.',
     target: '.qz-dash-grid',
     before: () => qzGoto('dashboard')
+  },
+  {
+    title: 'Practice your judgment',
+    text: '"What should I do?" scenarios live right here on the Dashboard. Answer one, get feedback, and watch your score update as you go.',
+    target: '.qz-scenario-grid'
   },
   {
     title: 'Open a file',
