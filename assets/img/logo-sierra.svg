@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Sierra Interactive">
+  <title>Sierra Interactive</title>
+  <g fill="#EE9440">
+    <circle cx="50" cy="50" r="50"/>
+    <path d="M74 74 H100 V100 H74 Z"/>
+  </g>
+  <path d="M67 34 C67 26 58 21 49 21 C39 21 32 27 32 36 C32 52 68 47 68 63 C68 72 59 79 49 79 C40 79 33 75 32 68"
+        fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

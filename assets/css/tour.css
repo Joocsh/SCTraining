@@ -1,0 +1,119 @@
+/* ============================================================
+   SHARED GUIDED TOUR OVERLAY: visual styles
+   Pairs with assets/js/tour.js. Self-contained on purpose: a
+   test drive page mimics a third-party product, so nothing here
+   may depend on that page's own design tokens.
+   ============================================================ */
+
+.sc-tour {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  pointer-events: none;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+.sc-tour.open { display: block; }
+
+/* Dark scrim. Sits behind the spotlight and swallows clicks so the
+   app underneath is frozen while the tour is open. */
+.sc-tour.open::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 25, 36, .70);
+  pointer-events: all;
+}
+
+/* The spotlight itself: a transparent box with a huge shadow that
+   paints the scrim everywhere except over the highlighted element. */
+.sc-tour-highlight {
+  position: fixed;
+  box-shadow: 0 0 0 9999px rgba(0, 25, 36, .70);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 9001;
+  transition: top .25s, left .25s, width .25s, height .25s, border-radius .25s;
+}
+
+.sc-tour-tip {
+  position: fixed;
+  width: 330px;
+  max-width: calc(100vw - 28px);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .22), 0 2px 8px rgba(0, 0, 0, .06);
+  z-index: 9002;
+  pointer-events: all;
+  transition: top .25s, left .25s;
+}
+
+.sc-tour-tip-body {
+  padding: 20px 22px 14px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #0c1e33;
+}
+.sc-tour-tip-body b {
+  display: block;
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 7px;
+  color: #0a2647;
+}
+.sc-tour-tip-body p { margin: 0; color: #47586b; }
+
+.sc-tour-tip-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 22px 18px;
+}
+.sc-tour-progress {
+  font-size: 12px;
+  font-weight: 700;
+  color: #8496a8;
+  letter-spacing: .02em;
+}
+.sc-tour-tip-btns { display: flex; gap: 8px; }
+.sc-tour-tip-btns button {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 7px 15px;
+  border-radius: 7px;
+  border: 1px solid #d7e0e9;
+  background: #fff;
+  color: #47586b;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.sc-tour-tip-btns button:hover { background: #f2f6fa; color: #0a2647; }
+.sc-tour-tip-btns button.primary {
+  background: #1565c0;
+  border-color: #1565c0;
+  color: #fff;
+}
+.sc-tour-tip-btns button.primary:hover { background: #0f4e97; border-color: #0f4e97; }
+
+/* Replay affordance, for pages that offer one in their chrome */
+.sc-tour-replay {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.sc-tour-replay:hover { background: rgba(255, 255, 255, .22); }
+
+@media (max-width: 560px) {
+  .sc-tour-tip-foot { flex-wrap: wrap; }
+}

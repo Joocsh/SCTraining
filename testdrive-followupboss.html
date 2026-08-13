@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Test Drive: FollowUpBoss · SkillCloud Academy</title>
 <link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/css/tour.css">
 <style>
   :root{--v-navy:#0a2647;--v-navy2:#0f3460;--v-cyan:#17c3d4;--v-cyan-d:#0fa6b6}
 
@@ -33,7 +34,8 @@
   .fub a{color:var(--fblue-d)}
 
   .fub-topbar{flex:none;background:var(--fnav);color:#fff;display:flex;align-items:center;gap:22px;padding:0 18px;height:52px}
-  .fub-topbar .fmark{width:26px;height:26px;border-radius:6px;background:var(--fblue);display:grid;place-items:center;font-weight:900;font-size:12px;flex:none;color:#123}
+  .fub-topbar .fmark{width:28px;height:28px;display:grid;place-items:center;flex:none}
+  .fub-topbar .fmark img{width:100%;height:100%;object-fit:contain;display:block}
   .fub-tabs{display:flex;align-items:center;gap:20px;font-size:13.5px;font-weight:600;color:#b7c2c9}
   .fub-tabs span{cursor:pointer;padding:6px 2px;border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;white-space:nowrap}
   .fub-tabs span.active{color:#fff;border-color:var(--fblue)}
@@ -527,12 +529,13 @@
   <a class="td-strip-back" href="index.html#test-drive-open">&larr; Test Drive</a>
   <span class="td-strip-dot"></span>
   <span class="td-strip-app">FollowUpBoss <b>Test Drive</b></span>
+  <button type="button" class="sc-tour-replay" onclick="fubTour && fubTour.start()">&#9654; Replay tour</button>
   <span class="td-strip-msg">Practice copy only. Nothing here is saved or connected to a real account.</span>
 </div>
 
 <div class="fub" id="fubApp">
   <div class="fub-topbar">
-    <div class="fmark">FB</div>
+    <div class="fmark"><img src="assets/img/logo-fub.svg" alt="FollowUpBoss"></div>
     <div class="fub-tabs">
       <span class="active" data-view="people">People</span>
       <span data-view="inbox">Inbox <span class="ct">3</span></span>
@@ -906,6 +909,7 @@
 </div>
 
 <script src="assets/js/app-core.js"></script>
+<script src="assets/js/tour.js"></script>
 <script src="assets/js/site.js"></script>
 <script>
 const tdMe = SCApp.requireAuth();
@@ -2268,6 +2272,66 @@ if(tdMe){
 }
 fubSmartCounts(); fubRows(); fubPlanRows(); fubAutoRows(); fubTemplateRows(); fubStageRows(); fubTagRows(); fubFieldRows();
 fubLeadFlowRows(); fubGroupRows(); fubPondRows(); fubTeamRows(); fubNotifList(); fubInbox0Counts();
+
+/* ---------------- guided tour ---------------- */
+/* Shown once per browser; the strip has a Replay button. Engine: assets/js/tour.js */
+var fubTour = SCTour.create({
+  key: 'sc_tour_fub',
+  steps: [
+    {
+      title: 'Welcome to the FollowUpBoss Test Drive',
+      text: 'This is a practice copy of the CRM your team works leads in. The tour points out where everything lives, takes about a minute, and you can skip it at any time.',
+      target: null
+    },
+    {
+      title: 'The top bar',
+      text: 'The FollowUpBoss logo takes you home. To its right sit the six sections you will live in all day, then search, notifications, and your profile.',
+      target: '.fub-topbar',
+      before: function () { showView('people'); fubShowList(false); }
+    },
+    {
+      title: 'The six sections',
+      text: 'People holds every lead. Inbox is your conversations. Tasks is what you owe leads today. Calendar has showings and appointments. Reporting is the numbers. Admin is the setup behind all of it.',
+      target: '.fub-tabs'
+    },
+    {
+      title: 'Smart Lists',
+      text: 'The left rail slices your database automatically. Today’s Leads, Attempted Contact, Hot Leads: each one is a saved filter with a live count, so you always know what needs attention.',
+      target: '.fub-rail',
+      before: function () { showView('people'); }
+    },
+    {
+      title: 'The People list',
+      text: 'Every lead with their stage, source, and last activity. Click any row to open the full lead record with the timeline, notes, and the actions you can take.',
+      target: '#peopleList',
+      before: function () { showView('people'); }
+    },
+    {
+      title: 'Inbox',
+      text: 'Calls, texts, and emails with a lead, threaded in one place. Nothing here sends for real, so practice replying freely.',
+      target: '#view-inbox',
+      before: function () { showView('inbox'); }
+    },
+    {
+      title: 'Tasks',
+      text: 'Follow ups you or an action plan created, so nothing falls through the cracks. Work the list top to bottom and check items off as you go.',
+      target: '#view-tasks',
+      before: function () { showView('tasks'); }
+    },
+    {
+      title: 'Admin',
+      text: 'Where lead flow, stages, action plans, templates, ponds, and teams get configured. Worth understanding early: most of what feels automatic in the CRM is set up here.',
+      target: '#adminTabs',
+      before: function () { showView('admin'); }
+    },
+    {
+      title: 'You are ready to practice',
+      text: 'Explore in any order. A good first pass: open a lead from People, reply to a thread in Inbox, then clear a task. Replay this tour any time from the bar at the top.',
+      target: null,
+      before: function () { showView('people'); fubShowList(false); }
+    }
+  ]
+});
 </script>
 </body>
 </html>

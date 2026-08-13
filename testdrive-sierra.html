@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sierra Test Drive — New Hire Training</title>
+<title>Sierra Test Drive · SkillCloud Academy</title>
+<link rel="stylesheet" href="assets/css/tour.css">
+<script src="assets/js/tour.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -73,7 +75,8 @@ a{color:inherit;}
 
 /* Sierra chrome — utility bar */
 .sierra-utility{background:var(--navy-1);display:flex;align-items:center;gap:18px;padding:11px 22px;flex-wrap:wrap;}
-.s-logo{width:34px;height:34px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;color:var(--navy-3);font-family:'Fraunces',serif;font-weight:700;font-size:16px;flex-shrink:0;}
+.s-logo{width:34px;height:34px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.s-logo img{width:100%;height:100%;object-fit:contain;display:block;}
 .s-search{display:flex;align-items:center;background:#fff;border-radius:20px;overflow:hidden;flex:0 1 260px;min-width:160px;}
 .s-search input{border:none;outline:none;padding:8px 14px;font-size:13px;flex:1;min-width:0;color:var(--navy-3);}
 .s-search button{background:var(--orange);border:none;width:32px;height:32px;border-radius:50%;margin:2px;display:flex;align-items:center;justify-content:center;color:var(--navy-3);flex-shrink:0;}
@@ -475,7 +478,8 @@ tbody tr.dimmed, .lead-card.dimmed{display:none;}
 <div style="background:#0a2647;color:#fff;display:flex;align-items:center;gap:12px;padding:0 22px;height:36px;font-size:12.5px;font-family:'Inter',sans-serif;position:relative;z-index:70">
   <a href="index.html#test-drive" style="color:#d3e2f0;font-weight:700;text-decoration:none">&larr; Test Drive</a>
   <span style="width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.35)"></span>
-  <span style="font-weight:800">Zierra <b style="color:#17c3d4">Test Drive</b></span>
+  <span style="font-weight:800">Sierra <b style="color:#17c3d4">Test Drive</b></span>
+  <button type="button" class="sc-tour-replay" onclick="sierraTour &amp;&amp; sierraTour.start()">&#9654; Replay tour</button>
   <span style="color:#9fb4c9;margin-left:auto;font-size:12px">Practice copy only. Nothing here is saved or connected to a real account.</span>
 </div>
 
@@ -510,7 +514,7 @@ tbody tr.dimmed, .lead-card.dimmed{display:none;}
   </div>
 
   <div class="sierra-utility">
-    <div class="s-logo">S</div>
+    <div class="s-logo"><img src="assets/img/logo-sierra.svg" alt="Sierra Interactive"></div>
     <div class="s-search"><input placeholder="Search Leads" disabled><button>🔍</button></div>
     <div class="ask-sierra">💡 Ask Sierra <span class="kbd">Ctrl + K</span></div>
     <div class="s-util-right">
@@ -796,6 +800,9 @@ function startDrive(){
   document.getElementById('landing').classList.remove('active');
   document.getElementById('app').classList.add('active');
   goStop(1);
+  // The tour spotlights the app chrome, which does not exist until now, so it
+  // waits for the landing screen to hand over instead of firing on page load.
+  if(sierraTour && !sierraTour.seen()) setTimeout(function(){ sierraTour.start(); }, 350);
 }
 
 function updateTopbar(){
@@ -2137,6 +2144,56 @@ function answerQuiz(i){
   fb.classList.add('show');
   setTimeout(()=>{ quizIndex++; renderMain(); }, 1600);
 }
+
+/* ================= GUIDED TOUR ================= */
+/* Opens the first time the associate enters the app (see startDrive), not on
+   page load, because every target below is app chrome. Engine: assets/js/tour.js */
+var sierraTour = SCTour.create({
+  key: 'sc_tour_sierra',
+  auto: false,
+  steps: [
+    {
+      title: 'Welcome to the Sierra Test Drive',
+      text: 'This is a practice copy of Sierra Interactive, the CRM your team runs on. The tour shows you the layout before you start working leads. It takes about a minute and you can skip it at any time.',
+      target: null
+    },
+    {
+      title: 'Your route through the test drive',
+      text: 'The bar at the top tracks where you are: which stop you are on, how many tasks you have cleared, and the odometer. Work the stops in order and it adds up to a full day in the CRM.',
+      target: '.hud'
+    },
+    {
+      title: 'The Sierra utility bar',
+      text: 'The Sierra logo takes you home. Next to it are lead search, Ask Sierra for quick answers, and on the right your resources, users, settings, inbox, and profile.',
+      target: '.sierra-utility'
+    },
+    {
+      title: 'Ask Sierra',
+      text: 'Sierra’s built in assistant. In the real product this is where you ask questions about a lead or your pipeline without digging through screens.',
+      target: '.ask-sierra'
+    },
+    {
+      title: 'Main navigation',
+      text: 'The tabs that move you between the dashboard, leads, and the rest of the CRM. They highlight as you advance through the stops.',
+      target: '#sierraNav'
+    },
+    {
+      title: 'The work area',
+      text: 'Everything you actually do happens here: the dashboard, lead lists, and lead records. It changes with each stop on your route.',
+      target: '#main'
+    },
+    {
+      title: 'Your coach',
+      text: 'The panel on the right tells you what to do at each stop and checks your work as you go. When you get stuck, read this first.',
+      target: '#coach'
+    },
+    {
+      title: 'You are ready to drive',
+      text: 'Follow the coach through the eight stops. Nothing here touches a real lead, so click freely. Replay this tour any time from the bar at the top.',
+      target: null
+    }
+  ]
+});
 
 /* ================= START ================= */
 updateTopbar();

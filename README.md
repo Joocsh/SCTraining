@@ -81,7 +81,7 @@ enlaces. Si agregas una página nueva, va en la raíz.
 | `mls.html`                  | Práctica de captura en MLS                                     |
 | `study-guide.html`          | Guía de estudio. Tiene ancla por puesto (`#tc`, `#lm`, ...)     |
 | `testdrive-followupboss.html` | Clon de práctica de FollowUpBoss                             |
-| `testdrive-zierra.html`     | Clon de práctica de Sierra                                     |
+| `testdrive-sierra.html`     | Clon de práctica de Sierra Interactive                          |
 
 ### Test drives en carpeta propia
 
@@ -185,7 +185,41 @@ al motor nuevo. No las borres sin revisar esa función.
 | `workflow.js` | Motor compartido del Case Simulator. La página define el contenido, este archivo pone la mecánica |
 | `sim-data.js` | Los datos de los casos: deals reales por estado, con nombres y precios cambiados |
 | `guide.js`    | Comportamiento compartido de las guías. Es progressive enhancement puro   |
+| `tour.js`     | Motor compartido del tour guiado de los test drives. Ver abajo            |
 | `site.js`     | Menú de navegación y marcado del enlace activo                           |
+
+### Tour guiado de los test drives
+
+`assets/js/tour.js` + `assets/css/tour.css`. La página aporta solo sus pasos; el motor
+inyecta su propio HTML, así que no hay que pegar marcado en ninguna página:
+
+```js
+var miTour = SCTour.create({
+  key: 'sc_tour_fub',        // bandera en localStorage, se muestra una sola vez
+  auto: true,                // false si lo quieres disparar tú
+  steps: [ { title, text, target, before }, ... ]
+});
+```
+
+`target` es cualquier selector CSS; omítelo para una tarjeta centrada sin foco. `before`
+corre antes de medir, así que sirve para cambiar de vista primero.
+
+Dos comportamientos que conviene conocer:
+
+- **Un paso cuyo `target` no esté visible se omite.** Las páginas son responsive y hay
+  elementos que desaparecen en pantallas estrechas (el rail de FollowUpBoss se oculta por
+  debajo de ~1000px). Sin esto, el paso describiría algo que no está en pantalla.
+  Si tu paso necesita una vista concreta, ponle un `before` que la active, o se saltará
+  al navegar hacia atrás.
+- **El foco se recorta a la ventana**, para que un elemento más alto que la pantalla no
+  genere un recuadro que se sale por ambos lados.
+
+Usan este motor `testdrive-followupboss.html` y `testdrive-sierra.html`. Sierra lo dispara
+desde `startDrive()` en vez de al cargar, porque su chrome no existe hasta que se sale de
+la pantalla de bienvenida.
+
+Los módulos `Quialia/` y `Docusign/` traen su propia copia del tour (`qualia-tour.js` y
+`docusign-tour.js`), anterior a este motor. Funcionan bien; migrarlas está pendiente.
 
 Para agregar un puesto nuevo con el motor compartido, la página debe definir
 `window.SIM_DATA`, `window.WF_LABELS` y `window.WF_STEPS` **antes** de cargar
@@ -196,6 +230,7 @@ Para agregar un puesto nuevo con el motor compartido, la página debe definir
 | Archivo          | Alcance                                                              |
 | ---------------- | -------------------------------------------------------------------- |
 | `styles.css`     | Base del sitio y paleta de marca en variables CSS                     |
+| `tour.css`       | Overlay del tour guiado. Sin dependencias del diseño de la página que lo carga |
 | `role-dash.css`  | Dashboards de puesto                                                  |
 | `role-track.css` | Capa extra, solo para leasing, lead manager, operaciones y CFO        |
 | `workflow.css`   | Panel del Case Simulator. **Requiere `role-dash.css` cargado antes**   |
