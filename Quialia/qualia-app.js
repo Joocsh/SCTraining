@@ -13,9 +13,9 @@ const QZ_ICONS = {
 };
 
 const QZ_LS_KEY = 'qz_va_training_v1';
-const QZ_STORE_DEFAULTS = { checklist: {}, scenarios: {}, docStatus: {}, taskStatus: {}, tourSeen: false };
+const QZ_STORE_DEFAULTS = { checklist: {}, scenarios: {}, docStatus: {}, taskStatus: {}, reviews: {}, tourSeen: false };
 let qzStore = Object.assign({}, QZ_STORE_DEFAULTS);
-let qzState = { view: 'dashboard', orderId: null, orderTab: 'overview', deTab: 'property', threadId: null, scenarioId: null, orderFilter: '' };
+let qzState = { view: 'dashboard', orderId: null, orderTab: 'overview', deTab: 'property', threadId: null, scenarioId: null, orderFilter: '', reviewOpen: null };
 
 function qzLoad() {
   try {
@@ -216,6 +216,7 @@ function qzTimelineHTML(o) {
 }
 function qzOrderTab(tab) {
   qzState.orderTab = tab;
+  qzState.reviewOpen = null;
   if (tab === 'dataentry') { qzState.deTab = 'property'; qzMark('de-property'); }
   else if (tab === 'tasks') qzMark('tasks-open');
   else if (tab === 'workflow') qzMark('workflow-view');
@@ -229,9 +230,10 @@ function qzOrderHTML() {
   if (!o) return '<p>Order not found.</p>';
   const pendingDocs = qzDocsForOrder(o.id).filter(d => qzDocStatus(d) === 'Pending').length;
   const openTasks = qzTasksForOrder(o.id).filter(t => qzTaskStatus(t) !== 'Complete').length;
+  const openReviews = qzReviewsForOrder(o.id).filter(r => !qzStore.reviews[r.id]).length;
 
   const tabs = [
-    ['overview', 'Overview'], ['dataentry', 'Data Entry'], ['documents', 'Documents', pendingDocs],
+    ['overview', 'Overview'], ['review', 'Review', openReviews], ['dataentry', 'Data Entry'], ['documents', 'Documents', pendingDocs],
     ['tasks', 'Tasks', openTasks], ['workflow', 'Workflow'], ['communication', 'Communication'],
     ['vendors', 'Vendors'], ['closing', 'Closing'], ['accounting', 'Accounting']
   ];
@@ -246,6 +248,7 @@ function qzOrderHTML() {
 
   let body = '';
   if (qzState.orderTab === 'overview') body = qzOverviewHTML(o);
+  else if (qzState.orderTab === 'review') body = qzReviewHTML(o);
   else if (qzState.orderTab === 'dataentry') body = qzDataEntryHTML(o);
   else if (qzState.orderTab === 'documents') body = qzDocumentsHTML(o);
   else if (qzState.orderTab === 'tasks') body = qzTasksHTML(o);
@@ -301,6 +304,103 @@ function qzOverviewHTML(o) {
       </div>
     </div>
   `;
+}
+
+/* ---------- Review (document verification) ---------- */
+const QZ_REVIEW_ACTION_LABEL = { verify: 'Verified', correct: 'Corrected', escalate: 'Escalated' };
+function qzReviewsForOrder(orderId) { return QZ_REVIEWS.filter(r => r.orderId === orderId); }
+function qzReviewScore(orderId) {
+  const items = qzReviewsForOrder(orderId);
+  let resolved = 0, correct = 0;
+  items.forEach(r => { const s = qzStore.reviews[r.id]; if (s) { resolved++; if (s.correct) correct++; } });
+  return { resolved, correct, total: items.length };
+}
+function qzReviewOpen(id, mode) { qzState.reviewOpen = { id, mode }; qzRenderRoot(); }
+function qzReviewCancel() { qzState.reviewOpen = null; qzRenderRoot(); }
+function qzReviewResolve(id, action, note) {
+  const r = QZ_REVIEWS.find(x => x.id === id);
+  qzStore.reviews[id] = { action, note: note || '', correct: action === r.answer };
+  qzState.reviewOpen = null;
+  qzSave();
+  qzRenderRoot();
+}
+function qzReviewVerify(id) { qzReviewResolve(id, 'verify', ''); }
+function qzReviewSaveCorrect(id) {
+  const r = QZ_REVIEWS.find(x => x.id === id);
+  const input = document.getElementById('qzReviewInput-' + id);
+  const val = input ? input.value.trim() : '';
+  if (!val) { qzToast('Enter the corrected value.'); return; }
+  if (r.partyRole) {
+    const o = QZ_ORDERS.find(x => x.id === r.orderId);
+    const p = o && o.parties.find(x => x.role === r.partyRole);
+    if (p) p.name = val;
+    qzMark('de-edit');
+  }
+  qzReviewResolve(id, 'correct', '');
+}
+function qzReviewSaveEscalate(id) {
+  const ta = document.getElementById('qzReviewNote-' + id);
+  const note = ta ? ta.value.trim() : '';
+  if (!note) { qzToast('Add a short note explaining why you are escalating.'); return; }
+  qzReviewResolve(id, 'escalate', note);
+}
+function qzReviewRedo(id) { delete qzStore.reviews[id]; qzState.reviewOpen = null; qzSave(); qzRenderRoot(); }
+function qzReviewItemHTML(r) {
+  const s = qzStore.reviews[r.id];
+  const open = qzState.reviewOpen && qzState.reviewOpen.id === r.id ? qzState.reviewOpen.mode : null;
+  const statusChip = s
+    ? `<span class="qz-rv-chip ${s.correct ? 'good' : 'bad'}">${QZ_REVIEW_ACTION_LABEL[s.action]}</span>`
+    : '<span class="qz-rv-chip pending">Pending</span>';
+
+  let bottom;
+  if (s) {
+    const rightAction = r.answer === 'verify' ? 'mark it verified' : r.answer === 'correct' ? 'correct it against the source' : 'escalate it with a note';
+    const verdict = s.correct ? '<b>Right call.</b> ' : `<b>Reconsider.</b> The right action here was to ${rightAction}. `;
+    const noteLine = s.action === 'escalate' && s.note ? `<div class="qz-rv-note">Your note: ${esc(s.note)}</div>` : '';
+    bottom = `<div class="qz-rv-feedback ${s.correct ? 'good' : 'bad'}">${verdict}${esc(r.explain)}${noteLine}
+      <div style="margin-top:10px"><button class="qz-btn sm" onclick="qzReviewRedo('${r.id}')">Redo</button></div></div>`;
+  } else if (open === 'correct') {
+    bottom = `<div class="qz-rv-form">
+      <label>Corrected value</label>
+      <input type="text" id="qzReviewInput-${r.id}" value="${esc(r.systemValue).replace(/"/g, '&quot;')}">
+      <div class="row"><button class="qz-btn sm" onclick="qzReviewCancel()">Cancel</button><button class="qz-btn sm primary" onclick="qzReviewSaveCorrect('${r.id}')">Save correction</button></div>
+    </div>`;
+  } else if (open === 'escalate') {
+    bottom = `<div class="qz-rv-form">
+      <label>Escalation note &mdash; why is this wrong?</label>
+      <textarea id="qzReviewNote-${r.id}" placeholder="Describe the discrepancy and why it needs a decision..."></textarea>
+      <div class="row"><button class="qz-btn sm" onclick="qzReviewCancel()">Cancel</button><button class="qz-btn sm primary" onclick="qzReviewSaveEscalate('${r.id}')">Submit escalation</button></div>
+    </div>`;
+  } else {
+    bottom = `<div class="qz-rv-actions">
+      <button class="qz-btn sm" onclick="qzReviewVerify('${r.id}')">&#10003; Looks correct</button>
+      <button class="qz-btn sm" onclick="qzReviewOpen('${r.id}','correct')">&#9998; Correct it</button>
+      <button class="qz-btn sm" onclick="qzReviewOpen('${r.id}','escalate')">&#9873; Escalate</button>
+    </div>`;
+  }
+
+  return `<div class="qz-rv-item">
+    <div class="qz-rv-head"><b>${esc(r.label)}</b>${statusChip}</div>
+    <div class="qz-rv-where">${esc(r.where)}</div>
+    <p class="qz-rv-instr">${esc(r.instruction)}</p>
+    <div class="qz-rv-compare">
+      <div class="col"><span class="k">On the order</span><span class="v">${esc(r.systemValue)}</span></div>
+      <div class="col"><span class="k">Source of truth</span><button class="qz-btn sm" onclick="qzViewDoc('${r.doc}','${esc(r.docTitle)}')">View ${esc(r.docTitle)}</button></div>
+    </div>
+    ${bottom}
+  </div>`;
+}
+function qzReviewHTML(o) {
+  const items = qzReviewsForOrder(o.id);
+  if (!items.length) {
+    return `<div class="qz-panel"><div class="ph"><h4>Review</h4></div><p style="font-size:13px;color:var(--qz-muted)">No review items are set up for this order yet.</p></div>`;
+  }
+  const score = qzReviewScore(o.id);
+  return `<div class="qz-panel">
+    <div class="ph"><h4>Document Review</h4><span class="qz-rv-score">${score.resolved}/${score.total} reviewed &middot; ${score.correct} correct calls</span></div>
+    <p style="font-size:13px;color:var(--qz-muted);margin:0 0 18px">Compare each item against its source document, then decide: verify it, correct a clear typo, or escalate with a note if it conflicts or is a legal matter.</p>
+    ${items.map(qzReviewItemHTML).join('')}
+  </div>`;
 }
 
 /* ---------- Data Entry ---------- */

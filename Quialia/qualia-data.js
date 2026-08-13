@@ -19,7 +19,7 @@ const QZ_ORDERS = [
     statusNote: 'The settlement agency is preparing the title commitment.',
     parties: [
       { name: 'Jon Smith', role: 'Buyer', email: 'john.smith@example.com', phone: '(469) 555-0142' },
-      { name: 'Tanya Hart', role: 'Seller', email: 'tanya.hart@example.com', phone: '(469) 555-0198' },
+      { name: 'Tanya R. Hart', role: 'Seller', email: 'tanya.hart@example.com', phone: '(469) 555-0198' },
       { name: 'Samantha Bee', role: 'Selling Agent', email: 'sbee@friscorealty.com', phone: '(972) 555-0110' },
       { name: 'Peter Einhorn', role: 'Listing Agent', email: 'peinhorn@friscorealty.com', phone: '(972) 555-0187' },
       { name: 'Lucas Adminton', role: 'Settlement Agent', email: 'ladminton@bestclosing.com', phone: '(214) 555-0166' },
@@ -77,7 +77,10 @@ const QZ_ORDERS = [
 
 const QZ_DOCUMENTS = [
   { id: 1, orderId: 'ORD-2026-1483', name: 'Purchase Agreement', type: 'Contract', status: 'Reviewed', uploadedBy: 'Samantha Bee', date: '2026-06-09', file: 'documents/purchase-agreement-1483.html' },
-  { id: 2, orderId: 'ORD-2026-1483', name: 'Title Commitment', type: 'Title', status: 'Received', uploadedBy: 'Lucas Adminton', date: '2026-06-20' },
+  { id: 2, orderId: 'ORD-2026-1483', name: 'Title Commitment', type: 'Title', status: 'Received', uploadedBy: 'Lucas Adminton', date: '2026-06-20', file: 'documents/title-commitment-1483.html' },
+  { id: 13, orderId: 'ORD-2026-1483', name: 'Home Inspection Invoice', type: 'Invoice', status: 'Received', uploadedBy: 'Ace Home Inspections', date: '2026-06-14', file: 'documents/home-inspection-invoice-1483.html' },
+  { id: 14, orderId: 'ORD-2026-1483', name: 'Source Deed', type: 'Title', status: 'Reviewed', uploadedBy: 'Lucas Adminton', date: '2026-06-18', file: 'documents/source-deed-1483.html' },
+  { id: 15, orderId: 'ORD-2026-1483', name: 'Proposed Deed (Draft)', type: 'Title', status: 'Received', uploadedBy: 'Lucas Adminton', date: '2026-06-22', file: 'documents/proposed-deed-1483.html' },
   { id: 3, orderId: 'ORD-2026-1483', name: 'Loan Estimate', type: 'Lender', status: 'Pending', uploadedBy: '—', date: '—' },
   { id: 4, orderId: 'ORD-2026-1483', name: 'Homeowners Insurance Binder', type: 'Insurance', status: 'Received', uploadedBy: 'John Smith', date: '2026-06-25' },
 
@@ -301,5 +304,60 @@ const QZ_SCENARIOS = [
       buttonLabel: 'Go to Transaction Information and verify the price',
       hint: 'Open Transaction Information, compare the purchase price against the purchase agreement, and correct it if it does not match.'
     }
+  }
+];
+
+/* Document-review items: verify order data against source documents, then decide
+   the right action — verify (no error), correct (clear typo), or escalate + note
+   (legal / conflicting). `answer` is the correct action; scoring grades the choice. */
+const QZ_REVIEWS = [
+  {
+    id: 'rev-1483-buyer',
+    orderId: 'ORD-2026-1483',
+    label: "Buyer's legal name",
+    where: 'Data Entry → Parties',
+    instruction: 'Compare the buyer name on this order against the Purchase Agreement.',
+    doc: 'documents/purchase-agreement-1483.html', docTitle: 'Purchase Agreement',
+    systemValue: 'Jon Smith',
+    sourceValue: 'John Smith',
+    answer: 'correct',
+    partyRole: 'Buyer',
+    explain: 'The contract clearly shows "John Smith". A plain data-entry typo verified against the source document is corrected directly.'
+  },
+  {
+    id: 'rev-1483-inspection',
+    orderId: 'ORD-2026-1483',
+    label: 'Home inspection charge',
+    where: 'Accounting',
+    instruction: 'Confirm the home inspection charge on the order matches the vendor invoice.',
+    doc: 'documents/home-inspection-invoice-1483.html', docTitle: 'Home Inspection Invoice',
+    systemValue: '$450.00',
+    sourceValue: '$425.00',
+    answer: 'correct',
+    explain: 'The vendor invoice totals $425.00. The charge on the order was overstated, correct it to match what the vendor actually billed.'
+  },
+  {
+    id: 'rev-1483-vesting',
+    orderId: 'ORD-2026-1483',
+    label: 'Seller vesting on the Proposed Deed',
+    where: 'Documents → Proposed Deed',
+    instruction: 'Compare how the seller (grantor) is vested on the Proposed Deed against the Source Deed.',
+    doc: 'documents/source-deed-1483.html', docTitle: 'Source Deed',
+    systemValue: 'Proposed Deed grantor: "Tanya Hart"',
+    sourceValue: 'Source Deed vesting: "Tanya R. Hart, a single person"',
+    answer: 'escalate',
+    explain: 'Deed vesting is a legal matter. The proposed deed drops the middle initial and vesting language shown on the source deed. A VA does not silently change deed vesting, flag it and escalate for the settlement agent to confirm and revise.'
+  },
+  {
+    id: 'rev-1483-price',
+    orderId: 'ORD-2026-1483',
+    label: 'Purchase price',
+    where: 'Data Entry → Transaction Information',
+    instruction: 'Verify the purchase price on the order against the Purchase Agreement.',
+    doc: 'documents/purchase-agreement-1483.html', docTitle: 'Purchase Agreement',
+    systemValue: '$365,120.00',
+    sourceValue: '$365,120.00',
+    answer: 'verify',
+    explain: 'The price matches the contract exactly. Not every item has an error, confirming a correct value is part of the job.'
   }
 ];
