@@ -36,6 +36,25 @@
     admin_social: {sim:1, prompt:8, quiz:6}
   };
 
+  // Absolute URL of the site root, derived from this script's own <script src>.
+  // Every page loads assets/js/app-core.js, so stripping that suffix gives the root
+  // regardless of how deep the page sits or what base path it is served under
+  // (localhost root, GitHub Pages subfolder, etc.). Pages used to be located by
+  // testing location.pathname against a hardcoded /(roles|guides)/ list, which
+  // silently broke for every subfolder added later.
+  var ROOT = (function(){
+    var s = document.currentScript;
+    if(!s){
+      var all = document.getElementsByTagName('script');
+      for(var i=0;i<all.length;i++){
+        if(all[i].src && /assets\/js\/app-core\.js/.test(all[i].src)){ s = all[i]; break; }
+      }
+    }
+    if(!s || !s.src) return '';
+    return s.src.replace(/assets\/js\/app-core\.js.*$/, '');
+  })();
+  function rootUrl(page){ return ROOT + page; }
+
   function readJSON(key, fallback){
     try{ var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
     catch(e){ return fallback; }
@@ -99,11 +118,7 @@
   }
 
   function loginUrl(next){
-    var depth = location.pathname.split('/').filter(Boolean);
-    // crude depth check: if we're inside /roles/ or /guides/, login.html is one level up
-    var inSub = /\/(roles|guides)\//.test(location.pathname);
-    var base = inSub ? '../login.html' : 'login.html';
-    return base + (next ? ('?next='+encodeURIComponent(next)) : '');
+    return rootUrl('login.html') + (next ? ('?next='+encodeURIComponent(next)) : '');
   }
 
   function requireAuth(opts){
@@ -114,7 +129,7 @@
       return null;
     }
     if(opts.adminOnly && u.role !== 'admin'){
-      window.location.href = (/\/(roles|guides)\//.test(location.pathname)?'../account.html':'account.html');
+      window.location.href = rootUrl('account.html');
       return null;
     }
     setLastPage(u.id, here());
@@ -291,7 +306,7 @@
       if(u){
         if(av) av.textContent = (u.avatar||u.name.charAt(0)).toUpperCase();
         if(label) label.textContent = u.role==='admin' ? 'Admin' : u.name.split(' ')[0];
-        chip.href = (/\/(roles|guides)\//.test(location.pathname)?'../':'') + (u.role==='admin'?'admin.html':'account.html');
+        chip.href = rootUrl(u.role==='admin'?'admin.html':'account.html');
       } else {
         if(av) av.textContent='?';
         if(label) label.textContent='Log In';
@@ -302,7 +317,7 @@
       btn.addEventListener('click', function(e){
         e.preventDefault();
         logout();
-        window.location.href = (/\/(roles|guides)\//.test(location.pathname)?'../':'') + 'login.html';
+        window.location.href = rootUrl('login.html');
       });
     });
     if(u){

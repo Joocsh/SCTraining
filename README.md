@@ -45,6 +45,8 @@ Para empezar de cero: borra el `localStorage` del sitio desde las DevTools del n
 ├── index.html, ai.html, ...       Páginas del sitio (ver mapa abajo)
 ├── roles/                         Una página por puesto + su simulador
 ├── guides/                        Guías del AI Lab, una por herramienta
+├── Quialia/                       Test drive de Qualia, módulo autocontenido
+├── Docusign/                      Test drive de DocuSign, módulo autocontenido
 ├── assets/
 │   ├── css/                       Hojas de estilo compartidas
 │   ├── js/                        Motores compartidos (auth, progreso, simulador)
@@ -79,8 +81,25 @@ enlaces. Si agregas una página nueva, va en la raíz.
 | `mls.html`                  | Práctica de captura en MLS                                     |
 | `study-guide.html`          | Guía de estudio. Tiene ancla por puesto (`#tc`, `#lm`, ...)     |
 | `testdrive-followupboss.html` | Clon de práctica de FollowUpBoss                             |
-| `testdrive-kualia.html`     | Clon de práctica de Kualia                                     |
 | `testdrive-zierra.html`     | Clon de práctica de Sierra                                     |
+
+### Test drives en carpeta propia
+
+Dos test drives son módulos autocontenidos, con su propio CSS y JS, en vez de un solo
+archivo en la raíz:
+
+| Carpeta     | Entrada                      | Qué practica                                          |
+| ----------- | ---------------------------- | ----------------------------------------------------- |
+| `Quialia/`  | `testdrive-qualia.html`      | Intake de clientes, lista de Clients y Admin           |
+| `Docusign/` | `testdrive-docusign.html`    | Sobres, orden de firma, colocación de campos, plantillas |
+
+Ambos cargan `assets/css/styles.css` y `assets/js/app-core.js` del sitio, y encima su
+propio `qualia.css` / `docusign.css`.
+
+Nota sobre el nombre: la carpeta se llama `Quialia/` pero la herramienta es **Qualia**. El
+nombre visible en la interfaz ya es el correcto; lo que quedó mal escrito es la carpeta.
+Renombrarla implica tocar `index.html` y las rutas internas del módulo. Reemplazó al
+antiguo `testdrive-kualia.html`, que también estaba mal escrito y ya no existe.
 
 ### `roles/`
 
@@ -128,6 +147,10 @@ El núcleo. Expone todo en `window.SCApp`. Cubre cuatro cosas:
 
 1. **Auth simulada.** `login()`, `logout()`, `currentUser()`, `requireAuth()`. La sesión es
    una llave de `localStorage`, no hay servidor.
+   Las rutas a `login.html`, `account.html` y `admin.html` se resuelven contra la raíz del
+   sitio, que se calcula a partir del `src` del propio `app-core.js` (ver `ROOT` y
+   `rootUrl()`). Por eso una página funciona a cualquier profundidad sin registrarse en
+   ningún lado.
 2. **Motor de progreso.** El progreso se guarda por usuario, por puesto y por modo
    (`sim`, `mls`, `prompt`, `quiz`, `email`). `getOverallPercent()` y
    `getRoleBreakdown()` alimentan `account.html` y `admin.html`.
@@ -235,9 +258,10 @@ referencia histórica. No la uses como punto de partida.
 ## Convenciones al agregar una página
 
 1. Va en la raíz si es una página principal, en `roles/` si es un puesto, en `guides/` si
-   es una guía del AI Lab.
-2. Enlaces relativos planos desde la raíz (`ai.html`), con `../` desde `roles/` y
-   `guides/`.
+   es una guía del AI Lab, o en su propia carpeta si es un módulo grande con CSS y JS
+   propios, como `Quialia/` y `Docusign/`.
+2. Enlaces relativos planos desde la raíz (`ai.html`), con `../` desde cualquier
+   subcarpeta.
 3. Carga `assets/js/app-core.js` antes que cualquier otro script tuyo, y llama a
    `SCApp.requireAuth()` si la página necesita sesión.
 4. Colores desde las variables CSS de `styles.css`, nunca hardcodeados.
