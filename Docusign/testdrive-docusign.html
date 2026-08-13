@@ -1,96 +1,163 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DocuSign Test Drive — SkillCloud Academy</title>
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link rel="stylesheet" href="docusign.css">
+  <style>
+    html, body { height: 100%; }
+    body.td-fullscreen { display: flex; flex-direction: column; height: 100vh; overflow: hidden; margin: 0; background: #f4f5f7; }
+
+    .td-strip { flex: none; background: #001924; color: #fff; display: flex; align-items: center; gap: 12px; padding: 0 22px; height: 36px; font-size: 12.5px; }
+    .td-strip-back { color: #d3e2f0; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 5px; flex: none; }
+    .td-strip-back:hover { color: #fff; text-decoration: none; }
+    .td-strip-dot { width: 4px; height: 4px; border-radius: 50%; background: rgba(255, 255, 255, .35); flex: none; }
+    .td-strip-app { font-weight: 800; flex: none; }
+    .td-strip-app b { color: #ffc400; }
+    .td-strip-msg { color: #9fb4c9; margin-left: auto; font-size: 12px; }
+    @media (max-width: 640px) { .td-strip-msg { display: none; } }
+  </style>
 </head>
+<body class="h-body td-fullscreen">
 
-<body>
-  <nav class="h-nav">
-    <div class="wrap">
-      <a href="../index.html" class="logo">
-        <span class="logo-mark">SC</span>
-        <span>SkillCloud <strong>Academy</strong></span>
-      </a>
-      <div class="h-user" id="hUser"></div>
-    </div>
-  </nav>
+  <!-- Shared Test Drive Strip -->
+  <div class="td-strip">
+    <a class="td-strip-back" href="../index.html#test-drive-open">&larr; Test Drive</a>
+    <span class="td-strip-dot"></span>
+    <span class="td-strip-app">DocuSign <b>Test Drive</b></span>
+    <span class="td-strip-msg">Practice copy only. Nothing here is saved or connected to a real account.</span>
+  </div>
 
-  <div class="wrap-full" style="max-width:100%;margin:0 auto;padding:20px 32px 60px;">
-    <div class="td-hero">
-      <div class="crumb"><a href="../index.html">Home</a> &rsaquo; Test Drive &rsaquo; DocuSign</div>
-      <div class="row" style="display:flex;align-items:center;gap:16px;">
-        <div class="td-logo-chip" style="background:#ffc400;color:#002738;font-weight:900;font-size:18px;padding:10px 14px;border-radius:10px;display:grid;place-items:center;">
-          DocuSign
+  <!-- ===================== DocuSign App Shell ===================== -->
+  <div class="ds-app" id="dsApp">
+
+    <!-- Top Navigation Bar — white topbar matching DocuSign eSignature -->
+    <header class="ds-topbar" id="dsTopbar">
+      <div class="ds-brand">
+        <div class="ds-logo-grid" title="Apps">
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
+          <span></span><span></span><span></span>
         </div>
-        <div>
-          <h1 style="margin:0 0 4px;font-size:24px;font-weight:800;color:var(--navy);">DocuSign VA Training Simulator</h1>
-          <p style="margin:0;font-size:13.5px;color:var(--muted);max-width:760px;line-height:1.5;">
-            Practice real-world Executive Virtual Assistant tasks in a working mock of DocuSign: prepare and send envelopes, configure recipient roles and signing order, place fields, manage in-flight documents, resend reminders, correct email typos, void envelopes, and execute full transaction packages.
-          </p>
-        </div>
+        <img src="Images-resources/OIP.webp" alt="DocuSign" class="ds-logo-img">
+        <span class="ds-product-name">eSignature</span>
       </div>
-    </div>
-
-    <div class="td-warn" style="margin-top:16px;padding:12px 18px;background:#fef8e7;border-left:4px solid #f5a623;border-radius:0 8px 8px 0;font-size:13px;color:#8a6d3b;">
-      <h4 style="margin:0 0 2px;font-size:13.5px;font-weight:700;">Training Simulator Environment</h4>
-      <p style="margin:0;line-height:1.5;">
-        This is a pre-production training interface built strictly for practice. It is not connected to any live DocuSign account, and nothing sent here reaches real signers or clients.
-      </p>
-    </div>
-
-    <!-- DocuSign App Container -->
-    <div class="ds-app" id="dsApp">
-      <div class="ds-topbar" id="dsTopbar">
-        <div class="ds-brand">
-          <span class="ds-logo-badge">DocuSign</span>
-          <span style="font-size:14px;color:#ffffff;font-weight:700;">eSignature</span>
-        </div>
-        <div class="ds-tabs">
-          <span class="active" data-view="dashboard" onclick="dsGoto('dashboard')">Home</span>
-          <span data-view="envelopes" onclick="dsGoto('envelopes')">Manage</span>
-          <span data-view="templates" onclick="dsGoto('templates')">Templates</span>
-          <span data-view="scenarios" onclick="dsGoto('scenarios')">Scenarios</span>
-        </div>
-        <div class="ds-right-actions">
-          <button class="ds-btn-new" onclick="dsGoto('new-envelope')">+ New Envelope</button>
-          <div class="ds-user-chip">
-            <span class="av" id="dsUserAvatar">VA</span>
-            <span id="dsUserLabel">Trainee</span>
-          </div>
-        </div>
+      <nav class="ds-topnav" id="dsTopnav">
+        <a class="ds-topnav-item active" data-view="dashboard" onclick="dsGoto('dashboard')">Home</a>
+        <a class="ds-topnav-item" data-view="envelopes" onclick="dsGoto('envelopes')">Agreements</a>
+        <a class="ds-topnav-item" data-view="templates" onclick="dsGoto('templates')">Templates</a>
+        <a class="ds-topnav-item" data-view="scenarios" onclick="dsGoto('scenarios')">Scenarios</a>
+      </nav>
+      <div class="ds-topbar-right">
+        <button class="ds-help-btn" title="Help" onclick="alert('DocuSign Help Center — training simulator only.')">?</button>
+        <div class="ds-user-avatar" id="dsUserAvatar" title="Account">VA</div>
       </div>
+    </header>
 
-      <div class="ds-body">
+    <!-- App Body: sidebar + main content area -->
+    <div class="ds-layout">
+
+      <!-- Left Sidebar — mirrors DocuSign real sidebar -->
+      <aside class="ds-sidebar" id="dsSidebar">
+        <button class="ds-new-btn" onclick="dsGoto('new-envelope')">
+          <span class="ds-new-btn-label">NEW</span>
+          <span class="ds-new-btn-caret">▾</span>
+        </button>
+
+        <div class="ds-sidebar-section">
+          <div class="ds-sidebar-label">ENVELOPES</div>
+          <ul class="ds-sidebar-nav">
+            <li><a onclick="dsGoto('dashboard')" id="sb-home" class="ds-active">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 10.5 10 3l7 7.5"/><path d="M5 8.8V17h4v-4h2v4h4V8.8"/></svg>
+              Inbox
+            </a></li>
+            <li><a onclick="dsGoto('envelopes')" id="sb-sent">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m3 10 14-7-7 14-2-5z"/></svg>
+              Sent
+            </a></li>
+            <li><a onclick="dsSetFilter('draft'); dsGoto('envelopes')" id="sb-drafts">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M7 7h6M7 10h4"/></svg>
+              Drafts
+            </a></li>
+          </ul>
+        </div>
+
+        <div class="ds-sidebar-section">
+          <div class="ds-sidebar-label">QUICK VIEWS</div>
+          <ul class="ds-sidebar-nav">
+            <li><a onclick="dsSetFilter('waiting'); dsGoto('envelopes')" id="sb-waiting">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 3"/></svg>
+              Waiting for Others
+            </a></li>
+            <li><a onclick="dsSetFilter('completed'); dsGoto('envelopes')" id="sb-completed">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7"/><path d="m7 10 2 2 4-4"/></svg>
+              Completed
+            </a></li>
+            <li><a onclick="dsSetFilter('expired'); dsGoto('envelopes')" id="sb-expiring">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 3v7l4 2"/><circle cx="10" cy="10" r="7"/></svg>
+              Expiring Soon
+            </a></li>
+          </ul>
+        </div>
+
+        <div class="ds-sidebar-section">
+          <ul class="ds-sidebar-nav">
+            <li><a onclick="dsGoto('templates')" id="sb-templates">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><rect x="11" y="11" width="6" height="6" rx="1"/></svg>
+              Templates
+            </a></li>
+            <li><a onclick="dsGoto('scenarios')" id="sb-scenarios">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 2a8 8 0 1 1 0 16A8 8 0 0 1 10 2z"/><path d="M10 9v5M10 7h.01"/></svg>
+              Scenarios
+            </a></li>
+            <li><a onclick="dsGoto('complete-transaction')" id="sb-exam">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m4 10 4 4 8-8"/></svg>
+              Final Exam
+            </a></li>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- Main Content Area -->
+      <main class="ds-main">
         <div id="dsRoot"></div>
+      </main>
+
+    </div><!-- .ds-layout -->
+  </div><!-- .ds-app -->
+
+  <!-- Footer omitted for fullscreen layout -->
+
+  <!-- ===================== Tour Overlay ===================== -->
+  <div class="ds-tour" id="dsTour">
+    <div class="ds-tour-highlight" id="dsTourHighlight"></div>
+    <div class="ds-tour-tip" id="dsTourTip">
+      <div class="ds-tour-tip-body" id="dsTourTipBody"></div>
+      <div class="ds-tour-tip-foot">
+        <span id="dsTourProgress"></span>
+        <div class="ds-tour-tip-btns">
+          <button type="button" onclick="dsTourSkip()">Skip</button>
+          <button type="button" id="dsTourBackBtn" onclick="dsTourBack()">Back</button>
+          <button type="button" id="dsTourNextBtn" class="primary" onclick="dsTourNext()">Next</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <footer class="h-foot">
-    <div class="wrap">
-      <p>SkillCloud Academy &bull; DocuSign Training Simulator</p>
-    </div>
-  </footer>
-
   <script src="../assets/js/app-core.js"></script>
   <script src="docusign-data.js"></script>
   <script src="docusign-app.js"></script>
+  <script src="docusign-tour.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      if (window.SCApp && SCApp.requireAuth) {
-        SCApp.requireAuth();
-      }
+      /* Use SCApp session — if already authenticated, enter directly. */
+      if (window.SCApp && SCApp.requireAuth) SCApp.requireAuth();
     });
   </script>
 </body>
-
 </html>

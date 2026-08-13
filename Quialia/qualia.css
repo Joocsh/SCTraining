@@ -1367,6 +1367,171 @@ table.qz-acct tfoot td {
   margin-top: 12px;
 }
 
+/* ---------- Review (document verification) ---------- */
+.qz-rv-score {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--qz-muted);
+}
+
+.qz-rv-item {
+  border: 1px solid var(--qz-line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+
+.qz-rv-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.qz-rv-head b {
+  font-size: 14.5px;
+}
+
+.qz-rv-chip {
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.qz-rv-chip.pending {
+  background: #eceeef;
+  color: var(--qz-muted);
+}
+
+.qz-rv-chip.good {
+  background: #dff3e6;
+  color: var(--qz-green-d);
+}
+
+.qz-rv-chip.bad {
+  background: #fdf0d9;
+  color: #94640f;
+}
+
+.qz-rv-where {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  color: var(--qz-green);
+  margin-top: 4px;
+}
+
+.qz-rv-instr {
+  font-size: 13px;
+  color: var(--qz-ink);
+  margin: 8px 0 12px;
+  line-height: 1.5;
+}
+
+.qz-rv-compare {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: #f6f7f7;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+.qz-rv-compare .col {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.qz-rv-compare .k {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  color: var(--qz-muted);
+}
+
+.qz-rv-compare .v {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.qz-rv-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.qz-rv-form label {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  color: var(--qz-muted);
+  margin-bottom: 6px;
+}
+
+.qz-rv-form input,
+.qz-rv-form textarea {
+  width: 100%;
+  border: 1px solid #ccd1d4;
+  border-radius: 7px;
+  padding: 9px 11px;
+  font-size: 13.5px;
+  font-family: inherit;
+  background: #fff;
+}
+
+.qz-rv-form textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+
+.qz-rv-form .row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.qz-rv-feedback {
+  font-size: 13px;
+  line-height: 1.55;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.qz-rv-feedback.good {
+  background: #eaf5ee;
+  color: #16532f;
+  border: 1px solid #bfe2cb;
+}
+
+.qz-rv-feedback.bad {
+  background: #fdf6e8;
+  color: #6b4c0f;
+  border: 1px solid #f0dcae;
+}
+
+.qz-rv-feedback b {
+  font-weight: 800;
+}
+
+.qz-rv-note {
+  margin-top: 8px;
+  font-style: italic;
+  opacity: .85;
+}
+
 /* ---------- Document modal ---------- */
 .qz-doc-modal {
   display: none;

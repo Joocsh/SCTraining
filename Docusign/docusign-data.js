@@ -82,6 +82,24 @@ const DS_ENVELOPES = [
       { id: 'r6', role: 'Seller', name: 'Robert Vance', email: 'robert@vance.com', status: 'voided', action: 'Needs to Sign', order: 1 }
     ],
     fields: []
+  },
+  {
+    id: 'ENV-2026-5510',
+    subject: 'Buyer Representation Agreement — EXPIRED',
+    type: 'Real Estate',
+    sender: 'Alex Rivera (VA)',
+    status: 'expired',
+    createdDate: '2026-07-01',
+    closingDate: '2026-07-08',
+    documents: [
+      { id: 'doc-6', name: 'Buyer_Representation_Agreement.pdf', pages: 3 }
+    ],
+    recipients: [
+      { id: 'r7', role: 'Buyer', name: 'Patricia Owens', email: 'p.owens@email.com', status: 'expired', action: 'Needs to Sign', order: 1 }
+    ],
+    fields: [
+      { id: 'f8', type: 'Signature', recipientId: 'r7', page: 3, label: 'Buyer Signature', required: true, value: null }
+    ]
   }
 ];
 
