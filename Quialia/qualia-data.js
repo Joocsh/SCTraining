@@ -14,6 +14,7 @@ const QZ_ORDERS = [
     closingDate: '2026-08-06',
     purchasePrice: 365120,
     loanAmount: 354954,
+    inspectionCharge: 450,
     settlementAgency: 'Best Closing Inc.',
     flag: null,
     statusNote: 'The settlement agency is preparing the title commitment.',
@@ -289,52 +290,81 @@ const QZ_SCENARIOS = [
   },
   {
     id: 'data-error',
-    title: 'You notice a data entry error made by someone else',
-    situation: 'While reviewing an order, you notice the purchase price entered does not match the purchase agreement.',
+    title: 'Double-checking a figure before closing',
+    situation: 'A coworker asks you to double-check the purchase price on an order against the purchase agreement before the file goes to closing. You have not looked at it yet.',
     options: [
-      'Correct it silently without telling anyone',
-      'Verify against the source document and escalate or correct it following your procedure',
-      'Leave it, it is probably not a big deal',
-      'Delete the field so it looks blank instead of wrong'
+      'Assume it is fine since no one has flagged it',
+      'Open the purchase agreement, compare it to the order, and follow your procedure whether it matches or not',
+      'Change the price to whatever looks more likely to be right',
+      'Tell your coworker you already checked it without actually looking'
     ],
     correct: 1,
-    explanation: 'Data errors can cascade into disclosures, payoffs, and disbursements. Verify against the source document, then follow your procedure for correcting and documenting the fix.',
+    explanation: 'Verification is the job whether or not there turns out to be an error. Open the source document, compare it line by line, and follow your procedure either way, confirming a correct value matters as much as catching a wrong one.',
     practice: {
       orderId: 'ORD-2026-1483', tab: 'dataentry', deTab: 'transaction',
       buttonLabel: 'Go to Transaction Information and verify the price',
-      hint: 'Open Transaction Information, compare the purchase price against the purchase agreement, and correct it if it does not match.'
+      hint: 'Open Transaction Information, compare the purchase price against the purchase agreement, and confirm whether it matches.'
     }
   }
 ];
 
-/* Document-review items: verify order data against source documents, then decide
-   the right action — verify (no error), correct (clear typo), or escalate + note
-   (legal / conflicting). `answer` is the correct action; scoring grades the choice. */
+/* Document-review items: a 4-step discrepancy-report engine.
+   Step 1 — open the source document (doc/docTitle).
+   Step 2 — multiple choice: "what does the source document actually say?" (sourceOptions,
+            graded against rightSourceOptionId). One option always restates systemValue as
+            the "matches, no discrepancy" choice, so this single question also answers
+            whether there IS a discrepancy, no free-text/fuzzy matching anywhere.
+   Step 3 — multiple choice: "what's the right next step?" (rightAction, one of
+            none | correct | escalate-agent | escalate-supervisor), always the same 4 choices.
+   Step 4 — conditional: if action=correct, an editable value (correctedValue is the
+            reference value, partyRole/field says where it gets applied); if action starts
+            with escalate-, a closed-list category (rightCategory) plus an ungraded free note.
+   Overall `correct` = every applicable graded sub-part correct. This same shape is reused
+   by the exam's `verify` items (see QZ_EXAM_ITEMS) through the same grading engine. */
 const QZ_REVIEWS = [
   {
     id: 'rev-1483-buyer',
     orderId: 'ORD-2026-1483',
     label: "Buyer's legal name",
     where: 'Data Entry → Parties',
-    instruction: 'Compare the buyer name on this order against the Purchase Agreement.',
+    instruction: "Open the Purchase Agreement and compare it to the buyer's name on this order.",
     doc: 'documents/purchase-agreement-1483.html', docTitle: 'Purchase Agreement',
     systemValue: 'Jon Smith',
-    sourceValue: 'John Smith',
-    answer: 'correct',
+    sourceOptions: [
+      { id: 'a', text: 'Jon Smith — matches, no discrepancy' },
+      { id: 'b', text: 'John Smith' },
+      { id: 'c', text: 'John Smith, Jr.' },
+      { id: 'd', text: 'J. Smith' }
+    ],
+    rightSourceOptionId: 'b',
+    rightAction: 'correct',
+    rightCategory: null,
+    correctedValue: 'John Smith',
     partyRole: 'Buyer',
-    explain: 'The contract clearly shows "John Smith". A plain data-entry typo verified against the source document is corrected directly.'
+    field: null,
+    explain: 'The Purchase Agreement clearly shows "John Smith", a one-character typo made during data entry. This is a plain, unambiguous correction: verify against the contract, then fix it directly.'
   },
   {
     id: 'rev-1483-inspection',
     orderId: 'ORD-2026-1483',
     label: 'Home inspection charge',
     where: 'Accounting',
-    instruction: 'Confirm the home inspection charge on the order matches the vendor invoice.',
+    instruction: 'Open the Home Inspection Invoice and confirm the charge on the order matches what the vendor actually billed.',
     doc: 'documents/home-inspection-invoice-1483.html', docTitle: 'Home Inspection Invoice',
     systemValue: '$450.00',
-    sourceValue: '$425.00',
-    answer: 'correct',
-    explain: 'The vendor invoice totals $425.00. The charge on the order was overstated, correct it to match what the vendor actually billed.'
+    sourceOptions: [
+      { id: 'a', text: '$450.00 — matches, no discrepancy' },
+      { id: 'b', text: '$425.00' },
+      { id: 'c', text: '$405.00' },
+      { id: 'd', text: '$475.00' }
+    ],
+    rightSourceOptionId: 'b',
+    rightAction: 'correct',
+    rightCategory: null,
+    correctedValue: '425.00',
+    partyRole: null,
+    field: 'inspectionCharge',
+    explain: 'The vendor invoice totals $425.00. The charge entered on the order was overstated by $25, correct it to match what the vendor actually billed. Accounting figures come from the invoice, not from memory.'
   },
   {
     id: 'rev-1483-vesting',
@@ -343,10 +373,20 @@ const QZ_REVIEWS = [
     where: 'Documents → Proposed Deed',
     instruction: 'Compare how the seller (grantor) is vested on the Proposed Deed against the Source Deed.',
     doc: 'documents/source-deed-1483.html', docTitle: 'Source Deed',
-    systemValue: 'Proposed Deed grantor: "Tanya Hart"',
-    sourceValue: 'Source Deed vesting: "Tanya R. Hart, a single person"',
-    answer: 'escalate',
-    explain: 'Deed vesting is a legal matter. The proposed deed drops the middle initial and vesting language shown on the source deed. A VA does not silently change deed vesting, flag it and escalate for the settlement agent to confirm and revise.'
+    systemValue: 'Tanya Hart',
+    sourceOptions: [
+      { id: 'a', text: 'Tanya Hart — matches, no discrepancy' },
+      { id: 'b', text: 'Tanya R. Hart' },
+      { id: 'c', text: 'Tanya R. Hart, a single person' },
+      { id: 'd', text: 'T. Hart' }
+    ],
+    rightSourceOptionId: 'c',
+    rightAction: 'escalate-agent',
+    rightCategory: 'legal-vesting',
+    correctedValue: null,
+    partyRole: null,
+    field: null,
+    explain: 'Deed vesting is a legal matter, not a typo. The proposed deed drops both the middle initial and the vesting language ("a single person") shown on the recorded source deed. A VA never edits vesting directly, escalate to the Settlement Agent to confirm and revise the deed.'
   },
   {
     id: 'rev-1483-price',
@@ -356,8 +396,312 @@ const QZ_REVIEWS = [
     instruction: 'Verify the purchase price on the order against the Purchase Agreement.',
     doc: 'documents/purchase-agreement-1483.html', docTitle: 'Purchase Agreement',
     systemValue: '$365,120.00',
-    sourceValue: '$365,120.00',
-    answer: 'verify',
-    explain: 'The price matches the contract exactly. Not every item has an error, confirming a correct value is part of the job.'
+    sourceOptions: [
+      { id: 'a', text: '$365,120.00 — matches, no discrepancy' },
+      { id: 'b', text: '$365,210.00' },
+      { id: 'c', text: '$356,120.00' },
+      { id: 'd', text: '$365,120.00, plus a $2,000 credit' }
+    ],
+    rightSourceOptionId: 'a',
+    rightAction: 'none',
+    rightCategory: null,
+    correctedValue: null,
+    partyRole: null,
+    field: null,
+    explain: 'The price matches the contract exactly. Not every item has an error, confirming a correct value and moving on is part of the job too.'
+  }
+];
+
+/* Closed list of escalation categories, used by Step 4 of the discrepancy-report engine. */
+const QZ_ESCALATION_CATEGORIES = [
+  { id: 'legal-vesting', label: 'Legal / vesting issue' },
+  { id: 'conflicting-sources', label: 'Conflicting sources' },
+  { id: 'outside-authority', label: 'Outside my authority as a VA' },
+  { id: 'needs-client-confirmation', label: 'Needs client confirmation' }
+];
+
+/* Step 3 of the discrepancy-report engine always offers these same 4 choices. */
+const QZ_ACTION_CHOICES = [
+  { id: 'none', label: 'No action needed' },
+  { id: 'correct', label: 'Correct it myself' },
+  { id: 'escalate-agent', label: 'Escalate to the Settlement Agent' },
+  { id: 'escalate-supervisor', label: 'Escalate to my Supervisor' }
+];
+const QZ_ACTION_LABEL = QZ_ACTION_CHOICES.reduce((m, a) => (m[a.id] = a.label, m), {});
+
+/* 12 lessons — the trainee's guided curriculum. Each step references an id that already
+   lives in QZ_CHECKLISTS ('do'), QZ_REVIEWS ('verify'), or QZ_SCENARIOS ('decide') — no
+   content is duplicated here. Lesson N+1 unlocks only once every step of lesson N is
+   resolved correctly (lock state is always derived at render time, never stored). */
+const QZ_LESSONS = [
+  {
+    id: 'l01-orientation', number: 1, title: 'Orientation & Navigation',
+    summary: 'Find your way around Orders before you touch any data.',
+    steps: [
+      { type: 'do', checklistId: 'orders-search', walk: {
+          target: '#qzTopSearchInput',
+          text: 'Type "1483" in the search box above. That finds Order ORD-2026-1483.',
+          setup: () => {
+            qzState.view = 'orders'; qzState.orderId = null; qzState.orderFilter = '';
+            const input = document.getElementById('qzTopSearchInput');
+            if (input) input.value = '';
+            qzSyncTopTabs(); qzRenderRoot();
+          }
+        } },
+      { type: 'do', checklistId: 'orders-open', walk: {
+          target: 'tr[data-order-id="ORD-2026-1483"]',
+          text: 'Click this row to open Order ORD-2026-1483.',
+          setup: () => {
+            qzState.view = 'orders'; qzState.orderId = null; qzState.orderFilter = '1483';
+            const input = document.getElementById('qzTopSearchInput');
+            if (input) input.value = '1483';
+            qzSyncTopTabs(); qzRenderRoot();
+          }
+        } },
+      { type: 'do', checklistId: 'orders-back', walk: {
+          target: '.qz-back',
+          text: 'Click "← Orders" to return to the Orders list.',
+          setup: () => { qzOpenOrder('ORD-2026-1483'); }
+        } }
+    ]
+  },
+  {
+    id: 'l02-overview-stage', number: 2, title: 'Reading a File: Overview & Stage',
+    summary: 'Always confirm where a file stands before you say anything about it.',
+    steps: [
+      { type: 'do', checklistId: 'workflow-view', walk: {
+          target: '[data-tab="workflow"]',
+          text: 'Click the Workflow tab to see exactly where Order ORD-2026-1483 stands right now.',
+          setup: () => qzOpenOrder('ORD-2026-1483')
+        } },
+      { type: 'decide', scenarioId: 'new-order', walk: {
+          target: null,
+          text: 'A new scenario. Read the situation below, then pick the option you believe is correct, no shortcuts here, this one tests your judgment.',
+          setup: () => qzOpenScenario('new-order')
+        } }
+    ]
+  },
+  {
+    id: 'l03-data-entry', number: 3, title: 'Data Entry: Property & Parties',
+    summary: 'Tour the Data Entry tabs and make your first tracked edit.',
+    steps: [
+      { type: 'do', checklistId: 'de-property', walk: {
+          target: '[data-tab="dataentry"]',
+          text: 'Click the Data Entry tab. It opens straight to Property, the first stop.',
+          setup: () => qzOpenOrder('ORD-2026-1483')
+        } },
+      { type: 'do', checklistId: 'de-parties', walk: {
+          target: '[data-detab="parties"]',
+          text: 'Click the Parties sub-tab to see everyone on this file.',
+          setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('dataentry'); }
+        } },
+      { type: 'do', checklistId: 'de-transaction', walk: {
+          target: '[data-detab="transaction"]',
+          text: 'Click Transaction Information to see the price, loan amount, and closing date.',
+          setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('dataentry'); }
+        } },
+      { type: 'do', checklistId: 'de-edit', walk: {
+          target: () => {
+            const btn = document.getElementById('qzDeSaveBtn');
+            if (btn && btn.offsetParent !== null) return btn; // visible once something changed
+            return document.querySelector('.qz-party-card[data-role="Buyer"] input[data-field="phone"]');
+          },
+          text: "Let's make a tracked edit. Change the Buyer's phone number to anything below. A Save button appears top-right, click it to save.",
+          setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('dataentry'); qzDeTab('parties'); }
+        } }
+    ]
+  },
+  {
+    id: 'l04-verify-buyer-name', number: 4, title: "Verify Against Source: Buyer's Name",
+    summary: 'Every field can be wrong. Learn to check it before you trust it.',
+    steps: [
+      { type: 'verify', reviewId: 'rev-1483-buyer' },
+      { type: 'decide', scenarioId: 'buyer-name-error' }
+    ]
+  },
+  {
+    id: 'l05-verify-figures', number: 5, title: 'Verify Figures: Price & Inspection Charge',
+    summary: 'Numbers need the same scrutiny as names, whether or not they turn out to be wrong.',
+    steps: [
+      { type: 'verify', reviewId: 'rev-1483-price' },
+      { type: 'verify', reviewId: 'rev-1483-inspection' },
+      { type: 'decide', scenarioId: 'data-error' }
+    ]
+  },
+  {
+    id: 'l06-documents', number: 6, title: 'Documents: Receive, Review, Version',
+    summary: 'Move a document through its real lifecycle: received, viewed, reviewed.',
+    steps: [
+      { type: 'do', checklistId: 'docs-upload' },
+      { type: 'do', checklistId: 'docs-download' },
+      { type: 'do', checklistId: 'docs-review' }
+    ]
+  },
+  {
+    id: 'l07-missing-document', number: 7, title: 'Missing Document & Honest Follow-up',
+    summary: 'Keep statuses accurate and follow up with whoever owns the delay.',
+    steps: [
+      { type: 'decide', scenarioId: 'missing-document' },
+      { type: 'do', checklistId: 'comm-followup', orderId: 'ORD-2026-1512' }
+    ]
+  },
+  {
+    id: 'l08-vesting-escalation', number: 8, title: 'When Not to Touch Data: Vesting & Escalation',
+    summary: 'Some things are not a VA’s call to fix. Learn to recognize and escalate them.',
+    steps: [
+      { type: 'verify', reviewId: 'rev-1483-vesting' }
+    ]
+  },
+  {
+    id: 'l09-communication', number: 9, title: 'Professional Communication',
+    summary: 'Open a thread, reply professionally, and know when to push a vendor.',
+    steps: [
+      { type: 'do', checklistId: 'comm-open', orderId: 'ORD-2026-1398' },
+      { type: 'do', checklistId: 'comm-reply', orderId: 'ORD-2026-1398' },
+      { type: 'decide', scenarioId: 'lender-followup' }
+    ]
+  },
+  {
+    id: 'l10-tasks', number: 10, title: 'Tasks & Prioritization',
+    summary: 'Work your queue like a real file depends on it, because it does.',
+    steps: [
+      { type: 'do', checklistId: 'tasks-open' },
+      { type: 'do', checklistId: 'tasks-complete' }
+    ]
+  },
+  {
+    id: 'l11-vendors-accounting', number: 11, title: 'Vendors & Read-Only Accounting',
+    summary: 'Check vendor status and understand where the money is tracked, without touching it.',
+    steps: [
+      { type: 'do', checklistId: 'vendors-open' },
+      { type: 'do', checklistId: 'vendors-check' },
+      { type: 'do', checklistId: 'accounting-open' }
+    ]
+  },
+  {
+    id: 'l12-closing', number: 12, title: 'Closing: Checklist & Date Changes',
+    summary: 'Confirm every document is reviewed, and escalate anything that moves the date.',
+    steps: [
+      { type: 'do', checklistId: 'closing-open', orderId: 'ORD-2026-1398' },
+      { type: 'do', checklistId: 'closing-review', orderId: 'ORD-2026-1398' },
+      { type: 'decide', scenarioId: 'closing-delay' }
+    ]
+  }
+];
+
+/* ---------- Final exam: dedicated order + documents, unrelated to the lesson orders
+   above, so the exam cannot be passed from memorized lesson answers. Unlocks only once
+   every lesson is complete; graded with no hints and no going back. ---------- */
+const QZ_EXAM_PASS_PCT = 0.8;
+
+const QZ_EXAM_ORDER = {
+  id: 'ORD-2026-EXAM',
+  titleNumber: 'TX-2026-09901',
+  propertyAddress: '4110 Hollow Creek Court, Allen, TX 75013',
+  type: 'Purchase',
+  status: 'Open',
+  stageIndex: 1,
+  opened: '2026-07-02',
+  closingDate: '2026-08-28',
+  purchasePrice: 398750,
+  loanAmount: 372900,
+  inspectionCharge: 395,
+  settlementAgency: 'Best Closing Inc.',
+  flag: null,
+  statusNote: 'The settlement agency is preparing the title commitment.',
+  parties: [
+    { name: 'Derek Owusu', role: 'Buyer', email: 'derek.owusu@example.com', phone: '(214) 555-0301' },
+    { name: 'Marisol Vega', role: 'Seller', email: 'marisol.vega@example.com', phone: '(214) 555-0344' },
+    { name: 'Renee Castillo', role: 'Selling Agent', email: 'rcastillo@allenhomes.com', phone: '(972) 555-0410' },
+    { name: 'Omar Fitch', role: 'Listing Agent', email: 'ofitch@allenhomes.com', phone: '(972) 555-0455' },
+    { name: 'Lucas Adminton', role: 'Settlement Agent', email: 'ladminton@bestclosing.com', phone: '(214) 555-0166' },
+    { name: 'Cedar Point Lending', role: 'Lender', email: 'processing@cedarpointlending.com', phone: '(469) 555-0388' }
+  ]
+};
+
+const QZ_EXAM_DOCUMENTS = [
+  { id: 901, orderId: 'ORD-2026-EXAM', name: 'Purchase Agreement', type: 'Contract', status: 'Reviewed', uploadedBy: 'Renee Castillo', date: '2026-07-03', file: 'documents/exam-purchase-agreement.html' },
+  { id: 902, orderId: 'ORD-2026-EXAM', name: 'Source Deed', type: 'Title', status: 'Reviewed', uploadedBy: 'Lucas Adminton', date: '2026-07-10', file: 'documents/exam-source-deed.html' }
+];
+
+const QZ_EXAM_ITEMS = [
+  { id: 'ex-01', type: 'do', label: 'Open the exam order and confirm its current workflow stage.', checklistId: 'workflow-view', points: 10 },
+  {
+    id: 'ex-02', type: 'verify', orderId: 'ORD-2026-EXAM', label: "Buyer's legal name",
+    where: 'Data Entry → Parties',
+    instruction: "Open the Purchase Agreement and compare it to the buyer's name on this order.",
+    doc: 'documents/exam-purchase-agreement.html', docTitle: 'Purchase Agreement',
+    systemValue: 'Derrick Owusu',
+    sourceOptions: [
+      { id: 'a', text: 'Derrick Owusu — matches, no discrepancy' },
+      { id: 'b', text: 'Derek Owusu' },
+      { id: 'c', text: 'Derek Owusu, Jr.' },
+      { id: 'd', text: 'D. Owusu' }
+    ],
+    rightSourceOptionId: 'b',
+    rightAction: 'correct', rightCategory: null,
+    correctedValue: 'Derek Owusu', partyRole: 'Buyer', field: null,
+    explain: 'The Purchase Agreement shows "Derek Owusu" — a data-entry typo. Correct it directly.',
+    points: 10
+  },
+  {
+    id: 'ex-03', type: 'verify', orderId: 'ORD-2026-EXAM', label: 'Purchase price',
+    where: 'Data Entry → Transaction Information',
+    instruction: 'Verify the purchase price on the order against the Purchase Agreement.',
+    doc: 'documents/exam-purchase-agreement.html', docTitle: 'Purchase Agreement',
+    systemValue: '$398,750.00',
+    sourceOptions: [
+      { id: 'a', text: '$398,750.00 — matches, no discrepancy' },
+      { id: 'b', text: '$389,750.00' },
+      { id: 'c', text: '$398,570.00' },
+      { id: 'd', text: '$398,750.00, plus a $1,500 credit' }
+    ],
+    rightSourceOptionId: 'a',
+    rightAction: 'none', rightCategory: null,
+    correctedValue: null, partyRole: null, field: null,
+    explain: 'The price matches the contract exactly. Confirming a correct value is as much the job as catching a wrong one.',
+    points: 10
+  },
+  {
+    id: 'ex-04', type: 'verify', orderId: 'ORD-2026-EXAM', label: 'Seller vesting on the Source Deed',
+    where: 'Documents → Source Deed',
+    instruction: 'Compare how the seller is vested on the Source Deed against the buyer name and vesting shown on the order.',
+    doc: 'documents/exam-source-deed.html', docTitle: 'Source Deed',
+    systemValue: 'Marisol Vega',
+    sourceOptions: [
+      { id: 'a', text: 'Marisol Vega — matches, no discrepancy' },
+      { id: 'b', text: 'Marisol Vega, a married person' },
+      { id: 'c', text: 'Marisol T. Vega, a married person' },
+      { id: 'd', text: 'M. Vega' }
+    ],
+    rightSourceOptionId: 'c',
+    rightAction: 'escalate-agent', rightCategory: 'legal-vesting',
+    correctedValue: null, partyRole: null, field: null,
+    explain: 'Vesting is a legal matter. The source deed carries a middle initial and marital-status language the order does not reflect. Escalate to the Settlement Agent, do not edit vesting yourself.',
+    points: 10
+  },
+  {
+    id: 'ex-05', type: 'decide',
+    situation: 'A vendor invoice on this file totals $30 less than the charge currently entered on the order.',
+    options: [
+      'Correct it silently without telling anyone',
+      'Verify the amount against the vendor invoice, then correct it to match what the vendor actually billed',
+      'Leave it, a small difference is not worth the trouble',
+      'Delete the charge entirely so it does not show as wrong'
+    ],
+    correct: 1,
+    points: 10
+  },
+  {
+    id: 'ex-06', type: 'decide',
+    situation: 'The lender tells you final loan documents will be late, and the current closing date cannot be met.',
+    options: [
+      'Change the closing date in the system on your own judgment',
+      'Notify your supervisor and escalate so the date change is verified and communicated correctly',
+      'Say nothing to the buyer and seller until someone asks',
+      'Cancel the order'
+    ],
+    correct: 1,
+    points: 10
   }
 ];

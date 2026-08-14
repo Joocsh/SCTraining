@@ -17,7 +17,7 @@
   var ROLE_LABELS = {
     tc:'Transaction Coordinator', listing:'Listing Coordinator', lc:'Leasing Coordinator',
     lm:'Lead Manager', ops:'Operations Manager', cfo:'CFO & Bookkeeper', admin_social:'Admin & Social Media',
-    general:'Practice Sandbox'
+    general:'Practice Sandbox', qualia:'Qualia (Title/Escrow)'
   };
   var ROLE_PAGES = {
     tc:'roles/transaction-coordinator.html', listing:'roles/listing-coordinator.html',

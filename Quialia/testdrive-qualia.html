@@ -46,9 +46,12 @@
 
     <div class="qz-body">
       <div id="qzLoginWrap"></div>
+      <div id="qzLessonBanner"></div>
       <div id="qzRoot" style="display:none"></div>
     </div>
   </div>
+
+  <div class="qz-toast-host" id="qzToastHost"></div>
 
   <div class="qz-doc-modal" id="qzDocModal" onclick="if(event.target===this) qzCloseDoc()">
     <div class="qz-doc-modal-card">
@@ -72,6 +75,13 @@
           <button type="button" id="qzTourNextBtn" class="primary" onclick="qzTourNext()">Next</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="qz-walk" id="qzWalk">
+    <div class="qz-walk-highlight" id="qzWalkHighlight"></div>
+    <div class="qz-walk-tip" id="qzWalkTip">
+      <div id="qzWalkTipBody"></div>
     </div>
   </div>
 

@@ -10,7 +10,7 @@ const QZ_TOUR_STEPS = [
   },
   {
     title: 'Two home views',
-    text: 'Dashboard tracks your training progress and is where you will practice Scenarios. Orders is where you will spend most of your time working files.',
+    text: 'Dashboard tracks your lesson progress. Orders is where you will spend most of your time working files.',
     target: '.qz-tabs'
   },
   {
@@ -19,15 +19,10 @@ const QZ_TOUR_STEPS = [
     target: '.qz-search'
   },
   {
-    title: 'Your checklist, automated',
-    text: 'Each card tracks one part of the job. Items check themselves off as you perform the real action in the UI, nothing to mark by hand.',
-    target: '.qz-dash-grid',
+    title: 'Twelve lessons, in order',
+    text: 'Each card is a lesson. Complete every step, real actions in the UI, "what should I do?" scenarios, and document verification, to unlock the next one.',
+    target: '.qz-lesson-grid',
     before: () => qzGoto('dashboard')
-  },
-  {
-    title: 'Practice your judgment',
-    text: '"What should I do?" scenarios live right here on the Dashboard. Answer one, get feedback, and watch your score update as you go.',
-    target: '.qz-scenario-grid'
   },
   {
     title: 'Open a file',
@@ -48,7 +43,7 @@ const QZ_TOUR_STEPS = [
   },
   {
     title: "You're ready",
-    text: 'That is the tour. Explore any module in any order, and try a Scenario when you want to test your judgment.',
+    text: 'That is the tour. Start with Lesson 1 on the Dashboard, and work through them in order.',
     target: null,
     before: () => qzGoto('dashboard')
   }

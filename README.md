@@ -90,7 +90,7 @@ archivo en la raíz:
 
 | Carpeta     | Entrada                      | Qué practica                                          |
 | ----------- | ---------------------------- | ----------------------------------------------------- |
-| `Quialia/`  | `testdrive-qualia.html`      | Intake de clientes, lista de Clients y Admin           |
+| `Quialia/`  | `testdrive-qualia.html`      | Orden de cierre: entrada de datos, verificación de documentos y escalamiento |
 | `Docusign/` | `testdrive-docusign.html`    | Sobres, orden de firma, colocación de campos, plantillas |
 
 Ambos cargan `assets/css/styles.css` y `assets/js/app-core.js` del sitio, y encima su
