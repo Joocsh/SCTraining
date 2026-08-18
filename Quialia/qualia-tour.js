@@ -19,7 +19,7 @@ const QZ_TOUR_STEPS = [
     target: '.qz-search'
   },
   {
-    title: 'Twelve lessons, in order',
+    title: 'Guided lessons, in order',
     text: 'Each card is a lesson. Complete every step, real actions in the UI, "what should I do?" scenarios, and document verification, to unlock the next one.',
     target: '.qz-lesson-grid',
     before: () => qzGoto('dashboard')

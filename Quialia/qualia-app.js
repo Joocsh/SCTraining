@@ -15,7 +15,7 @@ const QZ_ICONS = {
 const QZ_LS_KEY = 'qz_va_training_v1';
 const QZ_STORE_DEFAULTS = {
   checklist: {}, scenarios: {}, docStatus: {}, taskStatus: {}, reviews: {},
-  overrides: {}, lessons: {}, tourSeen: false, exam: null
+  overrides: {}, lessons: {}, replies: {}, tourSeen: false, exam: null
 };
 function qzDefaultStore() { return JSON.parse(JSON.stringify(QZ_STORE_DEFAULTS)); }
 let qzStore = qzDefaultStore();
@@ -29,10 +29,20 @@ function qzLoad() {
 }
 function qzSave() { localStorage.setItem(QZ_LS_KEY, JSON.stringify(qzStore)); }
 function qzMark(id) {
-  if (qzStore.checklist[id]) return;
-  qzStore.checklist[id] = true;
-  qzSave();
-  qzNotifyStepDone(id);
+  const alreadyDone = !!qzStore.checklist[id];
+  if (!alreadyDone) {
+    qzStore.checklist[id] = true;
+    qzSave();
+  }
+  // Normally re-marking an already-done item is a silent no-op, that's what keeps repeatable
+  // actions (like typing in the search box) from spamming a toast on every keystroke. But if
+  // the walkthrough is actively showing this exact step, it needs to hear about it regardless,
+  // the trainee may have completed this checklist item in an earlier session/attempt, and the
+  // walkthrough always starts a lesson at step 0 without skipping steps already done, redoing
+  // the action must still be able to advance it instead of going silently unheard.
+  const step = (typeof qzWalk !== 'undefined' && qzWalk) ? qzWalkCurrentStep() : null;
+  const walkActiveOnThis = step && step.type === 'do' && step.checklistId === id;
+  if (!alreadyDone || walkActiveOnThis) qzNotifyStepDone(id);
 }
 /* Instant "step done" feedback when the completed checklist id belongs to a step of the
    lesson currently being worked (qzState.lessonId) — no-op outside a lesson context.
@@ -144,7 +154,53 @@ function qzEnter() {
   document.getElementById('qzLoginWrap').style.display = 'none';
   document.getElementById('qzRoot').style.display = 'block';
   qzGoto('dashboard');
+  qzUpdateBellBadge();
   if (!qzStore.tourSeen && window.qzTourStart) setTimeout(qzTourStart, 350);
+}
+
+/* ---------- notification bell ---------- */
+function qzOpenTasks() { return QZ_TASKS.filter(t => qzTaskStatus(t) !== 'Complete'); }
+function qzUpdateBellBadge() {
+  const badge = document.querySelector('#qzBell .n');
+  if (badge) badge.textContent = qzOpenTasks().length;
+}
+function qzToggleBellDropdown(e) {
+  if (e) e.stopPropagation();
+  const dd = document.getElementById('qzBellDropdown');
+  if (!dd) return;
+  const opening = !dd.classList.contains('open');
+  if (opening) qzRenderBellDropdown();
+  dd.classList.toggle('open', opening);
+}
+function qzCloseBellDropdown() {
+  const dd = document.getElementById('qzBellDropdown');
+  if (dd) dd.classList.remove('open');
+}
+document.addEventListener('click', () => qzCloseBellDropdown());
+function qzRenderBellDropdown() {
+  const dd = document.getElementById('qzBellDropdown');
+  if (!dd) return;
+  const open = qzOpenTasks();
+  if (!open.length) { dd.innerHTML = '<div class="qz-bell-empty">No open tasks</div>'; return; }
+  const groups = {};
+  open.forEach(t => { (groups[t.relatedOrderId] = groups[t.relatedOrderId] || []).push(t); });
+  dd.innerHTML = Object.keys(groups).map(orderId => {
+    const o = qzGetOrder(orderId);
+    const label = o ? o.propertyAddress : orderId;
+    const items = groups[orderId].map(t =>
+      `<div class="qz-bell-item" onclick="qzGotoOrderTasks('${escAttr(orderId)}')"><span class="t">${esc(t.title)}</span><span class="d">${fmtDate(t.dueDate)}</span></div>`
+    ).join('');
+    return `<div class="qz-bell-group"><div class="qz-bell-group-h">${esc(label)}</div>${items}</div>`;
+  }).join('');
+}
+function qzGotoOrderTasks(orderId) {
+  qzState.view = 'order';
+  qzState.orderId = orderId;
+  qzState.orderTab = 'tasks';
+  qzMark('orders-open');
+  qzSyncTopTabs();
+  qzRenderRoot();
+  qzCloseBellDropdown();
 }
 
 /* ---------- top-level navigation ---------- */
@@ -295,6 +351,31 @@ function qzLessonStepGo(lessonId, stepIndex) {
   if (!l) return;
   qzLessonStepNavigate(l.steps[stepIndex]);
 }
+/* Shown next to a `decide`/`verify` step's own feedback once it's answered correctly, so
+   there's an explicit way forward instead of "Retake"/"Redo" being the only visible button. */
+function qzLessonContinueHTML(step) {
+  if (!qzState.lessonId) return '';
+  const l = QZ_LESSONS.find(x => x.id === qzState.lessonId);
+  if (!l) return '';
+  const idx = l.steps.indexOf(step);
+  if (idx === -1) return '';
+  const label = idx < l.steps.length - 1 ? 'Continue to next step &rarr;' : 'Finish Lesson &rarr;';
+  return `<button class="qz-btn sm primary" onclick="qzLessonContinue('${l.id}',${idx})">${label}</button>`;
+}
+/* If an active walkthrough is showing this exact step, skip its own ~1s "nice, moving on"
+   pause instead of navigating separately, the trainee already said they're ready by
+   clicking. Otherwise (no walkthrough, or a manual visit) navigate directly. */
+function qzLessonContinue(lessonId, stepIndex) {
+  if (typeof qzWalk !== 'undefined' && qzWalk && qzWalk.lessonId === lessonId && qzWalk.stepIndex === stepIndex) {
+    qzWalkSkipWait();
+    return;
+  }
+  const l = QZ_LESSONS.find(x => x.id === lessonId);
+  if (!l) return;
+  const next = l.steps[stepIndex + 1];
+  if (next) qzLessonStepNavigate(next);
+  else qzGoto('dashboard');
+}
 function qzLessonDetailHTML() {
   const l = QZ_LESSONS.find(x => x.id === qzState.lessonId);
   if (!l) return '<p>Lesson not found.</p>';
@@ -328,11 +409,11 @@ function qzLessonDetailHTML() {
    trainee performs the real action while a floating highlight + instruction card points
    at exactly what to do; qzNotifyStepDone() (called from qzMark) detects completion and
    advances automatically. Content lives on QZ_LESSONS[].steps[].walk (target/text/setup). */
-let qzWalk = null; // { lessonId, stepIndex }
+let qzWalk = null; // { lessonId, stepIndex, tourIndex }
 function qzWalkStart(lessonId) {
   const l = QZ_LESSONS.find(x => x.id === lessonId);
   if (!l || !l.steps.every(s => s.walk)) return;
-  qzWalk = { lessonId, stepIndex: 0 };
+  qzWalk = { lessonId, stepIndex: 0, tourIndex: null, stepDoneFired: false };
   qzWalkShowCurrent();
 }
 function qzWalkCurrentLesson() { return qzWalk ? QZ_LESSONS.find(x => x.id === qzWalk.lessonId) : null; }
@@ -342,38 +423,205 @@ function qzWalkCurrentStep() {
 }
 function qzWalkShowCurrent() {
   document.getElementById('qzWalk').classList.add('open');
+  qzWalk.tourIndex = null;
+  qzWalk.stepDoneFired = false;
+  // Default unlocked, a step that specifically needs the search box locked (see l01's
+  // orders-open) re-locks it in its own setup() below, this just guarantees it doesn't stay
+  // locked once that step is behind us.
+  qzWalkUnlockSearchInput();
   const step = qzWalkCurrentStep();
   if (!step) { qzWalkShowComplete(); return; }
   if (step.walk.setup) step.walk.setup();
-  qzWalkRenderTip(step, false);
-  requestAnimationFrame(() => requestAnimationFrame(() => qzWalkPosition(step)));
+  if (step.walk.skipClick) qzWalkRenderSkipClick(step); else qzWalkRenderTip(step, false);
+  requestAnimationFrame(() => requestAnimationFrame(() => qzWalkPosition(step, { scrollIntoView: true })));
+}
+/* For a `do` step that's purely explanatory (e.g. "this is the Upload button") where nothing
+   real would actually happen if clicked in this simulator, walk.nextAction runs the same
+   underlying function a real click would (so any state it changes still happens, keeping
+   later steps consistent), triggered by a "Next" button in the tip instead of requiring the
+   trainee to click the real element, which is still highlighted so they know what it is. */
+function qzWalkRenderSkipClick(step) {
+  const l = qzWalkCurrentLesson();
+  const text = typeof step.walk.text === 'function' ? step.walk.text() : step.walk.text;
+  qzWalkSetTipBody(`<b>Lesson ${l.number} &middot; Step ${qzWalk.stepIndex + 1} of ${l.steps.length}</b><p>${esc(text)}</p>
+    <button class="qz-btn primary" style="margin-top:10px" onclick="qzWalkRunNextAction()">Next &rarr;</button>
+    <div class="qz-walk-exit" onclick="qzWalkExit()">Exit walkthrough</div>`);
+}
+function qzWalkRunNextAction() {
+  const step = qzWalkCurrentStep();
+  if (!step || !step.walk.nextAction) return;
+  step.walk.nextAction();
+}
+/* One dot per step in the current lesson, filled for done, ringed for the one in progress,
+   hollow for anything still ahead, persistent across every view the walkthrough passes
+   through so there's always a sense of "point 2 of 6", not just a wall of content. */
+function qzWalkDotsHTML() {
+  const l = qzWalkCurrentLesson();
+  if (!l) return '';
+  const dots = l.steps.map((s, i) => {
+    const cls = i === qzWalk.stepIndex ? 'current' : (qzLessonStepDone(s) ? 'done' : '');
+    return `<span class="qz-walk-dot ${cls}"></span>`;
+  }).join('');
+  return `<div class="qz-walk-dots">${dots}</div>`;
+}
+function qzWalkSetTipBody(html) {
+  document.getElementById('qzWalkTipBody').innerHTML = qzWalkDotsHTML() + html;
 }
 function qzWalkRenderTip(step, done) {
   const l = qzWalkCurrentLesson();
-  const body = document.getElementById('qzWalkTipBody');
   if (done) {
-    body.innerHTML = `<b>&#10003; Nice.</b><p>Moving to the next step&hellip;</p>`;
+    qzWalkSetTipBody(`<b>&#10003; Nice.</b><p>Moving to the next step&hellip;</p>`);
   } else {
-    body.innerHTML = `<b>Lesson ${l.number} &middot; Step ${qzWalk.stepIndex + 1} of ${l.steps.length}</b><p>${esc(step.walk.text)}</p>
-      <div class="qz-walk-exit" onclick="qzWalkExit()">Exit walkthrough</div>`;
+    const text = typeof step.walk.text === 'function' ? step.walk.text() : step.walk.text;
+    qzWalkSetTipBody(`<b>Lesson ${l.number} &middot; Step ${qzWalk.stepIndex + 1} of ${l.steps.length}</b><p>${esc(text)}</p>
+      <div class="qz-walk-exit" onclick="qzWalkExit()">Exit walkthrough</div>`);
   }
 }
-/* Wrong answer on a `decide` step: don't advance, don't reveal the answer, just point
-   the trainee back at the feedback + Try Again control the scenario page already shows. */
-function qzWalkRenderRetry() {
-  const body = document.getElementById('qzWalkTipBody');
-  body.innerHTML = `<b>Not quite.</b><p>Read the explanation below, then click "Try Again" to retry this scenario.</p>
-    <div class="qz-walk-exit" onclick="qzWalkExit()">Exit walkthrough</div>`;
+/* Wrong answer on a `decide` step or a `verify` item: don't advance, don't reveal the
+   answer, just point the trainee back at the feedback + retry control the page already
+   shows (custom msg lets `verify` steps say "Redo" instead of "Try Again"). */
+function qzWalkRenderRetry(msg) {
+  qzWalkSetTipBody(`<b>Not quite.</b><p>${msg || 'Read the explanation below, then click "Try Again" to retry this scenario.'}</p>
+    <div class="qz-walk-exit" onclick="qzWalkExit()">Exit walkthrough</div>`);
 }
+/* Four different "what happens after a correct answer" behaviors, depending on the step:
+   1. walk.tour set (e.g. workflow-view) — a real UI panel just appeared with several parts
+      worth pointing out (the stage marker, the status text, the read-only note), so instead
+      of one blob of text this walks through them one at a time, each with its own highlight,
+      before moving on to the next lesson step.
+   2. walk.pauseText set — a single explanation (built from live order data) with a Continue
+      click, for steps that need context but only have one thing to point at.
+   3. decide/verify steps — these already render their own explanation + a "Continue to next
+      step" button on the page (qzLessonContinueHTML), auto-advancing here would yank the
+      trainee away before they get to read it, so this just waits for that button instead.
+   4. everything else (plain `do` clicks with nothing to read) — short "Nice" pause, then
+      auto-advance, unchanged from before. */
 function qzWalkStepDone() {
   const step = qzWalkCurrentStep();
   if (!step) return;
+  // Guards against firing more than once per step instance: a repeatable trigger (typing in
+  // the search box fires on every keystroke, and a loose substring match can satisfy the
+  // target on more than one of them) could otherwise queue up several independent advances
+  // that each fire their own delayed qzWalkAdvance(), skipping past whatever step comes next.
+  if (qzWalk.stepDoneFired) return;
+  qzWalk.stepDoneFired = true;
+  const exitLink = '<div class="qz-walk-exit" onclick="qzWalkExit()">Exit walkthrough</div>';
+  if (step.walk.tour && step.walk.tour.length) {
+    qzWalk.tourIndex = 0;
+    qzWalkShowTourStop();
+    return;
+  }
+  if (step.walk.pauseText) {
+    const text = typeof step.walk.pauseText === 'function' ? step.walk.pauseText() : step.walk.pauseText;
+    qzWalkSetTipBody(`<b>&#10003; Nice.</b><p>${esc(text)}</p>
+      <button class="qz-btn primary" style="margin-top:10px" onclick="qzWalkAdvance()">Continue &rarr;</button>${exitLink}`);
+    return;
+  }
+  if (step.type === 'decide' || step.type === 'verify') {
+    qzWalkSetTipBody(`<b>&#10003; Correct.</b><p>Read the explanation below, then click "Continue to next step" when you're ready.</p>${exitLink}`);
+    return;
+  }
   qzWalkRenderTip(step, true);
-  setTimeout(() => {
-    if (!qzWalk) return; // walkthrough may have been exited during the pause
-    qzWalk.stepIndex++;
-    qzWalkShowCurrent();
+  qzWalk.doneTimer = setTimeout(() => {
+    qzWalk.doneTimer = null;
+    qzWalkAdvance();
   }, 900);
+}
+/* Renders the current stop of an in-step tour (walk.tour[]): its own text + its own
+   highlighted target, with Next/Continue advancing through the array before finally moving
+   on to the next lesson step via qzWalkAdvance(). */
+function qzWalkShowTourStop() {
+  const step = qzWalkCurrentStep();
+  const stops = step.walk.tour;
+  const stop = stops[qzWalk.tourIndex];
+  const isLast = qzWalk.tourIndex === stops.length - 1;
+  const text = typeof stop.text === 'function' ? stop.text() : stop.text;
+  const exitLink = '<div class="qz-walk-exit" onclick="qzWalkExit()">Exit walkthrough</div>';
+  qzWalkSetTipBody(`<b>${qzWalk.tourIndex + 1} of ${stops.length}</b><p>${esc(text)}</p>
+    <button class="qz-btn primary" style="margin-top:10px" onclick="qzWalkTourNext()">${isLast ? 'Continue' : 'Next'} &rarr;</button>${exitLink}`);
+  requestAnimationFrame(() => requestAnimationFrame(() => qzWalkPosition({ walk: { target: stop.target } }, { scrollIntoView: true })));
+}
+function qzWalkTourNext() {
+  const step = qzWalkCurrentStep();
+  const stops = step.walk.tour;
+  if (qzWalk.tourIndex < stops.length - 1) {
+    qzWalk.tourIndex++;
+    qzWalkShowTourStop();
+  } else {
+    qzWalk.tourIndex = null;
+    qzWalkAdvance();
+  }
+}
+function qzWalkAdvance() {
+  if (!qzWalk) return; // walkthrough may have been exited during the pause
+  qzWalk.stepIndex++;
+  qzWalkShowCurrent();
+}
+/* Lets the "Continue to next step" button (qzLessonContinue) skip the ~1s pause qzWalkStepDone
+   normally shows before advancing, instead of doubling up with the pending timer. */
+function qzWalkSkipWait() {
+  if (!qzWalk) return;
+  if (qzWalk.doneTimer) { clearTimeout(qzWalk.doneTimer); qzWalk.doneTimer = null; }
+  qzWalkAdvance();
+}
+/* Keeps the orders-search step's tip text live as the trainee types, so a query that
+   doesn't surface Order ORD-2026-1483 says so immediately instead of staying silent. */
+/* Covers both search-adjacent steps: orders-search itself, and orders-open's fallback in
+   case the row it points at ever disappears (normally prevented by locking the search box
+   during that step, this is the safety net for anything that slips past that). Unlike the
+   search step, orders-open's target can change (row vs. fallback to the input), so this
+   also repositions, not just re-renders the text. */
+function qzWalkSyncSearchStep() {
+  if (typeof qzWalk === 'undefined' || !qzWalk) return;
+  const step = qzWalkCurrentStep();
+  if (!step || step.type !== 'do') return;
+  if (step.checklistId !== 'orders-search' && step.checklistId !== 'orders-open') return;
+  qzWalkRenderTip(step, false);
+  qzWalkPosition(step);
+}
+/* A `verify` lesson step maps to the 4-step discrepancy-report engine, which has its own
+   internal sub-phases (open doc / answer source / answer action / correct or escalate).
+   Called after every sub-phase action so the tip text and highlight track the trainee's
+   progress inside the item, not just the outer lesson step. No-op unless the walkthrough
+   is currently showing this exact `verify` step. */
+function qzWalkSyncVerifyStep(reviewId) {
+  if (typeof qzWalk === 'undefined' || !qzWalk) return;
+  const step = qzWalkCurrentStep();
+  if (!step || step.type !== 'verify' || step.reviewId !== reviewId) return;
+  qzWalkRenderTip(step, false);
+  qzWalkPosition(step, { scrollIntoView: true });
+}
+/* Generic target/text resolvers for a `verify` lesson step, reused by every lesson that
+   walks a discrepancy-report item (rev-1483-buyer, rev-1483-price, rev-1483-vesting, ...).
+   All copy comes from the review's own data, so nothing here is lesson-specific. While
+   the source document modal is open (z-index above the walk overlay, by design) the
+   highlight is suppressed and the tip just floats with a "close it to continue" nudge. */
+function qzWalkVerifyTarget(reviewId) {
+  const st = qzRevGet(reviewId);
+  if (document.getElementById('qzDocModal').classList.contains('open')) return null;
+  const scope = `.qz-rv-item[data-rev-id="${reviewId}"]`;
+  if (st.resolvedAt) return st.correct ? null : scope + ' .qz-rv-feedback button';
+  if (!st.docOpened) return scope + ' [data-rev-phase="1"] button';
+  if (!st.step2Choice) return scope + ' [data-rev-phase="2"]';
+  if (!st.step2Correct) return scope + ' [data-rev-phase="2"] .qz-rv-actions button';
+  if (!st.step3Choice) return scope + ' [data-rev-phase="3"]';
+  if (!st.step3Correct) return scope + ' [data-rev-phase="3"] .qz-rv-actions button';
+  if (st.step4Category && !st.step4CategoryCorrect) return scope + ' [data-rev-phase="4"] select';
+  return scope + ' [data-rev-phase="4"]';
+}
+function qzWalkVerifyText(reviewId) {
+  const r = qzReviewLookup(reviewId);
+  const st = qzRevGet(reviewId);
+  if (document.getElementById('qzDocModal').classList.contains('open')) return `Read the ${r.docTitle}, then close it to come back and report what you found.`;
+  if (st.resolvedAt) return 'Read the explanation below, then click "Redo" to try again.';
+  if (!st.docOpened) return `Open the ${r.docTitle} to compare it against "${r.label}."`;
+  if (!st.step2Choice) return 'Now pick what the source document actually says.';
+  if (!st.step2Correct) return 'Not quite, click "Try again" and look at the document once more.';
+  if (!st.step3Choice) return "Pick the right next step: does this need a correction, or does it need escalating?";
+  if (!st.step3Correct) return 'Not quite, click "Try again" and reconsider the right next step.';
+  if (st.step3Choice === 'correct') return 'Type the corrected value exactly as the source document shows it, then click "Save correction."';
+  if (st.step4Category && !st.step4CategoryCorrect) return 'Not quite — pick a different category and submit again.';
+  return 'Choose the escalation category that fits, then submit.';
 }
 /* Resolves a step's target: a plain CSS selector string, a function returning an
    Element/selector/null (for steps where WHAT to highlight changes as the trainee acts,
@@ -384,22 +632,40 @@ function qzWalkResolveTarget(target) {
   if (typeof t === 'string') t = document.querySelector(t);
   return (t && t.getBoundingClientRect && t.offsetParent !== null) ? t : null;
 }
-function qzWalkPosition(step) {
+function qzWalkPosition(step, opts) {
   const highlight = document.getElementById('qzWalkHighlight');
   const tip = document.getElementById('qzWalkTip');
-  const el = qzWalkResolveTarget(step.walk.target);
+  // The doc modal (z-index 200) sits below the walk overlay (z-index 250) on purpose, so the
+  // tip can float above it with a "close it to continue" nudge, but that means a highlight
+  // pointing anywhere other than the modal would visually darken/obscure it via the
+  // highlight's giant cutout box-shadow. Suppress the highlight whenever the modal is open,
+  // regardless of which step/target logic is in play.
+  const docModal = document.getElementById('qzDocModal');
+  const el = (docModal && docModal.classList.contains('open')) ? null : qzWalkResolveTarget(step.walk.target);
+  // Only on step/phase transitions (never on resize/scroll reposition calls, that would
+  // fight the trainee's own scrolling): bring the target into view if the review tab's
+  // item list has pushed it below the fold, the highlight rect below is computed from
+  // wherever the element ends up, the .qz-body scroll listener keeps it in sync while the
+  // scroll animates.
+  if (el && opts && opts.scrollIntoView) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
   const rect = el ? el.getBoundingClientRect() : null;
   tip.style.transform = 'none';
   if (!rect) {
     // No single element to point at (e.g. a `decide` step, the whole page is the content) —
     // float the tip in a fixed corner instead of leaving it stale from the previous step.
+    // Bottom, not top: a freshly-opened scenario/review loads with its situation + options
+    // right at the top of the panel, a top-right tip would sit directly on top of them and
+    // silently eat the trainee's click (the tip itself is pointer-events:auto). Anchoring to
+    // the bottom keeps clear of that content instead.
     highlight.style.opacity = '0';
     const margin = 18;
-    tip.style.top = margin + 'px';
+    tip.style.top = 'auto';
+    tip.style.bottom = margin + 'px';
     tip.style.left = (window.innerWidth - 300 - margin) + 'px';
     return;
   }
   highlight.style.opacity = '1';
+  tip.style.bottom = 'auto';
   const pad = 8;
   highlight.style.top = (rect.top - pad) + 'px';
   highlight.style.left = (rect.left - pad) + 'px';
@@ -417,16 +683,21 @@ function qzWalkShowComplete() {
   const l = qzWalkCurrentLesson();
   document.getElementById('qzWalkHighlight').style.opacity = '0';
   const tip = document.getElementById('qzWalkTip');
-  document.getElementById('qzWalkTipBody').innerHTML =
-    `<b>&#127881; Lesson ${l.number} complete!</b><p>Great work, you finished every step. The next lesson is unlocked from the Dashboard.</p>
-     <button class="qz-btn primary" style="margin-top:10px" onclick="qzWalkBackToLessons()">Back to Lessons</button>`;
+  qzWalkSetTipBody(`<b>&#127881; Lesson ${l.number} complete!</b><p>Great work, you finished every step. The next lesson is unlocked from the Dashboard.</p>
+     <button class="qz-btn primary" style="margin-top:10px" onclick="qzWalkBackToLessons()">Back to Lessons</button>`);
   tip.style.top = '50%';
+  tip.style.bottom = 'auto';
   tip.style.left = '50%';
   tip.style.transform = 'translate(-50%,-50%)';
+}
+function qzWalkUnlockSearchInput() {
+  const input = document.getElementById('qzTopSearchInput');
+  if (input) { input.disabled = false; input.title = ''; }
 }
 function qzWalkBackToLessons() {
   qzWalk = null;
   document.getElementById('qzWalk').classList.remove('open');
+  qzWalkUnlockSearchInput();
   qzGoto('dashboard');
 }
 function qzWalkExit(silent) {
@@ -434,13 +705,22 @@ function qzWalkExit(silent) {
   qzWalk = null;
   const w = document.getElementById('qzWalk');
   if (w) w.classList.remove('open');
+  qzWalkUnlockSearchInput();
   if (!silent) {
     if (l) { qzState.view = 'lesson'; qzState.lessonId = l.id; qzSyncTopTabs(); }
     qzRenderRoot();
   }
 }
 function qzWalkReposition() {
-  if (qzWalk) { const step = qzWalkCurrentStep(); if (step) qzWalkPosition(step); }
+  if (!qzWalk) return;
+  const step = qzWalkCurrentStep();
+  if (!step) return;
+  if (qzWalk.tourIndex != null && step.walk.tour) {
+    const stop = step.walk.tour[qzWalk.tourIndex];
+    if (stop) qzWalkPosition({ walk: { target: stop.target } });
+    return;
+  }
+  qzWalkPosition(step);
 }
 window.addEventListener('resize', qzWalkReposition);
 document.addEventListener('DOMContentLoaded', () => {
@@ -459,13 +739,13 @@ function qzExamDashboardCardHTML(unlocked) {
     const pct = ex.max ? Math.round(ex.score / ex.max * 100) : 0;
     const passed = pct >= Math.round(QZ_EXAM_PASS_PCT * 100);
     return `<div class="qz-exam-card done"><b>Final Exam</b><p>Completed &mdash; ${ex.score}/${ex.max} (${pct}%), ${passed ? 'Passed' : 'Not passed'}.</p>
-      <button class="qz-btn sm" onclick="qzExamResetAttempt()">Reset my exam attempt (training only)</button></div>`;
+      <button class="qz-btn sm" onclick="qzExamResetAttempt(this)">Reset my exam attempt (training only)</button></div>`;
   }
   if (ex && !ex.submittedAt) {
     return `<div class="qz-exam-card"><b>Final Exam</b><p>In progress &mdash; question ${(ex.currentIndex || 0) + 1} of ${QZ_EXAM_ITEMS.length}.</p>
       <button class="qz-btn primary" onclick="qzExamReturn()">Resume Exam</button></div>`;
   }
-  if (!unlocked) return `<div class="qz-exam-card locked"><b>Final Exam</b><p>Unlocks once all 12 lessons are complete.</p></div>`;
+  if (!unlocked) return `<div class="qz-exam-card locked"><b>Final Exam</b><p>Unlocks once all ${QZ_LESSONS.length} lessons are complete.</p></div>`;
   return `<div class="qz-exam-card"><b>Final Exam</b><p>One official attempt. No hints, no going back.</p><button class="qz-btn primary" onclick="qzExamStart()">Start Final Exam</button></div>`;
 }
 
@@ -489,8 +769,28 @@ function qzDashboardHTML() {
   }).join('');
   const allDone = QZ_LESSONS.every((l, i) => qzLessonState(i) === 'done');
   const examCard = qzExamDashboardCardHTML(allDone);
+
+  const allSteps = QZ_LESSONS.flatMap(l => l.steps);
+  const doneSteps = allSteps.filter(qzLessonStepDone).length;
+  const totalSteps = allSteps.length;
+  const overallPct = totalSteps ? Math.round(doneSteps / totalSteps * 100) : 0;
+  let examLabel = 'Pending';
+  if (qzStore.exam && qzStore.exam.submittedAt) {
+    const examPct = qzStore.exam.max ? Math.round(qzStore.exam.score / qzStore.exam.max * 100) : 0;
+    examLabel = examPct >= Math.round(QZ_EXAM_PASS_PCT * 100) ? 'Passed' : 'Not Passed';
+  } else if (qzStore.exam) {
+    examLabel = 'In Progress';
+  }
+
   return `
-    <div class="qz-welcome"><h2>Welcome back, ${esc(firstName)}</h2><p>This is your Qualia practice environment. Work through the lessons in order, nothing here is connected to a real account or real clients.</p></div>
+    <div class="qz-welcome">
+      <h2>Welcome back, ${esc(firstName)}</h2>
+      <p>This is your Qualia practice environment. Work through the lessons in order, nothing here is connected to a real account or real clients.</p>
+      <div class="qz-overall-progress">
+        <div class="qz-overall-label">Overall Progress: ${doneSteps} of ${totalSteps} steps (${overallPct}%) &middot; Exam: ${examLabel}</div>
+        <div class="qz-bar"><i style="width:${overallPct}%"></i></div>
+      </div>
+    </div>
     <div class="qz-listhead"><div><h2>Lessons</h2><div class="sub">Complete every step in a lesson to unlock the next. Each step is a real action in the UI, graded automatically.</div></div></div>
     <div class="qz-lesson-grid">${cards}</div>
     ${examCard}
@@ -502,12 +802,14 @@ function qzOrderParty(o, role) {
   const p = o.parties.find(x => x.role === role);
   return p ? p.name : 'Not set';
 }
+function qzOrderMatchesFilter(o, filter) {
+  const f = (filter || '').toLowerCase().trim();
+  if (!f) return true;
+  return o.propertyAddress.toLowerCase().includes(f) || o.id.toLowerCase().includes(f) || o.parties.some(p => p.name.toLowerCase().includes(f));
+}
 function qzOrdersRowsHTML() {
-  const filter = (qzState.orderFilter || '').toLowerCase().trim();
-  const rows = qzAllOrders().filter(o => !filter
-    || o.propertyAddress.toLowerCase().includes(filter)
-    || o.id.toLowerCase().includes(filter)
-    || o.parties.some(p => p.name.toLowerCase().includes(filter)));
+  const filter = qzState.orderFilter;
+  const rows = qzAllOrders().filter(o => qzOrderMatchesFilter(o, filter));
   if (!rows.length) return '<tr><td colspan="9" style="text-align:center;color:var(--qz-muted);padding:26px">No orders match that search.</td></tr>';
   return rows.map(o => `<tr class="link" data-order-id="${escAttr(o.id)}" onclick="qzOpenOrder('${o.id}')">
       <td>${esc(o.status)}</td>
@@ -545,7 +847,16 @@ function qzOrdersHTML() {
 }
 function qzTopSearch(v) {
   qzState.orderFilter = v;
-  if (v && v.trim()) qzMark('orders-search');
+  // Outside the walkthrough, any non-empty search counts (organic exploration shouldn't be
+  // graded against a specific order). But while the walkthrough is actively showing this
+  // exact step, only mark it done once the typed text actually surfaces Order ORD-2026-1483,
+  // otherwise the tip would celebrate "found it!" over a table showing zero results.
+  const step = (typeof qzWalk !== 'undefined' && qzWalk) ? qzWalkCurrentStep() : null;
+  const isSearchWalkStep = step && step.type === 'do' && step.checklistId === 'orders-search';
+  const target1483 = qzGetOrder('ORD-2026-1483');
+  if (v && v.trim() && (!isSearchWalkStep || (target1483 && qzOrderMatchesFilter(target1483, v)))) {
+    qzMark('orders-search');
+  }
   if (qzState.view !== 'orders') {
     qzState.view = 'orders';
     qzState.orderId = null;
@@ -555,6 +866,7 @@ function qzTopSearch(v) {
     const body = document.getElementById('qzOrdersBody');
     if (body) body.innerHTML = qzOrdersRowsHTML();
   }
+  qzWalkSyncSearchStep();
 }
 function qzOpenOrder(id) {
   qzState.view = 'order';
@@ -701,6 +1013,7 @@ function qzRevOpenDoc(id) {
   qzRevGet(id).docOpened = true;
   qzSave();
   qzRenderRoot();
+  qzWalkSyncVerifyStep(id);
 }
 function qzRevAnswerSource(id, optionId) {
   const r = qzReviewLookup(id);
@@ -710,16 +1023,22 @@ function qzRevAnswerSource(id, optionId) {
   st.step2Correct = optionId === r.rightSourceOptionId;
   qzSave();
   qzRenderRoot();
+  qzWalkSyncVerifyStep(id);
 }
+/* action==='none' is a terminal choice (no step 4 either way), so it finalizes right away
+   regardless of whether it was the right call, the outer feedback panel covers that case.
+   Any other action gates on correctness: a wrong "correct it myself"/"escalate" pick never
+   reaches step 4, it shows an immediate inline retry instead (see qzRevItemHTML). */
 function qzRevAnswerAction(id, action) {
   const r = qzReviewLookup(id);
   const st = qzRevGet(id);
-  if (!st.step2Choice || st.step3Choice) return;
+  if (!st.step2Choice || !st.step2Correct || st.step3Choice) return;
   st.step3Choice = action;
   st.step3Correct = action === r.rightAction;
-  if (action === 'none') { qzRevFinalize(id); return; }
   qzSave();
+  if (action === 'none') { qzRevFinalize(id); return; }
   qzRenderRoot();
+  qzWalkSyncVerifyStep(id);
 }
 function qzRevSaveCorrection(id) {
   const r = qzReviewLookup(id);
@@ -732,6 +1051,11 @@ function qzRevSaveCorrection(id) {
   else if (r.field) qzSetScalarOverride(r.orderId, r.field, val);
   qzMark('de-edit');
   qzRevFinalize(id);
+  qzToast('Correction saved.', { tone: 'good' });
+}
+function qzToggleRevExample(id) {
+  const el = document.getElementById('qzRevExample-' + id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 function qzRevSaveEscalation(id) {
   const r = qzReviewLookup(id);
@@ -744,7 +1068,17 @@ function qzRevSaveEscalation(id) {
   st.step4Category = cat;
   st.step4CategoryCorrect = cat === r.rightCategory;
   st.note = note;
+  // Same gating rule as Step 2/3: a wrong pick here must not be able to "pass" and finalize
+  // the item, stay on Step 4 with inline feedback and let the trainee pick again instead.
+  if (!st.step4CategoryCorrect) {
+    qzSave();
+    qzRenderRoot();
+    qzToast('Not quite — check the category and submit again.');
+    qzWalkSyncVerifyStep(id);
+    return;
+  }
   qzRevFinalize(id);
+  qzToast('Escalation submitted.', { tone: qzRevGet(id).correct ? 'good' : undefined });
 }
 function qzRevFinalize(id) {
   const st = qzRevGet(id);
@@ -754,11 +1088,51 @@ function qzRevFinalize(id) {
   st.resolvedAt = Date.now();
   qzSave();
   qzRenderRoot();
+  qzNotifyReviewResolved(id);
 }
+/* Full reset, used by the "Redo" control after the item is fully resolved. */
 function qzRevRetry(id) {
   qzStore.reviews[id] = { docOpened: qzStore.reviews[id] ? qzStore.reviews[id].docOpened : false };
   qzSave();
   qzRenderRoot();
+  qzWalkSyncVerifyStep(id);
+}
+/* Partial reset for a wrong mid-flow MC answer (step 2 or step 3): clears that step and
+   everything after it, keeps earlier correct answers (and docOpened) intact so the trainee
+   retries only what they got wrong instead of starting the whole item over. */
+function qzRevRetryStep(id, fromPhase) {
+  const st = qzRevGet(id);
+  if (fromPhase <= 2) { delete st.step2Choice; delete st.step2Correct; }
+  if (fromPhase <= 3) { delete st.step3Choice; delete st.step3Correct; }
+  delete st.step4Category; delete st.step4CategoryCorrect; delete st.note; delete st.correctedValueSaved;
+  qzSave();
+  qzRenderRoot();
+  qzWalkSyncVerifyStep(id);
+}
+/* Same idea as qzNotifyStepDone (called from qzMark) but for `verify` items, resolved via
+   qzRevFinalize instead of the checklist. An incorrect result does NOT auto-advance an
+   active walkthrough, same rule as qzNotifyScenarioAnswered: it points at the explanation
+   and the item's own "Redo" control instead. */
+function qzNotifyReviewResolved(reviewId) {
+  if (!qzState.lessonId || typeof QZ_LESSONS === 'undefined') return;
+  const l = QZ_LESSONS.find(x => x.id === qzState.lessonId);
+  if (!l) return;
+  const step = l.steps.find(s => s.type === 'verify' && s.reviewId === reviewId);
+  if (!step) return;
+  const st = qzRevGet(reviewId);
+
+  if (typeof qzWalk !== 'undefined' && qzWalk && qzWalk.lessonId === l.id && l.steps[qzWalk.stepIndex] === step) {
+    if (st.correct) qzWalkStepDone();
+    else { qzWalkRenderRetry('Read the explanation below, then click "Redo" to try again.'); qzWalkPosition(step); }
+    return;
+  }
+
+  if (!st.correct) return;
+  const label = qzLessonStepLabel(step);
+  const prog = qzLessonProgress(l);
+  if (prog.complete) qzToast(`Lesson ${l.number} complete! Use the banner above to head back and unlock the next lesson.`, { tone: 'good', duration: 5000 });
+  else qzToast(`"${label}" done, ${prog.done} of ${prog.total} steps in Lesson ${l.number}.`, { tone: 'good' });
+  qzRenderLessonBanner();
 }
 function qzRevItemHTML(id) {
   const r = qzReviewLookup(id);
@@ -770,62 +1144,84 @@ function qzRevItemHTML(id) {
     ? `<span class="qz-rv-chip ${st.correct ? 'good' : 'bad'}">${st.correct ? 'Correct' : 'Needs another look'}</span>`
     : '<span class="qz-rv-chip pending">Pending</span>';
 
-  const step1 = `<div class="qz-rv-step ${st.docOpened ? 'done' : 'active'}">
+  const step1 = `<div class="qz-rv-step ${st.docOpened ? 'done' : 'active'}" data-rev-phase="1">
     <div class="qz-rv-step-h">Step 1 &middot; Open the source document</div>
     <button class="qz-btn sm" onclick="qzRevOpenDoc('${id}')">${st.docOpened ? 'Reopen' : 'Open'} ${esc(r.docTitle)}</button>
   </div>`;
 
   let step2 = '';
   if (st.docOpened) {
+    const answered = !!st.step2Choice;
     const optsHtml = r.sourceOptions.map(o => {
       let cls = '';
-      if (st.step2Choice) {
+      if (answered) {
         if (o.id === r.rightSourceOptionId) cls = 'correct';
         else if (o.id === st.step2Choice) cls = 'incorrect';
       }
-      return `<button type="button" class="qz-option qz-rv-mc ${cls}" ${st.step2Choice ? 'disabled' : ''} onclick="qzRevAnswerSource('${id}','${o.id}')">${esc(o.text)}</button>`;
+      return `<button type="button" class="qz-option qz-rv-mc ${cls}" ${answered ? 'disabled' : ''} onclick="qzRevAnswerSource('${id}','${o.id}')">${esc(o.text)}</button>`;
     }).join('');
-    step2 = `<div class="qz-rv-step ${st.step2Choice ? 'done' : 'active'}">
+    const retry = (answered && !st.step2Correct)
+      ? `<div class="qz-rv-subfeedback bad">&#10007; Not quite, look at the document again before deciding what happens next.</div>
+         <div class="qz-rv-actions"><button class="qz-btn sm" onclick="qzRevRetryStep('${id}',2)">Try again</button></div>`
+      : '';
+    step2 = `<div class="qz-rv-step ${st.step2Correct ? 'done' : 'active'}" data-rev-phase="2">
       <div class="qz-rv-step-h">Step 2 &middot; What does the source document actually say?</div>
       ${optsHtml}
+      ${retry}
     </div>`;
   }
 
   let step3 = '';
-  if (st.step2Choice) {
+  if (st.step2Choice && st.step2Correct) {
+    const answered = !!st.step3Choice;
     const optsHtml = QZ_ACTION_CHOICES.map(a => {
       let cls = '';
-      if (st.step3Choice) {
+      if (answered) {
         if (a.id === r.rightAction) cls = 'correct';
         else if (a.id === st.step3Choice) cls = 'incorrect';
       }
-      return `<button type="button" class="qz-option qz-rv-mc ${cls}" ${st.step3Choice ? 'disabled' : ''} onclick="qzRevAnswerAction('${id}','${a.id}')">${esc(a.label)}</button>`;
+      return `<button type="button" class="qz-option qz-rv-mc ${cls}" ${answered ? 'disabled' : ''} onclick="qzRevAnswerAction('${id}','${a.id}')">${esc(a.label)}</button>`;
     }).join('');
-    step3 = `<div class="qz-rv-step ${st.step3Choice ? 'done' : 'active'}">
+    // action==='none' finalizes immediately (there's no step 4 either way), so this inline
+    // retry only needs to cover the correct/escalate picks, which pause here instead.
+    const retry = (answered && !st.step3Correct && !done)
+      ? `<div class="qz-rv-subfeedback bad">&#10007; That's not the right next step here.</div>
+         <div class="qz-rv-actions"><button class="qz-btn sm" onclick="qzRevRetryStep('${id}',3)">Try again</button></div>`
+      : '';
+    step3 = `<div class="qz-rv-step ${st.step3Correct ? 'done' : 'active'}" data-rev-phase="3">
       <div class="qz-rv-step-h">Step 3 &middot; What's the right next step?</div>
       ${optsHtml}
+      ${retry}
     </div>`;
   }
 
   let step4 = '';
-  if (st.step3Choice === 'correct' && !done) {
-    step4 = `<div class="qz-rv-step active">
+  if (st.step3Choice === 'correct' && st.step3Correct && !done) {
+    step4 = `<div class="qz-rv-step active" data-rev-phase="4">
       <div class="qz-rv-step-h">Step 4 &middot; Enter the corrected value</div>
-      <div class="qz-rv-form">
-        <input type="text" id="qzRevInput-${id}" value="${escAttr(r.systemValue)}">
-        <div class="row"><button class="qz-btn sm primary" onclick="qzRevSaveCorrection('${id}')">Save correction</button></div>
+      <div class="qz-form-grid full">
+        <div class="qz-field"><label>Corrected Value</label><input type="text" id="qzRevInput-${id}" value="${escAttr(r.systemValue)}"></div>
       </div>
+      <div class="qz-rv-actions"><button class="qz-btn sm primary" onclick="qzRevSaveCorrection('${id}')">Save correction</button></div>
     </div>`;
-  } else if (st.step3Choice && st.step3Choice.indexOf('escalate') === 0 && !done) {
-    const catOpts = QZ_ESCALATION_CATEGORIES.map(c => `<option value="${c.id}">${esc(c.label)}</option>`).join('');
-    step4 = `<div class="qz-rv-step active">
+  } else if (st.step3Choice && st.step3Correct && st.step3Choice.indexOf('escalate') === 0 && !done) {
+    // A prior wrong submit sets step4Category without resolving the item (gated, same as
+    // Step 2/3), re-select it and show why it was wrong instead of resetting the form blank.
+    const wrongCategory = st.step4Category && !st.step4CategoryCorrect;
+    const catOpts = QZ_ESCALATION_CATEGORIES.map(c => `<option value="${c.id}" ${st.step4Category === c.id ? 'selected' : ''}>${esc(c.label)}</option>`).join('');
+    const exampleHTML = r.noteExample
+      ? `<div class="qz-rv-example-toggle" onclick="qzToggleRevExample('${id}')">See example &rarr;</div>
+         <div class="qz-rv-example" id="qzRevExample-${id}" style="display:none">${esc(r.noteExample)}</div>`
+      : '';
+    const wrongNote = wrongCategory ? `<div class="qz-rv-subfeedback bad">&#10007; That's not the right category. Check it and submit again.</div>` : '';
+    step4 = `<div class="qz-rv-step active" data-rev-phase="4">
       <div class="qz-rv-step-h">Step 4 &middot; Escalation category</div>
-      <div class="qz-rv-form">
-        <select id="qzRevCategory-${id}"><option value="">Choose a category&hellip;</option>${catOpts}</select>
-        <label>Note (not graded, for practice)</label>
-        <textarea id="qzRevNote-${id}" placeholder="Describe the discrepancy and why it needs a decision..."></textarea>
-        <div class="row"><button class="qz-btn sm primary" onclick="qzRevSaveEscalation('${id}')">Submit escalation</button></div>
+      <div class="qz-form-grid full">
+        <div class="qz-field"><label>Category</label><select id="qzRevCategory-${id}"><option value="">Choose a category&hellip;</option>${catOpts}</select></div>
+        <div class="qz-field"><label>Note (not graded, for practice)</label><textarea id="qzRevNote-${id}" placeholder="Describe the discrepancy and why it needs a decision...">${esc(st.note || '')}</textarea>${exampleHTML}</div>
       </div>
+      ${wrongNote}
+      <div class="qz-rv-actions"><button class="qz-btn sm primary" onclick="qzRevSaveEscalation('${id}')">Submit escalation</button></div>
     </div>`;
   }
 
@@ -838,20 +1234,32 @@ function qzRevItemHTML(id) {
     bits.push(st.step3Correct
       ? '<div class="qz-rv-subfeedback good">&#10003; Chose the right next step.</div>'
       : `<div class="qz-rv-subfeedback bad">&#10007; The right next step was: "${esc(QZ_ACTION_LABEL[r.rightAction])}"</div>`);
-    if (st.step3Choice && st.step3Choice.indexOf('escalate') === 0) {
+    // r.rightCategory is only set when the item's correct action actually IS an escalation.
+    // If the trainee escalated something that should have been handled another way,
+    // r.rightCategory is null, there's no "right category" to name, the step3 bit above
+    // already explains the real mistake, so this bit is skipped rather than crashing on it.
+    if (st.step3Choice && st.step3Choice.indexOf('escalate') === 0 && r.rightCategory) {
       bits.push(st.step4CategoryCorrect
         ? '<div class="qz-rv-subfeedback good">&#10003; Picked the right escalation category.</div>'
         : `<div class="qz-rv-subfeedback bad">&#10007; The right category was: "${esc(QZ_ESCALATION_CATEGORIES.find(c => c.id === r.rightCategory).label)}"</div>`);
     }
     const noteLine = st.note ? `<div class="qz-rv-note">Your note: ${esc(st.note)}</div>` : '';
+    const lessonStep = qzState.lessonId && typeof QZ_LESSONS !== 'undefined'
+      ? (QZ_LESSONS.find(x => x.id === qzState.lessonId) || { steps: [] }).steps.find(s2 => s2.type === 'verify' && s2.reviewId === id)
+      : null;
+    const continueBtn = (st.correct && lessonStep) ? qzLessonContinueHTML(lessonStep) : '';
+    // Redo doesn't make sense once you're right and a Continue button is already offering
+    // the way forward, clicking it would wipe the resolved state and, since Continue only
+    // renders inside this same feedback block, take the Continue button down with it.
+    const redoBtn = (st.correct && continueBtn) ? '' : `<button class="qz-btn sm" onclick="qzRevRetry('${id}')">Redo</button>`;
     feedback = `<div class="qz-rv-feedback ${st.correct ? 'good' : 'bad'}">
       <b>${st.correct ? 'Right call.' : 'Not quite.'}</b> ${esc(r.explain)}
       ${bits.join('')}${noteLine}
-      <div style="margin-top:10px"><button class="qz-btn sm" onclick="qzRevRetry('${id}')">Redo</button></div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">${continueBtn}${redoBtn}</div>
     </div>`;
   }
 
-  return `<div class="qz-rv-item">
+  return `<div class="qz-rv-item" data-rev-id="${escAttr(id)}">
     <div class="qz-rv-head"><b>${esc(r.label)}</b>${statusChip}</div>
     <div class="qz-rv-where">${esc(r.where)}</div>
     <p class="qz-rv-instr">${esc(r.instruction)}</p>
@@ -871,10 +1279,28 @@ function qzReviewHTML(o) {
     return `<div class="qz-panel"><div class="ph"><h4>Review</h4></div><p style="font-size:13px;color:var(--qz-muted)">No review items are set up for this order yet.</p></div>`;
   }
   const score = qzReviewScore(o.id);
+  // While the walkthrough is actively working a `verify` step, show only that item in full
+  // ("one point at a time" instead of the whole order's review history at once): anything
+  // already resolved collapses to a compact row, anything not reached yet doesn't show. Outside
+  // an active verify step (browsing normally, or mid `do`/`decide` step), show everything.
+  const walkStep = (typeof qzWalk !== 'undefined' && qzWalk) ? qzWalkCurrentStep() : null;
+  const walking = walkStep && walkStep.type === 'verify';
+  const rows = items.map(r => {
+    if (!walking) return qzRevItemHTML(r.id);
+    if (walkStep.reviewId === r.id) return qzRevItemHTML(r.id);
+    return qzRevGet(r.id).resolvedAt ? qzRevCollapsedHTML(r.id) : '';
+  }).join('');
   return `<div class="qz-panel">
     <div class="ph"><h4>Document Review</h4><span class="qz-rv-score">${score.resolved}/${score.total} reviewed &middot; ${score.correct} correct calls</span></div>
     <p style="font-size:13px;color:var(--qz-muted);margin:0 0 18px">Open the source document, work through each step, and report what you find: verify it, correct it, or escalate it.</p>
-    ${items.map(r => qzRevItemHTML(r.id)).join('')}
+    ${rows}
+  </div>`;
+}
+function qzRevCollapsedHTML(id) {
+  const r = qzReviewLookup(id);
+  const st = qzRevGet(id);
+  return `<div class="qz-rv-item qz-rv-collapsed" data-rev-id="${escAttr(id)}">
+    <div class="qz-rv-head"><b>${esc(r.label)}</b><span class="qz-rv-chip ${st.correct ? 'good' : 'bad'}">${st.correct ? 'Correct' : 'Needs another look'}</span></div>
   </div>`;
 }
 
@@ -890,10 +1316,21 @@ function qzDeTab(tab) {
 function qzDeMarkDirty() {
   const btn = document.getElementById('qzDeSaveBtn');
   if (btn) btn.style.display = '';
-  if (typeof qzWalkReposition === 'function') qzWalkReposition();
+  qzWalkSyncEditStep();
+}
+/* Keeps the de-edit step's tip text live as the trainee types the buyer's phone number, same
+   idea as qzWalkSyncSearchStep: say immediately if what's typed doesn't match the number the
+   walkthrough asked for, instead of staying silent until Save is clicked. */
+function qzWalkSyncEditStep() {
+  if (typeof qzWalk === 'undefined' || !qzWalk) { if (typeof qzWalkReposition === 'function') qzWalkReposition(); return; }
+  const step = qzWalkCurrentStep();
+  if (!step || step.type !== 'do' || step.checklistId !== 'de-edit') { qzWalkReposition(); return; }
+  qzWalkRenderTip(step, false);
+  qzWalkPosition(step);
 }
 function qzDeSaveChanges(orderId) {
   const sub = qzState.deTab || 'property';
+  let skipSavedToast = false;
   if (sub === 'property') {
     const street = (document.getElementById('qzDeStreet').value || '').trim();
     const city = (document.getElementById('qzDeCity').value || '').trim();
@@ -903,6 +1340,7 @@ function qzDeSaveChanges(orderId) {
     if (addr) qzSetScalarOverride(orderId, 'propertyAddress', addr);
     if (propType) qzSetScalarOverride(orderId, 'propertyType', propType);
   } else if (sub === 'parties') {
+    let buyerPhoneMatchesTarget = false;
     document.querySelectorAll('.qz-party-card').forEach(card => {
       const role = card.dataset.role;
       const nameEl = card.querySelector('input[data-field="name"]');
@@ -913,8 +1351,19 @@ function qzDeSaveChanges(orderId) {
       if (emailEl && emailEl.value.trim()) patch.email = emailEl.value.trim();
       if (phoneEl && phoneEl.value.trim()) patch.phone = phoneEl.value.trim();
       if (Object.keys(patch).length) qzSetPartyOverride(orderId, role, patch);
+      if (role === 'Buyer' && phoneEl && phoneEl.value.trim() === QZ_DE_EDIT_TARGET_PHONE) buyerPhoneMatchesTarget = true;
     });
-    qzMark('de-edit');
+    // Outside the walkthrough, Data Entry is a general tool, any edit is a valid edit. But
+    // while the walkthrough is actively on this exact step, it's a specific exercise: type
+    // the number the trainee was just told, don't just accept whatever got typed.
+    const step = (typeof qzWalk !== 'undefined' && qzWalk) ? qzWalkCurrentStep() : null;
+    const isEditWalkStep = step && step.type === 'do' && step.checklistId === 'de-edit';
+    if (!isEditWalkStep || buyerPhoneMatchesTarget) {
+      qzMark('de-edit');
+    } else {
+      qzToast(`Saved, but it doesn't match — the buyer said ${QZ_DE_EDIT_TARGET_PHONE}. Check the Phone field and save again.`);
+      skipSavedToast = true;
+    }
   } else {
     const priceRaw = (document.getElementById('qzDePrice').value || '').replace(/[^0-9.]/g, '');
     const loanRaw = (document.getElementById('qzDeLoan').value || '').replace(/[^0-9.]/g, '');
@@ -927,7 +1376,7 @@ function qzDeSaveChanges(orderId) {
     if (titleNum) qzSetScalarOverride(orderId, 'titleNumber', titleNum);
     if (agency) qzSetScalarOverride(orderId, 'settlementAgency', agency);
   }
-  qzToast('Changes saved.', { tone: 'good' });
+  if (!skipSavedToast) qzToast('Changes saved.', { tone: 'good' });
   qzRenderRoot();
 }
 function qzDataEntryHTML(o) {
@@ -994,6 +1443,12 @@ function qzViewDoc(file, title) {
 function qzCloseDoc() {
   document.getElementById('qzDocModal').classList.remove('open');
   document.getElementById('qzDocFrame').src = 'about:blank';
+  // The walkthrough deliberately floats its tip (no highlight) while the doc modal covers
+  // the screen; once closed, re-sync so it can point at the review step underneath again.
+  if (typeof qzWalk !== 'undefined' && qzWalk) {
+    const step = qzWalkCurrentStep();
+    if (step) { qzWalkRenderTip(step, false); qzWalkPosition(step, { scrollIntoView: true }); }
+  }
 }
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') qzCloseDoc();
@@ -1003,14 +1458,14 @@ function qzDocumentsHTML(o) {
     const st = qzDocStatus(d);
     const badgeClass = st === 'Pending' ? 'pending' : st === 'Received' ? 'received' : 'reviewed';
     let actions = '';
-    if (st === 'Pending') actions = `<button class="qz-btn sm primary" onclick="qzUploadDoc(${d.id})">Upload</button>`;
+    if (st === 'Pending') actions = `<button class="qz-btn sm primary" data-doc-action="upload" onclick="qzUploadDoc(${d.id})">Upload</button>`;
     else {
       actions = d.file
-        ? `<button class="qz-btn sm" onclick="qzViewDoc('${d.file}','${esc(d.name)}')">View</button>`
-        : `<button class="qz-btn sm" onclick="qzDownloadDoc()">Download</button>`;
-      if (st === 'Received') actions += ` <button class="qz-btn sm" onclick="qzReviewDoc(${d.id})">Mark Reviewed</button>`;
+        ? `<button class="qz-btn sm" data-doc-action="view" onclick="qzViewDoc('${d.file}','${esc(d.name)}')">View</button>`
+        : `<button class="qz-btn sm" data-doc-action="download" onclick="qzDownloadDoc()">Download</button>`;
+      if (st === 'Received') actions += ` <button class="qz-btn sm" data-doc-action="review" onclick="qzReviewDoc(${d.id})">Mark Reviewed</button>`;
     }
-    return `<tr><td>${esc(d.name)}</td><td>${esc(d.type)}</td><td><span class="qz-badge ${badgeClass}">${st}</span></td><td>${esc(d.uploadedBy)}</td><td>${fmtDate(d.date)}</td><td><div class="qz-row-actions">${actions}</div></td></tr>`;
+    return `<tr data-doc-id="${d.id}"><td>${esc(d.name)}</td><td>${esc(d.type)}</td><td><span class="qz-badge ${badgeClass}">${st}</span></td><td>${esc(d.uploadedBy)}</td><td>${fmtDate(d.date)}</td><td><div class="qz-row-actions">${actions}</div></td></tr>`;
   }).join('');
   return `<div class="qz-panel"><div class="ph"><h4>Documents</h4></div>
     <table class="qz-tbl"><thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Uploaded By</th><th>Date</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>
@@ -1018,13 +1473,13 @@ function qzDocumentsHTML(o) {
 }
 
 /* ---------- Tasks ---------- */
-function qzCompleteTask(id) { qzStore.taskStatus[id] = 'Complete'; qzSave(); qzMark('tasks-complete'); qzRenderRoot(); }
+function qzCompleteTask(id) { qzStore.taskStatus[id] = 'Complete'; qzSave(); qzMark('tasks-complete'); qzRenderRoot(); qzUpdateBellBadge(); }
 function qzTasksHTML(o) {
   const rows = qzTasksForOrder(o.id).map(t => {
     const st = qzTaskStatus(t);
     const badgeClass = st === 'Complete' ? 'complete' : st === 'In Progress' ? 'progress' : 'open';
     const action = st !== 'Complete' ? `<button class="qz-btn sm primary" onclick="qzCompleteTask(${t.id})">Mark Complete</button>` : '<span style="color:var(--qz-muted);font-size:12px">Done</span>';
-    return `<tr><td>${esc(t.title)}</td><td>${esc(t.assignedTo)}</td><td>${fmtDate(t.dueDate)}</td><td><span class="qz-badge ${badgeClass}">${st}</span></td><td>${action}</td></tr>`;
+    return `<tr data-task-id="${t.id}"><td>${esc(t.title)}</td><td>${esc(t.assignedTo)}</td><td>${fmtDate(t.dueDate)}</td><td><span class="qz-badge ${badgeClass}">${st}</span></td><td>${action}</td></tr>`;
   }).join('');
   return `<div class="qz-panel"><div class="ph"><h4>Tasks</h4></div>
     <table class="qz-tbl"><thead><tr><th>Task</th><th>Assigned To</th><th>Due</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table>
@@ -1034,8 +1489,8 @@ function qzTasksHTML(o) {
 /* ---------- Workflow ---------- */
 function qzWorkflowHTML(o) {
   const note = o.flag === 'closing-delay'
-    ? `<p style="margin-top:14px;font-size:12.5px;color:var(--qz-bad)">Original closing date was ${fmtDate(o.originalClosingDate)}. This view is read-only, workflow structure is configured by admins, always escalate date changes per protocol.</p>`
-    : `<p style="margin-top:14px;font-size:12.5px;color:var(--qz-muted)">This view is read-only. Workflow structure and stage rules are configured by admins, not by a VA.</p>`;
+    ? `<p class="qz-tl-readonly-note" style="margin-top:14px;font-size:12.5px;color:var(--qz-bad)">Original closing date was ${fmtDate(o.originalClosingDate)}. This view is read-only, workflow structure is configured by admins, always escalate date changes per protocol.</p>`
+    : `<p class="qz-tl-readonly-note" style="margin-top:14px;font-size:12.5px;color:var(--qz-muted)">This view is read-only. Workflow structure and stage rules are configured by admins, not by a VA.</p>`;
   return `<div class="qz-panel"><div class="ph"><h4>Workflow</h4></div>
     ${qzTimelineHTML(o)}
     <div class="qz-tl-status"><b>Current stage: <span>${esc(QZ_STAGES[o.stageIndex])}</span></b><p>${esc(o.statusNote)}</p></div>
@@ -1045,14 +1500,26 @@ function qzWorkflowHTML(o) {
 
 /* ---------- Communication ---------- */
 function qzOpenThread(id) { qzState.threadId = id; qzMark('comm-open'); qzRenderRoot(); }
+/* Merges a thread's original messages with whatever the trainee has replied in this
+   session, replies are stored separately (qzStore.replies) rather than mutated onto
+   QZ_MESSAGES directly, so they survive a reload instead of resetting on every page load. */
+function qzThreadMessages(threadId) {
+  const t = QZ_MESSAGES.find(m => m.id === threadId);
+  if (!t) return [];
+  const stored = (qzStore.replies && qzStore.replies[threadId]) || [];
+  return t.thread.concat(stored);
+}
 function qzSendReply(threadId) {
   const box = document.getElementById('qzReplyBox');
   const text = box ? box.value.trim() : '';
   if (!text) { qzToast('Write a reply before sending.'); return; }
-  const t = QZ_MESSAGES.find(m => m.id === threadId);
-  const last = t.thread[t.thread.length - 1];
+  if (text.length < 20) { qzToast('Your reply should be at least 20 characters. Write a professional response.'); return; }
+  const msgs = qzThreadMessages(threadId);
+  const last = msgs[msgs.length - 1];
   const recipient = last.sender === 'You (VA)' ? last.recipient : last.sender;
-  t.thread.push({ sender: 'You (VA)', recipient: recipient, date: new Date().toISOString().slice(0, 10), body: text });
+  qzStore.replies[threadId] = qzStore.replies[threadId] || [];
+  qzStore.replies[threadId].push({ sender: 'You (VA)', recipient: recipient, date: new Date().toISOString().slice(0, 10), body: text });
+  qzSave();
   qzMark('comm-reply');
   qzRenderRoot();
 }
@@ -1060,15 +1527,18 @@ function qzLogFollowup() { qzMark('comm-followup'); qzToast('Follow-up logged on
 function qzCommunicationHTML(o) {
   const threads = QZ_MESSAGES.filter(m => m.orderId === o.id);
   if (!qzState.threadId || !threads.some(t => t.id === qzState.threadId)) qzState.threadId = threads[0] ? threads[0].id : null;
-  const list = threads.map(t => `<div class="qz-thread-item ${t.id === qzState.threadId ? 'active' : ''}" onclick="qzOpenThread(${t.id})"><b>${esc(t.subject)}</b><span>${t.thread.length} message${t.thread.length !== 1 ? 's' : ''}</span></div>`).join('');
+  const list = threads.map(t => {
+    const count = qzThreadMessages(t.id).length;
+    return `<div class="qz-thread-item ${t.id === qzState.threadId ? 'active' : ''}" onclick="qzOpenThread(${t.id})"><b>${esc(t.subject)}</b><span>${count} message${count !== 1 ? 's' : ''}</span></div>`;
+  }).join('');
   const active = threads.find(t => t.id === qzState.threadId);
   let detail = '<div class="qz-panel">Select a thread.</div>';
   if (active) {
-    const msgs = active.thread.map(m => `<div class="qz-msg ${m.sender === 'You (VA)' ? 'mine' : ''}"><div class="meta">${esc(m.sender)} &rarr; ${esc(m.recipient)} &middot; ${fmtDate(m.date)}</div>${esc(m.body)}</div>`).join('');
+    const msgs = qzThreadMessages(active.id).map(m => `<div class="qz-msg ${m.sender === 'You (VA)' ? 'mine' : ''}"><div class="meta">${esc(m.sender)} &rarr; ${esc(m.recipient)} &middot; ${fmtDate(m.date)}</div>${esc(m.body)}</div>`).join('');
     detail = `<div class="qz-panel"><div class="ph"><h4>${esc(active.subject)}</h4></div>
       ${msgs}
       <div class="qz-reply"><textarea id="qzReplyBox" placeholder="Write a reply..."></textarea>
-      <div class="row"><button class="qz-btn" onclick="qzLogFollowup()">Log Follow-up</button><button class="qz-btn primary" onclick="qzSendReply(${active.id})">Send Reply</button></div></div>
+      <div class="row"><button class="qz-btn" data-comm-action="followup" onclick="qzLogFollowup()">Log Follow-up</button><button class="qz-btn primary" data-comm-action="reply" onclick="qzSendReply(${active.id})">Send Reply</button></div></div>
     </div>`;
   }
   return `<div class="qz-comm-grid"><div class="qz-thread-list">${list}</div>${detail}</div>`;
@@ -1216,14 +1686,32 @@ function qzScenarioDetailHTML() {
   }).join('');
   const firstAttemptLine = answered && r.firstAttempt
     ? `<div class="qz-feedback-first">First attempt: ${r.firstAttempt.correct ? '&#10003; correct' : '&#10007; incorrect'}</div>` : '';
+  const lessonStep = qzState.lessonId && typeof QZ_LESSONS !== 'undefined'
+    ? (QZ_LESSONS.find(x => x.id === qzState.lessonId) || { steps: [] }).steps.find(s2 => s2.type === 'decide' && s2.scenarioId === s.id)
+    : null;
+  const continueBtn = (answered && r.correct && lessonStep) ? qzLessonContinueHTML(lessonStep) : '';
+  // Retake doesn't make sense once you're right and a Continue button is already offering
+  // the way forward, clicking it would wipe the answered state and, since Continue only
+  // renders inside this same feedback block, take the Continue button down with it. "Try
+  // Again" on a wrong answer is the essential retry path and always stays.
+  const retakeBtn = answered
+    ? ((r.correct && continueBtn) ? '' : `<button class="qz-btn" onclick="qzRetakeScenario('${s.id}')">${r.correct ? 'Retake Scenario' : 'Try Again'}</button>`)
+    : '';
+  // practice/verifyDoc navigate away to a different order/tab entirely, if the guided
+  // walkthrough is actively parked on this exact step waiting for a Continue click, that
+  // click lives only on this page, navigating away strands it with no way back. Once the
+  // trainee isn't mid-walkthrough here (browsing manually, or this step isn't the one being
+  // walked), these stay available as before.
+  const walkActiveHere = typeof qzWalk !== 'undefined' && qzWalk && lessonStep && qzWalkCurrentStep() === lessonStep;
   const feedback = answered ? `<div class="qz-feedback ${r.correct ? 'correct' : 'incorrect'}">
       <b>${r.correct ? 'Correct.' : 'Not quite.'}</b>${esc(s.explanation)}
       ${firstAttemptLine}
       <div class="qz-feedback-actions">
-        ${r.correct && s.verifyDoc ? `<button class="qz-btn" onclick="qzViewDoc('${s.verifyDoc.file}','${esc(s.verifyDoc.title)}')">${esc(s.verifyDoc.buttonLabel)}</button>` : ''}
-        ${s.practice ? `<button class="qz-btn primary" onclick="qzPracticeAction('${s.id}')">${esc(s.practice.buttonLabel)} &rarr;</button>` : ''}
+        ${continueBtn}
+        ${(!walkActiveHere && r.correct && s.verifyDoc) ? `<button class="qz-btn" onclick="qzViewDoc('${s.verifyDoc.file}','${esc(s.verifyDoc.title)}')">${esc(s.verifyDoc.buttonLabel)}</button>` : ''}
+        ${(!walkActiveHere && s.practice) ? `<button class="qz-btn primary" onclick="qzPracticeAction('${s.id}')">${esc(s.practice.buttonLabel)} &rarr;</button>` : ''}
         ${r.practiced ? '<span class="qz-rv-chip good">Practiced</span>' : ''}
-        <button class="qz-btn" onclick="qzRetakeScenario('${s.id}')">${r.correct ? 'Retake Scenario' : 'Try Again'}</button>
+        ${retakeBtn}
       </div>
     </div>` : '';
   return `<span class="qz-back" onclick="qzGoto('dashboard')">&larr; Dashboard</span>
@@ -1252,8 +1740,20 @@ function qzExamReturn() {
   qzSyncTopTabs();
   qzRenderRoot();
 }
-function qzExamResetAttempt() {
-  if (!confirm('This clears your recorded exam result on this device. Continue?')) return;
+/* Two-click confirm instead of a native confirm() dialog: first click arms the button and
+   flips its label for 3s, a second click within that window actually resets. */
+function qzExamResetAttempt(btn) {
+  if (!btn.dataset.confirming) {
+    btn.dataset.confirming = '1';
+    btn.dataset.label = btn.textContent;
+    btn.textContent = 'Click again to confirm reset';
+    btn.dataset.timer = setTimeout(() => {
+      btn.textContent = btn.dataset.label;
+      delete btn.dataset.confirming;
+    }, 3000);
+    return;
+  }
+  clearTimeout(Number(btn.dataset.timer));
   qzStore.exam = null;
   qzSave();
   qzRenderRoot();
@@ -1306,28 +1806,47 @@ function qzExamVerifyItemHTML(item, answered) {
   </div>`;
   let step2 = '';
   if (st.docOpened) {
+    const mcAnswered = !!st.step2Choice;
     const opts = item.sourceOptions.map(o =>
-      `<button type="button" class="qz-option qz-rv-mc ${st.step2Choice === o.id ? 'selected' : ''}" ${st.step2Choice ? 'disabled' : ''} onclick="qzRevAnswerSource('${item.id}','${o.id}')">${esc(o.text)}</button>`
+      `<button type="button" class="qz-option qz-rv-mc ${st.step2Choice === o.id ? 'selected' : ''}" ${mcAnswered ? 'disabled' : ''} onclick="qzRevAnswerSource('${item.id}','${o.id}')">${esc(o.text)}</button>`
     ).join('');
-    step2 = `<div class="qz-rv-step ${st.step2Choice ? 'done' : 'active'}"><div class="qz-rv-step-h">Step 2 &middot; What does the source document actually say?</div>${opts}</div>`;
+    // Same gating as the lesson version (qzRevItemHTML): a wrong pick here must not let the
+    // trainee click through to step 3, qzRevAnswerAction silently no-ops on !step2Correct,
+    // so without this the buttons below would look clickable but do nothing.
+    const retry = (mcAnswered && !st.step2Correct)
+      ? `<div class="qz-rv-subfeedback bad">&#10007; Not quite &mdash; review the document and try again.</div>
+         <div class="qz-rv-actions"><button class="qz-btn sm" onclick="qzRevRetryStep('${item.id}',2)">Try again</button></div>`
+      : '';
+    step2 = `<div class="qz-rv-step ${st.step2Correct ? 'done' : 'active'}"><div class="qz-rv-step-h">Step 2 &middot; What does the source document actually say?</div>${opts}${retry}</div>`;
   }
   let step3 = '';
-  if (st.step2Choice) {
+  if (st.step2Choice && st.step2Correct) {
+    const mcAnswered = !!st.step3Choice;
     const opts = QZ_ACTION_CHOICES.map(a2 =>
-      `<button type="button" class="qz-option qz-rv-mc ${st.step3Choice === a2.id ? 'selected' : ''}" ${st.step3Choice ? 'disabled' : ''} onclick="qzRevAnswerAction('${item.id}','${a2.id}')">${esc(a2.label)}</button>`
+      `<button type="button" class="qz-option qz-rv-mc ${st.step3Choice === a2.id ? 'selected' : ''}" ${mcAnswered ? 'disabled' : ''} onclick="qzRevAnswerAction('${item.id}','${a2.id}')">${esc(a2.label)}</button>`
     ).join('');
-    step3 = `<div class="qz-rv-step ${st.step3Choice ? 'done' : 'active'}"><div class="qz-rv-step-h">Step 3 &middot; What's the right next step?</div>${opts}</div>`;
+    const retry = (mcAnswered && !st.step3Correct && !st.resolvedAt)
+      ? `<div class="qz-rv-subfeedback bad">&#10007; That's not the right next step here.</div>
+         <div class="qz-rv-actions"><button class="qz-btn sm" onclick="qzRevRetryStep('${item.id}',3)">Try again</button></div>`
+      : '';
+    step3 = `<div class="qz-rv-step ${st.step3Correct ? 'done' : 'active'}"><div class="qz-rv-step-h">Step 3 &middot; What's the right next step?</div>${opts}${retry}</div>`;
   }
   let step4 = '';
-  if (st.step3Choice === 'correct' && !st.resolvedAt) {
+  if (st.step3Choice === 'correct' && st.step3Correct && !st.resolvedAt) {
     step4 = `<div class="qz-rv-step active"><div class="qz-rv-step-h">Step 4 &middot; Enter the corrected value</div>
       <div class="qz-rv-form"><input type="text" id="qzRevInput-${item.id}" value="${escAttr(item.systemValue)}">
       <div class="row"><button class="qz-btn sm primary" onclick="qzRevSaveCorrection('${item.id}')">Save correction</button></div></div></div>`;
-  } else if (st.step3Choice && st.step3Choice.indexOf('escalate') === 0 && !st.resolvedAt) {
-    const catOpts = QZ_ESCALATION_CATEGORIES.map(c => `<option value="${c.id}">${esc(c.label)}</option>`).join('');
+  } else if (st.step3Choice && st.step3Correct && st.step3Choice.indexOf('escalate') === 0 && !st.resolvedAt) {
+    // Same gating as the lesson version: qzRevSaveEscalation won't finalize a wrong category,
+    // it just re-renders this same step, so preserve what was picked/typed and say why it was
+    // wrong instead of silently resetting to a blank form.
+    const wrongCategory = st.step4Category && !st.step4CategoryCorrect;
+    const catOpts = QZ_ESCALATION_CATEGORIES.map(c => `<option value="${c.id}" ${st.step4Category === c.id ? 'selected' : ''}>${esc(c.label)}</option>`).join('');
+    const wrongNote = wrongCategory ? `<div class="qz-rv-subfeedback bad">&#10007; That's not the right category. Check it and submit again.</div>` : '';
     step4 = `<div class="qz-rv-step active"><div class="qz-rv-step-h">Step 4 &middot; Escalation category</div>
       <div class="qz-rv-form"><select id="qzRevCategory-${item.id}"><option value="">Choose a category&hellip;</option>${catOpts}</select>
-      <label>Note</label><textarea id="qzRevNote-${item.id}" placeholder="Describe the discrepancy..."></textarea>
+      <label>Note</label><textarea id="qzRevNote-${item.id}" placeholder="Describe the discrepancy...">${esc(st.note || '')}</textarea>
+      ${wrongNote}
       <div class="row"><button class="qz-btn sm primary" onclick="qzRevSaveEscalation('${item.id}')">Submit escalation</button></div></div></div>`;
   }
   return `<div class="qz-rv-head"><b>${esc(item.label)}</b></div>
