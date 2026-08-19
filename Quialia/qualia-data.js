@@ -967,7 +967,23 @@ const QZ_EXAM_DOCUMENTS = [
 ];
 
 const QZ_EXAM_ITEMS = [
-  { id: 'ex-01', type: 'do', label: 'Open the exam order and confirm its current workflow stage.', checklistId: 'workflow-view', points: 10 },
+  /* Was a `do` item worth 10 points for clicking a button labelled "Open the order" — it
+     measured nothing and handed every candidate 10% of the exam before they read anything.
+     Now it still requires navigating to the order, but the points come from reporting what
+     is actually there. (The exam is rebuilt to ~20 sampled items in a later phase; this is
+     the minimum change that stops the free points.) */
+  {
+    id: 'ex-01', type: 'decide',
+    situation: 'Open this order and look at its Workflow tab before answering. Which statement matches the current stage of the file and the reason recorded for it?',
+    options: [
+      'Closing Prep — the file is waiting on the final loan documents from the lender',
+      'Opened — intake is still being completed and no title work has started',
+      'Title Processing — the settlement agency is preparing the title commitment',
+      'Closing Date — everything is cleared and the file is ready to close'
+    ],
+    correct: 2,
+    points: 10
+  },
   {
     id: 'ex-02', type: 'verify', orderId: 'ORD-2026-EXAM', label: "Buyer's legal name",
     where: 'Data Entry → Parties',

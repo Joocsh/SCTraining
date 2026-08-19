@@ -12,7 +12,10 @@ const QZ_ICONS = {
   pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-7.4 7-12a7 7 0 0 0-14 0c0 4.6 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>'
 };
 
-const QZ_LS_KEY = 'qz_va_training_v1';
+/* v2: the v1 grader credited unverified corrections and gave away free exam points, so any
+   progress earned under it recorded passes that were never actually earned. Bumping the key
+   discards it rather than carrying false completions forward. */
+const QZ_LS_KEY = 'qz_va_training_v2';
 const QZ_STORE_DEFAULTS = {
   checklist: {}, scenarios: {}, docStatus: {}, taskStatus: {}, reviews: {},
   overrides: {}, lessons: {}, replies: {}, tourSeen: false, exam: null
@@ -121,10 +124,38 @@ function qzSetPartyOverride(orderId, role, patch) {
   ov.parties[role] = Object.assign({}, ov.parties[role], patch);
   qzSave();
 }
+/* Explicit list, never guessed by regex: these order fields are consumed as numbers
+   (fmtMoney, Number(), arithmetic in Accounting). A trainee typing a perfectly reasonable
+   "$425.00" into a correction field used to be stored verbatim, and Number("$425.00") is
+   NaN, which rendered "$NaN" rows and an NaN total in Accounting. Every write path that can
+   set one of these goes through qzCoerceFieldValue. */
+const QZ_NUMERIC_FIELDS = ['purchasePrice', 'loanAmount', 'inspectionCharge'];
+/* Currency/'$'/comma-tolerant parse. Returns null when there's no number in there at all,
+   so callers can reject the input instead of silently storing NaN. */
+function qzParseNumeric(v) {
+  const cleaned = String(v == null ? '' : v).replace(/[^0-9.\-]/g, '');
+  if (!cleaned || cleaned === '.' || cleaned === '-') return null;
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? null : n;
+}
+function qzCoerceFieldValue(field, value) {
+  if (QZ_NUMERIC_FIELDS.indexOf(field) === -1) return value;
+  const n = qzParseNumeric(value);
+  return n === null ? value : n;
+}
+/* Comparison-only normalization for grading a typed correction: ignores currency symbols,
+   thousands separators, trailing ".00", redundant whitespace and letter case, so "John
+   Smith", "  john   smith " and "$425.00" / "425" all grade the way a human reviewer would.
+   The value the trainee actually typed is stored separately, untouched. */
+function qzNormalizeValue(v) {
+  let s = String(v == null ? '' : v).replace(/[$,]/g, '').trim().replace(/\s+/g, ' ').toLowerCase();
+  if (/^-?\d+(\.\d+)?$/.test(s)) s = String(parseFloat(s));
+  return s;
+}
 function qzSetScalarOverride(orderId, field, value) {
   const ov = qzStore.overrides[orderId] = qzStore.overrides[orderId] || {};
   ov.scalars = ov.scalars || {};
-  ov.scalars[field] = value;
+  ov.scalars[field] = qzCoerceFieldValue(field, value);
   qzSave();
 }
 
@@ -250,11 +281,23 @@ function qzRenderRoot() {
 }
 
 /* ---------- lessons: gating (always derived, never stored) ---------- */
+/* Gating reads the sticky "was right at least once" flag, not the current answer. Lessons
+   are explicitly retry-friendly, so reopening a solved scenario/review to re-read it — or
+   deliberately clicking a wrong option to see the explanation — must never take back a
+   lesson the trainee already unlocked. Scoring integrity is handled separately and does not
+   use this: the exam is single-answer, and the score reported to SCApp uses first attempts
+   (see qzScenarioFirstAttemptCorrect). */
 function qzLessonStepDone(step) {
   if (step.type === 'do') return !!qzStore.checklist[step.checklistId];
-  if (step.type === 'verify') { const s = qzStore.reviews[step.reviewId]; return !!(s && s.correct); }
-  if (step.type === 'decide') { const s = qzStore.scenarios[step.scenarioId]; return !!(s && s.correct); }
+  if (step.type === 'verify') { const s = qzStore.reviews[step.reviewId]; return !!(s && (s.everCorrect || s.correct)); }
+  if (step.type === 'decide') { const s = qzStore.scenarios[step.scenarioId]; return !!(s && (s.everCorrect || s.correct)); }
   return false;
+}
+/* What the trainee got RIGHT ON THE FIRST TRY, independent of how many retries followed.
+   This is the honest measure of the curriculum and what gets reported outward. */
+function qzScenarioFirstAttemptCorrect(scenarioId) {
+  const s = qzStore.scenarios[scenarioId];
+  return !!(s && s.firstAttempt && s.firstAttempt.correct);
 }
 function qzLessonProgress(lesson) {
   const total = lesson.steps.length;
@@ -653,6 +696,7 @@ function qzWalkVerifyTarget(reviewId) {
   if (!st.step3Choice) return scope + ' [data-rev-phase="3"]';
   if (!st.step3Correct) return scope + ' [data-rev-phase="3"] .qz-rv-actions button';
   if (st.step4Category && !st.step4CategoryCorrect) return scope + ' [data-rev-phase="4"] select';
+  if (st.correctedValueSaved && !st.step4ValueCorrect) return scope + ' [data-rev-phase="4"] input';
   return scope + ' [data-rev-phase="4"]';
 }
 function qzWalkVerifyText(reviewId) {
@@ -665,7 +709,11 @@ function qzWalkVerifyText(reviewId) {
   if (!st.step2Correct) return 'Not quite, click "Try again" and look at the document once more.';
   if (!st.step3Choice) return "Pick the right next step: does this need a correction, or does it need escalating?";
   if (!st.step3Correct) return 'Not quite, click "Try again" and reconsider the right next step.';
-  if (st.step3Choice === 'correct') return 'Type the corrected value exactly as the source document shows it, then click "Save correction."';
+  if (st.step3Choice === 'correct') {
+    return (st.correctedValueSaved && !st.step4ValueCorrect)
+      ? "That doesn't match the source document. Reopen it if you need to, then retype the value exactly as it appears."
+      : 'Type the corrected value exactly as the source document shows it, then click "Save correction."';
+  }
   if (st.step4Category && !st.step4CategoryCorrect) return 'Not quite — pick a different category and submit again.';
   return 'Choose the escalation category that fits, then submit.';
 }
@@ -1067,6 +1115,18 @@ function qzReviewScore(orderId) {
   return { resolved, correct, total: items.length };
 }
 function qzRevGet(id) { return qzStore.reviews[id] || (qzStore.reviews[id] = { docOpened: false }); }
+/* Exam mode is derived from the item's own id rather than threaded through every call site,
+   because the same engine functions are wired to onclick handlers in both contexts and an
+   extra argument would have to be plumbed through ~12 render/handler pairs.
+   In exam mode the engine behaves differently in three ways:
+     - a wrong step 2/3 does NOT block the next step (you answer once and move on),
+     - nothing is colored right/wrong and no "Try again" is offered,
+     - step 4 branches on what the trainee CHOSE, not on what was correct,
+   so a trainee can complete the whole item while getting every sub-part wrong, and only
+   finds out at submit. In lessons, all three behave the opposite way, on purpose. */
+function qzRevExamMode(id) {
+  return typeof QZ_EXAM_ITEMS !== 'undefined' && QZ_EXAM_ITEMS.some(i => i.type === 'verify' && i.id === id);
+}
 function qzRevOpenDoc(id) {
   const r = qzReviewLookup(id);
   if (!r) return;
@@ -1086,6 +1146,23 @@ function qzRevAnswerSource(id, optionId) {
   qzRenderRoot();
   qzWalkSyncVerifyStep(id);
 }
+/* In the exam a wrong step 2 must not dead-end the item: step 3 has to stay reachable so the
+   trainee answers every part without learning they slipped. In lessons the opposite holds —
+   step 3 is gated on step 2 being right, because there the point is to fix it now. */
+function qzRevStep3Unlocked(id) {
+  const st = qzRevGet(id);
+  if (!st.step2Choice) return false;
+  return qzRevExamMode(id) ? true : !!st.step2Correct;
+}
+/* Which step-4 form to show. Lessons only open step 4 once step 3 was RIGHT (a wrong pick
+   gets an inline retry instead). The exam opens whichever form matches what the trainee
+   chose, so a wrong action still gets carried through to a complete, gradable answer. */
+function qzRevStep4Kind(id) {
+  const st = qzRevGet(id);
+  if (!st.step3Choice || st.step3Choice === 'none') return null;
+  if (!qzRevExamMode(id) && !st.step3Correct) return null;
+  return st.step3Choice === 'correct' ? 'correct' : 'escalate';
+}
 /* action==='none' is a terminal choice (no step 4 either way), so it finalizes right away
    regardless of whether it was the right call, the outer feedback panel covers that case.
    Any other action gates on correctness: a wrong "correct it myself"/"escalate" pick never
@@ -1093,7 +1170,7 @@ function qzRevAnswerSource(id, optionId) {
 function qzRevAnswerAction(id, action) {
   const r = qzReviewLookup(id);
   const st = qzRevGet(id);
-  if (!st.step2Choice || !st.step2Correct || st.step3Choice) return;
+  if (!qzRevStep3Unlocked(id) || st.step3Choice) return;
   st.step3Choice = action;
   st.step3Correct = action === r.rightAction;
   qzSave();
@@ -1101,6 +1178,11 @@ function qzRevAnswerAction(id, action) {
   qzRenderRoot();
   qzWalkSyncVerifyStep(id);
 }
+/* Step 4 (correction branch) is the step that used to be pure theater: the input came
+   prefilled with the WRONG value, and nothing ever compared what was typed against
+   r.correctedValue, so clicking "Save correction" without touching the field scored the item
+   correct and wrote the typo back onto the order. Now the typed value is graded like any
+   other sub-answer, and in a lesson a wrong one is refused the same way steps 2/3 are. */
 function qzRevSaveCorrection(id) {
   const r = qzReviewLookup(id);
   const input = document.getElementById('qzRevInput-' + id);
@@ -1108,9 +1190,21 @@ function qzRevSaveCorrection(id) {
   if (!val) { qzToast('Enter the corrected value.'); return; }
   const st = qzRevGet(id);
   st.correctedValueSaved = val;
-  if (r.partyRole) qzSetPartyOverride(r.orderId, r.partyRole, { name: val });
-  else if (r.field) qzSetScalarOverride(r.orderId, r.field, val);
-  qzMark('de-edit');
+  st.step4ValueCorrect = qzNormalizeValue(val) === qzNormalizeValue(r.correctedValue);
+
+  if (!qzRevExamMode(id) && !st.step4ValueCorrect) {
+    // Don't write a value we just graded wrong onto the order, and don't resolve the item:
+    // same "a wrong answer never passes" rule the other steps follow.
+    qzSave();
+    qzRenderRoot();
+    qzToast("That doesn't match the source document — check it and save again.");
+    qzWalkSyncVerifyStep(id);
+    return;
+  }
+  if (st.step4ValueCorrect) {
+    if (r.partyRole) qzSetPartyOverride(r.orderId, r.partyRole, { name: val });
+    else if (r.field) qzSetScalarOverride(r.orderId, r.field, val);
+  }
   qzRevFinalize(id);
   qzToast('Correction saved.', { tone: 'good' });
 }
@@ -1127,7 +1221,8 @@ function qzRevSaveEscalation(id) {
   st.note = note;
   // Same gating rule as Step 2/3: a wrong pick here must not be able to "pass" and finalize
   // the item, stay on Step 4 with inline feedback and let the trainee pick again instead.
-  if (!st.step4CategoryCorrect) {
+  // The exam skips that: one submission, graded silently at the end.
+  if (!qzRevExamMode(id) && !st.step4CategoryCorrect) {
     qzSave();
     qzRenderRoot();
     qzToast('Not quite — check the category and submit again.');
@@ -1140,8 +1235,15 @@ function qzRevSaveEscalation(id) {
 function qzRevFinalize(id) {
   const st = qzRevGet(id);
   const parts = [st.step2Correct, st.step3Correct];
-  if (st.step3Choice && st.step3Choice.indexOf('escalate') === 0) parts.push(st.step4CategoryCorrect);
+  // Whichever step-4 branch the trainee actually went down is graded. Keyed off step3Choice
+  // (what they did), not r.rightAction (what they should have done) — someone who wrongly
+  // escalates a typo is already failing on step3Correct, and has no correctedValue to grade.
+  if (st.step3Choice === 'correct') parts.push(st.step4ValueCorrect);
+  else if (st.step3Choice && st.step3Choice.indexOf('escalate') === 0) parts.push(st.step4CategoryCorrect);
   st.correct = parts.every(Boolean);
+  // Sticky "was right at least once", so redoing a solved item to review it can never
+  // re-lock a lesson the trainee already earned (see qzLessonStepDone).
+  if (st.correct) st.everCorrect = true;
   st.resolvedAt = Date.now();
   qzSave();
   qzRenderRoot();
@@ -1149,7 +1251,9 @@ function qzRevFinalize(id) {
 }
 /* Full reset, used by the "Redo" control after the item is fully resolved. */
 function qzRevRetry(id) {
-  qzStore.reviews[id] = { docOpened: qzStore.reviews[id] ? qzStore.reviews[id].docOpened : false };
+  if (qzRevExamMode(id)) return; // exam answers are final, see qzRevExamMode
+  const prev = qzStore.reviews[id] || {};
+  qzStore.reviews[id] = { docOpened: !!prev.docOpened, everCorrect: !!prev.everCorrect };
   qzSave();
   qzRenderRoot();
   qzWalkSyncVerifyStep(id);
@@ -1158,10 +1262,15 @@ function qzRevRetry(id) {
    everything after it, keeps earlier correct answers (and docOpened) intact so the trainee
    retries only what they got wrong instead of starting the whole item over. */
 function qzRevRetryStep(id, fromPhase) {
+  // Guarded in the engine, not just by omitting the button: the exam renders no retry
+  // control, but a callable global that silently rewinds a graded answer is exactly the
+  // kind of thing that turns a hiring filter back into an attendance certificate.
+  if (qzRevExamMode(id)) return;
   const st = qzRevGet(id);
   if (fromPhase <= 2) { delete st.step2Choice; delete st.step2Correct; }
   if (fromPhase <= 3) { delete st.step3Choice; delete st.step3Correct; }
-  delete st.step4Category; delete st.step4CategoryCorrect; delete st.note; delete st.correctedValueSaved;
+  delete st.step4Category; delete st.step4CategoryCorrect; delete st.note;
+  delete st.correctedValueSaved; delete st.step4ValueCorrect;
   qzSave();
   qzRenderRoot();
   qzWalkSyncVerifyStep(id);
@@ -1229,7 +1338,7 @@ function qzRevItemHTML(id) {
   }
 
   let step3 = '';
-  if (st.step2Choice && st.step2Correct) {
+  if (qzRevStep3Unlocked(id)) {
     const answered = !!st.step3Choice;
     const optsHtml = QZ_ACTION_CHOICES.map(a => {
       let cls = '';
@@ -1253,15 +1362,24 @@ function qzRevItemHTML(id) {
   }
 
   let step4 = '';
-  if (st.step3Choice === 'correct' && st.step3Correct && !done) {
+  const step4Kind = done ? null : qzRevStep4Kind(id);
+  if (step4Kind === 'correct') {
+    // Starts EMPTY on purpose. Prefilling it with r.systemValue (the value under suspicion)
+    // meant the trainee could "correct" the record by clicking Save without reading the
+    // document at all, which is the exact skill this step exists to test.
+    const wrongValue = st.correctedValueSaved && !st.step4ValueCorrect;
+    const wrongValueNote = wrongValue
+      ? `<div class="qz-rv-subfeedback bad">&#10007; That doesn't match the source document. Read it again and retype the value exactly as it appears.</div>`
+      : '';
     step4 = `<div class="qz-rv-step active" data-rev-phase="4">
       <div class="qz-rv-step-h">Step 4 &middot; Enter the corrected value</div>
       <div class="qz-form-grid full">
-        <div class="qz-field"><label>Corrected Value</label><input type="text" id="qzRevInput-${id}" value="${escAttr(r.systemValue)}"></div>
+        <div class="qz-field"><label>Corrected Value</label><input type="text" id="qzRevInput-${id}" value="${escAttr(st.correctedValueSaved || '')}" placeholder="Type it exactly as the source document shows it"></div>
       </div>
+      ${wrongValueNote}
       <div class="qz-rv-actions"><button class="qz-btn sm primary" onclick="qzRevSaveCorrection('${id}')">Save correction</button></div>
     </div>`;
-  } else if (st.step3Choice && st.step3Correct && st.step3Choice.indexOf('escalate') === 0 && !done) {
+  } else if (step4Kind === 'escalate') {
     // A prior wrong submit sets step4Category without resolving the item (gated, same as
     // Step 2/3), re-select it and show why it was wrong instead of resetting the form blank.
     const wrongCategory = st.step4Category && !st.step4CategoryCorrect;
@@ -1295,6 +1413,13 @@ function qzRevItemHTML(id) {
       bits.push(st.step4CategoryCorrect
         ? '<div class="qz-rv-subfeedback good">&#10003; Picked the right escalation category.</div>'
         : `<div class="qz-rv-subfeedback bad">&#10007; The right category was: "${esc(QZ_ESCALATION_CATEGORIES.find(c => c.id === r.rightCategory).label)}"</div>`);
+    }
+    // Only meaningful when they went down the correction branch: r.correctedValue is null on
+    // items whose right answer was "no action" or "escalate", nothing to compare against.
+    if (st.step3Choice === 'correct' && r.correctedValue) {
+      bits.push(st.step4ValueCorrect
+        ? '<div class="qz-rv-subfeedback good">&#10003; Entered the corrected value accurately.</div>'
+        : `<div class="qz-rv-subfeedback bad">&#10007; You entered "${esc(st.correctedValueSaved || '')}" &mdash; the source document shows "${esc(r.correctedValue)}"</div>`);
     }
     const noteLine = st.note ? `<div class="qz-rv-note">Your note: ${esc(st.note)}</div>` : '';
     const lessonStep = qzState.lessonId && typeof QZ_LESSONS !== 'undefined'
@@ -1418,13 +1543,15 @@ function qzDeSaveChanges(orderId) {
       skipSavedToast = true;
     }
   } else {
-    const priceRaw = (document.getElementById('qzDePrice').value || '').replace(/[^0-9.]/g, '');
-    const loanRaw = (document.getElementById('qzDeLoan').value || '').replace(/[^0-9.]/g, '');
+    // Same coercion path as a Review correction (qzSetScalarOverride → qzCoerceFieldValue):
+    // both write the same numeric order fields, so neither may store a raw "$425.00" string.
+    const price = qzParseNumeric(document.getElementById('qzDePrice').value);
+    const loan = qzParseNumeric(document.getElementById('qzDeLoan').value);
     const closing = (document.getElementById('qzDeClosing').value || '').trim();
     const titleNum = (document.getElementById('qzDeTitleNum').value || '').trim();
     const agency = (document.getElementById('qzDeSettleAgency').value || '').trim();
-    if (priceRaw) qzSetScalarOverride(orderId, 'purchasePrice', parseFloat(priceRaw));
-    if (loanRaw) qzSetScalarOverride(orderId, 'loanAmount', parseFloat(loanRaw));
+    if (price !== null) qzSetScalarOverride(orderId, 'purchasePrice', price);
+    if (loan !== null) qzSetScalarOverride(orderId, 'loanAmount', loan);
     if (closing) qzSetScalarOverride(orderId, 'closingDate', closing);
     if (titleNum) qzSetScalarOverride(orderId, 'titleNumber', titleNum);
     if (agency) qzSetScalarOverride(orderId, 'settlementAgency', agency);
@@ -1659,14 +1786,24 @@ function qzAnswerScenario(id, idx) {
   const correct = idx === s.correct;
   const prev = qzStore.scenarios[id] || {};
   const firstAttempt = prev.firstAttempt || { answered: idx, correct, ts: Date.now() };
-  qzStore.scenarios[id] = { answered: idx, correct, firstAttempt, practiced: prev.practiced || false };
+  qzStore.scenarios[id] = {
+    answered: idx, correct, firstAttempt,
+    everCorrect: !!prev.everCorrect || correct,
+    practiced: prev.practiced || false
+  };
   qzSave();
   qzRenderRoot();
   qzNotifyScenarioAnswered(id, correct);
 }
 function qzRetakeScenario(id) {
-  const prev = qzStore.scenarios[id];
-  qzStore.scenarios[id] = { firstAttempt: prev && prev.firstAttempt, practiced: prev && prev.practiced };
+  const prev = qzStore.scenarios[id] || {};
+  // firstAttempt (what's scored) and everCorrect (what gates the next lesson) both survive a
+  // retake — clearing everCorrect used to let a retake re-lock lessons already unlocked.
+  qzStore.scenarios[id] = {
+    firstAttempt: prev.firstAttempt,
+    everCorrect: !!prev.everCorrect,
+    practiced: !!prev.practiced
+  };
   qzSave();
   qzRenderRoot();
   if (typeof qzWalk !== 'undefined' && qzWalk) {
@@ -1808,8 +1945,18 @@ function qzExamResetAttempt(btn) {
   }
   clearTimeout(Number(btn.dataset.timer));
   qzStore.exam = null;
+  // A verify item's state lives in qzStore.reviews, NOT in qzStore.exam. Without this, a
+  // "reset" left all four verify items still resolved: qzExamItemAnswered() returned true
+  // for each, so the retake could be clicked straight through with the previous answers
+  // (and the previous score) intact.
+  if (typeof QZ_EXAM_ITEMS !== 'undefined') {
+    QZ_EXAM_ITEMS.forEach(i => { if (i.type === 'verify') delete qzStore.reviews[i.id]; });
+  }
   qzSave();
-  qzRenderRoot();
+  // Leave the exam view before re-rendering: qzExamHTML dereferences qzStore.exam, which
+  // we just nulled, and would throw if we re-rendered in place.
+  if (qzState.view === 'exam') qzGoto('dashboard');
+  else qzRenderRoot();
 }
 function qzExamNext() {
   qzState.examIndex++;
@@ -1817,9 +1964,11 @@ function qzExamNext() {
   qzRenderRoot();
 }
 function qzExamItemAnswered(item) {
-  if (item.type === 'do') { const a = qzStore.exam.answers[item.id]; return !!(a && a.done); }
-  if (item.type === 'decide') { const a = qzStore.exam.answers[item.id]; return !!(a && a.idx != null); }
+  const answers = (qzStore.exam && qzStore.exam.answers) || {};
+  if (item.type === 'do') { const a = answers[item.id]; return !!(a && a.done); }
+  if (item.type === 'decide') { const a = answers[item.id]; return !!(a && a.idx != null); }
   if (item.type === 'verify') { const s = qzStore.reviews[item.id]; return !!(s && s.resolvedAt); }
+  return false;
 }
 function qzExamDoStepGo(itemId) {
   const item = QZ_EXAM_ITEMS.find(i => i.id === itemId);
@@ -1837,6 +1986,9 @@ function qzExamAnswerDecide(itemId, idx) {
   qzSave();
   qzRenderRoot();
 }
+/* Currently unused: QZ_EXAM_ITEMS has no `do` items, because "clicking the button scores the
+   point" is not a measurement. Kept only so the item-type union stays complete — if a `do`
+   item is ever reintroduced, it must gate its points on something observed, not on the click. */
 function qzExamDoItemHTML(item, answered) {
   return `<p class="qz-rv-instr">${esc(item.label)}</p>
     ${answered
@@ -1857,49 +2009,38 @@ function qzExamVerifyItemHTML(item, answered) {
     <div class="qz-rv-step-h">Step 1 &middot; Open the source document</div>
     <button class="qz-btn sm" onclick="qzRevOpenDoc('${item.id}')">${st.docOpened ? 'Reopen' : 'Open'} ${esc(item.docTitle)}</button>
   </div>`;
+  // Exam rendering differs from the lesson version on purpose and in exactly one direction:
+  // nothing here tells the trainee how they're doing. No correct/incorrect coloring, no
+  // "Try again", no inline feedback — a step is answered once and the item moves on, right
+  // or wrong. Previously this reused the lesson's retry controls, which meant every multiple
+  // choice could be brute-forced until it went green: 4 options, unlimited attempts.
   let step2 = '';
   if (st.docOpened) {
     const mcAnswered = !!st.step2Choice;
     const opts = item.sourceOptions.map(o =>
       `<button type="button" class="qz-option qz-rv-mc ${st.step2Choice === o.id ? 'selected' : ''}" ${mcAnswered ? 'disabled' : ''} onclick="qzRevAnswerSource('${item.id}','${o.id}')">${esc(o.text)}</button>`
     ).join('');
-    // Same gating as the lesson version (qzRevItemHTML): a wrong pick here must not let the
-    // trainee click through to step 3, qzRevAnswerAction silently no-ops on !step2Correct,
-    // so without this the buttons below would look clickable but do nothing.
-    const retry = (mcAnswered && !st.step2Correct)
-      ? `<div class="qz-rv-subfeedback bad">&#10007; Not quite &mdash; review the document and try again.</div>
-         <div class="qz-rv-actions"><button class="qz-btn sm" onclick="qzRevRetryStep('${item.id}',2)">Try again</button></div>`
-      : '';
-    step2 = `<div class="qz-rv-step ${st.step2Correct ? 'done' : 'active'}"><div class="qz-rv-step-h">Step 2 &middot; What does the source document actually say?</div>${opts}${retry}</div>`;
+    step2 = `<div class="qz-rv-step ${mcAnswered ? 'done' : 'active'}"><div class="qz-rv-step-h">Step 2 &middot; What does the source document actually say?</div>${opts}</div>`;
   }
   let step3 = '';
-  if (st.step2Choice && st.step2Correct) {
+  if (qzRevStep3Unlocked(item.id)) {
     const mcAnswered = !!st.step3Choice;
     const opts = QZ_ACTION_CHOICES.map(a2 =>
       `<button type="button" class="qz-option qz-rv-mc ${st.step3Choice === a2.id ? 'selected' : ''}" ${mcAnswered ? 'disabled' : ''} onclick="qzRevAnswerAction('${item.id}','${a2.id}')">${esc(a2.label)}</button>`
     ).join('');
-    const retry = (mcAnswered && !st.step3Correct && !st.resolvedAt)
-      ? `<div class="qz-rv-subfeedback bad">&#10007; That's not the right next step here.</div>
-         <div class="qz-rv-actions"><button class="qz-btn sm" onclick="qzRevRetryStep('${item.id}',3)">Try again</button></div>`
-      : '';
-    step3 = `<div class="qz-rv-step ${st.step3Correct ? 'done' : 'active'}"><div class="qz-rv-step-h">Step 3 &middot; What's the right next step?</div>${opts}${retry}</div>`;
+    step3 = `<div class="qz-rv-step ${mcAnswered ? 'done' : 'active'}"><div class="qz-rv-step-h">Step 3 &middot; What's the right next step?</div>${opts}</div>`;
   }
   let step4 = '';
-  if (st.step3Choice === 'correct' && st.step3Correct && !st.resolvedAt) {
+  const step4Kind = st.resolvedAt ? null : qzRevStep4Kind(item.id);
+  if (step4Kind === 'correct') {
     step4 = `<div class="qz-rv-step active"><div class="qz-rv-step-h">Step 4 &middot; Enter the corrected value</div>
-      <div class="qz-rv-form"><input type="text" id="qzRevInput-${item.id}" value="${escAttr(item.systemValue)}">
+      <div class="qz-rv-form"><input type="text" id="qzRevInput-${item.id}" value="" placeholder="Type it exactly as the source document shows it">
       <div class="row"><button class="qz-btn sm primary" onclick="qzRevSaveCorrection('${item.id}')">Save correction</button></div></div></div>`;
-  } else if (st.step3Choice && st.step3Correct && st.step3Choice.indexOf('escalate') === 0 && !st.resolvedAt) {
-    // Same gating as the lesson version: qzRevSaveEscalation won't finalize a wrong category,
-    // it just re-renders this same step, so preserve what was picked/typed and say why it was
-    // wrong instead of silently resetting to a blank form.
-    const wrongCategory = st.step4Category && !st.step4CategoryCorrect;
-    const catOpts = QZ_ESCALATION_CATEGORIES.map(c => `<option value="${c.id}" ${st.step4Category === c.id ? 'selected' : ''}>${esc(c.label)}</option>`).join('');
-    const wrongNote = wrongCategory ? `<div class="qz-rv-subfeedback bad">&#10007; That's not the right category. Check it and submit again.</div>` : '';
+  } else if (step4Kind === 'escalate') {
+    const catOpts = QZ_ESCALATION_CATEGORIES.map(c => `<option value="${c.id}">${esc(c.label)}</option>`).join('');
     step4 = `<div class="qz-rv-step active"><div class="qz-rv-step-h">Step 4 &middot; Escalation category</div>
       <div class="qz-rv-form"><select id="qzRevCategory-${item.id}"><option value="">Choose a category&hellip;</option>${catOpts}</select>
-      <label>Note</label><textarea id="qzRevNote-${item.id}" placeholder="Describe the discrepancy...">${esc(st.note || '')}</textarea>
-      ${wrongNote}
+      <label>Note</label><textarea id="qzRevNote-${item.id}" placeholder="Describe the discrepancy..."></textarea>
       <div class="row"><button class="qz-btn sm primary" onclick="qzRevSaveEscalation('${item.id}')">Submit escalation</button></div></div></div>`;
   }
   return `<div class="qz-rv-head"><b>${esc(item.label)}</b></div>
