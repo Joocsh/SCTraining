@@ -473,9 +473,31 @@ function qzWalkRenderTip(step, done) {
     qzWalkSetTipBody(`<b>&#10003; Nice.</b><p>Moving to the next step&hellip;</p>`);
   } else {
     const text = typeof step.walk.text === 'function' ? step.walk.text() : step.walk.text;
-    qzWalkSetTipBody(`<b>Lesson ${l.number} &middot; Step ${qzWalk.stepIndex + 1} of ${l.steps.length}</b><p>${esc(text)}</p>
+    // Optional, collapsed by default: a step whose target is a free-text field (e.g. the
+    // Communication reply box) can carry its own example right in the tip, where the trainee
+    // is already looking, instead of a link elsewhere on the page that the tip itself
+    // usually ends up covering.
+    const example = typeof step.walk.example === 'function' ? step.walk.example() : step.walk.example;
+    const exampleHTML = example
+      ? `<button type="button" class="qz-walk-example-toggle" id="qzWalkExampleToggle" onclick="qzWalkToggleExample()">See example &rarr;</button>
+         <div class="qz-walk-example" id="qzWalkExampleBox" style="display:none">${esc(example)}</div>`
+      : '';
+    qzWalkSetTipBody(`<b>Lesson ${l.number} &middot; Step ${qzWalk.stepIndex + 1} of ${l.steps.length}</b><p>${esc(text)}</p>${exampleHTML}
       <div class="qz-walk-exit" onclick="qzWalkExit()">Exit walkthrough</div>`);
   }
+}
+/* Toggling the example changes the tip's height, without recomputing position afterward the
+   card's top/left stay wherever they were calculated for the shorter version, letting the
+   now-taller card run off the bottom of the viewport instead of the whole thing staying visible. */
+function qzWalkToggleExample() {
+  const el = document.getElementById('qzWalkExampleBox');
+  const btn = document.getElementById('qzWalkExampleToggle');
+  if (!el) return;
+  const showing = el.style.display !== 'none';
+  el.style.display = showing ? 'none' : 'block';
+  if (btn) btn.textContent = showing ? 'See example →' : 'Hide example';
+  const step = qzWalkCurrentStep();
+  if (step) qzWalkPosition(step);
 }
 /* Wrong answer on a `decide` step or a `verify` item: don't advance, don't reveal the
    answer, just point the trainee back at the feedback + retry control the page already
@@ -483,6 +505,17 @@ function qzWalkRenderTip(step, done) {
 function qzWalkRenderRetry(msg) {
   qzWalkSetTipBody(`<b>Not quite.</b><p>${msg || 'Read the explanation below, then click "Try Again" to retry this scenario.'}</p>
     <div class="qz-walk-exit" onclick="qzWalkExit()">Exit walkthrough</div>`);
+  qzWalkScrollFeedbackIntoView();
+}
+/* decide/verify steps float their tip (no highlight, target is null / whole page is the
+   content), so unlike do/verify-with-a-real-target steps, nothing was bringing the feedback
+   panel (with the Continue/Try Again/Redo button the trainee actually needs to click) into
+   view, it could render below the fold with no indication it was even there. */
+function qzWalkScrollFeedbackIntoView() {
+  requestAnimationFrame(() => {
+    const el = document.querySelector('.qz-feedback, .qz-rv-feedback');
+    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  });
 }
 /* Four different "what happens after a correct answer" behaviors, depending on the step:
    1. walk.tour set (e.g. workflow-view) — a real UI panel just appeared with several parts
@@ -519,6 +552,7 @@ function qzWalkStepDone() {
   }
   if (step.type === 'decide' || step.type === 'verify') {
     qzWalkSetTipBody(`<b>&#10003; Correct.</b><p>Read the explanation below, then click "Continue to next step" when you're ready.</p>${exitLink}`);
+    qzWalkScrollFeedbackIntoView();
     return;
   }
   qzWalkRenderTip(step, true);
@@ -579,6 +613,18 @@ function qzWalkSyncSearchStep() {
   qzWalkRenderTip(step, false);
   qzWalkPosition(step);
 }
+/* Same idea as qzWalkSyncSearchStep/qzWalkSyncEditStep: the comm-reply step's target moves
+   from the textarea to the Send button once there's 20+ characters typed, but nothing was
+   re-checking that while the trainee was actually typing, only on the next unrelated
+   reposition (resize/scroll), so the highlight sat on the box well past the point it should
+   have moved. */
+function qzWalkSyncReplyStep() {
+  if (typeof qzWalk === 'undefined' || !qzWalk) return;
+  const step = qzWalkCurrentStep();
+  if (!step || step.type !== 'do' || step.checklistId !== 'comm-reply') return;
+  qzWalkRenderTip(step, false);
+  qzWalkPosition(step);
+}
 /* A `verify` lesson step maps to the 4-step discrepancy-report engine, which has its own
    internal sub-phases (open doc / answer source / answer action / correct or escalate).
    Called after every sub-phase action so the tip text and highlight track the trainee's
@@ -623,6 +669,17 @@ function qzWalkVerifyText(reviewId) {
   if (st.step4Category && !st.step4CategoryCorrect) return 'Not quite — pick a different category and submit again.';
   return 'Choose the escalation category that fits, then submit.';
 }
+/* Escalation-note example, shown inside the walkthrough tip (not on the page itself) while
+   Step 4's note field is the active thing to fill in, same "See example" mechanism as any
+   other walk.example. Returns null once the item is resolved or has no example to offer. */
+function qzWalkVerifyExample(reviewId) {
+  const r = qzReviewLookup(reviewId);
+  if (!r.noteExample) return null;
+  const st = qzRevGet(reviewId);
+  if (st.resolvedAt) return null;
+  if (st.step3Choice && st.step3Correct && st.step3Choice.indexOf('escalate') === 0) return r.noteExample;
+  return null;
+}
 /* Resolves a step's target: a plain CSS selector string, a function returning an
    Element/selector/null (for steps where WHAT to highlight changes as the trainee acts,
    e.g. "type here" then "click Save once it appears"), or null/undefined. */
@@ -642,6 +699,10 @@ function qzWalkPosition(step, opts) {
   // regardless of which step/target logic is in play.
   const docModal = document.getElementById('qzDocModal');
   const el = (docModal && docModal.classList.contains('open')) ? null : qzWalkResolveTarget(step.walk.target);
+  // skipClick steps are demonstrative only ("here's the button, nothing to actually upload in
+  // this practice") — the real element stays highlighted for reference but must not be
+  // clickable, or the trainee could trigger the real action directly instead of via Next.
+  if (el && step.walk.skipClick && 'disabled' in el) el.disabled = true;
   // Only on step/phase transitions (never on resize/scroll reposition calls, that would
   // fight the trainee's own scrolling): bring the target into view if the review tab's
   // item list has pushed it below the fold, the highlight rect below is computed from
@@ -1053,10 +1114,6 @@ function qzRevSaveCorrection(id) {
   qzRevFinalize(id);
   qzToast('Correction saved.', { tone: 'good' });
 }
-function qzToggleRevExample(id) {
-  const el = document.getElementById('qzRevExample-' + id);
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
 function qzRevSaveEscalation(id) {
   const r = qzReviewLookup(id);
   const catSel = document.getElementById('qzRevCategory-' + id);
@@ -1209,16 +1266,12 @@ function qzRevItemHTML(id) {
     // Step 2/3), re-select it and show why it was wrong instead of resetting the form blank.
     const wrongCategory = st.step4Category && !st.step4CategoryCorrect;
     const catOpts = QZ_ESCALATION_CATEGORIES.map(c => `<option value="${c.id}" ${st.step4Category === c.id ? 'selected' : ''}>${esc(c.label)}</option>`).join('');
-    const exampleHTML = r.noteExample
-      ? `<div class="qz-rv-example-toggle" onclick="qzToggleRevExample('${id}')">See example &rarr;</div>
-         <div class="qz-rv-example" id="qzRevExample-${id}" style="display:none">${esc(r.noteExample)}</div>`
-      : '';
     const wrongNote = wrongCategory ? `<div class="qz-rv-subfeedback bad">&#10007; That's not the right category. Check it and submit again.</div>` : '';
     step4 = `<div class="qz-rv-step active" data-rev-phase="4">
       <div class="qz-rv-step-h">Step 4 &middot; Escalation category</div>
       <div class="qz-form-grid full">
         <div class="qz-field"><label>Category</label><select id="qzRevCategory-${id}"><option value="">Choose a category&hellip;</option>${catOpts}</select></div>
-        <div class="qz-field"><label>Note (not graded, for practice)</label><textarea id="qzRevNote-${id}" placeholder="Describe the discrepancy and why it needs a decision...">${esc(st.note || '')}</textarea>${exampleHTML}</div>
+        <div class="qz-field"><label>Note (not graded, for practice)</label><textarea id="qzRevNote-${id}" placeholder="Describe the discrepancy and why it needs a decision...">${esc(st.note || '')}</textarea></div>
       </div>
       ${wrongNote}
       <div class="qz-rv-actions"><button class="qz-btn sm primary" onclick="qzRevSaveEscalation('${id}')">Submit escalation</button></div>
@@ -1537,7 +1590,7 @@ function qzCommunicationHTML(o) {
     const msgs = qzThreadMessages(active.id).map(m => `<div class="qz-msg ${m.sender === 'You (VA)' ? 'mine' : ''}"><div class="meta">${esc(m.sender)} &rarr; ${esc(m.recipient)} &middot; ${fmtDate(m.date)}</div>${esc(m.body)}</div>`).join('');
     detail = `<div class="qz-panel"><div class="ph"><h4>${esc(active.subject)}</h4></div>
       ${msgs}
-      <div class="qz-reply"><textarea id="qzReplyBox" placeholder="Write a reply..."></textarea>
+      <div class="qz-reply"><textarea id="qzReplyBox" placeholder="Write a reply..." oninput="qzWalkSyncReplyStep()"></textarea>
       <div class="row"><button class="qz-btn" data-comm-action="followup" onclick="qzLogFollowup()">Log Follow-up</button><button class="qz-btn primary" data-comm-action="reply" onclick="qzSendReply(${active.id})">Send Reply</button></div></div>
     </div>`;
   }

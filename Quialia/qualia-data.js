@@ -310,6 +310,19 @@ const QZ_SCENARIOS = [
     // steps (rev-1483-price, rev-1483-inspection) already do this exact comparison for real.
   },
   {
+    id: 'comm-read-context',
+    title: 'What does this thread actually say?',
+    situation: 'Before you reply on Order ORD-2026-1398, look back at the "Closing date delay, final loan docs" thread you just opened. Based on what was actually written there, what is going on?',
+    options: [
+      'Northgate Home Loans confirmed the closing date will hold as scheduled',
+      "Northgate Home Loans is behind and recommends pushing the closing date, and Paula Aragone wants to be kept posted once there's a new date",
+      'The buyer emailed directly asking to cancel the contract',
+      'No closing date has been set on this file yet'
+    ],
+    correct: 1,
+    explanation: "That's what the thread says: the lender told you documents will not be ready before the original date and recommended pushing it, and Paula Aragone asked to be kept posted as soon as there is a new one. Reading the full history before you reply is what lets you respond with the actual facts instead of guessing."
+  },
+  {
     id: 'comm-tone',
     title: 'Choosing the right reply',
     situation: 'You are working Order ORD-2026-1398. The lender told you final loan documents will be late. The selling agent just messaged asking for an update on closing timeline. You do not have a new confirmed date yet.',
@@ -712,6 +725,7 @@ const QZ_LESSONS = [
       { type: 'verify', reviewId: 'rev-1483-vesting', walk: {
           target: () => qzWalkVerifyTarget('rev-1483-vesting'),
           text: () => qzWalkVerifyText('rev-1483-vesting'),
+          example: () => qzWalkVerifyExample('rev-1483-vesting'),
           setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('review'); }
         } }
     ]
@@ -771,8 +785,13 @@ const QZ_LESSONS = [
     steps: [
       { type: 'do', checklistId: 'comm-open', orderId: 'ORD-2026-1398', walk: {
           target: '.qz-thread-item',
-          text: 'Click on a message thread to read the full conversation history before doing anything else.',
+          text: "Click on a message thread to read the full conversation history before doing anything else. (You'll also see a \"Log Follow-up\" button next to Send Reply, that's for later in this lesson.)",
           setup: () => { qzOpenOrder('ORD-2026-1398'); qzOrderTab('communication'); }
+        } },
+      { type: 'decide', scenarioId: 'comm-read-context', walk: {
+          target: null,
+          text: "Before you write a reply, make sure you actually read what's in that thread, not just that you opened it. Answer the question below.",
+          setup: () => qzOpenScenario('comm-read-context')
         } },
       { type: 'do', checklistId: 'comm-reply', orderId: 'ORD-2026-1398', walk: {
           target: () => {
@@ -780,7 +799,22 @@ const QZ_LESSONS = [
             if (box && box.value.trim().length >= 20) return document.querySelector('[data-comm-action="reply"]');
             return box;
           },
-          text: 'Write a professional reply (at least 20 characters) and click Send.',
+          // Live text: matches the target function above, once there's enough written it
+          // stops repeating "write a reply" and confirms it's ready to send instead.
+          text: () => {
+            const box = document.getElementById('qzReplyBox');
+            const len = box ? box.value.trim().length : 0;
+            if (len >= 20) return "That's a good length. Click Send Reply when you're happy with it.";
+            return `Write a professional reply (at least 20 characters) and click Send. ${len ? `(${len} of 20)` : ''}`;
+          },
+          // Also conditional: once there's enough written, the example has done its job and
+          // just clutters the tip next to the "click Send" instruction.
+          example: () => {
+            const box = document.getElementById('qzReplyBox');
+            const len = box ? box.value.trim().length : 0;
+            if (len >= 20) return null;
+            return "Thanks for flagging this, Paula. I'm following up with the lender on the revised timeline now and will share the updated closing date with you and all parties as soon as it's confirmed.";
+          },
           setup: () => { qzOpenOrder('ORD-2026-1398'); qzOrderTab('communication'); }
         } },
       { type: 'decide', scenarioId: 'comm-tone', walk: {
