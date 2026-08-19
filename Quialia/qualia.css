@@ -1,8 +1,14 @@
 /* ===================== QUALIA VA TRAINING SIMULATOR ===================== */
 /* Palette and layout hand-matched against the real screenshots in
    Images-resourses/ (connect.png, core.png, OIP*.webp).
-   Tokens live on :root (not .qz-app) because .qz-doc-modal and .qz-tour are
-   siblings of .qz-app in the DOM, not descendants, so they need access too. */
+   Tokens live on :root (not .qz-app) because .qz-doc-modal, .qz-tour and the
+   shared sim-engine chrome are siblings of .qz-app in the DOM, not descendants,
+   so they need access too.
+   Do not move or delete this block: ~215 declarations across this file read
+   these tokens, and an undefined custom property makes its declaration invalid
+   at computed-value time — `background: var(--qz-green)` silently becomes
+   transparent rather than falling back to anything, which renders white-on-white
+   buttons instead of an obvious error. */
 
 :root {
   --qz-dark: #22252b;
@@ -20,6 +26,9 @@
   --qz-bad: #c94b3f;
   --qz-serif: Georgia, 'Times New Roman', Times, serif;
 }
+
+
+
 
 .qz-app {
   flex: 1;
@@ -49,30 +58,40 @@
 }
 
 /* ---------- Top bar ---------- */
+/* ---------- Qualia Core topbar (dark) ----------
+   Core's shell is a dark charcoal bar carrying the product's seven sections. This is the
+   single strongest recognition cue in the whole product, and the previous white Connect
+   topbar was the main reason the simulator read as the wrong application. */
 .qz-topbar {
   flex: none;
-  background: #ffffff;
-  color: var(--qz-ink);
+  background: var(--qz-dark);
+  color: #e8eaed;
   display: flex;
   align-items: center;
-  gap: 26px;
-  padding: 0 20px;
-  height: 60px;
-  border-bottom: 1px solid var(--qz-line);
+  gap: 22px;
+  padding: 0 18px;
+  height: 56px;
+  border-bottom: 1px solid #171a1f;
+  /* Eight Core sections plus the search pill and four icons do not fit under ~900px. Without
+     this they pushed <html> wider than the viewport, and since scrollIntoView scrolls every
+     scrollable ancestor, the walkthrough then slid the entire page sideways — topbar, rail and
+     all — which read as the layout being broken rather than merely scrolled. */
+  overflow: hidden;
 }
 
 .qz-brand {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-weight: 800;
-  font-size: 16.5px;
-  letter-spacing: -.2px;
+  gap: 7px;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -.3px;
   flex: none;
+  color: #fff;
 }
 
 .qz-brand .mark {
-  height: 28px;
+  height: 24px;
   display: flex;
   align-items: center;
   flex: none;
@@ -81,34 +100,64 @@
 .qz-brand .mark img {
   height: 100%;
   object-fit: contain;
+  display: block;
+}
+
+.qz-brand .wordmark {
+  font-weight: 600;
 }
 
 .qz-tabs {
   display: flex;
-  gap: 24px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--qz-muted);
+  gap: 4px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #b6bcc6;
   height: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Already overflow-x:auto, but a flex item defaults to min-width:auto and so refused to
+     shrink below its content — the scroller could never engage. This is what lets it. */
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.qz-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.qz-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .qz-tabs span {
   cursor: pointer;
   display: flex;
   align-items: center;
-  padding: 0 4px;
+  padding: 0 13px;
   border-bottom: 3px solid transparent;
   white-space: nowrap;
   transition: color .15s, border-color .15s;
 }
 
 .qz-tabs span.active {
-  color: var(--qz-green);
-  border-color: var(--qz-green);
+  color: #fff;
+  font-weight: 600;
+  border-color: var(--qz-ocean);
 }
 
 .qz-tabs span:hover {
-  color: var(--qz-green);
+  color: #fff;
+}
+
+/* Training-only entry: kept visually distinct so it never reads as a Core product section. */
+.qz-tabs span.training {
+  color: var(--qz-gold);
+}
+
+.qz-tabs span.training.active {
+  color: var(--qz-gold);
+  border-color: var(--qz-gold);
 }
 
 .qz-topbar .qz-search {
@@ -116,12 +165,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--qz-bg);
-  border: 1px solid var(--qz-line);
+  background: #fff;
+  border: 1px solid #fff;
   border-radius: 20px;
   padding: 7px 14px;
   gap: 8px;
-  min-width: 200px;
+  min-width: 0;
+  flex: 0 1 230px;
 }
 
 .qz-topbar .qz-search input {
@@ -151,12 +201,60 @@
   flex: none;
 }
 
+.qz-top-icons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: none;
+}
+
+.qz-top-ic {
+  position: relative;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #b6bcc6;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.qz-top-ic:hover {
+  color: #fff;
+}
+
+.qz-top-ic svg {
+  width: 19px;
+  height: 19px;
+}
+
+.qz-top-ic .dot-badge {
+  position: absolute;
+  top: -7px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  background: var(--qz-ocean);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
 .qz-topbar .qz-bell {
   position: relative;
   display: flex;
-  color: var(--qz-muted);
+  color: #b6bcc6;
   flex: none;
   cursor: pointer;
+}
+
+.qz-topbar .qz-bell:hover {
+  color: #fff;
 }
 
 .qz-topbar .qz-bell svg {
@@ -244,9 +342,16 @@
   align-items: center;
   gap: 8px;
   font-size: 12.5px;
-  font-weight: 700;
-  color: var(--qz-ink);
+  font-weight: 600;
+  color: #d6dae0;
   flex: none;
+  cursor: pointer;
+}
+
+.qz-topbar .qz-user .caret {
+  width: 13px;
+  height: 13px;
+  color: #8b929c;
 }
 
 .qz-topbar .qz-user .av {
@@ -370,13 +475,23 @@
   display: block;
 }
 
-.qz-view {
-  display: none;
+/* The order view supplies its own full-bleed Core chrome (dark rail + right panel), so it
+   opts out of .qz-body's page padding rather than sitting inside it as a card. */
+.qz-body.core {
   padding: 0;
+  overflow: hidden;
+  display: flex;
 }
 
-.qz-view.active {
-  display: block;
+.qz-body.core #qzRoot {
+  flex: 1;
+  /* Both min-* resets are load-bearing: a flex item defaults to min-height/min-width:auto, which
+     refuses to shrink below its content. Without min-height the Core rail grows past the viewport
+     and .qz-body (overflow:hidden) clips it; without min-width the 208px rail plus the main panel
+     force #qzRoot wider than .qz-body on narrow screens and the overflow is cut off on the right. */
+  min-height: 0;
+  min-width: 0;
+  display: flex;
 }
 
 .qz-listhead {
@@ -522,11 +637,12 @@
 .qz-lesson-banner {
   background: var(--qz-green);
   color: #fff;
-  border-radius: 9px;
-  padding: 11px 16px;
-  font-size: 12.5px;
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 12px;
   font-weight: 700;
-  margin-bottom: 16px;
+  line-height: 1.4;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -552,19 +668,7 @@
   gap: 10px;
 }
 
-.qz-lesson-step-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border: 1px solid var(--qz-line);
-  border-radius: 9px;
-  padding: 10px 14px;
-}
 
-.qz-lesson-step-row .label {
-  flex: 1;
-  font-size: 13px;
-}
 
 .qz-bar {
   height: 9px;
@@ -584,7 +688,6 @@
 .qz-orders-hero {
   background: linear-gradient(135deg, #1c6b43 0%, #24784e 50%, #155435 100%);
   color: #fff;
-  border-radius: 14px;
   padding: 32px 32px 28px;
   text-align: center;
   margin-bottom: 22px;
@@ -745,106 +848,17 @@ table.qz-tbl td.addr {
   color: var(--qz-ink);
 }
 
-.qz-order-hero {
-  background: linear-gradient(135deg, #1c6b43 0%, #24784e 50%, #155435 100%);
-  color: #fff;
-  border-radius: 14px;
-  padding: 34px 32px 0;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.1);
-  margin-bottom: 22px;
-}
 
-.qz-order-hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: .12;
-  pointer-events: none;
-  background-image: repeating-linear-gradient(115deg, rgba(255, 255, 255, .5) 0 2px, transparent 2px 46px);
-}
 
-.qz-order-hero .ic {
-  width: 34px;
-  height: 34px;
-  margin: 0 auto 10px;
-  position: relative;
-}
 
-.qz-order-hero .ic svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
 
-.qz-order-hero h2 {
-  font-family: var(--qz-serif);
-  font-weight: 700;
-  font-size: clamp(22px, 3vw, 30px);
-  margin: 0 0 10px;
-  color: #fff;
-  position: relative;
-  letter-spacing: -.2px;
-}
 
-.qz-order-hero .qz-badge.dark {
-  position: relative;
-  background: #22252b;
-  text-transform: none;
-  font-size: 12px;
-  padding: 5px 14px;
-  border-radius: 6px;
-  letter-spacing: 0;
-}
 
-.qz-order-hero .ordno {
-  margin: 10px 0 0;
-  font-size: 12.5px;
-  color: #d2edd9;
-  position: relative;
-}
 
-.qz-order-tabs {
-  display: flex;
-  gap: 4px;
-  margin-top: 22px;
-  position: relative;
-  flex-wrap: wrap;
-  justify-content: center;
-}
 
-.qz-order-tabs span {
-  background: transparent;
-  color: #d2edd9;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 11px 18px;
-  cursor: pointer;
-  border-radius: 8px 8px 0 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: background .15s, color .15s;
-}
 
-.qz-order-tabs span .c {
-  background: rgba(255, 255, 255, .22);
-  border-radius: 999px;
-  font-size: 10.5px;
-  padding: 1px 6px;
-}
 
-.qz-order-tabs span.active {
-  background: #fff;
-  color: var(--qz-ink);
-}
 
-.qz-order-tabs span:not(.active):hover {
-  background: rgba(255, 255, 255, .15);
-  color: #fff;
-}
 
 .qz-order-flag {
   margin: 16px 0 0;
@@ -1722,69 +1736,12 @@ table.qz-acct tfoot td {
   margin-bottom: 10px;
 }
 
-/* ---------- Document modal ---------- */
-.qz-doc-modal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(20, 24, 22, .55);
-  z-index: 200;
-  align-items: center;
-  justify-content: center;
-  padding: 30px;
-}
 
-.qz-doc-modal.open {
-  display: flex;
-}
 
-.qz-doc-modal-card {
-  width: 100%;
-  max-width: 860px;
-  height: 100%;
-  max-height: 86vh;
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 30px 70px rgba(10, 15, 12, .35);
-}
 
-.qz-doc-modal-head {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 18px;
-  border-bottom: 1px solid var(--qz-line);
-  font-weight: 800;
-  font-size: 14px;
-  color: var(--qz-ink);
-}
 
-.qz-doc-modal-close {
-  border: none;
-  background: none;
-  font-size: 22px;
-  line-height: 1;
-  color: var(--qz-muted);
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 6px;
-}
 
-.qz-doc-modal-close:hover {
-  background: var(--qz-bg);
-  color: var(--qz-ink);
-}
 
-.qz-doc-modal-card iframe {
-  flex: 1;
-  min-height: 0;
-  border: none;
-  width: 100%;
-}
 
 /* ---------- Guided tour ---------- */
 .qz-tour {
@@ -1877,126 +1834,20 @@ table.qz-acct tfoot td {
   color: #fff;
 }
 
-/* ---------- Interactive lesson walkthrough ----------
-   Unlike .qz-tour (fully click-blocking, used once for onboarding), .qz-walk itself is
-   pointer-events:none so the real app underneath stays clickable everywhere, only the
-   tip card (.qz-walk-tip) opts back in so its own buttons/links work. */
-.qz-walk {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 250;
-  pointer-events: none;
-}
 
-.qz-walk.open {
-  display: block;
-}
 
-.qz-walk-highlight {
-  position: fixed;
-  border-radius: 10px;
-  box-shadow: 0 0 0 9999px rgba(12, 16, 14, .5), 0 0 0 3px var(--qz-ocean);
-  transition: top .3s, left .3s, width .3s, height .3s, opacity .2s;
-  pointer-events: none;
-}
 
-.qz-walk-tip {
-  position: fixed;
-  width: 300px;
-  max-height: 80vh;
-  overflow-y: auto;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 20px 50px rgba(10, 15, 12, .4);
-  padding: 16px;
-  pointer-events: auto;
-  transition: top .3s, left .3s;
-}
 
-.qz-walk-tip b {
-  display: block;
-  font-size: 14.5px;
-  font-weight: 800;
-  color: var(--qz-ink);
-  margin-bottom: 6px;
-}
 
-.qz-walk-dots {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 10px;
-}
 
-.qz-walk-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--qz-line);
-  flex: none;
-}
 
-.qz-walk-dot.done {
-  background: var(--qz-green);
-}
 
-.qz-walk-dot.current {
-  width: 9px;
-  height: 9px;
-  background: #fff;
-  border: 2px solid var(--qz-ocean);
-  margin-top: -1px;
-}
 
-.qz-walk-tip p {
-  margin: 0;
-  font-size: 12.5px;
-  color: var(--qz-muted);
-  line-height: 1.55;
-}
 
-.qz-walk-exit {
-  margin-top: 10px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--qz-muted);
-  cursor: pointer;
-}
 
-.qz-walk-example-toggle {
-  display: inline-block;
-  margin-top: 8px;
-  padding: 5px 12px;
-  font-size: 11.5px;
-  font-weight: 700;
-  font-family: inherit;
-  color: var(--qz-ocean-d);
-  background: #eef6f1;
-  border: 1px solid var(--qz-line);
-  border-radius: 999px;
-  cursor: pointer;
-}
 
-.qz-walk-example-toggle:hover {
-  background: #e2f0e8;
-  border-color: var(--qz-ocean);
-}
 
-.qz-walk-example {
-  margin-top: 6px;
-  padding: 8px 10px;
-  background: var(--qz-bg);
-  border-radius: 7px;
-  font-size: 12px;
-  font-style: italic;
-  color: var(--qz-muted);
-  line-height: 1.5;
-}
 
-.qz-walk-exit:hover {
-  color: var(--qz-bad);
-  text-decoration: underline;
-}
 
 /* ---------- Final exam ---------- */
 .qz-exam-card {
@@ -2061,39 +1912,9 @@ table.qz-acct tfoot td {
   margin-top: 0;
 }
 
-/* ---------- Toast (replaces alert()) ---------- */
-.qz-toast-host {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 300;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 340px;
-}
 
-.qz-toast {
-  background: var(--qz-ink);
-  color: #fff;
-  font-size: 12.5px;
-  line-height: 1.5;
-  padding: 11px 15px;
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(20, 25, 22, .18);
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity .2s, transform .2s;
-}
 
-.qz-toast.show {
-  opacity: 1;
-  transform: translateY(0);
-}
 
-.qz-toast.good {
-  background: var(--qz-green-d);
-}
 
 /* ---------- Responsive ---------- */
 @media (max-width: 980px) {
@@ -2119,10 +1940,6 @@ table.qz-acct tfoot td {
     grid-template-columns: 1fr;
   }
 
-  .qz-order-tabs {
-    justify-content: flex-start;
-    overflow-x: auto;
-  }
 
   .qz-form-grid {
     grid-template-columns: 1fr;
@@ -2132,17 +1949,992 @@ table.qz-acct tfoot td {
     font-size: 12.5px;
   }
 
-  .qz-doc-modal {
-    padding: 0;
-  }
 
-  .qz-doc-modal-card {
-    max-height: 100%;
-    border-radius: 0;
-  }
 
   .qz-tour-tip {
     width: calc(100vw - 28px) !important;
     left: 14px !important;
+  }
+}
+/* ============================================================================
+   Qualia Core layout — order tab strip, dark navigation rail, right-hand panel
+   and the settlement-statement charges grid. These replace the Connect-style
+   green hero + centered tab row, which belonged to the buyer/agent portal
+   rather than the product a title/escrow VA actually works in.
+   ============================================================================ */
+
+/* ---------- multi-order tab strip ---------- */
+/* The strip is the row; .qz-ordertabs is just its left half. The lesson breadcrumb takes the
+   right half, which was previously empty space. */
+.qz-topstrip {
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  background: #e9ebee;
+  border-bottom: 1px solid #d2d6db;
+  padding: 6px 12px 0;
+  min-height: 36px;
+}
+
+.qz-ordertabs {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+/* Pushed right and vertically centred against the tabs, which sit on the strip's baseline. */
+.qz-topstrip #qzLessonBanner {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding-bottom: 6px;
+}
+
+.qz-otab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  max-width: 170px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  color: #5c626b;
+  background: #dfe2e6;
+  border: 1px solid #d2d6db;
+  border-bottom: none;
+  border-radius: 5px 5px 0 0;
+  cursor: pointer;
+}
+
+.qz-otab:hover {
+  background: #e7eaed;
+}
+
+.qz-otab.active {
+  background: #fff;
+  color: var(--qz-ink);
+  font-weight: 600;
+  /* Sits 1px lower so it visually merges with the white content below it. */
+  margin-bottom: -1px;
+  padding-bottom: 8px;
+}
+
+.qz-otab .lbl {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qz-otab .x {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1;
+  color: #9aa0a8;
+  cursor: pointer;
+  flex: none;
+}
+
+.qz-otab .x:hover {
+  color: var(--qz-bad);
+}
+
+/* ---------- three-column order shell ---------- */
+.qz-core {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  background: #fff;
+}
+
+.qz-order-side {
+  flex: none;
+  width: 208px;
+  background: #2b2f36;
+  color: #c7ccd3;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.qz-side-head {
+  padding: 18px 14px 14px;
+  text-align: center;
+  border-bottom: 1px solid #3a3f47;
+}
+
+.qz-side-head .pin {
+  display: block;
+  width: 20px;
+  height: 20px;
+  margin: 0 auto 6px;
+  color: #fff;
+}
+
+.qz-side-head .pin svg {
+  width: 100%;
+  height: 100%;
+}
+
+.qz-side-head .addr {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.3;
+}
+
+.qz-side-head .ono {
+  font-size: 12px;
+  color: #8b929c;
+  margin-top: 2px;
+}
+
+.qz-side-nav {
+  padding-bottom: 24px;
+}
+
+.qz-nav-sec-h {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #8b929c;
+  text-align: center;
+  padding: 16px 14px 6px;
+  margin: 0 12px;
+  border-bottom: 1px solid #3a3f47;
+}
+
+.qz-nav-sec.training .qz-nav-sec-h {
+  color: var(--qz-gold);
+}
+
+.qz-nav-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 5px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.qz-nav-group svg {
+  width: 13px;
+  height: 13px;
+  color: #8b929c;
+}
+
+.qz-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  font-size: 12.5px;
+  color: #a9afb8;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+
+.qz-nav-item .t {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qz-nav-item:hover {
+  color: #fff;
+  background: #333840;
+}
+
+.qz-nav-item.active {
+  color: var(--qz-ocean);
+  font-weight: 600;
+  border-left-color: var(--qz-ocean);
+  background: #23272d;
+}
+
+/* Sections of Core the training does not implement: visible, dimmer, and they answer
+   with an explanation instead of behaving like a broken link. */
+.qz-nav-item.stub {
+  color: #7b818a;
+}
+
+.qz-nav-item.stub:hover {
+  color: #a9afb8;
+}
+
+.qz-nav-item .ic {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  display: flex;
+}
+
+.qz-nav-item .ic svg {
+  width: 100%;
+  height: 100%;
+}
+
+.qz-nav-item .bdg {
+  flex: none;
+  min-width: 20px;
+  padding: 1px 4px;
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 3px;
+  background: #3f454e;
+  color: #c7ccd3;
+}
+
+.qz-nav-item.active .bdg {
+  background: var(--qz-ocean);
+  color: #fff;
+}
+
+.qz-nav-item .cnt {
+  flex: none;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 999px;
+  background: var(--qz-amber);
+  color: #22252b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- main content column ---------- */
+.qz-order-main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  background: #fff;
+  padding: 0 0 40px;
+}
+
+.qz-sec-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 24px 14px;
+  flex-wrap: wrap;
+}
+
+.qz-sec-head .ic {
+  width: 26px;
+  height: 26px;
+  color: var(--qz-ink);
+  flex: none;
+}
+
+.qz-sec-head .ic svg {
+  width: 100%;
+  height: 100%;
+}
+
+.qz-sec-head h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -.3px;
+}
+
+.qz-sec-badge {
+  background: var(--qz-ocean);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 3px 9px;
+}
+
+.qz-training-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--qz-amber);
+  border: 1px solid var(--qz-amber);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.qz-sec-addr {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--qz-muted);
+}
+
+.qz-order-body {
+  padding: 0 24px;
+}
+
+/* ---------- right-hand panel ---------- */
+.qz-order-panel {
+  flex: none;
+  width: 268px;
+  border-left: 1px solid var(--qz-line);
+  background: #fbfbfc;
+  overflow-y: auto;
+  padding-bottom: 30px;
+}
+
+.qz-panel-sec-h {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 11px 14px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--qz-muted);
+  cursor: pointer;
+  border-bottom: 1px solid var(--qz-line);
+  user-select: none;
+}
+
+.qz-panel-sec-h .cv {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  transform: rotate(-90deg);
+  transition: transform .15s;
+}
+
+.qz-panel-sec.open .qz-panel-sec-h .cv {
+  transform: rotate(0deg);
+}
+
+.qz-panel-count {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--qz-muted);
+  background: var(--qz-bg);
+  border: 1px solid var(--qz-line);
+  border-radius: 3px;
+  padding: 1px 6px;
+  letter-spacing: 0;
+}
+
+.qz-panel-sec-b {
+  padding: 10px 14px 14px;
+  border-bottom: 1px solid var(--qz-line);
+}
+
+.qz-presence {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: #9aa0a8;
+  padding: 3px 0;
+}
+
+.qz-presence.on {
+  color: var(--qz-ink);
+}
+
+.qz-presence .d {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c9ced4;
+  flex: none;
+}
+
+.qz-presence.on .d {
+  background: var(--qz-ocean);
+}
+
+.qz-presence .n {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qz-presence .r {
+  font-size: 10.5px;
+  color: #a8adb5;
+  flex: none;
+}
+
+.qz-panel-task {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--qz-line);
+  cursor: pointer;
+}
+
+.qz-panel-task:last-child {
+  border-bottom: none;
+}
+
+.qz-panel-task:hover .tt {
+  color: var(--qz-green);
+}
+
+.qz-panel-task .tt {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.qz-panel-empty,
+.qz-panel-help {
+  font-size: 12px;
+  color: var(--qz-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.qz-kb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  border: 1px solid var(--qz-line);
+  border-radius: 5px;
+  padding: 6px 9px;
+  background: #fff;
+}
+
+.qz-kb svg {
+  width: 13px;
+  height: 13px;
+  color: var(--qz-muted);
+  flex: none;
+}
+
+.qz-kb input {
+  border: none;
+  outline: none;
+  background: none;
+  font-family: inherit;
+  font-size: 12px;
+  flex: 1;
+  min-width: 0;
+  color: var(--qz-ink);
+}
+
+.qz-kb-btns {
+  display: flex;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.qz-kb-btns .qz-btn {
+  flex: 1;
+}
+
+.qz-note-box {
+  width: 100%;
+  min-height: 130px;
+  resize: vertical;
+  border: 1px solid var(--qz-line);
+  border-radius: 5px;
+  padding: 8px 9px;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--qz-ink);
+  outline: none;
+  margin-bottom: 8px;
+}
+
+.qz-note-box:focus {
+  border-color: var(--qz-ocean);
+}
+
+/* ---------- settlement statement charges grid ---------- */
+.qz-tbl-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.qz-acct-grid {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.qz-acct-grid th {
+  font-weight: 600;
+  color: var(--qz-ink);
+  text-align: center;
+  padding: 8px 10px;
+  border: 1px solid var(--qz-line);
+  background: #fff;
+  white-space: nowrap;
+}
+
+.qz-acct-grid tr.grp th {
+  border-top: none;
+}
+
+.qz-acct-grid tr.grp th:first-child {
+  border-left: none;
+  border-top: none;
+  border-bottom: none;
+}
+
+.qz-acct-grid th.ln {
+  width: 34px;
+  border-left: none;
+  border-top: none;
+}
+
+.qz-acct-grid td {
+  padding: 9px 10px;
+  border: 1px solid var(--qz-line);
+  vertical-align: middle;
+}
+
+.qz-acct-grid td.ln {
+  width: 34px;
+  text-align: center;
+  color: var(--qz-muted);
+  font-variant-numeric: tabular-nums;
+  border-left: none;
+  background: #fafbfb;
+}
+
+.qz-acct-grid tbody tr:first-child td.ln {
+  color: var(--qz-green);
+  font-weight: 700;
+}
+
+.qz-acct-grid td.desc {
+  min-width: 210px;
+}
+
+.qz-acct-grid td.payee {
+  color: var(--qz-green);
+  min-width: 150px;
+}
+
+.qz-acct-grid td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  min-width: 96px;
+}
+
+.qz-acct-grid td.num.has {
+  background: #f4f9f6;
+}
+
+.qz-acct-grid tr.empty td {
+  height: 34px;
+}
+
+.qz-acct-grid tfoot td {
+  font-weight: 700;
+  background: #f7f8f9;
+}
+
+.qz-acct-grid tfoot td.tl {
+  text-align: right;
+  letter-spacing: .6px;
+  font-size: 11.5px;
+  color: var(--qz-muted);
+  border-left: none;
+}
+
+/* ---------- due-date / urgency chips ---------- */
+.qz-due {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 1px 7px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.qz-due.overdue {
+  background: #fbe9e7;
+  color: var(--qz-bad);
+}
+
+.qz-due.today,
+.qz-due.soon {
+  background: #fdf0d8;
+  color: #97690f;
+}
+
+.qz-due.far {
+  background: var(--qz-bg);
+  color: var(--qz-muted);
+}
+
+.qz-due-context {
+  font-size: 12px;
+  color: var(--qz-muted);
+  margin-bottom: 12px;
+  padding: 8px 11px;
+  background: var(--qz-bg);
+  border-radius: 6px;
+}
+
+.qz-field.wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1180px) {
+  .qz-order-panel {
+    display: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .qz-order-side {
+    width: 168px;
+  }
+}
+
+/* ---------- Narrow screens: the order rail becomes an overlay drawer ----------
+   Even at its 168px width the rail plus a readable content column overflows .qz-body, which
+   is overflow:hidden — the excess was silently cut off on the right with no way to scroll to
+   it. Below this breakpoint the rail leaves the flex flow entirely and slides over the
+   content instead, so the main column always gets the full width. */
+.qz-rail-toggle {
+  display: none;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-right: 4px;
+  padding: 0;
+  border: 1px solid var(--qz-line);
+  border-radius: 7px;
+  background: var(--qz-card);
+  color: var(--qz-ink);
+  cursor: pointer;
+}
+
+.qz-rail-toggle svg {
+  width: 17px;
+  height: 17px;
+}
+
+.qz-rail-toggle:hover {
+  background: var(--qz-bg);
+}
+
+.qz-rail-scrim {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .qz-rail-toggle {
+    display: inline-flex;
+  }
+
+  .qz-core {
+    position: relative;
+  }
+
+  .qz-order-side {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 40;
+    width: 232px;
+    transform: translateX(-100%);
+    transition: transform .18s ease;
+    box-shadow: 2px 0 14px rgba(0, 0, 0, .28);
+  }
+
+  .qz-core.rail-open .qz-order-side {
+    transform: none;
+  }
+
+  .qz-core.rail-open .qz-rail-scrim {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    background: rgba(0, 0, 0, .38);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qz-order-side {
+    transition: none;
+  }
+}
+
+/* ============================================================================
+   reconcile + compose mechanics, and the timed exam chrome.
+   ============================================================================ */
+.qz-rec-item {
+  border-left: 3px solid var(--qz-ocean);
+}
+
+.qz-rec-docs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.qz-rec-docs .qz-btn.opened {
+  border-color: var(--qz-ocean);
+  color: var(--qz-green);
+}
+
+.qz-rec-step {
+  border-top: 1px solid var(--qz-line);
+  padding: 14px 0 4px;
+}
+
+.qz-rec-locked {
+  font-size: 12px;
+  color: var(--qz-muted);
+  font-style: italic;
+  margin-top: 6px;
+}
+
+.qz-rec-grid {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  margin-top: 10px;
+}
+
+.qz-rec-grid th {
+  text-align: left;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--qz-muted);
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--qz-line);
+  white-space: nowrap;
+}
+
+.qz-rec-grid td {
+  padding: 10px 9px;
+  border-bottom: 1px solid var(--qz-line);
+  vertical-align: top;
+}
+
+.qz-rec-grid td.fld {
+  min-width: 190px;
+}
+
+.qz-rec-grid td.fld b {
+  display: block;
+  font-size: 13px;
+}
+
+.qz-rec-grid td.fld .on-order {
+  display: block;
+  font-size: 11.5px;
+  color: var(--qz-muted);
+  margin-top: 3px;
+}
+
+.qz-rec-sel {
+  width: 100%;
+  min-width: 150px;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 6px 7px;
+  border: 1px solid var(--qz-line);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--qz-ink);
+}
+
+.qz-rec-sel.ok,
+.qz-rec-typed input.ok {
+  border-color: var(--qz-ocean);
+  background: #f2f9f5;
+}
+
+.qz-rec-sel.bad,
+.qz-rec-typed input.bad {
+  border-color: var(--qz-bad);
+  background: #fdf3f2;
+}
+
+.qz-rec-typed {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.qz-rec-typed input {
+  flex: 1;
+  min-width: 90px;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 6px 7px;
+  border: 1px solid var(--qz-line);
+  border-radius: 5px;
+  outline: none;
+  color: var(--qz-ink);
+}
+
+.qz-rec-na {
+  font-size: 11.5px;
+  color: var(--qz-muted);
+}
+
+.qz-rec-decide-h {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--qz-muted);
+  margin-bottom: 7px;
+}
+
+.qz-rec-follow {
+  margin-top: 10px;
+  padding: 11px 12px;
+  background: var(--qz-bg);
+  border-radius: 7px;
+}
+
+.qz-rec-follow label {
+  display: block;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--qz-muted);
+  margin: 6px 0 4px;
+}
+
+.qz-rec-follow input,
+.qz-rec-follow select,
+.qz-rec-follow textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: 12.5px;
+  padding: 7px 9px;
+  border: 1px solid var(--qz-line);
+  border-radius: 5px;
+  outline: none;
+  background: #fff;
+  color: var(--qz-ink);
+  margin-bottom: 8px;
+}
+
+.qz-rec-follow textarea {
+  min-height: 74px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.qz-rec-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  border-top: 1px solid var(--qz-line);
+  margin-top: 6px;
+}
+
+.qz-rec-hint {
+  font-size: 11.5px;
+  color: var(--qz-muted);
+}
+
+/* ---------- compose ---------- */
+.qz-compose-thread {
+  background: var(--qz-bg);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 12px 0;
+}
+
+.qz-compose-box {
+  width: 100%;
+  min-height: 150px;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  padding: 11px 13px;
+  border: 1px solid var(--qz-line);
+  border-radius: 7px;
+  outline: none;
+  color: var(--qz-ink);
+  margin-bottom: 10px;
+}
+
+.qz-compose-box:focus {
+  border-color: var(--qz-ocean);
+}
+
+.qz-compose-box:disabled {
+  background: var(--qz-bg);
+  color: var(--qz-muted);
+}
+
+/* ---------- exam clock ---------- */
+.qz-exam-clock {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  background: rgba(255, 255, 255, .18);
+  border-radius: 5px;
+  padding: 2px 9px;
+}
+
+.qz-exam-clock.low {
+  background: var(--qz-bad);
+  color: #fff;
+}
+
+.qz-exam-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Narrow screens: the breadcrumb gives up its text before the order tabs give up theirs —
+   the tab labels are how you tell two open files apart, the breadcrumb is a shortcut. */
+@media (max-width: 760px) {
+  .qz-lesson-banner {
+    max-width: 42vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Under ~900px the search pill is the first thing to go: the Core sections and the bell are
+   what a trainee actually needs from this bar, and search is reachable from the Orders list. */
+@media (max-width: 900px) {
+  .qz-topbar .qz-search {
+    display: none;
+  }
+
+  .qz-topbar {
+    gap: 14px;
   }
 }

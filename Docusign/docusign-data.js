@@ -1,6 +1,15 @@
 /* DocuSign VA Training Simulator — Data Models & Scenarios.
    100% frontend static mock data. No real backend, no real DocuSign API/account. */
 
+/* The simulator's "today". Every date in the dataset is positioned relative to this anchor
+   so envelope ages and expirations stay internally coherent. Anything that quotes a countdown
+   reads it from here rather than hardcoding a number into prose. */
+const DS_TODAY = '2026-08-12';
+
+/* Lessons: populated in Phase D. The engine reads this from SimEngine.init(), so the
+   array must exist before docusign-app.js calls init(). */
+const DS_LESSONS = [];
+
 const DS_BRAND_NAVY = '#002738';
 const DS_BRAND_YELLOW = '#ffc400';
 const DS_BRAND_BLUE = '#0066cc';
@@ -36,13 +45,15 @@ const DS_ENVELOPES = [
     type: 'HR / Onboarding',
     sender: 'Alex Rivera (VA)',
     status: 'waiting',
+    deliveryStatus: 'failed',
+    statusNote: 'Delivery Failed — bounce received from invalid domain gmial.com',
     createdDate: '2026-08-11',
     closingDate: '2026-08-25',
     documents: [
       { id: 'doc-3', name: 'Independent_Contractor_Agreement.pdf', pages: 4 }
     ],
     recipients: [
-      { id: 'r4', role: 'Contractor', name: 'David Miller', email: 'david.m.freelance@gmial.com', status: 'waiting', action: 'Needs to Sign', order: 1 }
+      { id: 'r4', role: 'Contractor', name: 'David Miller', email: 'david.m.freelance@gmial.com', status: 'waiting', deliveryStatus: 'failed', action: 'Needs to Sign', order: 1 }
     ],
     fields: [
       { id: 'f5', type: 'Signature', recipientId: 'r4', page: 4, label: 'Contractor Signature', required: true, value: null },
@@ -178,66 +189,66 @@ const DS_SCENARIOS = [
   {
     id: 'ds_scen_1',
     title: 'Scenario 1: "The client says they never received the email"',
-    situation: 'Your client emails you saying: "John Smith claims he never received the DocuSign email for the Purchase Agreement sent yesterday." What is your FIRST step as a Virtual Assistant?',
+    situation: 'Your supervising agent contacts you: "The buyer, John Smith, claims he never received the DocuSign email for the Purchase Agreement we sent yesterday afternoon." What is your first action as a real estate VA?',
     options: [
-      'Immediately create a brand new envelope and send it again to John Smith.',
-      'Open the Manage tab, inspect Envelope ENV-2026-9041, check the recipient status and email address, and click "Resend".',
-      'Tell the manager that DocuSign is down and ask John to print and sign manually.',
-      'Void the envelope immediately and delete all documents from the system.'
+      'Open the Manage tab, locate Envelope ENV-2026-9041, check the recipient email address for typos, verify envelope status, and click "Resend" if correct.',
+      'Immediately create a brand new envelope and send a duplicate contract so the client is not kept waiting.',
+      'Advise the supervising agent to download the document and request a wet-ink signature in person.',
+      'Void the envelope immediately with the reason "Client reported non-receipt" and draft a replacement.'
     ],
-    correct: 1,
-    explanation: 'Always inspect the in-progress envelope first! Check whether the email address has a typo or if it is sitting in "Waiting for Others". If the email is correct, clicking "Resend" re-triggers the notification without creating duplicate envelopes.'
+    correct: 0,
+    explanation: 'Always inspect the in-flight envelope first. Check whether there was an email typo, if the envelope is waiting on a prior signer in a sequential order, or if it is currently in "Waiting for Others". If the address is verified, clicking "Resend" re-triggers the notification without creating confusing duplicate envelopes.'
   },
   {
     id: 'ds_scen_2',
-    title: 'Scenario 2: Typo in Recipient Email (gmial.com)',
-    situation: 'You sent an Independent Contractor Agreement to David Miller, but you just noticed the envelope status says "Delivery Failed" because the email address was entered as "david.m.freelance@gmial.com". The envelope is already sent. What should you do?',
+    title: 'Scenario 2: Correcting a Typo in a Recipient Email',
+    situation: 'You sent an Independent Contractor Agreement to vendor David Miller, but you notice the envelope status indicates delivery bounced because his email was entered as "david.m.freelance@gmial.com". The envelope is already in flight. What is the proper procedure?',
     options: [
-      'Create a brand new envelope from scratch and send it to the correct email.',
-      'Open the envelope in Manage → Select "Correct" → Update the email address to "@gmail.com" → Save & Resend.',
-      'Delete the envelope from the archives and ignore the error.',
-      'Email David from your personal Gmail with a PDF attachment.'
+      'Download the PDF, email it directly to David from your inbox, and ask him to sign and email back.',
+      'Open the envelope in Manage → Select "Correct" → Update the recipient email address to "@gmail.com" → Save & Resend.',
+      'Void the envelope and create a new one from scratch, since recipient details cannot be changed once an envelope is sent.',
+      'Wait 24 hours to see if the mail server automatically routes the message to the correct domain.'
     ],
     correct: 1,
-    explanation: 'DocuSign includes an in-flight "Correct" feature! You do NOT need to recreate the envelope. Simply select Correct on the envelope, fix the email typo, and click Save/Send.'
+    explanation: 'DocuSign includes an in-flight "Correct" feature for active envelopes. You do NOT need to recreate or void the envelope. Simply open the envelope, choose Correct, update the recipient email address, and resend.'
   },
   {
     id: 'ds_scen_3',
-    title: 'Scenario 3: Outdated Contract Must NOT Be Signed',
-    situation: 'Your manager calls you: "The contract we sent to Robert Vance 2 hours ago has the wrong purchase price! We must stop him from signing it immediately." What action should you perform?',
+    title: 'Scenario 3: Outdated Terms on a Sent Agreement',
+    situation: 'Ten minutes after sending a purchase agreement to buyer Robert Vance, the listing agent informs you that the seller updated the purchase price terms and the sent document is invalid. Robert has not opened or signed the document yet. What should you do immediately?',
     options: [
-      'Click "Delete" to archive the envelope in your dashboard.',
-      'Select the envelope in Manage → Click "Void" → Enter the reason: "Superceded by updated contract price" → Confirm Void.',
-      'Wait for Robert to sign it and then change the price in PDF editor later.',
-      'Change your password in DocuSign.'
+      'Archive the envelope to remove it from your active inbox filter.',
+      'Send a reminder email asking Robert to disregard the dollar figure on the document.',
+      'Open the envelope in Manage → Click "Void" → Enter the reason: "Superseded by updated contract terms" → Confirm Void.',
+      'Wait until Robert signs it, then attach an addendum modifying the terms in the final signed copy.'
     ],
-    correct: 1,
-    explanation: 'Voiding an envelope instantly revokes all signing links and prevents any recipient from completing signature. Deleting or archiving only hides the record from your view; it does NOT stop the recipient from signing. Always Void an invalid envelope!'
+    correct: 2,
+    explanation: 'Voiding an envelope instantly revokes all signing links and renders the document unsigned and non-executable. Archiving or deleting only removes the item from your view—it does not prevent the recipient from signing. Always void an erroneous contract immediately with a clear reason.'
   },
   {
     id: 'ds_scen_4',
-    title: 'Scenario 4: Follow-up on Missing Signatures',
-    situation: 'You sent a Purchase Agreement 2 days ago. John Smith signed on Day 1, but Sarah Johnson has not signed yet and the closing date is approaching. What is the recommended VA workflow?',
+    title: 'Scenario 4: Managing Stalled Sequential Signatures',
+    situation: 'A 2-party purchase agreement was sent with sequential signing order: Buyer John Smith (Order 1) and Seller Sarah Johnson (Order 2). John signed 24 hours ago, but Sarah has not signed and the closing deadline is approaching. Sarah calls saying she checked her inbox and found no DocuSign email. What is the likely cause and resolution?',
     options: [
-      'Void the envelope and re-send to Sarah only.',
-      'Check envelope status → Verify Sarah is listed as "Waiting" → Click "Send Reminder" → Notify the manager/agent of the status.',
-      'Call Sarah and ask for her credit card number.',
-      'Do nothing; DocuSign will automatically sign for her after 48 hours.'
+      'John must have used the wrong signature type; you must void and re-send the entire agreement.',
+      'Sarah was configured as Order 2, so her email notification was sent only after John completed his signature; verify her spam folder and send a reminder if needed.',
+      'Sequential routing failed because DocuSign requires all signers to share order 1; convert the envelope to parallel routing.',
+      'DocuSign envelopes expire automatically after 24 hours, so the envelope has already timed out.'
     ],
     correct: 1,
-    explanation: 'Check status to confirm who is blocking completion. Sending a manual reminder re-notifies the pending recipient gently. If urgent, escalate to the agent with clear status details.'
+    explanation: 'In sequential signing order, Order 2 recipients only receive their notification once Order 1 finishes signing. Since John completed Day 1, Sarah received her email only then. Checking her spam/junk folder and sending a reminder from Manage is the standard procedure.'
   },
   {
     id: 'ds_scen_5',
-    title: 'Scenario 5 (Final Exam): Complete Real Estate Transaction Workflow',
-    situation: 'You are handling a new transaction for 123 Main Street. Requirements: Buyer (John) must sign FIRST, Seller (Sarah) must sign SECOND, Agent (Michael) receives a CC copy upon completion. You have uploaded the Purchase Agreement. How do you configure the recipients & signing order?',
+    title: 'Scenario 5: Multi-Party Transaction Routing Setup',
+    situation: 'You are preparing an envelope for 123 Main Street with three parties: Buyer (John Smith) who must review and sign first, Seller (Sarah Johnson) who signs only after the buyer signs, and Closing Attorney (Michael Brown) who needs an automatic copy of the completed agreement for the file. How should this envelope be configured?',
     options: [
-      'Set John = 1 (Signer), Sarah = 1 (Signer), Michael = 1 (Signer).',
-      'Enable "Set signing order" → John = Order 1 (Needs to Sign), Sarah = Order 2 (Needs to Sign), Michael = Order 3 (Receives a Copy).',
-      'Send 3 separate emails with 3 separate PDFs to each person.',
-      'Set Michael = Order 1 (Needs to Sign), John = Order 2 (CC), Sarah = Order 3 (CC).'
+      'Parallel order: John (Order 1, Needs to Sign), Sarah (Order 1, Needs to Sign), Michael (Order 1, Needs to Sign).',
+      'Sequential order: John (Order 1, Needs to Sign), Sarah (Order 2, Needs to Sign), Michael (Order 3, Needs to Sign).',
+      'Create two separate envelopes: one for John and Sarah, and another forwarded manually to Michael.',
+      'Sequential order: John (Order 1, Needs to Sign), Sarah (Order 2, Needs to Sign), Michael (Order 3, Receives a Copy).'
     ],
-    correct: 1,
-    explanation: 'Sequential signing order (Order 1 -> Order 2 -> Order 3) guarantees John signs first before Sarah receives the notification. Setting Michael as "Receives a Copy" (CC) ensures the agent automatically receives the final executed copy once all signatures are complete!'
+    correct: 3,
+    explanation: 'Setting John as Order 1 (Needs to Sign) and Sarah as Order 2 (Needs to Sign) enforces the required signing sequence. Setting Michael as Order 3 with the action "Receives a Copy" (CC) ensures he automatically receives the fully executed package upon completion without blocking the signing workflow.'
   }
 ];

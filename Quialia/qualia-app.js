@@ -18,11 +18,23 @@ const QZ_ICONS = {
 const QZ_LS_KEY = 'qz_va_training_v2';
 const QZ_STORE_DEFAULTS = {
   checklist: {}, scenarios: {}, docStatus: {}, taskStatus: {}, reviews: {},
-  overrides: {}, lessons: {}, replies: {}, tourSeen: false, exam: null
+  reconciles: {}, composes: {},
+  overrides: {}, replies: {}, notes: {}, tourSeen: false, exam: null,
+  // Which lessons have ever been finished. Gating reads this instead of live progress,
+  // so restarting a lesson to replay it cannot re-lock the ones after it.
+  lessonsDone: {},
+  shuffleSalt: null
 };
 function qzDefaultStore() { return JSON.parse(JSON.stringify(QZ_STORE_DEFAULTS)); }
 let qzStore = qzDefaultStore();
-let qzState = { view: 'dashboard', orderId: null, orderTab: 'overview', deTab: 'property', threadId: null, scenarioId: null, orderFilter: '', lessonId: null, examIndex: 0 };
+let qzState = {
+  view: 'dashboard', orderId: null, orderTab: 'overview', deTab: 'property', threadId: null,
+  scenarioId: null, orderFilter: '', lessonId: null, examIndex: 0,
+  railOpen: false,     // narrow-screen only: is the order rail showing as an overlay drawer?
+  openOrders: [],      // Core keeps several files open at once (see qzRenderOrderTabs)
+  orderViews: {},      // per-order view state, so switching tabs restores where you were
+  panel: { chat: true, tasks: true, help: true, notes: false }
+};
 
 function qzLoad() {
   try {
@@ -43,7 +55,7 @@ function qzMark(id) {
   // the trainee may have completed this checklist item in an earlier session/attempt, and the
   // walkthrough always starts a lesson at step 0 without skipping steps already done, redoing
   // the action must still be able to advance it instead of going silently unheard.
-  const step = (typeof qzWalk !== 'undefined' && qzWalk) ? qzWalkCurrentStep() : null;
+  const step = (SimEngine.walkActive()) ? SimEngine.currentStep() : null;
   const walkActiveOnThis = step && step.type === 'do' && step.checklistId === id;
   if (!alreadyDone || walkActiveOnThis) qzNotifyStepDone(id);
 }
@@ -58,21 +70,25 @@ function qzNotifyStepDone(checklistId) {
   const step = l.steps.find(s => s.type === 'do' && s.checklistId === checklistId);
   if (!step) return;
 
-  if (typeof qzWalk !== 'undefined' && qzWalk && qzWalk.lessonId === l.id && l.steps[qzWalk.stepIndex] === step) {
-    qzWalkStepDone();
+  if (SimEngine.walkActive() && SimEngine.currentStep() === step) {
+    SimEngine.stepCompleted();
     return;
   }
 
   const label = qzLessonStepLabel(step);
-  const prog = qzLessonProgress(l);
-  if (prog.complete) qzToast(`Lesson ${l.number} complete! Use the banner above to head back and unlock the next lesson.`, { tone: 'good', duration: 5000 });
-  else qzToast(`"${label}" done, ${prog.done} of ${prog.total} steps in Lesson ${l.number}.`, { tone: 'good' });
+  const prog = SimEngine.progress(l);
+  if (prog.complete) simToast(`Lesson ${l.number} complete! Use the banner above to head back and unlock the next lesson.`, { tone: 'good', duration: 5000 });
+  else simToast(`"${label}" done, ${prog.done} of ${prog.total} steps in Lesson ${l.number}.`, { tone: 'good' });
   qzRenderLessonBanner();
 }
 function qzResetProgress() { localStorage.removeItem(QZ_LS_KEY); }
 
-function esc(s) { return String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c])); }
-function escAttr(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+/* esc/escAttr are bound from the shared engine rather than redefined — the project keeps
+   exactly one definition of each (assets/js/sim-engine.js), while the short local names
+   stay usable at the several hundred call sites in this file. */
+const esc = SimEngine.esc;
+const escAttr = SimEngine.escAttr;
+
 function fmtMoney(n) { return '$' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function fmtDate(iso) {
   if (!iso || iso === '—') return '—';
@@ -81,18 +97,128 @@ function fmtDate(iso) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-/* ---------- non-blocking toast (replaces alert()) ---------- */
-function qzToast(msg, opts) {
-  const host = document.getElementById('qzToastHost');
-  if (!host) { return; }
-  const el = document.createElement('div');
-  el.className = 'qz-toast' + (opts && opts.tone ? ' ' + opts.tone : '');
-  el.textContent = msg; // textContent, not innerHTML — no HTML-escaping needed or wanted here
-  host.appendChild(el);
-  requestAnimationFrame(() => el.classList.add('show'));
-  const duration = (opts && opts.duration) || 3200;
-  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 250); }, duration);
+/* ---------- deterministic option shuffling ----------
+   Every multiple choice in the project used to render its options in authoring order, and
+   the correct one was written second far more often than not — across the whole item bank,
+   "always answer B" scored higher than reading the questions. Position is now decided by a
+   PRNG seeded on the item's id plus a per-session salt, so:
+     - the same question keeps the same order while you're looking at it (no reshuffle on
+       every re-render, which would move an option out from under the cursor),
+     - a different attempt gets a different order (the salt is regenerated on exam start
+       and on exam reset), and
+     - authoring order carries no signal at all.
+   Handlers still receive the REAL index/id, so grading never has to unmap anything. */
+function qzHashString(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
 }
+function qzMulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function qzShuffleSalt() {
+  if (!qzStore.shuffleSalt) {
+    qzStore.shuffleSalt = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    qzSave();
+  }
+  return qzStore.shuffleSalt;
+}
+function qzNewShuffleSalt() {
+  qzStore.shuffleSalt = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  qzSave();
+}
+/* Returns an array `order` of length n where order[displayedPosition] === originalIndex. */
+function qzOptionOrder(itemId, n) {
+  const rand = qzMulberry32(qzHashString(String(itemId) + '|' + qzShuffleSalt()));
+  const order = [];
+  for (let i = 0; i < n; i++) order.push(i);
+  for (let i = n - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+  }
+  return order;
+}
+/* Development check for B-1's acceptance criterion: with the current salt, how often does
+   the correct answer land in each displayed position across the whole bank? No position
+   should dominate. Call qzAnswerDistribution() from the console. */
+function qzAnswerDistribution() {
+  const counts = [0, 0, 0, 0], rows = [];
+  const record = (id, correctRealIdx, n) => {
+    const order = qzOptionOrder(id, n);
+    const shown = order.indexOf(correctRealIdx);
+    if (shown > -1 && shown < counts.length) counts[shown]++;
+    rows.push({ id, shownAt: 'ABCD'[shown] });
+  };
+  QZ_SCENARIOS.forEach(s => record('scenario:' + s.id, s.correct, s.options.length));
+  if (typeof QZ_EXAM_BANK !== 'undefined') {
+    QZ_EXAM_BANK.forEach(i => {
+      if (i.type === 'decide') record('scenario:' + i.id, i.correct, i.options.length);
+      if (i.type === 'verify') {
+        const real = i.sourceOptions.findIndex(o => o.id === i.rightSourceOptionId);
+        record('rev2:' + i.id, real, i.sourceOptions.length);
+      }
+    });
+  }
+  QZ_REVIEWS.forEach(r => {
+    const real = r.sourceOptions.findIndex(o => o.id === r.rightSourceOptionId);
+    record('rev2:' + r.id, real, r.sourceOptions.length);
+  });
+  const total = counts.reduce((a, b) => a + b, 0);
+  const pct = counts.map(c => Math.round(c / total * 100));
+  return { total, counts, percentByPosition: { A: pct[0], B: pct[1], C: pct[2], D: pct[3] }, max: Math.max.apply(null, pct), rows };
+}
+
+/* ---------- "today" and due-date arithmetic ----------
+   Everything time-related is measured against QZ_TODAY, never against the real clock: the
+   dataset is a fixed snapshot, so a real Date.now() would drift it into nonsense within
+   days of writing it. Lesson content that quotes a countdown ("closing is in N days") calls
+   these instead of hardcoding a number that the data can silently contradict later. */
+function qzDaysFromToday(iso) {
+  if (!iso || iso === '—') return null;
+  const d = new Date(iso + 'T00:00:00'), t = new Date(QZ_TODAY + 'T00:00:00');
+  if (isNaN(d)) return null;
+  return Math.round((d - t) / 86400000);
+}
+/* Business days, ignoring holidays — enough for "closing is in N business days" copy. */
+function qzBusinessDaysFromToday(iso) {
+  const total = qzDaysFromToday(iso);
+  if (total === null || total < 0) return total;
+  let count = 0;
+  const cur = new Date(QZ_TODAY + 'T00:00:00');
+  for (let i = 0; i < total; i++) {
+    cur.setDate(cur.getDate() + 1);
+    const day = cur.getDay();
+    if (day !== 0 && day !== 6) count++;
+  }
+  return count;
+}
+function qzDaysPhrase(iso) {
+  const n = qzDaysFromToday(iso);
+  if (n === null) return 'no date set';
+  if (n < 0) return `${Math.abs(n)} day${Math.abs(n) === 1 ? '' : 's'} ago`;
+  if (n === 0) return 'today';
+  if (n === 1) return 'tomorrow';
+  return `in ${n} days`;
+}
+/* Small colored chip for task/document tables: overdue, due today, due soon, or neutral. */
+function qzDueChipHTML(iso) {
+  const n = qzDaysFromToday(iso);
+  if (n === null) return '';
+  let cls = 'far', text;
+  if (n < 0) { cls = 'overdue'; text = `${Math.abs(n)}d overdue`; }
+  else if (n === 0) { cls = 'today'; text = 'due today'; }
+  else if (n <= 3) { cls = 'soon'; text = `in ${n}d`; }
+  else text = `in ${n}d`;
+  return `<span class="qz-due ${cls}">${text}</span>`;
+}
+
+
 
 /* ---------- data lookups (respect in-session overrides) ---------- */
 function qzDocsForOrder(orderId) { return QZ_DOCUMENTS.filter(d => d.orderId === orderId).concat(typeof QZ_EXAM_DOCUMENTS !== 'undefined' ? QZ_EXAM_DOCUMENTS.filter(d => d.orderId === orderId) : []); }
@@ -159,6 +285,81 @@ function qzSetScalarOverride(orderId, field, value) {
   qzSave();
 }
 
+/* ---------- lesson progress: ledger + per-lesson restart ----------
+   Progress itself is derived from the item stores (checklist / scenarios / reviews /
+   reconciles / composes), never stored as a lesson-level flag — that stays true. What IS
+   stored is whether a lesson was ever finished, which is what unlocking reads. */
+function qzLessonEverComplete(lessonId) { return !!qzStore.lessonsDone[lessonId]; }
+function qzNoteLessonComplete(lessonId) {
+  if (qzStore.lessonsDone[lessonId]) return;   // idempotent: called from every progress read
+  qzStore.lessonsDone[lessonId] = true;
+  qzSave();
+}
+
+function qzClearPartyOverride(orderId, role, field) {
+  const ov = qzStore.overrides[orderId];
+  if (!ov || !ov.parties || !ov.parties[role]) return;
+  delete ov.parties[role][field];
+  if (!Object.keys(ov.parties[role]).length) delete ov.parties[role];
+}
+function qzClearScalarOverride(orderId, field) {
+  const ov = qzStore.overrides[orderId];
+  if (!ov || !ov.scalars) return;
+  delete ov.scalars[field];
+}
+
+/* Wipes an item's working state but keeps firstAttempt. Replaying a lesson is practice; it
+   must not be able to overwrite the answer the trainee actually gave the first time, which is
+   what the recorded grade is derived from. */
+function qzResetItemState(bag, id) {
+  const prev = bag[id];
+  if (prev && prev.firstAttempt) bag[id] = { firstAttempt: prev.firstAttempt };
+  else delete bag[id];
+}
+
+/* Undoes the world-state changes a lesson makes, so a replay starts where the first run did.
+   Only the lessons that actually mutate something appear here — the rest only write progress
+   records, which qzResetLesson clears generically. The doc and task ids match the ones the
+   lessons' own walk targets hardcode. */
+const QZ_LESSON_UNDO = {
+  'l02-data-entry': () => qzClearPartyOverride('ORD-2026-1483', 'Buyer', 'phone'),
+  'l04-documents': () => { delete qzStore.docStatus[3]; },
+  'l05-communication': () => { delete qzStore.replies[3]; },
+  'l06-tasks': () => { delete qzStore.taskStatus[7]; }
+};
+
+/* A verify/reconcile item that resolved as "correct it myself" wrote a real value onto the
+   order. Derived from the item's own metadata rather than a hardcoded list, so items added
+   later roll back without anyone remembering to register them. */
+function qzUndoItemWrite(item) {
+  if (!item || !item.orderId) return;
+  if (item.partyRole) qzClearPartyOverride(item.orderId, item.partyRole, 'name');
+  else if (item.field) qzClearScalarOverride(item.orderId, item.field);
+}
+
+/* Clears one lesson so it can be run again. Note the deliberate consequence for the five items
+   shared between lessons (rev-1483-legal, comm-followup, rec-1483-price-conflict,
+   rec-1512-commitment, cmp-1398-delay, mostly the capstone reusing earlier work): clearing them
+   also drops them from the other lesson's progress bar. That is honest — the item really was
+   cleared — and it is safe, because unlocking reads lessonsDone, not live progress. */
+function qzResetLesson(lessonId) {
+  const l = QZ_LESSONS.find(x => x.id === lessonId);
+  if (!l) return;
+  l.steps.forEach(step => {
+    if (step.type === 'do') delete qzStore.checklist[step.checklistId];
+    else if (step.type === 'decide') qzResetItemState(qzStore.scenarios, step.scenarioId);
+    else if (step.type === 'verify') {
+      qzUndoItemWrite(qzReviewLookup(step.reviewId));
+      qzResetItemState(qzStore.reviews, step.reviewId);
+    } else if (step.type === 'reconcile') qzResetItemState(qzStore.reconciles, step.reconcileId);
+    else if (step.type === 'compose') qzResetItemState(qzStore.composes, step.composeId);
+  });
+  const undo = QZ_LESSON_UNDO[lessonId];
+  if (undo) undo();
+  qzSave();
+  simToast(`Lesson ${l.number} restarted — its steps are open again.`, { tone: 'good' });
+}
+
 /* ---------- login ---------- */
 function qzLoginHTML() {
   const su = window.SCApp && SCApp.currentUser && SCApp.currentUser();
@@ -183,7 +384,15 @@ function qzEnter() {
   }
   document.getElementById('qzTopbar').style.display = 'flex';
   document.getElementById('qzLoginWrap').style.display = 'none';
-  document.getElementById('qzRoot').style.display = 'block';
+  // Clears the inline display:none the markup ships with, rather than replacing it with an
+  // inline display:block. An inline value beats every selector, so hardcoding 'block' here
+  // silently killed `.qz-body.core #qzRoot { display: flex }`: #qzRoot stopped being a flex
+  // container, .qz-core stopped being a flex item, its `flex:1; min-height:0` never applied,
+  // and the Core rail grew to its content height instead of the viewport's — overflowing
+  // .qz-body (overflow:hidden) by ~725px and clipping the bottom of the sidebar for good.
+  // Empty string hands the decision back to the stylesheet, which sets block or flex per view.
+  document.getElementById('qzRoot').style.display = '';
+  qzRenderCoreSections();
   qzGoto('dashboard');
   qzUpdateBellBadge();
   if (!qzStore.tourSeen && window.qzTourStart) setTimeout(qzTourStart, 350);
@@ -194,6 +403,12 @@ function qzOpenTasks() { return QZ_TASKS.filter(t => qzTaskStatus(t) !== 'Comple
 function qzUpdateBellBadge() {
   const badge = document.querySelector('#qzBell .n');
   if (badge) badge.textContent = qzOpenTasks().length;
+  const mail = document.getElementById('qzMailBadge');
+  if (mail) {
+    const threads = typeof QZ_MESSAGES !== 'undefined' ? QZ_MESSAGES.length : 0;
+    mail.textContent = threads;
+    mail.style.display = threads ? 'flex' : 'none';
+  }
 }
 function qzToggleBellDropdown(e) {
   if (e) e.stopPropagation();
@@ -234,14 +449,54 @@ function qzGotoOrderTasks(orderId) {
   qzCloseBellDropdown();
 }
 
-/* ---------- top-level navigation ---------- */
+/* ---------- Qualia Core: top-level section nav ----------
+   Core's topbar carries the whole product, not just the two views this trainer implements.
+   The sections that aren't part of the training still render — a VA has to recognise the
+   real chrome — but they answer with an explicit "not part of this module" instead of
+   being dead links that make the trainee wonder whether they broke something.
+   Training-only entries (Dashboard) are marked so they read as scaffolding, not product. */
+const QZ_CORE_SECTIONS = [
+  { id: 'dashboard', label: 'Training', view: 'dashboard', training: true },
+  { id: 'orders', label: 'Orders', view: 'orders' },
+  { id: 'contacts', label: 'Contacts' },
+  { id: 'calendar', label: 'Calendar' },
+  { id: 'accounting', label: 'Accounting' },
+  { id: 'reports', label: 'Reports' },
+  { id: 'compliance', label: 'Compliance' },
+  { id: 'admin', label: 'Admin' }
+];
+function qzCoreStub(label) {
+  simToast(`${label} is part of Qualia Core but not part of this training module.`);
+}
+function qzRenderCoreSections() {
+  const host = document.getElementById('qzCoreSections');
+  if (!host) return;
+  host.innerHTML = QZ_CORE_SECTIONS.map(s => {
+    const onclick = s.view ? `qzGoto('${s.view}')` : `qzCoreStub('${s.label}')`;
+    return `<span data-view="${s.id}" class="${s.training ? 'training' : ''}" onclick="${onclick}">${esc(s.label)}</span>`;
+  }).join('');
+  qzSyncTopTabs();
+}
+/* Core has no per-page back link — the old `.qz-back` in the order view went away with the
+   Connect shell — so leaving an open file means clicking Orders in the top bar. That makes
+   this function the only path for the `orders-back` step, and it used to do two things that
+   broke it: it never marked the item, and it aborted any active walkthrough on the way out. */
 function qzGoto(view) {
+  const wasOrder = qzState.view === 'order';
+  const step = SimEngine.walkActive() ? SimEngine.currentStep() : null;
+  // The one navigation that is itself a lesson step, rather than the trainee wandering off.
+  const isBackStep = !!(step && step.type === 'do' && step.checklistId === 'orders-back'
+    && view === 'orders' && wasOrder);
   qzState.view = view;
   qzState.orderId = null;
-  qzState.lessonId = null;
-  if (qzWalk) qzWalkExit(true);
+  if (!isBackStep) {
+    qzState.lessonId = null;
+    if (SimEngine.walkActive()) SimEngine.exit(true);
+  }
   qzSyncTopTabs();
   qzRenderRoot();
+  // Marked after the render so the walkthrough's completion tip measures the new view.
+  if (view === 'orders' && wasOrder) qzMark('orders-back');
 }
 function qzSyncTopTabs() {
   document.querySelectorAll('#qzTopbar .qz-tabs span[data-view]').forEach(el => {
@@ -250,6 +505,87 @@ function qzSyncTopTabs() {
       || (v === 'dashboard' && (qzState.view === 'scenario' || qzState.view === 'lesson' || qzState.view === 'exam'));
     el.classList.toggle('active', active);
   });
+  qzRenderOrderTabs();
+}
+
+/* ---------- Core: multi-order tab strip ----------
+   qzState.openOrders holds the ids of every file the trainee has open, in the order they
+   were opened, exactly like Core's strip under the topbar. Per-order view state (which
+   sidebar page, which Data Entry sub-tab, which message thread) is kept per id in
+   qzState.orderViews so switching tabs returns you to where you were, rather than resetting
+   every file to Overview — that persistence is the whole point of the mechanic. */
+function qzOrderViewState(orderId) {
+  if (!qzState.orderViews[orderId]) qzState.orderViews[orderId] = { orderTab: 'overview', deTab: 'property', threadId: null };
+  return qzState.orderViews[orderId];
+}
+function qzOpenOrderTab(orderId) {
+  if (qzState.openOrders.indexOf(orderId) === -1) qzState.openOrders.push(orderId);
+}
+function qzCloseOrderTab(orderId, ev) {
+  if (ev) ev.stopPropagation();
+  const i = qzState.openOrders.indexOf(orderId);
+  if (i > -1) qzState.openOrders.splice(i, 1);
+  delete qzState.orderViews[orderId];
+  if (qzState.orderId === orderId) {
+    // Fall back to the neighbouring tab rather than dumping the trainee on the orders list,
+    // which is what closing a tab does in any real multi-document app.
+    const next = qzState.openOrders[i] || qzState.openOrders[i - 1];
+    if (next) { qzSwitchOrderTab(next); return; }
+    qzState.view = 'orders'; qzState.orderId = null;
+    qzSyncTopTabs();
+    qzRenderRoot();
+    // Closing the last open file lands on the list, which is the same outcome the
+    // `orders-back` step asks for, so it counts too.
+    qzMark('orders-back');
+    return;
+  }
+  qzSyncTopTabs();
+  qzRenderRoot();
+}
+function qzSwitchOrderTab(orderId) {
+  const vs = qzOrderViewState(orderId);
+  qzState.view = 'order';
+  qzState.orderId = orderId;
+  qzState.orderTab = vs.orderTab;
+  qzState.deTab = vs.deTab;
+  qzState.threadId = vs.threadId;
+  qzSyncTopTabs();
+  qzRenderRoot();
+}
+/* Mirror the live qzState fields back into the per-order record, so the next switch away
+   and back lands on the same page. */
+function qzPersistOrderView() {
+  if (qzState.view !== 'order' || !qzState.orderId) return;
+  const vs = qzOrderViewState(qzState.orderId);
+  vs.orderTab = qzState.orderTab;
+  vs.deTab = qzState.deTab;
+  vs.threadId = qzState.threadId;
+}
+/* The strip is shared by the order tabs and the lesson breadcrumb, so neither one can hide
+   it alone — whichever renders last would clobber the other's decision. Both call this. */
+function qzSyncTopStrip() {
+  const strip = document.getElementById('qzTopStrip');
+  const banner = document.getElementById('qzLessonBanner');
+  if (!strip) return;
+  const hasTabs = qzState.openOrders.length > 0;
+  const hasBanner = !!(banner && banner.innerHTML.trim());
+  strip.style.display = (hasTabs || hasBanner) ? 'flex' : 'none';
+}
+function qzRenderOrderTabs() {
+  const host = document.getElementById('qzOrderTabs');
+  if (!host) return;
+  if (!qzState.openOrders.length) { host.innerHTML = ''; qzSyncTopStrip(); return; }
+  host.innerHTML = qzState.openOrders.map(id => {
+    const o = qzGetOrder(id);
+    if (!o) return '';
+    const label = o.propertyAddress.split(',')[0];
+    const active = qzState.view === 'order' && qzState.orderId === id;
+    return `<div class="qz-otab ${active ? 'active' : ''}" data-order-tab="${escAttr(id)}" onclick="qzSwitchOrderTab('${id}')" title="${escAttr(o.propertyAddress)}">
+      <span class="lbl">${esc(label)}</span>
+      <button type="button" class="x" title="Close" onclick="qzCloseOrderTab('${id}',event)">&times;</button>
+    </div>`;
+  }).join('');
+  qzSyncTopStrip();
 }
 /* Lives in its own persistent DOM node (#qzLessonBanner, outside #qzRoot) so it can be
    refreshed the instant a step completes without a full re-render, this matters when a
@@ -259,16 +595,21 @@ function qzLessonBreadcrumbHTML() {
   if (!qzState.lessonId || qzState.view === 'lesson' || qzState.view === 'dashboard' || qzState.view === 'exam') return '';
   const l = QZ_LESSONS.find(x => x.id === qzState.lessonId);
   if (!l) return '';
-  const prog = qzLessonProgress(l);
+  const prog = SimEngine.progress(l);
   const label = prog.complete ? `Lesson ${l.number} complete!` : `Lesson ${l.number} &middot; ${prog.done} of ${prog.total} steps done`;
-  return `<div class="qz-lesson-banner ${prog.complete ? 'done' : ''}" onclick="qzOpenLesson('${l.id}')">${label} &middot; Back to Lesson &rarr;</div>`;
+  return `<div class="qz-lesson-banner ${prog.complete ? 'done' : ''}" onclick="SimEngine.openLesson('${l.id}')">${label} &middot; Back to Lesson &rarr;</div>`;
 }
 function qzRenderLessonBanner() {
   const el = document.getElementById('qzLessonBanner');
   if (el) el.innerHTML = qzLessonBreadcrumbHTML();
+  qzSyncTopStrip();
 }
 function qzRenderRoot() {
   const root = document.getElementById('qzRoot');
+  // The order view brings its own full-height Core chrome (dark rail + right panel), so the
+  // scrolling page padding that every other view wants has to come off for it.
+  const body = document.querySelector('.qz-body');
+  if (body) body.classList.toggle('core', qzState.view === 'order');
   let html = '';
   if (qzState.view === 'dashboard') html = qzDashboardHTML();
   else if (qzState.view === 'orders') html = qzOrdersHTML();
@@ -291,6 +632,8 @@ function qzLessonStepDone(step) {
   if (step.type === 'do') return !!qzStore.checklist[step.checklistId];
   if (step.type === 'verify') { const s = qzStore.reviews[step.reviewId]; return !!(s && (s.everCorrect || s.correct)); }
   if (step.type === 'decide') { const s = qzStore.scenarios[step.scenarioId]; return !!(s && (s.everCorrect || s.correct)); }
+  if (step.type === 'reconcile') { const s = qzStore.reconciles[step.reconcileId]; return !!(s && (s.everCorrect || s.correct)); }
+  if (step.type === 'compose') { const s = qzStore.composes[step.composeId]; return !!(s && (s.everCorrect || s.correct)); }
   return false;
 }
 /* What the trainee got RIGHT ON THE FIRST TRY, independent of how many retries followed.
@@ -299,17 +642,8 @@ function qzScenarioFirstAttemptCorrect(scenarioId) {
   const s = qzStore.scenarios[scenarioId];
   return !!(s && s.firstAttempt && s.firstAttempt.correct);
 }
-function qzLessonProgress(lesson) {
-  const total = lesson.steps.length;
-  const done = lesson.steps.filter(qzLessonStepDone).length;
-  return { done, total, complete: total > 0 && done === total };
-}
-function qzLessonState(index) {
-  if (index === 0) return qzLessonProgress(QZ_LESSONS[0]).complete ? 'done' : 'unlocked';
-  const prevComplete = qzLessonProgress(QZ_LESSONS[index - 1]).complete;
-  if (!prevComplete) return 'locked';
-  return qzLessonProgress(QZ_LESSONS[index]).complete ? 'done' : 'unlocked';
-}
+
+
 
 /* Maps a `do` step's checklistId to where it lives in the order shell. */
 const QZ_CHECKLIST_TAB = {
@@ -326,6 +660,7 @@ const QZ_CHECKLIST_TAB = {
   'comm-open': { tab: 'communication' },
   'comm-reply': { tab: 'communication' },
   'comm-followup': { tab: 'communication' },
+  'triage-open-all': { tab: 'overview' },
   'vendors-open': { tab: 'vendors' },
   'vendors-check': { tab: 'vendors' },
   'closing-open': { tab: 'closing' },
@@ -362,6 +697,25 @@ function qzLessonStepNavigate(step) {
     qzRenderRoot();
   } else if (step.type === 'decide') {
     qzOpenScenario(step.scenarioId);
+  } else if (step.type === 'reconcile') {
+    const r = qzRecLookup(step.reconcileId);
+    if (!r) return;
+    qzOpenOrderTab(r.orderId);
+    qzState.view = 'order';
+    qzState.orderId = r.orderId;
+    qzState.orderTab = 'review';
+    qzMark('orders-open');
+    qzSyncTopTabs();
+    qzRenderRoot();
+  } else if (step.type === 'compose') {
+    const c = qzComposeLookup(step.composeId);
+    if (!c) return;
+    if (c.orderId) qzOpenOrderTab(c.orderId);
+    qzState.view = 'order';
+    qzState.orderId = c.orderId || qzState.orderId;
+    qzState.orderTab = 'communication';
+    qzSyncTopTabs();
+    qzRenderRoot();
   }
 }
 function qzLessonStepLabel(step) {
@@ -374,273 +728,40 @@ function qzLessonStepLabel(step) {
   }
   if (step.type === 'verify') { const r = qzReviewLookup(step.reviewId); return r ? 'Verify: ' + r.label : step.reviewId; }
   if (step.type === 'decide') { const s = QZ_SCENARIOS.find(x => x.id === step.scenarioId); return s ? s.title : step.scenarioId; }
+  if (step.type === 'reconcile') { const r = qzRecLookup(step.reconcileId); return r ? 'Reconcile: ' + r.label : step.reconcileId; }
+  if (step.type === 'compose') { const c = qzComposeLookup(step.composeId); return c ? 'Write: ' + c.label : step.composeId; }
+  return '';
 }
 function qzLessonStepStatus(step) {
   if (step.type === 'do') return qzLessonStepDone(step) ? 'good' : 'pending';
   if (step.type === 'verify') { const s = qzStore.reviews[step.reviewId]; if (!s || !s.resolvedAt) return 'pending'; return s.correct ? 'good' : 'bad'; }
   if (step.type === 'decide') { const s = qzStore.scenarios[step.scenarioId]; if (!s || s.answered == null) return 'pending'; return s.correct ? 'good' : 'bad'; }
+  if (step.type === 'reconcile') { const s = qzStore.reconciles[step.reconcileId]; if (!s || !s.resolvedAt) return 'pending'; return s.correct ? 'good' : 'bad'; }
+  if (step.type === 'compose') { const s = qzStore.composes[step.composeId]; if (!s || !s.resolvedAt) return 'pending'; return s.correct ? 'good' : 'bad'; }
+  return 'pending';
 }
-const QZ_STEP_STATUS_LABEL = { good: 'Done', bad: 'Try again', pending: 'Not yet' };
-function qzOpenLesson(id) {
-  const idx = QZ_LESSONS.findIndex(l => l.id === id);
-  if (idx === -1 || qzLessonState(idx) === 'locked') return;
-  qzState.view = 'lesson';
-  qzState.lessonId = id;
-  qzSyncTopTabs();
-  qzRenderRoot();
-}
-function qzLessonStepGo(lessonId, stepIndex) {
-  const l = QZ_LESSONS.find(x => x.id === lessonId);
-  if (!l) return;
-  qzLessonStepNavigate(l.steps[stepIndex]);
-}
-/* Shown next to a `decide`/`verify` step's own feedback once it's answered correctly, so
-   there's an explicit way forward instead of "Retake"/"Redo" being the only visible button. */
-function qzLessonContinueHTML(step) {
-  if (!qzState.lessonId) return '';
-  const l = QZ_LESSONS.find(x => x.id === qzState.lessonId);
-  if (!l) return '';
-  const idx = l.steps.indexOf(step);
-  if (idx === -1) return '';
-  const label = idx < l.steps.length - 1 ? 'Continue to next step &rarr;' : 'Finish Lesson &rarr;';
-  return `<button class="qz-btn sm primary" onclick="qzLessonContinue('${l.id}',${idx})">${label}</button>`;
-}
-/* If an active walkthrough is showing this exact step, skip its own ~1s "nice, moving on"
-   pause instead of navigating separately, the trainee already said they're ready by
-   clicking. Otherwise (no walkthrough, or a manual visit) navigate directly. */
-function qzLessonContinue(lessonId, stepIndex) {
-  if (typeof qzWalk !== 'undefined' && qzWalk && qzWalk.lessonId === lessonId && qzWalk.stepIndex === stepIndex) {
-    qzWalkSkipWait();
-    return;
-  }
-  const l = QZ_LESSONS.find(x => x.id === lessonId);
-  if (!l) return;
-  const next = l.steps[stepIndex + 1];
-  if (next) qzLessonStepNavigate(next);
-  else qzGoto('dashboard');
-}
+/* The step list, "Try It" button and completion notice are all generic — the engine
+   renders them (SimEngine.lessonDetailHTML) and this only supplies the panel chrome and
+   the back link, which are Qualia's own layout. */
 function qzLessonDetailHTML() {
-  const l = QZ_LESSONS.find(x => x.id === qzState.lessonId);
-  if (!l) return '<p>Lesson not found.</p>';
-  const prog = qzLessonProgress(l);
-  const walkable = l.steps.every(s => s.walk);
-  const rows = l.steps.map((step, i) => {
-    const status = qzLessonStepStatus(step);
-    const goBtn = step.walk ? '' : `<button class="qz-btn sm" onclick="qzLessonStepGo('${l.id}',${i})">Go</button>`;
-    return `<div class="qz-lesson-step-row">
-      <span class="qz-rv-chip ${status}">${QZ_STEP_STATUS_LABEL[status]}</span>
-      <span class="label">${esc(qzLessonStepLabel(step))}</span>
-      ${goBtn}
-    </div>`;
-  }).join('');
-  const tryBtn = (walkable && !prog.complete)
-    ? `<button class="qz-btn primary" style="margin-bottom:16px" onclick="qzWalkStart('${l.id}')">Try It &rarr;</button>`
-    : '';
   return `<span class="qz-back" onclick="qzGoto('dashboard')">&larr; Dashboard</span>
     <div class="qz-panel qz-lesson-detail">
-      <div class="ph"><h4>Lesson ${l.number} &middot; ${esc(l.title)}</h4></div>
-      <p class="situation">${esc(l.summary)}</p>
-      ${tryBtn}
-      <div class="qz-lesson-steps">${rows}</div>
-      ${prog.complete ? '<div class="qz-rv-feedback good"><b>Lesson complete.</b> The next lesson is unlocked from the Dashboard.</div>' : ''}
+      ${SimEngine.lessonDetailHTML(qzState.lessonId)}
     </div>`;
 }
+/* Thin wrapper so call sites don't have to pass the current lesson id every time. */
+function qzContinueHTML(step) {
+  return SimEngine.continueHTML(step, qzState.lessonId);
+}
 
-/* ---------- Interactive lesson walkthrough (generic engine) ----------
-   Unlike the intro tour (qualia-tour.js), the app stays fully interactive underneath —
-   the overlay itself is pointer-events:none, only the tip card can be clicked. The
-   trainee performs the real action while a floating highlight + instruction card points
-   at exactly what to do; qzNotifyStepDone() (called from qzMark) detects completion and
-   advances automatically. Content lives on QZ_LESSONS[].steps[].walk (target/text/setup). */
-let qzWalk = null; // { lessonId, stepIndex, tourIndex }
-function qzWalkStart(lessonId) {
-  const l = QZ_LESSONS.find(x => x.id === lessonId);
-  if (!l || !l.steps.every(s => s.walk)) return;
-  qzWalk = { lessonId, stepIndex: 0, tourIndex: null, stepDoneFired: false };
-  qzWalkShowCurrent();
-}
-function qzWalkCurrentLesson() { return qzWalk ? QZ_LESSONS.find(x => x.id === qzWalk.lessonId) : null; }
-function qzWalkCurrentStep() {
-  const l = qzWalkCurrentLesson();
-  return l ? l.steps[qzWalk.stepIndex] : null;
-}
-function qzWalkShowCurrent() {
-  document.getElementById('qzWalk').classList.add('open');
-  qzWalk.tourIndex = null;
-  qzWalk.stepDoneFired = false;
-  // Default unlocked, a step that specifically needs the search box locked (see l01's
-  // orders-open) re-locks it in its own setup() below, this just guarantees it doesn't stay
-  // locked once that step is behind us.
-  qzWalkUnlockSearchInput();
-  const step = qzWalkCurrentStep();
-  if (!step) { qzWalkShowComplete(); return; }
-  if (step.walk.setup) step.walk.setup();
-  if (step.walk.skipClick) qzWalkRenderSkipClick(step); else qzWalkRenderTip(step, false);
-  requestAnimationFrame(() => requestAnimationFrame(() => qzWalkPosition(step, { scrollIntoView: true })));
-}
-/* For a `do` step that's purely explanatory (e.g. "this is the Upload button") where nothing
-   real would actually happen if clicked in this simulator, walk.nextAction runs the same
-   underlying function a real click would (so any state it changes still happens, keeping
-   later steps consistent), triggered by a "Next" button in the tip instead of requiring the
-   trainee to click the real element, which is still highlighted so they know what it is. */
-function qzWalkRenderSkipClick(step) {
-  const l = qzWalkCurrentLesson();
-  const text = typeof step.walk.text === 'function' ? step.walk.text() : step.walk.text;
-  qzWalkSetTipBody(`<b>Lesson ${l.number} &middot; Step ${qzWalk.stepIndex + 1} of ${l.steps.length}</b><p>${esc(text)}</p>
-    <button class="qz-btn primary" style="margin-top:10px" onclick="qzWalkRunNextAction()">Next &rarr;</button>
-    <div class="qz-walk-exit" onclick="qzWalkExit()">Exit walkthrough</div>`);
-}
-function qzWalkRunNextAction() {
-  const step = qzWalkCurrentStep();
-  if (!step || !step.walk.nextAction) return;
-  step.walk.nextAction();
-}
-/* One dot per step in the current lesson, filled for done, ringed for the one in progress,
-   hollow for anything still ahead, persistent across every view the walkthrough passes
-   through so there's always a sense of "point 2 of 6", not just a wall of content. */
-function qzWalkDotsHTML() {
-  const l = qzWalkCurrentLesson();
-  if (!l) return '';
-  const dots = l.steps.map((s, i) => {
-    const cls = i === qzWalk.stepIndex ? 'current' : (qzLessonStepDone(s) ? 'done' : '');
-    return `<span class="qz-walk-dot ${cls}"></span>`;
-  }).join('');
-  return `<div class="qz-walk-dots">${dots}</div>`;
-}
-function qzWalkSetTipBody(html) {
-  document.getElementById('qzWalkTipBody').innerHTML = qzWalkDotsHTML() + html;
-}
-function qzWalkRenderTip(step, done) {
-  const l = qzWalkCurrentLesson();
-  if (done) {
-    qzWalkSetTipBody(`<b>&#10003; Nice.</b><p>Moving to the next step&hellip;</p>`);
-  } else {
-    const text = typeof step.walk.text === 'function' ? step.walk.text() : step.walk.text;
-    // Optional, collapsed by default: a step whose target is a free-text field (e.g. the
-    // Communication reply box) can carry its own example right in the tip, where the trainee
-    // is already looking, instead of a link elsewhere on the page that the tip itself
-    // usually ends up covering.
-    const example = typeof step.walk.example === 'function' ? step.walk.example() : step.walk.example;
-    const exampleHTML = example
-      ? `<button type="button" class="qz-walk-example-toggle" id="qzWalkExampleToggle" onclick="qzWalkToggleExample()">See example &rarr;</button>
-         <div class="qz-walk-example" id="qzWalkExampleBox" style="display:none">${esc(example)}</div>`
-      : '';
-    qzWalkSetTipBody(`<b>Lesson ${l.number} &middot; Step ${qzWalk.stepIndex + 1} of ${l.steps.length}</b><p>${esc(text)}</p>${exampleHTML}
-      <div class="qz-walk-exit" onclick="qzWalkExit()">Exit walkthrough</div>`);
-  }
-}
-/* Toggling the example changes the tip's height, without recomputing position afterward the
-   card's top/left stay wherever they were calculated for the shorter version, letting the
-   now-taller card run off the bottom of the viewport instead of the whole thing staying visible. */
-function qzWalkToggleExample() {
-  const el = document.getElementById('qzWalkExampleBox');
-  const btn = document.getElementById('qzWalkExampleToggle');
-  if (!el) return;
-  const showing = el.style.display !== 'none';
-  el.style.display = showing ? 'none' : 'block';
-  if (btn) btn.textContent = showing ? 'See example →' : 'Hide example';
-  const step = qzWalkCurrentStep();
-  if (step) qzWalkPosition(step);
-}
-/* Wrong answer on a `decide` step or a `verify` item: don't advance, don't reveal the
-   answer, just point the trainee back at the feedback + retry control the page already
-   shows (custom msg lets `verify` steps say "Redo" instead of "Try Again"). */
-function qzWalkRenderRetry(msg) {
-  qzWalkSetTipBody(`<b>Not quite.</b><p>${msg || 'Read the explanation below, then click "Try Again" to retry this scenario.'}</p>
-    <div class="qz-walk-exit" onclick="qzWalkExit()">Exit walkthrough</div>`);
-  qzWalkScrollFeedbackIntoView();
-}
-/* decide/verify steps float their tip (no highlight, target is null / whole page is the
-   content), so unlike do/verify-with-a-real-target steps, nothing was bringing the feedback
-   panel (with the Continue/Try Again/Redo button the trainee actually needs to click) into
-   view, it could render below the fold with no indication it was even there. */
-function qzWalkScrollFeedbackIntoView() {
-  requestAnimationFrame(() => {
-    const el = document.querySelector('.qz-feedback, .qz-rv-feedback');
-    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  });
-}
-/* Four different "what happens after a correct answer" behaviors, depending on the step:
-   1. walk.tour set (e.g. workflow-view) — a real UI panel just appeared with several parts
-      worth pointing out (the stage marker, the status text, the read-only note), so instead
-      of one blob of text this walks through them one at a time, each with its own highlight,
-      before moving on to the next lesson step.
-   2. walk.pauseText set — a single explanation (built from live order data) with a Continue
-      click, for steps that need context but only have one thing to point at.
-   3. decide/verify steps — these already render their own explanation + a "Continue to next
-      step" button on the page (qzLessonContinueHTML), auto-advancing here would yank the
-      trainee away before they get to read it, so this just waits for that button instead.
-   4. everything else (plain `do` clicks with nothing to read) — short "Nice" pause, then
-      auto-advance, unchanged from before. */
-function qzWalkStepDone() {
-  const step = qzWalkCurrentStep();
-  if (!step) return;
-  // Guards against firing more than once per step instance: a repeatable trigger (typing in
-  // the search box fires on every keystroke, and a loose substring match can satisfy the
-  // target on more than one of them) could otherwise queue up several independent advances
-  // that each fire their own delayed qzWalkAdvance(), skipping past whatever step comes next.
-  if (qzWalk.stepDoneFired) return;
-  qzWalk.stepDoneFired = true;
-  const exitLink = '<div class="qz-walk-exit" onclick="qzWalkExit()">Exit walkthrough</div>';
-  if (step.walk.tour && step.walk.tour.length) {
-    qzWalk.tourIndex = 0;
-    qzWalkShowTourStop();
-    return;
-  }
-  if (step.walk.pauseText) {
-    const text = typeof step.walk.pauseText === 'function' ? step.walk.pauseText() : step.walk.pauseText;
-    qzWalkSetTipBody(`<b>&#10003; Nice.</b><p>${esc(text)}</p>
-      <button class="qz-btn primary" style="margin-top:10px" onclick="qzWalkAdvance()">Continue &rarr;</button>${exitLink}`);
-    return;
-  }
-  if (step.type === 'decide' || step.type === 'verify') {
-    qzWalkSetTipBody(`<b>&#10003; Correct.</b><p>Read the explanation below, then click "Continue to next step" when you're ready.</p>${exitLink}`);
-    qzWalkScrollFeedbackIntoView();
-    return;
-  }
-  qzWalkRenderTip(step, true);
-  qzWalk.doneTimer = setTimeout(() => {
-    qzWalk.doneTimer = null;
-    qzWalkAdvance();
-  }, 900);
-}
-/* Renders the current stop of an in-step tour (walk.tour[]): its own text + its own
-   highlighted target, with Next/Continue advancing through the array before finally moving
-   on to the next lesson step via qzWalkAdvance(). */
-function qzWalkShowTourStop() {
-  const step = qzWalkCurrentStep();
-  const stops = step.walk.tour;
-  const stop = stops[qzWalk.tourIndex];
-  const isLast = qzWalk.tourIndex === stops.length - 1;
-  const text = typeof stop.text === 'function' ? stop.text() : stop.text;
-  const exitLink = '<div class="qz-walk-exit" onclick="qzWalkExit()">Exit walkthrough</div>';
-  qzWalkSetTipBody(`<b>${qzWalk.tourIndex + 1} of ${stops.length}</b><p>${esc(text)}</p>
-    <button class="qz-btn primary" style="margin-top:10px" onclick="qzWalkTourNext()">${isLast ? 'Continue' : 'Next'} &rarr;</button>${exitLink}`);
-  requestAnimationFrame(() => requestAnimationFrame(() => qzWalkPosition({ walk: { target: stop.target } }, { scrollIntoView: true })));
-}
-function qzWalkTourNext() {
-  const step = qzWalkCurrentStep();
-  const stops = step.walk.tour;
-  if (qzWalk.tourIndex < stops.length - 1) {
-    qzWalk.tourIndex++;
-    qzWalkShowTourStop();
-  } else {
-    qzWalk.tourIndex = null;
-    qzWalkAdvance();
-  }
-}
-function qzWalkAdvance() {
-  if (!qzWalk) return; // walkthrough may have been exited during the pause
-  qzWalk.stepIndex++;
-  qzWalkShowCurrent();
-}
-/* Lets the "Continue to next step" button (qzLessonContinue) skip the ~1s pause qzWalkStepDone
-   normally shows before advancing, instead of doubling up with the pending timer. */
-function qzWalkSkipWait() {
-  if (!qzWalk) return;
-  if (qzWalk.doneTimer) { clearTimeout(qzWalk.doneTimer); qzWalk.doneTimer = null; }
-  qzWalkAdvance();
-}
+/* ---------- walkthrough: Qualia-specific hooks ----------
+   The walkthrough engine itself now lives in assets/js/sim-engine.js and is shared with
+   the DocuSign module. What stays here is only what depends on Qualia's own screens: the
+   per-mechanic sync helpers below (which re-resolve the tip after an interaction inside a
+   multi-step item) and the target/text resolvers for verify, reconcile and compose.
+   Everything generic — positioning, the tip card, dots, tours, skipClick, advancing — is
+   the engine's, and is reached through SimEngine.*. */
+
 /* Keeps the orders-search step's tip text live as the trainee types, so a query that
    doesn't surface Order ORD-2026-1483 says so immediately instead of staying silent. */
 /* Covers both search-adjacent steps: orders-search itself, and orders-open's fallback in
@@ -648,46 +769,109 @@ function qzWalkSkipWait() {
    during that step, this is the safety net for anything that slips past that). Unlike the
    search step, orders-open's target can change (row vs. fallback to the input), so this
    also repositions, not just re-renders the text. */
-function qzWalkSyncSearchStep() {
-  if (typeof qzWalk === 'undefined' || !qzWalk) return;
-  const step = qzWalkCurrentStep();
+function qzSyncSearchStep() {
+  if (!SimEngine.walkActive()) return;
+  const step = SimEngine.currentStep();
   if (!step || step.type !== 'do') return;
   if (step.checklistId !== 'orders-search' && step.checklistId !== 'orders-open') return;
-  qzWalkRenderTip(step, false);
-  qzWalkPosition(step);
+  SimEngine.renderTip(step, false);
+  SimEngine.position(step);
 }
-/* Same idea as qzWalkSyncSearchStep/qzWalkSyncEditStep: the comm-reply step's target moves
+/* Same idea as qzSyncSearchStep/qzSyncEditStep: the comm-reply step's target moves
    from the textarea to the Send button once there's 20+ characters typed, but nothing was
    re-checking that while the trainee was actually typing, only on the next unrelated
    reposition (resize/scroll), so the highlight sat on the box well past the point it should
    have moved. */
-function qzWalkSyncReplyStep() {
-  if (typeof qzWalk === 'undefined' || !qzWalk) return;
-  const step = qzWalkCurrentStep();
+function qzSyncReplyStep() {
+  if (!SimEngine.walkActive()) return;
+  const step = SimEngine.currentStep();
   if (!step || step.type !== 'do' || step.checklistId !== 'comm-reply') return;
-  qzWalkRenderTip(step, false);
-  qzWalkPosition(step);
+  SimEngine.renderTip(step, false);
+  SimEngine.position(step);
 }
 /* A `verify` lesson step maps to the 4-step discrepancy-report engine, which has its own
    internal sub-phases (open doc / answer source / answer action / correct or escalate).
    Called after every sub-phase action so the tip text and highlight track the trainee's
    progress inside the item, not just the outer lesson step. No-op unless the walkthrough
    is currently showing this exact `verify` step. */
-function qzWalkSyncVerifyStep(reviewId) {
-  if (typeof qzWalk === 'undefined' || !qzWalk) return;
-  const step = qzWalkCurrentStep();
+function qzSyncVerifyStep(reviewId) {
+  if (!SimEngine.walkActive()) return;
+  const step = SimEngine.currentStep();
   if (!step || step.type !== 'verify' || step.reviewId !== reviewId) return;
-  qzWalkRenderTip(step, false);
-  qzWalkPosition(step, { scrollIntoView: true });
+  SimEngine.renderTip(step, false);
+  SimEngine.position(step, { scrollIntoView: true });
+}
+/* Same idea for the two new mechanics: a reconcile item has many sub-phases (open each
+   doc, fill each cell, decide each row) and a compose item changes as the trainee types,
+   so both need the tip re-resolved after every interaction. */
+function qzSyncReconcileStep(reconcileId) {
+  if (!SimEngine.walkActive()) return;
+  const step = SimEngine.currentStep();
+  if (!step || step.type !== 'reconcile' || step.reconcileId !== reconcileId) return;
+  SimEngine.renderTip(step, false);
+  SimEngine.position(step, { scrollIntoView: true });
+}
+function qzSyncComposeStep(composeId) {
+  if (!SimEngine.walkActive()) return;
+  const step = SimEngine.currentStep();
+  if (!step || step.type !== 'compose' || (composeId && step.composeId !== composeId)) return;
+  SimEngine.renderTip(step, false);
+  SimEngine.position(step);
+}
+/* Generic walk resolvers for a reconcile step, mirroring qzVerifyTarget/Text: the copy
+   is derived from the item's own state so no lesson has to hand-write per-phase guidance. */
+function qzReconcileTarget(recId) {
+  const st = qzRecGet(recId);
+  if (SimEngine.docOpen()) return null;
+  const scope = `.qz-rec-item[data-rec-id="${recId}"]`;
+  if (st.resolvedAt) return st.correct ? null : scope + ' .qz-rv-feedback button';
+  if (!qzRecAllDocsOpened(recId)) return scope + ' [data-rec-phase="1"]';
+  const r = qzRecLookup(recId);
+  const unfilled = r.rows.find(row => !qzRecRowCellsDone(recId, row.id));
+  if (unfilled) return scope + ` [data-rec-phase="2"] tr[data-rec-row="${unfilled.id}"]`;
+  const undecided = r.rows.find(row => !qzRecRowSettled(recId, row.id));
+  if (undecided) return scope + ` [data-rec-phase="3"][data-rec-row="${undecided.id}"]`;
+  return scope + ' .qz-rec-actions button';
+}
+function qzReconcileText(recId) {
+  const r = qzRecLookup(recId);
+  const st = qzRecGet(recId);
+  if (SimEngine.docOpen()) return 'Read it, then close it and come back to the grid.';
+  if (st.resolvedAt) return st.correct ? 'Reconciled.' : 'Read the breakdown below, then click "Redo" to work it again.';
+  if (!qzRecAllDocsOpened(recId)) {
+    const left = r.docs.filter(d => !st.opened[d.id]).length;
+    return `Open every source before filling anything in. ${left} still unopened.`;
+  }
+  const unfilled = r.rows.find(row => !qzRecRowCellsDone(recId, row.id));
+  if (unfilled) return `For "${unfilled.label}", record what each source says. They will not all agree, that is the point.`;
+  const undecided = r.rows.find(row => !qzRecRowSettled(recId, row.id));
+  if (undecided) return `Now decide what happens with "${undecided.label}". Which source governs, and is this yours to fix?`;
+  return 'Every row is filled in. Submit the reconciliation.';
+}
+function qzComposeTarget(composeId) {
+  const st = qzComposeGet(composeId);
+  const scope = `.qz-compose-item[data-compose-id="${composeId}"]`;
+  if (st.resolvedAt) return st.correct ? null : scope + ' .qz-rv-feedback button';
+  const box = document.getElementById('qzComposeBox-' + composeId);
+  if (box && box.value.trim().length >= 40) return scope + ' .qz-rv-actions button';
+  return scope + ' .qz-compose-box';
+}
+function qzComposeText(composeId) {
+  const st = qzComposeGet(composeId);
+  if (st.resolvedAt && !st.correct) return 'Read which points the reply missed, then revise and send it again.';
+  const box = document.getElementById('qzComposeBox-' + composeId);
+  const len = box ? box.value.trim().length : 0;
+  if (len >= 40) return 'Long enough. Read it back once, then send it, your reply is checked against what a professional response has to contain.';
+  return `Write the reply. Think about what the other person needs to know and by when. ${len ? `(${len} of 40 characters)` : ''}`;
 }
 /* Generic target/text resolvers for a `verify` lesson step, reused by every lesson that
    walks a discrepancy-report item (rev-1483-buyer, rev-1483-price, rev-1483-vesting, ...).
    All copy comes from the review's own data, so nothing here is lesson-specific. While
    the source document modal is open (z-index above the walk overlay, by design) the
    highlight is suppressed and the tip just floats with a "close it to continue" nudge. */
-function qzWalkVerifyTarget(reviewId) {
+function qzVerifyTarget(reviewId) {
   const st = qzRevGet(reviewId);
-  if (document.getElementById('qzDocModal').classList.contains('open')) return null;
+  if (SimEngine.docOpen()) return null;
   const scope = `.qz-rv-item[data-rev-id="${reviewId}"]`;
   if (st.resolvedAt) return st.correct ? null : scope + ' .qz-rv-feedback button';
   if (!st.docOpened) return scope + ' [data-rev-phase="1"] button';
@@ -695,14 +879,19 @@ function qzWalkVerifyTarget(reviewId) {
   if (!st.step2Correct) return scope + ' [data-rev-phase="2"] .qz-rv-actions button';
   if (!st.step3Choice) return scope + ' [data-rev-phase="3"]';
   if (!st.step3Correct) return scope + ' [data-rev-phase="3"] .qz-rv-actions button';
-  if (st.step4Category && !st.step4CategoryCorrect) return scope + ' [data-rev-phase="4"] select';
-  if (st.correctedValueSaved && !st.step4ValueCorrect) return scope + ' [data-rev-phase="4"] input';
+  // Both retry states point at the whole step, not at the field that was answered wrong. The
+  // tip card is placed below its target, and in step 4 the submit button sits below the field
+  // — so highlighting just the <select> or the <input> put the card straight on top of the
+  // button the trainee had to press next. Targeting the block also means scrollIntoView
+  // centres the button along with the field instead of pushing it under the fold.
+  if (st.step4Category && !st.step4CategoryCorrect) return scope + ' [data-rev-phase="4"]';
+  if (st.correctedValueSaved && !st.step4ValueCorrect) return scope + ' [data-rev-phase="4"]';
   return scope + ' [data-rev-phase="4"]';
 }
-function qzWalkVerifyText(reviewId) {
+function qzVerifyText(reviewId) {
   const r = qzReviewLookup(reviewId);
   const st = qzRevGet(reviewId);
-  if (document.getElementById('qzDocModal').classList.contains('open')) return `Read the ${r.docTitle}, then close it to come back and report what you found.`;
+  if (SimEngine.docOpen()) return `Read the ${r.docTitle}, then close it to come back and report what you found.`;
   if (st.resolvedAt) return 'Read the explanation below, then click "Redo" to try again.';
   if (!st.docOpened) return `Open the ${r.docTitle} to compare it against "${r.label}."`;
   if (!st.step2Choice) return 'Now pick what the source document actually says.';
@@ -720,7 +909,7 @@ function qzWalkVerifyText(reviewId) {
 /* Escalation-note example, shown inside the walkthrough tip (not on the page itself) while
    Step 4's note field is the active thing to fill in, same "See example" mechanism as any
    other walk.example. Returns null once the item is resolved or has no example to offer. */
-function qzWalkVerifyExample(reviewId) {
+function qzVerifyExample(reviewId) {
   const r = qzReviewLookup(reviewId);
   if (!r.noteExample) return null;
   const st = qzRevGet(reviewId);
@@ -728,134 +917,42 @@ function qzWalkVerifyExample(reviewId) {
   if (st.step3Choice && st.step3Correct && st.step3Choice.indexOf('escalate') === 0) return r.noteExample;
   return null;
 }
-/* Resolves a step's target: a plain CSS selector string, a function returning an
-   Element/selector/null (for steps where WHAT to highlight changes as the trainee acts,
-   e.g. "type here" then "click Save once it appears"), or null/undefined. */
-function qzWalkResolveTarget(target) {
-  let t = typeof target === 'function' ? target() : target;
-  if (!t) return null;
-  if (typeof t === 'string') t = document.querySelector(t);
-  return (t && t.getBoundingClientRect && t.offsetParent !== null) ? t : null;
-}
-function qzWalkPosition(step, opts) {
-  const highlight = document.getElementById('qzWalkHighlight');
-  const tip = document.getElementById('qzWalkTip');
-  // The doc modal (z-index 200) sits below the walk overlay (z-index 250) on purpose, so the
-  // tip can float above it with a "close it to continue" nudge, but that means a highlight
-  // pointing anywhere other than the modal would visually darken/obscure it via the
-  // highlight's giant cutout box-shadow. Suppress the highlight whenever the modal is open,
-  // regardless of which step/target logic is in play.
-  const docModal = document.getElementById('qzDocModal');
-  const el = (docModal && docModal.classList.contains('open')) ? null : qzWalkResolveTarget(step.walk.target);
-  // skipClick steps are demonstrative only ("here's the button, nothing to actually upload in
-  // this practice") — the real element stays highlighted for reference but must not be
-  // clickable, or the trainee could trigger the real action directly instead of via Next.
-  if (el && step.walk.skipClick && 'disabled' in el) el.disabled = true;
-  // Only on step/phase transitions (never on resize/scroll reposition calls, that would
-  // fight the trainee's own scrolling): bring the target into view if the review tab's
-  // item list has pushed it below the fold, the highlight rect below is computed from
-  // wherever the element ends up, the .qz-body scroll listener keeps it in sync while the
-  // scroll animates.
-  if (el && opts && opts.scrollIntoView) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  const rect = el ? el.getBoundingClientRect() : null;
-  tip.style.transform = 'none';
-  if (!rect) {
-    // No single element to point at (e.g. a `decide` step, the whole page is the content) —
-    // float the tip in a fixed corner instead of leaving it stale from the previous step.
-    // Bottom, not top: a freshly-opened scenario/review loads with its situation + options
-    // right at the top of the panel, a top-right tip would sit directly on top of them and
-    // silently eat the trainee's click (the tip itself is pointer-events:auto). Anchoring to
-    // the bottom keeps clear of that content instead.
-    highlight.style.opacity = '0';
-    const margin = 18;
-    tip.style.top = 'auto';
-    tip.style.bottom = margin + 'px';
-    tip.style.left = (window.innerWidth - 300 - margin) + 'px';
-    return;
-  }
-  highlight.style.opacity = '1';
-  tip.style.bottom = 'auto';
-  const pad = 8;
-  highlight.style.top = (rect.top - pad) + 'px';
-  highlight.style.left = (rect.left - pad) + 'px';
-  highlight.style.width = (rect.width + pad * 2) + 'px';
-  highlight.style.height = (rect.height + pad * 2) + 'px';
-
-  const tipW = 300, tipH = tip.offsetHeight || 140, margin = 14;
-  let top = rect.bottom + pad + margin;
-  if (top + tipH > window.innerHeight - margin) top = Math.max(margin, rect.top - pad - margin - tipH);
-  const left = Math.min(Math.max(margin, rect.left), window.innerWidth - tipW - margin);
-  tip.style.top = top + 'px';
-  tip.style.left = left + 'px';
-}
-function qzWalkShowComplete() {
-  const l = qzWalkCurrentLesson();
-  document.getElementById('qzWalkHighlight').style.opacity = '0';
-  const tip = document.getElementById('qzWalkTip');
-  qzWalkSetTipBody(`<b>&#127881; Lesson ${l.number} complete!</b><p>Great work, you finished every step. The next lesson is unlocked from the Dashboard.</p>
-     <button class="qz-btn primary" style="margin-top:10px" onclick="qzWalkBackToLessons()">Back to Lessons</button>`);
-  tip.style.top = '50%';
-  tip.style.bottom = 'auto';
-  tip.style.left = '50%';
-  tip.style.transform = 'translate(-50%,-50%)';
-}
-function qzWalkUnlockSearchInput() {
+/* Lesson 1 locks the top search box during its 'open the order' step so the trainee can't
+   filter the target row out from under the highlight. The engine calls this before every
+   step (config.beforeStep), so the lock can never outlive the one step that wanted it. */
+/* Runs before every walkthrough step. Besides releasing the lock the orders-open step puts on
+   the box, it clears what that step typed into it: the value and qzState.orderFilter used to
+   survive the whole rest of the lesson, so the search kept showing "1483" and the Orders list
+   stayed filtered to one row long after that step was over. Steps that need a preset filter
+   set it in their own setup(), which runs after this. */
+function qzUnlockSearchInput() {
   const input = document.getElementById('qzTopSearchInput');
-  if (input) { input.disabled = false; input.title = ''; }
+  if (input) { input.disabled = false; input.title = ''; input.value = ''; }
+  qzState.orderFilter = '';
 }
-function qzWalkBackToLessons() {
-  qzWalk = null;
-  document.getElementById('qzWalk').classList.remove('open');
-  qzWalkUnlockSearchInput();
-  qzGoto('dashboard');
-}
-function qzWalkExit(silent) {
-  const l = qzWalkCurrentLesson();
-  qzWalk = null;
-  const w = document.getElementById('qzWalk');
-  if (w) w.classList.remove('open');
-  qzWalkUnlockSearchInput();
-  if (!silent) {
-    if (l) { qzState.view = 'lesson'; qzState.lessonId = l.id; qzSyncTopTabs(); }
-    qzRenderRoot();
-  }
-}
-function qzWalkReposition() {
-  if (!qzWalk) return;
-  const step = qzWalkCurrentStep();
-  if (!step) return;
-  if (qzWalk.tourIndex != null && step.walk.tour) {
-    const stop = step.walk.tour[qzWalk.tourIndex];
-    if (stop) qzWalkPosition({ walk: { target: stop.target } });
-    return;
-  }
-  qzWalkPosition(step);
-}
-window.addEventListener('resize', qzWalkReposition);
-document.addEventListener('DOMContentLoaded', () => {
-  // .qz-body is the actual scrolling container (the page itself is height:100vh/overflow:hidden),
-  // and getBoundingClientRect() is viewport-relative — without this, the highlight/tip stay
-  // frozen at their last position while the real target scrolls away underneath them.
-  const bodyEl = document.querySelector('.qz-body');
-  if (bodyEl) bodyEl.addEventListener('scroll', qzWalkReposition, { passive: true });
-});
+
+
 
 /* ---------- final exam card (full exam logic lives further down) ---------- */
 function qzExamDashboardCardHTML(unlocked) {
-  if (typeof QZ_EXAM_ITEMS === 'undefined') return '';
+  if (typeof QZ_EXAM_BANK === 'undefined') return '';
   const ex = qzStore.exam;
+  const count = QZ_EXAM_BLUEPRINT.reduce((n, s) => n + s.count, 0);
   if (ex && ex.submittedAt) {
     const pct = ex.max ? Math.round(ex.score / ex.max * 100) : 0;
     const passed = pct >= Math.round(QZ_EXAM_PASS_PCT * 100);
-    return `<div class="qz-exam-card done"><b>Final Exam</b><p>Completed &mdash; ${ex.score}/${ex.max} (${pct}%), ${passed ? 'Passed' : 'Not passed'}.</p>
+    return `<div class="qz-exam-card done"><b>Final Exam</b><p>Completed &mdash; ${ex.score}/${ex.max} (${pct}%), ${passed ? 'Passed' : 'Not passed'}. Pass mark ${Math.round(QZ_EXAM_PASS_PCT * 100)}%.</p>
+      ${qzExamResultHTML()}
       <button class="qz-btn sm" onclick="qzExamResetAttempt(this)">Reset my exam attempt (training only)</button></div>`;
   }
   if (ex && !ex.submittedAt) {
-    return `<div class="qz-exam-card"><b>Final Exam</b><p>In progress &mdash; question ${(ex.currentIndex || 0) + 1} of ${QZ_EXAM_ITEMS.length}.</p>
+    return `<div class="qz-exam-card"><b>Final Exam</b><p>In progress &mdash; question ${(ex.currentIndex || 0) + 1} of ${(ex.itemIds || []).length} &middot; ${qzExamTimeLeftLabel()} remaining.</p>
       <button class="qz-btn primary" onclick="qzExamReturn()">Resume Exam</button></div>`;
   }
   if (!unlocked) return `<div class="qz-exam-card locked"><b>Final Exam</b><p>Unlocks once all ${QZ_LESSONS.length} lessons are complete.</p></div>`;
-  return `<div class="qz-exam-card"><b>Final Exam</b><p>One official attempt. No hints, no going back.</p><button class="qz-btn primary" onclick="qzExamStart()">Start Final Exam</button></div>`;
+  return `<div class="qz-exam-card"><b>Final Exam</b>
+    <p>${count} questions drawn from a larger bank, ${QZ_EXAM_MINUTES} minutes, pass mark ${Math.round(QZ_EXAM_PASS_PCT * 100)}%. One answer per question, no hints, no going back, and no feedback until you submit.</p>
+    <button class="qz-btn primary" onclick="qzExamStart()">Start Final Exam</button></div>`;
 }
 
 /* ---------- dashboard ---------- */
@@ -863,12 +960,12 @@ function qzDashboardHTML() {
   const su = window.SCApp && SCApp.currentUser && SCApp.currentUser();
   const firstName = su ? su.name.split(' ')[0] : 'there';
   const cards = QZ_LESSONS.map((l, i) => {
-    const state = qzLessonState(i);
-    const prog = qzLessonProgress(l);
+    const state = SimEngine.lessonState(i);
+    const prog = SimEngine.progress(l);
     const locked = state === 'locked';
     const pct = prog.total ? Math.round(prog.done / prog.total * 100) : 0;
     const fracLabel = locked ? 'Locked' : (state === 'done' ? 'Complete' : prog.done + ' of ' + prog.total + ' done');
-    return `<div class="qz-lesson-card ${state}" ${locked ? '' : `onclick="qzOpenLesson('${l.id}')"`}>
+    return `<div class="qz-lesson-card ${state}" ${locked ? '' : `onclick="SimEngine.openLesson('${l.id}')"`}>
       <div class="eyebrow">MODULE ${String(l.number).padStart(2, '0')}</div>
       <b>${esc(l.title)}</b>
       <p>${esc(l.summary)}</p>
@@ -876,7 +973,7 @@ function qzDashboardHTML() {
       <div class="frac">${esc(fracLabel)}</div>
     </div>`;
   }).join('');
-  const allDone = QZ_LESSONS.every((l, i) => qzLessonState(i) === 'done');
+  const allDone = QZ_LESSONS.every((l, i) => SimEngine.lessonState(i) === 'done');
   const examCard = qzExamDashboardCardHTML(allDone);
 
   const allSteps = QZ_LESSONS.flatMap(l => l.steps);
@@ -944,14 +1041,16 @@ function qzOrdersHTML() {
       <div class="ic">${QZ_ICONS.pin}</div>
       <h2>Skill Cloud Training</h2>
       <div class="qz-orders-hero-btns">
-        <button class="qz-btn" type="button" onclick="qzToast('Training only, quotes are not available in this simulator.')">Get a Quote</button>
-        <button class="qz-btn primary" type="button" onclick="qzToast('Training only, creating new orders is not available in this simulator.')">Place Order</button>
+        <button class="qz-btn" type="button" onclick="simToast('Training only, quotes are not available in this simulator.')">Get a Quote</button>
+        <button class="qz-btn primary" type="button" onclick="simToast('Training only, creating new orders is not available in this simulator.')">Place Order</button>
       </div>
       <div class="qz-orders-stats">${qzOrdersStatsHTML()}</div>
     </div>
     <div class="qz-listhead"><div><h2>Orders</h2><div class="sub">Search and open a file the way you would in a live queue</div></div></div>
-    <table class="qz-tbl"><thead><tr><th>Status</th><th>Stage</th><th>Order</th><th>Borrower</th><th>Seller</th><th>Property</th><th>Type</th><th>Agent</th><th>Closing</th></tr></thead>
-    <tbody id="qzOrdersBody">${qzOrdersRowsHTML()}</tbody></table>
+    <div class="qz-tbl-scroll">
+      <table class="qz-tbl"><thead><tr><th>Status</th><th>Stage</th><th>Order</th><th>Borrower</th><th>Seller</th><th>Property</th><th>Type</th><th>Agent</th><th>Closing</th></tr></thead>
+      <tbody id="qzOrdersBody">${qzOrdersRowsHTML()}</tbody></table>
+    </div>
   `;
 }
 function qzTopSearch(v) {
@@ -960,7 +1059,7 @@ function qzTopSearch(v) {
   // graded against a specific order). But while the walkthrough is actively showing this
   // exact step, only mark it done once the typed text actually surfaces Order ORD-2026-1483,
   // otherwise the tip would celebrate "found it!" over a table showing zero results.
-  const step = (typeof qzWalk !== 'undefined' && qzWalk) ? qzWalkCurrentStep() : null;
+  const step = (SimEngine.walkActive()) ? SimEngine.currentStep() : null;
   const isSearchWalkStep = step && step.type === 'do' && step.checklistId === 'orders-search';
   const target1483 = qzGetOrder('ORD-2026-1483');
   if (v && v.trim() && (!isSearchWalkStep || (target1483 && qzOrderMatchesFilter(target1483, v)))) {
@@ -975,26 +1074,20 @@ function qzTopSearch(v) {
     const body = document.getElementById('qzOrdersBody');
     if (body) body.innerHTML = qzOrdersRowsHTML();
   }
-  qzWalkSyncSearchStep();
+  qzSyncSearchStep();
 }
 function qzOpenOrder(id) {
+  qzOpenOrderTab(id);
+  const vs = qzOrderViewState(id);
   qzState.view = 'order';
   qzState.orderId = id;
-  qzState.orderTab = 'overview';
-  qzState.deTab = 'property';
-  qzState.threadId = null;
+  qzState.orderTab = vs.orderTab;
+  qzState.deTab = vs.deTab;
+  qzState.threadId = vs.threadId;
   qzMark('orders-open');
   qzSyncTopTabs();
   qzRenderRoot();
 }
-function qzBackToOrders() {
-  qzMark('orders-back');
-  qzState.view = 'orders';
-  qzState.orderId = null;
-  qzSyncTopTabs();
-  qzRenderRoot();
-}
-
 /* ---------- order shell ---------- */
 function qzTimelineHTML(o) {
   const steps = QZ_STAGES.map((label, idx) => {
@@ -1014,27 +1107,217 @@ function qzOrderTab(tab) {
   else if (tab === 'vendors') qzMark('vendors-open');
   else if (tab === 'closing') qzMark('closing-open');
   else if (tab === 'accounting') qzMark('accounting-open');
+  qzPersistOrderView();
   qzRenderRoot();
 }
+
+/* ---------- Core: the order sidebar ----------
+   Core groups an order's pages into ORDER / CLOSING / TASKS rails rather than the flat tab
+   row Connect uses. The `tab` keys are unchanged from the previous shell on purpose: the
+   lesson walkthroughs target [data-tab="..."], so renaming the navigation must not rename
+   the contract those steps rely on.
+   Pages the training doesn't implement are rendered (a VA needs to recognise the real rail)
+   but answer with qzCoreStub. `Review` has no Core equivalent at all — it's this trainer's
+   own instrument — so it's grouped separately and labelled as training. */
+const QZ_CORE_NAV = [
+  { section: 'Order', groups: [
+    { label: 'General', items: [
+      { label: 'Basic Info', tab: 'overview' },
+      { label: 'Properties', tab: 'dataentry', deTab: 'property' },
+      { label: 'Contacts', tab: 'dataentry', deTab: 'parties' },
+      { label: 'Loan', tab: 'dataentry', deTab: 'transaction' },
+      { label: 'Earnest & Commissions' },
+      { label: 'Taxes & Prorations' },
+      { label: 'Payoffs' }
+    ] },
+    { label: 'Title', items: [
+      { label: 'CPL' },
+      { label: 'Policy Info & Rates' },
+      { label: 'Commitment' },
+      { label: 'Final Policy' }
+    ] }
+  ] },
+  { section: 'Closing', groups: [
+    { label: 'Charges', items: [
+      { label: 'Origination Charges', badge: 'A' },
+      { label: 'Did Not Shop For', badge: 'B', tab: 'accounting' },
+      { label: 'Did Shop For', badge: 'C' },
+      { label: 'Taxes & Fees', badge: 'E' },
+      { label: 'Prepaids', badge: 'F' },
+      { label: 'Escrow', badge: 'G' },
+      { label: 'Other Charges', badge: 'H' },
+      { label: 'Lender Credits', badge: 'J' },
+      { label: 'Debits/Credits', badge: 'K/M' },
+      { label: 'Debits/Credits', badge: 'L/N' }
+    ] },
+    { label: 'Closing File', items: [
+      { label: 'Disclosures', tab: 'closing' },
+      { label: 'Proceeds' },
+      { label: 'Workflow', tab: 'workflow' }
+    ] }
+  ] },
+  { section: 'Tasks', groups: [
+    { label: '', items: [
+      { label: 'Documents', tab: 'documents', icon: 'doc' },
+      { label: 'Accounting', tab: 'accounting', icon: 'acct' },
+      { label: 'Marketplace', tab: 'vendors', icon: 'market' },
+      { label: 'Connect', tab: 'communication', icon: 'connect' },
+      { label: 'Order Tasks', tab: 'tasks', icon: 'task' }
+    ] }
+  ] },
+  { section: 'Training', training: true, groups: [
+    { label: '', items: [
+      { label: 'Document Review', tab: 'review', icon: 'review' }
+    ] }
+  ] }
+];
+const QZ_NAV_ICONS = {
+  doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>',
+  acct: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h4"/></svg>',
+  market: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18l-1.5 10.5A2 2 0 0 1 17.5 21h-11a2 2 0 0 1-2-1.5z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>',
+  connect: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l1.9-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg>',
+  task: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l2 2 4-4"/><rect x="3" y="4" width="18" height="16" rx="2"/></svg>',
+  review: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>'
+};
+function qzNavGo(tab, deTab) {
+  // The drawer sits on top of the content on narrow screens, so leaving it open after a nav
+  // click would hide the very page the click just opened.
+  qzState.railOpen = false;
+  if (deTab) qzState.deTab = deTab;
+  qzOrderTab(tab);
+  if (deTab) { qzState.deTab = deTab; qzDeTab(deTab); }
+}
+/* Below ~760px there is no room for a 208px rail plus a readable content column, so the rail
+   becomes an overlay drawer instead of a permanent column (see the .qz-core.rail-open rules).
+   Kept in qzState rather than a DOM class because qzRenderRoot rebuilds .qz-core wholesale on
+   every navigation, which would drop a class toggled directly on the node. */
+function qzToggleRail(force) {
+  qzState.railOpen = (force === undefined) ? !qzState.railOpen : !!force;
+  qzRenderRoot();
+}
+
+function qzOrderSidebarHTML(o) {
+  const counts = {
+    documents: qzDocsForOrder(o.id).filter(d => qzDocStatus(d) === 'Pending').length,
+    tasks: qzTasksForOrder(o.id).filter(t => qzTaskStatus(t) !== 'Complete').length,
+    review: qzReviewsForOrder(o.id).filter(r => !qzStore.reviews[r.id]).length
+  };
+  const sections = QZ_CORE_NAV.map(sec => {
+    const groups = sec.groups.map(g => {
+      const items = g.items.map(it => {
+        const live = !!it.tab;
+        const active = live && qzState.orderTab === it.tab &&
+          (!it.deTab || qzState.deTab === it.deTab);
+        const onclick = live
+          ? `qzNavGo('${it.tab}'${it.deTab ? `,'${it.deTab}'` : ''})`
+          : `qzCoreStub('${esc(it.label)}')`;
+        const badge = it.badge ? `<span class="bdg">${esc(it.badge)}</span>` : '';
+        const count = counts[it.tab] ? `<span class="cnt">${counts[it.tab]}</span>` : '';
+        const icon = it.icon ? `<span class="ic">${QZ_NAV_ICONS[it.icon]}</span>` : '';
+        // data-tab is the selector contract the lesson walkthroughs point at.
+        return `<div class="qz-nav-item ${active ? 'active' : ''} ${live ? '' : 'stub'}" ${live ? `data-tab="${it.tab}"` : ''} onclick="${onclick}">${icon}<span class="t">${esc(it.label)}</span>${count}${badge}</div>`;
+      }).join('');
+      const head = g.label ? `<div class="qz-nav-group">${esc(g.label)}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>` : '';
+      return head + items;
+    }).join('');
+    return `<div class="qz-nav-sec ${sec.training ? 'training' : ''}"><div class="qz-nav-sec-h">${esc(sec.section)}</div>${groups}</div>`;
+  }).join('');
+
+  return `<div class="qz-order-side">
+    <div class="qz-side-head">
+      <span class="pin">${QZ_ICONS.pin}</span>
+      <div class="addr">${esc(o.propertyAddress.split(',')[0])}</div>
+      <div class="ono">${esc(o.id.replace('ORD-', ''))}</div>
+    </div>
+    <div class="qz-side-nav">${sections}</div>
+  </div>`;
+}
+
+/* ---------- Core: right-hand panel ----------
+   Chat is presence only (decorative, as in the real product for our purposes), Tasks and
+   Help are contextual to the open order, Notes is the one that actually persists — that's
+   where a VA writes down what they did, and Lesson 14 expects it to still be there. */
+const QZ_CORE_PRESENCE = [
+  { name: 'Lucas Adminton', role: 'Settlement Agent', online: true },
+  { name: 'Dana Reyes', role: 'Escrow Officer', online: true },
+  { name: 'Travis Jones', role: 'Title Examiner', online: false },
+  { name: 'Barbara Runolfsson', role: 'Post-Closing', online: false },
+  { name: 'Training User', role: 'You', online: true }
+];
+const QZ_PANEL_HELP = {
+  overview: 'Basic Info shows the file at a glance: stage, key dates, parties and figures. Confirm where a file stands here before telling anyone anything about it.',
+  dataentry: 'Properties, Contacts and Loan hold the data entered at intake. Every field here should be traceable to a document in the file.',
+  documents: 'Documents tracks each file\'s paperwork through Pending, Received and Reviewed. A status is a statement of fact other people rely on.',
+  review: 'Document Review is a training instrument, not a Qualia Core screen. It walks the comparison a VA does by eye: open the source, report what it says, decide what to do.',
+  tasks: 'Order Tasks lists what is outstanding on this file. Prioritise by closing impact and by whether the next step belongs to someone else.',
+  workflow: 'Workflow shows the file\'s stage progression. Stage rules are configured by admins, not by a VA.',
+  communication: 'Connect is where correspondence with agents, lenders and clients lives. Everything written here is part of the file record.',
+  vendors: 'Marketplace tracks the vendors engaged on this order and their confirmation status.',
+  closing: 'Disclosures collects what must be complete before the file can be called closing-ready.',
+  accounting: 'The charges grid is read-only for a VA. Review the figures, and route anything that looks wrong to someone with authority to change it.'
+};
+function qzTogglePanel(key) {
+  qzState.panel[key] = !qzState.panel[key];
+  qzRenderRoot();
+}
+function qzSaveNote(orderId) {
+  const el = document.getElementById('qzNoteBox');
+  if (!el) return;
+  qzStore.notes[orderId] = el.value;
+  qzSave();
+  simToast('Note saved to this file.', { tone: 'good' });
+}
+function qzPanelSectionHTML(key, title, bodyHTML, extraHead) {
+  const open = !!qzState.panel[key];
+  return `<div class="qz-panel-sec ${open ? 'open' : ''}">
+    <div class="qz-panel-sec-h" onclick="qzTogglePanel('${key}')">
+      <svg class="cv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      <span>${esc(title)}</span>${extraHead || ''}
+    </div>
+    ${open ? `<div class="qz-panel-sec-b">${bodyHTML}</div>` : ''}
+  </div>`;
+}
+function qzOrderPanelHTML(o) {
+  const presence = QZ_CORE_PRESENCE.map(p =>
+    `<div class="qz-presence ${p.online ? 'on' : ''}"><span class="d"></span><span class="n">${esc(p.name)}</span><span class="r">${esc(p.role)}</span></div>`
+  ).join('');
+
+  const openTasks = qzTasksForOrder(o.id).filter(t => qzTaskStatus(t) !== 'Complete');
+  const allTasks = qzTasksForOrder(o.id);
+  const tasksBody = openTasks.length
+    ? openTasks.map(t => `<div class="qz-panel-task" onclick="qzNavGo('tasks')"><span class="tt">${esc(t.title)}</span>${qzDueChipHTML(t.dueDate)}</div>`).join('')
+    : '<div class="qz-panel-empty">Nothing outstanding on this order.</div>';
+
+  const helpText = QZ_PANEL_HELP[qzState.orderTab] || 'Open a section from the rail on the left to see guidance for it.';
+  const helpBody = `<p class="qz-panel-help">${esc(helpText)}</p>
+    <div class="qz-kb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input type="text" placeholder="Search knowledge base&hellip;" onkeydown="if(event.key==='Enter') qzCoreStub('The knowledge base')"></div>
+    <div class="qz-kb-btns"><button type="button" class="qz-btn sm" onclick="qzCoreStub('Help Center')">Help Center</button><button type="button" class="qz-btn sm" onclick="qzCoreStub('Contact Us')">Contact Us</button></div>`;
+
+  const note = (qzStore.notes && qzStore.notes[o.id]) || '';
+  const notesBody = `<textarea id="qzNoteBox" class="qz-note-box" placeholder="Record what you did on this file, who you contacted, and what you are waiting on&hellip;">${esc(note)}</textarea>
+    <button type="button" class="qz-btn sm primary" onclick="qzSaveNote('${o.id}')">Save note</button>`;
+
+  return `<div class="qz-order-panel">
+    ${qzPanelSectionHTML('chat', 'Chat', presence)}
+    ${qzPanelSectionHTML('tasks', 'Tasks', tasksBody, `<span class="qz-panel-count">${openTasks.length} / ${allTasks.length}</span>`)}
+    ${qzPanelSectionHTML('help', 'Help', helpBody)}
+    ${qzPanelSectionHTML('notes', 'Notes', notesBody)}
+  </div>`;
+}
+/* Human title for the page currently open, shown in the Core content header next to the
+   house glyph the way Core titles each section of an order. */
+const QZ_TAB_TITLE = {
+  overview: 'Basic Info', dataentry: 'Properties & Contacts', documents: 'Documents',
+  review: 'Document Review', tasks: 'Order Tasks', workflow: 'Workflow',
+  communication: 'Connect', vendors: 'Marketplace', closing: 'Disclosures',
+  accounting: 'Services Borrower Did Not Shop For'
+};
 function qzOrderHTML() {
   const o = qzGetOrder(qzState.orderId);
   if (!o) return '<p>Order not found.</p>';
-  const pendingDocs = qzDocsForOrder(o.id).filter(d => qzDocStatus(d) === 'Pending').length;
-  const openTasks = qzTasksForOrder(o.id).filter(t => qzTaskStatus(t) !== 'Complete').length;
-  const openReviews = qzReviewsForOrder(o.id).filter(r => !qzStore.reviews[r.id]).length;
-
-  const tabs = [
-    ['overview', 'Overview'], ['review', 'Review', openReviews], ['dataentry', 'Data Entry'], ['documents', 'Documents', pendingDocs],
-    ['tasks', 'Tasks', openTasks], ['workflow', 'Workflow'], ['communication', 'Communication'],
-    ['vendors', 'Vendors'], ['closing', 'Closing'], ['accounting', 'Accounting']
-  ];
-  const tabsHtml = tabs.map(t => {
-    const [key, label, count] = t;
-    return `<span class="${qzState.orderTab === key ? 'active' : ''}" data-tab="${key}" onclick="qzOrderTab('${key}')">${esc(label)}${count ? ' <span class="c">' + count + '</span>' : ''}</span>`;
-  }).join('');
 
   let flagHtml = '';
-  if (o.flag === 'missing-document') flagHtml = `<div class="qz-order-flag">A required document is outstanding, see the Documents tab.</div>`;
+  if (o.flag === 'missing-document') flagHtml = `<div class="qz-order-flag">A required document is outstanding, see Documents.</div>`;
   else if (o.flag === 'closing-delay') flagHtml = `<div class="qz-order-flag bad">Closing date moved from ${fmtDate(o.originalClosingDate)} to ${fmtDate(o.closingDate)}, see Workflow for details.</div>`;
 
   let body = '';
@@ -1049,18 +1332,28 @@ function qzOrderHTML() {
   else if (qzState.orderTab === 'closing') body = qzClosingHTML(o);
   else if (qzState.orderTab === 'accounting') body = qzAccountingHTML(o);
 
-  return `
-    <span class="qz-back" onclick="qzBackToOrders()">&larr; Orders</span>
-    <div class="qz-order-hero">
-      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5a1 1 0 0 0 1 1H17.5a1 1 0 0 0 1-1V10"/><path d="M12 15.2c-2.6-1.6-3.6-3-3.6-4.2a1.8 1.8 0 0 1 3.6-.9 1.8 1.8 0 0 1 3.6.9c0 1.2-1 2.6-3.6 4.2Z" fill="#fff" stroke="none"/></svg></div>
-      <h2>${esc(o.propertyAddress)}</h2>
-      <span class="qz-badge dark">${esc(o.type)}</span>
-      <div class="ordno">Order #${esc(o.id.replace('ORD-', ''))}</div>
-      <div class="qz-order-tabs">${tabsHtml}</div>
+  const title = QZ_TAB_TITLE[qzState.orderTab] || 'Order';
+  const badge = qzState.orderTab === 'accounting' ? '<span class="qz-sec-badge">B</span>' : '';
+  const trainingTag = qzState.orderTab === 'review'
+    ? '<span class="qz-training-tag">Training tool &mdash; not a Qualia Core screen</span>' : '';
+
+  return `<div class="qz-core${qzState.railOpen ? ' rail-open' : ''}">
+    <div class="qz-rail-scrim" onclick="qzToggleRail(false)"></div>
+    ${qzOrderSidebarHTML(o)}
+    <div class="qz-order-main">
+      <div class="qz-sec-head">
+        <button type="button" class="qz-rail-toggle" onclick="qzToggleRail()" aria-label="Order navigation">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5a1 1 0 0 0 1 1H17.5a1 1 0 0 0 1-1V10"/></svg></span>
+        <h2>${esc(title)}</h2>${badge}${trainingTag}
+        <span class="qz-sec-addr">${esc(o.propertyAddress)}</span>
+      </div>
+      ${flagHtml}
+      <div class="qz-order-body">${body}</div>
     </div>
-    ${flagHtml}
-    <div style="margin-top:18px">${body}</div>
-  `;
+    ${qzOrderPanelHTML(o)}
+  </div>`;
 }
 
 /* ---------- Overview ---------- */
@@ -1087,9 +1380,9 @@ function qzOverviewHTML(o) {
         <div class="ph"><h4><span class="dot gold">${QZ_ICONS.parties}</span> Parties</h4></div>
         <table class="qz-parties"><thead><tr><th>Role</th><th>Name</th><th class="ic">Message</th><th class="ic">Cell</th><th class="ic">Work</th></tr></thead><tbody>
           ${o.parties.map(p => `<tr><td class="role">${esc(p.role)}</td><td class="name">${esc(p.name)}</td>
-            <td class="ic"><button type="button" title="Message" onclick="qzToast('Training only, no real message is sent.')">${QZ_ICONS.message}</button></td>
-            <td class="ic"><button type="button" title="Cell" onclick="qzToast('Training only, no real call is placed.')">${QZ_ICONS.cell}</button></td>
-            <td class="ic"><button type="button" title="Work" onclick="qzToast('Training only, no real call is placed.')">${QZ_ICONS.phone}</button></td>
+            <td class="ic"><button type="button" title="Message" onclick="simToast('Training only, no real message is sent.')">${QZ_ICONS.message}</button></td>
+            <td class="ic"><button type="button" title="Cell" onclick="simToast('Training only, no real call is placed.')">${QZ_ICONS.cell}</button></td>
+            <td class="ic"><button type="button" title="Work" onclick="simToast('Training only, no real call is placed.')">${QZ_ICONS.phone}</button></td>
           </tr>`).join('')}
         </tbody></table>
       </div>
@@ -1106,7 +1399,7 @@ function qzOverviewHTML(o) {
 function qzReviewsForOrder(orderId) { return QZ_REVIEWS.filter(r => r.orderId === orderId); }
 function qzReviewLookup(id) {
   return QZ_REVIEWS.find(r => r.id === id) ||
-    (typeof QZ_EXAM_ITEMS !== 'undefined' ? QZ_EXAM_ITEMS.find(i => i.type === 'verify' && i.id === id) : undefined);
+    (typeof QZ_EXAM_BANK !== 'undefined' ? QZ_EXAM_BANK.find(i => i.type === 'verify' && i.id === id) : undefined);
 }
 function qzReviewScore(orderId) {
   const items = qzReviewsForOrder(orderId);
@@ -1125,16 +1418,16 @@ function qzRevGet(id) { return qzStore.reviews[id] || (qzStore.reviews[id] = { d
    so a trainee can complete the whole item while getting every sub-part wrong, and only
    finds out at submit. In lessons, all three behave the opposite way, on purpose. */
 function qzRevExamMode(id) {
-  return typeof QZ_EXAM_ITEMS !== 'undefined' && QZ_EXAM_ITEMS.some(i => i.type === 'verify' && i.id === id);
+  return typeof QZ_EXAM_BANK !== 'undefined' && QZ_EXAM_BANK.some(i => i.type === 'verify' && i.id === id);
 }
 function qzRevOpenDoc(id) {
   const r = qzReviewLookup(id);
   if (!r) return;
-  qzViewDoc(r.doc, r.docTitle);
+  simViewDoc(r.doc, r.docTitle);
   qzRevGet(id).docOpened = true;
   qzSave();
   qzRenderRoot();
-  qzWalkSyncVerifyStep(id);
+  qzSyncVerifyStep(id);
 }
 function qzRevAnswerSource(id, optionId) {
   const r = qzReviewLookup(id);
@@ -1144,7 +1437,7 @@ function qzRevAnswerSource(id, optionId) {
   st.step2Correct = optionId === r.rightSourceOptionId;
   qzSave();
   qzRenderRoot();
-  qzWalkSyncVerifyStep(id);
+  qzSyncVerifyStep(id);
 }
 /* In the exam a wrong step 2 must not dead-end the item: step 3 has to stay reachable so the
    trainee answers every part without learning they slipped. In lessons the opposite holds —
@@ -1176,7 +1469,7 @@ function qzRevAnswerAction(id, action) {
   qzSave();
   if (action === 'none') { qzRevFinalize(id); return; }
   qzRenderRoot();
-  qzWalkSyncVerifyStep(id);
+  qzSyncVerifyStep(id);
 }
 /* Step 4 (correction branch) is the step that used to be pure theater: the input came
    prefilled with the WRONG value, and nothing ever compared what was typed against
@@ -1187,7 +1480,7 @@ function qzRevSaveCorrection(id) {
   const r = qzReviewLookup(id);
   const input = document.getElementById('qzRevInput-' + id);
   const val = input ? input.value.trim() : '';
-  if (!val) { qzToast('Enter the corrected value.'); return; }
+  if (!val) { simToast('Enter the corrected value.'); return; }
   const st = qzRevGet(id);
   st.correctedValueSaved = val;
   st.step4ValueCorrect = qzNormalizeValue(val) === qzNormalizeValue(r.correctedValue);
@@ -1197,8 +1490,8 @@ function qzRevSaveCorrection(id) {
     // same "a wrong answer never passes" rule the other steps follow.
     qzSave();
     qzRenderRoot();
-    qzToast("That doesn't match the source document — check it and save again.");
-    qzWalkSyncVerifyStep(id);
+    simToast("That doesn't match the source document — check it and save again.");
+    qzSyncVerifyStep(id);
     return;
   }
   if (st.step4ValueCorrect) {
@@ -1206,13 +1499,13 @@ function qzRevSaveCorrection(id) {
     else if (r.field) qzSetScalarOverride(r.orderId, r.field, val);
   }
   qzRevFinalize(id);
-  qzToast('Correction saved.', { tone: 'good' });
+  simToast('Correction saved.', { tone: 'good' });
 }
 function qzRevSaveEscalation(id) {
   const r = qzReviewLookup(id);
   const catSel = document.getElementById('qzRevCategory-' + id);
   const cat = catSel ? catSel.value : '';
-  if (!cat) { qzToast('Choose an escalation category.'); return; }
+  if (!cat) { simToast('Choose an escalation category.'); return; }
   const noteEl = document.getElementById('qzRevNote-' + id);
   const note = noteEl ? noteEl.value.trim() : '';
   const st = qzRevGet(id);
@@ -1225,12 +1518,12 @@ function qzRevSaveEscalation(id) {
   if (!qzRevExamMode(id) && !st.step4CategoryCorrect) {
     qzSave();
     qzRenderRoot();
-    qzToast('Not quite — check the category and submit again.');
-    qzWalkSyncVerifyStep(id);
+    simToast('Not quite — check the category and submit again.');
+    qzSyncVerifyStep(id);
     return;
   }
   qzRevFinalize(id);
-  qzToast('Escalation submitted.', { tone: qzRevGet(id).correct ? 'good' : undefined });
+  simToast('Escalation submitted.', { tone: qzRevGet(id).correct ? 'good' : undefined });
 }
 function qzRevFinalize(id) {
   const st = qzRevGet(id);
@@ -1256,7 +1549,7 @@ function qzRevRetry(id) {
   qzStore.reviews[id] = { docOpened: !!prev.docOpened, everCorrect: !!prev.everCorrect };
   qzSave();
   qzRenderRoot();
-  qzWalkSyncVerifyStep(id);
+  qzSyncVerifyStep(id);
 }
 /* Partial reset for a wrong mid-flow MC answer (step 2 or step 3): clears that step and
    everything after it, keeps earlier correct answers (and docOpened) intact so the trainee
@@ -1273,7 +1566,7 @@ function qzRevRetryStep(id, fromPhase) {
   delete st.correctedValueSaved; delete st.step4ValueCorrect;
   qzSave();
   qzRenderRoot();
-  qzWalkSyncVerifyStep(id);
+  qzSyncVerifyStep(id);
 }
 /* Same idea as qzNotifyStepDone (called from qzMark) but for `verify` items, resolved via
    qzRevFinalize instead of the checklist. An incorrect result does NOT auto-advance an
@@ -1287,17 +1580,17 @@ function qzNotifyReviewResolved(reviewId) {
   if (!step) return;
   const st = qzRevGet(reviewId);
 
-  if (typeof qzWalk !== 'undefined' && qzWalk && qzWalk.lessonId === l.id && l.steps[qzWalk.stepIndex] === step) {
-    if (st.correct) qzWalkStepDone();
-    else { qzWalkRenderRetry('Read the explanation below, then click "Redo" to try again.'); qzWalkPosition(step); }
+  if (SimEngine.walkActive() && SimEngine.currentStep() === step) {
+    if (st.correct) SimEngine.stepCompleted();
+    else { SimEngine.renderRetry('Read the explanation below, then click "Redo" to try again.'); SimEngine.position(step); }
     return;
   }
 
   if (!st.correct) return;
   const label = qzLessonStepLabel(step);
-  const prog = qzLessonProgress(l);
-  if (prog.complete) qzToast(`Lesson ${l.number} complete! Use the banner above to head back and unlock the next lesson.`, { tone: 'good', duration: 5000 });
-  else qzToast(`"${label}" done, ${prog.done} of ${prog.total} steps in Lesson ${l.number}.`, { tone: 'good' });
+  const prog = SimEngine.progress(l);
+  if (prog.complete) simToast(`Lesson ${l.number} complete! Use the banner above to head back and unlock the next lesson.`, { tone: 'good', duration: 5000 });
+  else simToast(`"${label}" done, ${prog.done} of ${prog.total} steps in Lesson ${l.number}.`, { tone: 'good' });
   qzRenderLessonBanner();
 }
 function qzRevItemHTML(id) {
@@ -1318,7 +1611,10 @@ function qzRevItemHTML(id) {
   let step2 = '';
   if (st.docOpened) {
     const answered = !!st.step2Choice;
-    const optsHtml = r.sourceOptions.map(o => {
+    // Shuffled: the "matches, no discrepancy" option was authored first on every single
+    // item, which taught position rather than reading.
+    const optsHtml = qzOptionOrder('rev2:' + id, r.sourceOptions.length).map(i => {
+      const o = r.sourceOptions[i];
       let cls = '';
       if (answered) {
         if (o.id === r.rightSourceOptionId) cls = 'correct';
@@ -1340,7 +1636,8 @@ function qzRevItemHTML(id) {
   let step3 = '';
   if (qzRevStep3Unlocked(id)) {
     const answered = !!st.step3Choice;
-    const optsHtml = QZ_ACTION_CHOICES.map(a => {
+    const optsHtml = qzOptionOrder('rev3:' + id, QZ_ACTION_CHOICES.length).map(i => {
+      const a = QZ_ACTION_CHOICES[i];
       let cls = '';
       if (answered) {
         if (a.id === r.rightAction) cls = 'correct';
@@ -1425,7 +1722,7 @@ function qzRevItemHTML(id) {
     const lessonStep = qzState.lessonId && typeof QZ_LESSONS !== 'undefined'
       ? (QZ_LESSONS.find(x => x.id === qzState.lessonId) || { steps: [] }).steps.find(s2 => s2.type === 'verify' && s2.reviewId === id)
       : null;
-    const continueBtn = (st.correct && lessonStep) ? qzLessonContinueHTML(lessonStep) : '';
+    const continueBtn = (st.correct && lessonStep) ? qzContinueHTML(lessonStep) : '';
     // Redo doesn't make sense once you're right and a Continue button is already offering
     // the way forward, clicking it would wipe the resolved state and, since Continue only
     // renders inside this same feedback block, take the Continue button down with it.
@@ -1451,9 +1748,13 @@ function qzRevItemHTML(id) {
     ${feedback}
   </div>`;
 }
+function qzReconcilesForOrder(orderId) {
+  return typeof QZ_RECONCILES !== 'undefined' ? QZ_RECONCILES.filter(r => r.orderId === orderId) : [];
+}
 function qzReviewHTML(o) {
   const items = qzReviewsForOrder(o.id);
-  if (!items.length) {
+  const recs = qzReconcilesForOrder(o.id);
+  if (!items.length && !recs.length) {
     return `<div class="qz-panel"><div class="ph"><h4>Review</h4></div><p style="font-size:13px;color:var(--qz-muted)">No review items are set up for this order yet.</p></div>`;
   }
   const score = qzReviewScore(o.id);
@@ -1461,17 +1762,28 @@ function qzReviewHTML(o) {
   // ("one point at a time" instead of the whole order's review history at once): anything
   // already resolved collapses to a compact row, anything not reached yet doesn't show. Outside
   // an active verify step (browsing normally, or mid `do`/`decide` step), show everything.
-  const walkStep = (typeof qzWalk !== 'undefined' && qzWalk) ? qzWalkCurrentStep() : null;
+  const walkStep = (SimEngine.walkActive()) ? SimEngine.currentStep() : null;
   const walking = walkStep && walkStep.type === 'verify';
+  const walkingRec = walkStep && walkStep.type === 'reconcile';
   const rows = items.map(r => {
+    if (walkingRec) return qzRevGet(r.id).resolvedAt ? qzRevCollapsedHTML(r.id) : '';
     if (!walking) return qzRevItemHTML(r.id);
     if (walkStep.reviewId === r.id) return qzRevItemHTML(r.id);
     return qzRevGet(r.id).resolvedAt ? qzRevCollapsedHTML(r.id) : '';
   }).join('');
+  // Reconcile items live in the same tab: they are the same job (compare the record against
+  // its sources), just across more than one document at a time.
+  const recRows = recs.map(r => {
+    if (walkingRec) return walkStep.reconcileId === r.id ? qzRecItemHTML(r.id) : '';
+    if (walking) return '';
+    return qzRecItemHTML(r.id);
+  }).join('');
+  const scoreLine = items.length
+    ? `<span class="qz-rv-score">${score.resolved}/${score.total} reviewed &middot; ${score.correct} correct calls</span>` : '';
   return `<div class="qz-panel">
-    <div class="ph"><h4>Document Review</h4><span class="qz-rv-score">${score.resolved}/${score.total} reviewed &middot; ${score.correct} correct calls</span></div>
+    <div class="ph"><h4>Document Review</h4>${scoreLine}</div>
     <p style="font-size:13px;color:var(--qz-muted);margin:0 0 18px">Open the source document, work through each step, and report what you find: verify it, correct it, or escalate it.</p>
-    ${rows}
+    ${rows}${recRows}
   </div>`;
 }
 function qzRevCollapsedHTML(id) {
@@ -1494,17 +1806,17 @@ function qzDeTab(tab) {
 function qzDeMarkDirty() {
   const btn = document.getElementById('qzDeSaveBtn');
   if (btn) btn.style.display = '';
-  qzWalkSyncEditStep();
+  qzSyncEditStep();
 }
 /* Keeps the de-edit step's tip text live as the trainee types the buyer's phone number, same
-   idea as qzWalkSyncSearchStep: say immediately if what's typed doesn't match the number the
+   idea as qzSyncSearchStep: say immediately if what's typed doesn't match the number the
    walkthrough asked for, instead of staying silent until Save is clicked. */
-function qzWalkSyncEditStep() {
-  if (typeof qzWalk === 'undefined' || !qzWalk) { if (typeof qzWalkReposition === 'function') qzWalkReposition(); return; }
-  const step = qzWalkCurrentStep();
-  if (!step || step.type !== 'do' || step.checklistId !== 'de-edit') { qzWalkReposition(); return; }
-  qzWalkRenderTip(step, false);
-  qzWalkPosition(step);
+function qzSyncEditStep() {
+  if (!SimEngine.walkActive()) { SimEngine.reposition(); return; }
+  const step = SimEngine.currentStep();
+  if (!step || step.type !== 'do' || step.checklistId !== 'de-edit') { SimEngine.reposition(); return; }
+  SimEngine.renderTip(step, false);
+  SimEngine.position(step);
 }
 function qzDeSaveChanges(orderId) {
   const sub = qzState.deTab || 'property';
@@ -1515,8 +1827,10 @@ function qzDeSaveChanges(orderId) {
     const stateZip = (document.getElementById('qzDeStateZip').value || '').trim();
     const propType = (document.getElementById('qzDePropType').value || '').trim();
     const addr = [street, city, stateZip].filter(Boolean).join(', ');
+    const legal = (document.getElementById('qzDeLegal').value || '').trim();
     if (addr) qzSetScalarOverride(orderId, 'propertyAddress', addr);
     if (propType) qzSetScalarOverride(orderId, 'propertyType', propType);
+    if (legal) qzSetScalarOverride(orderId, 'legalDescription', legal);
   } else if (sub === 'parties') {
     let buyerPhoneMatchesTarget = false;
     document.querySelectorAll('.qz-party-card').forEach(card => {
@@ -1534,12 +1848,12 @@ function qzDeSaveChanges(orderId) {
     // Outside the walkthrough, Data Entry is a general tool, any edit is a valid edit. But
     // while the walkthrough is actively on this exact step, it's a specific exercise: type
     // the number the trainee was just told, don't just accept whatever got typed.
-    const step = (typeof qzWalk !== 'undefined' && qzWalk) ? qzWalkCurrentStep() : null;
+    const step = (SimEngine.walkActive()) ? SimEngine.currentStep() : null;
     const isEditWalkStep = step && step.type === 'do' && step.checklistId === 'de-edit';
     if (!isEditWalkStep || buyerPhoneMatchesTarget) {
       qzMark('de-edit');
     } else {
-      qzToast(`Saved, but it doesn't match — the buyer said ${QZ_DE_EDIT_TARGET_PHONE}. Check the Phone field and save again.`);
+      simToast(`Saved, but it doesn't match — the buyer said ${QZ_DE_EDIT_TARGET_PHONE}. Check the Phone field and save again.`);
       skipSavedToast = true;
     }
   } else {
@@ -1556,7 +1870,7 @@ function qzDeSaveChanges(orderId) {
     if (titleNum) qzSetScalarOverride(orderId, 'titleNumber', titleNum);
     if (agency) qzSetScalarOverride(orderId, 'settlementAgency', agency);
   }
-  if (!skipSavedToast) qzToast('Changes saved.', { tone: 'good' });
+  if (!skipSavedToast) simToast('Changes saved.', { tone: 'good' });
   qzRenderRoot();
 }
 function qzDataEntryHTML(o) {
@@ -1573,6 +1887,7 @@ function qzDataEntryHTML(o) {
       <div class="qz-field"><label>City</label><input id="qzDeCity" value="${escAttr((parts[1] || '').trim())}" oninput="qzDeMarkDirty()"></div>
       <div class="qz-field"><label>State / Zip</label><input id="qzDeStateZip" value="${escAttr((parts[2] || '').trim())}" oninput="qzDeMarkDirty()"></div>
       <div class="qz-field"><label>Property Type</label><input id="qzDePropType" value="${escAttr(o.propertyType || 'Single Family Residence')}" oninput="qzDeMarkDirty()"></div>
+      <div class="qz-field wide"><label>Legal Description</label><input id="qzDeLegal" value="${escAttr(o.legalDescription || '')}" oninput="qzDeMarkDirty()"></div>
     </div>`;
   } else if (sub === 'parties') {
     body = o.parties.map(p => `
@@ -1612,31 +1927,33 @@ function qzUploadDoc(id) {
   qzSave();
   qzRenderRoot();
 }
-function qzDownloadDoc() { qzMark('docs-download'); qzToast('Downloaded (training only, no real file was transferred).'); }
-function qzReviewDoc(id) { qzStore.docStatus[id] = 'Reviewed'; qzSave(); qzMark('docs-review'); qzRenderRoot(); }
+/* Opening a document from the Documents table is the "I looked at it" step of the lifecycle,
+   so it has to mark docs-download the same way the Download button does. The refactor pointed
+   this button straight at the engine's simViewDoc, which only opens the modal — so Lesson 4
+   step 2 opened the file and then waited forever for a step that could never complete.
+   Review items deliberately keep calling simViewDoc directly: they track their own docOpened. */
 function qzViewDoc(file, title) {
   qzMark('docs-download');
-  document.getElementById('qzDocModalTitle').textContent = title || 'Document';
-  document.getElementById('qzDocFrame').src = file;
-  document.getElementById('qzDocModal').classList.add('open');
+  simViewDoc(file, title);
 }
-function qzCloseDoc() {
-  document.getElementById('qzDocModal').classList.remove('open');
-  document.getElementById('qzDocFrame').src = 'about:blank';
-  // The walkthrough deliberately floats its tip (no highlight) while the doc modal covers
-  // the screen; once closed, re-sync so it can point at the review step underneath again.
-  if (typeof qzWalk !== 'undefined' && qzWalk) {
-    const step = qzWalkCurrentStep();
-    if (step) { qzWalkRenderTip(step, false); qzWalkPosition(step, { scrollIntoView: true }); }
-  }
-}
+function qzDownloadDoc() { qzMark('docs-download'); simToast('Downloaded (training only, no real file was transferred).'); }
+function qzReviewDoc(id) { qzStore.docStatus[id] = 'Reviewed'; qzSave(); qzMark('docs-review'); qzRenderRoot(); }
+
+
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') qzCloseDoc();
+  if (e.key === 'Escape') simCloseDoc();
 });
 function qzDocumentsHTML(o) {
+  const o2 = qzGetOrder(o.id);
+  const daysToClosing = o2 ? qzDaysFromToday(o2.closingDate) : null;
   const rows = qzDocsForOrder(o.id).map(d => {
     const st = qzDocStatus(d);
     const badgeClass = st === 'Pending' ? 'pending' : st === 'Received' ? 'received' : 'reviewed';
+    // A pending document only matters in relation to the closing it's holding up — showing
+    // that pressure in the row is what makes "which of these is urgent" a real question.
+    const pressure = (st === 'Pending' && daysToClosing !== null)
+      ? ` <span class="qz-due ${daysToClosing < 0 ? 'overdue' : daysToClosing <= 7 ? 'soon' : 'far'}">closing in ${daysToClosing}d</span>`
+      : '';
     let actions = '';
     if (st === 'Pending') actions = `<button class="qz-btn sm primary" data-doc-action="upload" onclick="qzUploadDoc(${d.id})">Upload</button>`;
     else {
@@ -1645,7 +1962,7 @@ function qzDocumentsHTML(o) {
         : `<button class="qz-btn sm" data-doc-action="download" onclick="qzDownloadDoc()">Download</button>`;
       if (st === 'Received') actions += ` <button class="qz-btn sm" data-doc-action="review" onclick="qzReviewDoc(${d.id})">Mark Reviewed</button>`;
     }
-    return `<tr data-doc-id="${d.id}"><td>${esc(d.name)}</td><td>${esc(d.type)}</td><td><span class="qz-badge ${badgeClass}">${st}</span></td><td>${esc(d.uploadedBy)}</td><td>${fmtDate(d.date)}</td><td><div class="qz-row-actions">${actions}</div></td></tr>`;
+    return `<tr data-doc-id="${d.id}"><td>${esc(d.name)}</td><td>${esc(d.type)}</td><td><span class="qz-badge ${badgeClass}">${st}</span>${pressure}</td><td>${esc(d.uploadedBy)}</td><td>${fmtDate(d.date)}</td><td><div class="qz-row-actions">${actions}</div></td></tr>`;
   }).join('');
   return `<div class="qz-panel"><div class="ph"><h4>Documents</h4></div>
     <table class="qz-tbl"><thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Uploaded By</th><th>Date</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>
@@ -1659,9 +1976,16 @@ function qzTasksHTML(o) {
     const st = qzTaskStatus(t);
     const badgeClass = st === 'Complete' ? 'complete' : st === 'In Progress' ? 'progress' : 'open';
     const action = st !== 'Complete' ? `<button class="qz-btn sm primary" onclick="qzCompleteTask(${t.id})">Mark Complete</button>` : '<span style="color:var(--qz-muted);font-size:12px">Done</span>';
-    return `<tr data-task-id="${t.id}"><td>${esc(t.title)}</td><td>${esc(t.assignedTo)}</td><td>${fmtDate(t.dueDate)}</td><td><span class="qz-badge ${badgeClass}">${st}</span></td><td>${action}</td></tr>`;
+    // A completed task's countdown is noise — only what's still open can be "overdue".
+    const due = st === 'Complete' ? fmtDate(t.dueDate) : `${fmtDate(t.dueDate)} ${qzDueChipHTML(t.dueDate)}`;
+    return `<tr data-task-id="${t.id}"><td>${esc(t.title)}</td><td>${esc(t.assignedTo)}</td><td>${due}</td><td><span class="qz-badge ${badgeClass}">${st}</span></td><td>${action}</td></tr>`;
   }).join('');
+  const o2 = qzGetOrder(o.id);
+  const closingLine = o2 && o2.closingDate
+    ? `<div class="qz-due-context">Today is ${fmtDate(QZ_TODAY)}. This file is scheduled to close ${qzDaysPhrase(o2.closingDate)}, on ${fmtDate(o2.closingDate)}.</div>`
+    : '';
   return `<div class="qz-panel"><div class="ph"><h4>Tasks</h4></div>
+    ${closingLine}
     <table class="qz-tbl"><thead><tr><th>Task</th><th>Assigned To</th><th>Due</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table>
   </div>`;
 }
@@ -1692,8 +2016,8 @@ function qzThreadMessages(threadId) {
 function qzSendReply(threadId) {
   const box = document.getElementById('qzReplyBox');
   const text = box ? box.value.trim() : '';
-  if (!text) { qzToast('Write a reply before sending.'); return; }
-  if (text.length < 20) { qzToast('Your reply should be at least 20 characters. Write a professional response.'); return; }
+  if (!text) { simToast('Write a reply before sending.'); return; }
+  if (text.length < 20) { simToast('Your reply should be at least 20 characters. Write a professional response.'); return; }
   const msgs = qzThreadMessages(threadId);
   const last = msgs[msgs.length - 1];
   const recipient = last.sender === 'You (VA)' ? last.recipient : last.sender;
@@ -1703,7 +2027,7 @@ function qzSendReply(threadId) {
   qzMark('comm-reply');
   qzRenderRoot();
 }
-function qzLogFollowup() { qzMark('comm-followup'); qzToast('Follow-up logged on this file (training only).'); }
+function qzLogFollowup() { qzMark('comm-followup'); simToast('Follow-up logged on this file (training only).'); }
 function qzCommunicationHTML(o) {
   const threads = QZ_MESSAGES.filter(m => m.orderId === o.id);
   if (!qzState.threadId || !threads.some(t => t.id === qzState.threadId)) qzState.threadId = threads[0] ? threads[0].id : null;
@@ -1711,13 +2035,26 @@ function qzCommunicationHTML(o) {
     const count = qzThreadMessages(t.id).length;
     return `<div class="qz-thread-item ${t.id === qzState.threadId ? 'active' : ''}" onclick="qzOpenThread(${t.id})"><b>${esc(t.subject)}</b><span>${count} message${count !== 1 ? 's' : ''}</span></div>`;
   }).join('');
+  // A compose exercise takes over this tab while it's the active thing to do: it carries its
+  // own thread context and its own graded reply box, so showing the ordinary reply UI beside
+  // it would just offer a second, ungraded way to answer the same message.
+  const composes = (typeof QZ_COMPOSES !== 'undefined' ? QZ_COMPOSES : []).filter(c => c.orderId === o.id);
+  const walkStep = (SimEngine.walkActive()) ? SimEngine.currentStep() : null;
+  if (composes.length) {
+    const activeCompose = (walkStep && walkStep.type === 'compose')
+      ? composes.find(c => c.id === walkStep.composeId)
+      : composes.find(c => !qzComposeGet(c.id).resolvedAt) || composes[0];
+    if (activeCompose) {
+      return `<div class="qz-panel">${qzComposeItemHTML(activeCompose.id)}</div>`;
+    }
+  }
   const active = threads.find(t => t.id === qzState.threadId);
   let detail = '<div class="qz-panel">Select a thread.</div>';
   if (active) {
     const msgs = qzThreadMessages(active.id).map(m => `<div class="qz-msg ${m.sender === 'You (VA)' ? 'mine' : ''}"><div class="meta">${esc(m.sender)} &rarr; ${esc(m.recipient)} &middot; ${fmtDate(m.date)}</div>${esc(m.body)}</div>`).join('');
     detail = `<div class="qz-panel"><div class="ph"><h4>${esc(active.subject)}</h4></div>
       ${msgs}
-      <div class="qz-reply"><textarea id="qzReplyBox" placeholder="Write a reply..." oninput="qzWalkSyncReplyStep()"></textarea>
+      <div class="qz-reply"><textarea id="qzReplyBox" placeholder="Write a reply..." oninput="qzSyncReplyStep()"></textarea>
       <div class="row"><button class="qz-btn" data-comm-action="followup" onclick="qzLogFollowup()">Log Follow-up</button><button class="qz-btn primary" data-comm-action="reply" onclick="qzSendReply(${active.id})">Send Reply</button></div></div>
     </div>`;
   }
@@ -1728,7 +2065,7 @@ function qzCommunicationHTML(o) {
 function qzCheckVendor(id) {
   const v = QZ_VENDORS.find(x => x.id === id);
   qzMark('vendors-check');
-  qzToast(v.name + ': ' + v.status);
+  simToast(v.name + ': ' + v.status);
 }
 function qzVendorsHTML(o) {
   const rows = QZ_VENDORS.filter(v => v.orderId === o.id).map(v => {
@@ -1741,7 +2078,7 @@ function qzVendorsHTML(o) {
 }
 
 /* ---------- Closing ---------- */
-function qzReviewClosing() { qzMark('closing-review'); qzToast('Closing checklist reviewed (training only).'); }
+function qzReviewClosing() { qzMark('closing-review'); simToast('Closing checklist reviewed (training only).'); }
 function qzClosingHTML(o) {
   const outstanding = qzDocsForOrder(o.id).filter(d => qzDocStatus(d) !== 'Reviewed');
   const items = outstanding.length
@@ -1760,22 +2097,642 @@ function qzClosingHTML(o) {
 }
 
 /* ---------- Accounting (read-only) ---------- */
-function qzAccountingHTML(o) {
-  const rows = [
-    ["Title - Settlement or Closing Fee", "Best Closing Inc.", Math.round(o.purchasePrice * 0.0014 * 100) / 100],
-    ["Owner's Title Policy", "Best Closing Inc.", Math.round(o.purchasePrice * 0.0057 * 100) / 100],
-    ["Recording Fees", "County Clerk", 185],
-    ["Credit Report", "Certified Credit Bureau", 29.5]
+/* ---------- Accounting: settlement statement grid ----------
+   Core does not show charges as a flat three-column list. It shows numbered lines against
+   who pays them and when: Paid by Borrower (At Closing / Before Closing), Paid by Seller
+   (same split), and By Others. Reading that grid — and understanding that the same total
+   can sit in very different columns — is the actual skill, so the layout is the lesson.
+   Blank numbered lines are rendered deliberately: the real grid is a fixed-length section,
+   not a list that shrinks to its contents.
+   Each charge declares which column it lands in; `col` is one of the five column keys. */
+const QZ_ACCT_COLS = ['borrowerAt', 'borrowerBefore', 'sellerAt', 'sellerBefore', 'byOthers'];
+function qzAcctLines(o) {
+  const lines = [
+    { desc: 'Title - Settlement or Closing Fee', payee: 'Best Closing Inc.', amount: Math.round(o.purchasePrice * 0.0014 * 100) / 100, col: 'borrowerAt' },
+    { desc: "Owner's Title Policy", payee: 'Best Closing Inc.', amount: Math.round(o.purchasePrice * 0.0057 * 100) / 100, col: 'sellerAt' },
+    { desc: 'Recording Fees', payee: 'County Clerk', amount: 185, col: 'borrowerAt' },
+    { desc: 'Credit Report', payee: 'Certified Credit Bureau', amount: 29.5, col: 'borrowerBefore' }
   ];
-  if (o.inspectionCharge != null) rows.push(["Home Inspection Fee", "Ace Home Inspections", Number(o.inspectionCharge)]);
-  const total = rows.reduce((s, r) => s + r[2], 0);
-  const trs = rows.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td class="num">${fmtMoney(r[2])}</td></tr>`).join('');
+  if (o.inspectionCharge != null) {
+    lines.push({ desc: 'Home Inspection Fee', payee: 'Ace Home Inspections', amount: Number(o.inspectionCharge), col: 'borrowerBefore' });
+  }
+  return lines;
+}
+function qzAccountingHTML(o) {
+  const lines = qzAcctLines(o);
+  const MIN_ROWS = 8;
+  const totals = { borrowerAt: 0, borrowerBefore: 0, sellerAt: 0, sellerBefore: 0, byOthers: 0 };
+  lines.forEach(l => { if (totals[l.col] != null) totals[l.col] += l.amount; });
+
+  const rowHTML = (l, i) => {
+    const cells = QZ_ACCT_COLS.map(c =>
+      `<td class="num ${l && l.col === c ? 'has' : ''}">${l && l.col === c ? fmtMoney(l.amount) : ''}</td>`
+    ).join('');
+    return `<tr class="${l ? '' : 'empty'}">
+      <td class="ln">${String(i + 1).padStart(2, '0')}</td>
+      <td class="desc">${l ? esc(l.desc) : ''}</td>
+      <td class="payee">${l ? 'to ' + esc(l.payee) : ''}</td>
+      ${cells}
+    </tr>`;
+  };
+  const body = [];
+  for (let i = 0; i < Math.max(MIN_ROWS, lines.length); i++) body.push(rowHTML(lines[i] || null, i));
+  const totalCells = QZ_ACCT_COLS.map(c => `<td class="num">${fmtMoney(totals[c])}</td>`).join('');
+
   return `<div class="qz-panel">
-    <div class="qz-readonly-note">Accounting is read-only in this simulator. A VA can review balances here, funds are never modified.</div>
-    <table class="qz-tbl qz-acct"><thead><tr><th>Description</th><th>Payee</th><th class="num">Amount</th></tr></thead>
-    <tbody>${trs}</tbody>
-    <tfoot><tr><td colspan="2">Total Charges</td><td class="num">${fmtMoney(total)}</td></tr></tfoot>
-    </table>
+    <div class="qz-readonly-note">This grid is read-only for a VA. Review the figures and route anything that looks wrong to someone with authority to change it, funds are never modified from here.</div>
+    <div class="qz-tbl-scroll">
+      <table class="qz-acct-grid">
+        <thead>
+          <tr class="grp">
+            <th colspan="3"></th>
+            <th colspan="2">Paid by Borrower</th>
+            <th colspan="2">Paid by Seller</th>
+            <th rowspan="2" class="by-others">By Others</th>
+          </tr>
+          <tr>
+            <th class="ln"></th><th class="desc">Description</th><th class="payee">Payee</th>
+            <th class="num">At Closing</th><th class="num">Before Closing</th>
+            <th class="num">At Closing</th><th class="num">Before Closing</th>
+          </tr>
+        </thead>
+        <tbody>${body.join('')}</tbody>
+        <tfoot><tr><td colspan="3" class="tl">TOTALS</td>${totalCells}</tr></tfoot>
+      </table>
+    </div>
+  </div>`;
+}
+
+
+/* ============================================================================
+   MECHANIC: `reconcile` — cross-checking N sources against N fields
+   ----------------------------------------------------------------------------
+   The `verify` engine above answers one question about one field against one
+   document. Most of what actually goes wrong on a title file is not that shape:
+   a price appears in three places and two of them agree, a commitment lists six
+   requirements that each have to be traced to different evidence, a payoff has
+   expired and the arithmetic has to be redone. All of those are "open several
+   documents, fill in a grid, then decide per row".
+
+   So `reconcile` generalises it. An item declares:
+     docs[]    — every source the trainee can open (all must be opened first,
+                 the same gate step 1 applies in `verify`)
+     rows[]    — one per field being reconciled. Each row carries:
+                   label     what is being compared
+                   onOrder   what the order currently says (display only)
+                   cells[]   one per doc: what does THIS document say for this
+                             field? Either a closed list of options, or a typed
+                             value graded with qzNormalizeValue / numeric
+                             tolerance.
+                   rightAction / rightCategory / correctedValue — the same
+                             decision vocabulary `verify` already uses, so the
+                             judgment half is identical and transfers.
+   Grading is per cell and per row-decision; the item is correct only when every
+   graded part is. Same everCorrect stickiness, same exam-mode rules (one shot,
+   no colouring, no retry) as `verify`.
+   ============================================================================ */
+function qzRecLookup(id) {
+  return (typeof QZ_RECONCILES !== 'undefined' ? QZ_RECONCILES.find(r => r.id === id) : null) ||
+    (typeof QZ_EXAM_BANK !== 'undefined' ? QZ_EXAM_BANK.find(i => i.type === 'reconcile' && i.id === id) : null);
+}
+function qzRecExamMode(id) {
+  return typeof QZ_EXAM_BANK !== 'undefined' && QZ_EXAM_BANK.some(i => i.type === 'reconcile' && i.id === id);
+}
+function qzRecGet(id) {
+  if (!qzStore.reconciles[id]) qzStore.reconciles[id] = { opened: {}, cells: {}, decisions: {}, notes: {} };
+  return qzStore.reconciles[id];
+}
+function qzRecAllDocsOpened(id) {
+  const r = qzRecLookup(id), st = qzRecGet(id);
+  return !!r && r.docs.every(d => st.opened[d.id]);
+}
+function qzRecOpenDoc(id, docId) {
+  const r = qzRecLookup(id);
+  const d = r && r.docs.find(x => x.id === docId);
+  if (!d) return;
+  simViewDoc(d.file, d.title);
+  qzRecGet(id).opened[docId] = true;
+  qzSave();
+  qzRenderRoot();
+  qzSyncReconcileStep(id);
+}
+/* Cell answers are stored as {value, correct}. A cell is either a closed list
+   (options + right) or a free value (right + optional numeric tolerance). */
+function qzRecCellKey(rowId, docId) { return rowId + '::' + docId; }
+function qzRecGradeCell(cell, value) {
+  if (cell.options) return value === cell.right;
+  if (cell.tolerance != null) {
+    const a = qzParseNumeric(value), b = qzParseNumeric(cell.right);
+    if (a === null || b === null) return false;
+    return Math.abs(a - b) <= cell.tolerance;
+  }
+  return qzNormalizeValue(value) === qzNormalizeValue(cell.right);
+}
+function qzRecAnswerCell(id, rowId, docId, value) {
+  const r = qzRecLookup(id);
+  if (!r || !qzRecAllDocsOpened(id)) return;
+  const row = r.rows.find(x => x.id === rowId);
+  const cell = row && row.cells.find(c => c.docId === docId);
+  if (!cell) return;
+  const st = qzRecGet(id);
+  const key = qzRecCellKey(rowId, docId);
+  // In a lesson, a graded-wrong cell can be answered again; in the exam it locks.
+  if (qzRecExamMode(id) && st.cells[key]) return;
+  st.cells[key] = { value: value, correct: qzRecGradeCell(cell, value) };
+  qzSave();
+  qzRenderRoot();
+  qzSyncReconcileStep(id);
+}
+function qzRecSaveTypedCell(id, rowId, docId) {
+  const el = document.getElementById('qzRecIn-' + id + '-' + rowId + '-' + docId);
+  if (!el) return;
+  const v = el.value.trim();
+  if (!v) { simToast('Enter what the document shows for this field.'); return; }
+  qzRecAnswerCell(id, rowId, docId, v);
+}
+function qzRecRowCellsDone(id, rowId) {
+  const r = qzRecLookup(id), st = qzRecGet(id);
+  const row = r.rows.find(x => x.id === rowId);
+  if (!row) return false;
+  return row.cells.every(c => {
+    const a = st.cells[qzRecCellKey(rowId, c.docId)];
+    // Lessons require the cell to be RIGHT before the decision unlocks (you cannot
+    // decide what to do about a discrepancy you have not read correctly). The exam
+    // only requires it to be answered.
+    return a && (qzRecExamMode(id) ? true : a.correct);
+  });
+}
+function qzRecAnswerDecision(id, rowId, action) {
+  const r = qzRecLookup(id);
+  const row = r && r.rows.find(x => x.id === rowId);
+  if (!row || !qzRecRowCellsDone(id, rowId)) return;
+  const st = qzRecGet(id);
+  const prev = st.decisions[rowId];
+  if (qzRecExamMode(id) && prev && prev.action) return;
+  st.decisions[rowId] = {
+    action: action,
+    actionCorrect: action === row.rightAction,
+    category: prev ? prev.category : null,
+    categoryCorrect: prev ? prev.categoryCorrect : null
+  };
+  qzSave();
+  qzRenderRoot();
+  qzSyncReconcileStep(id);
+}
+function qzRecSaveCategory(id, rowId) {
+  const r = qzRecLookup(id);
+  const row = r && r.rows.find(x => x.id === rowId);
+  const sel = document.getElementById('qzRecCat-' + id + '-' + rowId);
+  if (!row || !sel) return;
+  const cat = sel.value;
+  if (!cat) { simToast('Choose an escalation category.'); return; }
+  const st = qzRecGet(id);
+  const d = st.decisions[rowId] || {};
+  d.category = cat;
+  d.categoryCorrect = cat === row.rightCategory;
+  const noteEl = document.getElementById('qzRecNote-' + id + '-' + rowId);
+  if (noteEl) st.notes[rowId] = noteEl.value.trim();
+  st.decisions[rowId] = d;
+  qzSave();
+  if (!qzRecExamMode(id) && !d.categoryCorrect) {
+    qzRenderRoot();
+    simToast('Not quite — check the category and submit again.');
+    qzSyncReconcileStep(id);
+    return;
+  }
+  qzRenderRoot();
+  qzSyncReconcileStep(id);
+}
+function qzRecSaveRowValue(id, rowId) {
+  const r = qzRecLookup(id);
+  const row = r && r.rows.find(x => x.id === rowId);
+  const el = document.getElementById('qzRecFix-' + id + '-' + rowId);
+  if (!row || !el) return;
+  const v = el.value.trim();
+  if (!v) { simToast('Enter the corrected value.'); return; }
+  const st = qzRecGet(id);
+  const d = st.decisions[rowId] || {};
+  d.value = v;
+  d.valueCorrect = row.tolerance != null
+    ? (() => { const a = qzParseNumeric(v), b = qzParseNumeric(row.correctedValue); return a !== null && b !== null && Math.abs(a - b) <= row.tolerance; })()
+    : qzNormalizeValue(v) === qzNormalizeValue(row.correctedValue);
+  st.decisions[rowId] = d;
+  qzSave();
+  if (!qzRecExamMode(id) && !d.valueCorrect) {
+    qzRenderRoot();
+    simToast("That doesn't match the source. Check it and save again.");
+    qzSyncReconcileStep(id);
+    return;
+  }
+  // Apply it for real, same override layer a `verify` correction uses.
+  if (d.valueCorrect && row.field) qzSetScalarOverride(r.orderId, row.field, v);
+  if (d.valueCorrect && row.partyRole) qzSetPartyOverride(r.orderId, row.partyRole, { name: v });
+  qzRenderRoot();
+  qzSyncReconcileStep(id);
+}
+/* A row is settled once its decision is complete: 'none' needs nothing more,
+   'correct' needs a value, an escalation needs a category. */
+function qzRecRowSettled(id, rowId) {
+  const r = qzRecLookup(id);
+  const row = r.rows.find(x => x.id === rowId);
+  const d = qzRecGet(id).decisions[rowId];
+  if (!d || !d.action) return false;
+  if (!qzRecExamMode(id) && !d.actionCorrect) return false;
+  if (d.action === 'none') return true;
+  if (d.action === 'correct') return d.value != null && (qzRecExamMode(id) || d.valueCorrect);
+  return d.category != null && (qzRecExamMode(id) || d.categoryCorrect);
+}
+function qzRecComplete(id) {
+  const r = qzRecLookup(id);
+  return !!r && qzRecAllDocsOpened(id) && r.rows.every(row =>
+    (qzRecExamMode(id) ? true : qzRecRowCellsDone(id, row.id)) && qzRecRowSettled(id, row.id));
+}
+/* Overall correctness = every graded sub-part. Used by both the lesson gate and
+   the exam scorer, so a partially-right reconcile is never a pass. */
+function qzRecGrade(id) {
+  const r = qzRecLookup(id), st = qzRecGet(id);
+  const parts = [];
+  r.rows.forEach(row => {
+    row.cells.forEach(c => {
+      const a = st.cells[qzRecCellKey(row.id, c.docId)];
+      parts.push(!!(a && a.correct));
+    });
+    const d = st.decisions[row.id];
+    parts.push(!!(d && d.actionCorrect));
+    if (d && d.action === 'correct') parts.push(!!d.valueCorrect);
+    if (d && d.action && d.action.indexOf('escalate') === 0) parts.push(!!d.categoryCorrect);
+  });
+  const right = parts.filter(Boolean).length;
+  return { right: right, total: parts.length, correct: parts.length > 0 && right === parts.length };
+}
+function qzRecFinalize(id) {
+  const st = qzRecGet(id);
+  const g = qzRecGrade(id);
+  st.correct = g.correct;
+  if (g.correct) st.everCorrect = true;
+  st.resolvedAt = Date.now();
+  qzSave();
+  qzRenderRoot();
+  qzNotifyReconcileResolved(id);
+}
+function qzRecSubmit(id) {
+  if (!qzRecComplete(id)) { simToast('Finish every row before submitting.'); return; }
+  qzRecFinalize(id);
+}
+function qzRecRetry(id) {
+  if (qzRecExamMode(id)) return;
+  const prev = qzStore.reconciles[id] || {};
+  qzStore.reconciles[id] = { opened: prev.opened || {}, cells: {}, decisions: {}, notes: {}, everCorrect: !!prev.everCorrect };
+  qzSave();
+  qzRenderRoot();
+  qzSyncReconcileStep(id);
+}
+function qzNotifyReconcileResolved(recId) {
+  if (!qzState.lessonId || typeof QZ_LESSONS === 'undefined') return;
+  const l = QZ_LESSONS.find(x => x.id === qzState.lessonId);
+  if (!l) return;
+  const step = l.steps.find(s => s.type === 'reconcile' && s.reconcileId === recId);
+  if (!step) return;
+  const st = qzRecGet(recId);
+  if (SimEngine.walkActive() && SimEngine.currentStep() === step) {
+    if (st.correct) SimEngine.stepCompleted();
+    else { SimEngine.renderRetry('Read the breakdown below, then click "Redo" to try again.'); SimEngine.position(step); }
+    return;
+  }
+  if (!st.correct) return;
+  const prog = SimEngine.progress(l);
+  if (prog.complete) simToast(`Lesson ${l.number} complete! Use the banner above to head back and unlock the next lesson.`, { tone: 'good', duration: 5000 });
+  else simToast(`"${qzLessonStepLabel(step)}" done, ${prog.done} of ${prog.total} steps in Lesson ${l.number}.`, { tone: 'good' });
+  qzRenderLessonBanner();
+}
+
+/* ---------- reconcile: rendering ---------- */
+function qzRecCellHTML(r, row, cell, examMode) {
+  const st = qzRecGet(r.id);
+  const key = qzRecCellKey(row.id, cell.docId);
+  const a = st.cells[key];
+  const locked = !!a && (examMode || a.correct);
+  if (cell.options) {
+    const opts = cell.options.map(o => {
+      const sel = a && a.value === o;
+      let cls = '';
+      if (a && !examMode) {
+        if (o === cell.right) cls = 'correct';
+        else if (sel) cls = 'incorrect';
+      } else if (sel) cls = 'selected';
+      return `<option value="${escAttr(o)}" ${sel ? 'selected' : ''}>${esc(o)}</option>`;
+    }).join('');
+    const cls = (a && !examMode) ? (a.correct ? 'ok' : 'bad') : '';
+    return `<select class="qz-rec-sel ${cls}" ${locked ? 'disabled' : ''} onchange="qzRecAnswerCell('${r.id}','${row.id}','${cell.docId}',this.value)">
+      <option value="">&mdash;</option>${opts}</select>`;
+  }
+  const cls = (a && !examMode) ? (a.correct ? 'ok' : 'bad') : '';
+  return `<div class="qz-rec-typed">
+    <input type="text" class="${cls}" id="qzRecIn-${r.id}-${row.id}-${cell.docId}" value="${escAttr(a ? a.value : '')}" ${locked ? 'disabled' : ''} placeholder="${escAttr(cell.placeholder || 'As shown')}">
+    ${locked ? '' : `<button type="button" class="qz-btn sm" onclick="qzRecSaveTypedCell('${r.id}','${row.id}','${cell.docId}')">Set</button>`}
+  </div>`;
+}
+function qzRecRowDecisionHTML(r, row, examMode) {
+  const st = qzRecGet(r.id);
+  if (!qzRecRowCellsDone(r.id, row.id)) {
+    return `<div class="qz-rec-locked">Fill in every source for this row first.</div>`;
+  }
+  const d = st.decisions[row.id] || {};
+  const answered = !!d.action;
+  const actions = qzOptionOrder('rec3:' + r.id + ':' + row.id, QZ_ACTION_CHOICES.length).map(i => {
+    const a = QZ_ACTION_CHOICES[i];
+    let cls = '';
+    if (answered && !examMode) {
+      if (a.id === row.rightAction) cls = 'correct';
+      else if (a.id === d.action) cls = 'incorrect';
+    } else if (d.action === a.id) cls = 'selected';
+    return `<button type="button" class="qz-option qz-rv-mc ${cls}" ${answered ? 'disabled' : ''} onclick="qzRecAnswerDecision('${r.id}','${row.id}','${a.id}')">${esc(a.label)}</button>`;
+  }).join('');
+
+  let follow = '';
+  if (answered && (examMode || d.actionCorrect)) {
+    if (d.action === 'correct') {
+      const done = d.value != null && (examMode || d.valueCorrect);
+      const wrong = d.value != null && !d.valueCorrect && !examMode;
+      follow = done && !wrong
+        ? `<div class="qz-rv-subfeedback good">&#10003; Value recorded${examMode ? '' : ': ' + esc(d.value)}</div>`
+        : `<div class="qz-rec-follow">
+             <label>Corrected value</label>
+             <input type="text" id="qzRecFix-${r.id}-${row.id}" value="${escAttr(d.value || '')}" placeholder="Type it exactly as the governing source shows it">
+             ${wrong ? '<div class="qz-rv-subfeedback bad">&#10007; That does not match the governing source.</div>' : ''}
+             <button type="button" class="qz-btn sm primary" onclick="qzRecSaveRowValue('${r.id}','${row.id}')">Save</button>
+           </div>`;
+    } else if (d.action.indexOf('escalate') === 0) {
+      const done = d.category != null && (examMode || d.categoryCorrect);
+      const wrong = d.category != null && !d.categoryCorrect && !examMode;
+      const catOpts = QZ_ESCALATION_CATEGORIES.map(c => `<option value="${c.id}" ${d.category === c.id ? 'selected' : ''}>${esc(c.label)}</option>`).join('');
+      follow = done && !wrong
+        ? `<div class="qz-rv-subfeedback good">&#10003; Escalation category recorded.</div>`
+        : `<div class="qz-rec-follow">
+             <label>Escalation category</label>
+             <select id="qzRecCat-${r.id}-${row.id}"><option value="">Choose a category&hellip;</option>${catOpts}</select>
+             <label>Note (not graded, for practice)</label>
+             <textarea id="qzRecNote-${r.id}-${row.id}" placeholder="What is inconsistent, and what decision does it need?">${esc(st.notes[row.id] || '')}</textarea>
+             ${wrong ? '<div class="qz-rv-subfeedback bad">&#10007; That is not the right category here.</div>' : ''}
+             <button type="button" class="qz-btn sm primary" onclick="qzRecSaveCategory('${r.id}','${row.id}')">Submit</button>
+           </div>`;
+    }
+  } else if (answered && !examMode && !d.actionCorrect) {
+    follow = `<div class="qz-rv-subfeedback bad">&#10007; That is not the right call for this row.</div>
+      <button type="button" class="qz-btn sm" onclick="qzRecClearDecision('${r.id}','${row.id}')">Try again</button>`;
+  }
+  return `<div class="qz-rec-decide"><div class="qz-rec-decide-h">What should happen with this field?</div>${actions}${follow}</div>`;
+}
+function qzRecClearDecision(id, rowId) {
+  if (qzRecExamMode(id)) return;
+  delete qzRecGet(id).decisions[rowId];
+  qzSave();
+  qzRenderRoot();
+  qzSyncReconcileStep(id);
+}
+function qzRecItemHTML(id) {
+  const r = qzRecLookup(id);
+  if (!r) return '';
+  const st = qzRecGet(id);
+  const examMode = qzRecExamMode(id);
+  const done = !!st.resolvedAt;
+
+  const docBtns = r.docs.map(d =>
+    `<button type="button" class="qz-btn sm ${st.opened[d.id] ? 'opened' : ''}" data-rec-doc="${escAttr(d.id)}" onclick="qzRecOpenDoc('${id}','${d.id}')">${st.opened[d.id] ? '&#10003; ' : ''}${esc(d.title)}</button>`
+  ).join('');
+  const allOpen = qzRecAllDocsOpened(id);
+
+  const head = `<div class="qz-rec-step ${allOpen ? 'done' : 'active'}" data-rec-phase="1">
+    <div class="qz-rv-step-h">Step 1 &middot; Open every source</div>
+    <div class="qz-rec-docs">${docBtns}</div>
+    ${allOpen ? '' : '<div class="qz-rec-locked">All of them. You cannot reconcile sources you have not read.</div>'}
+  </div>`;
+
+  let grid = '';
+  if (allOpen && !done) {
+    const headCells = r.docs.map(d => `<th>${esc(d.short || d.title)}</th>`).join('');
+    const bodyRows = r.rows.map(row => {
+      const cells = r.docs.map(d => {
+        const cell = row.cells.find(c => c.docId === d.id);
+        return `<td>${cell ? qzRecCellHTML(r, row, cell, examMode) : '<span class="qz-rec-na">n/a</span>'}</td>`;
+      }).join('');
+      return `<tr data-rec-row="${escAttr(row.id)}">
+        <td class="fld"><b>${esc(row.label)}</b>${row.onOrder ? `<span class="on-order">On the order: ${esc(row.onOrder)}</span>` : ''}</td>
+        ${cells}
+      </tr>`;
+    }).join('');
+    grid = `<div class="qz-rec-step active" data-rec-phase="2">
+      <div class="qz-rv-step-h">Step 2 &middot; What does each source say?</div>
+      <div class="qz-tbl-scroll"><table class="qz-rec-grid"><thead><tr><th class="fld">Field</th>${headCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>
+    </div>`;
+  }
+
+  let decisions = '';
+  if (allOpen && !done) {
+    decisions = r.rows.map(row => `<div class="qz-rec-step active" data-rec-phase="3" data-rec-row="${escAttr(row.id)}">
+      <div class="qz-rv-step-h">Step 3 &middot; ${esc(row.label)}</div>
+      ${qzRecRowDecisionHTML(r, row, examMode)}
+    </div>`).join('');
+  }
+
+  let submit = '';
+  if (allOpen && !done) {
+    const ready = qzRecComplete(id);
+    submit = `<div class="qz-rec-actions">
+      <button type="button" class="qz-btn primary" ${ready ? '' : 'disabled'} onclick="qzRecSubmit('${id}')">Submit reconciliation</button>
+      ${ready ? '' : '<span class="qz-rec-hint">Every row needs a source reading and a decision.</span>'}
+    </div>`;
+  }
+
+  let feedback = '';
+  if (done) {
+    const g = qzRecGrade(id);
+    const bits = r.rows.map(row => {
+      const d = st.decisions[row.id] || {};
+      const cellsOk = row.cells.every(c => { const a = st.cells[qzRecCellKey(row.id, c.docId)]; return a && a.correct; });
+      const ok = cellsOk && d.actionCorrect &&
+        (d.action !== 'correct' || d.valueCorrect) &&
+        (!d.action || d.action.indexOf('escalate') !== 0 || d.categoryCorrect);
+      return `<div class="qz-rv-subfeedback ${ok ? 'good' : 'bad'}">${ok ? '&#10003;' : '&#10007;'} ${esc(row.label)} &mdash; ${esc(ok ? 'handled correctly' : row.explain)}</div>`;
+    }).join('');
+    const lessonStep = qzState.lessonId && typeof QZ_LESSONS !== 'undefined'
+      ? (QZ_LESSONS.find(x => x.id === qzState.lessonId) || { steps: [] }).steps.find(s2 => s2.type === 'reconcile' && s2.reconcileId === id)
+      : null;
+    const continueBtn = (st.correct && lessonStep) ? qzContinueHTML(lessonStep) : '';
+    const redoBtn = (st.correct && continueBtn) ? '' : `<button class="qz-btn sm" onclick="qzRecRetry('${id}')">Redo</button>`;
+    feedback = `<div class="qz-rv-feedback ${st.correct ? 'good' : 'bad'}">
+      <b>${st.correct ? 'Fully reconciled.' : 'Not fully reconciled.'}</b> ${g.right} of ${g.total} graded points. ${esc(r.explain || '')}
+      ${bits}
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">${continueBtn}${redoBtn}</div>
+    </div>`;
+  }
+
+  const chip = done
+    ? `<span class="qz-rv-chip ${st.correct ? 'good' : 'bad'}">${st.correct ? 'Correct' : 'Needs another look'}</span>`
+    : '<span class="qz-rv-chip pending">Pending</span>';
+
+  return `<div class="qz-rv-item qz-rec-item" data-rec-id="${escAttr(id)}">
+    <div class="qz-rv-head"><b>${esc(r.label)}</b>${chip}</div>
+    <div class="qz-rv-where">${esc(r.where)}</div>
+    <p class="qz-rv-instr">${esc(r.instruction)}</p>
+    ${head}${grid}${decisions}${submit}${feedback}
+  </div>`;
+}
+
+/* ============================================================================
+   MECHANIC: `compose` — a written reply graded against a rubric
+   ----------------------------------------------------------------------------
+   qzSendReply used to accept any 20 characters, which made Lesson 5 decorative:
+   the trainee could type "aaaaaaaaaaaaaaaaaaaaaa" and be told they had
+   communicated professionally. A rubric replaces that. Each criterion is a
+   named check the trainee does NOT see until they submit, evaluated with plain
+   regex and term lists — no model, no network, nothing that can drift.
+   Criteria live on the item so different lessons can weight different things,
+   and `mustAvoid` criteria invert (they pass when the pattern is ABSENT), which
+   is how "did not leak an SSN" and "did not blame a named third party" work.
+   ============================================================================ */
+const QZ_NPI_PATTERNS = [
+  { re: /\b\d{3}-\d{2}-\d{4}\b/, what: 'a Social Security number' },
+  { re: /\b\d{9,}\b/, what: 'a long account-style number' },
+  { re: /\brouting\s*(number|#)?\s*[:#]?\s*\d{6,}/i, what: 'a routing number' },
+  { re: /\bacct\.?\s*(number|#)?\s*[:#]?\s*\d{5,}/i, what: 'an account number' }
+];
+function qzComposeCriteria(item) {
+  return (item.rubric || []).map(c => Object.assign({}, c));
+}
+/* Each criterion returns true when satisfied. `test` receives the text plus a
+   context object holding the order, so "did you cite the file" can check the
+   real address and order number rather than a hardcoded string. */
+const QZ_RUBRIC_CHECKS = {
+  identifiesFile: (text, ctx) => {
+    const o = ctx.order;
+    if (!o) return false;
+    const street = o.propertyAddress.split(',')[0].toLowerCase();
+    const num = o.id.replace('ORD-', '').toLowerCase();
+    const t = text.toLowerCase();
+    return t.includes(street) || t.includes(num) || t.includes(o.id.toLowerCase());
+  },
+  givesTimeframe: text => /\b(by|before|on)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|today|end of (the )?(day|week)|close of business|cob|eod|\d{1,2}\/\d{1,2}|[a-z]+ \d{1,2})\b/i.test(text)
+    || /\bwithin\s+\d+\s+(hour|day|business day)/i.test(text)
+    || /\b(24|48|72)\s*hours\b/i.test(text),
+  acknowledgesRequest: text => /\b(thank|thanks|received|got your|following up|checking in|as you asked|you asked|regarding your|in response to|appreciate)\b/i.test(text),
+  noBlame: text => !/\b(their fault|not (my|our) fault|the lender (is|has been) (slow|useless|terrible|dropping)|they (dropped|messed|screwed)|blame|incompetent|useless)\b/i.test(text),
+  noNPI: text => !QZ_NPI_PATTERNS.some(p => p.re.test(text)),
+  statesNextStep: text => /\b(i will|i'll|we will|we'll|i am|i'm)\s+\w+/i.test(text) && /\b(follow(ing)? up|confirm|contact|reach out|check|update|send|request|escalat)/i.test(text),
+  noCommitmentBeyondAuthority: text => !/\b(i (have )?(confirmed|approved|changed|moved|set) the (closing )?date|the new closing date (is|will be)|i can guarantee|i guarantee)\b/i.test(text),
+  verifyOutOfBand: text => /\b(call|phone|verbally|by phone|voice)\b/i.test(text) && /\b(number|on file|of record|from the file|previously)\b/i.test(text)
+};
+function qzComposeGrade(item, text, ctx) {
+  const results = qzComposeCriteria(item).map(c => {
+    const fn = QZ_RUBRIC_CHECKS[c.check];
+    let pass = false;
+    try { pass = fn ? !!fn(text, ctx || {}) : false; } catch (e) { pass = false; }
+    return { key: c.check, label: c.label, why: c.why, pass: pass, required: c.required !== false };
+  });
+  const required = results.filter(r => r.required);
+  const passed = required.filter(r => r.pass).length;
+  return {
+    results: results,
+    passed: passed,
+    total: required.length,
+    correct: required.length > 0 && passed === required.length
+  };
+}
+function qzComposeGet(id) {
+  if (!qzStore.composes[id]) qzStore.composes[id] = {};
+  return qzStore.composes[id];
+}
+function qzComposeExamMode(id) {
+  return typeof QZ_EXAM_BANK !== 'undefined' && QZ_EXAM_BANK.some(i => i.type === 'compose' && i.id === id);
+}
+function qzComposeLookup(id) {
+  return (typeof QZ_COMPOSES !== 'undefined' ? QZ_COMPOSES.find(c => c.id === id) : null) ||
+    (typeof QZ_EXAM_BANK !== 'undefined' ? QZ_EXAM_BANK.find(i => i.type === 'compose' && i.id === id) : null);
+}
+function qzComposeSubmit(id) {
+  const item = qzComposeLookup(id);
+  const el = document.getElementById('qzComposeBox-' + id);
+  if (!item || !el) return;
+  const text = el.value.trim();
+  if (text.length < 40) { simToast('Write a full reply before submitting, at least a couple of sentences.'); return; }
+  const ctx = { order: item.orderId ? qzGetOrder(item.orderId) : null };
+  const g = qzComposeGrade(item, text, ctx);
+  const st = qzComposeGet(id);
+  st.text = text;
+  st.results = g.results;
+  st.correct = g.correct;
+  if (g.correct) st.everCorrect = true;
+  st.resolvedAt = Date.now();
+  qzSave();
+  qzRenderRoot();
+  qzNotifyComposeResolved(id);
+}
+function qzComposeRetry(id) {
+  if (qzComposeExamMode(id)) return;
+  const prev = qzStore.composes[id] || {};
+  qzStore.composes[id] = { text: prev.text, everCorrect: !!prev.everCorrect };
+  qzSave();
+  qzRenderRoot();
+  qzSyncComposeStep(id);
+}
+function qzNotifyComposeResolved(composeId) {
+  if (!qzState.lessonId || typeof QZ_LESSONS === 'undefined') return;
+  const l = QZ_LESSONS.find(x => x.id === qzState.lessonId);
+  if (!l) return;
+  const step = l.steps.find(s => s.type === 'compose' && s.composeId === composeId);
+  if (!step) return;
+  const st = qzComposeGet(composeId);
+  if (SimEngine.walkActive() && SimEngine.currentStep() === step) {
+    if (st.correct) SimEngine.stepCompleted();
+    else { SimEngine.renderRetry('Read which points the reply missed, then revise it.'); SimEngine.position(step); }
+    return;
+  }
+  if (!st.correct) return;
+  const prog = SimEngine.progress(l);
+  simToast(`"${qzLessonStepLabel(step)}" done, ${prog.done} of ${prog.total} steps in Lesson ${l.number}.`, { tone: 'good' });
+  qzRenderLessonBanner();
+}
+function qzComposeItemHTML(id) {
+  const item = qzComposeLookup(id);
+  if (!item) return '';
+  const st = qzComposeGet(id);
+  const examMode = qzComposeExamMode(id);
+  const done = !!st.resolvedAt;
+
+  const context = (item.thread || []).map(m =>
+    `<div class="qz-msg ${m.sender === 'You (VA)' ? 'mine' : ''}"><div class="meta">${esc(m.sender)} &rarr; ${esc(m.recipient)} &middot; ${fmtDate(m.date)}</div>${esc(m.body)}</div>`
+  ).join('');
+
+  let feedback = '';
+  if (done && !examMode) {
+    const bits = st.results.map(r =>
+      `<div class="qz-rv-subfeedback ${r.pass ? 'good' : 'bad'}">${r.pass ? '&#10003;' : '&#10007;'} ${esc(r.label)}${r.pass ? '' : ' &mdash; ' + esc(r.why)}</div>`
+    ).join('');
+    const passed = st.results.filter(r => r.pass).length;
+    const lessonStep = qzState.lessonId && typeof QZ_LESSONS !== 'undefined'
+      ? (QZ_LESSONS.find(x => x.id === qzState.lessonId) || { steps: [] }).steps.find(s2 => s2.type === 'compose' && s2.composeId === id)
+      : null;
+    const continueBtn = (st.correct && lessonStep) ? qzContinueHTML(lessonStep) : '';
+    const redo = (st.correct && continueBtn) ? '' : `<button class="qz-btn sm" onclick="qzComposeRetry('${id}')">Revise it</button>`;
+    feedback = `<div class="qz-rv-feedback ${st.correct ? 'good' : 'bad'}">
+      <b>${st.correct ? 'That reply does the job.' : 'This reply is missing something.'}</b>
+      ${passed} of ${st.results.length} points covered.
+      ${bits}
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">${continueBtn}${redo}</div>
+    </div>`;
+  } else if (done && examMode) {
+    feedback = '<div class="qz-rv-subfeedback good">&#10003; Reply recorded. Use Next to continue.</div>';
+  }
+
+  const editable = !done;
+  return `<div class="qz-rv-item qz-compose-item" data-compose-id="${escAttr(id)}">
+    <div class="qz-rv-head"><b>${esc(item.label)}</b></div>
+    <p class="qz-rv-instr">${esc(item.instruction)}</p>
+    ${context ? `<div class="qz-compose-thread">${context}</div>` : ''}
+    <textarea id="qzComposeBox-${id}" class="qz-compose-box" ${editable ? '' : 'disabled'} placeholder="${escAttr(item.placeholder || 'Write your reply...')}" oninput="qzSyncComposeStep('${id}')">${esc(st.text || '')}</textarea>
+    ${editable ? `<div class="qz-rv-actions"><button class="qz-btn primary" onclick="qzComposeSubmit('${id}')">Send reply</button>
+      <span class="qz-rec-hint">Your reply is checked against what a professional response has to contain. You will see the checklist after you send.</span></div>` : ''}
+    ${feedback}
   </div>`;
 }
 
@@ -1806,9 +2763,9 @@ function qzRetakeScenario(id) {
   };
   qzSave();
   qzRenderRoot();
-  if (typeof qzWalk !== 'undefined' && qzWalk) {
-    const step = qzWalkCurrentStep();
-    if (step && step.type === 'decide' && step.scenarioId === id) qzWalkRenderTip(step, false);
+  if (SimEngine.walkActive()) {
+    const step = SimEngine.currentStep();
+    if (step && step.type === 'decide' && step.scenarioId === id) SimEngine.renderTip(step, false);
   }
 }
 /* Same idea as qzNotifyStepDone (called from qzMark) but for `decide` steps, answered
@@ -1822,17 +2779,17 @@ function qzNotifyScenarioAnswered(scenarioId, correct) {
   const step = l.steps.find(s => s.type === 'decide' && s.scenarioId === scenarioId);
   if (!step) return;
 
-  if (typeof qzWalk !== 'undefined' && qzWalk && qzWalk.lessonId === l.id && l.steps[qzWalk.stepIndex] === step) {
-    if (correct) qzWalkStepDone();
-    else qzWalkRenderRetry();
+  if (SimEngine.walkActive() && SimEngine.currentStep() === step) {
+    if (correct) SimEngine.stepCompleted();
+    else SimEngine.renderRetry();
     return;
   }
 
   if (!correct) return;
   const label = qzLessonStepLabel(step);
-  const prog = qzLessonProgress(l);
-  if (prog.complete) qzToast(`Lesson ${l.number} complete! Use the banner above to head back and unlock the next lesson.`, { tone: 'good', duration: 5000 });
-  else qzToast(`"${label}" done, ${prog.done} of ${prog.total} steps in Lesson ${l.number}.`, { tone: 'good' });
+  const prog = SimEngine.progress(l);
+  if (prog.complete) simToast(`Lesson ${l.number} complete! Use the banner above to head back and unlock the next lesson.`, { tone: 'good', duration: 5000 });
+  else simToast(`"${label}" done, ${prog.done} of ${prog.total} steps in Lesson ${l.number}.`, { tone: 'good' });
   qzRenderLessonBanner();
 }
 function qzPracticeAction(id) {
@@ -1862,24 +2819,35 @@ function qzPracticeAction(id) {
   }
   qzSyncTopTabs();
   qzRenderRoot();
-  if (p.hint) qzToast(p.hint);
+  if (p.hint) simToast(p.hint);
+}
+/* A scenario's `situation` may be a function so it can quote live state — days to closing,
+   the charge currently on the order, the number of outstanding documents. Scenarios that
+   hardcoded those numbers in prose drifted out of sync with the data the moment a lesson
+   corrected a figure (the accounting scenario still said "$450.00" long after Lesson 3 had
+   corrected it to $425.00, describing something the trainee could no longer see). */
+function qzSituationText(s) {
+  return typeof s.situation === 'function' ? s.situation() : s.situation;
 }
 function qzScenarioDetailHTML() {
   const s = QZ_SCENARIOS.find(x => x.id === qzState.scenarioId);
   if (!s) return '<p>Scenario not found.</p>';
   const r = qzStore.scenarios[s.id];
   const answered = !!(r && r.answered != null);
-  const opts = s.options.map((opt, idx) => {
+  // Displayed order is shuffled; `idx` stays the REAL index so grading and stored answers
+  // are unaffected, only the letter and the position change.
+  const opts = qzOptionOrder('scenario:' + s.id, s.options.length).map((idx, pos) => {
+    const opt = s.options[idx];
     let cls = '';
     if (answered) { if (idx === s.correct) cls = 'correct'; else if (idx === r.answered && !r.correct) cls = 'incorrect'; }
-    return `<button type="button" class="qz-option ${cls}" ${answered ? 'disabled' : ''} onclick="qzAnswerScenario('${s.id}',${idx})">${String.fromCharCode(65 + idx)}. ${esc(opt)}</button>`;
+    return `<button type="button" class="qz-option ${cls}" ${answered ? 'disabled' : ''} onclick="qzAnswerScenario('${s.id}',${idx})">${String.fromCharCode(65 + pos)}. ${esc(opt)}</button>`;
   }).join('');
   const firstAttemptLine = answered && r.firstAttempt
     ? `<div class="qz-feedback-first">First attempt: ${r.firstAttempt.correct ? '&#10003; correct' : '&#10007; incorrect'}</div>` : '';
   const lessonStep = qzState.lessonId && typeof QZ_LESSONS !== 'undefined'
     ? (QZ_LESSONS.find(x => x.id === qzState.lessonId) || { steps: [] }).steps.find(s2 => s2.type === 'decide' && s2.scenarioId === s.id)
     : null;
-  const continueBtn = (answered && r.correct && lessonStep) ? qzLessonContinueHTML(lessonStep) : '';
+  const continueBtn = (answered && r.correct && lessonStep) ? qzContinueHTML(lessonStep) : '';
   // Retake doesn't make sense once you're right and a Continue button is already offering
   // the way forward, clicking it would wipe the answered state and, since Continue only
   // renders inside this same feedback block, take the Continue button down with it. "Try
@@ -1892,13 +2860,13 @@ function qzScenarioDetailHTML() {
   // click lives only on this page, navigating away strands it with no way back. Once the
   // trainee isn't mid-walkthrough here (browsing manually, or this step isn't the one being
   // walked), these stay available as before.
-  const walkActiveHere = typeof qzWalk !== 'undefined' && qzWalk && lessonStep && qzWalkCurrentStep() === lessonStep;
+  const walkActiveHere = SimEngine.walkActive() && lessonStep && SimEngine.currentStep() === lessonStep;
   const feedback = answered ? `<div class="qz-feedback ${r.correct ? 'correct' : 'incorrect'}">
       <b>${r.correct ? 'Correct.' : 'Not quite.'}</b>${esc(s.explanation)}
       ${firstAttemptLine}
       <div class="qz-feedback-actions">
         ${continueBtn}
-        ${(!walkActiveHere && r.correct && s.verifyDoc) ? `<button class="qz-btn" onclick="qzViewDoc('${s.verifyDoc.file}','${esc(s.verifyDoc.title)}')">${esc(s.verifyDoc.buttonLabel)}</button>` : ''}
+        ${(!walkActiveHere && r.correct && s.verifyDoc) ? `<button class="qz-btn" onclick="simViewDoc('${s.verifyDoc.file}','${esc(s.verifyDoc.title)}')">${esc(s.verifyDoc.buttonLabel)}</button>` : ''}
         ${(!walkActiveHere && s.practice) ? `<button class="qz-btn primary" onclick="qzPracticeAction('${s.id}')">${esc(s.practice.buttonLabel)} &rarr;</button>` : ''}
         ${r.practiced ? '<span class="qz-rv-chip good">Practiced</span>' : ''}
         ${retakeBtn}
@@ -1906,29 +2874,109 @@ function qzScenarioDetailHTML() {
     </div>` : '';
   return `<span class="qz-back" onclick="qzGoto('dashboard')">&larr; Dashboard</span>
     <div class="qz-panel qz-scenario-detail"><div class="ph"><h4>${esc(s.title)}</h4></div>
-      <p class="situation">${esc(s.situation)}</p>
+      <p class="situation">${esc(qzSituationText(s))}</p>
       ${opts}
       ${feedback}
     </div>`;
 }
 
-/* ---------- Final exam: no hints, no going back, one official attempt.
-   Reuses the discrepancy-report engine (qzRevOpenDoc/qzRevAnswerSource/qzRevAnswerAction/
-   qzRevSaveCorrection/qzRevSaveEscalation) for `verify` items via qzReviewLookup(), but
-   renders without correctness coloring or explanations, those only appear after Submit. */
+/* ---------- Final exam: sampled, timed, no hints, no going back ----------
+   Reuses every grading engine the lessons use (qzRev*, qzRec*, qzCompose*) through their
+   shared lookups, but in exam mode: one answer per step, no correct/incorrect colouring,
+   no "Try again", and no explanation until the whole paper is submitted.
+
+   Two structural differences from the previous version:
+     - The paper is DRAWN from QZ_EXAM_BANK per attempt (qzExamBuild), following
+       QZ_EXAM_BLUEPRINT, so two sittings are not the same twenty questions.
+     - It is timed. A VA is judged on throughput under a queue, and unlimited time on a
+       hiring filter measures patience rather than competence. Running out submits what
+       exists; it does not discard the attempt. */
+function qzExamShuffled(list, seedKey) {
+  const order = qzOptionOrder(seedKey, list.length);
+  return order.map(i => list[i]);
+}
+function qzExamBuild() {
+  const ids = [];
+  QZ_EXAM_BLUEPRINT.forEach(spec => {
+    const pool = QZ_EXAM_BANK.filter(i => i.category === spec.category);
+    // Salt is regenerated immediately before this runs, so the draw differs per attempt.
+    const drawn = qzExamShuffled(pool, 'exampool:' + spec.category).slice(0, spec.count);
+    drawn.forEach(i => ids.push(i.id));
+  });
+  // Interleave categories rather than presenting six verifies in a row.
+  return qzExamShuffled(ids, 'examorder');
+}
+function qzExamItems() {
+  const ex = qzStore.exam;
+  if (!ex || !ex.itemIds) return [];
+  return ex.itemIds.map(id => QZ_EXAM_BANK.find(i => i.id === id)).filter(Boolean);
+}
+function qzExamLookup(id) { return QZ_EXAM_BANK.find(i => i.id === id); }
+/* Clears every engine's state for the bank, so a fresh attempt starts genuinely fresh
+   rather than inheriting answers from the previous one (see the reset bug this fixes). */
+function qzExamClearItemState() {
+  QZ_EXAM_BANK.forEach(i => {
+    if (i.type === 'verify') delete qzStore.reviews[i.id];
+    if (i.type === 'reconcile') delete qzStore.reconciles[i.id];
+    if (i.type === 'compose') delete qzStore.composes[i.id];
+  });
+}
 function qzExamStart() {
-  qzStore.exam = { startedAt: Date.now(), currentIndex: 0, answers: {}, submittedAt: null, score: 0, max: 0 };
+  // New salt per attempt: a second attempt must not present the same questions, in the same
+  // order, with the same options in the same positions.
+  qzNewShuffleSalt();
+  qzExamClearItemState();
+  const itemIds = qzExamBuild();
+  qzStore.exam = {
+    startedAt: Date.now(),
+    endsAt: Date.now() + QZ_EXAM_MINUTES * 60000,
+    itemIds: itemIds,
+    currentIndex: 0,
+    answers: {},
+    submittedAt: null,
+    score: 0, max: 0
+  };
   qzSave();
   qzState.view = 'exam';
   qzState.examIndex = 0;
   qzSyncTopTabs();
   qzRenderRoot();
+  qzExamStartTimer();
+}
+let qzExamTimerHandle = null;
+function qzExamStartTimer() {
+  if (qzExamTimerHandle) clearInterval(qzExamTimerHandle);
+  qzExamTimerHandle = setInterval(() => {
+    const ex = qzStore.exam;
+    if (!ex || ex.submittedAt) { clearInterval(qzExamTimerHandle); qzExamTimerHandle = null; return; }
+    const el = document.getElementById('qzExamClock');
+    const left = ex.endsAt - Date.now();
+    if (left <= 0) {
+      clearInterval(qzExamTimerHandle); qzExamTimerHandle = null;
+      simToast('Time is up. Submitting what you have.', { duration: 5000 });
+      qzExamSubmit();
+      return;
+    }
+    if (el) {
+      const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
+      el.textContent = m + ':' + String(s).padStart(2, '0');
+      el.classList.toggle('low', left < 5 * 60000);
+    }
+  }, 1000);
+}
+function qzExamTimeLeftLabel() {
+  const ex = qzStore.exam;
+  if (!ex || !ex.endsAt) return '';
+  const left = Math.max(0, ex.endsAt - Date.now());
+  const m = Math.floor(left / 60000), s = Math.floor((left % 60000) / 1000);
+  return m + ':' + String(s).padStart(2, '0');
 }
 function qzExamReturn() {
   qzState.view = 'exam';
   qzState.examIndex = (qzStore.exam && qzStore.exam.currentIndex) || 0;
   qzSyncTopTabs();
   qzRenderRoot();
+  if (qzStore.exam && !qzStore.exam.submittedAt) qzExamStartTimer();
 }
 /* Two-click confirm instead of a native confirm() dialog: first click arms the button and
    flips its label for 3s, a second click within that window actually resets. */
@@ -1945,13 +2993,10 @@ function qzExamResetAttempt(btn) {
   }
   clearTimeout(Number(btn.dataset.timer));
   qzStore.exam = null;
-  // A verify item's state lives in qzStore.reviews, NOT in qzStore.exam. Without this, a
-  // "reset" left all four verify items still resolved: qzExamItemAnswered() returned true
-  // for each, so the retake could be clicked straight through with the previous answers
-  // (and the previous score) intact.
-  if (typeof QZ_EXAM_ITEMS !== 'undefined') {
-    QZ_EXAM_ITEMS.forEach(i => { if (i.type === 'verify') delete qzStore.reviews[i.id]; });
-  }
+  // Item state lives in qzStore.reviews / .reconciles / .composes, NOT in qzStore.exam.
+  // Without clearing it, a "reset" left every item still resolved and the retake could be
+  // clicked straight through carrying the previous answers and score.
+  qzExamClearItemState();
   qzSave();
   // Leave the exam view before re-rendering: qzExamHTML dereferences qzStore.exam, which
   // we just nulled, and would throw if we re-rendered in place.
@@ -1965,44 +3010,142 @@ function qzExamNext() {
 }
 function qzExamItemAnswered(item) {
   const answers = (qzStore.exam && qzStore.exam.answers) || {};
-  if (item.type === 'do') { const a = answers[item.id]; return !!(a && a.done); }
   if (item.type === 'decide') { const a = answers[item.id]; return !!(a && a.idx != null); }
+  if (item.type === 'numeric') { const a = answers[item.id]; return !!(a && a.value != null); }
   if (item.type === 'verify') { const s = qzStore.reviews[item.id]; return !!(s && s.resolvedAt); }
+  if (item.type === 'reconcile') { const s = qzStore.reconciles[item.id]; return !!(s && s.resolvedAt); }
+  if (item.type === 'compose') { const s = qzStore.composes[item.id]; return !!(s && s.resolvedAt); }
   return false;
 }
-function qzExamDoStepGo(itemId) {
-  const item = QZ_EXAM_ITEMS.find(i => i.id === itemId);
-  if (!item) return;
-  qzStore.exam.answers[itemId] = { done: true };
-  qzSave();
-  qzState.view = 'order';
-  qzState.orderId = QZ_EXAM_ORDER.id;
-  qzState.orderTab = 'workflow';
-  qzSyncTopTabs();
-  qzRenderRoot();
-}
 function qzExamAnswerDecide(itemId, idx) {
+  if (!qzStore.exam || qzStore.exam.answers[itemId]) return; // one answer only
   qzStore.exam.answers[itemId] = { idx };
   qzSave();
   qzRenderRoot();
 }
-/* Currently unused: QZ_EXAM_ITEMS has no `do` items, because "clicking the button scores the
-   point" is not a measurement. Kept only so the item-type union stays complete — if a `do`
-   item is ever reintroduced, it must gate its points on something observed, not on the click. */
-function qzExamDoItemHTML(item, answered) {
-  return `<p class="qz-rv-instr">${esc(item.label)}</p>
-    ${answered
-      ? '<div class="qz-rv-subfeedback good">&#10003; Done. Use Next to continue.</div>'
-      : `<button class="qz-btn sm" onclick="qzExamDoStepGo('${item.id}')">Open the order</button>`}`;
+function qzExamAnswerNumeric(itemId) {
+  const el = document.getElementById('qzExamNum-' + itemId);
+  if (!el || !qzStore.exam || qzStore.exam.answers[itemId]) return;
+  const v = el.value.trim();
+  if (!v) { simToast('Enter an amount.'); return; }
+  qzStore.exam.answers[itemId] = { value: v };
+  qzSave();
+  qzRenderRoot();
 }
 function qzExamDecideItemHTML(item, answered) {
   const a = qzStore.exam.answers[item.id];
-  const opts = item.options.map((opt, idx) => {
+  const opts = qzOptionOrder('scenario:' + item.id, item.options.length).map((idx, pos) => {
     const cls = a && a.idx === idx ? 'selected' : '';
-    return `<button type="button" class="qz-option ${cls}" ${answered ? 'disabled' : ''} onclick="qzExamAnswerDecide('${item.id}',${idx})">${String.fromCharCode(65 + idx)}. ${esc(opt)}</button>`;
+    return `<button type="button" class="qz-option ${cls}" ${answered ? 'disabled' : ''} onclick="qzExamAnswerDecide('${item.id}',${idx})">${String.fromCharCode(65 + pos)}. ${esc(item.options[idx])}</button>`;
   }).join('');
-  return `<p class="situation">${esc(item.situation)}</p>${opts}`;
+  return `<p class="situation">${esc(qzSituationText(item))}</p>${opts}`;
 }
+function qzExamNumericItemHTML(item, answered) {
+  const a = qzStore.exam.answers[item.id];
+  return `<p class="situation">${esc(item.prompt)}</p>
+    <div class="qz-rv-form">
+      <input type="text" id="qzExamNum-${item.id}" value="${escAttr(a ? a.value : '')}" ${answered ? 'disabled' : ''} placeholder="${escAttr(item.placeholder || 'Amount')}">
+      ${answered ? '<div class="qz-rv-subfeedback good">&#10003; Answer recorded.</div>'
+        : `<div class="row"><button class="qz-btn sm primary" onclick="qzExamAnswerNumeric('${item.id}')">Record answer</button></div>`}
+    </div>`;
+}
+function qzExamHTML() {
+  const items = qzExamItems();
+  const i = qzState.examIndex;
+  const item = items[i];
+  if (!item) return '<p>Exam not found.</p>';
+  const answered = qzExamItemAnswered(item);
+  let body = '';
+  if (item.type === 'verify') body = qzExamVerifyItemHTML(item, answered);
+  else if (item.type === 'decide') body = qzExamDecideItemHTML(item, answered);
+  else if (item.type === 'numeric') body = qzExamNumericItemHTML(item, answered);
+  else if (item.type === 'reconcile') body = qzRecItemHTML(item.id);
+  else if (item.type === 'compose') body = qzComposeItemHTML(item.id);
+  const isLast = i === items.length - 1;
+  const nextBtn = answered
+    ? `<button class="qz-btn primary" onclick="${isLast ? 'qzExamSubmit()' : 'qzExamNext()'}">${isLast ? 'Submit Exam' : 'Next'} &rarr;</button>`
+    : '';
+  return `<div class="qz-exam-banner"><b>Final Exam</b> &middot; Question ${i + 1} of ${items.length} &middot; no hints, no going back
+      <span class="qz-exam-clock" id="qzExamClock">${qzExamTimeLeftLabel()}</span></div>
+    <div class="qz-panel qz-exam-item">
+      ${body}
+      <div style="margin-top:16px">${nextBtn}</div>
+    </div>`;
+}
+function qzExamActiveBannerHTML() {
+  if (!qzStore.exam || qzStore.exam.submittedAt || qzState.view === 'exam') return '';
+  return `<div class="qz-exam-banner active" onclick="qzExamReturn()">Final Exam in progress &middot; ${qzExamTimeLeftLabel()} left &middot; Return to Exam &rarr;</div>`;
+}
+/* Partial credit on the two multi-part types: a reconcile with 9 graded points and a
+   compose with 6 rubric criteria are not all-or-nothing the way a multiple choice is, and
+   scoring them that way would make the paper far harsher than the pass mark assumes. */
+function qzExamScoreItem(item) {
+  if (item.type === 'decide') {
+    const a = qzStore.exam.answers[item.id];
+    return (a && a.idx === item.correct) ? item.points : 0;
+  }
+  if (item.type === 'numeric') {
+    const a = qzStore.exam.answers[item.id];
+    if (!a) return 0;
+    const got = qzParseNumeric(a.value), want = qzParseNumeric(item.answer);
+    if (got === null || want === null) return 0;
+    return Math.abs(got - want) <= (item.tolerance || 0.01) ? item.points : 0;
+  }
+  if (item.type === 'verify') {
+    const s = qzStore.reviews[item.id];
+    return (s && s.correct) ? item.points : 0;
+  }
+  if (item.type === 'reconcile') {
+    const s = qzStore.reconciles[item.id];
+    if (!s || !s.resolvedAt) return 0;
+    const g = qzRecGrade(item.id);
+    return g.total ? Math.round(item.points * (g.right / g.total)) : 0;
+  }
+  if (item.type === 'compose') {
+    const s = qzStore.composes[item.id];
+    if (!s || !s.results) return 0;
+    const req = s.results.filter(r => r.required);
+    const passed = req.filter(r => r.pass).length;
+    return req.length ? Math.round(item.points * (passed / req.length)) : 0;
+  }
+  return 0;
+}
+function qzExamSubmit() {
+  if (!qzStore.exam) return;
+  if (qzExamTimerHandle) { clearInterval(qzExamTimerHandle); qzExamTimerHandle = null; }
+  const items = qzExamItems();
+  let score = 0, max = 0;
+  items.forEach(item => { max += item.points; score += qzExamScoreItem(item); });
+  qzStore.exam.score = score;
+  qzStore.exam.max = max;
+  qzStore.exam.submittedAt = Date.now();
+  qzSave();
+  const su = window.SCApp && SCApp.currentUser && SCApp.currentUser();
+  if (su && window.SCApp.setModeScore) SCApp.setModeScore(su.id, 'qualia', 'exam', score, max);
+  qzGoto('dashboard');
+}
+/* Per-item breakdown shown on the dashboard after submission — the exam withholds
+   feedback until the end, so this is the only place the candidate learns anything. */
+function qzExamResultHTML() {
+  const ex = qzStore.exam;
+  if (!ex || !ex.submittedAt) return '';
+  const items = qzExamItems();
+  const pct = ex.max ? ex.score / ex.max : 0;
+  const passed = pct >= QZ_EXAM_PASS_PCT;
+  const rows = items.map(item => {
+    const got = qzExamScoreItem(item);
+    const label = item.label || item.situation || item.prompt || item.id;
+    const short = String(typeof label === 'function' ? label() : label).slice(0, 90);
+    return `<div class="qz-rv-subfeedback ${got === item.points ? 'good' : got > 0 ? '' : 'bad'}">
+      ${got === item.points ? '&#10003;' : got > 0 ? '&bull;' : '&#10007;'} ${esc(short)} &mdash; ${got}/${item.points}</div>`;
+  }).join('');
+  return `<div class="qz-rv-feedback ${passed ? 'good' : 'bad'}">
+    <b>${passed ? 'Passed' : 'Did not pass'} &mdash; ${ex.score}/${ex.max} (${Math.round(pct * 100)}%)</b>
+    Pass mark is ${Math.round(QZ_EXAM_PASS_PCT * 100)}%.
+    ${rows}
+  </div>`;
+}
+
 function qzExamVerifyItemHTML(item, answered) {
   const st = qzRevGet(item.id);
   const step1 = `<div class="qz-rv-step ${st.docOpened ? 'done' : 'active'}">
@@ -2017,17 +3160,19 @@ function qzExamVerifyItemHTML(item, answered) {
   let step2 = '';
   if (st.docOpened) {
     const mcAnswered = !!st.step2Choice;
-    const opts = item.sourceOptions.map(o =>
-      `<button type="button" class="qz-option qz-rv-mc ${st.step2Choice === o.id ? 'selected' : ''}" ${mcAnswered ? 'disabled' : ''} onclick="qzRevAnswerSource('${item.id}','${o.id}')">${esc(o.text)}</button>`
-    ).join('');
+    const opts = qzOptionOrder('rev2:' + item.id, item.sourceOptions.length).map(i => {
+      const o = item.sourceOptions[i];
+      return `<button type="button" class="qz-option qz-rv-mc ${st.step2Choice === o.id ? 'selected' : ''}" ${mcAnswered ? 'disabled' : ''} onclick="qzRevAnswerSource('${item.id}','${o.id}')">${esc(o.text)}</button>`;
+    }).join('');
     step2 = `<div class="qz-rv-step ${mcAnswered ? 'done' : 'active'}"><div class="qz-rv-step-h">Step 2 &middot; What does the source document actually say?</div>${opts}</div>`;
   }
   let step3 = '';
   if (qzRevStep3Unlocked(item.id)) {
     const mcAnswered = !!st.step3Choice;
-    const opts = QZ_ACTION_CHOICES.map(a2 =>
-      `<button type="button" class="qz-option qz-rv-mc ${st.step3Choice === a2.id ? 'selected' : ''}" ${mcAnswered ? 'disabled' : ''} onclick="qzRevAnswerAction('${item.id}','${a2.id}')">${esc(a2.label)}</button>`
-    ).join('');
+    const opts = qzOptionOrder('rev3:' + item.id, QZ_ACTION_CHOICES.length).map(i => {
+      const a2 = QZ_ACTION_CHOICES[i];
+      return `<button type="button" class="qz-option qz-rv-mc ${st.step3Choice === a2.id ? 'selected' : ''}" ${mcAnswered ? 'disabled' : ''} onclick="qzRevAnswerAction('${item.id}','${a2.id}')">${esc(a2.label)}</button>`;
+    }).join('');
     step3 = `<div class="qz-rv-step ${mcAnswered ? 'done' : 'active'}"><div class="qz-rv-step-h">Step 3 &middot; What's the right next step?</div>${opts}</div>`;
   }
   let step4 = '';
@@ -2050,50 +3195,38 @@ function qzExamVerifyItemHTML(item, answered) {
     ${step1}${step2}${step3}${step4}
     ${answered ? '<div class="qz-rv-subfeedback good">&#10003; Answer recorded. Use Next to continue.</div>' : ''}`;
 }
-function qzExamHTML() {
-  const items = QZ_EXAM_ITEMS;
-  const i = qzState.examIndex;
-  const item = items[i];
-  if (!item) return '<p>Exam not found.</p>';
-  const answered = qzExamItemAnswered(item);
-  let body = '';
-  if (item.type === 'do') body = qzExamDoItemHTML(item, answered);
-  else if (item.type === 'verify') body = qzExamVerifyItemHTML(item, answered);
-  else if (item.type === 'decide') body = qzExamDecideItemHTML(item, answered);
-  const isLast = i === items.length - 1;
-  const nextBtn = answered
-    ? `<button class="qz-btn primary" onclick="${isLast ? 'qzExamSubmit()' : 'qzExamNext()'}">${isLast ? 'Submit Exam' : 'Next'} &rarr;</button>`
-    : '';
-  return `<div class="qz-exam-banner"><b>Final Exam</b> &middot; Question ${i + 1} of ${items.length} &middot; no hints, no going back</div>
-    <div class="qz-panel qz-exam-item">
-      ${body}
-      <div style="margin-top:16px">${nextBtn}</div>
-    </div>`;
-}
-function qzExamActiveBannerHTML() {
-  if (!qzStore.exam || qzStore.exam.submittedAt || qzState.view === 'exam') return '';
-  return `<div class="qz-exam-banner active" onclick="qzExamReturn()">Final Exam in progress &middot; Return to Exam &rarr;</div>`;
-}
-function qzExamSubmit() {
-  let score = 0, max = 0;
-  QZ_EXAM_ITEMS.forEach(item => {
-    max += item.points;
-    if (item.type === 'do') { const a = qzStore.exam.answers[item.id]; if (a && a.done) score += item.points; }
-    else if (item.type === 'decide') { const a = qzStore.exam.answers[item.id]; if (a && a.idx === item.correct) score += item.points; }
-    else if (item.type === 'verify') { const s = qzStore.reviews[item.id]; if (s && s.correct) score += item.points; }
-  });
-  qzStore.exam.score = score;
-  qzStore.exam.max = max;
-  qzStore.exam.submittedAt = Date.now();
-  qzSave();
-  const su = window.SCApp && SCApp.currentUser && SCApp.currentUser();
-  if (su && window.SCApp.setModeScore) SCApp.setModeScore(su.id, 'qualia', 'exam', score, max);
-  qzGoto('dashboard');
-}
 
 /* ---------- bootstrap ---------- */
+/* Hands the shared engine everything it cannot know on its own. Note that `lessons` is
+   passed by reference to the live array, so nothing has to be re-registered when the
+   curriculum changes, and `store` is a getter rather than the object itself because
+   qzLoad() REPLACES qzStore wholesale on load. */
+function qzInitEngine() {
+  SimEngine.init({
+    lessons: QZ_LESSONS,
+    store: () => qzStore,
+    save: qzSave,
+    render: qzRenderRoot,
+    goHome: () => qzGoto('dashboard'),
+    showLesson: (id) => { qzState.view = 'lesson'; qzState.lessonId = id; qzSyncTopTabs(); qzRenderRoot(); },
+    currentLessonId: () => qzState.lessonId,
+    navigate: qzLessonStepNavigate,
+    stepDone: qzLessonStepDone,
+    stepLabel: qzLessonStepLabel,
+    stepStatus: qzLessonStepStatus,
+    // Every item type that renders its own explanation plus a Continue button on the page.
+    selfFeedbackTypes: ['decide', 'verify', 'reconcile', 'compose'],
+    feedbackSelector: '.qz-feedback, .qz-rv-feedback',
+    beforeStep: qzUnlockSearchInput,
+    lessonEverComplete: qzLessonEverComplete,
+    noteLessonComplete: qzNoteLessonComplete,
+    resetLesson: qzResetLesson,
+    btnClass: 'qz-btn'
+  });
+}
 document.addEventListener('DOMContentLoaded', function () {
   qzLoad();
+  qzInitEngine();
   const su = window.SCApp && SCApp.currentUser && SCApp.currentUser();
   if (su) {
     qzEnter();

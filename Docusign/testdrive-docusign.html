@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DocuSign Test Drive — SkillCloud Academy</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/styles.css">
+  <!-- Chrome owned by the shared lesson engine (walkthrough overlay, toasts, doc modal).
+       Loaded before docusign.css so the module can override its --sim-* tokens. -->
+  <link rel="stylesheet" href="../assets/css/sim-engine.css">
   <link rel="stylesheet" href="docusign.css">
   <style>
     html, body { height: 100%; }
@@ -27,7 +27,7 @@
 
   <!-- Shared Test Drive Strip -->
   <div class="td-strip">
-    <a class="td-strip-back" href="../index.html#test-drive-open">&larr; Test Drive</a>
+    <a class="td-strip-back" href="../index.html#test-drive-open" onclick="if(window.dsResetProgress) dsResetProgress()">&larr; Test Drive</a>
     <span class="td-strip-dot"></span>
     <span class="td-strip-app">DocuSign <b>Test Drive</b></span>
     <span class="td-strip-msg">Practice copy only. Nothing here is saved or connected to a real account.</span>
@@ -39,6 +39,9 @@
     <!-- Top Navigation Bar — white topbar matching DocuSign eSignature -->
     <header class="ds-topbar" id="dsTopbar">
       <div class="ds-brand">
+        <button type="button" class="ds-hamburger" id="dsHamburger" onclick="dsToggleSidebar()" aria-label="Toggle navigation menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
         <div class="ds-logo-grid" title="Apps">
           <span></span><span></span><span></span>
           <span></span><span></span><span></span>
@@ -54,10 +57,13 @@
         <a class="ds-topnav-item" data-view="scenarios" onclick="dsGoto('scenarios')">Scenarios</a>
       </nav>
       <div class="ds-topbar-right">
-        <button class="ds-help-btn" title="Help" onclick="alert('DocuSign Help Center — training simulator only.')">?</button>
+        <button class="ds-help-btn" title="Help" onclick="simToast('DocuSign Help Center — training simulator only.')">?</button>
         <div class="ds-user-avatar" id="dsUserAvatar" title="Account">VA</div>
       </div>
     </header>
+
+    <!-- Sidebar backdrop overlay for mobile -->
+    <div class="ds-sidebar-backdrop" id="dsSidebarBackdrop" onclick="dsToggleSidebar(false)"></div>
 
     <!-- App Body: sidebar + main content area -->
     <div class="ds-layout">
@@ -150,6 +156,7 @@
   </div>
 
   <script src="../assets/js/app-core.js"></script>
+  <script src="../assets/js/sim-engine.js"></script>
   <script src="docusign-data.js"></script>
   <script src="docusign-app.js"></script>
   <script src="docusign-tour.js"></script>

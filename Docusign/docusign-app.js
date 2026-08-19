@@ -1,62 +1,141 @@
 /* DocuSign VA Training Simulator — View Engine & Scenario Logic.
    Redesigned for sidebar layout matching real DocuSign eSignature UI.
-   100% frontend static logic using localStorage for state persistence. */
+   100% frontend static logic using localStorage for state persistence.
 
-const DS_LS_KEY = 'ds_va_training_v2';
-let dsStore = { checklist: {}, scenarios: {}, envelopes: [], tourSeen: false };
+   v3: v1/v2 credited items that auto-completed on navigation and had a fake exam
+   (a checklist mirror with no questions). Bumping the key discards that progress
+   rather than carrying false completions forward. */
+
+const DS_LS_KEY = 'ds_va_training_v3';
+const DS_STORE_DEFAULTS = {
+  checklist: {}, scenarios: {}, overrides: {},
+  tourSeen: false, exam: null,
+  lessonsDone: {},
+  shuffleSalt: null
+};
+function dsDefaultStore() { return JSON.parse(JSON.stringify(DS_STORE_DEFAULTS)); }
+let dsStore = dsDefaultStore();
 let dsState = {
   view: 'dashboard',
   envelopeFilter: 'all',
   activeEnvId: null,
   activeScenarioId: null,
+  lessonId: null,
+  examIndex: 0,
   wizardStep: 1,
-  wizardData: {
-    subject: 'Purchase Agreement — 123 Main Street',
-    message: 'Please review and sign the attached Purchase Agreement at your earliest convenience.',
-    documents: [{ name: 'Purchase_Agreement_123_Main.pdf', pages: 6 }],
-    recipients: [
-      { id: 'wr1', name: 'John Smith',    email: 'john.smith@example.com',      role: 'Buyer',  action: 'Needs to Sign',    order: 1 },
-      { id: 'wr2', name: 'Sarah Johnson', email: 'sarah.j@example.com',         role: 'Seller', action: 'Needs to Sign',    order: 2 },
-      { id: 'wr3', name: 'Michael Brown', email: 'michael.brown@agency.com',    role: 'Agent',  action: 'Receives a Copy',  order: 3 }
-    ],
-    fields: [
-      { id: 'wf1', type: 'Signature',  recipientId: 'wr1', label: 'Buyer Signature',  required: true },
-      { id: 'wf2', type: 'Date Signed',recipientId: 'wr1', label: 'Date',             required: true },
-      { id: 'wf3', type: 'Signature',  recipientId: 'wr2', label: 'Seller Signature', required: true },
-      { id: 'wf4', type: 'Date Signed',recipientId: 'wr2', label: 'Date',             required: true }
-    ],
-    useSequentialOrder: true
-  }
+  wizardData: null   /* populated by dsResetWizard() */
 };
 
-/* ---------- Persistence ---------- */
+/* Default wizard state — called on boot and after each send. */
+function dsResetWizard() {
+  dsState.wizardStep = 1;
+  dsState.wizardData = {
+    subject: '',
+    message: '',
+    documents: [],
+    recipients: [
+      { id: 'wr1', name: '', email: '', role: 'Signer', action: 'Needs to Sign', order: 1 }
+    ],
+    fields: [],
+    useSequentialOrder: true
+  };
+}
+
+/* ---------- Persistence ----------
+   Override layer: base data (DS_ENVELOPES) stays immutable; edits (void, correct,
+   new envelopes) are stored as patches and applied on top. This means a reload
+   restores the trainee's actions rather than silently discarding them. */
 function dsLoad() {
   try {
     const raw = localStorage.getItem(DS_LS_KEY);
-    if (raw) {
-      const p = JSON.parse(raw);
-      dsStore.checklist = p.checklist || {};
-      dsStore.scenarios = p.scenarios || {};
-      dsStore.tourSeen  = p.tourSeen  || false;
-    }
-  } catch (e) { /* ignore */ }
-  dsStore.envelopes = DS_ENVELOPES.map(e => Object.assign({}, e,
-    { recipients: e.recipients.map(r => Object.assign({}, r)) }
-  ));
+    dsStore = raw ? Object.assign(dsDefaultStore(), JSON.parse(raw)) : dsDefaultStore();
+  } catch (e) { dsStore = dsDefaultStore(); }
+  if (!dsState.wizardData) dsResetWizard();
 }
-function dsSave() {
-  localStorage.setItem(DS_LS_KEY, JSON.stringify({
-    checklist: dsStore.checklist,
-    scenarios: dsStore.scenarios,
-    tourSeen:  dsStore.tourSeen
-  }));
+function dsSave() { localStorage.setItem(DS_LS_KEY, JSON.stringify(dsStore)); }
+function dsResetProgress() { localStorage.removeItem(DS_LS_KEY); }
+
+/* ---------- Envelope access (respects overrides) ---------- */
+function dsGetEnvelope(envId) {
+  const base = DS_ENVELOPES.find(e => e.id === envId);
+  const ov = dsStore.overrides[envId];
+  if (!base && !ov) return null;
+  if (!base && ov) return ov;   /* trainee-created envelope (from wizard) */
+  if (!ov) return base;
+  /* Merge: shallow scalars + deep recipients */
+  const merged = Object.assign({}, base, ov);
+  merged.recipients = (ov.recipients || base.recipients).map(r => Object.assign({}, r));
+  merged.documents  = ov.documents || base.documents;
+  merged.fields     = ov.fields || base.fields;
+  return merged;
 }
+/* All envelopes the trainee should see: base + created, with overrides applied. */
+function dsAllEnvelopes() {
+  const baseIds = DS_ENVELOPES.map(e => e.id);
+  const createdIds = Object.keys(dsStore.overrides).filter(id => baseIds.indexOf(id) === -1);
+  return baseIds.concat(createdIds).map(dsGetEnvelope).filter(Boolean);
+}
+function dsSetEnvelopeOverride(envId, patch) {
+  dsStore.overrides[envId] = Object.assign(dsStore.overrides[envId] || {}, patch);
+  dsSave();
+}
+
+/* ---------- Checklist marking (walkthrough-aware) ----------
+   dsMark() is the ONLY write path for checklist items. Every call site must be an
+   event handler, NEVER a render function — that was the v2 bug where 7 items auto-
+   completed on navigation. */
 function dsMark(id) {
-  if (!dsStore.checklist[id]) { dsStore.checklist[id] = true; dsSave(); }
+  const alreadyDone = !!dsStore.checklist[id];
+  if (!alreadyDone) {
+    dsStore.checklist[id] = true;
+    dsSave();
+  }
+  /* If the walkthrough is actively showing this step, it needs to hear about it
+     even if the item was already done from a previous session. */
+  const step = (SimEngine.walkActive()) ? SimEngine.currentStep() : null;
+  const walkActiveOnThis = step && step.type === 'do' && step.checklistId === id;
+  if (!alreadyDone || walkActiveOnThis) dsNotifyStepDone(id);
 }
-function esc(s) {
-  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
-    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+
+/* esc/escAttr are bound from the shared engine — the project keeps exactly one
+   definition of each (assets/js/sim-engine.js). */
+const esc = SimEngine.esc;
+const escAttr = SimEngine.escAttr;
+
+/* ---------- Deterministic option shuffling ----------
+   Copied from the Qualia module's pattern: position is decided by a PRNG seeded on
+   the item's id plus a per-session salt, so the same question keeps the same order
+   while you look at it, but a different attempt shuffles differently. */
+function dsHashString(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function dsMulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function dsShuffleSalt() {
+  if (!dsStore.shuffleSalt) {
+    dsStore.shuffleSalt = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    dsSave();
+  }
+  return dsStore.shuffleSalt;
+}
+function dsOptionOrder(itemId, n) {
+  const rand = dsMulberry32(dsHashString(String(itemId) + '|' + dsShuffleSalt()));
+  const order = [];
+  for (let i = 0; i < n; i++) order.push(i);
+  for (let i = n - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+  }
+  return order;
 }
 
 /* ---------- Scenario Score ---------- */
@@ -68,6 +147,10 @@ function dsScenarioScore() {
   });
   return { correct, answered, total: DS_SCENARIOS.length };
 }
+function dsScenarioFirstAttemptCorrect(scenarioId) {
+  const s = dsStore.scenarios[scenarioId];
+  return !!(s && s.firstAttempt && s.firstAttempt.correct);
+}
 
 /* ---------- User sync ---------- */
 function dsSyncUser() {
@@ -76,8 +159,19 @@ function dsSyncUser() {
   if (su && av) av.textContent = (su.avatar || su.name.charAt(0)).toUpperCase();
 }
 
+/* ---------- Mobile Sidebar Drawer ---------- */
+function dsToggleSidebar(forced) {
+  const sb = document.getElementById('dsSidebar');
+  const bd = document.getElementById('dsSidebarBackdrop');
+  if (!sb) return;
+  const shouldOpen = typeof forced === 'boolean' ? forced : !sb.classList.contains('open');
+  sb.classList.toggle('open', shouldOpen);
+  if (bd) bd.classList.toggle('open', shouldOpen);
+}
+
 /* ---------- Navigation ---------- */
 function dsGoto(view, extraId) {
+  dsToggleSidebar(false);
   dsState.view = view;
   if (view === 'envelope-detail') dsState.activeEnvId = extraId;
   if (view === 'scenario-detail') dsState.activeScenarioId = extraId;
@@ -116,7 +210,8 @@ function dsSyncNav() {
     'new-envelope':   'sb-sent',
     'templates':      'sb-templates',
     'scenarios':      'sb-scenarios',
-    'complete-transaction': 'sb-home'
+    'lesson':         'sb-home',
+    'complete-transaction': 'sb-exam'
   };
   const id = map[dsState.view];
   if (id) {
@@ -136,6 +231,7 @@ function dsRenderRoot() {
     'templates':           dsTemplatesHTML,
     'scenarios':           dsScenariosHTML,
     'scenario-detail':     dsScenarioDetailHTML,
+    'lesson':              dsLessonDetailHTML,
     'complete-transaction':dsCompleteTransactionHTML
   };
   root.innerHTML = (views[dsState.view] || (() => '<p>View not found.</p>'))();
@@ -162,8 +258,9 @@ function dsDashboardHTML() {
   const scorePct = score.answered ? Math.round(score.correct / score.answered * 100) : 0;
 
   // Count envelope statuses for quick stats
-  const waiting   = dsStore.envelopes.filter(e => e.status === 'waiting').length;
-  const completed = dsStore.envelopes.filter(e => e.status === 'completed').length;
+  const allEnvelopes = dsAllEnvelopes();
+  const waiting   = allEnvelopes.filter(e => e.status === 'waiting').length;
+  const completed = allEnvelopes.filter(e => e.status === 'completed').length;
 
   return `
     <div class="ds-welcome">
@@ -212,9 +309,10 @@ function dsDashboardHTML() {
 
 /* ==================== AGREEMENTS (Envelopes) VIEW ==================== */
 function dsEnvelopesHTML() {
-  dsMark('ds_c5_1');
+  /* B-2 fix: dsMark('ds_c5_1') was here — removed. Marking now happens via lesson
+     walkthrough step completion, not by navigating to the view. */
   const filter = dsState.envelopeFilter;
-  const list   = dsStore.envelopes.filter(e => filter === 'all' || e.status === filter);
+  const list   = dsAllEnvelopes().filter(e => filter === 'all' || e.status === filter);
 
   const rows = list.map(e => {
     const recipChips = e.recipients.map(r => {
@@ -274,7 +372,7 @@ function dsStatusLabel(s) {
 
 /* ==================== ENVELOPE WIZARD ==================== */
 function dsNewEnvelopeWizardHTML() {
-  dsMark('ds_c1_1');
+  /* B-2 fix: dsMark('ds_c1_1') was here — removed. */
   const step = dsState.wizardStep;
 
   const stepDefs = [
@@ -306,32 +404,46 @@ function dsNewEnvelopeWizardHTML() {
 }
 
 function dsWizardStep1HTML() {
-  const docs = dsState.wizardData.documents;
+  const d = dsState.wizardData;
+  const docs = d.documents;
   return `
     <div class="ds-panel">
-      <h4>Step 1 — Add Documents</h4>
-      <p style="font-size:13px;color:var(--ds-muted);margin-bottom:16px;">Upload the PDF or Word files that recipients will review and sign. You can add multiple documents to a single envelope.</p>
+      <h4>Step 1 — Add Documents & Envelope Details</h4>
+      <p style="font-size:13px;color:var(--ds-muted);margin-bottom:16px;">Upload the PDF or Word files that recipients will review and sign, and configure the email subject and message.</p>
 
       <div class="ds-upload-zone">
         <div style="font-size:32px;margin-bottom:8px;">📄</div>
         <b style="font-size:14px;color:#222;display:block;margin-bottom:4px;">Upload PDF or Document File</b>
         <span style="font-size:12.5px;color:#888;">Drag files here or click to attach — simulated for training</span>
         <div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-          <button class="ds-btn primary" onclick="dsAttachDoc('Purchase_Agreement_123_Main.pdf',6)">+ Purchase Agreement (6 pages)</button>
-          <button class="ds-btn" onclick="dsAttachDoc('Seller_Property_Disclosure.pdf',3)">+ Property Disclosure (3 pages)</button>
+          <button type="button" class="ds-btn primary" onclick="dsAttachDoc('Purchase_Agreement_123_Main.pdf',6)">+ Purchase Agreement (6 pages)</button>
+          <button type="button" class="ds-btn" onclick="dsAttachDoc('Seller_Property_Disclosure.pdf',3)">+ Property Disclosure (3 pages)</button>
+          <button type="button" class="ds-btn" onclick="dsAttachDoc('Independent_Contractor_Agreement.pdf',4)">+ Contractor Agreement (4 pages)</button>
         </div>
       </div>
 
       <div style="margin-bottom:18px;">
         <b style="font-size:13px;">Attached Documents (${docs.length})</b>
-        <ul style="margin:8px 0 0;padding-left:18px;font-size:13px;color:#333;line-height:1.8;">
-          ${docs.map(d => `<li><b>${esc(d.name)}</b> — ${d.pages} page${d.pages !== 1 ? 's' : ''} <span style="color:#888;font-size:12px;margin-left:6px;">PDF</span></li>`).join('')}
-        </ul>
+        ${docs.length === 0 ? '<p style="font-size:12.5px;color:#888;margin:8px 0 0;">No documents attached yet. Click a document above to attach it.</p>' :
+          `<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;color:#333;line-height:1.8;">
+            ${docs.map(doc => `<li><b>${esc(doc.name)}</b> — ${doc.pages} page${doc.pages !== 1 ? 's' : ''} <button type="button" class="ds-btn sm danger" style="padding:1px 6px;margin-left:8px;font-size:11px;" onclick="dsRemoveDoc('${escAttr(doc.name)}')">✕ Remove</button></li>`).join('')}
+          </ul>`}
+      </div>
+
+      <div style="background:#fafafa;border:1px solid #e0e0e0;border-radius:8px;padding:16px;margin-bottom:18px;">
+        <div style="margin-bottom:12px;">
+          <label style="display:block;font-size:12px;font-weight:700;color:var(--ds-muted);margin-bottom:4px;text-transform:uppercase;">Email Subject</label>
+          <input type="text" id="dsWizSubject" value="${escAttr(d.subject)}" placeholder="e.g. Please DocuSign: Purchase Agreement — 123 Main St" style="width:100%;padding:8px 10px;border:1px solid var(--ds-line);border-radius:4px;font-size:13.5px;" oninput="dsState.wizardData.subject=this.value">
+        </div>
+        <div>
+          <label style="display:block;font-size:12px;font-weight:700;color:var(--ds-muted);margin-bottom:4px;text-transform:uppercase;">Email Message</label>
+          <textarea id="dsWizMessage" rows="3" placeholder="Enter custom message to signers..." style="width:100%;padding:8px 10px;border:1px solid var(--ds-line);border-radius:4px;font-size:13px;resize:vertical;" oninput="dsState.wizardData.message=this.value">${esc(d.message)}</textarea>
+        </div>
       </div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:12px;color:#888;">💡 Tip: You can add up to 10 documents per envelope</span>
-        <button class="ds-btn primary" onclick="dsNextWizardStep(2)">Next: Add Recipients →</button>
+        <span style="font-size:12px;color:#888;">💡 Tip: You can add multiple documents per envelope</span>
+        <button type="button" class="ds-btn primary" onclick="dsNextWizardStep(2)">Next: Add Recipients →</button>
       </div>
     </div>`;
 }
@@ -343,22 +455,42 @@ function dsAttachDoc(name, pages) {
   dsRenderRoot();
 }
 
+function dsRemoveDoc(name) {
+  dsState.wizardData.documents = dsState.wizardData.documents.filter(d => d.name !== name);
+  dsRenderRoot();
+}
+
 function dsWizardStep2HTML() {
-  dsMark('ds_c2_1');
   const recs = dsState.wizardData.recipients;
 
-  const rows = recs.map((r) => `
-    <div style="display:flex;align-items:center;gap:12px;background:#fafafa;border:1px solid #e0e0e0;border-radius:8px;padding:12px 16px;margin-bottom:10px;">
-      <div style="font-size:12px;font-weight:700;color:#888;width:60px;text-transform:uppercase;">Order ${r.order}</div>
-      <div style="flex:1;">
-        <b style="font-size:13.5px;display:block;color:#222;">${esc(r.name)}</b>
-        <span style="font-size:12px;color:#888;">${esc(r.email)}</span>
+  const rows = recs.map((r, i) => `
+    <div style="display:flex;align-items:center;gap:10px;background:#fafafa;border:1px solid #e0e0e0;border-radius:8px;padding:12px 14px;margin-bottom:10px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:6px;width:90px;">
+        <label style="font-size:11px;font-weight:700;color:var(--ds-muted);">ORDER</label>
+        <input type="number" min="1" max="10" value="${r.order}" style="width:46px;padding:4px 6px;border:1px solid var(--ds-line);border-radius:4px;font-size:13px;text-align:center;" onchange="dsUpdateRecipient('${r.id}','order',parseInt(this.value,10)||1)">
       </div>
-      <div style="font-size:12px;color:#555;width:100px;text-align:center;">
-        <span style="font-size:11.5px;font-weight:600;color:#444;">${esc(r.role)}</span>
+      <div style="flex:2;min-width:140px;">
+        <label style="display:block;font-size:10.5px;font-weight:700;color:var(--ds-muted);margin-bottom:2px;">NAME</label>
+        <input type="text" value="${escAttr(r.name)}" placeholder="Full Name" style="width:100%;padding:6px 8px;border:1px solid var(--ds-line);border-radius:4px;font-size:13px;" oninput="dsUpdateRecipient('${r.id}','name',this.value)">
+      </div>
+      <div style="flex:3;min-width:180px;">
+        <label style="display:block;font-size:10.5px;font-weight:700;color:var(--ds-muted);margin-bottom:2px;">EMAIL</label>
+        <input type="email" value="${escAttr(r.email)}" placeholder="name@example.com" style="width:100%;padding:6px 8px;border:1px solid var(--ds-line);border-radius:4px;font-size:13px;" oninput="dsUpdateRecipient('${r.id}','email',this.value)">
+      </div>
+      <div style="flex:1.5;min-width:110px;">
+        <label style="display:block;font-size:10.5px;font-weight:700;color:var(--ds-muted);margin-bottom:2px;">ROLE</label>
+        <input type="text" value="${escAttr(r.role || '')}" placeholder="Buyer, Seller, etc." style="width:100%;padding:6px 8px;border:1px solid var(--ds-line);border-radius:4px;font-size:13px;" oninput="dsUpdateRecipient('${r.id}','role',this.value)">
+      </div>
+      <div style="flex:2;min-width:130px;">
+        <label style="display:block;font-size:10.5px;font-weight:700;color:var(--ds-muted);margin-bottom:2px;">ACTION</label>
+        <select style="width:100%;padding:6px 8px;border:1px solid var(--ds-line);border-radius:4px;font-size:12.5px;background:#fff;" onchange="dsUpdateRecipient('${r.id}','action',this.value)">
+          <option value="Needs to Sign" ${r.action === 'Needs to Sign' ? 'selected' : ''}>Needs to Sign</option>
+          <option value="Receives a Copy" ${r.action === 'Receives a Copy' ? 'selected' : ''}>Receives a Copy (CC)</option>
+          <option value="Needs to View" ${r.action === 'Needs to View' ? 'selected' : ''}>Needs to View</option>
+        </select>
       </div>
       <div>
-        <span class="ds-badge ${r.action === 'Needs to Sign' ? 'waiting' : 'draft'}">${esc(r.action)}</span>
+        <button type="button" class="ds-btn sm danger" style="padding:4px 8px;" onclick="dsRemoveRecipient('${r.id}')" title="Remove Recipient">✕</button>
       </div>
     </div>`).join('');
 
@@ -372,45 +504,96 @@ function dsWizardStep2HTML() {
         <label for="chkSeq" style="font-size:13px;font-weight:600;color:#1a237e;cursor:pointer;">Set Signing Order — recipients sign sequentially (Order 1 → Order 2 → CC)</label>
       </div>
 
-      <div style="margin-bottom:20px;">${rows}</div>
+      <div style="margin-bottom:14px;">${rows}</div>
+
+      <div style="margin-bottom:18px;">
+        <button type="button" class="ds-btn" onclick="dsAddRecipient()">+ Add Recipient</button>
+      </div>
 
       <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:10px 14px;font-size:12.5px;color:#7a5f00;margin-bottom:18px;">
         💡 <b>Tip:</b> Setting Buyer to Order 1 and Seller to Order 2 ensures Sarah cannot sign until John signs first — critical for real estate transactions.
       </div>
 
       <div style="display:flex;justify-content:space-between;">
-        <button class="ds-btn" onclick="dsNextWizardStep(1)">← Back</button>
-        <button class="ds-btn primary" onclick="dsNextWizardStep(3)">Next: Place Fields →</button>
+        <button type="button" class="ds-btn" onclick="dsNextWizardStep(1)">← Back</button>
+        <button type="button" class="ds-btn primary" onclick="dsNextWizardStep(3)">Next: Place Fields →</button>
       </div>
     </div>`;
 }
 
+function dsUpdateRecipient(id, key, val) {
+  const r = dsState.wizardData.recipients.find(x => x.id === id);
+  if (!r) return;
+  r[key] = val;
+  if (key === 'action') dsMark('ds_c2_1');
+}
+
+function dsAddRecipient() {
+  const recs = dsState.wizardData.recipients;
+  const nextOrder = dsState.wizardData.useSequentialOrder ? recs.length + 1 : 1;
+  const newId = 'wr' + (Date.now().toString(36));
+  recs.push({
+    id: newId,
+    name: '',
+    email: '',
+    role: '',
+    action: 'Needs to Sign',
+    order: nextOrder
+  });
+  dsRenderRoot();
+}
+
+function dsRemoveRecipient(id) {
+  const recs = dsState.wizardData.recipients;
+  if (recs.length <= 1) {
+    simToast('An envelope must have at least one recipient.');
+    return;
+  }
+  dsState.wizardData.recipients = recs.filter(r => r.id !== id);
+  // Re-index orders if sequential
+  if (dsState.wizardData.useSequentialOrder) {
+    dsState.wizardData.recipients.forEach((r, i) => r.order = i + 1);
+  }
+  dsRenderRoot();
+}
+
 function dsToggleSequential(val) {
-  dsMark('ds_c2_2');
-  dsMark('ds_c2_3');
+  /* B-2 fix: previously marked both ds_c2_2 AND ds_c2_3 with a single click.
+     Now marks only the one matching the action taken. */
+  if (val) dsMark('ds_c2_2');   /* enabled sequential */
+  else     dsMark('ds_c2_3');   /* configured parallel (all same order) */
   dsState.wizardData.useSequentialOrder = val;
   const recs = dsState.wizardData.recipients;
   if (!val) {
     recs.forEach(r => r.order = 1); // parallel
   } else {
-    recs[0].order = 1; recs[1].order = 2; recs[2].order = 3;
+    recs.forEach((r, i) => r.order = i + 1);
   }
   dsRenderRoot();
 }
 
 function dsWizardStep3HTML() {
-  dsMark('ds_c3_1');
+  const recs = dsState.wizardData.recipients;
+  const fields = dsState.wizardData.fields;
+
+  // Render recipient options for field assignment
+  function recipOptions(currentRecipId) {
+    return recs.map(r =>
+      `<option value="${escAttr(r.id)}" ${r.id === currentRecipId ? 'selected' : ''}>${esc(r.name || r.role || r.id)} (${esc(r.role || 'Signer')}, Order ${r.order})</option>`
+    ).join('');
+  }
+
   return `
     <div class="ds-panel">
-      <h4>Step 3 — Place Fields on Document</h4>
-      <p style="font-size:13px;color:var(--ds-muted);margin-bottom:14px;">Assign Signature, Initials, Date Signed, and Text fields to the correct recipient on the document.</p>
+      <h4>Step 3 — Place & Assign Fields on Document</h4>
+      <p style="font-size:13px;color:var(--ds-muted);margin-bottom:14px;">Assign Signature, Initials, Date Signed, and Text fields to the correct recipient on the document canvas.</p>
 
       <div class="ds-canvas">
         <div class="ds-canvas-header">
-          <div><b style="font-size:13px;">📄 Purchase_Agreement_123_Main.pdf — Page 1 of 6</b></div>
+          <div><b style="font-size:13px;">📄 Document Canvas — Page 1</b></div>
           <div style="display:flex;gap:8px;">
-            <button class="ds-btn" onclick="dsAddField()">+ Add Field</button>
-            <button class="ds-btn danger" onclick="dsAuditFields()">⚠ Audit Assignments</button>
+            <button type="button" class="ds-btn" onclick="dsAddField()">+ Add Field</button>
+            <button type="button" class="ds-btn danger" onclick="dsAuditFields()">⚠ Audit Assignments</button>
           </div>
         </div>
 
@@ -418,7 +601,7 @@ function dsWizardStep3HTML() {
         <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
           <div style="font-size:11.5px;font-weight:700;color:#888;align-self:center;">FIELDS:</div>
           ${['Signature','Initials','Date Signed','Text Box','Checkbox'].map(f =>
-            `<button class="ds-btn" style="font-size:12px;padding:5px 10px;" onclick="alert('In real DocuSign, drag this ${f} field onto the document. Training note: fields are pre-placed below.')">${f}</button>`
+            `<button type="button" class="ds-btn" style="font-size:12px;padding:5px 10px;" onclick="simToast('In real DocuSign, drag this ${f} field onto the document. Fields are pre-placed below.')">${f}</button>`
           ).join('')}
         </div>
 
@@ -427,51 +610,108 @@ function dsWizardStep3HTML() {
           <p>This Purchase Agreement is entered into by and between Buyer and Seller for the property at <b>123 Main Street, Austin TX 78701</b>. Both parties agree to the terms outlined herein.</p>
 
           <div style="border-top:1px solid #e0e0e0;padding-top:16px;margin-top:16px;">
-            <b style="font-size:12.5px;color:#555;text-transform:uppercase;letter-spacing:.5px;">Buyer Section — John Smith</b>
-            <div class="ds-field-slot assigned-buyer" style="margin-top:10px;">
-              <span>✍ Signature Field — John Smith (Buyer, Order 1)</span>
-              <span class="ds-badge completed" style="font-size:11px;">Required</span>
+            <b style="font-size:12.5px;color:#555;text-transform:uppercase;letter-spacing:.5px;">Buyer Signature Block</b>
+            <div class="ds-field-slot assigned-buyer" style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <span>✍ Signature Field — Buyer</span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <label style="font-size:11px;color:#555;">Assign to:</label>
+                <select style="font-size:12px;padding:3px 6px;border-radius:4px;border:1px solid #ccc;background:#fff;" onchange="dsUpdateFieldRecipient('wf1', this.value)">
+                  ${recipOptions(fields.find(f => f.id === 'wf1')?.recipientId || recs[0]?.id)}
+                </select>
+                <span class="ds-badge completed" style="font-size:11px;">Required</span>
+              </div>
             </div>
-            <div class="ds-field-slot assigned-buyer">
-              <span>📅 Date Signed — John Smith (Buyer, Order 1)</span>
-              <span class="ds-badge completed" style="font-size:11px;">Required</span>
+            <div class="ds-field-slot assigned-buyer" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <span>📅 Date Signed — Buyer</span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <label style="font-size:11px;color:#555;">Assign to:</label>
+                <select style="font-size:12px;padding:3px 6px;border-radius:4px;border:1px solid #ccc;background:#fff;" onchange="dsUpdateFieldRecipient('wf2', this.value)">
+                  ${recipOptions(fields.find(f => f.id === 'wf2')?.recipientId || recs[0]?.id)}
+                </select>
+                <span class="ds-badge completed" style="font-size:11px;">Required</span>
+              </div>
             </div>
           </div>
 
           <div style="border-top:1px solid #e0e0e0;padding-top:16px;margin-top:16px;">
-            <b style="font-size:12.5px;color:#555;text-transform:uppercase;letter-spacing:.5px;">Seller Section — Sarah Johnson</b>
-            <div class="ds-field-slot assigned-seller" style="margin-top:10px;">
-              <span>✍ Signature Field — Sarah Johnson (Seller, Order 2)</span>
-              <span class="ds-badge completed" style="font-size:11px;">Required</span>
+            <b style="font-size:12.5px;color:#555;text-transform:uppercase;letter-spacing:.5px;">Seller Signature Block</b>
+            <div class="ds-field-slot assigned-seller" style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <span>✍ Signature Field — Seller</span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <label style="font-size:11px;color:#555;">Assign to:</label>
+                <select style="font-size:12px;padding:3px 6px;border-radius:4px;border:1px solid #ccc;background:#fff;" onchange="dsUpdateFieldRecipient('wf3', this.value)">
+                  ${recipOptions(fields.find(f => f.id === 'wf3')?.recipientId || recs[1]?.id || recs[0]?.id)}
+                </select>
+                <span class="ds-badge completed" style="font-size:11px;">Required</span>
+              </div>
             </div>
-            <div class="ds-field-slot assigned-seller">
-              <span>📅 Date Signed — Sarah Johnson (Seller, Order 2)</span>
-              <span class="ds-badge completed" style="font-size:11px;">Required</span>
+            <div class="ds-field-slot assigned-seller" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <span>📅 Date Signed — Seller</span>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <label style="font-size:11px;color:#555;">Assign to:</label>
+                <select style="font-size:12px;padding:3px 6px;border-radius:4px;border:1px solid #ccc;background:#fff;" onchange="dsUpdateFieldRecipient('wf4', this.value)">
+                  ${recipOptions(fields.find(f => f.id === 'wf4')?.recipientId || recs[1]?.id || recs[0]?.id)}
+                </select>
+                <span class="ds-badge completed" style="font-size:11px;">Required</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <div style="display:flex;justify-content:space-between;margin-top:18px;">
-        <button class="ds-btn" onclick="dsNextWizardStep(2)">← Back</button>
-        <button class="ds-btn primary" onclick="dsNextWizardStep(4)">Next: Review & Send →</button>
+        <button type="button" class="ds-btn" onclick="dsNextWizardStep(2)">← Back</button>
+        <button type="button" class="ds-btn primary" onclick="dsNextWizardStep(4)">Next: Review & Send →</button>
       </div>
     </div>`;
 }
 
+function dsUpdateFieldRecipient(fieldId, recipId) {
+  let f = dsState.wizardData.fields.find(x => x.id === fieldId);
+  if (!f) {
+    f = { id: fieldId, type: 'Signature', recipientId: recipId, label: fieldId, required: true };
+    dsState.wizardData.fields.push(f);
+  } else {
+    f.recipientId = recipId;
+  }
+}
+
 function dsAddField() {
+  /* B-8: was alert(). B-2: mark moved here from the render function. */
   dsMark('ds_c3_1');
-  alert('In the real DocuSign, you drag fields from the left palette onto the document. Fields are pre-placed in this training view to simulate a correctly configured envelope.');
+  simToast('In real DocuSign, you drag fields from the left palette onto the document. Fields are pre-placed in this training view.', { duration: 4000 });
 }
 function dsAuditFields() {
-  dsMark('ds_c3_2');
-  dsMark('ds_c3_3');
-  alert('✅ Field Audit Passed!\n\nBuyer fields (Signature + Date) → John Smith (Order 1)\nSeller fields (Signature + Date) → Sarah Johnson (Order 2)\n\nAll assignments are correct. No fields are unassigned or mis-assigned.');
+  /* B-4/B-8: was a single alert that always said "passed". Now checks fields. */
+  const fields = dsState.wizardData.fields;
+  const recs = dsState.wizardData.recipients;
+  const errors = [];
+
+  // Check that all required fields are assigned
+  const buyerRecip = recs.find(r => /buyer/i.test(r.role) || /john/i.test(r.name)) || recs[0];
+  const sellerRecip = recs.find(r => /seller/i.test(r.role) || /sarah/i.test(r.name)) || recs[1];
+
+  const f1 = fields.find(f => f.id === 'wf1');
+  const f3 = fields.find(f => f.id === 'wf3');
+
+  if (buyerRecip && f1 && f1.recipientId !== buyerRecip.id) {
+    errors.push(`Buyer signature is assigned to ${recs.find(r => r.id === f1.recipientId)?.name || 'the wrong recipient'}.`);
+  }
+  if (sellerRecip && f3 && f3.recipientId !== sellerRecip.id) {
+    errors.push(`Seller signature is assigned to ${recs.find(r => r.id === f3.recipientId)?.name || 'the wrong recipient'}.`);
+  }
+
+  if (errors.length === 0) {
+    dsMark('ds_c3_2');
+    dsMark('ds_c3_3');
+    simToast('Field Audit Passed! All field assignments match signer roles.', { tone: 'good' });
+  } else {
+    simToast(`Audit issue: ${errors[0]}`);
+  }
 }
 
 function dsWizardStep4HTML() {
-  dsMark('ds_c1_3');
-  dsMark('ds_c1_4');
+  /* B-2 fix: dsMark('ds_c1_3') and dsMark('ds_c1_4') were here — removed. */
   const d = dsState.wizardData;
   return `
     <div class="ds-panel">
@@ -507,35 +747,43 @@ function dsNextWizardStep(s) {
 }
 
 function dsSendEnvelopeFinal() {
-  dsMark('ds_c1_3');
-  dsMark('ds_c1_4');
   const d = dsState.wizardData;
+  /* Validation: subject and at least one recipient with name+email */
+  if (!d.subject.trim()) { simToast('Enter an email subject before sending.'); return; }
+  const validRecips = d.recipients.filter(r => r.name.trim() && r.email.trim());
+  if (!validRecips.length) { simToast('Add at least one recipient with name and email.'); return; }
+
+  const newEnvId = 'ENV-' + new Date().getFullYear() + '-' + Math.floor(1000 + Math.random() * 9000);
   const newEnv = {
-    id: 'ENV-' + new Date().getFullYear() + '-' + Math.floor(1000 + Math.random() * 9000),
+    id: newEnvId,
     subject: d.subject,
     type: 'Real Estate Purchase',
     sender: (window.SCApp && SCApp.currentUser && SCApp.currentUser()
       ? SCApp.currentUser().name : 'Alex Rivera') + ' (VA)',
     status: 'waiting',
-    createdDate: new Date().toISOString().split('T')[0],
-    closingDate:  new Date(Date.now() + 20 * 86400000).toISOString().split('T')[0],
+    createdDate: DS_TODAY,
+    closingDate: '2026-09-01',
     documents: [...d.documents],
     recipients: d.recipients.map(r => Object.assign({}, r, { status: r.order === 1 ? 'sent' : 'pending' })),
     fields: [...d.fields]
   };
-  dsStore.envelopes.unshift(newEnv);
+  /* B-6 fix: persist via override layer, not volatile array. */
+  dsSetEnvelopeOverride(newEnvId, newEnv);
 
-  // Reset wizard for next use
-  dsState.wizardStep = 1;
-  dsState.wizardData.documents = [{ name: 'Purchase_Agreement_123_Main.pdf', pages: 6 }];
+  /* B-2 fix: marks moved here from dsWizardStep4HTML (the render function). */
+  dsMark('ds_c1_3');
+  dsMark('ds_c1_4');
 
-  alert(`✅ Envelope ${newEnv.id} sent successfully!\n\nNotification emails have been triggered.\nJohn Smith (Buyer) will receive the first signing request.`);
+  dsResetWizard();
+  /* B-8: was alert(). */
+  simToast(`Envelope ${newEnvId} sent! Notification emails triggered.`, { tone: 'good', duration: 4000 });
   dsGoto('envelopes');
 }
 
 /* ==================== ENVELOPE DETAIL ==================== */
 function dsEnvelopeDetailHTML() {
-  const env = dsStore.envelopes.find(e => e.id === dsState.activeEnvId);
+  /* B-6 fix: reads through override layer, not volatile array. */
+  const env = dsGetEnvelope(dsState.activeEnvId);
   if (!env) return '<p style="color:#888;padding:24px;">Envelope not found.</p>';
 
   const recipRows = env.recipients.map(r => {
@@ -623,58 +871,111 @@ function dsEnvelopeDetailHTML() {
     </div>`;
 }
 
-/* -- Envelope Actions -- */
+/* -- Envelope Actions (B-8: all alert/prompt replaced with toasts + in-page forms) -- */
 function dsActionResend(envId) {
   dsMark('ds_c5_2');
-  alert(`📩 Reminder sent for Envelope ${envId}!\n\nAll outstanding recipients have been re-notified via email. Their existing signing links remain active.`);
+  simToast(`Reminder sent for Envelope ${envId}! All outstanding recipients re-notified.`, { tone: 'good' });
 }
 
 function dsActionCorrect(envId) {
-  dsMark('ds_c5_3');
-  const env = dsStore.envelopes.find(e => e.id === envId);
+  /* B-5/B-8: was prompt() with no validation. Now shows inline form. */
+  const env = dsGetEnvelope(envId);
   if (!env) return;
-
-  // Show which recipients can be corrected
-  const recipNames = env.recipients.map((r, i) => `${i+1}. ${r.name} — ${r.email}`).join('\n');
-  const choice = prompt(
-    `Correct Envelope ${envId}\n\nRecipients:\n${recipNames}\n\nEnter the NEW email address for recipient #1 (or Cancel):`,
-    env.recipients[0] ? env.recipients[0].email : ''
-  );
-  if (choice && choice.trim()) {
-    if (env.recipients[0]) env.recipients[0].email = choice.trim();
-    alert(`✅ Recipient email corrected!\n\nNew address: ${choice.trim()}\n\nThe envelope has been updated and a new notification sent.`);
-    dsRenderRoot();
+  /* Render the form inline in the detail view */
+  const root = document.getElementById('dsRoot');
+  const formId = 'dsCorrectForm-' + envId;
+  if (document.getElementById(formId)) return;   /* already open */
+  const bar = document.querySelector('.ds-action-bar');
+  if (!bar) return;
+  const form = document.createElement('div');
+  form.id = formId;
+  form.className = 'ds-panel';
+  form.style.marginTop = '12px';
+  const recips = env.recipients.map((r, i) =>
+    `<div style="margin-bottom:8px;"><label style="font-size:12px;font-weight:600;color:var(--ds-muted);">${esc(r.name)} (${esc(r.role)})</label>
+     <input type="email" id="dsCorrectEmail-${i}" value="${escAttr(r.email)}" style="width:100%;padding:6px 10px;border:1px solid var(--ds-line);border-radius:4px;font-size:13px;margin-top:4px;"></div>`
+  ).join('');
+  form.innerHTML = `<h4>Correct Envelope ${esc(envId)}</h4>
+    <p style="font-size:13px;color:var(--ds-muted);">Update recipient email addresses below. Only email format is accepted.</p>
+    ${recips}
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="ds-btn primary" onclick="dsCorrectSubmit('${escAttr(envId)}')">Save & Resend</button>
+      <button class="ds-btn" onclick="document.getElementById('${formId}').remove()">Cancel</button>
+    </div>`;
+  bar.after(form);
+}
+function dsCorrectSubmit(envId) {
+  const env = dsGetEnvelope(envId);
+  if (!env) return;
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const updated = [];
+  for (let i = 0; i < env.recipients.length; i++) {
+    const input = document.getElementById('dsCorrectEmail-' + i);
+    if (!input) continue;
+    const val = input.value.trim();
+    if (!emailRe.test(val)) {
+      simToast(`"${val}" is not a valid email address.`);
+      input.focus();
+      return;
+    }
+    updated.push(Object.assign({}, env.recipients[i], { email: val }));
   }
+  dsSetEnvelopeOverride(envId, { recipients: updated });
+  dsMark('ds_c5_3');
+  simToast('Recipient email corrected! Envelope updated and re-sent.', { tone: 'good' });
+  dsRenderRoot();
 }
 
 function dsActionVoid(envId) {
-  dsMark('ds_c5_4');
-  const env = dsStore.envelopes.find(e => e.id === envId);
+  /* B-5/B-8: was prompt() with pre-filled reason + 'Superceded' typo. */
+  const env = dsGetEnvelope(envId);
   if (!env) return;
-
-  const reason = prompt(
-    `Void Envelope ${envId}\n\nYou MUST enter a reason for voiding (required for audit trail).\n\nThis will instantly revoke all signing links. This action cannot be undone.`,
-    'Superceded by updated contract terms'
-  );
-  if (reason && reason.trim()) {
-    env.status = 'voided';
-    env.recipients.forEach(r => r.status = 'voided');
-    alert(`🚫 Envelope ${envId} voided.\n\nReason logged: "${reason.trim()}"\n\nAll signing links have been revoked. Recipients can no longer sign this document.`);
-    dsRenderRoot();
+  const formId = 'dsVoidForm-' + envId;
+  if (document.getElementById(formId)) return;
+  const bar = document.querySelector('.ds-action-bar');
+  if (!bar) return;
+  const form = document.createElement('div');
+  form.id = formId;
+  form.className = 'ds-panel';
+  form.style.marginTop = '12px';
+  form.innerHTML = `<h4>Void Envelope ${esc(envId)}</h4>
+    <p style="font-size:13px;color:var(--ds-muted);">This will instantly revoke all signing links. This action cannot be undone.</p>
+    <label style="font-size:12px;font-weight:600;color:var(--ds-muted);">Reason for voiding (required, minimum 10 characters)</label>
+    <textarea id="dsVoidReason" rows="3" placeholder="Enter reason..." style="width:100%;padding:8px 10px;border:1px solid var(--ds-line);border-radius:4px;font-size:13px;margin-top:4px;resize:vertical;"></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="ds-btn danger" onclick="dsVoidSubmit('${escAttr(envId)}')">Void Envelope</button>
+      <button class="ds-btn" onclick="document.getElementById('${formId}').remove()">Cancel</button>
+    </div>`;
+  bar.after(form);
+}
+function dsVoidSubmit(envId) {
+  const reason = (document.getElementById('dsVoidReason') || {}).value || '';
+  if (reason.trim().length < 10) {
+    simToast('Enter a reason of at least 10 characters.');
+    return;
   }
+  /* B-6 fix: persist via override layer */
+  const env = dsGetEnvelope(envId);
+  if (!env) return;
+  const voidedRecips = env.recipients.map(r => Object.assign({}, r, { status: 'voided' }));
+  dsSetEnvelopeOverride(envId, { status: 'voided', recipients: voidedRecips, voidReason: reason.trim() });
+  dsMark('ds_c5_4');
+  /* B-11 fix: 'Superceded' → 'Superseded' is fixed by removing the pre-filled prompt */
+  simToast(`Envelope ${envId} voided. All signing links revoked.`, { tone: 'good' });
+  dsRenderRoot();
 }
 
 function dsActionDownload(envId) {
-  alert(`📥 Downloading completed document package for ${envId}...\n\nIn the real DocuSign, this downloads:\n• Completed PDF with all signatures applied\n• Signature Certificate (audit log)\n\nFor training: document saved to Downloads folder.`);
+  simToast(`Downloading completed document package for ${envId}...`, { duration: 3000 });
 }
 
 function dsActionDownloadCert(envId) {
-  alert(`🏅 Downloading Certificate of Completion for ${envId}...\n\nThe certificate includes:\n• Signer names, emails, IP addresses\n• Timestamp for each signature event\n• DocuSign envelope ID for legal reference`);
+  simToast(`Downloading Certificate of Completion for ${envId}...`, { duration: 3000 });
 }
 
 /* ==================== TEMPLATES ==================== */
 function dsTemplatesHTML() {
-  dsMark('ds_c4_1');
+  /* B-2 fix: dsMark('ds_c4_1') was here — removed. */
 
   const cards = DS_TEMPLATES.map(t => `
     <div class="ds-template-card">
@@ -697,7 +998,7 @@ function dsTemplatesHTML() {
         <h2 class="ds-page-title">Templates</h2>
         <div class="sub">Reusable agreement templates with pre-configured fields and recipient roles</div>
       </div>
-      <button class="ds-btn primary" onclick="alert('In DocuSign: New Template wizard opens. For training use the pre-built library below.')">+ New Template</button>
+      <button class="ds-btn primary" onclick="simToast('In DocuSign: New Template wizard opens. Use the pre-built library below for training.')">+ New Template</button>
     </div>
 
     <div style="background:#e8f0fe;border:1px solid #c5d8ff;border-radius:8px;padding:12px 16px;font-size:13px;color:#1a237e;margin-bottom:18px;">
@@ -710,7 +1011,15 @@ function dsTemplatesHTML() {
 function dsUseTemplate(tmplId) {
   dsMark('ds_c4_2');
   const tmpl = DS_TEMPLATES.find(t => t.id === tmplId);
-  alert(`Template "${tmpl ? tmpl.name : tmplId}" selected!\n\nIn DocuSign, this auto-populates:\n• Pre-configured document structure\n• Recipient role placeholders\n• Pre-placed signature and date fields\n\nOpening the Send Envelope wizard...`);
+  /* B-8: was alert(). Now navigates to wizard with template pre-populated. */
+  simToast(`Template "${tmpl ? tmpl.name : tmplId}" selected! Opening Send Envelope wizard...`, { tone: 'good' });
+  dsResetWizard();
+  if (tmpl) {
+    dsState.wizardData.subject = tmpl.name;
+    dsState.wizardData.recipients = tmpl.recipients.map((r, i) => ({
+      id: 'wt' + i, name: '', email: '', role: r, action: r === 'CC' ? 'Receives a Copy' : 'Needs to Sign', order: i + 1
+    }));
+  }
   dsGoto('new-envelope');
 }
 
@@ -750,22 +1059,25 @@ function dsScenarioDetailHTML() {
   if (!s) return '<p style="color:#888;padding:24px;">Scenario not found.</p>';
   const r = dsStore.scenarios[s.id];
 
-  const opts = s.options.map((opt, idx) => {
+  /* B-3: options are shown in shuffled order */
+  const order = dsOptionOrder(s.id, s.options.length);
+  const opts = order.map(origIdx => {
     let cls = '';
     if (r) {
-      if (idx === s.correct)                    cls = 'correct';
-      else if (idx === r.answered && !r.correct) cls = 'incorrect';
+      if (origIdx === s.correct)                    cls = 'correct';
+      else if (origIdx === r.answered && !r.correct) cls = 'incorrect';
     }
     return `
-      <button type="button" class="ds-option ${cls}" ${r ? 'disabled' : ''} onclick="dsAnswerScenario('${s.id}',${idx})">
-        <b>${String.fromCharCode(65 + idx)}.</b> ${esc(opt)}
+      <button type="button" class="ds-option ${cls}" ${r ? 'disabled' : ''} onclick="dsAnswerScenario('${s.id}',${origIdx})">
+        ${esc(s.options[origIdx])}
       </button>`;
   }).join('');
 
   const feedback = r ? `
     <div class="ds-feedback ${r.correct ? 'correct' : 'incorrect'}">
-      <b>${r.correct ? '✅ Correct Action!' : '❌ Not quite right.'}</b>
+      <b>${r.correct ? 'Correct!' : 'Not quite right.'}</b>
       <p style="margin:6px 0 0;">${esc(s.explanation)}</p>
+      ${SimEngine.continueHTML ? SimEngine.continueHTML({ type: 'decide', scenarioId: s.id }) : ''}
     </div>` : '';
 
   return `
@@ -786,82 +1098,179 @@ function dsAnswerScenario(scenId, optIdx) {
   const s = DS_SCENARIOS.find(x => x.id === scenId);
   if (!s) return;
   const isCorrect = (optIdx === s.correct);
-  dsStore.scenarios[scenId] = { answered: optIdx, correct: isCorrect, ts: Date.now() };
+  const existing = dsStore.scenarios[scenId];
+  const record = { answered: optIdx, correct: isCorrect, ts: Date.now() };
+  /* B-3 fix: track first attempt separately for exam-quality grading. */
+  if (!existing) record.firstAttempt = { answered: optIdx, correct: isCorrect };
+  else record.firstAttempt = existing.firstAttempt || { answered: optIdx, correct: isCorrect };
+  dsStore.scenarios[scenId] = record;
   dsSave();
+  /* B-7: Report score to SCApp core */
+  const su = window.SCApp && SCApp.currentUser && SCApp.currentUser();
+  if (su && window.SCApp.setModeScore) {
+    const sc = dsScenarioScore();
+    SCApp.setModeScore(su.id, 'docusign', 'scenario', sc.correct, sc.total);
+  }
+  /* Notify walkthrough (for 'decide' steps linked to this scenario) */
+  if (isCorrect) dsNotifyStepDone('scenario:' + scenId);
   dsRenderRoot();
 }
 
-/* ==================== FINAL EXAM ==================== */
+/* ==================== EXAM (placeholder until Phase D-4) ==================== */
+/* B-1 fix: the previous "exam" was a checklist mirror that auto-completed on
+   navigation. Replaced with a real exam shell that will be populated in D-4. */
 function dsCompleteTransactionHTML() {
-  const checkItems = [
-    { id:'ds_c1_1', label:'Opened New Envelope Wizard' },
-    { id:'ds_c1_2', label:'Attached purchase agreement document' },
-    { id:'ds_c2_1', label:'Configured recipient roles (Buyer, Seller, Agent CC)' },
-    { id:'ds_c2_2', label:'Enabled sequential signing order' },
-    { id:'ds_c3_1', label:'Placed Signature & Date fields for both signers' },
-    { id:'ds_c3_2', label:'Audited field assignments (no mis-assigned fields)' },
-    { id:'ds_c1_3', label:'Reviewed envelope summary before sending' },
-    { id:'ds_c1_4', label:'Sent envelope successfully' },
-    { id:'ds_c5_2', label:'Sent a reminder to an outstanding signer' },
-    { id:'ds_c5_4', label:'Voided an incorrect envelope with reason' }
-  ];
+  /* Check if all lessons are complete */
+  const allDone = DS_LESSONS.length > 0 && DS_LESSONS.every((l, i) =>
+    SimEngine.lessonState(i) === 'done');
 
-  const rows = checkItems.map(ci => {
-    const done = !!dsStore.checklist[ci.id];
+  if (!allDone) {
     return `
-      <div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid #f2f2f2;">
-        <span style="font-size:18px;">${done ? '✅' : '⬜'}</span>
-        <span style="font-size:13.5px;color:${done ? '#2e7d32' : '#333'};font-weight:${done ? '600' : '400'};">${esc(ci.label)}</span>
+      <div class="ds-detail-back" onclick="dsGoto('dashboard')">← Back to Dashboard</div>
+      <div class="ds-panel" style="margin-top:0;text-align:center;padding:40px 20px;">
+        <h2 style="margin:0 0 12px;color:#222;">Final Exam</h2>
+        <p style="font-size:14px;color:var(--ds-muted);max-width:420px;margin:0 auto;">
+          Complete all ${DS_LESSONS.length || '—'} lessons before attempting the exam.
+          Each lesson teaches a skill that the exam will test.
+        </p>
       </div>`;
-  }).join('');
-
-  const doneCount = checkItems.filter(ci => dsStore.checklist[ci.id]).length;
-  const pct = Math.round(doneCount / checkItems.length * 100);
+  }
 
   return `
     <div class="ds-detail-back" onclick="dsGoto('dashboard')">← Back to Dashboard</div>
-
-    <div class="ds-panel" style="margin-top:0;">
-      <h2 style="margin:0 0 6px;color:#222;">🎯 Final Exam: Full Real Estate Transaction</h2>
-      <p style="font-size:13.5px;color:#888;margin-bottom:20px;">Complete all 10 steps to prove you can manage a full DocuSign transaction from start to finish.</p>
-
-      <div style="background:#fafafa;border:1px solid #e0e0e0;border-radius:8px;padding:16px 20px;margin-bottom:18px;font-size:13.5px;">
-        <b style="font-size:14px;">Transaction Scenario:</b>
-        <ul style="margin:10px 0 0;padding-left:18px;line-height:1.8;">
-          <li><b>Property:</b> 123 Main Street, Austin TX 78701</li>
-          <li><b>Buyer:</b> John Smith — must sign <b>FIRST</b> (Order 1)</li>
-          <li><b>Seller:</b> Sarah Johnson — must sign <b>SECOND</b> (Order 2)</li>
-          <li><b>Agent:</b> Michael Brown — receives a CC copy (Order 3)</li>
-          <li><b>Required:</b> Buyer Signature + Date · Seller Signature + Date</li>
-        </ul>
-      </div>
-
-      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
-        <div style="flex:1;background:#e8e8e8;border-radius:999px;height:10px;">
-          <div style="width:${pct}%;background:${pct===100?'#43a047':'var(--ds-blue)'};height:100%;border-radius:999px;transition:width .4s;"></div>
-        </div>
-        <span style="font-size:14px;font-weight:700;color:${pct===100?'#2e7d32':'var(--ds-blue)'};">${doneCount}/${checkItems.length} — ${pct}%</span>
-      </div>
-
-      <div style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;margin-bottom:18px;">
-        ${rows}
-      </div>
-
-      ${pct === 100 ? `
-        <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:16px 18px;text-align:center;font-size:15px;font-weight:700;color:#2e7d32;">
-          🎉 Exam Complete! You've demonstrated full DocuSign VA competency.
-        </div>` : `
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="ds-btn yellow" onclick="dsGoto('new-envelope')">1. Start New Envelope →</button>
-          <button class="ds-btn primary" onclick="dsGoto('envelopes')">2. Monitor Agreements →</button>
-          <button class="ds-btn" onclick="dsGoto('scenarios')">3. Practice Scenarios →</button>
-        </div>`}
+    <div class="ds-panel" style="margin-top:0;text-align:center;padding:40px 20px;">
+      <h2 style="margin:0 0 12px;color:#222;">Final Exam</h2>
+      <p style="font-size:14px;color:var(--ds-muted);max-width:420px;margin:0 auto;">
+        Exam content coming soon. All lessons are complete!
+      </p>
     </div>`;
 }
 
+/* ============================================================================
+   LESSON INFRASTRUCTURE
+   Wires DocuSign-specific step completion into the shared SimEngine.
+   ============================================================================ */
+
+/* Maps a step to its "done" status. The engine calls this for every step on
+   every render, so it must be fast and side-effect-free. */
+function dsLessonStepDone(step) {
+  if (step.type === 'do') return !!dsStore.checklist[step.checklistId];
+  if (step.type === 'decide') {
+    const r = dsStore.scenarios[step.scenarioId];
+    return !!(r && r.correct);
+  }
+  if (step.type === 'configure') return !!dsStore.checklist['cfg:' + step.id];
+  if (step.type === 'triage')    return !!dsStore.checklist['tri:' + step.id];
+  if (step.type === 'verify')    return !!dsStore.checklist['ver:' + step.id];
+  if (step.type === 'compose')   return !!dsStore.checklist['cmp:' + step.id];
+  return false;
+}
+
+/* Human-readable label shown in the lesson detail's step list. */
+function dsLessonStepLabel(step) {
+  const typeLabel = { do: 'Do', decide: 'Decide', configure: 'Configure',
+                      triage: 'Triage', verify: 'Verify', compose: 'Compose' };
+  return (typeLabel[step.type] || step.type) + ': ' + (step.label || step.checklistId || step.scenarioId || step.id || '');
+}
+
+/* Step chip: good / bad / pending. */
+function dsLessonStepStatus(step) {
+  if (dsLessonStepDone(step)) return 'good';
+  return 'pending';
+}
+
+/* Navigate to the correct view when a step is clicked in the lesson detail. */
+function dsLessonStepNavigate(step) {
+  if (step.type === 'do' && step.view)       dsGoto(step.view, step.viewArg);
+  else if (step.type === 'decide')           dsGoto('scenario-detail', step.scenarioId);
+  else if (step.type === 'configure')        dsGoto(step.view || 'new-envelope', step.viewArg);
+  else if (step.type === 'triage')           dsGoto(step.view || 'envelopes', step.viewArg);
+  else if (step.type === 'verify')           dsGoto(step.view || 'envelope-detail', step.viewArg);
+  else if (step.type === 'compose')          dsGoto(step.view || 'dashboard', step.viewArg);
+  else dsRenderRoot();
+}
+
+/* Called from dsMark() and dsAnswerScenario() when something relevant completes. */
+function dsNotifyStepDone(triggerId) {
+  if (!SimEngine.walkActive()) return;
+  const step = SimEngine.currentStep();
+  if (!step) return;
+
+  /* Does this trigger match the current walkthrough step? */
+  let match = false;
+  if (step.type === 'do' && step.checklistId === triggerId) match = true;
+  if (step.type === 'decide' && triggerId === 'scenario:' + step.scenarioId) match = true;
+  if (step.type === 'configure' && triggerId === 'cfg:' + step.id) match = true;
+  if (step.type === 'triage' && triggerId === 'tri:' + step.id) match = true;
+  if (step.type === 'verify' && triggerId === 'ver:' + step.id) match = true;
+
+  if (match) SimEngine.stepCompleted();
+}
+
+/* Lesson ever-complete tracking (for gating: restarting a lesson must not re-lock later ones). */
+function dsLessonEverComplete(lessonId) { return !!dsStore.lessonsDone[lessonId]; }
+function dsNoteLessonComplete(lessonId) {
+  if (!dsStore.lessonsDone[lessonId]) {
+    dsStore.lessonsDone[lessonId] = Date.now();
+    dsSave();
+  }
+}
+
+/* Reset a single lesson: clear its steps' progress from the store. */
+function dsResetLesson(lessonId) {
+  const l = SimEngine.findLesson(lessonId);
+  if (!l) return;
+  l.steps.forEach(step => {
+    if (step.type === 'do' && step.checklistId) delete dsStore.checklist[step.checklistId];
+    if (step.type === 'decide' && step.scenarioId) delete dsStore.scenarios[step.scenarioId];
+    if (step.type === 'configure') delete dsStore.checklist['cfg:' + step.id];
+    if (step.type === 'triage')    delete dsStore.checklist['tri:' + step.id];
+    if (step.type === 'verify')    delete dsStore.checklist['ver:' + step.id];
+    if (step.type === 'compose')   delete dsStore.checklist['cmp:' + step.id];
+  });
+  dsSave();
+}
+
+/* Lesson detail HTML: the engine does most of the work; the host provides this thin wrapper. */
+function dsLessonDetailHTML() {
+  const id = dsState.lessonId;
+  if (!id) return '<p>No lesson selected.</p>';
+  return SimEngine.lessonDetailHTML(id);
+}
+
 /* ==================== BOOTSTRAP ==================== */
+/* Hands the shared engine everything it cannot know on its own. Note that `lessons` is
+   passed by reference to the live array, so nothing has to be re-registered when the
+   curriculum changes, and `store` is a getter rather than the object itself because
+   dsLoad() REPLACES dsStore wholesale on load. */
+function dsInitEngine() {
+  SimEngine.init({
+    lessons: DS_LESSONS,
+    store: () => dsStore,
+    save: dsSave,
+    render: dsRenderRoot,
+    goHome: () => dsGoto('dashboard'),
+    showLesson: (id) => { dsState.view = 'lesson'; dsState.lessonId = id; dsSyncNav(); dsRenderRoot(); },
+    currentLessonId: () => dsState.lessonId,
+    navigate: dsLessonStepNavigate,
+    stepDone: dsLessonStepDone,
+    stepLabel: dsLessonStepLabel,
+    stepStatus: dsLessonStepStatus,
+    /* Types whose page renders its own explanation + Continue button. */
+    selfFeedbackTypes: ['decide', 'verify', 'configure', 'triage', 'compose'],
+    feedbackSelector: '.ds-feedback, .sim-feedback',
+    beforeStep: function () { /* no search box to unlock in DocuSign */ },
+    lessonEverComplete: dsLessonEverComplete,
+    noteLessonComplete: dsNoteLessonComplete,
+    resetLesson: dsResetLesson,
+    btnClass: 'ds-btn'
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   dsLoad();
+  dsResetWizard();
+  dsInitEngine();
   dsSyncUser();
   dsSyncNav();
   dsRenderRoot();

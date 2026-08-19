@@ -9,8 +9,8 @@ const QZ_TOUR_STEPS = [
     target: null
   },
   {
-    title: 'Two home views',
-    text: 'Dashboard tracks your lesson progress. Orders is where you will spend most of your time working files.',
+    title: 'The Qualia Core sections',
+    text: 'This dark bar is Qualia Core, the tool a title and escrow team works in. Orders is where you will spend nearly all your time. Training is this course, not part of the product.',
     target: '.qz-tabs'
   },
   {
@@ -31,10 +31,20 @@ const QZ_TOUR_STEPS = [
     before: () => qzGoto('orders')
   },
   {
-    title: 'Everything about the file, in one place',
-    text: 'Overview, Data Entry, Documents, Tasks, and more all live inside the Order. Explore freely, nothing here is connected to a real account.',
-    target: '.qz-order-tabs',
+    title: 'Everything about the file, on one rail',
+    text: 'Inside an order, this dark rail groups every page: Order details, Closing charges, and your Tasks. Sections the course does not cover are still listed, so you recognise the real thing.',
+    target: '.qz-order-side',
     before: () => qzOpenOrder('ORD-2026-1483')
+  },
+  {
+    title: 'Several files at once',
+    text: 'Each order you open gets its own tab up here, and each remembers the page you were on. Working five files in parallel is the normal shape of the job.',
+    target: '#qzOrderTabs'
+  },
+  {
+    title: 'Chat, tasks, help and notes',
+    text: 'This panel follows whatever page you are on. Notes is the one that saves: it is where you record what you did and what you are waiting on.',
+    target: '.qz-order-panel'
   },
   {
     title: 'Always check the stage first',

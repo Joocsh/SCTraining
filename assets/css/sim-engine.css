@@ -1,0 +1,369 @@
+/* ============================================================================
+   sim-engine.css — chrome owned by assets/js/sim-engine.js.
+
+   Loaded by every simulator that uses the shared lesson engine. Deliberately
+   self-contained: it defines its own --sim-* tokens with fallbacks so a host
+   module can re-theme it by redefining them (DocuSign and Qualia have different
+   brand colours) without either one having to fork this file.
+   ============================================================================ */
+:root {
+  --sim-accent: #48a668;
+  --sim-accent-d: #3d9458;
+  --sim-ink: #24262b;
+  --sim-muted: #6e727c;
+  --sim-line: #e3e5e8;
+  --sim-bg: #f3f4f6;
+  --sim-good: #1c6b43;
+  --sim-bad: #c94b3f;
+}
+
+/* ---------- toasts (replace alert()) ---------- */
+.sim-toast-host {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.sim-toast {
+  max-width: 340px;
+  background: #22252b;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 11px 15px;
+  border-radius: 9px;
+  box-shadow: 0 10px 30px rgba(10, 15, 12, .28);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .22s, transform .22s;
+}
+
+.sim-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.sim-toast.good {
+  background: var(--sim-good);
+}
+
+.sim-toast.bad {
+  background: var(--sim-bad);
+}
+
+/* ---------- document modal ---------- */
+.sim-doc-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(12, 16, 14, .55);
+  padding: 30px 20px;
+}
+
+.sim-doc-modal.open {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sim-doc-modal-card {
+  width: 100%;
+  max-width: 900px;
+  height: 100%;
+  max-height: 88vh;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 60px rgba(10, 15, 12, .4);
+}
+
+.sim-doc-modal-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--sim-line);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sim-ink);
+}
+
+.sim-doc-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  color: var(--sim-muted);
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.sim-doc-modal-close:hover {
+  color: var(--sim-bad);
+}
+
+.sim-doc-modal-card iframe {
+  flex: 1;
+  width: 100%;
+  border: none;
+  background: #e9ebee;
+}
+
+/* ---------- walkthrough overlay ----------
+   The overlay itself is pointer-events:none so the app underneath stays fully usable;
+   only the tip card opts back in, so its own buttons work. This is what separates the
+   walkthrough from a first-run product tour, which freezes everything. */
+.sim-walk {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  pointer-events: none;
+}
+
+.sim-walk.open {
+  display: block;
+}
+
+.sim-walk-highlight.on {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sim-walk-highlight {
+  position: fixed;
+  border-radius: 10px;
+  /* Hidden until it has been given real geometry: at 0x0 its 9999px shadow spread paints the
+     entire viewport dark. Driven by a class rather than an inline opacity, so there is no
+     specificity question about which value wins. */
+  opacity: 0;
+  visibility: hidden;
+  /* The giant spread is the dimming layer: everything outside the highlight rect is
+     covered by the shadow, so no separate scrim element is needed. */
+  box-shadow: 0 0 0 9999px rgba(12, 16, 14, .5), 0 0 0 3px var(--sim-accent);
+  transition: top .3s, left .3s, width .3s, height .3s, opacity .2s;
+  pointer-events: none;
+}
+
+.sim-walk-tip {
+  position: fixed;
+  width: 300px;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 12px;
+  padding: 15px 17px;
+  box-shadow: 0 18px 44px rgba(10, 15, 12, .34);
+  pointer-events: auto;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  transition: top .3s, left .3s;
+}
+
+.sim-walk-tip b {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--sim-ink);
+  margin-bottom: 6px;
+}
+
+.sim-walk-tip p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--sim-muted);
+  line-height: 1.55;
+}
+
+.sim-walk-next {
+  margin-top: 10px;
+}
+
+.sim-walk-dots {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.sim-walk-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--sim-line);
+  flex: none;
+}
+
+.sim-walk-dot.done {
+  background: var(--sim-accent);
+}
+
+.sim-walk-dot.current {
+  width: 9px;
+  height: 9px;
+  background: #fff;
+  border: 2px solid var(--sim-accent);
+  margin-top: -1px;
+}
+
+.sim-walk-exit {
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--sim-muted);
+  cursor: pointer;
+}
+
+.sim-walk-exit:hover {
+  color: var(--sim-bad);
+  text-decoration: underline;
+}
+
+.sim-walk-example-toggle {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--sim-good);
+  background: #eef7f1;
+  border: 1px solid #cfe6da;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.sim-walk-example-toggle:hover {
+  background: #e2f0e8;
+  border-color: var(--sim-accent);
+}
+
+.sim-walk-example {
+  margin-top: 6px;
+  padding: 8px 10px;
+  background: var(--sim-bg);
+  border-radius: 7px;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--sim-muted);
+  line-height: 1.5;
+}
+
+/* ---------- lesson detail (rendered by the engine) ---------- */
+.sim-lesson-summary {
+  font-size: 13.5px;
+  color: var(--sim-muted);
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+
+.sim-lesson-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sim-lesson-step-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 13px;
+  border: 1px solid var(--sim-line);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.sim-lesson-step-row .label {
+  flex: 1;
+  min-width: 0;
+}
+
+.sim-chip {
+  flex: none;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: var(--sim-bg);
+  color: var(--sim-muted);
+}
+
+.sim-chip.good {
+  background: #e6f4ec;
+  color: var(--sim-good);
+}
+
+.sim-chip.bad {
+  background: #fbe9e7;
+  color: var(--sim-bad);
+}
+
+.sim-feedback {
+  margin-top: 14px;
+  padding: 13px 15px;
+  border-radius: 9px;
+  font-size: 13px;
+  line-height: 1.6;
+  background: var(--sim-bg);
+  border-left: 3px solid var(--sim-muted);
+}
+
+.sim-feedback b {
+  display: inline;
+  margin-right: 5px;
+}
+
+.sim-feedback.good {
+  background: #e9f5ee;
+  border-left-color: var(--sim-good);
+}
+
+.sim-feedback.bad {
+  background: #fdf1ef;
+  border-left-color: var(--sim-bad);
+}
+
+@media (max-width: 640px) {
+  .sim-walk-tip {
+    width: calc(100vw - 28px);
+    left: 14px !important;
+  }
+}
+
+/* ---------- lesson actions row ---------- */
+.sim-lesson-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+/* Kept visually quieter than Try It / Replay: restarting throws answers away, so it should
+   read as the secondary option even though it sits in the same row. */
+.sim-reset-btn {
+  margin-left: auto;
+  opacity: .75;
+}
+
+.sim-reset-btn:hover {
+  opacity: 1;
+}
+
+@media (max-width: 560px) {
+  .sim-reset-btn {
+    margin-left: 0;
+  }
+}
