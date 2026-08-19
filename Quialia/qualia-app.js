@@ -23,12 +23,15 @@ const QZ_STORE_DEFAULTS = {
   // Which lessons have ever been finished. Gating reads this instead of live progress,
   // so restarting a lesson to replay it cannot re-lock the ones after it.
   lessonsDone: {},
+  // Set once qzMigrateChecklistScope has run against this store.
+  checklistScoped: false,
   shuffleSalt: null
 };
 function qzDefaultStore() { return JSON.parse(JSON.stringify(QZ_STORE_DEFAULTS)); }
 let qzStore = qzDefaultStore();
 let qzState = {
   view: 'dashboard', orderId: null, orderTab: 'overview', deTab: 'property', threadId: null,
+  composeId: null,   // a compose exercise the trainee opened by hand from the thread list
   scenarioId: null, orderFilter: '', lessonId: null, examIndex: 0,
   railOpen: false,     // narrow-screen only: is the order rail showing as an overlay drawer?
   openOrders: [],      // Core keeps several files open at once (see qzRenderOrderTabs)
@@ -43,10 +46,39 @@ function qzLoad() {
   } catch (e) { qzStore = qzDefaultStore(); }
 }
 function qzSave() { localStorage.setItem(QZ_LS_KEY, JSON.stringify(qzStore)); }
+/* One-time backfill for progress saved before checklist keys became order-scoped (see
+   qzScopedChecklistKey). A step's scoped key cannot be reconstructed from the flat store in
+   general — the store never recorded WHICH file the action happened on — but for a lesson
+   already recorded as finished the answer is known: every one of its steps was satisfied.
+   Steps in unfinished lessons are left alone rather than guessed at. */
+function qzMigrateChecklistScope() {
+  if (qzStore.checklistScoped || typeof QZ_LESSONS === 'undefined') return;
+  QZ_LESSONS.forEach(l => {
+    if (!qzStore.lessonsDone[l.id]) return;
+    l.steps.forEach(s => {
+      if (s.type !== 'do' || !s.orderId) return;
+      if (qzStore.checklist[s.checklistId]) qzStore.checklist[qzScopedChecklistKey(s.checklistId, s.orderId)] = true;
+    });
+  });
+  qzStore.checklistScoped = true;
+  qzSave();
+}
+/* Checklist ids are deliberately reused across lessons — "Log a follow-up" is practiced on
+   ORD-2026-1512 in Lesson 4 and again on ORD-2026-1398 in Lesson 5 — but the store is one
+   flat map keyed by id alone, so doing it once satisfied both lessons' steps and Lesson 5
+   opened with steps already ticked off that the trainee had never done on that file.
+   A step that names an `orderId` is therefore tracked under a second, order-scoped key.
+   The free-navigation checklist panel still reads the plain id, so "have you ever logged a
+   follow-up" keeps meaning exactly what it meant before. */
+function qzScopedChecklistKey(id, orderId) { return orderId ? id + '@' + orderId : id; }
 function qzMark(id) {
-  const alreadyDone = !!qzStore.checklist[id];
-  if (!alreadyDone) {
+  const scopedKey = qzScopedChecklistKey(id, qzState.orderId);
+  // "Already done" is judged on the scoped key, not the global one: the same action on a
+  // different file is a genuinely new step and must still announce itself.
+  const alreadyDone = !!qzStore.checklist[scopedKey];
+  if (!alreadyDone || !qzStore.checklist[id]) {
     qzStore.checklist[id] = true;
+    qzStore.checklist[scopedKey] = true;
     qzSave();
   }
   // Normally re-marking an already-done item is a silent no-op, that's what keeps repeatable
@@ -56,7 +88,8 @@ function qzMark(id) {
   // walkthrough always starts a lesson at step 0 without skipping steps already done, redoing
   // the action must still be able to advance it instead of going silently unheard.
   const step = (SimEngine.walkActive()) ? SimEngine.currentStep() : null;
-  const walkActiveOnThis = step && step.type === 'do' && step.checklistId === id;
+  const walkActiveOnThis = step && step.type === 'do' && step.checklistId === id &&
+    (!step.orderId || step.orderId === qzState.orderId);
   if (!alreadyDone || walkActiveOnThis) qzNotifyStepDone(id);
 }
 /* Instant "step done" feedback when the completed checklist id belongs to a step of the
@@ -67,7 +100,10 @@ function qzNotifyStepDone(checklistId) {
   if (!qzState.lessonId || typeof QZ_LESSONS === 'undefined') return;
   const l = QZ_LESSONS.find(x => x.id === qzState.lessonId);
   if (!l) return;
-  const step = l.steps.find(s => s.type === 'do' && s.checklistId === checklistId);
+  // Order-scoped, same reason as qzMark: a lesson step tied to a file is only "done" when
+  // the action happened on that file.
+  const step = l.steps.find(s => s.type === 'do' && s.checklistId === checklistId &&
+    (!s.orderId || s.orderId === qzState.orderId));
   if (!step) return;
 
   if (SimEngine.walkActive() && SimEngine.currentStep() === step) {
@@ -629,7 +665,7 @@ function qzRenderRoot() {
    use this: the exam is single-answer, and the score reported to SCApp uses first attempts
    (see qzScenarioFirstAttemptCorrect). */
 function qzLessonStepDone(step) {
-  if (step.type === 'do') return !!qzStore.checklist[step.checklistId];
+  if (step.type === 'do') return !!qzStore.checklist[qzScopedChecklistKey(step.checklistId, step.orderId)];
   if (step.type === 'verify') { const s = qzStore.reviews[step.reviewId]; return !!(s && (s.everCorrect || s.correct)); }
   if (step.type === 'decide') { const s = qzStore.scenarios[step.scenarioId]; return !!(s && (s.everCorrect || s.correct)); }
   if (step.type === 'reconcile') { const s = qzStore.reconciles[step.reconcileId]; return !!(s && (s.everCorrect || s.correct)); }
@@ -847,6 +883,25 @@ function qzReconcileText(recId) {
   const undecided = r.rows.find(row => !qzRecRowSettled(recId, row.id));
   if (undecided) return `Now decide what happens with "${undecided.label}". Which source governs, and is this yours to fix?`;
   return 'Every row is filled in. Submit the reconciliation.';
+}
+/* Escalation-note example for a `reconcile` step, the exact counterpart of qzVerifyExample
+   below: the note that sits beside the category picker is free text and ungraded, and with
+   nothing to look at it is a blank page. Resolved per ROW, because one reconcile walks
+   several in turn — it offers the example only while the row the walkthrough is standing on
+   is the one actually asking for a note. */
+function qzReconcileExample(recId) {
+  const r = qzRecLookup(recId);
+  const st = qzRecGet(recId);
+  if (!r || st.resolvedAt || SimEngine.docOpen()) return null;
+  if (!qzRecAllDocsOpened(recId)) return null;
+  const row = r.rows.find(x => !qzRecRowSettled(recId, x.id));
+  if (!row || !row.noteExample) return null;
+  // Only once the row's action has been answered AND answered right, and only for an
+  // escalation: offered any earlier, the example would hand over the decision the trainee is
+  // being asked to make. Once the category is recorded the row settles and this moves on.
+  const d = st.decisions[row.id] || {};
+  if (!d.action || !d.actionCorrect || d.action.indexOf('escalate') !== 0) return null;
+  return row.noteExample;
 }
 function qzComposeTarget(composeId) {
   const st = qzComposeGet(composeId);
@@ -1101,6 +1156,9 @@ function qzTimelineHTML(o) {
 }
 function qzOrderTab(tab) {
   qzState.orderTab = tab;
+  // Leaving the tab drops any hand-opened compose exercise, so coming back lands on the
+  // ordinary messages view rather than mid-exercise.
+  qzState.composeId = null;
   if (tab === 'dataentry') { qzState.deTab = 'property'; qzMark('de-property'); }
   else if (tab === 'tasks') qzMark('tasks-open');
   else if (tab === 'workflow') qzMark('workflow-view');
@@ -2038,16 +2096,31 @@ function qzCommunicationHTML(o) {
   // A compose exercise takes over this tab while it's the active thing to do: it carries its
   // own thread context and its own graded reply box, so showing the ordinary reply UI beside
   // it would just offer a second, ungraded way to answer the same message.
+  // The takeover needs a REASON, though. ORD-2026-1398 carries two compose exercises, and
+  // while merely having one was reason enough, this tab never rendered its thread list, reply
+  // box or Log Follow-up button on that order at all — which is every interactive step of
+  // Lesson 5. The trainee got a walkthrough tip pointing at controls that were not on screen.
   const composes = (typeof QZ_COMPOSES !== 'undefined' ? QZ_COMPOSES : []).filter(c => c.orderId === o.id);
   const walkStep = (SimEngine.walkActive()) ? SimEngine.currentStep() : null;
-  if (composes.length) {
-    const activeCompose = (walkStep && walkStep.type === 'compose')
-      ? composes.find(c => c.id === walkStep.composeId)
-      : composes.find(c => !qzComposeGet(c.id).resolvedAt) || composes[0];
-    if (activeCompose) {
-      return `<div class="qz-panel">${qzComposeItemHTML(activeCompose.id)}</div>`;
-    }
+  const activeCompose = composes.length ? qzActiveComposeFor(o, composes, walkStep) : null;
+  if (activeCompose) {
+    // Only reachable by choice (no walkthrough driving it) does it need a way back.
+    const back = (!walkStep && qzState.composeId === activeCompose.id)
+      ? '<button class="qz-btn sm" style="margin-bottom:12px" onclick="qzCloseCompose()">&larr; Back to messages</button>'
+      : '';
+    return `<div class="qz-panel">${back}${qzComposeItemHTML(activeCompose.id)}</div>`;
   }
+  /* Free navigation still has to be able to REACH the exercise, so when the tab is showing
+     ordinary threads the order's exercises sit at the top of the thread list as openable
+     entries rather than disappearing. */
+  const exerciseList = composes.map(c => {
+    const st = qzComposeGet(c.id);
+    const state = st.resolvedAt ? (st.correct ? 'Completed' : 'Needs revision') : 'Not started';
+    // Deliberately NOT .qz-thread-item: that selector is the walkthrough's handle on a real
+    // message thread (Lesson 5 step 1), and an exercise entry sitting above the threads would
+    // otherwise be the first thing it matched.
+    return `<div class="qz-thread-exercise" onclick="qzOpenCompose('${escAttr(c.id)}')"><b>Exercise &middot; ${esc(c.label)}</b><span>${esc(state)}</span></div>`;
+  }).join('');
   const active = threads.find(t => t.id === qzState.threadId);
   let detail = '<div class="qz-panel">Select a thread.</div>';
   if (active) {
@@ -2058,8 +2131,37 @@ function qzCommunicationHTML(o) {
       <div class="row"><button class="qz-btn" data-comm-action="followup" onclick="qzLogFollowup()">Log Follow-up</button><button class="qz-btn primary" data-comm-action="reply" onclick="qzSendReply(${active.id})">Send Reply</button></div></div>
     </div>`;
   }
-  return `<div class="qz-comm-grid"><div class="qz-thread-list">${list}</div>${detail}</div>`;
+  return `<div class="qz-comm-grid"><div class="qz-thread-list">${exerciseList}${list}</div>${detail}</div>`;
 }
+/* Which compose exercise (if any) owns the Communication tab right now. In order:
+     1. the walkthrough is standing on a compose step for this order,
+     2. the trainee opened one from the thread list,
+     3. the lesson being worked has a compose step for this order (Lesson 14 has no
+        walkthrough at all, so nothing else would surface its exercise).
+   Everything else — free navigation, and any lesson whose steps use the ordinary thread
+   controls, Lesson 5 above all — gets the normal messages view. */
+function qzActiveComposeFor(o, composes, walkStep) {
+  if (walkStep && walkStep.type === 'compose') {
+    return composes.find(c => c.id === walkStep.composeId) || null;
+  }
+  // A walkthrough parked on a `do` step for THIS order wants the real controls that step
+  // points at, never an exercise panel covering them.
+  if (walkStep && walkStep.type === 'do' && walkStep.orderId === o.id) return null;
+  if (qzState.composeId) {
+    const chosen = composes.find(c => c.id === qzState.composeId);
+    if (chosen) return chosen;
+  }
+  const lesson = (qzState.lessonId && typeof QZ_LESSONS !== 'undefined')
+    ? QZ_LESSONS.find(x => x.id === qzState.lessonId) : null;
+  if (lesson && lesson.steps.some(st => st.type === 'compose' && composes.some(c => c.id === st.composeId))) {
+    const ids = lesson.steps.filter(st => st.type === 'compose').map(st => st.composeId);
+    const mine = composes.filter(c => ids.indexOf(c.id) > -1);
+    return mine.find(c => !qzComposeGet(c.id).resolvedAt) || mine[0] || null;
+  }
+  return null;
+}
+function qzOpenCompose(id) { qzState.composeId = id; qzRenderRoot(); }
+function qzCloseCompose() { qzState.composeId = null; qzRenderRoot(); }
 
 /* ---------- Vendors ---------- */
 function qzCheckVendor(id) {
@@ -3226,6 +3328,7 @@ function qzInitEngine() {
 }
 document.addEventListener('DOMContentLoaded', function () {
   qzLoad();
+  qzMigrateChecklistScope();
   qzInitEngine();
   const su = window.SCApp && SCApp.currentUser && SCApp.currentUser();
   if (su) {

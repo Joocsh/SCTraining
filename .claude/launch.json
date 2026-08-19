@@ -4,8 +4,22 @@
     {
       "name": "static-site",
       "runtimeExecutable": "py",
-      "runtimeArgs": ["-m", "http.server", "5799"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5799"
+      ],
       "port": 5799
+    },
+    {
+      "name": "verify-tmp",
+      "runtimeExecutable": "py",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5805"
+      ],
+      "port": 5805
     }
   ]
 }

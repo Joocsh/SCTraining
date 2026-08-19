@@ -796,6 +796,10 @@ const QZ_RECONCILES = [
         // old figure. That combination is exactly what conflicting-sources is for.
         rightAction: 'escalate-supervisor',
         rightCategory: 'conflicting-sources',
+        // Same role as a review item's noteExample, and shown the same way: a collapsed
+        // "See example" inside the walkthrough tip while the escalation note is the active
+        // field. The note is free text and ungraded, so without a model it is a blank page.
+        noteExample: 'The order shows a purchase price of $365,120.00, which matches the Purchase Agreement and the Loan Estimate. Addendum No. 1 is signed later, states that it controls, and sets the price at $361,750.00, so $361,750.00 is the operative figure and the Loan Estimate was issued against a price the addendum has superseded. This is a contract question with the lender file attached, not a data entry fix, so I have not changed the price on the order. Escalating so the order, the lender file and the closing figures can be brought back into line together.',
         explain: 'The signed Addendum is dated after the base contract and says it controls, so $361,750.00 is the operative price. But the Loan Estimate was issued against $365,120.00, which means the lender has not been told. You do not resolve that by editing the order: escalate it as conflicting sources so the price, the lender file and the closing figures are brought back into line together.'
       },
       {
@@ -861,6 +865,9 @@ const QZ_RECONCILES = [
           { docId: 'hoa', options: ['Addresses this requirement', 'Does not address this requirement'], right: 'Does not address this requirement' }
         ],
         // needs-client-confirmation: nobody in-house can say whether "E. Ruiz" is this seller.
+        // Escalation-note model, surfaced by qzReconcileExample as a collapsed "See example"
+        // in the walkthrough tip while this row's note is the active field.
+        noteExample: 'Schedule B-I item 6 of the Title Commitment (Title No. TX-2026-04502) requires release of an abstract of judgment in favor of Meridian Recovery Partners LLC for $12,480.00, styled against "E. Ruiz." Schedule A shows the record owner as Elena Ruiz, a single person. Nothing in the file establishes whether that judgment is against our seller or a different person with the same initial, and the HOA resale certificate does not touch it. I have not assumed it either way. This needs the seller to confirm identity before the requirement can be cleared or disputed.',
         rightAction: 'escalate-agent',
         rightCategory: 'needs-client-confirmation',
         explain: 'A judgment lien is recorded against "E. Ruiz" and nothing in the file resolves whether that is this seller or a different person with the same initial. Nobody internal can answer that, it needs the seller to confirm identity before the requirement can be cleared or disputed. That makes it a client-confirmation escalation to the settlement agent, not a lien you quietly assume away.'
@@ -888,6 +895,9 @@ const QZ_RECONCILES = [
           { docId: 'po', options: ['Good through August 10, 2026', 'Good through August 25, 2026', 'Good through September 10, 2026', 'No expiry stated'], right: 'Good through August 10, 2026' },
           { docId: 'cd', options: ['Closing August 25, 2026', 'Closing August 11, 2026', 'Closing September 4, 2026', 'Not stated'], right: 'Closing August 25, 2026' }
         ],
+        // Escalation-note model, surfaced by qzReconcileExample as a collapsed "See example"
+        // in the walkthrough tip while this row's note is the active field.
+        noteExample: 'The payoff statement on 219 Lakeshore Drive is good through August 10, 2026 at $282,754.73, and the Closing Disclosure has closing on August 25. The statement has expired for the date we are actually closing on. I have worked the additional per diem at $47.13 a day so the file knows the size of the gap, but I have not recorded it as a figure of record: an updated statement has to come from Summit Ridge, and the statement itself says that funding short of the per diem leaves the lien unreleased. Asking you to order a current payoff good through the new closing date.',
         rightAction: 'escalate-agent',
         rightCategory: 'outside-authority',
         explain: 'The payoff expired on August 10 and closing is now August 25. An expired payoff cannot simply be topped up on your own arithmetic and used to close: the servicer has to issue an updated statement. Flag it to the settlement agent so a current payoff is ordered, because funding short means the lien is not released.'
@@ -930,6 +940,9 @@ const QZ_RECONCILES = [
           { docId: 'rout', options: ['Same sender as Email A', 'A different company entirely'], right: 'A different company entirely' },
           { docId: 'po', options: ['Names Summit Ridge as the servicer', 'Names Best Closing as the servicer'], right: 'Names Summit Ridge as the servicer' }
         ],
+        // Escalation-note model, surfaced by qzReconcileExample as a collapsed "See example"
+        // in the walkthrough tip while this row's note is the active field.
+        noteExample: 'The order lists the settlement agent as ladminton@bestclosing.com. The email asking to move the closing funds for 219 Lakeshore Drive comes from ladminton@bestclosinq.com, one letter different, and its reply-to is a third domain again. It manufactures urgency and explicitly tells me not to call the office. I have not replied to it, forwarded it, or confirmed anything, and I am not repeating the account details here. Bringing it to you outside that thread, and I suggest we confirm with Lucas by phone on the number already in the order file.',
         rightAction: 'escalate-supervisor',
         rightCategory: 'outside-authority',
         explain: 'The sender is bestclosinq.com, not bestclosing.com, the reply-to points at a third domain, the message manufactures urgency, and it explicitly discourages you from calling the office. This is a business email compromise attempt. Do not reply to the thread, do not forward it onward, and do not confirm anything: escalate it to your supervisor through a channel that did not come out of this email.'
@@ -943,6 +956,9 @@ const QZ_RECONCILES = [
           { docId: 'po', options: ['Says wire instructions must be confirmed by telephone', 'Says wire instructions may be accepted by email', 'Says nothing about confirming instructions'], right: 'Says wire instructions must be confirmed by telephone' },
           { docId: 'sus', options: ['Also asks for phone confirmation', 'Discourages calling the office'], right: 'Discourages calling the office' }
         ],
+        // Escalation-note model, surfaced by qzReconcileExample as a collapsed "See example"
+        // in the walkthrough tip while this row's note is the active field.
+        noteExample: 'Summit Ridge Mortgage Servicing, the servicer named on the payoff statement for 219 Lakeshore Drive, has emailed a change of receiving bank for the payoff. It explains why the bank changed and asks that it be confirmed by phone on the number printed on the statement, which is what the statement itself requires. It reads as genuine, but confirming it is not mine to do, and probably real is not the same as verified. Sending it to you to verify out of band against the file before any funds move. I have not replied to the sender.',
         rightAction: 'escalate-agent',
         rightCategory: 'needs-client-confirmation',
         explain: 'Email B is almost certainly legitimate: it comes from the servicer named on the payoff statement, explains why the bank changed, and asks you to verify by phone using the number printed on the statement rather than one in the email. That does not make it yours to action. Route it to the settlement agent for out-of-band verification against the file number. "Probably real" and "verified" are not the same thing, and the difference is the whole exercise.'
@@ -1430,6 +1446,7 @@ const QZ_LESSONS = [
       { type: 'reconcile', reconcileId: 'rec-1483-price-conflict', walk: {
           target: () => qzReconcileTarget('rec-1483-price-conflict'),
           text: () => qzReconcileText('rec-1483-price-conflict'),
+          example: () => qzReconcileExample('rec-1483-price-conflict'),
           setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('review'); }
         } },
       { type: 'decide', scenarioId: 'which-governs', walk: {
@@ -1451,6 +1468,7 @@ const QZ_LESSONS = [
       { type: 'reconcile', reconcileId: 'rec-1398-wire', walk: {
           target: () => qzReconcileTarget('rec-1398-wire'),
           text: () => qzReconcileText('rec-1398-wire'),
+          example: () => qzReconcileExample('rec-1398-wire'),
           setup: () => { qzOpenOrder('ORD-2026-1398'); qzOrderTab('review'); }
         } },
       { type: 'compose', composeId: 'cmp-1398-wire', orderId: 'ORD-2026-1398', walk: {
@@ -1482,6 +1500,7 @@ const QZ_LESSONS = [
       { type: 'reconcile', reconcileId: 'rec-1512-commitment', walk: {
           target: () => qzReconcileTarget('rec-1512-commitment'),
           text: () => qzReconcileText('rec-1512-commitment'),
+          example: () => qzReconcileExample('rec-1512-commitment'),
           setup: () => { qzOpenOrder('ORD-2026-1512'); qzOrderTab('review'); }
         } }
     ]
@@ -1498,6 +1517,7 @@ const QZ_LESSONS = [
       { type: 'reconcile', reconcileId: 'rec-1398-payoff', walk: {
           target: () => qzReconcileTarget('rec-1398-payoff'),
           text: () => qzReconcileText('rec-1398-payoff'),
+          example: () => qzReconcileExample('rec-1398-payoff'),
           setup: () => { qzOpenOrder('ORD-2026-1398'); qzOrderTab('review'); }
         } },
       { type: 'decide', scenarioId: 'payoff-expired', walk: {

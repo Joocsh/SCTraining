@@ -2938,3 +2938,31 @@ table.qz-acct tfoot td {
     gap: 14px;
   }
 }
+
+/* A compose exercise no longer takes over the Communication tab unconditionally (see
+   qzActiveComposeFor), so free navigation reaches it from the top of the thread list.
+   It carries its own class rather than .qz-thread-item, which the Lesson 5 walkthrough
+   uses to mean "a real message thread". */
+.qz-thread-exercise {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--qz-line);
+  cursor: pointer;
+  background: #fbf7ec;
+  border-left: 3px solid var(--qz-gold);
+}
+
+.qz-thread-exercise b {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 3px;
+  color: #6b5416;
+}
+
+.qz-thread-exercise span {
+  font-size: 11.5px;
+  color: var(--qz-muted);
+}
+
+.qz-thread-exercise:hover {
+  background: #f6efdd;
+}

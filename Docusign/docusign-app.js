@@ -9,6 +9,7 @@
 const DS_LS_KEY = 'ds_va_training_v3';
 const DS_STORE_DEFAULTS = {
   checklist: {}, scenarios: {}, overrides: {},
+  reviews: {}, triages: {}, composes: {},
   tourSeen: false, exam: null,
   lessonsDone: {},
   shuffleSalt: null
@@ -20,6 +21,9 @@ let dsState = {
   envelopeFilter: 'all',
   activeEnvId: null,
   activeScenarioId: null,
+  activeTriageId: null,
+  activeVerifyId: null,
+  activeComposeId: null,
   lessonId: null,
   examIndex: 0,
   wizardStep: 1,
@@ -170,11 +174,22 @@ function dsToggleSidebar(forced) {
 }
 
 /* ---------- Navigation ---------- */
+/* Opening an envelope from the list is a real trainee action, so it is credited here in the
+   click handler rather than inside the render function — the B-2 rule for the whole module:
+   an item is marked by doing the thing, never by the view that shows it being drawn. */
+function dsOpenEnvelope(envId) {
+  dsGoto('envelope-detail', envId);
+  dsMark('ds_env_open');
+}
 function dsGoto(view, extraId) {
   dsToggleSidebar(false);
   dsState.view = view;
   if (view === 'envelope-detail') dsState.activeEnvId = extraId;
   if (view === 'scenario-detail') dsState.activeScenarioId = extraId;
+  if (view === 'triage')          dsState.activeTriageId = extraId;
+  if (view === 'verify')          dsState.activeVerifyId = extraId;
+  if (view === 'compose')         dsState.activeComposeId = extraId;
+  if (view === 'lesson')          dsState.lessonId = extraId;
   dsSyncNav();
   dsRenderRoot();
   // Scroll main to top
@@ -210,7 +225,11 @@ function dsSyncNav() {
     'new-envelope':   'sb-sent',
     'templates':      'sb-templates',
     'scenarios':      'sb-scenarios',
+    'triage':         'sb-sent',
+    'verify':         'sb-sent',
+    'compose':        'sb-sent',
     'lesson':         'sb-home',
+    'exam':           'sb-exam',
     'complete-transaction': 'sb-exam'
   };
   const id = map[dsState.view];
@@ -231,8 +250,12 @@ function dsRenderRoot() {
     'templates':           dsTemplatesHTML,
     'scenarios':           dsScenariosHTML,
     'scenario-detail':     dsScenarioDetailHTML,
+    'triage':              dsTriageHTML,
+    'verify':              dsVerifyHTML,
+    'compose':             dsComposeHTML,
     'lesson':              dsLessonDetailHTML,
-    'complete-transaction':dsCompleteTransactionHTML
+    'exam':                dsExamHTML,
+    'complete-transaction':dsExamHTML
   };
   root.innerHTML = (views[dsState.view] || (() => '<p>View not found.</p>'))();
 }
@@ -242,7 +265,38 @@ function dsDashboardHTML() {
   const su   = window.SCApp && SCApp.currentUser && SCApp.currentUser();
   const name = su ? su.name.split(' ')[0] : 'Trainee';
 
-  const cards = Object.keys(DS_CHECKLISTS).map(key => {
+  // 10 Structured Lesson Cards (Progressive Unlock)
+  const lessonCards = DS_LESSONS.map((l, i) => {
+    const state = SimEngine.lessonState(i);
+    const prog = SimEngine.progress(l);
+    const pct = prog.total ? Math.round(prog.done / prog.total * 100) : 0;
+    const isLocked = state === 'locked';
+    const isDone = state === 'done';
+    const badgeText = isDone ? 'Done' : (isLocked ? 'Locked' : 'Unlocked');
+    const badgeClass = isDone ? 'completed' : (isLocked ? 'expired' : 'waiting');
+
+    const clickAction = !isLocked ? `onclick="SimEngine.openLesson('${escAttr(l.id)}')"` : '';
+
+    return `
+      <div class="ds-lesson-card ${state}" ${clickAction} style="background:#fff;border:1px solid ${isDone?'#a5d6a7':isLocked?'#e0e0e0':'#c5d8ff'};border-radius:8px;padding:16px;cursor:${isLocked?'not-allowed':'pointer'};transition:all .15s;opacity:${isLocked?'.65':'1'};box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <span style="font-size:11px;font-weight:700;color:var(--ds-muted);text-transform:uppercase;">LESSON ${l.number}</span>
+            <h4 style="margin:2px 0 0;font-size:14px;color:#222;">${esc(l.title)}</h4>
+          </div>
+          <span class="ds-badge ${badgeClass}" style="font-size:11px;padding:2px 8px;">${badgeText}</span>
+        </div>
+        <p style="font-size:12.5px;color:var(--ds-muted);line-height:1.4;margin:0 0 12px;min-height:34px;">${esc(l.summary)}</p>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="flex:1;background:#eee;border-radius:999px;height:6px;overflow:hidden;">
+            <div style="width:${pct}%;background:${isDone?'#43a047':'var(--ds-blue)'};height:100%;border-radius:999px;"></div>
+          </div>
+          <span style="font-size:11.5px;font-weight:700;color:${isDone?'#2e7d32':'var(--ds-muted)'};">${prog.done}/${prog.total}</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  const checklistsCards = Object.keys(DS_CHECKLISTS).map(key => {
     const cl  = DS_CHECKLISTS[key];
     const done = cl.items.filter(it => dsStore.checklist[it.id]).length;
     const total = cl.items.length;
@@ -265,7 +319,7 @@ function dsDashboardHTML() {
   return `
     <div class="ds-welcome">
       <h2>Welcome back, ${esc(name)}</h2>
-      <p>Practice real DocuSign VA tasks: prepare and send envelopes, set signing order, place fields, resend reminders, correct recipient emails, void bad contracts, and download completed documents.</p>
+      <p>Master professional DocuSign Virtual Assistant workflows: envelope preparation, sequential routing, field audits, in-flight corrections, void procedures, and security verification.</p>
       <button class="ds-tour-replay-btn" onclick="dsTourStart()">▶ Replay Tour</button>
     </div>
 
@@ -275,7 +329,7 @@ function dsDashboardHTML() {
         Send an Envelope
       </button>
       <button class="ds-btn primary" onclick="dsGoto('templates')">Use a Template</button>
-      <button class="ds-btn" onclick="dsGoto('complete-transaction')">🎯 Final Exam</button>
+      <button class="ds-btn" onclick="dsGoto('exam')">🎯 Final Exam</button>
     </div>
 
     <!-- Quick Stats -->
@@ -300,10 +354,17 @@ function dsDashboardHTML() {
       </div>
     </div>
 
+    <div class="ds-listhead" style="margin-top:24px;">
+      <div><h2>Curriculum: 10 Structured Lessons</h2><div class="sub">Progressive unlock &middot; Interactive guided walkthrough on every lesson</div></div>
+    </div>
+    <div class="ds-dash-grid" style="grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:16px;margin-bottom:28px;">
+      ${lessonCards}
+    </div>
+
     <div class="ds-listhead">
       <div><h2>Training Checklists</h2><div class="sub">Items auto-complete as you practice each action</div></div>
     </div>
-    <div class="ds-dash-grid">${cards}</div>
+    <div class="ds-dash-grid">${checklistsCards}</div>
   `;
 }
 
@@ -320,7 +381,7 @@ function dsEnvelopesHTML() {
       return `<span class="ds-recip-chip ${done ? 'done' : ''}">${esc(r.name.split(' ')[0])} ${done ? '✓' : '…'}</span>`;
     }).join('');
     return `
-      <tr class="link" onclick="dsGoto('envelope-detail','${esc(e.id)}')">
+      <tr class="link" onclick="dsOpenEnvelope('${esc(e.id)}')">
         <td class="subject">
           ${esc(e.subject)}
           <div class="td-sub">From: ${esc(e.sender)}</div>
@@ -510,7 +571,7 @@ function dsWizardStep2HTML() {
         <button type="button" class="ds-btn" onclick="dsAddRecipient()">+ Add Recipient</button>
       </div>
 
-      <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:10px 14px;font-size:12.5px;color:#7a5f00;margin-bottom:18px;">
+      <div class="ds-box-tip">
         💡 <b>Tip:</b> Setting Buyer to Order 1 and Seller to Order 2 ensures Sarah cannot sign until John signs first — critical for real estate transactions.
       </div>
 
@@ -861,11 +922,11 @@ function dsEnvelopeDetailHTML() {
       <div class="ds-recipients-list">${recipRows}</div>
 
       ${isWaiting ? `
-        <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:10px 14px;font-size:12.5px;color:#7a5f00;margin-top:14px;">
+        <div class="ds-box-tip" style="margin-top:14px;margin-bottom:0;">
           💡 <b>VA Tip:</b> If a recipient hasn't acted in 24–48 hours, use <em>Send Reminder</em> to re-notify them. Check the email address is correct with <em>Correct Envelope</em> first.
         </div>` : ''}
       ${isCompleted ? `
-        <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:10px 14px;font-size:12.5px;color:#2e7d32;margin-top:14px;">
+        <div class="ds-box-success" style="margin-top:14px;margin-bottom:0;">
           ✅ All parties have signed. Download the completed PDF with the Certificate of Completion for your records.
         </div>` : ''}
     </div>`;
@@ -1073,11 +1134,27 @@ function dsScenarioDetailHTML() {
       </button>`;
   }).join('');
 
+  /* A wrong answer used to be terminal: the options were disabled and nothing offered a way
+     back, so a single mis-click on Lesson 1's scenario locked the entire curriculum behind an
+     unsatisfiable step. Retry is always available; what protects the score is firstAttempt,
+     which dsAnswerScenario records once and never overwrites. Once the answer IS correct and
+     a Continue button is showing, Retake is dropped — clicking it there would wipe the
+     resolved state and take the Continue button down with it. */
+  const continueBtn = (r && r.correct && SimEngine.continueHTML)
+    ? SimEngine.continueHTML({ type: 'decide', scenarioId: s.id }) : '';
+  const retakeBtn = r
+    ? ((r.correct && continueBtn) ? ''
+      : `<button type="button" class="ds-btn sm" onclick="dsRetakeScenario('${escAttr(s.id)}')">${r.correct ? 'Retake Scenario' : 'Try Again'}</button>`)
+    : '';
+  const firstLine = (r && r.firstAttempt)
+    ? `<div class="ds-first-attempt">First attempt: ${r.firstAttempt.correct ? '&#10003; correct' : '&#10007; incorrect'} &middot; this is what counts toward your score.</div>`
+    : '';
   const feedback = r ? `
     <div class="ds-feedback ${r.correct ? 'correct' : 'incorrect'}">
       <b>${r.correct ? 'Correct!' : 'Not quite right.'}</b>
-      <p style="margin:6px 0 0;">${esc(s.explanation)}</p>
-      ${SimEngine.continueHTML ? SimEngine.continueHTML({ type: 'decide', scenarioId: s.id }) : ''}
+      <p class="ds-feedback-body">${esc(s.explanation)}</p>
+      ${firstLine}
+      <div class="ds-feedback-actions">${continueBtn}${retakeBtn}</div>
     </div>` : '';
 
   return `
@@ -1094,6 +1171,22 @@ function dsScenarioDetailHTML() {
     </div>`;
 }
 
+/* Clears the current answer so the options unlock, while keeping firstAttempt — retaking is
+   for learning, not for laundering a wrong first answer into a right one. Mirrors
+   qzRetakeScenario in the Qualia module. */
+function dsRetakeScenario(scenId) {
+  const prev = dsStore.scenarios[scenId] || {};
+  if (prev.firstAttempt) dsStore.scenarios[scenId] = { firstAttempt: prev.firstAttempt };
+  else delete dsStore.scenarios[scenId];
+  dsSave();
+  dsRenderRoot();
+  /* If the walkthrough is parked on this exact step it is showing "Not quite" with no way
+     forward; re-rendering its tip puts the original instruction back. */
+  if (SimEngine.walkActive()) {
+    const step = SimEngine.currentStep();
+    if (step && step.type === 'decide' && step.scenarioId === scenId) SimEngine.renderTip(step, false);
+  }
+}
 function dsAnswerScenario(scenId, optIdx) {
   const s = DS_SCENARIOS.find(x => x.id === scenId);
   if (!s) return;
@@ -1116,33 +1209,529 @@ function dsAnswerScenario(scenId, optIdx) {
   dsRenderRoot();
 }
 
-/* ==================== EXAM (placeholder until Phase D-4) ==================== */
-/* B-1 fix: the previous "exam" was a checklist mirror that auto-completed on
-   navigation. Replaced with a real exam shell that will be populated in D-4. */
-function dsCompleteTransactionHTML() {
-  /* Check if all lessons are complete */
-  const allDone = DS_LESSONS.length > 0 && DS_LESSONS.every((l, i) =>
-    SimEngine.lessonState(i) === 'done');
+/* ============================================================================
+   TRIAGE MECHANIC (D-1: Lesson 5, Lesson 10 & Exam)
+   ============================================================================ */
+const DS_TRIAGE_ACTION_LABELS = {
+  'resend': 'Send Reminder (Resend)',
+  'correct': 'Correct Envelope (In-flight Edit)',
+  'void': 'Void Envelope (Mandatory Reason)',
+  'none': 'No Action Needed (On Track / Completed)',
+  'report-phishing': 'Report Phishing / Security Threat',
+  'escalate': 'Escalate to Supervising Broker'
+};
 
-  if (!allDone) {
-    return `
-      <div class="ds-detail-back" onclick="dsGoto('dashboard')">← Back to Dashboard</div>
-      <div class="ds-panel" style="margin-top:0;text-align:center;padding:40px 20px;">
-        <h2 style="margin:0 0 12px;color:#222;">Final Exam</h2>
-        <p style="font-size:14px;color:var(--ds-muted);max-width:420px;margin:0 auto;">
-          Complete all ${DS_LESSONS.length || '—'} lessons before attempting the exam.
-          Each lesson teaches a skill that the exam will test.
-        </p>
+function dsTriageHTML() {
+  const id = dsState.activeTriageId || 'tri-env-9041';
+  const item = DS_TRIAGE_ITEMS.find(x => x.id === id) || DS_TRIAGE_ITEMS[0];
+  const r = dsStore.triages[item.id];
+
+  const actions = ['resend', 'correct', 'void', 'none', 'report-phishing', 'escalate'];
+  const btns = actions.map(act => {
+    let cls = '';
+    if (r) {
+      if (act === item.rightAction)                 cls = 'correct';
+      else if (act === r.answered && !r.correct)   cls = 'incorrect';
+    }
+    return `<button type="button" class="ds-option ${cls}" ${r ? 'disabled' : ''} onclick="dsTriageAnswer('${item.id}','${act}')" style="margin-bottom:8px;text-align:left;">
+      <b>${esc(DS_TRIAGE_ACTION_LABELS[act])}</b>
+    </button>`;
+  }).join('');
+
+  const docBtn = item.doc ? `<div style="margin-bottom:14px;"><button type="button" class="ds-btn primary sm" onclick="SimEngine.viewDoc('${escAttr(item.doc)}','${escAttr(item.docTitle)}')">📄 Open & Inspect ${esc(item.docTitle || 'Document')}</button></div>` : '';
+
+  const continueBtn = (r && r.correct && SimEngine.continueHTML)
+    ? SimEngine.continueHTML({ type: 'triage', triageId: item.id }) : '';
+  const retryBtn = r
+    ? ((r.correct && continueBtn) ? ''
+      : `<button type="button" class="ds-btn sm" onclick="dsRetakeTriage('${escAttr(item.id)}')">${r.correct ? 'Redo' : 'Try Again'}</button>`)
+    : '';
+  const feedback = r ? `
+    <div class="ds-feedback ${r.correct ? 'correct' : 'incorrect'}">
+      <b>${r.correct ? 'Correct triage action.' : 'Not the right action here.'}</b>
+      <p class="ds-feedback-body">${esc(item.explain)}</p>
+      <div class="ds-feedback-actions">${continueBtn}${retryBtn}</div>
+    </div>` : '';
+
+  return `
+    <div class="ds-detail-back" onclick="dsGoto('dashboard')">← Back to Dashboard</div>
+
+    <div class="ds-panel" style="margin-top:0;">
+      <span class="ds-badge yellow" style="font-size:11px;margin-bottom:6px;display:inline-block;">TRIAGE DECISION</span>
+      <h3 style="margin:0 0 12px;color:#222;font-size:17px;">${esc(item.title)}</h3>
+
+      <div style="font-size:14px;line-height:1.7;color:#333;margin-bottom:16px;background:#f5f5f5;padding:16px 18px;border-radius:8px;border-left:4px solid var(--ds-blue);">
+        ${esc(item.situation)}
+      </div>
+
+      ${docBtn}
+
+      <div style="font-size:12px;font-weight:700;color:var(--ds-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">What is the appropriate action for this item?</div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        ${btns}
+      </div>
+      ${feedback}
+    </div>`;
+}
+
+/* Same rule as dsRetakeScenario: unlock the choices, keep firstAttempt. Used by both the
+   triage and verify banks, which store their records in different bags but with the same
+   shape. */
+function dsRetakeItem(bag, itemId, stepType, stepKey) {
+  const prev = bag[itemId] || {};
+  if (prev.firstAttempt) bag[itemId] = { firstAttempt: prev.firstAttempt };
+  else delete bag[itemId];
+  dsSave();
+  dsRenderRoot();
+  if (SimEngine.walkActive()) {
+    const step = SimEngine.currentStep();
+    if (step && step.type === stepType && step[stepKey] === itemId) SimEngine.renderTip(step, false);
+  }
+}
+function dsRetakeTriage(itemId) { dsRetakeItem(dsStore.triages, itemId, 'triage', 'triageId'); }
+function dsRetakeVerify(itemId) { dsRetakeItem(dsStore.reviews, itemId, 'verify', 'reviewId'); }
+
+function dsTriageAnswer(itemId, action) {
+  const item = DS_TRIAGE_ITEMS.find(x => x.id === itemId);
+  if (!item) return;
+  const isCorrect = (action === item.rightAction);
+  /* firstAttempt is written once and never overwritten, so retaking can improve what the
+     trainee understands without rewriting what they actually scored the first time. */
+  const prev = dsStore.triages[itemId];
+  dsStore.triages[itemId] = {
+    answered: action, correct: isCorrect, ts: Date.now(),
+    firstAttempt: (prev && prev.firstAttempt) || { answered: action, correct: isCorrect }
+  };
+  if (isCorrect) dsMark('tri:' + itemId);
+  dsSave();
+  if (isCorrect) dsNotifyStepDone('tri:' + itemId);
+  dsRenderRoot();
+}
+
+/* ============================================================================
+   VERIFY MECHANIC (D-1: Lesson 6, Lesson 7, Lesson 9 & Exam)
+   ============================================================================ */
+function dsVerifyHTML() {
+  const id = dsState.activeVerifyId || 'ver-cert-9041';
+  const item = DS_VERIFY_ITEMS.find(x => x.id === id) || DS_VERIFY_ITEMS[0];
+  const r = dsStore.reviews[item.id];
+
+  const opts = item.options.map(opt => {
+    let cls = '';
+    if (r) {
+      if (opt.id === item.rightOptionId)           cls = 'correct';
+      else if (opt.id === r.answered && !r.correct) cls = 'incorrect';
+    }
+    return `<button type="button" class="ds-option ${cls}" ${r ? 'disabled' : ''} onclick="dsVerifyAnswer('${item.id}','${opt.id}')" style="margin-bottom:8px;text-align:left;">
+      <b>${opt.id.toUpperCase()}.</b> ${esc(opt.text)}
+    </button>`;
+  }).join('');
+
+  const docBtn = `<button type="button" class="ds-btn primary" onclick="SimEngine.viewDoc('${escAttr(item.doc)}','${escAttr(item.docTitle)}')">🔍 Open ${esc(item.docTitle)} &rarr;</button>`;
+
+  const continueBtn = (r && r.correct && SimEngine.continueHTML)
+    ? SimEngine.continueHTML({ type: 'verify', reviewId: item.id }) : '';
+  const retryBtn = r
+    ? ((r.correct && continueBtn) ? ''
+      : `<button type="button" class="ds-btn sm" onclick="dsRetakeVerify('${escAttr(item.id)}')">${r.correct ? 'Redo' : 'Try Again'}</button>`)
+    : '';
+  const feedback = r ? `
+    <div class="ds-feedback ${r.correct ? 'correct' : 'incorrect'}">
+      <b>${r.correct ? 'Audit verified.' : 'That is not what the document shows.'}</b>
+      <p class="ds-feedback-body">${esc(item.explain)}</p>
+      <div class="ds-feedback-actions">${continueBtn}${retryBtn}</div>
+    </div>` : '';
+
+  return `
+    <div class="ds-detail-back" onclick="dsGoto('dashboard')">← Back to Dashboard</div>
+
+    <div class="ds-panel" style="margin-top:0;">
+      <span class="ds-badge green" style="font-size:11px;margin-bottom:6px;display:inline-block;">DOCUMENT VERIFICATION</span>
+      <h3 style="margin:0 0 12px;color:#222;font-size:17px;">${esc(item.title)}</h3>
+
+      <div style="background:#f0f4ff;border:1px solid #c5d8ff;border-radius:8px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div>
+          <span style="font-size:12px;font-weight:700;color:#1a237e;">STEP 1: INSPECT SOURCE DOCUMENT</span>
+          <div style="font-size:13px;color:#333;margin-top:2px;">Compare system timestamps and signer records with the document audit trail.</div>
+        </div>
+        ${docBtn}
+      </div>
+
+      <div style="font-size:13.5px;line-height:1.6;color:#333;margin-bottom:16px;background:#fafafa;padding:12px 16px;border-radius:6px;border:1px solid #e0e0e0;">
+        <span style="font-size:11px;font-weight:700;color:var(--ds-muted);text-transform:uppercase;">SYSTEM LOG</span><br>
+        <b>${esc(item.systemValue)}</b>
+      </div>
+
+      <div style="font-size:13px;font-weight:700;color:#222;margin-bottom:12px;">${esc(item.question)}</div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        ${opts}
+      </div>
+      ${feedback}
+    </div>`;
+}
+
+function dsVerifyAnswer(itemId, optionId) {
+  const item = DS_VERIFY_ITEMS.find(x => x.id === itemId);
+  if (!item) return;
+  const isCorrect = (optionId === item.rightOptionId);
+  const prev = dsStore.reviews[itemId];
+  dsStore.reviews[itemId] = {
+    answered: optionId, correct: isCorrect, ts: Date.now(),
+    firstAttempt: (prev && prev.firstAttempt) || { answered: optionId, correct: isCorrect }
+  };
+  if (isCorrect) dsMark('ver:' + itemId);
+  dsSave();
+  if (isCorrect) dsNotifyStepDone('ver:' + itemId);
+  dsRenderRoot();
+}
+
+/* ============================================================================
+   COMPOSE MECHANIC (D-1: Lesson 8 & Exam)
+   ============================================================================ */
+function dsComposeHTML() {
+  const id = dsState.activeComposeId || 'cmp-void-notice';
+  const item = DS_COMPOSE_ITEMS.find(x => x.id === id) || DS_COMPOSE_ITEMS[0];
+  const r = dsStore.composes[item.id];
+
+  let feedback = '';
+  if (r) {
+    const rubricRows = r.results.map(crit => `
+      <div style="display:flex;align-items:center;gap:10px;font-size:12.5px;margin-bottom:4px;color:${crit.pass ? '#2e7d32' : '#c62828'};">
+        <span>${crit.pass ? '✓' : '✗'}</span>
+        <span>${esc(crit.label)} ${crit.required ? '(Required)' : ''}</span>
+      </div>`).join('');
+
+    feedback = `
+      <div class="ds-feedback ${r.passed ? 'correct' : 'incorrect'}">
+        <b>${r.passed ? '✅ Rubric Criteria Met (' + r.passedCount + '/' + r.totalCount + ')' : '❌ Needs Revision (' + r.passedCount + '/' + r.totalCount + ')'}</b>
+        <div style="margin-top:8px;">${rubricRows}</div>
+        ${r.passed && SimEngine.continueHTML ? SimEngine.continueHTML({ type: 'compose', composeId: item.id }) : ''}
       </div>`;
   }
 
   return `
     <div class="ds-detail-back" onclick="dsGoto('dashboard')">← Back to Dashboard</div>
-    <div class="ds-panel" style="margin-top:0;text-align:center;padding:40px 20px;">
-      <h2 style="margin:0 0 12px;color:#222;">Final Exam</h2>
-      <p style="font-size:14px;color:var(--ds-muted);max-width:420px;margin:0 auto;">
-        Exam content coming soon. All lessons are complete!
-      </p>
+
+    <div class="ds-panel" style="margin-top:0;">
+      <span class="ds-badge primary" style="font-size:11px;margin-bottom:6px;display:inline-block;">CLIENT COMMUNICATION</span>
+      <h3 style="margin:0 0 12px;color:#222;font-size:17px;">${esc(item.title)}</h3>
+
+      <div style="font-size:14px;line-height:1.7;color:#333;margin-bottom:16px;background:#f5f5f5;padding:16px 18px;border-radius:8px;border-left:4px solid var(--ds-blue);">
+        ${esc(item.scenario)}
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--ds-muted);margin-bottom:6px;text-transform:uppercase;">Draft Email Message</label>
+        <textarea id="dsComposeText" rows="6" placeholder="Dear Robert,..." style="width:100%;padding:10px 12px;border:1px solid var(--ds-line);border-radius:6px;font-size:13.5px;line-height:1.6;resize:vertical;">${r ? esc(r.text) : ''}</textarea>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;">
+        <button type="button" class="ds-btn primary" onclick="dsComposeGrade('${item.id}')">Submit &amp; Check Rubric &rarr;</button>
+      </div>
+
+      ${feedback}
+    </div>`;
+}
+
+function dsComposeGrade(itemId) {
+  const item = DS_COMPOSE_ITEMS.find(x => x.id === itemId);
+  if (!item) return;
+  const textarea = document.getElementById('dsComposeText');
+  const text = (textarea ? textarea.value : '').toLowerCase();
+
+  const results = item.rubric.map(crit => {
+    const match = crit.keywords.some(kw => text.includes(kw.toLowerCase()));
+    return { id: crit.id, label: crit.label, required: crit.required, pass: match };
+  });
+
+  const reqFailed = results.some(r => r.required && !r.pass);
+  const passed = !reqFailed && text.trim().length >= 25;
+  const passedCount = results.filter(r => r.pass).length;
+
+  dsStore.composes[itemId] = {
+    text: textarea ? textarea.value : '',
+    passed: passed,
+    results: results,
+    passedCount: passedCount,
+    totalCount: results.length,
+    ts: Date.now()
+  };
+
+  if (passed) dsMark('cmp:' + itemId);
+  dsSave();
+  if (passed) dsNotifyStepDone('cmp:' + itemId);
+  dsRenderRoot();
+}
+
+/* ============================================================================
+   FINAL EXAM ENGINE (D-4)
+   ============================================================================ */
+let dsExamTimerHandle = null;
+
+function dsExamBuild() {
+  if (dsStore.exam && !dsStore.exam.submittedAt) return; // Keep active attempt
+  const items = [];
+  DS_EXAM_BLUEPRINT.forEach(bp => {
+    const pool = DS_EXAM_BANK.filter(b => b.category === bp.category);
+    const order = dsOptionOrder('exam_pool_' + bp.category, pool.length);
+    for (let i = 0; i < Math.min(bp.count, pool.length); i++) {
+      items.push(pool[order[i]]);
+    }
+  });
+
+  dsStore.exam = {
+    items: items.map(it => it.id),
+    answers: {},
+    startedAt: Date.now(),
+    expiresAt: Date.now() + (DS_EXAM_MINUTES * 60 * 1000),
+    score: 0,
+    max: 0,
+    submittedAt: null
+  };
+  dsSave();
+}
+
+function dsExamItems() {
+  if (!dsStore.exam) return [];
+  return dsStore.exam.items.map(id => DS_EXAM_BANK.find(b => b.id === id)).filter(Boolean);
+}
+
+function dsExamTimeLeftLabel() {
+  if (!dsStore.exam || dsStore.exam.submittedAt) return 'Completed';
+  const remain = Math.max(0, Math.floor((dsStore.exam.expiresAt - Date.now()) / 1000));
+  if (remain <= 0 && !dsStore.exam.submittedAt) {
+    setTimeout(dsExamSubmit, 10);
+    return '00:00 (Time Expired)';
+  }
+  const m = Math.floor(remain / 60);
+  const s = remain % 60;
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
+function dsExamScoreItem(item) {
+  const ans = dsStore.exam.answers[item.id];
+  if (!ans) return 0;
+  if (item.type === 'decide') {
+    return ans.choice === item.correct ? (item.points || 5) : 0;
+  }
+  if (item.type === 'triage') {
+    return ans.choice === item.rightAction ? (item.points || 5) : 0;
+  }
+  if (item.type === 'verify') {
+    return ans.choice === item.rightOptionId ? (item.points || 5) : 0;
+  }
+  if (item.type === 'compose') {
+    const text = (ans.text || '').toLowerCase();
+    const req = item.rubric.filter(r => r.required);
+    const passed = req.filter(r => r.keywords.some(kw => text.includes(kw.toLowerCase()))).length;
+    return req.length ? Math.round((item.points || 10) * (passed / req.length)) : 0;
+  }
+  return 0;
+}
+
+function dsExamSubmit() {
+  if (!dsStore.exam || dsStore.exam.submittedAt) return;
+  if (dsExamTimerHandle) { clearInterval(dsExamTimerHandle); dsExamTimerHandle = null; }
+
+  const items = dsExamItems();
+  let score = 0, max = 0;
+  items.forEach(item => {
+    const pts = item.points || 5;
+    max += pts;
+    score += dsExamScoreItem(item);
+  });
+
+  dsStore.exam.score = score;
+  dsStore.exam.max = max;
+  dsStore.exam.submittedAt = Date.now();
+  dsSave();
+
+  /* B-7: Report exam score to SCApp core */
+  const su = window.SCApp && SCApp.currentUser && SCApp.currentUser();
+  if (su && window.SCApp.setModeScore) {
+    SCApp.setModeScore(su.id, 'docusign', 'exam', score, max);
+  }
+
+  dsGoto('dashboard');
+}
+
+function dsExamResetAttempt() {
+  dsStore.exam = null;
+  dsSave();
+  dsExamBuild();
+  dsState.examIndex = 0;
+  dsRenderRoot();
+}
+
+function dsExamHTML() {
+  if (!dsStore.exam || !dsStore.exam.startedAt) dsExamBuild();
+
+  // Start timer ticking if active
+  if (!dsExamTimerHandle && !dsStore.exam.submittedAt) {
+    dsExamTimerHandle = setInterval(() => {
+      const el = document.getElementById('dsExamClock');
+      if (el) el.textContent = dsExamTimeLeftLabel();
+      if (dsStore.exam && !dsStore.exam.submittedAt && Date.now() >= dsStore.exam.expiresAt) {
+        dsExamSubmit();
+      }
+    }, 1000);
+  }
+
+  // If submitted, show result card
+  if (dsStore.exam && dsStore.exam.submittedAt) {
+    return dsExamResultHTML();
+  }
+
+  const items = dsExamItems();
+  const i = Math.max(0, Math.min(dsState.examIndex || 0, items.length - 1));
+  const item = items[i];
+  if (!item) return '<p>No exam questions found.</p>';
+
+  const ans = dsStore.exam.answers[item.id] || {};
+  let body = '';
+
+  if (item.type === 'decide') {
+    const order = dsOptionOrder('exam_opt_' + item.id, item.options.length);
+    const opts = order.map(origIdx => `
+      <button type="button" class="ds-option ${ans.choice === origIdx ? 'selected' : ''}" onclick="dsExamSelectChoice('${item.id}', ${origIdx})" style="margin-bottom:8px;text-align:left;">
+        ${esc(item.options[origIdx])}
+      </button>`).join('');
+
+    body = `
+      <div style="font-size:14px;line-height:1.7;color:#333;margin-bottom:16px;background:#f5f5f5;padding:16px 18px;border-radius:8px;border-left:4px solid var(--ds-blue);">
+        ${esc(item.situation)}
+      </div>
+      <div style="font-size:12.5px;font-weight:700;color:var(--ds-muted);text-transform:uppercase;margin-bottom:10px;">Select the best action:</div>
+      <div>${opts}</div>`;
+  } else if (item.type === 'triage') {
+    const actions = ['resend', 'correct', 'void', 'none', 'report-phishing', 'escalate'];
+    const btns = actions.map(act => `
+      <button type="button" class="ds-option ${ans.choice === act ? 'selected' : ''}" onclick="dsExamSelectChoice('${item.id}', '${act}')" style="margin-bottom:8px;text-align:left;">
+        <b>${esc(DS_TRIAGE_ACTION_LABELS[act])}</b>
+      </button>`).join('');
+
+    body = `
+      <div style="font-size:14px;line-height:1.7;color:#333;margin-bottom:16px;background:#f5f5f5;padding:16px 18px;border-radius:8px;border-left:4px solid var(--ds-blue);">
+        ${esc(item.situation)}
+      </div>
+      <div style="font-size:12.5px;font-weight:700;color:var(--ds-muted);text-transform:uppercase;margin-bottom:10px;">Choose triage action:</div>
+      <div>${btns}</div>`;
+  } else if (item.type === 'verify') {
+    const docBtn = `<button type="button" class="ds-btn primary sm" onclick="SimEngine.viewDoc('${escAttr(item.doc)}','${escAttr(item.docTitle)}')">🔍 Open ${esc(item.docTitle)} &rarr;</button>`;
+    const opts = item.options.map(opt => `
+      <button type="button" class="ds-option ${ans.choice === opt.id ? 'selected' : ''}" onclick="dsExamSelectChoice('${item.id}', '${opt.id}')" style="margin-bottom:8px;text-align:left;">
+        <b>${opt.id.toUpperCase()}.</b> ${esc(opt.text)}
+      </button>`).join('');
+
+    body = `
+      <div style="background:#f0f4ff;border:1px solid #c5d8ff;border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:13px;font-weight:600;color:#1a237e;">Inspect document audit log:</span>
+        ${docBtn}
+      </div>
+      <div style="font-size:13px;background:#fafafa;padding:10px 14px;border:1px solid #e0e0e0;border-radius:6px;margin-bottom:14px;">
+        <span style="font-size:11px;font-weight:700;color:var(--ds-muted);">RECORD LOG:</span> <b>${esc(item.systemValue)}</b>
+      </div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px;">${esc(item.question)}</div>
+      <div>${opts}</div>`;
+  } else if (item.type === 'compose') {
+    body = `
+      <div style="font-size:14px;line-height:1.7;color:#333;margin-bottom:16px;background:#f5f5f5;padding:16px 18px;border-radius:8px;border-left:4px solid var(--ds-blue);">
+        ${esc(item.situation)}
+      </div>
+      <label style="display:block;font-size:12px;font-weight:700;color:var(--ds-muted);margin-bottom:6px;text-transform:uppercase;">Draft Communication</label>
+      <textarea rows="5" placeholder="Type your response here..." style="width:100%;padding:10px 12px;border:1px solid var(--ds-line);border-radius:6px;font-size:13px;" oninput="dsExamInputText('${item.id}', this.value)">${esc(ans.text || '')}</textarea>`;
+  }
+
+  const isLast = i === items.length - 1;
+  const isAnswered = ans.choice !== undefined || (ans.text && ans.text.trim().length > 10);
+
+  return `
+    <div style="background:#002738;color:#fff;padding:12px 20px;border-radius:8px;display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+      <div><b>DocuSign VA Certification Exam</b> &middot; Question ${i + 1} of ${items.length}</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:12.5px;color:#9fb4c9;">Time Remaining:</span>
+        <span id="dsExamClock" style="font-weight:800;color:#ffc400;font-size:14px;">${dsExamTimeLeftLabel()}</span>
+      </div>
+    </div>
+
+    <div class="ds-panel" style="margin-top:0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 style="margin:0;font-size:16px;color:#222;">${esc(item.label)}</h3>
+        <span style="font-size:12px;color:var(--ds-muted);">${item.points || 5} points</span>
+      </div>
+
+      ${body}
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px;padding-top:16px;border-top:1px solid #eee;">
+        <button type="button" class="ds-btn" ${i === 0 ? 'disabled' : ''} onclick="dsExamNav(${i - 1})">← Previous</button>
+        ${isLast ?
+          `<button type="button" class="ds-btn yellow" style="font-weight:800;padding:8px 22px;" onclick="dsExamSubmit()">Submit Exam 🚀</button>` :
+          `<button type="button" class="ds-btn primary" onclick="dsExamNav(${i + 1})">Next Question &rarr;</button>`}
+      </div>
+    </div>`;
+}
+
+function dsExamSelectChoice(itemId, choice) {
+  if (!dsStore.exam || dsStore.exam.submittedAt) return;
+  dsStore.exam.answers[itemId] = { choice: choice, ts: Date.now() };
+  dsSave();
+  dsRenderRoot();
+}
+
+function dsExamInputText(itemId, text) {
+  if (!dsStore.exam || dsStore.exam.submittedAt) return;
+  dsStore.exam.answers[itemId] = { text: text, ts: Date.now() };
+  dsSave();
+}
+
+function dsExamNav(index) {
+  dsState.examIndex = index;
+  dsRenderRoot();
+}
+
+function dsExamResultHTML() {
+  const ex = dsStore.exam;
+  if (!ex) return '<p>No exam data found.</p>';
+
+  const items = dsExamItems();
+  const pct = ex.max ? ex.score / ex.max : 0;
+  const passed = pct >= DS_EXAM_PASS_PCT;
+
+  const rows = items.map(item => {
+    const got = dsExamScoreItem(item);
+    const pts = item.points || 5;
+    const isFull = got === pts;
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #f0f0f0;font-size:13px;">
+        <div>
+          <span style="color:${isFull ? '#2e7d32' : got > 0 ? '#f57c00' : '#c62828'};font-weight:700;margin-right:8px;">${isFull ? '✓' : got > 0 ? '•' : '✗'}</span>
+          <b>${esc(item.label)}</b>
+        </div>
+        <div style="font-weight:700;color:${isFull ? '#2e7d32' : '#555'};">${got}/${pts} pts</div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="ds-detail-back" onclick="dsGoto('dashboard')">← Back to Dashboard</div>
+
+    <div class="ds-panel" style="margin-top:0;">
+      <div style="background:${passed ? '#e8f5e9' : '#ffebee'};border:1px solid ${passed ? '#a5d6a7' : '#ffcdd2'};border-radius:8px;padding:24px;text-align:center;margin-bottom:20px;">
+        <h2 style="margin:0 0 6px;color:${passed ? '#2e7d32' : '#c62828'};">${passed ? '🎉 Passed DocuSign Certification!' : '❌ Did Not Pass — Score Below 75%'}</h2>
+        <div style="font-size:24px;font-weight:800;color:#222;margin:10px 0;">${ex.score} / ${ex.max} (${Math.round(pct * 100)}%)</div>
+        <p style="font-size:13px;color:var(--ds-muted);max-width:480px;margin:0 auto;">
+          ${passed ? 'Congratulations! You have demonstrated high competency across DocuSign envelope configuration, routing, in-flight management, and security verification.' : 'Review the lessons and try the exam again to earn certification.'}
+        </p>
+        <div style="margin-top:16px;">
+          <button type="button" class="ds-btn ${passed ? 'primary' : 'yellow'}" onclick="dsExamResetAttempt()">${passed ? 'Retake Exam' : 'Try Again &rarr;'}</button>
+        </div>
+      </div>
+
+      <div class="ds-listhead" style="margin-top:16px;">
+        <div><h4 style="margin:0;">Score Breakdown by Question</h4></div>
+      </div>
+      <div style="background:#fff;border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;">
+        ${rows}
+      </div>
     </div>`;
 }
 
@@ -1159,10 +1748,19 @@ function dsLessonStepDone(step) {
     const r = dsStore.scenarios[step.scenarioId];
     return !!(r && r.correct);
   }
+  if (step.type === 'triage') {
+    const r = dsStore.triages[step.triageId];
+    return !!(r && r.correct);
+  }
+  if (step.type === 'verify') {
+    const r = dsStore.reviews[step.reviewId];
+    return !!(r && r.correct);
+  }
+  if (step.type === 'compose') {
+    const r = dsStore.composes[step.composeId];
+    return !!(r && r.passed);
+  }
   if (step.type === 'configure') return !!dsStore.checklist['cfg:' + step.id];
-  if (step.type === 'triage')    return !!dsStore.checklist['tri:' + step.id];
-  if (step.type === 'verify')    return !!dsStore.checklist['ver:' + step.id];
-  if (step.type === 'compose')   return !!dsStore.checklist['cmp:' + step.id];
   return false;
 }
 
@@ -1170,7 +1768,7 @@ function dsLessonStepDone(step) {
 function dsLessonStepLabel(step) {
   const typeLabel = { do: 'Do', decide: 'Decide', configure: 'Configure',
                       triage: 'Triage', verify: 'Verify', compose: 'Compose' };
-  return (typeLabel[step.type] || step.type) + ': ' + (step.label || step.checklistId || step.scenarioId || step.id || '');
+  return (typeLabel[step.type] || step.type) + ': ' + (step.label || step.checklistId || step.scenarioId || step.triageId || step.reviewId || step.composeId || step.id || '');
 }
 
 /* Step chip: good / bad / pending. */
@@ -1183,10 +1781,10 @@ function dsLessonStepStatus(step) {
 function dsLessonStepNavigate(step) {
   if (step.type === 'do' && step.view)       dsGoto(step.view, step.viewArg);
   else if (step.type === 'decide')           dsGoto('scenario-detail', step.scenarioId);
+  else if (step.type === 'triage')           dsGoto('triage', step.triageId);
+  else if (step.type === 'verify')           dsGoto('verify', step.reviewId);
+  else if (step.type === 'compose')          dsGoto('compose', step.composeId);
   else if (step.type === 'configure')        dsGoto(step.view || 'new-envelope', step.viewArg);
-  else if (step.type === 'triage')           dsGoto(step.view || 'envelopes', step.viewArg);
-  else if (step.type === 'verify')           dsGoto(step.view || 'envelope-detail', step.viewArg);
-  else if (step.type === 'compose')          dsGoto(step.view || 'dashboard', step.viewArg);
   else dsRenderRoot();
 }
 
@@ -1200,9 +1798,10 @@ function dsNotifyStepDone(triggerId) {
   let match = false;
   if (step.type === 'do' && step.checklistId === triggerId) match = true;
   if (step.type === 'decide' && triggerId === 'scenario:' + step.scenarioId) match = true;
+  if (step.type === 'triage' && triggerId === 'tri:' + step.triageId) match = true;
+  if (step.type === 'verify' && triggerId === 'ver:' + step.reviewId) match = true;
+  if (step.type === 'compose' && triggerId === 'cmp:' + step.composeId) match = true;
   if (step.type === 'configure' && triggerId === 'cfg:' + step.id) match = true;
-  if (step.type === 'triage' && triggerId === 'tri:' + step.id) match = true;
-  if (step.type === 'verify' && triggerId === 'ver:' + step.id) match = true;
 
   if (match) SimEngine.stepCompleted();
 }
@@ -1216,19 +1815,66 @@ function dsNoteLessonComplete(lessonId) {
   }
 }
 
-/* Reset a single lesson: clear its steps' progress from the store. */
+/* Clears one item's progress while KEEPING firstAttempt. Restarting a lesson must not be a
+   way to erase a wrong first answer and re-take it clean — the honest first-try result is
+   what gets reported, so it is the one thing a restart is not allowed to touch. */
+function dsResetItemState(bag, id) {
+  const prev = bag[id];
+  if (prev && prev.firstAttempt) bag[id] = { firstAttempt: prev.firstAttempt };
+  else delete bag[id];
+}
+
+/* Undoes the world-state a lesson changes, so a replay starts from the same place the first
+   run did. Progress records are cleared generically by dsResetLesson; this covers the things
+   that outlive them — an envelope this lesson voided or corrected, a document it uploaded,
+   a reminder it logged. Without it, restarting Lesson 5 leaves ENV-6620 already voided and
+   the trainee replays a lesson whose whole premise ("stop this from being signed") is gone.
+   Only lessons that actually mutate something appear here. */
+const DS_LESSON_UNDO = {
+  'l02-prepare-send': () => {
+    // The wizard send creates an envelope override and resets the draft.
+    dsClearEnvelopeOverride('ENV-2026-9041');
+    dsResetWizard();
+  },
+  'l05-triage-actions': () => {
+    // Correct / resend / void performed against the triage envelopes.
+    ['ENV-2026-9041', 'ENV-2026-8812', 'ENV-2026-6620', 'ENV-2026-7734'].forEach(dsClearEnvelopeOverride);
+  },
+  'l10-capstone-bandeja': () => {
+    DS_ENVELOPES.forEach(e => dsClearEnvelopeOverride(e.id));
+  }
+};
+
+/* Removes every override recorded against one envelope, returning it to its DS_ENVELOPES
+   baseline. The base data is immutable by design (see the overrides layer), so this is just
+   dropping the diff on top of it. */
+function dsClearEnvelopeOverride(envId) {
+  if (dsStore.overrides && dsStore.overrides[envId]) delete dsStore.overrides[envId];
+}
+
+/* Clears one lesson so it can be run again. Note the deliberate consequence for items shared
+   between lessons (the capstone reuses several of the earlier triage envelopes): clearing
+   them also drops them from the other lesson's progress bar. That is honest — the item really
+   was cleared — and it is safe, because unlocking reads lessonsDone, not live progress, so a
+   lesson already finished stays finished and nothing downstream re-locks. */
 function dsResetLesson(lessonId) {
   const l = SimEngine.findLesson(lessonId);
   if (!l) return;
   l.steps.forEach(step => {
     if (step.type === 'do' && step.checklistId) delete dsStore.checklist[step.checklistId];
-    if (step.type === 'decide' && step.scenarioId) delete dsStore.scenarios[step.scenarioId];
-    if (step.type === 'configure') delete dsStore.checklist['cfg:' + step.id];
-    if (step.type === 'triage')    delete dsStore.checklist['tri:' + step.id];
-    if (step.type === 'verify')    delete dsStore.checklist['ver:' + step.id];
-    if (step.type === 'compose')   delete dsStore.checklist['cmp:' + step.id];
+    if (step.type === 'decide' && step.scenarioId) dsResetItemState(dsStore.scenarios, step.scenarioId);
+    if (step.type === 'triage' && step.triageId) dsResetItemState(dsStore.triages, step.triageId);
+    if (step.type === 'verify' && step.reviewId) dsResetItemState(dsStore.reviews, step.reviewId);
+    if (step.type === 'compose' && step.composeId) dsResetItemState(dsStore.composes, step.composeId);
+    if (step.type === 'configure') {
+      delete dsStore.checklist['cfg:' + step.id];
+      if (dsStore.configures) dsResetItemState(dsStore.configures, step.id);
+    }
   });
+  const undo = DS_LESSON_UNDO[lessonId];
+  if (undo) undo();
   dsSave();
+  simToast(`Lesson ${l.number} restarted — its steps are open again.`, { tone: 'good' });
 }
 
 /* Lesson detail HTML: the engine does most of the work; the host provides this thin wrapper. */

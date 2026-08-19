@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DocuSign Security Review — Phishing Sample 2</title>
+  <link rel="stylesheet" href="doc.css">
+  <style>
+    .email-container { max-width: 600px; margin: 0 auto; background: #fff; border: 2px solid #de350b; border-radius: 8px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+    .email-header { background: #002738; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; }
+    .email-header h1 { color: #fff; font-size: 18px; margin: 0; }
+    .email-body { padding: 28px 24px; color: #333; line-height: 1.6; }
+    .email-meta { background: #fff8e1; border: 1px solid #ffe082; border-radius: 6px; padding: 14px 16px; margin-bottom: 20px; font-size: 13px; }
+    .email-meta div { margin-bottom: 4px; }
+    .btn-review { display: inline-block; background: #0066cc; color: #fff; font-weight: 700; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-size: 14px; margin: 18px 0; }
+    .email-footer { background: #f4f5f7; padding: 18px 24px; font-size: 11.5px; color: #6b778c; text-align: center; border-top: 1px solid #dfe1e6; }
+  </style>
+</head>
+<body>
+  <div class="banner">Training Security Sample — Deceptive Link Destination. Check where the link actually leads!</div>
+  <div class="email-container">
+    <div class="email-header">
+      <h1>DocuSign eSignature</h1>
+      <span style="color:#ffc400;font-size:12px;font-weight:700;">NEW DOCUMENT</span>
+    </div>
+    <div class="email-body">
+      <div class="email-meta">
+        <div><b>Display Sender:</b> "Lucas Adminton via DocuSign" &lt;dse@docusign.net&gt;</div>
+        <div><b>Actual Header Return-Path:</b> &lt;<span style="color:#de350b;font-weight:700;">mailbot@cloudserver-node88.xyz</span>&gt;</div>
+        <div><b>To:</b> alex.rivera@skillcloudva.com</div>
+        <div><b>Subject:</b> Please DocuSign: Settlement Statement &amp; Escrow Disbursement Approval</div>
+        <div><b>Envelope ID:</b> ENV-FAKE-88402 (Unregistered in Manage Tab)</div>
+      </div>
+
+      <p style="font-size: 14.5px; margin: 0 0 12px;">
+        Lucas Adminton at Best Closing Inc. has sent you a settlement statement for approval.
+      </p>
+
+      <div style="text-align: center;">
+        <span class="btn-review">VIEW ENVELOPE</span>
+      </div>
+      <p style="font-size: 12px; color: #777; text-align: center; margin-top: 8px;">
+        Actual Link Destination: <code style="color:#de350b;font-weight:700;">http://185.220.101.5/docusign/verify.html</code>
+      </p>
+
+      <hr style="border: 0; border-top: 1px solid #eee; margin: 24px 0;">
+      <p style="font-size: 12px; color: #666; margin: 0;">
+        <b>Phishing Clues for VA:</b> The display text mimics a legitimate sender, but the underlying hyperlink points to a raw IP address (185.220.101.5) instead of a verified <code>*.docusign.net</code> domain. Always verify envelopes inside the DocuSign Manage console directly rather than trusting links in unexpected emails.
+      </p>
+    </div>
+    <div class="email-footer">
+      Simulated Phishing Training Example &middot; SkillCloud Academy Security Curriculum
+    </div>
+  </div>
+</body>
+</html>
