@@ -6,7 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Test Drive: Qualia · SkillCloud Academy</title>
   <link rel="stylesheet" href="../assets/css/styles.css">
+  <!-- Chrome owned by the shared lesson engine (walkthrough overlay, toasts, doc modal).
+       Loaded before qualia.css so the module can override its --sim-* tokens. -->
+  <link rel="stylesheet" href="../assets/css/sim-engine.css">
   <link rel="stylesheet" href="qualia.css">
+  <!-- Core facade sections (Contacts, Calendar, Accounting, Reports, Compliance, Admin).
+       After qualia.css so it can build on the same --qz-* tokens. -->
+  <link rel="stylesheet" href="qualia-shell.css">
   <style>
     html, body { height: 100%; }
     body.td-fullscreen { display: flex; flex-direction: column; height: 100vh; overflow: hidden; margin: 0; }
@@ -31,40 +37,47 @@
   </div>
 
   <div class="qz-app" id="qzApp">
+    <!-- Qualia Core chrome (dark topbar + section nav), not Connect. A VA of a title/escrow
+         team works in Core; the previous shell reproduced the Connect buyer/agent portal,
+         which is a different product with a different layout. -->
     <div class="qz-topbar" id="qzTopbar" style="display:none">
       <div class="qz-brand">
-        <span class="mark"><img src="Images-resourses/OIP.webp" alt="Qualia" style="height:28px;object-fit:contain;display:block;"></span>
+        <span class="mark"><img src="Images-resourses/OIP.webp" alt="Qualia"></span>
+        <span class="wordmark">Qualia</span>
       </div>
-      <div class="qz-tabs">
-        <span class="active" data-view="dashboard" onclick="qzGoto('dashboard')">Dashboard</span>
-        <span data-view="orders" onclick="qzGoto('orders')">Orders</span>
-      </div>
+      <div class="qz-tabs" id="qzCoreSections"></div>
       <div class="qz-search"><input type="text" id="qzTopSearchInput" placeholder="Find order&hellip;" oninput="qzTopSearch(this.value)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
-      <div class="qz-bell" id="qzBell" onclick="qzToggleBellDropdown(event)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="n">0</span>
-        <div class="qz-bell-dropdown" id="qzBellDropdown" onclick="event.stopPropagation()"></div>
+      <div class="qz-top-icons">
+        <button type="button" class="qz-top-ic" title="Documents" onclick="qzCoreStub('Documents')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></button>
+        <button type="button" class="qz-top-ic" title="Messages" onclick="qzCoreStub('Messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span class="dot-badge" id="qzMailBadge">0</span></button>
+        <div class="qz-bell" id="qzBell" onclick="qzToggleBellDropdown(event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="n">0</span>
+          <div class="qz-bell-dropdown" id="qzBellDropdown" onclick="event.stopPropagation()"></div>
+        </div>
+        <div class="qz-user"><span class="av" id="qzUserAvatar">VA</span><span id="qzUserLabel">Trainee</span><svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
       </div>
-      <div class="qz-user"><span class="av" id="qzUserAvatar">VA</span><span id="qzUserLabel">Trainee</span></div>
+    </div>
+
+    <!-- Multi-order tab strip: Core keeps several files open at once, and Lesson 13 is
+         built entirely on that mechanic. -->
+    <div class="qz-topstrip" id="qzTopStrip" style="display:none">
+      <div class="qz-ordertabs" id="qzOrderTabs"></div>
+      <!-- Lesson breadcrumb rides along the right edge of this strip rather than sitting in
+           .qz-body: that container is display:flex in Core, so a banner child there became a
+           full-height column beside the app and wasted ~305px of width. Here it costs no
+           vertical space at all, since the strip already exists and its right half was empty. -->
+      <div id="qzLessonBanner"></div>
     </div>
 
     <div class="qz-body">
       <div id="qzLoginWrap"></div>
-      <div id="qzLessonBanner"></div>
       <div id="qzRoot" style="display:none"></div>
     </div>
   </div>
 
-  <div class="qz-toast-host" id="qzToastHost"></div>
-
-  <div class="qz-doc-modal" id="qzDocModal" onclick="if(event.target===this) qzCloseDoc()">
-    <div class="qz-doc-modal-card">
-      <div class="qz-doc-modal-head">
-        <span id="qzDocModalTitle">Document</span>
-        <button type="button" class="qz-doc-modal-close" onclick="qzCloseDoc()" aria-label="Close">&times;</button>
-      </div>
-      <iframe id="qzDocFrame" title="Document preview"></iframe>
-    </div>
-  </div>
+  <!-- The toast host, document modal and walkthrough overlay are injected by
+       SimEngine.init() (see assets/js/sim-engine.js → simMarkupHTML), so the two
+       simulator shells cannot drift apart from the engine that drives them. -->
 
   <div class="qz-tour" id="qzTour">
     <div class="qz-tour-highlight" id="qzTourHighlight"></div>
@@ -81,17 +94,15 @@
     </div>
   </div>
 
-  <div class="qz-walk" id="qzWalk">
-    <div class="qz-walk-highlight" id="qzWalkHighlight"></div>
-    <div class="qz-walk-tip" id="qzWalkTip">
-      <div id="qzWalkTipBody"></div>
-    </div>
-  </div>
-
   <script src="../assets/js/app-core.js"></script>
   <script src="../assets/js/site.js"></script>
+  <script src="../assets/js/sim-engine.js"></script>
   <script src="qualia-data.js"></script>
+  <!-- Facade data before qualia-app.js, renderers after it: qualia-shell.js reads helpers
+       (esc, fmtDate, qzGetOrder, simToast) that qualia-app.js defines. -->
+  <script src="qualia-shell-data.js"></script>
   <script src="qualia-app.js"></script>
+  <script src="qualia-shell.js"></script>
   <script src="qualia-tour.js"></script>
   <script>
     const tdMe = SCApp.requireAuth();
