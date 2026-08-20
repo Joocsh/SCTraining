@@ -526,7 +526,7 @@
 </head>
 <body class="h-body td-fullscreen">
 <div class="td-strip">
-  <a class="td-strip-back" href="index.html#test-drive-open">&larr; Test Drive</a>
+  <a class="td-strip-back" href="index.html#test-drive-open" onclick="if(window.fubTour) fubTour.reset()">&larr; Test Drive</a>
   <span class="td-strip-dot"></span>
   <span class="td-strip-app">FollowUpBoss <b>Test Drive</b></span>
   <button type="button" class="sc-tour-replay" onclick="fubTour && fubTour.start()">&#9654; Replay tour</button>
@@ -2276,7 +2276,7 @@ fubLeadFlowRows(); fubGroupRows(); fubPondRows(); fubTeamRows(); fubNotifList();
 /* ---------------- guided tour ---------------- */
 /* Shown once per browser; the strip has a Replay button. Engine: assets/js/tour.js */
 var fubTour = SCTour.create({
-  key: 'sc_tour_fub',
+  key: 'sc_tour_fub_v2',   // bumped: the v1 flag was consumed during development
   steps: [
     {
       title: 'Welcome to the FollowUpBoss Test Drive',

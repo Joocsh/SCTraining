@@ -476,7 +476,7 @@ tbody tr.dimmed, .lead-card.dimmed{display:none;}
 
 <!-- SkillCloud Test Drive back strip (added for the Academy site) -->
 <div style="background:#0a2647;color:#fff;display:flex;align-items:center;gap:12px;padding:0 22px;height:36px;font-size:12.5px;font-family:'Inter',sans-serif;position:relative;z-index:70">
-  <a href="index.html#test-drive" style="color:#d3e2f0;font-weight:700;text-decoration:none">&larr; Test Drive</a>
+  <a href="index.html#test-drive" style="color:#d3e2f0;font-weight:700;text-decoration:none" onclick="if(window.sierraTour) sierraTour.reset()">&larr; Test Drive</a>
   <span style="width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.35)"></span>
   <span style="font-weight:800">Sierra <b style="color:#17c3d4">Test Drive</b></span>
   <button type="button" class="sc-tour-replay" onclick="sierraTour &amp;&amp; sierraTour.start()">&#9654; Replay tour</button>
@@ -2149,7 +2149,7 @@ function answerQuiz(i){
 /* Opens the first time the associate enters the app (see startDrive), not on
    page load, because every target below is app chrome. Engine: assets/js/tour.js */
 var sierraTour = SCTour.create({
-  key: 'sc_tour_sierra',
+  key: 'sc_tour_sierra_v2', // bumped: the v1 flag was consumed during development
   auto: false,
   steps: [
     {

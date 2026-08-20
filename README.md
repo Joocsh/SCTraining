@@ -218,6 +218,14 @@ Usan este motor `testdrive-followupboss.html` y `testdrive-sierra.html`. Sierra 
 desde `startDrive()` en vez de al cargar, porque su chrome no existe hasta que se sale de
 la pantalla de bienvenida.
 
+**Cuándo se vuelve a mostrar.** El enlace `← Test Drive` de cada test drive llama a
+`reset()` al salir, así que el tour reaparece la próxima vez que se entra. Es el mismo
+criterio que ya usaban Qualia y DocuSign, donde ese enlace borra el store entero
+(`qzResetProgress` / `dsResetProgress`) y con él su `tourSeen`. Sin ese reset la bandera
+se marca una vez y el tour no vuelve nunca, que fue exactamente lo que pasó con
+FollowUpBoss. Si alguna vez necesitas forzar que todos lo vean otra vez, sube la versión
+de `key` (van por `_v2`).
+
 Los módulos `Quialia/` y `Docusign/` traen su propia copia del tour (`qualia-tour.js` y
 `docusign-tour.js`), anterior a este motor. Funcionan bien; migrarlas está pendiente.
 
