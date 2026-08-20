@@ -15,21 +15,26 @@
 }
 .sc-tour.open { display: block; }
 
-/* Dark scrim. Sits behind the spotlight and swallows clicks so the
-   app underneath is frozen while the tour is open. */
+/* Click blocker only, deliberately transparent: it freezes the app while the
+   tour is open. It must NOT be tinted. The spotlight's box-shadow below already
+   paints the scrim everywhere except the highlighted element, so tinting here
+   too would darken the highlight as well, leaving it at 30% brightness instead
+   of 100%. On a light UI that still reads as highlighted; on a dark one (the
+   FollowUpBoss top bar is #364650) it turns the spotlight into a near-black
+   box, which is the opposite of pointing at something. */
 .sc-tour.open::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: rgba(0, 25, 36, .70);
+  background: transparent;
   pointer-events: all;
 }
 
-/* The spotlight itself: a transparent box with a huge shadow that
-   paints the scrim everywhere except over the highlighted element. */
+/* The spotlight: a transparent box whose huge spread shadow paints the scrim
+   over everything except the box itself. This is the ONLY thing that dims. */
 .sc-tour-highlight {
   position: fixed;
-  box-shadow: 0 0 0 9999px rgba(0, 25, 36, .70);
+  box-shadow: 0 0 0 9999px rgba(0, 25, 36, .72);
   border-radius: 8px;
   pointer-events: none;
   z-index: 9001;
