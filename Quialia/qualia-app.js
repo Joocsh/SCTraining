@@ -494,12 +494,16 @@ function qzGotoOrderTasks(orderId) {
 const QZ_CORE_SECTIONS = [
   { id: 'dashboard', label: 'Training', view: 'dashboard', training: true },
   { id: 'orders', label: 'Orders', view: 'orders' },
-  { id: 'contacts', label: 'Contacts' },
-  { id: 'calendar', label: 'Calendar' },
-  { id: 'accounting', label: 'Accounting' },
-  { id: 'reports', label: 'Reports' },
-  { id: 'compliance', label: 'Compliance' },
-  { id: 'admin', label: 'Admin' }
+  /* These six are the Core facade (Quialia/qualia-shell.js): real screens to walk
+     through, no persistence. `view` matches `id` on purpose — qzSyncTopTabs compares
+     el.dataset.view against qzState.view, so the active underline works with no change
+     to that function. */
+  { id: 'contacts', label: 'Contacts', view: 'contacts' },
+  { id: 'calendar', label: 'Calendar', view: 'calendar' },
+  { id: 'accounting', label: 'Accounting', view: 'accounting' },
+  { id: 'reports', label: 'Reports', view: 'reports' },
+  { id: 'compliance', label: 'Compliance', view: 'compliance' },
+  { id: 'admin', label: 'Admin', view: 'admin' }
 ];
 function qzCoreStub(label) {
   simToast(`${label} is part of Qualia Core but not part of this training module.`);
@@ -523,6 +527,14 @@ function qzGoto(view) {
   // The one navigation that is itself a lesson step, rather than the trainee wandering off.
   const isBackStep = !!(step && step.type === 'do' && step.checklistId === 'orders-back'
     && view === 'orders' && wasOrder);
+  /* Guard: the Core facade sections are browsing, not coursework, and every other exit from
+     a lesson below silently kills the running walkthrough. Wandering into Contacts mid-step
+     would therefore discard the lesson with no warning, so refuse the navigation instead and
+     say why. Training views are unaffected — this only fires for the facade. */
+  if (step && typeof QZ_SHELL_VIEWS !== 'undefined' && QZ_SHELL_VIEWS[view]) {
+    simToast('Finish or exit the current lesson step before browsing other sections.');
+    return;
+  }
   qzState.view = view;
   qzState.orderId = null;
   if (!isBackStep) {
@@ -653,6 +665,12 @@ function qzRenderRoot() {
   else if (qzState.view === 'scenario') html = qzScenarioDetailHTML();
   else if (qzState.view === 'lesson') html = qzLessonDetailHTML();
   else if (qzState.view === 'exam') html = qzExamHTML();
+  /* Core facade sections (Contacts, Calendar, Accounting, Reports, Compliance, Admin).
+     Guarded on the registry existing so qualia-app.js still runs if qualia-shell.js is
+     not loaded, and placed last so it can never shadow a training view. */
+  else if (typeof QZ_SHELL_VIEWS !== 'undefined' && QZ_SHELL_VIEWS[qzState.view]) {
+    html = QZ_SHELL_VIEWS[qzState.view]();
+  }
   root.innerHTML = qzExamActiveBannerHTML() + html;
   qzRenderLessonBanner();
 }
@@ -2722,14 +2740,36 @@ const QZ_RUBRIC_CHECKS = {
   noNPI: text => !QZ_NPI_PATTERNS.some(p => p.re.test(text)),
   statesNextStep: text => /\b(i will|i'll|we will|we'll|i am|i'm)\s+\w+/i.test(text) && /\b(follow(ing)? up|confirm|contact|reach out|check|update|send|request|escalat)/i.test(text),
   noCommitmentBeyondAuthority: text => !/\b(i (have )?(confirmed|approved|changed|moved|set) the (closing )?date|the new closing date (is|will be)|i can guarantee|i guarantee)\b/i.test(text),
-  verifyOutOfBand: text => /\b(call|phone|verbally|by phone|voice)\b/i.test(text) && /\b(number|on file|of record|from the file|previously)\b/i.test(text)
+  verifyOutOfBand: text => /\b(call|phone|verbally|by phone|voice)\b/i.test(text) && /\b(number|on file|of record|from the file|previously)\b/i.test(text),
+  /* Deliberately not givesTimeframe, though it starts by accepting everything that one does.
+     givesTimeframe answers "did you commit to a day you will come back", so it insists on the
+     grammar of a promise — "by Thursday", "within 24 hours". An escalation about a wire-fraud
+     attempt is asked for something different: convey the window the firm is working against.
+     That is stated as a fact about the attack ("the wire goes out tomorrow morning, so this
+     needs eyes today"), never as a promise, and it scored zero against the promise grammar —
+     the lesson's own model answer failed its own rubric at 4 of 5.
+     Still concrete, though: a bare "this is urgent" names no window and does not pass. */
+  conveysUrgency: text => QZ_RUBRIC_CHECKS.givesTimeframe(text)
+    || /\b(today|tonight|tomorrow|this (morning|afternoon|evening)|first thing|same day|overnight)\b/i.test(text)
+    || /\bbefore (the|any|it|anything|funds|money)\b/i.test(text)
 };
 function qzComposeGrade(item, text, ctx) {
   const results = qzComposeCriteria(item).map(c => {
     const fn = QZ_RUBRIC_CHECKS[c.check];
     let pass = false;
     try { pass = fn ? !!fn(text, ctx || {}) : false; } catch (e) { pass = false; }
-    return { key: c.check, label: c.label, why: c.why, pass: pass, required: c.required !== false };
+    /* A rubric naming a check this file does not define is an authoring or version-skew
+       problem, never something the trainee wrote wrongly — and scoring it as a missed point
+       makes the exercise unpassable no matter what they write. That is not hypothetical: the
+       rubric lives in qualia-data.js and the checks live here, so a browser holding one file
+       from cache and the other fresh produces exactly that. Mark it, and keep it out of the
+       required set so a mismatch can never block a lesson. */
+    const ungradable = !fn;
+    return {
+      key: c.check, label: c.label, why: c.why, pass: pass,
+      ungradable: ungradable,
+      required: !ungradable && c.required !== false
+    };
   });
   const required = results.filter(r => r.required);
   const passed = required.filter(r => r.pass).length;
@@ -2807,10 +2847,13 @@ function qzComposeItemHTML(id) {
 
   let feedback = '';
   if (done && !examMode) {
-    const bits = st.results.map(r =>
-      `<div class="qz-rv-subfeedback ${r.pass ? 'good' : 'bad'}">${r.pass ? '&#10003;' : '&#10007;'} ${esc(r.label)}${r.pass ? '' : ' &mdash; ' + esc(r.why)}</div>`
-    ).join('');
-    const passed = st.results.filter(r => r.pass).length;
+    const bits = st.results.map(r => {
+      // Says plainly that the app is stale rather than showing it as a point they missed.
+      if (r.ungradable) return `<div class="qz-rv-subfeedback bad">&#9888; ${esc(r.label)} &mdash; this point could not be graded because the page is running an out-of-date script. Reload with Ctrl+Shift+R. It is not counting against you.</div>`;
+      return `<div class="qz-rv-subfeedback ${r.pass ? 'good' : 'bad'}">${r.pass ? '&#10003;' : '&#10007;'} ${esc(r.label)}${r.pass ? '' : ' &mdash; ' + esc(r.why)}</div>`;
+    }).join('');
+    const gradable = st.results.filter(r => !r.ungradable);
+    const passed = gradable.filter(r => r.pass).length;
     const lessonStep = qzState.lessonId && typeof QZ_LESSONS !== 'undefined'
       ? (QZ_LESSONS.find(x => x.id === qzState.lessonId) || { steps: [] }).steps.find(s2 => s2.type === 'compose' && s2.composeId === id)
       : null;
@@ -2818,7 +2861,7 @@ function qzComposeItemHTML(id) {
     const redo = (st.correct && continueBtn) ? '' : `<button class="qz-btn sm" onclick="qzComposeRetry('${id}')">Revise it</button>`;
     feedback = `<div class="qz-rv-feedback ${st.correct ? 'good' : 'bad'}">
       <b>${st.correct ? 'That reply does the job.' : 'This reply is missing something.'}</b>
-      ${passed} of ${st.results.length} points covered.
+      ${passed} of ${gradable.length} points covered.
       ${bits}
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">${continueBtn}${redo}</div>
     </div>`;

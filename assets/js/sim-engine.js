@@ -382,7 +382,8 @@
   function simWalkRenderRetry(msg) {
     simWalkSetTipBody('<b>Not quite.</b><p>' + esc(msg || 'Read the explanation below, then try this step again.') + '</p>' +
       '<div class="sim-walk-exit" onclick="simWalkExit()">Exit walkthrough</div>');
-    simWalkScrollFeedbackIntoView();
+    // Same staleness on the wrong-answer path, where the button under the card is "Redo".
+    simWalkFocusFeedback();
   }
   /* Steps with no highlight target float their tip in a corner, so nothing was bringing
      the feedback panel — with the button the trainee actually needs to click — into view.
@@ -391,6 +392,26 @@
     requestAnimationFrame(function () {
       var el = document.querySelector(get('feedbackSelector'));
       if (el) el.scrollIntoView({ block: 'center', behavior: simScrollBehavior() });
+    });
+  }
+  /* Scrolling the feedback into view is not enough on its own. Once a self-feedback step
+     resolves, the page replaces the controls the step was pointing at with an explanation and
+     a Continue/Redo button — but the tip card still carries the coordinates computed for the
+     control that has just gone away, and the card is the one part of this overlay that accepts
+     pointer events. On a reconcile submitted from near the bottom of the panel, the card stayed
+     parked exactly where "Continue to next step" then rendered, covering the button its own
+     text was telling the trainee to press: the walkthrough looked frozen.
+     Re-anchoring on that button runs simWalkPosition again — placement, scroll AND the
+     simTipCoversControl check — against what is actually on screen now. */
+  function simWalkFocusFeedback() {
+    requestAnimationFrame(function () {
+      var fb = document.querySelector(get('feedbackSelector'));
+      if (!fb) { simWalkScrollFeedbackIntoView(); return; }
+      // The button first: it is what the tip is asking for, so pointing at it beats pointing
+      // at the block that contains it — a block target excuses its own children from the
+      // collision check, which is the loophole the card slipped through.
+      var el = fb.querySelector('button:not([disabled]), a[href]') || fb;
+      simWalkPosition({ walk: { target: el } }, { scrollIntoView: true });
     });
   }
   /* Four "what happens after this step is satisfied" behaviours:
@@ -423,7 +444,7 @@
     }
     if (get('selfFeedbackTypes').indexOf(step.type) > -1) {
       simWalkSetTipBody('<b>&#10003; Correct.</b><p>Read the explanation below, then click "Continue to next step" when you\'re ready.</p>' + exitLink);
-      simWalkScrollFeedbackIntoView();
+      simWalkFocusFeedback();
       return;
     }
     simWalkRenderTip(step, true);
@@ -532,6 +553,7 @@
          tip would sit on them and silently eat the click, since the tip is the one part
          of the overlay that accepts pointer events. */
       highlight.classList.remove('on');
+      tip.classList.remove('pass-through');
       var m = 18;
       tip.style.top = 'auto';
       tip.style.bottom = m + 'px';
@@ -568,7 +590,17 @@
       { top: below, left: left },
       { top: above, left: left },
       { top: Math.max(margin, rect.top), left: rect.right + pad + margin },
-      { top: Math.max(margin, rect.top), left: rect.left - pad - margin - tipW }
+      { top: Math.max(margin, rect.top), left: rect.left - pad - margin - tipW },
+      /* Corners, as a fallback when none of the four placements beside the target can be used.
+         In a short viewport with a tall panel — a resolved reconcile, whose explanation runs to
+         several lines above its Continue button — every target-relative spot is either off the
+         bottom or sitting on a control, and the old fallback then parked the card straight over
+         the button the tip was telling the trainee to press. A corner loses the visual tie to
+         the highlight, which still rings the target, but it never eats the click. */
+      { top: global.innerHeight - tipH - margin, left: global.innerWidth - tipW - margin },
+      { top: margin, left: global.innerWidth - tipW - margin },
+      { top: global.innerHeight - tipH - margin, left: margin },
+      { top: margin, left: margin }
     ];
     var chosen = null, firstOnscreen = null;
     for (var i = 0; i < candidates.length; i++) {
@@ -578,8 +610,13 @@
       if (!firstOnscreen) firstOnscreen = c;
       if (!simTipCoversControl(c, tipW, tipH, el)) { chosen = c; break; }
     }
-    /* Every placement is blocked or offscreen: keep the original below-the-target behaviour
-       rather than parking the card somewhere arbitrary. */
+    /* Every placement is blocked, corners included: keep the original below-the-target
+       behaviour rather than parking the card somewhere arbitrary — but stop the card from
+       intercepting pointer events, so a control underneath it can still be clicked. The card
+       is informational; only its own buttons and links need to stay clickable, and the CSS
+       for this class opts exactly those back in. Without it the trainee is simply stuck:
+       the tip says "click Continue to next step" and the card itself eats the click. */
+    tip.classList.toggle('pass-through', !chosen);
     if (!chosen) chosen = firstOnscreen || { top: Math.max(margin, below), left: left };
     tip.style.top = chosen.top + 'px';
     tip.style.left = chosen.left + 'px';
@@ -636,10 +673,18 @@
   var walkScrollRAF = null;
   function simWalkTrackScroll(step, el) {
     if (walkScrollRAF) cancelAnimationFrame(walkScrollRAF);
+    /* What this loop is really guarding against is the walkthrough MOVING ON mid-scroll, so it
+       watches the lesson step that owns the placement rather than the object it was handed.
+       Not every placement is the lesson step itself — a tour stop and the post-resolution
+       feedback anchor both pass a synthetic { walk: { target } } — and comparing those against
+       simWalkCurrentStep() was never equal, so the tracker gave up on its first tick and left
+       the card parked at the pre-scroll rect. For a real step this is the same comparison it
+       always was. */
+    var owner = simWalkCurrentStep();
     var lastTop = null, stable = 0, started = Date.now();
     var tick = function () {
       walkScrollRAF = null;
-      if (!walk || simWalkCurrentStep() !== step) return;
+      if (!walk || simWalkCurrentStep() !== owner) return;
       var top = el.getBoundingClientRect().top;
       stable = (lastTop !== null && Math.abs(top - lastTop) < 0.5) ? stable + 1 : 0;
       lastTop = top;

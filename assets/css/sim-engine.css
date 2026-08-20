@@ -171,6 +171,22 @@
   transition: top .3s, left .3s;
 }
 
+/* Set by simWalkPosition when no placement was free of controls, so the card had to be put
+   somewhere that covers one. The card stops intercepting pointer events and its own controls
+   opt back in, so the button underneath stays clickable instead of the walkthrough looking
+   frozen. Scrolling a long tip by wheel is lost in this state, which is the lesser cost. */
+.sim-walk-tip.pass-through {
+  pointer-events: none;
+}
+
+.sim-walk-tip.pass-through button,
+.sim-walk-tip.pass-through a,
+.sim-walk-tip.pass-through .sim-walk-exit,
+.sim-walk-tip.pass-through .sim-walk-example-toggle,
+.sim-walk-tip.pass-through .sim-walk-example {
+  pointer-events: auto;
+}
+
 .sim-walk-tip b {
   display: block;
   font-size: 14.5px;

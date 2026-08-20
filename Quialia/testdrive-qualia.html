@@ -10,6 +10,9 @@
        Loaded before qualia.css so the module can override its --sim-* tokens. -->
   <link rel="stylesheet" href="../assets/css/sim-engine.css">
   <link rel="stylesheet" href="qualia.css">
+  <!-- Core facade sections (Contacts, Calendar, Accounting, Reports, Compliance, Admin).
+       After qualia.css so it can build on the same --qz-* tokens. -->
+  <link rel="stylesheet" href="qualia-shell.css">
   <style>
     html, body { height: 100%; }
     body.td-fullscreen { display: flex; flex-direction: column; height: 100vh; overflow: hidden; margin: 0; }
@@ -95,7 +98,11 @@
   <script src="../assets/js/site.js"></script>
   <script src="../assets/js/sim-engine.js"></script>
   <script src="qualia-data.js"></script>
+  <!-- Facade data before qualia-app.js, renderers after it: qualia-shell.js reads helpers
+       (esc, fmtDate, qzGetOrder, simToast) that qualia-app.js defines. -->
+  <script src="qualia-shell-data.js"></script>
   <script src="qualia-app.js"></script>
+  <script src="qualia-shell.js"></script>
   <script src="qualia-tour.js"></script>
   <script>
     const tdMe = SCApp.requireAuth();

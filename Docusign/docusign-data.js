@@ -420,7 +420,7 @@ const DS_LESSONS = [
           setup: () => dsGoto('envelopes')
         } },
       { type: 'do', checklistId: 'ds_c5_2', view: 'envelope-detail', viewArg: 'ENV-2026-9041', walk: {
-          target: '.ds-action-bar button.primary',
+          target: '#dsBtnSendReminder',
           text: 'Notice that John Smith has signed (Order 1), but Sarah Johnson (Order 2) is waiting. Click "Send Reminder" to prompt Sarah.',
           setup: () => dsGoto('envelope-detail', 'ENV-2026-9041')
         } },
@@ -446,13 +446,13 @@ const DS_LESSONS = [
           setup: () => dsGoto('dashboard')
         } },
       { type: 'do', checklistId: 'ds_c1_2', view: 'new-envelope', walk: {
-          target: '.ds-upload-zone button.primary',
+          target: '#dsAttachPurchaseAgreement',
           text: 'Click "+ Purchase Agreement (6 pages)" to attach the primary contract document.',
           setup: () => { dsResetWizard(); dsGoto('new-envelope'); }
         } },
       { type: 'do', checklistId: 'ds_c1_3', view: 'new-envelope', walk: {
-          target: '#dsWizSubject',
-          text: 'Enter a clear email subject (e.g. "Purchase Agreement — 123 Main Street") and click "Next: Add Recipients".',
+          target: '#dsBtnNextRecipients',
+          text: 'Verify or enter the email subject (e.g. "Purchase Agreement — 123 Main Street") and click "Next: Add Recipients →".',
           setup: () => {
             if (dsState.view !== 'new-envelope' || dsState.wizardStep !== 1) {
               dsResetWizard();
@@ -462,17 +462,24 @@ const DS_LESSONS = [
           }
         } },
       { type: 'do', checklistId: 'ds_c2_1', view: 'new-envelope', walk: {
-          target: '.ds-panel button.primary',
-          text: 'In Step 2, review the recipients and ensure Buyer has action "Needs to Sign". Click "Next: Place Fields".',
+          target: '#dsBtnNextFields',
+          text: 'In Step 2, review the recipients and ensure Buyer has action "Needs to Sign". Click "Next: Place Fields →".',
           setup: () => {
             dsState.wizardStep = 2;
             dsGoto('new-envelope');
           }
         } },
       { type: 'do', checklistId: 'ds_c1_4', view: 'new-envelope', walk: {
-          target: '.ds-panel button.yellow',
+          target: '#dsBtnSendFinal',
           text: 'Step 4 shows the final review. Click "🚀 Send Envelope" to launch the agreement.',
           setup: () => {
+            if (!dsState.wizardData) dsResetWizard();
+            if (!dsState.wizardData.documents || !dsState.wizardData.documents.length) {
+              dsState.wizardData.documents = [{ name: 'Purchase_Agreement_123_Main.pdf', pages: 6 }];
+            }
+            if (!dsState.wizardData.subject) {
+              dsState.wizardData.subject = 'Purchase Agreement — 123 Main Street';
+            }
             dsState.wizardStep = 4;
             dsGoto('new-envelope');
           }
@@ -497,6 +504,7 @@ const DS_LESSONS = [
           target: '#chkSeq',
           text: 'Now uncheck "Set Signing Order" to see how parallel routing allows all signers to execute simultaneously.',
           setup: () => {
+            if (!dsState.wizardData) dsResetWizard();
             dsState.wizardStep = 2;
             dsState.wizardData.useSequentialOrder = true;
             dsGoto('new-envelope');
@@ -514,7 +522,7 @@ const DS_LESSONS = [
     summary: 'Audit signature and date fields to ensure Buyer fields are assigned to Buyer, not Seller.',
     steps: [
       { type: 'do', checklistId: 'ds_c3_1', view: 'new-envelope', walk: {
-          target: '.ds-canvas-header button:first-child',
+          target: '#dsBtnAddField',
           text: 'In Step 3, explore the document canvas and field palette.',
           setup: () => {
             dsResetWizard();
@@ -523,7 +531,7 @@ const DS_LESSONS = [
           }
         } },
       { type: 'do', checklistId: 'ds_c3_2', view: 'new-envelope', walk: {
-          target: '.ds-canvas-header button.danger',
+          target: '#dsBtnAuditFields',
           text: 'Click "⚠ Audit Assignments" to verify that all field slots correspond to the correct signer.',
           setup: () => {
             dsState.wizardStep = 3;
@@ -542,12 +550,12 @@ const DS_LESSONS = [
     summary: 'Triage active envelopes: know when to resend a reminder, correct a typo, or void an invalid deal.',
     steps: [
       { type: 'do', checklistId: 'ds_c5_3', view: 'envelope-detail', viewArg: 'ENV-2026-8812', walk: {
-          target: '.ds-action-bar button:nth-child(2)',
+          target: '#dsBtnCorrectEnv',
           text: 'Envelope ENV-2026-8812 bounced. Click "✏️ Correct Envelope" to update David Miller\'s email address.',
           setup: () => dsGoto('envelope-detail', 'ENV-2026-8812')
         } },
       { type: 'do', checklistId: 'ds_c5_4', view: 'envelope-detail', viewArg: 'ENV-2026-9041', walk: {
-          target: '.ds-action-bar button.danger',
+          target: '#dsBtnVoidEnv',
           text: 'To cancel an envelope with mandatory audit trail, click "🚫 Void" and provide a clear reason.',
           setup: () => dsGoto('envelope-detail', 'ENV-2026-9041')
         } },

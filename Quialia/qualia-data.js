@@ -1020,7 +1020,7 @@ const QZ_COMPOSES = [
     rubric: [
       { check: 'identifiesFile', label: 'Names the file the request relates to', why: 'Your supervisor needs to know which closing is exposed before anything else.' },
       { check: 'statesNextStep', label: 'Says what you have done and are doing', why: 'They need to know whether you replied, confirmed, or forwarded anything, because that changes how urgent this is.' },
-      { check: 'givesTimeframe', label: 'Conveys the timing pressure concretely', why: 'The message claims a wire goes out tomorrow morning. Whether that is true or not, the window matters.' },
+      { check: 'conveysUrgency', label: 'Conveys the timing pressure concretely', why: 'The message claims a wire goes out tomorrow morning. Whether that is true or not, the window matters.' },
       { check: 'verifyOutOfBand', label: 'Proposes verifying by phone using a number from the file', why: 'The only way to break the attack is to confirm through a channel the email did not supply.' },
       { check: 'noNPI', label: 'Does not repeat the account and routing numbers', why: 'Re-transmitting the fraudulent account details spreads them further into your own systems.', required: true }
     ]
