@@ -1,0 +1,190 @@
+/* =====================================================================
+   APPFOLIO SIMULATOR — PERIPHERAL SECTION STYLES
+
+   Accounting, Reporting, Communications and Settings. Split from appfolio.css
+   for the same reason their JavaScript is split: they are the sections that
+   grow largest, and the core stylesheet should stay about the shell.
+
+   Every class here is .afs-* or a section-specific .af-* that only these
+   screens use. No brand colours are declared — the tokens in appfolio.css are
+   the single source, and they are still placeholders until the screenshots
+   arrive in Images-resources/.
+   ===================================================================== */
+
+/* =====================================================================
+   TABS — used by Accounting and, later, Reporting
+   ===================================================================== */
+.af-tabs {
+  display: flex;
+  gap: 3px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--af-line);
+  margin-bottom: 20px;
+}
+.af-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--af-muted);
+  padding: 9px 14px;
+  margin-bottom: -1px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.af-tab:hover { color: var(--af-text); }
+.af-tab.on { color: var(--af-text); font-weight: 700; border-bottom-color: var(--af-brand); }
+
+/* =====================================================================
+   ACCOUNTING — the three balances
+
+   The fiduciary boundary is the hardest idea in this module, so the three
+   account types are given three visibly different cards rather than three rows
+   of a table. A left border in a distinct weight per type is doing real work
+   here: it is the fastest way to see, at a glance, that this money is not all
+   the same money.
+   ===================================================================== */
+.af-accts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--af-gap);
+  margin-bottom: var(--af-gap);
+}
+.af-acct {
+  background: var(--af-panel);
+  border: 1px solid var(--af-line);
+  border-left: 4px solid var(--af-muted);
+  border-radius: var(--af-radius);
+  padding: 16px 18px;
+}
+.af-acct-operating        { border-left-color: var(--af-accent); }
+/* Owner money and resident money are not the company's. They are marked
+   differently from the operating account on purpose. */
+.af-acct-trust            { border-left-color: var(--af-good); }
+.af-acct-security-deposit { border-left-color: var(--af-warn); }
+
+.af-acct-type {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--af-muted);
+}
+.af-acct-balance {
+  display: block;
+  margin: 7px 0 4px;
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.af-acct-name { display: block; font-size: 13px; }
+.af-acct-meta { display: block; margin-top: 6px; font-size: 12px; color: var(--af-muted); }
+
+/* =====================================================================
+   REPORTING
+   ===================================================================== */
+.af-report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
+}
+.af-report {
+  display: block;
+  text-align: left;
+  background: var(--af-panel);
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  padding: 14px 16px;
+  font: inherit;
+  cursor: pointer;
+}
+.af-report:hover { border-color: var(--af-accent); }
+.af-report b { display: block; font-size: 14px; margin-bottom: 4px; }
+.af-report span { display: block; font-size: 12.5px; line-height: 1.5; color: var(--af-muted); }
+
+/* =====================================================================
+   SETTINGS
+   ===================================================================== */
+.af-set-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .af-set-layout { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .af-set-rail { border-right: none; border-bottom: 1px solid var(--af-line); padding: 0 0 14px; }
+}
+
+.af-set-rail {
+  border-right: 1px solid var(--af-line);
+  padding-right: 14px;
+  position: sticky;
+  top: 0;
+}
+.af-set-group + .af-set-group { margin-top: 18px; }
+.af-set-grouplabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .7px;
+  text-transform: uppercase;
+  color: var(--af-muted);
+  padding: 0 10px 6px;
+}
+.af-set-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--af-text);
+  padding: 7px 10px;
+  cursor: pointer;
+}
+.af-set-link:hover { background: var(--af-bg); }
+.af-set-link.on { background: var(--af-bg); font-weight: 700; }
+.af-set-body { min-width: 0; }
+
+/* =====================================================================
+   FORMS
+   ===================================================================== */
+.af-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px 20px;
+}
+.af-form label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--af-text);
+}
+.af-input {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  padding: 8px 11px;
+  border: 1px solid var(--af-line);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 400;
+  color: var(--af-text);
+  background: var(--af-panel);
+}
+.af-input:focus { outline: none; border-color: var(--af-accent); box-shadow: 0 0 0 1px var(--af-accent); }
+/* Disabled has to read as deliberate rather than broken: these are fields the
+   product genuinely does not let you edit, not fields that failed to load. */
+.af-input:disabled {
+  background: var(--af-bg);
+  color: var(--af-muted);
+  cursor: not-allowed;
+  -webkit-text-fill-color: var(--af-muted);
+  opacity: 1;
+}

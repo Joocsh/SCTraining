@@ -1310,6 +1310,8 @@
     .td-mini.fub { background: #1e88e5; }
     .td-mini.zi { background: #F5A522; color: #1C2540; }
     .td-mini.ku { background: #6c4fd1; }
+    .td-mini.af { background: #0f2a4a; padding: 0; overflow: hidden; }
+    .td-mini.af img { width: 100%; height: 100%; object-fit: contain; display: block; }
     .td-mini-row span { color: #e6eef7; font-size: 13.5px; font-weight: 600; }
     @media(max-width:820px) {
       .td-launch-card { flex-direction: column; align-items: flex-start; padding: 34px 26px; }
@@ -1346,6 +1348,8 @@
     .td-tile.fub .td-tile-logo { background: #1e88e5; } .td-tile.fub:hover { border-color: #1e88e5; }
     .td-tile.zi .td-tile-logo { background: #F5A522; color: #1C2540; } .td-tile.zi:hover { border-color: #F5A522; }
     .td-tile.ku .td-tile-logo { background: #6c4fd1; } .td-tile.ku:hover { border-color: #6c4fd1; }
+    .td-tile.af .td-tile-logo { background: #0f2a4a; padding: 0; overflow: hidden; } .td-tile.af:hover { border-color: #168a53; }
+    .td-tile.af .td-tile-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
     .td-tile-copy b { display: block; font-size: 15.5px; color: var(--v-navy); margin-bottom: 2px; }
     .td-tile-copy span { display: block; font-size: 13px; color: var(--v-muted); line-height: 1.5; }
     .td-tile-go { margin-left: auto; color: var(--v-cyan-d); font-weight: 800; font-size: 13.5px; flex: none; }
@@ -1607,6 +1611,7 @@
           <div class="td-mini-row"><span class="td-mini zi" style="background:#fff;padding:2px;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="assets/img/logo-sierra.svg" alt="Sierra" style="width:100%;height:100%;object-fit:contain;"></span><span>Sierra</span></div>
           <div class="td-mini-row"><span class="td-mini ku" style="background:#fff;padding:2px;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="Quialia/Images-resourses/OIP.webp" alt="Qualia" style="width:100%;height:100%;object-fit:contain;"></span><span>Qualia</span></div>
           <div class="td-mini-row"><span class="td-mini ds" style="background:#fff;padding:2px;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="Docusign/Images-resources/OIP.webp" alt="DocuSign" style="width:100%;height:100%;object-fit:contain;"></span><span>DocuSign</span></div>
+          <div class="td-mini-row"><span class="td-mini af"><img src="AppFolio/Images-resources/appfolio-icon.svg" alt="AppFolio"></span><span>AppFolio</span></div>
         </div>
       </div>
     </div>
@@ -1848,6 +1853,11 @@
         <a class="td-tile ds" href="Docusign/testdrive-docusign.html">
           <span class="td-tile-logo" style="background:#fff;padding:4px;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="Docusign/Images-resources/OIP.webp" alt="DocuSign" style="width:100%;height:100%;object-fit:contain;"></span>
           <span class="td-tile-copy"><b>DocuSign</b><span>Envelopes, signing order, field placement, templates &amp; tracking.</span></span>
+          <span class="td-tile-go">Launch &rarr;</span>
+        </a>
+        <a class="td-tile af" href="AppFolio/testdrive-appfolio.html">
+          <span class="td-tile-logo"><img src="AppFolio/Images-resources/appfolio-icon.svg" alt="AppFolio"></span>
+          <span class="td-tile-copy"><b>AppFolio</b><span>Properties, residents, leasing, maintenance and trust accounting.</span></span>
           <span class="td-tile-go">Launch &rarr;</span>
         </a>
       </div>
