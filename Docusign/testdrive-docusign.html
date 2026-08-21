@@ -52,6 +52,7 @@
       <nav class="ds-topnav" id="dsTopnav">
         <a class="ds-topnav-item active" data-view="dashboard" onclick="dsGoto('dashboard')">Home</a>
         <a class="ds-topnav-item" data-view="envelopes" onclick="dsGoto('envelopes')">Agreements</a>
+        <a class="ds-topnav-item" data-view="mailbox" onclick="dsGoto('mailbox')">Mailbox <span class="ds-sidebar-badge" id="dsTopMailBadge" style="display:none;"></span></a>
         <a class="ds-topnav-item" data-view="templates" onclick="dsOpenTemplates()">Templates</a>
         <a class="ds-topnav-item" data-view="reports" onclick="dsGoto('reports')">Reports</a>
         <a class="ds-topnav-item" data-view="settings" onclick="dsGoto('settings')">Settings</a>
@@ -149,6 +150,11 @@
         </div>
 
         <ul class="ds-sidebar-nav flush">
+          <li><a onclick="dsGoto('mailbox')" id="sb-mailbox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>
+            VA Mailbox
+            <span class="ds-sidebar-badge" id="dsSbMailBadge" style="display:none;"></span>
+          </a></li>
           <li><a onclick="dsGoto('powerforms')" id="sb-powerforms">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
             PowerForms
@@ -230,6 +236,7 @@
   <script src="../assets/js/app-core.js"></script>
   <script src="../assets/js/sim-engine.js"></script>
   <script src="docusign-data.js"></script>
+  <script src="docusign-data-ext.js"></script>
   <!-- Fictional account catalogue. Loaded between the frozen curriculum and the
        view engine: it reads DS_TODAY from the first, and the second reads it. -->
   <script src="docusign-shell-data.js"></script>

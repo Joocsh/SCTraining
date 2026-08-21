@@ -16,20 +16,35 @@
    blue without a single call site changing. */
 :root {
   /* --- 2024 rebrand --- */
-  --ds24-blue:      #2b57d9;   /* Start button, links, focus ring */
+  --ds24-blue:      #285ed8;   /* Start button, links, focus ring — sampled */
   --ds24-blue-h:    #1f45b8;
   --ds24-ink:       #1a1a1a;   /* page titles */
   --ds24-text:      #333333;
   --ds24-muted:     #6b6b6b;   /* "From: …" lines, column labels */
   --ds24-line:      #e0e0e0;
   --ds24-bg:        #ffffff;
-  --ds24-sidebar:   #f7f7f7;
-  --ds24-sel:       #ececec;   /* selected sidebar item */
-  --ds24-green:     #1a8a4a;   /* Completed */
+  --ds24-sidebar:   #f6f5f6;
+  --ds24-sel:       #dfdee0;   /* selected sidebar item — sampled */
+  --ds24-green:     #007641;   /* Completed — sampled */
   --ds24-amber:     #b26a00;   /* Waiting */
   --ds24-red:       #c62828;   /* Voided / Declined */
-  --ds24-pill:      #1c2b3a;   /* active filter pill, dark fill */
+  --ds24-pill:      #272532;   /* active filter pill — sampled; warm near-black,
+                                  not the blue-navy it was guessed as */
   --ds24-radius:    6px;
+
+  /* --- published brand palette (brand.docusign.com/color) ---
+     These are the MARKETING colours and they are deliberately NOT the product
+     chrome: the real application's primary action is the sampled --ds24-blue
+     above, not Cobalt. Kept here for the logo, the signing landing page and
+     anything that has to look like Docusign's brand rather than its product.
+     Sampling the 2091x242 lockup in Images-resources/ returns #4c01ff and
+     #ff5251, which is these two values plus JPEG rounding. */
+  --ds-cobalt:      #4C00FF;
+  --ds-poppy:       #FF5252;
+  --ds-inkwell:     #130032;
+  --ds-deep-violet: #26065D;
+  --ds-mist:        #CBC2FF;
+  --ds-ecru:        #F8F3F0;
 
   /* --- legacy names, re-pointed --- */
   --ds-yellow:      var(--ds24-blue);
@@ -3302,6 +3317,146 @@ body.ds-demo .ds-training-entry { display: none; }
 /* A warning is not a blocker. gmial.com has to stay typeable, because Lesson 5
    is about noticing the bounce it causes. */
 .ds-wr-msg.warn { color: #8a6100; }
+.ds-wr-adv-btn {
+  align-self: center;
+  margin-top: 14px;
+  font-size: 11.5px;
+  padding: 5px 9px;
+  color: var(--ds24-muted);
+}
+.ds-wr-adv-btn:hover { color: var(--ds24-blue); }
+.ds-adv-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ds24-blue);
+  margin-left: 3px;
+  vertical-align: middle;
+}
+.ds-wr-adv {
+  flex-basis: 100%;
+  background: #f0f4f8;
+  border: 1px solid #d0dce8;
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-top: 6px;
+}
+.ds-wr-adv-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: var(--ds24-ink);
+}
+.ds-wr-adv-head b { display: flex; align-items: center; gap: 5px; color: var(--ds24-blue); }
+.ds-wr-adv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.ds-wr-adv-col label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ds24-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.ds-wr-adv-row {
+  margin-bottom: 8px;
+}
+.ds-wr-adv-row label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ds24-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.ds-wr-adv-row textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--ds24-line);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12.5px;
+  resize: vertical;
+  background: #fff;
+}
+.ds-switch-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 5px;
+}
+.ds-switch-label input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+.ds-badge-xs {
+  font-size: 10px;
+  padding: 2px 6px;
+  gap: 3px;
+  display: inline-flex;
+  align-items: center;
+  font-weight: 700;
+  border-radius: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.ds-wiz-adv-block {
+  border: 1px solid var(--ds24-line);
+  border-radius: var(--ds24-radius);
+  background: #fff;
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+.ds-wiz-adv-head {
+  padding: 12px 16px;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.ds-wiz-adv-head b { display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--ds24-ink); }
+.ds-wiz-adv-head .ds-wiz-adv-chevron { margin-left: auto; color: var(--ds24-muted); font-size: 14px; }
+.ds-wiz-adv-body {
+  padding: 16px;
+  border-top: 1px solid var(--ds24-line);
+  background: #fff;
+}
+.ds-wiz-rem-grid { display: flex; flex-direction: column; gap: 14px; }
+.ds-wiz-rem-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+.ds-wiz-rem-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ds24-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.ds-wiz-rem-field select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--ds24-line);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12.5px;
+  background: #fff;
+}
 
 /* ---- template detail ---- */
 .ds-backlink {
@@ -3311,18 +3466,6 @@ body.ds-demo .ds-training-entry { display: none; }
   background: none;
   border: none;
   font: inherit;
-  font-size: 13.5px;
-  color: var(--ds24-muted);
-  cursor: pointer;
-  padding: 0 0 14px;
-}
-.ds-backlink:hover { color: var(--ds24-blue); }
-.ds-kpi b.ds-kpi-text { font-size: 17px; line-height: 1.3; }
-.ds-fieldchip {
-  display: inline-block;
-  margin: 2px 5px 2px 0;
-  padding: 3px 9px;
-  border-radius: 999px;
   background: #eef2fb;
   color: var(--ds24-blue);
   font-size: 11.5px;
@@ -3705,3 +3848,429 @@ body.ds-demo .ds-training-entry { display: none; }
   white-space: nowrap;
 }
 .ds-attached-del { flex: none; }
+
+/* An empty validation line must not reserve space, or every clean row grows a
+   blank gap under it. It only takes height once it has something to say. */
+.ds-wr-msg:empty { display: none; }
+
+/* =====================================================================
+   STEP 3 — placed fields
+   Fields are colour-coded by recipient position rather than by role, so the
+   scheme works for any number of recipients instead of assuming a buyer and a
+   seller. Six hues, then it wraps.
+   ===================================================================== */
+.ds-fld-area { margin-top: 26px; border-top: 1px dashed #d8d8d8; padding-top: 16px; }
+.ds-fld-area-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .7px;
+  text-transform: uppercase;
+  color: var(--ds24-muted);
+  margin-bottom: 10px;
+}
+.ds-fld-area-head span {
+  min-width: 20px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #ececec;
+  color: var(--ds24-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.ds-fld {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 9px 12px;
+  border: 1px solid;
+  border-left-width: 4px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: box-shadow .12s;
+}
+.ds-fld:hover { box-shadow: 0 1px 6px rgba(0,0,0,.10); }
+.ds-fld.on { box-shadow: 0 0 0 2px var(--ds24-blue); }
+.ds-fld-type { display: flex; align-items: center; gap: 7px; font-weight: 600; flex: 1; min-width: 150px; }
+.ds-fld-who {
+  border: 1px solid rgba(0,0,0,.18);
+  border-radius: 4px;
+  background: rgba(255,255,255,.75);
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 7px;
+  max-width: 240px;
+  cursor: pointer;
+}
+.ds-fld-req { font-size: 11px; font-weight: 700; opacity: .75; white-space: nowrap; }
+.ds-fld-del {
+  background: none;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  color: inherit;
+  opacity: .6;
+  cursor: pointer;
+  flex: none;
+}
+.ds-fld-del:hover { opacity: 1; background: rgba(0,0,0,.08); }
+
+.ds-fld.c0 { background: #eef2fb; border-color: #93a9e0; color: #1c3468; }
+.ds-fld.c1 { background: #eaf6ef; border-color: #85c3a1; color: #14532d; }
+.ds-fld.c2 { background: #fdf3e6; border-color: #e0b476; color: #6b4300; }
+.ds-fld.c3 { background: #f4eefb; border-color: #b494dd; color: #4a2673; }
+.ds-fld.c4 { background: #fdeef1; border-color: #e094a6; color: #7a1f38; }
+.ds-fld.c5 { background: #e9f5f7; border-color: #7fb8c4; color: #14434d; }
+/* A field nobody can complete is an error, and it must not look like just
+   another colour in the rotation. */
+.ds-fld.bad {
+  background: #fdf1ef;
+  border-color: var(--ds24-red);
+  color: #8a1c1c;
+}
+
+.ds-fld-empty {
+  text-align: center;
+  padding: 34px 20px;
+  border: 1px dashed #d0d0d0;
+  border-radius: var(--ds24-radius);
+  color: var(--ds24-muted);
+}
+.ds-fld-empty svg { color: #c8c8c8; }
+.ds-fld-empty b { display: block; margin: 10px 0 5px; font-size: 14px; color: var(--ds24-ink); }
+.ds-fld-empty span { display: block; max-width: 44ch; margin: 0 auto; font-size: 12.5px; line-height: 1.55; }
+
+.ds-prop-del { margin-top: 16px; width: 100%; justify-content: center; }
+.ds-palette-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Bullet list inside the confirm modal, used by the field audit to report every
+   problem at once rather than one per re-run. */
+.ds-confirm-list {
+  margin: 12px 0 0;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ds24-text);
+}
+.ds-confirm-list li { margin-bottom: 6px; }
+
+/* ============================================================================
+   CAPABILITY EXPANSION: TEMPLATES, MAILBOX, BULK SEND, POWERFORMS, SIGNER
+   ============================================================================ */
+
+/* ---- Phase B: Template Builder & Role Matching ---- */
+.ds-role-match-card { max-width: 640px; width: 100%; }
+.ds-role-match-row {
+  background: #f8fafc;
+  border: 1px solid var(--ds24-line);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.ds-role-match-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.ds-role-match-head b { font-size: 13.5px; color: var(--ds24-ink); }
+.ds-role-match-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ds-role-match-inputs label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ds24-muted);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.ds-role-match-inputs input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--ds24-line);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12.5px;
+  background: #fff;
+}
+.ds-tpl-builder-card { max-width: 780px; width: 100%; max-height: 90vh; overflow-y: auto; }
+.ds-tpl-builder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.ds-tpl-builder-field label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ds24-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.ds-tpl-builder-field input,
+.ds-tpl-builder-field select,
+.ds-tpl-builder-field textarea {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--ds24-line);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 13px;
+  background: #fff;
+}
+.ds-tpl-role-item {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 60px 1fr 1fr 34px;
+  gap: 8px;
+  align-items: center;
+  background: #fafafa;
+  border: 1px solid var(--ds24-line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+.ds-tpl-role-item input,
+.ds-tpl-role-item select {
+  padding: 5px 7px;
+  border: 1px solid var(--ds24-line);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12px;
+  background: #fff;
+}
+
+/* ---- Phase C: Mailbox (VA Inbox) ---- */
+.ds-mailbox-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  height: calc(100vh - 120px);
+  min-height: 480px;
+  border: 1px solid var(--ds24-line);
+  border-radius: var(--ds24-radius);
+  background: #fff;
+  overflow: hidden;
+}
+.ds-mail-list-col {
+  border-right: 1px solid var(--ds24-line);
+  display: flex;
+  flex-direction: column;
+  background: #fafafa;
+  overflow: hidden;
+}
+.ds-mail-list-head {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ds24-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+}
+.ds-mail-list-head b { font-size: 14px; color: var(--ds24-ink); }
+.ds-mail-items-wrap {
+  flex: 1;
+  overflow-y: auto;
+}
+.ds-mail-item {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ds24-line);
+  cursor: pointer;
+  background: #fff;
+  transition: background .15s;
+}
+.ds-mail-item:hover { background: #f0f5ff; }
+.ds-mail-item.active { background: #e8f0fe; border-left: 3px solid var(--ds24-blue); }
+.ds-mail-item.unread { font-weight: 700; background: #fdfdfd; }
+.ds-mail-item-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--ds24-muted);
+  margin-bottom: 3px;
+}
+.ds-mail-item-sender { font-size: 13px; color: var(--ds24-ink); margin-bottom: 2px; }
+.ds-mail-item-subject { font-size: 12.5px; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds-mail-view-col {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: #fff;
+}
+.ds-mail-view-head {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--ds24-line);
+}
+.ds-mail-view-title { font-size: 17px; font-weight: 700; color: var(--ds24-ink); margin: 0 0 10px; }
+.ds-mail-view-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--ds24-muted);
+}
+.ds-mail-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.ds-tech-header-card {
+  margin: 14px 20px;
+  padding: 12px 14px;
+  background: #1e2430;
+  color: #c9d1d9;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+.ds-tech-header-card b { color: #58a6ff; }
+.ds-mail-body-content {
+  padding: 20px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--ds24-ink);
+  flex: 1;
+}
+.ds-phish-callout {
+  margin: 14px 20px;
+  padding: 12px 14px;
+  background: #fff8e6;
+  border-left: 4px solid #f59e0b;
+  border-radius: 4px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #92400e;
+}
+.ds-sidebar-badge {
+  display: inline-block;
+  background: var(--ds24-blue);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 999px;
+  margin-left: auto;
+}
+
+/* ---- Phase D: Bulk Send, PowerForms & Reports ---- */
+.ds-csv-box {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--ds24-line);
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+  resize: vertical;
+}
+.ds-csv-tbl-wrap {
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid var(--ds24-line);
+  border-radius: 6px;
+  margin: 12px 0;
+}
+.ds-csv-row.bad { background: #fdf2f2; color: var(--ds24-red); }
+.ds-csv-row.warn { background: #fefce8; color: #854d0e; }
+.ds-rpt-result-card {
+  background: #fff;
+  border: 1px solid var(--ds24-line);
+  border-radius: var(--ds24-radius);
+  padding: 20px;
+  margin-top: 18px;
+}
+.ds-rpt-chart-wrap { margin: 16px 0; }
+
+/* ---- Phase E: Signer Experience ---- */
+.ds-signer-other-wrap { position: relative; display: inline-block; }
+.ds-signer-other-dd {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--ds24-line);
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  min-width: 180px;
+  z-index: 100;
+  padding: 4px 0;
+  margin-top: 4px;
+}
+.ds-signer-other-dd.open { display: block; }
+.ds-signer-other-dd button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ds24-ink);
+  cursor: pointer;
+}
+.ds-signer-other-dd button:hover { background: #f0f4f8; }
+.ds-adopt-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid var(--ds24-line);
+  margin-bottom: 16px;
+}
+.ds-adopt-tab {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ds24-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+.ds-adopt-tab.on { color: var(--ds24-blue); border-bottom-color: var(--ds24-blue); }
+.ds-draw-canvas {
+  width: 100%;
+  height: 140px;
+  background: #fff;
+  border: 1px dashed var(--ds24-line);
+  border-radius: 6px;
+  cursor: crosshair;
+  touch-action: none;
+}
+.ds-auth-gate-card {
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  background: #fff;
+  border-radius: 12px;
+  padding: 28px 24px;
+  box-shadow: 0 20px 45px rgba(0,0,0,0.2);
+}
+.ds-auth-gate-input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 16px;
+  text-align: center;
+  letter-spacing: 2px;
+  border: 2px solid var(--ds24-line);
+  border-radius: 6px;
+  margin: 16px 0;
+  font-family: inherit;
+}
+.ds-auth-gate-input:focus { outline: none; border-color: var(--ds24-blue); }
+

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40" fill="none">
+  <!-- Docusign app icon. The Nexus mark, redrawn as vectors from the 2091x242
+       brand lockup in this folder: a Poppy half-disc behind an Inkwell document
+       with a folded corner, sitting on a Cobalt square.
+       Colours are the published brand values (brand.docusign.com/color), which
+       match the pixels sampled from the lockup: Poppy #FF5252, Cobalt #4C00FF. -->
+  <rect width="40" height="40" rx="8" fill="#ffffff"/>
+  <g transform="translate(7 7.2) scale(0.1327)">
+    <!-- Square first: the disc shows through the folded-corner notch. -->
+    <rect x="0" y="55" width="140" height="140" fill="#4C00FF"/>
+    <path d="M55 0h69a71 71 0 0 1 0 142H55z" fill="#FF5252"/>
+    <path d="M55 55h55l30 30v55H55z" fill="#000000"/>
+  </g>
+</svg>

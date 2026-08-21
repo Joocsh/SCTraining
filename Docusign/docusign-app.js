@@ -490,7 +490,8 @@ function dsConfirm(opts) {
         <h3 id="dsConfirmTitle">${esc(opts.title || 'Are you sure?')}</h3>
       </div>
       <div class="ds-confirm-body">
-        <p>${esc(opts.body || '')}</p>
+        ${opts.body ? `<p>${esc(opts.body)}</p>` : ''}
+        ${opts.list && opts.list.length ? `<ul class="ds-confirm-list">${opts.list.map(x => '<li>' + esc(x) + '</li>').join('')}</ul>` : ''}
         ${needsReason ? `
           <label class="ds-confirm-reason">
             <span>${esc(opts.reason.label || 'Reason')}</span>
@@ -902,6 +903,7 @@ function dsSyncNav() {
     const AGREEMENT_VIEWS = ['envelope-detail', 'new-envelope', 'deleted', 'bulk-send',
                              'powerforms', 'shared-access', 'signer-experience'];
     if (v === 'templates' && dsState.view === 'template-detail') { el.classList.add('active'); return; }
+    if (v === 'mailbox' && dsState.view === 'mailbox') { el.classList.add('active'); return; }
     const active = v === dsState.view
       || (v === 'envelopes' && AGREEMENT_VIEWS.indexOf(dsState.view) > -1)
       || (v === 'lessons' && LESSON_VIEWS.indexOf(dsState.view) > -1);
@@ -916,6 +918,7 @@ function dsSyncNav() {
   const map = {
     'new-envelope':   'sb-sent',
     'envelope-detail':'sb-sent',
+    'mailbox':        'sb-mailbox',
     'templates':      'sb-templates',
     'template-detail':'sb-templates',
     'powerforms':     'sb-powerforms',
@@ -949,6 +952,19 @@ function dsSyncNav() {
     if (el) el.classList.add('ds-active');
   }
 
+  // Update Mailbox unread count badges
+  const unreadCount = typeof dsUnreadEmailCount === 'function' ? dsUnreadEmailCount() : 0;
+  const topBadge = document.getElementById('dsTopMailBadge');
+  const sbBadge = document.getElementById('dsSbMailBadge');
+  if (topBadge) {
+    topBadge.textContent = unreadCount ? String(unreadCount) : '';
+    topBadge.style.display = unreadCount ? 'inline-block' : 'none';
+  }
+  if (sbBadge) {
+    sbBadge.textContent = unreadCount ? String(unreadCount) : '';
+    sbBadge.style.display = unreadCount ? 'inline-block' : 'none';
+  }
+
   /* Folders live in demo state, so they are repainted on every navigation — a
      folder created a moment ago has to appear without a reload. */
   dsRenderSidebarFolders();
@@ -957,25 +973,25 @@ function dsSyncNav() {
 /* ---------- Lesson banner ----------
    Visible across ALL views while a lesson is active. Tells the trainee which
    lesson they are in, how far they are, and gives them a one-click exit.
-   Clears itself in product mode and demo mode. */
+   Progress is persisted as you go, so clicking Exit never loses work. */
 function dsRenderLessonBanner() {
   const el = document.getElementById('dsLessonBanner');
   if (!el) return;
-  if (!dsTrainingActive()) { el.innerHTML = ''; return; }
-
-  /* Resolve lesson metadata — dsState.lessonId is the primary source, but a
-     walkthrough may be running without one (edge case). */
   const lid = dsState.lessonId;
-  const lesson = lid ? SimEngine.findLesson(lid) : null;
-  let title = '';
-  let stepInfo = '';
-
-  if (lesson) {
-    title = `Lesson ${lesson.number} of ${DS_LESSONS.length} — ${SimEngine.esc(lesson.title)}`;
-    const prog = SimEngine.progress(lesson);
-    stepInfo = `Step ${prog.done} of ${prog.total}`;
-  } else {
-    title = 'Walkthrough in progress';
+  const les = lid ? DS_LESSONS.find(x => x.id === lid) : null;
+  if (!les) {
+    el.innerHTML = '';
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = 'block';
+  const prog = SimEngine.progress(les);
+  const total = prog.total;
+  const done = prog.done;
+  const title = `Lesson ${les.number} — ${les.title}`;
+  let stepInfo = `${done} of ${total} steps complete`;
+  if (dsState.view === 'exam' || dsState.view === 'complete-transaction') {
+    stepInfo = 'Practical Final Exam';
   }
 
   el.innerHTML = `
@@ -1009,6 +1025,7 @@ function dsRenderRoot() {
     'envelopes':           dsEnvelopesHTML,
     'envelope-detail':     dsEnvelopeDetailHTML,
     'new-envelope':        dsNewEnvelopeWizardHTML,
+    'mailbox':             dsMailboxHTML,
     'templates':           dsTemplatesHTML,
     'reports':             dsReportsHTML,
     'settings':            dsSettingsHTML,
@@ -1718,6 +1735,202 @@ function dsOpenBulkBatch(i) {
   dsRenderRoot();
 }
 
+/* ==================== BULK SEND (PHASE D.1) ==================== */
+
+function dsOpenBulkSendWizard() {
+  const tmpls = dsAllTemplates();
+  dsState.bulkWizardData = {
+    batchName: 'Buyer Disclosure Batch — ' + DS_TODAY,
+    templateId: tmpls[0] ? tmpls[0].id : '',
+    csvText: '',
+    parsedRows: [],
+    errors: []
+  };
+  dsRenderBulkSendWizardModal();
+}
+
+function dsLoadSampleBulkCSV() {
+  const sample = [
+    'Name,Email,Role',
+    'Jonathan Miller,jonathan.miller@example.com,Buyer',
+    'Ashley Davis,ashley.davis@example.com,Buyer',
+    'Christopher Lee,chris.lee@example.com,Buyer',
+    'Stephanie Taylor,steph.taylor@example.com,Buyer',
+    'Marcus Vance,marcus.vance@example.com,Buyer'
+  ].join('\n');
+  const ta = document.getElementById('dsBulkCsvInput');
+  if (ta) {
+    ta.value = sample;
+    dsOnBulkCsvInput(sample);
+  }
+}
+
+function dsOnBulkCsvInput(text) {
+  if (!dsState.bulkWizardData) return;
+  dsState.bulkWizardData.csvText = text;
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const rows = [];
+  const errors = [];
+
+  if (lines.length > 1) {
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const nameIdx = headers.findIndex(h => /name/i.test(h));
+    const emailIdx = headers.findIndex(h => /email/i.test(h));
+    const roleIdx = headers.findIndex(h => /role/i.test(h));
+
+    for (let i = 1; i < lines.length; i++) {
+      const parts = lines[i].split(',').map(p => p.trim());
+      const name = nameIdx > -1 ? parts[nameIdx] : parts[0] || '';
+      const email = emailIdx > -1 ? parts[emailIdx] : parts[1] || '';
+      const role = roleIdx > -1 ? parts[roleIdx] : parts[2] || 'Buyer';
+
+      let rowErr = null;
+      if (!name) rowErr = 'Missing name';
+      else if (!email) rowErr = 'Missing email';
+      else if (!dsEmailSyntaxOk(email)) rowErr = `Invalid email syntax ("${email}")`;
+
+      if (rowErr) errors.push(`Row ${i + 1}: ${rowErr}`);
+      rows.push({ line: i + 1, name, email, role, error: rowErr });
+    }
+  }
+
+  dsState.bulkWizardData.parsedRows = rows;
+  dsState.bulkWizardData.errors = errors;
+  dsRenderBulkSendWizardModal();
+}
+
+function dsRenderBulkSendWizardModal() {
+  let modal = document.getElementById('dsBulkWizardModalWrap');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'dsBulkWizardModalWrap';
+    modal.className = 'ds-modal-backdrop';
+    document.body.appendChild(modal);
+  }
+
+  const d = dsState.bulkWizardData;
+  const tmpls = dsAllTemplates();
+  const validCount = d.parsedRows.filter(r => !r.error).length;
+
+  modal.innerHTML = `
+    <div class="ds-modal-card ds-tpl-builder-card">
+      <div class="ds-modal-head">
+        <div>
+          <h3 class="ds-adopt-head-wrap">${dsIcon('users')} Create New Bulk Send</h3>
+          <div class="ds-audit-actor">Import recipient lists via CSV to dispatch standardized envelope packages at scale</div>
+        </div>
+        <button type="button" class="ds-btn ds-cert-close-btn" onclick="dsCloseBulkWizard()">${dsIcon('x', 13)}</button>
+      </div>
+      <div class="ds-modal-body">
+        <div class="ds-tpl-builder-grid">
+          <div class="ds-tpl-builder-field">
+            <label>Batch Name *</label>
+            <input type="text" id="dsBulkBatchName" value="${escAttr(d.batchName)}" placeholder="e.g. Q3 Texas Buyer Packages"
+                   oninput="dsState.bulkWizardData.batchName = this.value">
+          </div>
+          <div class="ds-tpl-builder-field">
+            <label>Select Template *</label>
+            <select id="dsBulkTmplSelect" onchange="dsState.bulkWizardData.templateId = this.value">
+              ${tmpls.map(t => `<option value="${escAttr(t.id)}" ${d.templateId === t.id ? 'selected' : ''}>${esc(t.name)} (${esc(t.category)})</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 6px;">
+          <label style="font-size:12px;font-weight:700;color:var(--ds24-muted);text-transform:uppercase;">Recipient CSV List (Name, Email, Role)</label>
+          <button type="button" class="ds-btn sm" onclick="dsLoadSampleBulkCSV()">${dsIcon('download', 12)} Load Sample CSV</button>
+        </div>
+
+        <textarea id="dsBulkCsvInput" rows="4" class="ds-csv-box" placeholder="Name,Email,Role&#10;Jane Doe,jane@example.com,Buyer&#10;Mark Smith,mark@example.com,Buyer"
+                  oninput="dsOnBulkCsvInput(this.value)">${esc(d.csvText)}</textarea>
+
+        ${d.parsedRows.length ? `
+          <div class="ds-csv-tbl-wrap">
+            <table class="ds-agr-tbl ds-agr-tbl-compact">
+              <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Role</th><th>Validation Status</th></tr></thead>
+              <tbody>
+                ${d.parsedRows.map(r => `
+                  <tr class="ds-csv-row ${r.error ? 'bad' : ''}">
+                    <td>${r.line}</td>
+                    <td><b>${esc(r.name || '—')}</b></td>
+                    <td>${esc(r.email || '—')}</td>
+                    <td>${esc(r.role || '—')}</td>
+                    <td>${r.error ? '<span class="ds-badge danger ds-badge-xs">' + esc(r.error) + '</span>' : '<span class="ds-badge completed ds-badge-xs">Valid</span>'}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+          <div class="ds-box-tip">
+            ${dsIcon('checkCircle', 14)} <b>Ready:</b> ${validCount} valid recipient${validCount === 1 ? '' : 's'} identified. ${d.errors.length ? `<span style="color:var(--ds24-red);">${d.errors.length} error(s) must be resolved.</span>` : ''}
+          </div>
+        ` : ''}
+      </div>
+      <div class="ds-modal-foot">
+        <button type="button" class="ds-btn" onclick="dsCloseBulkWizard()">Cancel</button>
+        <button type="button" class="ds-btn primary" id="dsBtnSubmitBulk" ${!validCount || d.errors.length ? 'disabled' : ''} onclick="dsSubmitBulkSend()">
+          ${dsIcon('send', 14)} Send ${validCount} Envelopes Now
+        </button>
+      </div>
+    </div>`;
+}
+
+function dsCloseBulkWizard() {
+  const m = document.getElementById('dsBulkWizardModalWrap');
+  if (m) m.remove();
+  dsState.bulkWizardData = null;
+}
+
+function dsSubmitBulkSend() {
+  const d = dsState.bulkWizardData;
+  if (!d) return;
+  const valid = d.parsedRows.filter(r => !r.error);
+  if (!valid.length) {
+    simToast('Add at least one valid recipient before sending.');
+    return;
+  }
+
+  const tmpl = dsAllTemplates().find(t => t.id === d.templateId) || DS_TEMPLATES[0];
+  const batchName = d.batchName.trim() || 'Bulk Send Batch';
+  const newBatch = {
+    index: dsBulkBatches().length + 1,
+    name: batchName,
+    tmpl: tmpl.name,
+    recips: valid.length,
+    done: 0,
+    sent: DS_TODAY,
+    status: 'waiting'
+  };
+
+  if (!dsDemo.bulkBatches) dsDemo.bulkBatches = [];
+  dsDemo.bulkBatches.push(newBatch);
+
+  // Generate individual envelope records for each recipient
+  valid.forEach((r, idx) => {
+    const envId = 'ENV-' + DS_TODAY.slice(0, 4) + '-' + (9200 + dsSentSeq++);
+    const newEnv = {
+      id: envId,
+      subject: `${tmpl.name} — ${r.name}`,
+      type: tmpl.category || 'Real Estate',
+      sender: (dsDemo.user ? dsDemo.user.name : 'Alex Rivera') + ' (VA)',
+      status: 'waiting',
+      createdDate: DS_TODAY,
+      closingDate: '2026-09-15',
+      documents: tmpl.documents ? JSON.parse(JSON.stringify(tmpl.documents)) : [{ name: `${tmpl.name}.pdf`, pages: 2 }],
+      recipients: [
+        { id: 'wr1', name: r.name, email: r.email, role: r.role || 'Buyer', action: 'Needs to Sign', order: 1, status: 'sent' }
+      ],
+      fields: [
+        { id: 'f1', type: 'Signature', recipientId: 'wr1', page: 1, label: 'Signature', required: true }
+      ]
+    };
+    dsSetEnvelopeOverride(envId, newEnv);
+  });
+
+  dsCloseBulkWizard();
+  simToast(`Bulk Send dispatched! ${valid.length} envelopes created and queued.`, { tone: 'good', duration: 4500 });
+  dsGoto('bulk-send');
+}
+
 function dsBulkSendHTML() {
   const rows = dsBulkBatches().map(b => {
     const pct = Math.round(b.done / b.recips * 100);
@@ -1742,7 +1955,7 @@ function dsBulkSendHTML() {
   return `
     <div class="ds-pagehead">
       <h1 class="ds-page-title">Bulk Send</h1>
-      <button type="button" class="ds-btn primary" onclick="dsDemoAction('Creating a bulk send')">${dsIcon('plus', 15)} New Bulk Send</button>
+      <button type="button" class="ds-btn primary" onclick="dsOpenBulkSendWizard()">${dsIcon('plus', 15)} New Bulk Send</button>
     </div>
 
     <p class="ds-pagelede">Send one template to a list of recipients at once. Each recipient receives their own private envelope.</p>
@@ -1758,14 +1971,148 @@ function dsBulkSendHTML() {
     </table>`;
 }
 
-/* ---------- PowerForms ----------
-   Public self-service links generated from a template. Response counts are the
-   only invented numbers on this screen. */
+/* ---------- PowerForms (Phase D.2) ---------- */
+
 function dsPowerForms() {
   const byId = {};
   dsAllTemplates().forEach(t => { byId[t.id] = t; });
-  return DS_S_POWERFORMS.map(p =>
+  const base = DS_S_POWERFORMS.map(p =>
     Object.assign({ tmpl: (byId[p.tmplId] || {}).name || '—' }, p));
+  const custom = (dsDemo.powerforms || []).map(p =>
+    Object.assign({ tmpl: (byId[p.tmplId] || {}).name || '—' }, p));
+  return custom.concat(base);
+}
+
+function dsOpenNewPowerFormModal() {
+  const tmpls = dsAllTemplates();
+  const modal = document.createElement('div');
+  modal.id = 'dsPfModalWrap';
+  modal.className = 'ds-modal-backdrop';
+  modal.innerHTML = `
+    <div class="ds-modal-card ds-tpl-builder-card">
+      <div class="ds-modal-head">
+        <div>
+          <h3 class="ds-adopt-head-wrap">${dsIcon('zap')} Create New PowerForm</h3>
+          <div class="ds-audit-actor">Generate a public self-service URL allowing clients to initiate and sign on-demand</div>
+        </div>
+        <button type="button" class="ds-btn ds-cert-close-btn" onclick="document.getElementById('dsPfModalWrap').remove()">${dsIcon('x', 13)}</button>
+      </div>
+      <div class="ds-modal-body">
+        <div class="ds-tpl-builder-grid">
+          <div class="ds-tpl-builder-field">
+            <label>PowerForm Title *</label>
+            <input type="text" id="dsPfTitle" placeholder="e.g. Client Intake &amp; Disclosure Form" value="Client Intake Form">
+          </div>
+          <div class="ds-tpl-builder-field">
+            <label>Source Template *</label>
+            <select id="dsPfTmpl">
+              ${tmpls.map(t => `<option value="${escAttr(t.id)}">${esc(t.name)} (${esc(t.category)})</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="ds-tpl-builder-field">
+          <label>Signer Instructions (Displayed to visitor)</label>
+          <textarea rows="3" id="dsPfInstructions" placeholder="Enter instructions shown to signers before they access the agreement...">Please complete all required fields. Your information will be processed immediately by Keller Williams Realty.</textarea>
+        </div>
+      </div>
+      <div class="ds-modal-foot">
+        <button type="button" class="ds-btn" onclick="document.getElementById('dsPfModalWrap').remove()">Cancel</button>
+        <button type="button" class="ds-btn primary" onclick="dsSubmitNewPowerForm()">Create PowerForm</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function dsSubmitNewPowerForm() {
+  const title = (document.getElementById('dsPfTitle') || {}).value || '';
+  const tmplId = (document.getElementById('dsPfTmpl') || {}).value || '';
+  if (!title.trim()) {
+    simToast('PowerForm title is required.');
+    return;
+  }
+  const slug = 'pf_' + title.toLowerCase().replace(/[^a-z0-9]+/g, '_') + '_' + (100 + (dsDemo.powerforms || []).length);
+  if (!dsDemo.powerforms) dsDemo.powerforms = [];
+  dsDemo.powerforms.push({
+    name: title.trim(),
+    tmplId: tmplId,
+    slug: slug,
+    on: true,
+    responses: 0
+  });
+
+  const m = document.getElementById('dsPfModalWrap');
+  if (m) m.remove();
+  simToast(`PowerForm "${title.trim()}" created! Ready for self-service signing.`, { tone: 'good', duration: 4000 });
+  dsGoto('powerforms');
+}
+
+function dsOpenPowerFormSimulator(slug) {
+  const pf = dsPowerForms().find(p => p.slug === slug) || dsPowerForms()[0];
+  const modal = document.createElement('div');
+  modal.id = 'dsPfSimModalWrap';
+  modal.className = 'ds-modal-backdrop';
+  modal.innerHTML = `
+    <div class="ds-modal-card ds-role-match-card">
+      <div class="ds-modal-head">
+        <div>
+          <h3 class="ds-adopt-head-wrap">${dsIcon('zap')} PowerForm Signer Portal</h3>
+          <div class="ds-audit-actor">Public URL: <code>https://powerforms.docusign.net/${esc(pf.slug)}</code></div>
+        </div>
+        <button type="button" class="ds-btn ds-cert-close-btn" onclick="document.getElementById('dsPfSimModalWrap').remove()">${dsIcon('x', 13)}</button>
+      </div>
+      <div class="ds-modal-body">
+        <p class="ds-wiz-sub">This simulator demonstrates what an external client experiences when opening your PowerForm link.</p>
+        <div class="ds-role-match-row">
+          <div class="ds-role-match-head"><b>Signer Information</b></div>
+          <div class="ds-role-match-inputs">
+            <div>
+              <label>Full Name</label>
+              <input type="text" id="dsPfSimName" value="Samantha Wright" placeholder="Full name">
+            </div>
+            <div>
+              <label>Email Address</label>
+              <input type="email" id="dsPfSimEmail" value="samantha.w@client.example.com" placeholder="Email address">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ds-modal-foot">
+        <button type="button" class="ds-btn" onclick="document.getElementById('dsPfSimModalWrap').remove()">Cancel</button>
+        <button type="button" class="ds-btn yellow" onclick="dsLaunchPowerFormSigner('${escAttr(pf.slug)}')">Begin Signing →</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function dsLaunchPowerFormSigner(slug) {
+  const pf = dsPowerForms().find(p => p.slug === slug) || dsPowerForms()[0];
+  const name = (document.getElementById('dsPfSimName') || {}).value || 'Signer';
+  const email = (document.getElementById('dsPfSimEmail') || {}).value || 'signer@example.com';
+  pf.responses = (pf.responses || 0) + 1;
+
+  const envId = 'ENV-' + DS_TODAY.slice(0, 4) + '-' + (9300 + dsSentSeq++);
+  const newEnv = {
+    id: envId,
+    subject: `PowerForm: ${pf.name} — ${name}`,
+    type: 'Self-Service PowerForm',
+    sender: 'PowerForm Self-Service',
+    status: 'waiting',
+    createdDate: DS_TODAY,
+    closingDate: '2026-09-15',
+    documents: [{ name: `${pf.name}.pdf`, pages: 2 }],
+    recipients: [
+      { id: 'wr1', name: name, email: email, role: 'Signer', action: 'Needs to Sign', order: 1, status: 'sent' }
+    ],
+    fields: [
+      { id: 'f1', type: 'Signature', recipientId: 'wr1', page: 1, label: 'Signature', required: true }
+    ]
+  };
+  dsSetEnvelopeOverride(envId, newEnv);
+
+  const m = document.getElementById('dsPfSimModalWrap');
+  if (m) m.remove();
+  simToast(`Initiated signing session for ${name}!`, { tone: 'good' });
+  dsSimulateSigner(envId);
 }
 
 function dsPowerFormsHTML() {
@@ -1781,14 +2128,14 @@ function dsPowerFormsHTML() {
       <div class="ds-pf-foot">
         <span class="ds-pf-count">${p.responses} responses</span>
         <button type="button" class="ds-btn sm" onclick="dsCopyLink('https://powerforms.docusign.net/${escAttr(p.slug)}')">${dsIcon('copy', 14)} Copy Link</button>
-        <button type="button" class="ds-btn sm" onclick="dsDemoAction('Viewing PowerForm responses')">${dsIcon('eye', 14)} View Responses</button>
+        <button type="button" class="ds-btn primary sm" onclick="dsOpenPowerFormSimulator('${escAttr(p.slug)}')">${dsIcon('eye', 14)} Test PowerForm</button>
       </div>
     </div>`).join('');
 
   return `
     <div class="ds-pagehead">
       <h1 class="ds-page-title">PowerForms</h1>
-      <button type="button" class="ds-btn primary" onclick="dsDemoAction('Creating a PowerForm')">${dsIcon('plus', 15)} New PowerForm</button>
+      <button type="button" class="ds-btn primary" onclick="dsOpenNewPowerFormModal()">${dsIcon('plus', 15)} New PowerForm</button>
     </div>
 
     <p class="ds-pagelede">A PowerForm turns a template into a public link. Anyone with the link fills it in and signs it, and the completed envelope arrives in your account — no invitation needed.</p>
@@ -1986,6 +2333,14 @@ function dsRecipientProblems() {
     seen[key] = true;
     const bad = dsSuspiciousDomain(email);
     if (bad) out.warnings[r.id] = 'Did you mean a different domain? "' + bad + '" is a common typo — check before sending.';
+    if (r.action === 'Witness' && !r.witnessFor) {
+      out.blocking[r.id] = 'Select which signer this witness is assigned to.';
+      out.count++;
+      return;
+    }
+    if (r.accessCode && r.accessCode.trim().length > 0 && r.accessCode.trim().length < 6) {
+      out.warnings[r.id] = 'Access code should be at least 6 characters.';
+    }
   });
   return out;
 }
@@ -2041,28 +2396,55 @@ function dsShowSampleDocs() {
   }
 }
 
+/* Attaching a document attaches a document.
+
+   It used to do considerably more: it rewrote the subject with a hard-coded
+   "— 123 Main Street", and injected John Smith, Sarah Johnson and four fields
+   into an envelope the visitor had built themselves. Attach a PDF, and two
+   strangers appeared on your envelope.
+
+   That cast is lesson scaffolding, and lessons and the product are separate
+   things. The prefill now happens only while the course is running — the same
+   dsTrainingActive() seam that decides whether an action grades — so a visitor
+   exploring the wizard gets exactly what they asked for, and a trainee still
+   lands on a workable envelope without typing two recipients by hand first. */
 function dsAttachDoc(name, pages) {
   dsMark('ds_c1_2');
-  const exists = dsState.wizardData.documents.find(d => d.name === name);
-  if (!exists) {
-    dsState.wizardData.documents.push({ name, pages });
+
+  if (!dsState.wizardData.documents.some(d => d.name === name)) {
+    dsState.wizardData.documents.push({ name: name, pages: pages });
   }
-  if (!dsState.wizardData.subject || !dsState.wizardData.subject.trim()) {
-    dsState.wizardData.subject = name.replace(/\.pdf$/i, '').replace(/_/g, ' ') + ' — 123 Main Street';
+
+  /* Defaulting the subject to the document name is real Docusign behaviour, so
+     it stays — but it is the document's name, not an address from a lesson. */
+  if (!(dsState.wizardData.subject || '').trim()) {
+    dsState.wizardData.subject =
+      ('Please Docusign: ' + name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ')).slice(0, DS_SUBJECT_MAX);
   }
-  if (!dsState.wizardData.recipients || !dsState.wizardData.recipients.length || !dsState.wizardData.recipients[0].name) {
-    dsState.wizardData.recipients = [
-      { id: 'wr1', name: 'John Smith', email: 'john.smith@gmail.com', role: 'Buyer', action: 'Needs to Sign', order: 1 },
-      { id: 'wr2', name: 'Sarah Johnson', email: 'sarah.j@realty.com', role: 'Seller', action: 'Needs to Sign', order: 2 }
-    ];
-    dsState.wizardData.fields = [
-      { id: 'wf1', type: 'Signature', recipientId: 'wr1', label: 'Buyer Signature', required: true },
-      { id: 'wf2', type: 'Date Signed', recipientId: 'wr1', label: 'Buyer Date', required: true },
-      { id: 'wf3', type: 'Signature', recipientId: 'wr2', label: 'Seller Signature', required: true },
-      { id: 'wf4', type: 'Date Signed', recipientId: 'wr2', label: 'Seller Date', required: true }
-    ];
-  }
+
+  if (dsTrainingActive()) dsSeedLessonEnvelope();
   dsRenderRoot();
+}
+
+/* The worked example the course builds on: a buyer, a seller, and the four
+   fields a purchase agreement needs. Only ever called from inside a lesson, and
+   only when the envelope is still empty — it must never overwrite work in
+   progress. */
+function dsSeedLessonEnvelope() {
+  const recs = dsState.wizardData.recipients || [];
+  const untouched = !recs.length || (recs.length === 1 && !(recs[0].name || '').trim() && !(recs[0].email || '').trim());
+  if (!untouched) return;
+
+  dsState.wizardData.recipients = [
+    { id: 'wr1', name: 'John Smith', email: 'john.smith@gmail.com', role: 'Buyer', action: 'Needs to Sign', order: 1 },
+    { id: 'wr2', name: 'Sarah Johnson', email: 'sarah.j@realty.com', role: 'Seller', action: 'Needs to Sign', order: 2 }
+  ];
+  dsState.wizardData.fields = [
+    { id: 'wf1', type: 'Signature',   recipientId: 'wr1', label: 'John Smith Signature',   required: true, validation: 'None (standard text)' },
+    { id: 'wf2', type: 'Date Signed', recipientId: 'wr1', label: 'John Smith Date Signed', required: true, validation: 'None (standard text)' },
+    { id: 'wf3', type: 'Signature',   recipientId: 'wr2', label: 'Sarah Johnson Signature',   required: true, validation: 'None (standard text)' },
+    { id: 'wf4', type: 'Date Signed', recipientId: 'wr2', label: 'Sarah Johnson Date Signed', required: true, validation: 'None (standard text)' }
+  ];
 }
 
 /* ---------- File attachment ----------
@@ -2156,6 +2538,13 @@ function dsRemoveDocNow(name) {
   dsRenderRoot();
 }
 
+function dsToggleRecipAdv(id) {
+  const r = (dsState.wizardData.recipients || []).find(x => x.id === id);
+  if (!r) return;
+  r.advOpen = !r.advOpen;
+  dsRenderRoot();
+}
+
 function dsWizardStep2HTML() {
   const recs = dsState.wizardData.recipients;
 
@@ -2163,17 +2552,32 @@ function dsWizardStep2HTML() {
      flag both rows involved rather than only the second one. */
   const probs = dsRecipientProblems();
 
-  const ACTIONS = ['Needs to Sign', 'Needs to View', 'Receives a Copy',
-                   'Needs to Sign in Person', 'Specify Recipients'];
+  const ACTIONS = [
+    'Needs to Sign',
+    'Needs to Sign in Person',
+    'Receives a Copy',
+    'Needs to View',
+    'Specify Recipients',
+    'Allow to Edit',
+    'Witness'
+  ];
+
+  const idvEnabled = !!(dsDemo.settings && dsDemo.settings.idvEnabled);
 
   const rows = recs.map((r, i) => {
     const err = probs.blocking[r.id];
     const warn = probs.warnings[r.id];
+    const isCC = r.action === 'Receives a Copy';
+    const isWitness = r.action === 'Witness';
+    const otherSigners = recs.filter(x => x.id !== r.id && dsRecipientSigns(x));
+    const hasAdvConfig = !!(r.accessCode || r.smsAuth || r.idv || r.privateMessage || (isWitness && r.witnessFor));
+
     /* Any role already on the recipient is kept as an option even if it is not
        in the canonical list — switching this control from a free-text box to a
        dropdown must not silently drop a value somebody already typed. */
     const roles = DS_RECIPIENT_ROLES.indexOf(r.role) > -1 || !r.role
       ? DS_RECIPIENT_ROLES : [r.role].concat(DS_RECIPIENT_ROLES);
+
     return `
     <div class="ds-wr${err ? ' bad' : warn ? ' warn' : ''}" id="dsWr-${escAttr(r.id)}">
       <div class="ds-wr-order">
@@ -2206,7 +2610,60 @@ function dsWizardStep2HTML() {
           ${ACTIONS.map(a => `<option value="${escAttr(a)}" ${r.action === a ? 'selected' : ''}>${esc(a)}</option>`).join('')}
         </select>
       </div>
+      <button type="button" class="ds-btn sm ds-wr-adv-btn" onclick="dsToggleRecipAdv('${r.id}')" title="Advanced recipient settings">
+        Advanced ${r.advOpen ? '▴' : '▾'}${hasAdvConfig ? '<span class="ds-adv-dot"></span>' : ''}
+      </button>
       <button type="button" class="ds-btn sm danger ds-wr-del" onclick="dsRemoveRecipient('${r.id}')" title="Remove recipient">${dsIcon('x', 12)}</button>
+
+      ${r.advOpen ? `
+        <div class="ds-wr-adv" id="dsWrAdv-${escAttr(r.id)}">
+          <div class="ds-wr-adv-head">
+            <b>${dsIcon('lock', 12)} Advanced Recipient Settings</b>
+            ${isCC ? '<span class="ds-recip-subnote">Receives a Copy (CC) recipients do not authenticate or receive private messages.</span>' : ''}
+          </div>
+          ${isWitness ? `
+            <div class="ds-wr-adv-row">
+              <label>Witness For (Signer)</label>
+              <select onchange="dsUpdateRecipient('${r.id}','witnessFor',this.value)">
+                <option value="">Select signer to witness…</option>
+                ${otherSigners.map(os => `<option value="${escAttr(os.id)}" ${r.witnessFor === os.id ? 'selected' : ''}>${esc(os.name || os.role || os.id)} (${esc(os.email)})</option>`).join('')}
+              </select>
+            </div>` : ''}
+          <div class="ds-wr-adv-grid">
+            <div class="ds-wr-adv-col">
+              <label>Access Code</label>
+              <input type="text" placeholder="Min. 6 characters" value="${escAttr(r.accessCode || '')}"
+                     ${isCC || r.smsAuth ? 'disabled' : ''}
+                     title="${r.smsAuth ? 'Access Code and SMS Auth are mutually exclusive' : isCC ? 'Not applicable to CC' : 'Signer must enter this code before viewing document'}"
+                     oninput="dsUpdateRecipient('${r.id}','accessCode',this.value)">
+              <span class="ds-recip-subnote">Signer enters code before viewing</span>
+            </div>
+            <div class="ds-wr-adv-col">
+              <label>SMS Authentication</label>
+              <input type="tel" placeholder="(555) 000-0000" value="${escAttr(r.smsAuth || '')}"
+                     ${isCC || r.accessCode ? 'disabled' : ''}
+                     title="${r.accessCode ? 'Access Code and SMS Auth are mutually exclusive' : isCC ? 'Not applicable to CC' : 'One-time passcode sent via SMS'}"
+                     oninput="dsUpdateRecipient('${r.id}','smsAuth',this.value)">
+              <span class="ds-recip-subnote">One-time passcode sent via SMS</span>
+            </div>
+            <div class="ds-wr-adv-col">
+              <label>ID Verification</label>
+              <label class="ds-switch-label">
+                <input type="checkbox" ${isCC || !idvEnabled ? 'disabled' : ''} ${r.idv ? 'checked' : ''}
+                       onchange="dsUpdateRecipient('${r.id}','idv',this.checked)">
+                <span>Require Gov ID / Passport</span>
+              </label>
+              <span class="ds-recip-subnote">${!idvEnabled ? 'Disabled: Enable in Settings → Identity Verification' : 'Verified by DocuSign IDV'}</span>
+            </div>
+          </div>
+          <div class="ds-wr-adv-row">
+            <label>Private Message (Visible only to this recipient)</label>
+            <textarea rows="2" maxlength="1000" placeholder="Add a private note for this recipient only..."
+                      ${isCC ? 'disabled' : ''}
+                      oninput="dsUpdateRecipient('${r.id}','privateMessage',this.value)">${esc(r.privateMessage || '')}</textarea>
+          </div>
+        </div>` : ''}
+
       <p class="ds-wr-msg${err ? ' bad' : warn ? ' warn' : ''}" id="dsWrMsg-${escAttr(r.id)}">${err || warn ? dsIcon('alert', 13) + esc(err || warn) : ''}</p>
     </div>`;
   }).join('');
@@ -2344,180 +2801,197 @@ function dsToggleSequential(val) {
   dsRenderRoot();
 }
 
+/* ============================================================================
+   STEP 3 — PLACE AND ASSIGN FIELDS
+   ============================================================================ */
+
+const DS_FIELD_TYPES = [
+  { type: 'Signature',     icon: 'pen',         signing: true },
+  { type: 'Initial',       icon: 'edit',        signing: true },
+  { type: 'Date Signed',   icon: 'calendar' },
+  { type: 'Name',          icon: 'user' },
+  { type: 'Email Address', icon: 'mail' },
+  { type: 'Company',       icon: 'building' },
+  { type: 'Title',         icon: 'briefcase' },
+  { type: 'Text',          icon: 'type' },
+  { type: 'Checkbox',      icon: 'checkSquare' },
+  { type: 'Dropdown',      icon: 'caret' },
+  { type: 'Radio',         icon: 'checkCircle' },
+  { type: 'Note',          icon: 'fileText' },
+  { type: 'Attachment',    icon: 'download' }
+];
+const DS_SIGNING_TYPES = DS_FIELD_TYPES.filter(f => f.signing).map(f => f.type);
+
+/* Recipients who are expected to fill something in. A CC cannot complete a
+   field, so assigning one to them is an error the audit reports. */
+function dsRecipientSigns(r) {
+  return r.action === 'Needs to Sign' || r.action === 'Needs to Sign in Person' || r.action === 'Witness';
+}
+
+/* Colour index per recipient, by position. Docusign colour-codes fields by
+   signer; deriving it from the index means it works for any number of
+   recipients instead of assuming exactly a buyer and a seller. */
+function dsRecipColor(recipId) {
+  const recs = dsState.wizardData.recipients || [];
+  const i = recs.findIndex(r => r.id === recipId);
+  return 'c' + ((i < 0 ? 0 : i) % 6);
+}
+
 function dsWizardStep3HTML() {
   const recs = dsState.wizardData.recipients || [];
   const fields = dsState.wizardData.fields || [];
-  const activeRecipId = dsState.activeCanvasRecipId || (recs[0] ? recs[0].id : 'wr1');
-  const selectedField = fields.find(f => f.id === dsState.selectedCanvasFieldId) || fields[0];
+  const docs = dsState.wizardData.documents || [];
+  const activeRecipId = dsState.activeCanvasRecipId && recs.some(r => r.id === dsState.activeCanvasRecipId)
+    ? dsState.activeCanvasRecipId
+    : (recs[0] ? recs[0].id : null);
+  const activeRecip = recs.find(r => r.id === activeRecipId) || recs[0] || null;
+  const selectedField = fields.find(f => f.id === dsState.selectedCanvasFieldId) || null;
 
-  // Render recipient options for field assignment
-  function recipOptions(currentRecipId) {
-    return recs.map(r =>
-      `<option value="${escAttr(r.id)}" ${r.id === currentRecipId ? 'selected' : ''}>${esc(r.name || r.role || r.id)} (${esc(r.role || 'Signer')}, Order ${r.order})</option>`
-    ).join('');
-  }
+  const recipLabel = r => (r.name || r.role || 'Unnamed recipient');
+  const recipOptions = current => recs.map(r =>
+    `<option value="${escAttr(r.id)}" ${r.id === current ? 'selected' : ''}>${esc(recipLabel(r))} (${esc(r.role || 'No role')}, order ${r.order})</option>`
+  ).join('');
 
-  const activeRecip = recs.find(r => r.id === activeRecipId) || recs[0] || { name: 'Signer 1', role: 'Buyer' };
-  const isBuyer = /buyer|john/i.test(activeRecip.role || activeRecip.name);
+  /* The page header reflects the document that is actually attached. */
+  const docName = docs.length ? docs[0].name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ') : 'Untitled document';
+
+  const fieldRows = fields.map(f => {
+    const r = recs.find(x => x.id === f.recipientId);
+    const orphan = !r;
+    const cc = r && !dsRecipientSigns(r);
+    return `
+      <div class="ds-fld ${dsRecipColor(f.recipientId)}${f.id === dsState.selectedCanvasFieldId ? ' on' : ''}${orphan || cc ? ' bad' : ''}"
+           onclick="dsSelectCanvasField('${escAttr(f.id)}')">
+        <span class="ds-fld-type">${dsIcon(dsFieldIcon(f.type), 14)}${esc(f.label || f.type)}</span>
+        <select class="ds-fld-who" onclick="event.stopPropagation();" onchange="dsUpdateFieldRecipient('${escAttr(f.id)}', this.value)">
+          ${recipOptions(f.recipientId)}
+        </select>
+        <span class="ds-fld-req">${f.required ? 'Required' : 'Optional'}</span>
+        <button type="button" class="ds-fld-del" title="Remove field"
+                onclick="event.stopPropagation();dsDeleteCanvasField('${escAttr(f.id)}')">${dsIcon('x', 12)}</button>
+      </div>`;
+  }).join('');
 
   return `
     <div class="ds-panel">
       <div class="ds-step3-head">
         <div>
-          <h4 class="ds-step3-title">Step 3 — Place & Assign Fields on Document</h4>
-          <p class="ds-step3-sub">Click standard DocuSign fields to place them on the document. Fields are color-coded by signer.</p>
+          <h4 class="ds-step3-title">Step 3 — Place &amp; Assign Fields</h4>
+          <p class="ds-step3-sub">Choose a signer, then click a field type to place it. Every field belongs to exactly one recipient, and its colour tells you which.</p>
         </div>
         <div class="ds-step3-signer-ctrl">
-          <label class="ds-step3-label">Active Signer:</label>
-          <select class="ds-select ds-step3-select" onchange="dsSetActiveCanvasRecip(this.value)">
-            ${recs.map(r => `<option value="${escAttr(r.id)}" ${r.id === activeRecipId ? 'selected' : ''}>${esc(r.name || r.role)} (${esc(r.role)})</option>`).join('')}
+          <label class="ds-step3-label" for="dsActiveSigner">Placing fields for</label>
+          <select class="ds-select ds-step3-select" id="dsActiveSigner" onchange="dsSetActiveCanvasRecip(this.value)">
+            ${recs.map(r => `<option value="${escAttr(r.id)}" ${r.id === activeRecipId ? 'selected' : ''}>${esc(recipLabel(r))}${dsRecipientSigns(r) ? '' : ' — cannot sign'}</option>`).join('')}
           </select>
-          <button type="button" class="ds-btn danger" id="dsBtnAuditFields" onclick="dsAuditFields()" title="Check for misassigned signatures">${dsIcon('alert', 14)} Audit Assignments</button>
+          <button type="button" class="ds-btn danger" id="dsBtnAuditFields" onclick="dsAuditFields()" title="Check every field is assigned to someone who can complete it">${dsIcon('alert', 14)} Audit Assignments</button>
         </div>
       </div>
 
       <div class="ds-canvas-workspace">
-        <!-- Left: Standard Fields Palette -->
         <div class="ds-tag-palette">
           <div class="ds-palette-head">Standard Fields</div>
-          <button type="button" class="ds-palette-btn sig" id="dsBtnAddField" onclick="dsAddCustomCanvasField('Signature')">
-            <span>${dsIcon('pen')}</span> Signature
-          </button>
-          <button type="button" class="ds-palette-btn sig" onclick="dsAddCustomCanvasField('Initial')">
-            <span>${dsIcon('edit')}</span> Initial
-          </button>
-          <button type="button" class="ds-palette-btn" onclick="dsAddCustomCanvasField('Date Signed')">
-            <span>${dsIcon('calendar')}</span> Date Signed
-          </button>
-          <button type="button" class="ds-palette-btn" onclick="dsAddCustomCanvasField('Name')">
-            <span>${dsIcon('type')}</span> Name
-          </button>
-          <button type="button" class="ds-palette-btn" onclick="dsAddCustomCanvasField('Email Address')">
-            <span>${dsIcon('mail')}</span> Email Address
-          </button>
-          <button type="button" class="ds-palette-btn" onclick="dsAddCustomCanvasField('Text')">
-            <span>${dsIcon('type')}</span> Text Box
-          </button>
-          <button type="button" class="ds-palette-btn" onclick="dsAddCustomCanvasField('Checkbox')">
-            <span>${dsIcon('checkSquare')}</span> Checkbox
-          </button>
+          ${DS_FIELD_TYPES.map((ft, i) => `
+            <button type="button" class="ds-palette-btn${ft.signing ? ' sig' : ''}"
+                    ${i === 0 ? 'id="dsBtnAddField"' : ''}
+                    ${activeRecip ? '' : 'disabled'}
+                    onclick="dsAddCustomCanvasField('${escAttr(ft.type)}')">
+              <span>${dsIcon(ft.icon)}</span> ${esc(ft.type)}
+            </button>`).join('')}
           <div class="ds-palette-tip">
-            ${dsIcon('bulb', 13)} Click any field above to place it for <b>${esc(activeRecip.name || activeRecip.role)}</b>.
+            ${activeRecip
+              ? `${dsIcon('bulb', 13)} Fields are placed for <b>${esc(recipLabel(activeRecip))}</b>. Change the signer above to place fields for someone else.`
+              : `${dsIcon('alert', 13)} Add a recipient in step 2 before placing fields.`}
           </div>
         </div>
 
-        <!-- Center: Document Canvas -->
         <div class="ds-doc-canvas">
           <div class="ds-doc-page">
             <div class="ds-doc-letterhead">
-              <h2 class="ds-doc-title">REAL ESTATE PURCHASE AGREEMENT</h2>
-              <div class="ds-doc-sub">Standard Residential Contract &middot; State of Texas</div>
+              <h2 class="ds-doc-title">${esc(docName)}</h2>
+              <div class="ds-doc-sub">${esc(dsState.wizardData.subject || 'No subject set')}</div>
             </div>
+
             <p class="ds-doc-text">
-              This Agreement is entered into between <b>Buyer (John Smith)</b> and <b>Seller (Sarah Johnson)</b> for the real property located at:
-              <br><b class="ds-doc-text-bold">123 Main Street, Austin, TX 78701</b>
+              This agreement is between
+              ${recs.length
+                ? recs.map(r => `<b>${esc(recipLabel(r))}</b>${r.role ? ' (' + esc(r.role) + ')' : ''}`).join(' and ')
+                : '<b>no recipients yet</b>'}.
             </p>
             <p class="ds-doc-clause">
-              <b>1. Purchase Price & Financing:</b> Buyer agrees to purchase property for the sum of $450,000 with earnest money deposit of $5,000 delivered to Escrow within 3 business days of execution.
+              ${docs.length
+                ? esc(docs.map(d => d.name).join(', ')) + ' &mdash; the document a recipient will see here.'
+                : 'No document attached. Go back to step 1 and attach one.'}
             </p>
 
-            <div class="ds-sig-block-wrap">
-              <div class="ds-sig-block-title">Buyer Signature Block</div>
-              <div class="ds-field-slot assigned-buyer ds-sig-slot-row" onclick="dsSelectCanvasField('wf1')">
-                <span>${dsIcon('pen', 14)} Signature Field — Buyer</span>
-                <div class="ds-sig-slot-ctrls">
-                  <select class="ds-sig-select" onchange="dsUpdateFieldRecipient('wf1', this.value)">
-                    ${recipOptions(fields.find(f => f.id === 'wf1')?.recipientId || recs[0]?.id)}
-                  </select>
-                  <span class="ds-badge completed ds-sig-badge">Required</span>
-                </div>
+            <div class="ds-fld-area">
+              <div class="ds-fld-area-head">
+                Placed fields <span>${fields.length}</span>
               </div>
-              <div class="ds-field-slot assigned-buyer ds-sig-slot-row" onclick="dsSelectCanvasField('wf2')">
-                <span>${dsIcon('calendar', 14)} Date Signed — Buyer</span>
-                <div class="ds-sig-slot-ctrls">
-                  <select class="ds-sig-select" onchange="dsUpdateFieldRecipient('wf2', this.value)">
-                    ${recipOptions(fields.find(f => f.id === 'wf2')?.recipientId || recs[0]?.id)}
-                  </select>
-                  <span class="ds-badge completed ds-sig-badge">Required</span>
-                </div>
-              </div>
+              ${fields.length ? fieldRows : `
+                <div class="ds-fld-empty">
+                  ${dsIcon('pen', 30)}
+                  <b>No fields placed yet</b>
+                  <span>Pick a field type on the left. Without at least one signature field, nobody can sign this envelope.</span>
+                </div>`}
             </div>
-
-            <div class="ds-sig-block-wrap">
-              <div class="ds-sig-block-title">Seller Signature Block</div>
-              <div class="ds-field-slot assigned-seller ds-sig-slot-row" onclick="dsSelectCanvasField('wf3')">
-                <span>${dsIcon('pen', 14)} Signature Field — Seller</span>
-                <div class="ds-sig-slot-ctrls">
-                  <select class="ds-sig-select" onchange="dsUpdateFieldRecipient('wf3', this.value)">
-                    ${recipOptions(fields.find(f => f.id === 'wf3')?.recipientId || recs[1]?.id || recs[0]?.id)}
-                  </select>
-                  <span class="ds-badge completed ds-sig-badge">Required</span>
-                </div>
-              </div>
-              <div class="ds-field-slot assigned-seller ds-sig-slot-row" onclick="dsSelectCanvasField('wf4')">
-                <span>${dsIcon('calendar', 14)} Date Signed — Seller</span>
-                <div class="ds-sig-slot-ctrls">
-                  <select class="ds-sig-select" onchange="dsUpdateFieldRecipient('wf4', this.value)">
-                    ${recipOptions(fields.find(f => f.id === 'wf4')?.recipientId || recs[1]?.id || recs[0]?.id)}
-                  </select>
-                  <span class="ds-badge completed ds-sig-badge">Required</span>
-                </div>
-              </div>
-            </div>
-
-            ${fields.filter(f => !['wf1','wf2','wf3','wf4'].includes(f.id)).map(f => {
-              const r = recs.find(x => x.id === f.recipientId) || recs[0] || {};
-              const isBuyerF = /buyer|john/i.test(r.role || r.name);
-              return `
-                <div class="ds-field-slot ${isBuyerF ? 'assigned-buyer' : 'assigned-seller'} ds-sig-slot-row" onclick="dsSelectCanvasField('${escAttr(f.id)}')">
-                  <span>${dsIcon('pin', 13)} ${esc(f.label || f.type)} (${esc(r.name || r.role)})</span>
-                  <button type="button" class="ds-delete-field-btn" onclick="dsDeleteCanvasField('${escAttr(f.id)}')">${dsIcon('x', 12)}</button>
-                </div>`;
-            }).join('')}
           </div>
         </div>
 
-        <!-- Right: Properties Inspector Pane -->
         <div class="ds-props-pane">
           <div class="ds-props-head">Field Properties</div>
           ${selectedField ? `
             <div class="ds-prop-row">
-              <label class="ds-prop-label">Field Label / Type</label>
-              <input type="text" class="ds-input ds-prop-input" value="${escAttr(selectedField.label || selectedField.type)}" oninput="dsUpdateSelectedFieldLabel(this.value)">
+              <label class="ds-prop-label" for="dsPropLabel">Field label</label>
+              <input type="text" class="ds-input ds-prop-input" id="dsPropLabel"
+                     value="${escAttr(selectedField.label || selectedField.type)}"
+                     oninput="dsUpdateSelectedFieldLabel(this.value)">
             </div>
             <div class="ds-prop-row">
-              <label class="ds-prop-label">Assigned Recipient</label>
-              <select class="ds-select ds-prop-select" onchange="dsUpdateFieldRecipient('${escAttr(selectedField.id)}', this.value)">
+              <label class="ds-prop-label" for="dsPropRecip">Assigned recipient</label>
+              <select class="ds-select ds-prop-select" id="dsPropRecip"
+                      onchange="dsUpdateFieldRecipient('${escAttr(selectedField.id)}', this.value)">
                 ${recipOptions(selectedField.recipientId)}
               </select>
             </div>
             <div class="ds-prop-row-chk">
-              <input type="checkbox" id="chkPropReq" ${selectedField.required ? 'checked' : ''} onchange="dsToggleSelectedFieldRequired(this.checked)">
-              <label for="chkPropReq" class="ds-prop-chk-label">Required Field</label>
+              <input type="checkbox" id="chkPropReq" ${selectedField.required ? 'checked' : ''}
+                     onchange="dsToggleSelectedFieldRequired(this.checked)">
+              <label for="chkPropReq" class="ds-prop-chk-label">Required field</label>
             </div>
             <div class="ds-prop-row">
-              <label class="ds-prop-label">Validation Format</label>
-              <select class="ds-select ds-prop-select">
-                <option>None (Standard Text)</option>
-                <option>Numbers Only (0-9)</option>
-                <option>Currency Format ($ USD)</option>
-                <option>Date (MM/DD/YYYY)</option>
-                <option>SSN Mask (***-**-****)</option>
+              <label class="ds-prop-label" for="dsPropValidation">Validation format</label>
+              <select class="ds-select ds-prop-select" id="dsPropValidation"
+                      onchange="dsUpdateSelectedFieldValidation(this.value)">
+                ${['None (standard text)', 'Numbers only (0-9)', 'Currency ($ USD)', 'Date (MM/DD/YYYY)', 'SSN mask (***-**-****)', 'Email address', 'ZIP code']
+                  .map(v => `<option ${selectedField.validation === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}
               </select>
             </div>
+            <button type="button" class="ds-btn sm danger ds-prop-del" onclick="dsDeleteCanvasField('${escAttr(selectedField.id)}')">
+              ${dsIcon('trash', 13)} Remove this field
+            </button>
           ` : `
-            <p class="ds-empty-p">Select a field on the canvas to inspect and edit its properties.</p>
+            <p class="ds-empty-p">Select a field on the canvas to edit its label, its owner, and whether it is required.</p>
           `}
         </div>
       </div>
 
       <div class="ds-step3-foot">
-        <button type="button" class="ds-btn" onclick="dsNextWizardStep(2)">← Back</button>
-        <button type="button" class="ds-btn primary" id="dsBtnNextReview" onclick="dsNextWizardStep(4)">Next: Review & Send →</button>
+        <button type="button" class="ds-btn" onclick="dsNextWizardStep(2)">&larr; Back</button>
+        <button type="button" class="ds-btn primary" id="dsBtnNextReview" onclick="dsNextWizardStep(4)">Next: Review &amp; Send &rarr;</button>
       </div>
     </div>`;
 }
 
+function dsFieldIcon(type) {
+  const f = DS_FIELD_TYPES.find(x => x.type === type);
+  return f ? f.icon : 'pin';
+}
+
+function dsUpdateSelectedFieldValidation(v) {
+  const f = (dsState.wizardData.fields || []).find(x => x.id === dsState.selectedCanvasFieldId);
+  if (f) f.validation = v;
+}
 
 function dsSetActiveCanvasRecip(recipId) {
   dsState.activeCanvasRecipId = recipId;
@@ -2536,8 +3010,9 @@ function dsAddCustomCanvasField(type) {
     id: newId,
     type: type,
     recipientId: recipId,
-    label: `${type} Field`,
-    required: true
+    label: dsFieldLabel(type, recipId),
+    required: true,
+    validation: 'None (standard text)'
   };
   dsState.wizardData.fields.push(newField);
   dsState.selectedCanvasFieldId = newId;
@@ -2552,23 +3027,34 @@ function dsDeleteCanvasField(fieldId) {
 }
 function dsUpdateSelectedFieldLabel(lbl) {
   const f = dsState.wizardData.fields.find(x => x.id === dsState.selectedCanvasFieldId);
-  if (f) f.label = lbl;
+  if (!f) return;
+  f.label = lbl;
+  /* Once it has been named by hand, reassigning the field must not silently
+     rewrite that name. */
+  f.customLabel = true;
 }
 /* Reassigns a placed field to a different recipient. Five selects in step 3 have
    been calling this since the wizard was written and it was never defined, so
    changing the owner of a signature field threw a ReferenceError and did
    nothing. It matters more than it looks: reassigning a field is exactly the
    mistake dsAuditFields() is meant to catch in Lesson 3. */
+/* "<owner> <type>", e.g. "Sarah Johnson Signature". Naming the owner in the
+   label is what makes a mis-assigned field obvious on the canvas itself. */
+function dsFieldLabel(type, recipId) {
+  const r = (dsState.wizardData.recipients || []).find(x => x.id === recipId);
+  const who = r ? (r.name || r.role || '') : '';
+  return (who ? who + ' ' : '') + type;
+}
+
 function dsUpdateFieldRecipient(fieldId, recipientId) {
   const f = (dsState.wizardData.fields || []).find(x => x.id === fieldId);
   if (!f) return;
   f.recipientId = recipientId;
-  const r = (dsState.wizardData.recipients || []).find(x => x.id === recipientId);
-  if (r) {
-    /* Keep the label honest — a field labelled "Buyer Signature" that now belongs
-       to the seller is the confusing half of this bug. */
-    f.label = String(f.label || f.type).replace(/^[^ ]+ /, (r.role || r.name.split(" ")[0]) + " ");
-  }
+  /* Rebuild the label from type + new owner rather than doing string surgery on
+     the old one. The previous version replaced the first word, so "Signature
+     Field" became "Buyer Field" and the field type was lost. A label somebody
+     typed themselves is never touched. */
+  if (!f.customLabel) f.label = dsFieldLabel(f.type, recipientId);
   dsRenderRoot();
 }
 
@@ -2581,37 +3067,104 @@ function dsAddField() {
   dsAddCustomCanvasField('Signature');
 }
 function dsAuditFields() {
-  /* B-4/B-8: was a single alert that always said "passed". Now checks fields. */
-  const fields = dsState.wizardData.fields;
-  const recs = dsState.wizardData.recipients;
-  const errors = [];
+  /* Checks four things that would each stop a real envelope from working. The
+     previous version only compared two hard-coded field ids against a hard-coded
+     buyer and seller — and once those ids stopped existing it found nothing to
+     check and passed every time, including with zero fields placed.
 
-  // Check that all required fields are assigned
-  const buyerRecip = recs.find(r => /buyer/i.test(r.role) || /john/i.test(r.name)) || recs[0];
-  const sellerRecip = recs.find(r => /seller/i.test(r.role) || /sarah/i.test(r.name)) || recs[1];
+     Nothing here is hard-coded. Every rule is derived from the recipients and
+     the fields that are actually on the envelope. */
+  const fields = dsState.wizardData.fields || [];
+  const recs = dsState.wizardData.recipients || [];
+  const problems = [];
+  const label = r => (r.name || r.role || 'a recipient');
 
-  const f1 = fields.find(f => f.id === 'wf1');
-  const f3 = fields.find(f => f.id === 'wf3');
-
-  if (buyerRecip && f1 && f1.recipientId !== buyerRecip.id) {
-    errors.push(`Buyer signature is assigned to ${recs.find(r => r.id === f1.recipientId)?.name || 'the wrong recipient'}.`);
-  }
-  if (sellerRecip && f3 && f3.recipientId !== sellerRecip.id) {
-    errors.push(`Seller signature is assigned to ${recs.find(r => r.id === f3.recipientId)?.name || 'the wrong recipient'}.`);
+  /* 1. An envelope with no fields cannot be signed by anyone. */
+  if (!fields.length) {
+    problems.push('No fields have been placed. Nobody can sign this envelope.');
   }
 
-  if (errors.length === 0) {
+  /* 2. A field pointing at a recipient who is no longer on the envelope —
+        usually the result of deleting a recipient in step 2 after tagging. */
+  fields.forEach(f => {
+    if (!recs.some(r => r.id === f.recipientId)) {
+      problems.push('"' + (f.label || f.type) + '" is not assigned to anyone on this envelope.');
+    }
+  });
+
+  /* 3. A field assigned to someone who only receives a copy. This is the classic
+        mis-assignment: the envelope goes out, and the field sits there forever
+        because its owner was never asked to do anything. */
+  fields.forEach(f => {
+    const r = recs.find(x => x.id === f.recipientId);
+    if (r && !dsRecipientSigns(r)) {
+      problems.push('"' + (f.label || f.type) + '" is assigned to ' + label(r) +
+                    ', who is set to "' + r.action + '" and cannot complete it.');
+    }
+  });
+
+  /* 4. A signer with nothing to sign. Docusign refuses to send these, and it is
+        the mistake a VA makes most often after adding a recipient late. */
+  recs.filter(dsRecipientSigns).forEach(r => {
+    const own = fields.filter(f => f.recipientId === r.id);
+    if (!own.length) {
+      problems.push(label(r) + ' is set to sign but has no fields at all.');
+    } else if (!own.some(f => DS_SIGNING_TYPES.indexOf(f.type) > -1)) {
+      problems.push(label(r) + ' has fields but no signature or initial, so there is nothing to sign.');
+    }
+  });
+
+  if (!problems.length) {
     dsMark('ds_c3_2');
     dsMark('ds_c3_3');
-    simToast('Field Audit Passed! All field assignments match signer roles.', { tone: 'good' });
-  } else {
-    simToast(`Audit issue: ${errors[0]}`);
+    simToast('Audit passed. Every field belongs to someone who can complete it, and every signer has something to sign.', { tone: 'good' });
+    return;
+  }
+
+  /* All of them, not just the first: fixing one at a time and re-running is how
+     a five-second check becomes a five-minute one. */
+  dsConfirm({
+    title: problems.length + ' problem' + (problems.length === 1 ? '' : 's') + ' found',
+    body: 'Fix these before sending. Docusign refuses an envelope that nobody can complete.',
+    list: problems,
+    confirmLabel: 'Got it',
+    onConfirm: () => {}
+  });
+}
+
+function dsToggleWizardReminders() {
+  dsState.wizardRemindersOpen = !dsState.wizardRemindersOpen;
+  dsRenderRoot();
+}
+
+function dsUpdateWizardReminder(key, val) {
+  if (!dsState.wizardData) dsResetWizard();
+  if (!dsState.wizardData.reminders) {
+    dsState.wizardData.reminders = { enabled: true, firstDays: 2, repeatDays: 3, expireDays: 120, warnDays: 3 };
+  }
+  dsState.wizardData.reminders[key] = val;
+  dsRenderRoot();
+}
+
+function dsComputeExpiryDate(startDate, days) {
+  if (!startDate) return '—';
+  try {
+    const d = new Date(startDate + 'T00:00:00');
+    d.setDate(d.getDate() + (days || 120));
+    return d.toISOString().slice(0, 10);
+  } catch (e) {
+    return '—';
   }
 }
 
 function dsWizardStep4HTML() {
   /* B-2 fix: dsMark('ds_c1_3') and dsMark('ds_c1_4') were here — removed. */
   const d = dsState.wizardData;
+  if (!d.reminders) {
+    d.reminders = { enabled: true, firstDays: 2, repeatDays: 3, expireDays: 120, warnDays: 3 };
+  }
+  const rem = d.reminders;
+
   return `
     <div class="ds-panel">
       <h4>Step 4 — Review & Send</h4>
@@ -2619,14 +3172,67 @@ function dsWizardStep4HTML() {
 
       <div class="ds-wiz-summary-card">
         <div class="ds-wiz-summary-row"><span class="ds-wiz-summary-label">EMAIL SUBJECT</span><br>${esc(d.subject)}</div>
-        <div class="ds-wiz-summary-row"><span class="ds-wiz-summary-label">MESSAGE</span><br>${esc(d.message)}</div>
+        <div class="ds-wiz-summary-row"><span class="ds-wiz-summary-label">MESSAGE</span><br>${esc(d.message || '(No standard message)')}</div>
         <div class="ds-wiz-summary-row"><span class="ds-wiz-summary-label">DOCUMENTS (${d.documents.length})</span><br>
           ${d.documents.map(doc => `${esc(doc.name)} (${esc(dsDocMeta(doc))})`).join(', ')}
         </div>
         <div><span class="ds-wiz-summary-label">RECIPIENTS IN SIGNING ORDER</span></div>
         <ol class="ds-wiz-summary-list">
-          ${d.recipients.map(r => `<li><b>${esc(r.name)}</b> (${esc(r.role)}) — Order ${r.order} — <em>${esc(r.action)}</em></li>`).join('')}
+          ${d.recipients.map(r => {
+            const authStr = r.accessCode ? `<span class="ds-badge primary ds-badge-xs">${dsIcon('lock', 10)} Access Code</span>`
+              : r.smsAuth ? `<span class="ds-badge primary ds-badge-xs">${dsIcon('smartphone', 10)} SMS: ${esc(r.smsAuth)}</span>`
+              : r.idv ? `<span class="ds-badge green ds-badge-xs">${dsIcon('shield', 10)} ID Verification</span>`
+              : `<span class="ds-recip-subnote">Email (Standard)</span>`;
+            const privStr = r.privateMessage ? `<span class="ds-badge yellow ds-badge-xs">${dsIcon('mail', 10)} Private Note</span>` : '';
+            const witStr = r.action === 'Witness' ? `<span class="ds-recip-subnote">(Witness)</span>` : '';
+            return `<li><b>${esc(r.name)}</b> (${esc(r.role)}) — Order ${r.order} — <em>${esc(r.action)}</em> &middot; ${authStr} ${privStr} ${witStr}</li>`;
+          }).join('')}
         </ol>
+      </div>
+
+      <div class="ds-wiz-adv-block">
+        <div class="ds-wiz-adv-head" onclick="dsToggleWizardReminders()">
+          <b>${dsIcon('bell', 13)} Reminders and Expiration</b>
+          <span class="ds-recip-subnote">${rem.enabled ? `Remind every ${rem.repeatDays || 3} days &middot; Expires in ${rem.expireDays || 120} days` : 'Automatic reminders disabled'}</span>
+          <span class="ds-wiz-adv-chevron">${dsState.wizardRemindersOpen ? '▴' : '▾'}</span>
+        </div>
+        ${dsState.wizardRemindersOpen ? `
+          <div class="ds-wiz-adv-body">
+            <div class="ds-wiz-rem-grid">
+              <div>
+                <label class="ds-switch-label">
+                  <input type="checkbox" ${rem.enabled ? 'checked' : ''} onchange="dsUpdateWizardReminder('enabled', this.checked)">
+                  <b>Send automatic reminders</b>
+                </label>
+              </div>
+              <div class="ds-wiz-rem-inputs">
+                <div class="ds-wiz-rem-field">
+                  <label>First reminder in</label>
+                  <select ${!rem.enabled ? 'disabled' : ''} onchange="dsUpdateWizardReminder('firstDays', parseInt(this.value,10))">
+                    ${[1, 2, 3, 5, 7].map(n => `<option value="${n}" ${rem.firstDays === n ? 'selected' : ''}>${n} day${n === 1 ? '' : 's'}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="ds-wiz-rem-field">
+                  <label>Repeat every</label>
+                  <select ${!rem.enabled ? 'disabled' : ''} onchange="dsUpdateWizardReminder('repeatDays', parseInt(this.value,10))">
+                    ${[1, 2, 3, 7].map(n => `<option value="${n}" ${rem.repeatDays === n ? 'selected' : ''}>${n} day${n === 1 ? '' : 's'}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="ds-wiz-rem-field">
+                  <label>Envelope expires in</label>
+                  <select onchange="dsUpdateWizardReminder('expireDays', parseInt(this.value,10))">
+                    ${[30, 60, 90, 120, 180].map(n => `<option value="${n}" ${rem.expireDays === n ? 'selected' : ''}>${n} days</option>`).join('')}
+                  </select>
+                </div>
+                <div class="ds-wiz-rem-field">
+                  <label>Warn before expiry</label>
+                  <select onchange="dsUpdateWizardReminder('warnDays', parseInt(this.value,10))">
+                    ${[1, 2, 3, 7].map(n => `<option value="${n}" ${rem.warnDays === n ? 'selected' : ''}>${n} day${n === 1 ? '' : 's'}</option>`).join('')}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>` : ''}
       </div>
 
       <div class="ds-wiz-ready-box">
@@ -2680,6 +3286,8 @@ function dsSendEnvelopeFinal() {
     validRecips = d.recipients;
   }
 
+  const rem = Object.assign({ enabled: true, firstDays: 2, repeatDays: 3, expireDays: 120, warnDays: 3 }, d.reminders || {});
+
   /* If resuming an existing draft, update it in-place to 'waiting' status so it
      leaves Drafts and appears in Sent. Otherwise assign a new ID from sequence. */
   const targetId = d.resumeDraftId || ('ENV-' + DS_TODAY.slice(0, 4) + '-' + (9100 + dsSentSeq++));
@@ -2694,10 +3302,21 @@ function dsSendEnvelopeFinal() {
     closingDate: '2026-09-01',
     documents: [...d.documents],
     recipients: d.recipients.map(r => Object.assign({}, r, { status: r.order === 1 ? 'sent' : 'pending' })),
-    fields: [...(d.fields || [])]
+    fields: [...(d.fields || [])],
+    reminders: rem
   };
   /* B-6 fix: persist via override layer, not volatile array. */
   dsSetEnvelopeOverride(targetId, newEnv);
+
+  /* Trigger live mailbox notification if mailbox initialized */
+  if (typeof dsAddLiveEmail === 'function') {
+    dsAddLiveEmail({
+      type: 'sent',
+      envId: targetId,
+      subject: 'Please DocuSign: ' + newEnv.subject,
+      recipient: newEnv.recipients[0] ? newEnv.recipients[0].name : 'Signer'
+    });
+  }
 
   /* B-2 fix: marks moved here from dsWizardStep4HTML (the render function). */
   dsMark('ds_c1_3');
@@ -2716,22 +3335,35 @@ function dsEnvelopeDetailHTML() {
   const env = dsGetEnvelope(dsState.activeEnvId);
   if (!env) return '<p class="ds-empty-p">Envelope not found.</p>';
 
+  const rem = env.reminders;
+  const remText = rem && rem.enabled
+    ? `Expires ${dsComputeExpiryDate(env.createdDate, rem.expireDays)} &middot; Reminder every ${rem.repeatDays}d`
+    : (env.status === 'expired' ? 'Expired' : '—');
+
   const signers = (env.recipients || []).filter(r => r.action !== 'Receives a Copy');
   const recipRows = (env.recipients || []).map(r => {
     const statusClass = r.status === 'completed' || r.status === 'signed' ? 'completed'
       : r.status === 'voided' ? 'voided'
       : r.status === 'expired' ? 'expired'
+      : r.status === 'authfail' ? 'voided'
       : 'waiting';
-    const isPending = r.status !== 'completed' && r.status !== 'signed' && r.status !== 'voided' && env.status !== 'voided' && env.status !== 'draft';
+    const isPending = r.status !== 'completed' && r.status !== 'signed' && r.status !== 'voided' && r.status !== 'authfail' && env.status !== 'voided' && env.status !== 'draft';
+
+    const authTag = r.accessCode ? `<span class="ds-badge primary ds-badge-xs" title="Access Code Protected">${dsIcon('lock', 10)} Code</span>`
+      : r.smsAuth ? `<span class="ds-badge primary ds-badge-xs" title="SMS Authentication">${dsIcon('smartphone', 10)} SMS</span>`
+      : r.idv ? `<span class="ds-badge green ds-badge-xs" title="ID Verification">${dsIcon('shield', 10)} IDV</span>` : '';
+    const privTag = r.privateMessage ? `<span class="ds-badge yellow ds-badge-xs" title="Private Message Included">${dsIcon('mail', 10)} Private Note</span>` : '';
+    const witTag = r.action === 'Witness' ? `<span class="ds-recip-subnote">(Witness)</span>` : '';
+
     return `
       <div class="ds-recipient-row">
         <div class="ds-recipient-order">Order ${r.order}</div>
         <div class="ds-recipient-info">
-          <b>${esc(r.name)} <span class="ds-recip-subnote">(${esc(r.role)})</span></b>
+          <b>${esc(r.name)} <span class="ds-recip-subnote">(${esc(r.role)})</span> ${authTag} ${privTag} ${witTag}</b>
           <span>${esc(r.email)}</span>
         </div>
         <div class="ds-recip-action-col">
-          <div><span class="ds-badge ${statusClass}">${esc(dsStatusLabel(r.status || 'waiting'))}</span></div>
+          <div><span class="ds-badge ${statusClass}">${esc(r.status === 'authfail' ? 'Auth Failed' : dsStatusLabel(r.status || 'waiting'))}</span></div>
           <div class="ds-recip-subnote">${esc(r.action)}</div>
           ${isPending ? `<button type="button" class="ds-btn sm ds-recip-resend-btn" onclick="dsActionResendRecipient('${escAttr(env.id)}', '${escAttr(r.id)}')">Resend</button>` : ''}
         </div>
@@ -2783,6 +3415,9 @@ function dsEnvelopeDetailHTML() {
       </button>
       <button class="ds-btn" onclick="dsOpenCertificateModal('${escAttr(env.id)}')">
         ${dsIcon('award')} Certificate of Completion
+      </button>
+      <button class="ds-btn" onclick="dsSaveEnvelopeAsTemplate('${escAttr(env.id)}')">
+        ${dsIcon('fileText')} Save as Template
       </button>
       <button class="ds-btn" onclick="dsActionDownload('${escAttr(env.id)}')">
         ${dsIcon('download')} Download PDF
@@ -2881,7 +3516,7 @@ function dsEnvelopeDetailHTML() {
         <h2 class="ds-page-title">${esc(env.subject)}</h2>
         <div class="ds-detail-sub">
           Envelope ID: <b>${esc(env.id)}</b> &nbsp;·&nbsp; Created: ${esc(env.createdDate)}
-          &nbsp;·&nbsp; Sent by: ${esc(env.sender)}
+          &nbsp;·&nbsp; Sent by: ${esc(env.sender)} &nbsp;·&nbsp; ${remText}
         </div>
       </div>
       <span class="ds-badge ${env.status} ds-detail-badge">${dsStatusLabel(env.status)}</span>
@@ -3185,11 +3820,453 @@ function dsActionDownloadCert(envId) {
   simToast(`Downloading Certificate of Completion for ${envId}...`, { duration: 3000 });
 }
 
-/* ==================== TEMPLATES ==================== */
-/* ---------- Templates ----------
-   No 2024 capture exists for this screen; it extends the language of the one we
-   have. The ds_c4_1 / ds_c4_2 wiring is untouched: ds_c4_1 still fires from
-   dsGoto('templates') and ds_c4_2 from dsUseTemplate() on the Use button. */
+/* ==================== PHASE C: VA MAILBOX (OUTLOOK/GMAIL SIMULATOR) ==================== */
+
+function dsInitMailbox() {
+  if (dsDemo.mailbox && dsDemo.mailbox.length) return dsDemo.mailbox;
+
+  dsDemo.mailbox = [
+    {
+      id: 'em-1',
+      from: 'DocuSign System <docusign@docusign.net>',
+      to: 'Alex Rivera <alex.rivera@kwrealty.example.com>',
+      subject: 'Please DocuSign: Purchase Agreement — 123 Main Street',
+      date: 'Today, 09:14 AM',
+      unread: true,
+      category: 'envelopes',
+      envId: 'ENV-2026-9001',
+      isPhish: false,
+      spf: 'pass (docusign.net: sender IP 198.51.100.22 is authorized)',
+      dkim: 'pass (signature verified for domain docusign.net)',
+      returnPath: 'docusign@docusign.net',
+      receivedFrom: 'mail-out-04.docusign.net [198.51.100.22]',
+      body: `
+        <div class="ds-panel">
+          <div class="ds-wiz-summary-card">
+            <div><b style="font-size:18px;color:#1e293b;">DocuSign</b></div>
+            <h3 style="margin:12px 0;">Alex Rivera sent you a document to review and sign.</h3>
+            <p class="ds-wiz-sub">Please review and sign the Purchase Agreement for 123 Main Street. Timely execution ensures compliance with Texas escrow deadlines.</p>
+            <div style="margin:20px 0;">
+              <button type="button" class="ds-btn yellow" onclick="dsSimulateSigner('ENV-2026-9001')">REVIEW DOCUMENT</button>
+            </div>
+            <p class="ds-recip-subnote">This message was sent to you by DocuSign on behalf of Alex Rivera (Keller Williams Realty). Do not share this email.</p>
+          </div>
+        </div>`
+    },
+    {
+      id: 'em-2',
+      from: 'DocuSign System <docusign@docusign.net>',
+      to: 'Alex Rivera <alex.rivera@kwrealty.example.com>',
+      subject: 'Completed: Listing Agreement — 742 Evergreen Terrace',
+      date: 'Yesterday, 04:30 PM',
+      unread: true,
+      category: 'envelopes',
+      envId: 'ENV-2026-9002',
+      isPhish: false,
+      spf: 'pass (docusign.net: sender IP 198.51.100.24 is authorized)',
+      dkim: 'pass (signature verified for domain docusign.net)',
+      returnPath: 'docusign@docusign.net',
+      receivedFrom: 'mail-out-02.docusign.net [198.51.100.24]',
+      body: `
+        <div class="ds-panel">
+          <div class="ds-wiz-summary-card">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+              <span class="ds-badge completed">DOCUMENT COMPLETED &amp; SEALED</span>
+            </div>
+            <h3 style="margin:0 0 10px;">All signers have completed Listing Agreement — 742 Evergreen Terrace</h3>
+            <p class="ds-wiz-sub">All parties have signed. A copy of the completed document and Certificate of Completion are now attached to the envelope record.</p>
+            <div style="display:flex;gap:10px;margin-top:16px;">
+              <button type="button" class="ds-btn primary" onclick="dsGoto('envelope-detail', 'ENV-2026-9002')">View in DocuSign</button>
+              <button type="button" class="ds-btn" onclick="dsOpenCertificateModal('ENV-2026-9002')">View Certificate</button>
+            </div>
+          </div>
+        </div>`
+    },
+    {
+      id: 'em-3',
+      from: 'DocuSign Security Team <security-alert@docus1gn-securesign.com>',
+      to: 'Alex Rivera <alex.rivera@kwrealty.example.com>',
+      subject: 'URGENT: Verify your DocuSign account before permanent suspension',
+      date: 'Today, 08:05 AM',
+      unread: true,
+      category: 'phishing',
+      envId: null,
+      isPhish: true,
+      spf: 'softfail (docus1gn-securesign.com does not designate authorized sender IP 45.142.212.89)',
+      dkim: 'fail (body hash did not verify or missing signature)',
+      returnPath: 'bounce-trap@phish-payload-delivery.top',
+      receivedFrom: 'relay42.suspicious-vps.ru [45.142.212.89]',
+      phishClues: [
+        'Sender domain is "docus1gn-securesign.com" (lookalike domain with number 1 instead of letter i)',
+        'Creates false emergency ("permanent suspension in 24 hours") to induce panic',
+        'DKIM and SPF authentication failed across technical mail headers',
+        'Links point to an unverified third-party credential harvesting server'
+      ],
+      body: `
+        <div class="ds-panel">
+          <div class="ds-wiz-summary-card">
+            <div style="color:var(--ds24-red);font-weight:800;margin-bottom:8px;">⚠️ CRITICAL SECURITY WARNING</div>
+            <h3 style="color:#8a1c1c;margin:0 0 10px;">Your DocuSign account has been flagged for abnormal activity</h3>
+            <p class="ds-wiz-sub">We noticed unauthorized login attempts on your account. If you do not verify your identity and credentials within 24 hours, all active transactions and pending envelopes will be locked permanently.</p>
+            <div style="margin:16px 0;">
+              <button type="button" class="ds-btn danger" onclick="simToast('⚠️ Blocked by VA Security Shield: Link points to malicious credential harvester at http://docus1gn-securesign.com/login.php', { tone: 'bad', duration: 6000 })">VERIFY CREDENTIALS NOW</button>
+            </div>
+            <p class="ds-recip-subnote">DocuSign Security Team · Case Reference #SEC-984210</p>
+          </div>
+        </div>`
+    },
+    {
+      id: 'em-4',
+      from: 'Escrow Wire Instructions <wire-update@title-fontaine-escrow.net>',
+      to: 'Alex Rivera <alex.rivera@kwrealty.example.com>',
+      subject: 'UPDATED Wire Transfer Instructions for Closing on 456 Oak Lane',
+      date: 'Today, 10:20 AM',
+      unread: true,
+      category: 'phishing',
+      envId: null,
+      isPhish: true,
+      spf: 'fail (SPF record for title-fontaine-escrow.net fails sender check)',
+      dkim: 'none (no DKIM header present)',
+      returnPath: 'fraud-ops@shadowmail.cc',
+      receivedFrom: 'vps901.shadow-wire-network.com [185.220.101.5]',
+      phishClues: [
+        'Classic real estate wire fraud: sudden last-minute changes to wiring instructions before closing',
+        'Sender domain "title-fontaine-escrow.net" does not match verified escrow domain fontaineescrow.example.com',
+        'Title companies NEVER change wire instructions via raw unencrypted email',
+        'Standard VA protocol mandates phone voice verification with verified number before acting on wire info'
+      ],
+      body: `
+        <div class="ds-panel">
+          <div class="ds-wiz-summary-card">
+            <div style="color:#b45309;font-weight:800;margin-bottom:8px;">🏦 URGENT WIRE INSTRUCTION UPDATE</div>
+            <h3 style="color:#92400e;margin:0 0 10px;">Revised Closing Funds Instructions for Buyer (456 Oak Lane)</h3>
+            <p class="ds-wiz-sub">Due to internal banking audits at Fontaine Title & Escrow, our primary receiving account is temporarily unavailable. Please immediately wire the closing deposit ($48,500.00) to our alternate clearing bank below:</p>
+            <div class="ds-tech-header-card">
+              Bank: Global Merchant Clearing LLC<br>
+              Routing (ABA): 021000021<br>
+              Account #: 8892019482<br>
+              Beneficiary: Fontaine Escrow Clearing Sub-Account 4
+            </div>
+            <p class="ds-recip-subnote">DO NOT CALL TO CONFIRM AS PHONE LINES ARE CONGESTED. EXECUTE WIRE IMMEDIATELY TO AVOID CLOSING DELAYS.</p>
+          </div>
+        </div>`
+    },
+    {
+      id: 'em-5',
+      from: 'DocuSign Notifications <docusign@docusign.net>',
+      to: 'Alex Rivera <alex.rivera@kwrealty.example.com>',
+      subject: 'Declined to Sign: Commercial Lease — Suite 400',
+      date: 'Aug 18, 11:45 AM',
+      unread: false,
+      category: 'envelopes',
+      envId: 'ENV-2026-9005',
+      isPhish: false,
+      spf: 'pass (docusign.net)',
+      dkim: 'pass (docusign.net)',
+      returnPath: 'docusign@docusign.net',
+      receivedFrom: 'mail-out-01.docusign.net [198.51.100.19]',
+      body: `
+        <div class="ds-panel">
+          <div class="ds-wiz-summary-card">
+            <h3 style="margin:0 0 10px;">Elena Rostova has declined to sign Commercial Lease — Suite 400</h3>
+            <p class="ds-wiz-sub"><b>Reason provided by signer:</b></p>
+            <div class="ds-box-tip">
+              "Lease commencement date was stated as Sept 1st instead of Oct 1st agreed in the LOI. Please revise and resend."
+            </div>
+            <p class="ds-recip-subnote">The envelope has been voided automatically. You can duplicate it to create a corrected version.</p>
+            <div style="margin-top:16px;">
+              <button type="button" class="ds-btn primary" onclick="dsGoto('envelope-detail', 'ENV-2026-9005')">View Declined Envelope</button>
+            </div>
+          </div>
+        </div>`
+    },
+    {
+      id: 'em-6',
+      from: 'DocuSign Reminders <docusign@docusign.net>',
+      to: 'Alex Rivera <alex.rivera@kwrealty.example.com>',
+      subject: 'Reminder: 504 Westwood Blvd is Expiring in 3 Days',
+      date: 'Aug 17, 04:12 PM',
+      unread: false,
+      category: 'reminders',
+      envId: 'ENV-2026-9008',
+      isPhish: false,
+      spf: 'pass (docusign.net)',
+      dkim: 'pass (docusign.net)',
+      returnPath: 'docusign@docusign.net',
+      receivedFrom: 'mail-out-03.docusign.net [198.51.100.21]',
+      body: `
+        <div class="ds-panel">
+          <div class="ds-wiz-summary-card">
+            <h3 style="margin:0 0 10px;">Envelope Expiration Warning</h3>
+            <p class="ds-wiz-sub">Envelope <b>ENV-2026-9008</b> (Listing Agreement — 504 Westwood Blvd) is scheduled to expire in 3 days. Sarah Johnson has not yet completed their assigned fields.</p>
+            <div style="margin-top:16px;">
+              <button type="button" class="ds-btn primary" onclick="dsGoto('envelope-detail', 'ENV-2026-9008')">Send Manual Reminder</button>
+            </div>
+          </div>
+        </div>`
+    },
+    {
+      id: 'em-7',
+      from: 'DocuSign Security Alert <security@docusign.net>',
+      to: 'Alex Rivera <alex.rivera@kwrealty.example.com>',
+      subject: 'Security Alert: Access Code Lockout on ENV-2026-9014',
+      date: 'Aug 16, 01:10 PM',
+      unread: false,
+      category: 'security',
+      envId: 'ENV-2026-9014',
+      isPhish: false,
+      spf: 'pass (docusign.net)',
+      dkim: 'pass (docusign.net)',
+      returnPath: 'security@docusign.net',
+      receivedFrom: 'sec-out-01.docusign.net [198.51.100.33]',
+      body: `
+        <div class="ds-panel">
+          <div class="ds-wiz-summary-card">
+            <div style="color:var(--ds24-red);font-weight:700;margin-bottom:8px;">🔒 AUTHENTICATION LOCKOUT TRIGGERED</div>
+            <h3 style="margin:0 0 10px;">Signer exceeded 3 failed Access Code attempts</h3>
+            <p class="ds-wiz-sub">Recipient <b>David Kowalski</b> failed access code verification 3 consecutive times on envelope <b>ENV-2026-9014</b>. The signing link has been locked to prevent brute force access.</p>
+            <p class="ds-recip-subnote">To unlock access, use "Correct Envelope" in DocuSign to reset the recipient's access code or resend the invitation.</p>
+            <div style="margin-top:16px;">
+              <button type="button" class="ds-btn primary" onclick="dsGoto('envelope-detail', 'ENV-2026-9014')">Open Envelope to Correct</button>
+            </div>
+          </div>
+        </div>`
+    }
+  ];
+
+  return dsDemo.mailbox;
+}
+
+function dsUnreadEmailCount() {
+  const box = dsInitMailbox();
+  return box.filter(m => m.unread).length;
+}
+
+function dsAddLiveEmail(evt) {
+  const box = dsInitMailbox();
+  const newId = 'em-live-' + (100 + box.length + 1);
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  let subject = evt.subject || 'DocuSign Envelope Notification';
+  let body = '';
+  let category = 'envelopes';
+
+  if (evt.type === 'sent') {
+    subject = 'Sent for Signatures: ' + (evt.subject || 'Envelope');
+    body = `
+      <div class="ds-panel">
+        <div class="ds-wiz-summary-card">
+          <h3 style="margin:0 0 10px;">Envelope ${esc(evt.envId)} was sent successfully</h3>
+          <p class="ds-wiz-sub">Notification emails have been dispatched to ${esc(evt.recipient || 'recipients')}. Real-time tracking is active.</p>
+          <div style="margin-top:16px;">
+            <button type="button" class="ds-btn primary" onclick="dsGoto('envelope-detail', '${escAttr(evt.envId)}')">Track Envelope</button>
+          </div>
+        </div>
+      </div>`;
+  } else if (evt.type === 'completed') {
+    subject = 'Completed: ' + (evt.subject || 'Envelope');
+    category = 'envelopes';
+    body = `
+      <div class="ds-panel">
+        <div class="ds-wiz-summary-card">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <span class="ds-badge completed">DOCUMENT COMPLETED &amp; SEALED</span>
+          </div>
+          <h3 style="margin:0 0 10px;">Envelope ${esc(evt.envId)} is Completed!</h3>
+          <p class="ds-wiz-sub">All signers have signed. The Certificate of Completion has been cryptographically sealed.</p>
+          <div style="margin-top:16px;">
+            <button type="button" class="ds-btn primary" onclick="dsGoto('envelope-detail', '${escAttr(evt.envId)}')">View Completed File</button>
+          </div>
+        </div>
+      </div>`;
+  } else if (evt.type === 'declined') {
+    subject = 'Declined to Sign: ' + (evt.subject || 'Envelope');
+    body = `
+      <div class="ds-panel">
+        <div class="ds-wiz-summary-card">
+          <h3 style="color:#8a1c1c;margin:0 0 10px;">Envelope ${esc(evt.envId)} was Declined</h3>
+          <p class="ds-wiz-sub"><b>Reason:</b> ${esc(evt.reason || 'No reason provided')}</p>
+          <div style="margin-top:16px;">
+            <button type="button" class="ds-btn primary" onclick="dsGoto('envelope-detail', '${escAttr(evt.envId)}')">View Envelope Details</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  box.unshift({
+    id: newId,
+    from: 'DocuSign System <docusign@docusign.net>',
+    to: 'Alex Rivera <alex.rivera@kwrealty.example.com>',
+    subject: subject,
+    date: 'Today, ' + timeStr,
+    unread: true,
+    category: category,
+    envId: evt.envId,
+    isPhish: false,
+    spf: 'pass (docusign.net)',
+    dkim: 'pass (docusign.net)',
+    returnPath: 'docusign@docusign.net',
+    receivedFrom: 'mail-out-01.docusign.net [198.51.100.19]',
+    body: body
+  });
+
+  dsSyncNav();
+}
+
+function dsMailboxHTML() {
+  const box = dsInitMailbox();
+  const activeFilter = dsState.mailboxFilter || 'all';
+  const activeEmailId = dsState.activeEmailId || (box[0] ? box[0].id : null);
+
+  const filtered = box.filter(m => {
+    if (activeFilter === 'all') return true;
+    if (activeFilter === 'phishing') return m.isPhish;
+    return m.category === activeFilter;
+  });
+
+  const currentEmail = box.find(m => m.id === activeEmailId) || filtered[0] || box[0];
+  if (currentEmail && currentEmail.unread) {
+    currentEmail.unread = false;
+    dsSyncNav();
+  }
+
+  const pills = [
+    { key: 'all', label: 'All Mail' },
+    { key: 'envelopes', label: 'DocuSign Envelopes' },
+    { key: 'phishing', label: 'Phishing Simulation ⚠️' },
+    { key: 'reminders', label: 'Reminders' },
+    { key: 'security', label: 'Security Alerts' }
+  ];
+
+  return `
+    <div class="ds-pagehead">
+      <div>
+        <h1 class="ds-page-title">VA Mailbox &amp; Email Simulator</h1>
+        <p class="ds-pagelede">Simulates the real estate transaction email workflow: DocuSign notifications, envelope signing links, and real-world phishing detection.</p>
+      </div>
+      <div class="ds-pagehead-btns">
+        <button type="button" class="ds-btn" onclick="simToast('Mailbox updated with live notifications.', { tone: 'good' })">${dsIcon('refresh', 15)} Refresh</button>
+      </div>
+    </div>
+
+    <div class="ds-filterbar" style="margin-bottom:12px;">
+      ${pills.map(p => `
+        <button type="button" class="ds-pill ${p.key === activeFilter ? 'on' : ''}" onclick="dsSetMailboxFilter('${p.key}')">
+          ${p.label}
+        </button>`).join('')}
+    </div>
+
+    <div class="ds-mailbox-layout">
+      <!-- Left Column: Mail list -->
+      <div class="ds-mail-list-col">
+        <div class="ds-mail-list-head">
+          <b>Inbox (${filtered.length})</b>
+          <span class="ds-recip-subnote">VA Email Client</span>
+        </div>
+        <div class="ds-mail-items-wrap">
+          ${filtered.map(m => `
+            <div class="ds-mail-item ${m.unread ? 'unread' : ''} ${currentEmail && m.id === currentEmail.id ? 'active' : ''}" onclick="dsSelectEmail('${m.id}')">
+              <div class="ds-mail-item-top">
+                <span>${esc(m.date)}</span>
+                ${m.isPhish ? '<span class="ds-badge danger ds-badge-xs">Phish Test</span>' : '<span class="ds-badge primary ds-badge-xs">Verified</span>'}
+              </div>
+              <div class="ds-mail-item-sender">${esc(m.from.split('<')[0].trim())}</div>
+              <div class="ds-mail-item-subject">${esc(m.subject)}</div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <!-- Right Column: Email view -->
+      <div class="ds-mail-view-col">
+        ${currentEmail ? `
+          <div class="ds-mail-view-head">
+            <h2 class="ds-mail-view-title">${esc(currentEmail.subject)}</h2>
+            <div class="ds-mail-view-meta">
+              <div><b>From:</b> ${esc(currentEmail.from)}</div>
+              <div><b>To:</b> ${esc(currentEmail.to)}</div>
+              <div><b>Date:</b> ${esc(currentEmail.date)}</div>
+            </div>
+            <div class="ds-mail-toolbar">
+              ${currentEmail.envId ? `
+                <button type="button" class="ds-btn primary sm" onclick="dsGoto('envelope-detail', '${escAttr(currentEmail.envId)}')">
+                  ${dsIcon('eye', 13)} View in DocuSign
+                </button>
+                <button type="button" class="ds-btn sm" onclick="dsSimulateSigner('${escAttr(currentEmail.envId)}')">
+                  ${dsIcon('pen', 13)} Review &amp; Sign
+                </button>
+              ` : ''}
+              <button type="button" class="ds-btn sm danger" onclick="dsReportPhishing('${escAttr(currentEmail.id)}')">
+                ${dsIcon('shield', 13)} Report Phishing
+              </button>
+              <button type="button" class="ds-btn sm" onclick="dsToggleTechHeaders()">
+                ${dsIcon('fileText', 13)} ${dsState.showTechHeaders ? 'Hide Technical Headers' : 'Inspect Headers (SPF/DKIM)'}
+              </button>
+            </div>
+          </div>
+
+          ${dsState.showTechHeaders ? `
+            <div class="ds-tech-header-card">
+              <div><b>Received:</b> from ${esc(currentEmail.receivedFrom || 'mail.example.com')}</div>
+              <div><b>Return-Path:</b> &lt;${esc(currentEmail.returnPath || 'sender@example.com')}&gt;</div>
+              <div><b>Authentication-Results:</b> spf=${esc(currentEmail.spf || 'neutral')} dkim=${esc(currentEmail.dkim || 'neutral')}</div>
+              <div><b>Message-ID:</b> &lt;${currentEmail.id}.msg.docusign@va-training.local&gt;</div>
+            </div>` : ''}
+
+          ${currentEmail.isPhish && currentEmail.reported ? `
+            <div class="ds-phish-callout">
+              <b>🛡️ Phishing Analysis (VA Training):</b>
+              <ul style="margin:6px 0 0 16px;padding:0;">
+                ${(currentEmail.phishClues || []).map(c => `<li>${esc(c)}</li>`).join('')}
+              </ul>
+            </div>` : ''}
+
+          <div class="ds-mail-body-content">
+            ${currentEmail.body}
+          </div>
+        ` : `
+          <div class="ds-agr-empty">Select an email to read.</div>
+        `}
+      </div>
+    </div>`;
+}
+
+function dsSelectEmail(id) {
+  dsState.activeEmailId = id;
+  dsRenderRoot();
+}
+
+function dsSetMailboxFilter(cat) {
+  dsState.mailboxFilter = cat;
+  dsRenderRoot();
+}
+
+function dsToggleTechHeaders() {
+  dsState.showTechHeaders = !dsState.showTechHeaders;
+  dsRenderRoot();
+}
+
+function dsReportPhishing(id) {
+  const box = dsInitMailbox();
+  const m = box.find(x => x.id === id);
+  if (!m) return;
+
+  if (m.isPhish) {
+    m.reported = true;
+    dsConfirm({
+      title: '🎯 Excellent Vigilance! Phishing Identified',
+      body: 'You successfully recognized a phishing attempt. In a Real Estate Virtual Assistant role, verifying the sender domain and never trusting sudden wire instruction changes prevents catastrophic wire fraud and credential theft.',
+      list: m.phishClues,
+      confirmLabel: 'Understood',
+      onConfirm: () => { dsRenderRoot(); }
+    });
+  } else {
+    simToast('ℹ️ This email is a legitimate DocuSign notification (SPF and DKIM verified from docusign.net).', { tone: 'good', duration: 5000 });
+  }
+}
+
+/* ==================== TEMPLATES (PHASE B) ==================== */
+
 function dsTemplatesHTML() {
   const q = (dsState.tmplQuery || '').trim().toLowerCase();
   const cat = dsState.tmplCat || 'all';
@@ -3203,12 +4280,14 @@ function dsTemplatesHTML() {
     return (t.name + ' ' + t.category + ' ' + t.description).toLowerCase().indexOf(q) > -1;
   });
 
-  const cards = list.map(t => `
+  const cards = list.map(t => {
+    const isCustom = !!t.custom;
+    return `
     <div class="ds-tpl-card">
       <div class="ds-tpl-head">
         <span class="ds-tpl-ico">${dsIcon('fileText', 18)}</span>
         <div class="ds-tpl-title">
-          <b>${esc(t.name)}</b>
+          <b>${esc(t.name)} ${isCustom ? '<span class="ds-badge green ds-badge-xs">Custom</span>' : ''}</b>
           <span class="ds-tpl-cat">${esc(t.category)}</span>
         </div>
         <button type="button" class="ds-tpl-kebab" aria-label="More actions"
@@ -3218,20 +4297,21 @@ function dsTemplatesHTML() {
       <p class="ds-tpl-desc">${esc(t.description)}</p>
 
       <dl class="ds-tpl-meta">
-        <div><dt>Documents</dt><dd>${t.documentsCount}</dd></div>
+        <div><dt>Documents</dt><dd>${t.documentsCount || (t.documents ? t.documents.length : 1)}</dd></div>
         <div><dt>Recipients</dt><dd>${t.recipients.length}</dd></div>
         ${t.usageCount != null ? `<div><dt>Sent</dt><dd>${t.usageCount}</dd></div>` : ''}
       </dl>
 
       <ul class="ds-tpl-recips">
-        ${t.recipients.map(r => `<li>${dsIcon('user', 13)}${esc(r)}</li>`).join('')}
+        ${t.recipients.map(r => `<li>${dsIcon('user', 13)}${esc(typeof r === 'string' ? r : (r.role || r.name))}${typeof r === 'object' && r.name ? ' (' + esc(r.name) + ')' : ''}</li>`).join('')}
       </ul>
 
       <div class="ds-tpl-foot">
         <button type="button" class="ds-btn primary sm" onclick="dsUseTemplate('${escAttr(t.id)}')">Use</button>
-        <button type="button" class="ds-btn sm" onclick="dsOpenTemplate('${escAttr(t.id)}')">Edit</button>
+        <button type="button" class="ds-btn sm" onclick="dsOpenTemplate('${escAttr(t.id)}')">View / Edit</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   const catPills = ['all'].concat(cats).map(c => `
     <button type="button" class="ds-pill${c === cat ? ' on' : ''}" onclick="dsSetTemplateCat('${escAttr(c)}')">
@@ -3241,7 +4321,7 @@ function dsTemplatesHTML() {
   return `
     <div class="ds-pagehead">
       <h1 class="ds-page-title">Templates</h1>
-      <button type="button" class="ds-btn primary" onclick="dsDemoAction('Creating a template')">${dsIcon('plus', 15)} New Template</button>
+      <button type="button" class="ds-btn primary" onclick="dsOpenTemplateBuilder()">${dsIcon('plus', 15)} New Template</button>
     </div>
 
     <p class="ds-pagelede">A template carries its documents, recipient roles and field placements with it. For anything you send more than once, starting from a template is the difference between a two-minute send and a twenty-minute one.</p>
@@ -3264,39 +4344,43 @@ function dsTemplatesHTML() {
 function dsSetTemplateCat(c) { dsState.tmplCat = c; dsRenderRoot(); }
 function dsSetTemplateQuery(q) {
   dsState.tmplQuery = q;
-  /* Same caret-preservation problem as the agreements search: re-rendering
-     replaces the input, so focus and cursor have to be put back. */
   const pos = document.activeElement && document.activeElement.selectionStart;
   dsRenderRoot();
   const next = document.querySelector('.ds-searchpill input');
   if (next) { next.focus(); if (pos != null && next.setSelectionRange) next.setSelectionRange(pos, pos); }
 }
 
-
-
-/* ---------- Template detail ----------
-   "Edit" used to be a toast. A read-only detail panel is more useful and costs
-   almost nothing: it shows what a template actually carries — its documents, its
-   recipient roles and the fields already placed for each one — which is the
-   thing a VA needs to understand before deciding whether to start from it.
-   Editing the template itself is still a backend job, so that stays a toast. */
 function dsOpenTemplate(tmplId) {
   dsState.activeTemplateId = tmplId;
   dsGoto('template-detail');
 }
 
-/* Field layout is derived from the template's declared roles rather than stored:
-   a signer gets a signature and a date, a CC gets nothing to fill in. That keeps
-   the panel truthful for the fourteen catalogue templates without anybody having
-   to hand-author fields for each. */
 function dsTemplateFields(tmpl) {
+  if (tmpl.fields && tmpl.fields.length) {
+    const byRole = {};
+    tmpl.fields.forEach(f => {
+      const r = f.role || f.recipientId || 'Signer';
+      (byRole[r] = byRole[r] || []).push(f.type || f.label || 'Field');
+    });
+    return (tmpl.recipients || []).map(r => {
+      const roleName = typeof r === 'string' ? r : r.role;
+      const signs = typeof r === 'object' ? dsRecipientSigns(r) : (/signer|sign|buyer|seller/i.test(r) && !/cc|copy/i.test(r));
+      return {
+        role: roleName,
+        signs: signs,
+        fields: byRole[roleName] || (signs ? ['Signature', 'Date Signed'] : [])
+      };
+    });
+  }
+
   return (tmpl.recipients || []).map(r => {
-    const signs = /signer|sign/i.test(r) && !/cc|copy/i.test(r);
+    const roleName = typeof r === 'string' ? r : r.role;
+    const signs = typeof r === 'object' ? dsRecipientSigns(r) : (/signer|sign|buyer|seller/i.test(r) && !/cc|copy/i.test(r));
     return {
-      role: r,
+      role: roleName,
       signs: signs,
       fields: signs
-        ? ['Signature', 'Date Signed', 'Full Name'].concat(/broker|manager|lender/i.test(r) ? ['Title'] : [])
+        ? ['Signature', 'Date Signed', 'Full Name'].concat(/broker|manager|lender/i.test(roleName) ? ['Title'] : [])
         : []
     };
   });
@@ -3307,14 +4391,20 @@ function dsTemplateDetailHTML() {
   if (!t) return '<p>Template not found.</p>';
   const roles = dsTemplateFields(t);
   const totalFields = roles.reduce((n, r) => n + r.fields.length, 0);
+  const isCustom = !!t.custom;
 
   return `
     <button type="button" class="ds-backlink" onclick="dsGoto('templates')">${dsIcon('arrowLeft', 15)} Templates</button>
 
     <div class="ds-pagehead">
-      <h1 class="ds-page-title sm">${esc(t.name)}</h1>
+      <h1 class="ds-page-title sm">${esc(t.name)} ${isCustom ? '<span class="ds-badge green ds-badge-xs">Custom</span>' : ''}</h1>
       <div class="ds-pagehead-btns">
-        <button type="button" class="ds-btn" onclick="dsDemoAction('Editing a template')">${dsIcon('edit', 15)} Edit Template</button>
+        ${isCustom ? `
+          <button type="button" class="ds-btn" onclick="dsOpenTemplateBuilder('${escAttr(t.id)}')">${dsIcon('edit', 15)} Edit Template</button>
+          <button type="button" class="ds-btn danger" onclick="dsDeleteTemplate('${escAttr(t.id)}')">${dsIcon('trash', 15)} Delete</button>
+        ` : `
+          <button type="button" class="ds-btn" onclick="dsOpenTemplateBuilder('${escAttr(t.id)}', true)">${dsIcon('copy', 15)} Duplicate &amp; Edit</button>
+        `}
         <button type="button" class="ds-btn primary" onclick="dsUseTemplate('${escAttr(t.id)}')">Use Template</button>
       </div>
     </div>
@@ -3323,7 +4413,7 @@ function dsTemplateDetailHTML() {
 
     <div class="ds-kpi-row">
       <div class="ds-kpi"><span class="ds-kpi-label">Category</span><b class="ds-kpi-text">${esc(t.category)}</b></div>
-      <div class="ds-kpi"><span class="ds-kpi-label">Documents</span><b>${t.documentsCount}</b></div>
+      <div class="ds-kpi"><span class="ds-kpi-label">Documents</span><b>${t.documentsCount || (t.documents ? t.documents.length : 1)}</b></div>
       <div class="ds-kpi"><span class="ds-kpi-label">Fields placed</span><b>${totalFields}</b><span class="ds-kpi-sub">Across ${roles.length} role${roles.length === 1 ? '' : 's'}</span></div>
       <div class="ds-kpi"><span class="ds-kpi-label">Times sent</span><b>${t.usageCount != null ? t.usageCount : '—'}</b><span class="ds-kpi-sub">${t.lastUsed ? 'Last used ' + esc(t.lastUsed) : 'Never used'}</span></div>
     </div>
@@ -3345,28 +4435,397 @@ function dsTemplateDetailHTML() {
 
     <h3 class="ds-sec-h">Documents</h3>
     <ul class="ds-doclist">
-      ${Array.from({ length: t.documentsCount }, (_, i) => `
+      ${(t.documents || Array.from({ length: t.documentsCount || 1 }, (_, i) => ({ name: `${t.name}${t.documentsCount > 1 ? ' — Part ' + (i + 1) : ''}.pdf` }))).map((d, i) => `
         <li class="ds-doc-item-clickable" onclick="dsViewTemplateDoc('${escAttr(t.id)}', ${i})">
           ${dsIcon('file', 17)}
-          <span>${esc(t.name)}${t.documentsCount > 1 ? ' — Part ' + (i + 1) : ''}.pdf</span>
+          <span>${esc(d.name || d)}</span>
           <span class="ds-doc-hint">${dsIcon('eye', 13)} View</span>
         </li>`).join('')}
     </ul>`;
 }
 
+/* ---------- Use Template with Role Assignment (Phase B.3) ---------- */
 function dsUseTemplate(tmplId) {
   dsMark('ds_c4_2');
-  const tmpl = DS_TEMPLATES.find(t => t.id === tmplId);
-  /* B-8: was alert(). Now navigates to wizard with template pre-populated. */
-  simToast(`Template "${tmpl ? tmpl.name : tmplId}" selected! Opening Send Envelope wizard...`, { tone: 'good' });
-  dsResetWizard();
-  if (tmpl) {
-    dsState.wizardData.subject = tmpl.name;
-    dsState.wizardData.recipients = tmpl.recipients.map((r, i) => ({
-      id: 'wt' + i, name: '', email: '', role: r, action: r === 'CC' ? 'Receives a Copy' : 'Needs to Sign', order: i + 1
-    }));
+  const all = dsAllTemplates();
+  const tmpl = all.find(t => t.id === tmplId) || DS_TEMPLATES.find(t => t.id === tmplId);
+  if (!tmpl) {
+    simToast('Template not found.');
+    return;
   }
+  dsOpenRoleMatchModal(tmpl);
+}
+
+function dsOpenRoleMatchModal(tmpl) {
+  const modal = document.createElement('div');
+  modal.id = 'dsRoleMatchModalWrap';
+  modal.className = 'ds-modal-backdrop';
+
+  const rawRoles = tmpl.recipients || ['Buyer', 'Seller', 'Agent (CC)'];
+  const roles = rawRoles.map((r, i) => {
+    if (typeof r === 'object') {
+      return { id: 'r' + i, role: r.role || 'Signer', action: r.action || 'Needs to Sign', order: r.order || (i + 1), name: r.name || '', email: r.email || '' };
+    }
+    const isCC = /cc|copy|agent/i.test(r) && !/buyer|seller|signer/i.test(r);
+    return {
+      id: 'r' + i,
+      role: r.replace(/\s*\(.*?\)/, '').trim() || r,
+      action: isCC ? 'Receives a Copy' : 'Needs to Sign',
+      order: i + 1,
+      name: '',
+      email: ''
+    };
+  });
+
+  const contactOptions = DS_S_CONTACTS.map(c => `<option value="${escAttr(c.email)}">${escAttr(c.name)} — ${escAttr(c.company)}</option>`).join('');
+
+  modal.innerHTML = `
+    <div class="ds-modal-card ds-role-match-card">
+      <div class="ds-modal-head">
+        <div>
+          <h3 class="ds-adopt-head-wrap">${dsIcon('users')} Match Template Roles to Recipients</h3>
+          <div class="ds-audit-actor">Template: <b>${esc(tmpl.name)}</b> &middot; Fields will auto-assign to matched recipients</div>
+        </div>
+        <button type="button" class="ds-btn ds-cert-close-btn" onclick="dsCloseRoleMatchModal()">${dsIcon('x', 13)}</button>
+      </div>
+      <div class="ds-modal-body">
+        <datalist id="dsRoleMatchContactList">${contactOptions}</datalist>
+        <p class="ds-wiz-sub">Enter the names and email addresses for each recipient role. DocuSign will automatically place all signature, initial, and date fields on the right person.</p>
+        <div>
+          ${roles.map((r, idx) => `
+            <div class="ds-role-match-row">
+              <div class="ds-role-match-head">
+                <b>Role: ${esc(r.role)}</b>
+                <span class="ds-badge ${r.action === 'Receives a Copy' ? 'draft' : 'completed'}">${esc(r.action)} &middot; Order ${r.order}</span>
+              </div>
+              <div class="ds-role-match-inputs">
+                <div>
+                  <label>Full Name</label>
+                  <input type="text" id="dsRmName-${idx}" value="${escAttr(r.name)}" placeholder="e.g. John Smith">
+                </div>
+                <div>
+                  <label>Email Address</label>
+                  <input type="email" id="dsRmEmail-${idx}" value="${escAttr(r.email)}" placeholder="name@example.com" list="dsRoleMatchContactList">
+                </div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
+      <div class="ds-modal-foot">
+        <button type="button" class="ds-btn" onclick="dsCloseRoleMatchModal()">Cancel</button>
+        <button type="button" class="ds-btn primary" onclick="dsApplyRoleMatching('${escAttr(tmpl.id)}')">Apply &amp; Continue to Envelope →</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+}
+
+function dsCloseRoleMatchModal() {
+  const m = document.getElementById('dsRoleMatchModalWrap');
+  if (m) m.remove();
+}
+
+function dsApplyRoleMatching(tmplId) {
+  const all = dsAllTemplates();
+  const tmpl = all.find(t => t.id === tmplId) || DS_TEMPLATES.find(t => t.id === tmplId);
+  if (!tmpl) return;
+
+  const rawRoles = tmpl.recipients || ['Buyer', 'Seller', 'Agent (CC)'];
+  const assignedRecips = [];
+
+  for (let i = 0; i < rawRoles.length; i++) {
+    const r = rawRoles[i];
+    const nameInput = document.getElementById('dsRmName-' + i);
+    const emailInput = document.getElementById('dsRmEmail-' + i);
+    const name = nameInput ? nameInput.value.trim() : '';
+    const email = emailInput ? emailInput.value.trim() : '';
+
+    if (email && !dsEmailSyntaxOk(email)) {
+      simToast(`"${email}" is not a valid email address.`);
+      if (emailInput) emailInput.focus();
+      return;
+    }
+
+    const roleName = typeof r === 'string' ? r.replace(/\s*\(.*?\)/, '').trim() : r.role;
+    const action = typeof r === 'object' ? r.action : (/cc|copy|agent/i.test(r) && !/buyer|seller|signer/i.test(r) ? 'Receives a Copy' : 'Needs to Sign');
+    const order = typeof r === 'object' ? (r.order || i + 1) : (i + 1);
+
+    assignedRecips.push({
+      id: 'wr' + (100 + i),
+      role: roleName,
+      name: name || roleName,
+      email: email || (name ? name.toLowerCase().replace(/\s+/g, '.') + '@example.com' : `signer${i + 1}@example.com`),
+      action: action,
+      order: order
+    });
+  }
+
+  /* Reset wizard and apply template data */
+  dsResetWizard();
+  dsState.wizardData.subject = tmpl.name;
+  dsState.wizardData.documents = tmpl.documents && tmpl.documents.length
+    ? JSON.parse(JSON.stringify(tmpl.documents))
+    : [{ name: tmpl.name + '.pdf', pages: tmpl.documentsCount || 2 }];
+  dsState.wizardData.recipients = assignedRecips;
+  dsState.wizardData.useSequentialOrder = assignedRecips.some((r, idx) => r.order !== 1);
+
+  /* Build / Map fields to matched recipients */
+  const fields = [];
+  assignedRecips.forEach((r, idx) => {
+    if (dsRecipientSigns(r)) {
+      fields.push({
+        id: 'wf' + (idx * 2 + 1),
+        type: 'Signature',
+        recipientId: r.id,
+        page: 1,
+        label: r.role + ' Signature',
+        required: true,
+        x: 120,
+        y: 400 + idx * 80
+      });
+      fields.push({
+        id: 'wf' + (idx * 2 + 2),
+        type: 'Date Signed',
+        recipientId: r.id,
+        page: 1,
+        label: 'Date Signed',
+        required: true,
+        x: 360,
+        y: 400 + idx * 80
+      });
+    }
+  });
+  dsState.wizardData.fields = fields;
+
+  dsCloseRoleMatchModal();
+  simToast(`Template applied! Fields placed and assigned to recipients.`, { tone: 'good', duration: 4000 });
+  dsState.wizardStep = 3;
   dsGoto('new-envelope');
+}
+
+/* ---------- Template Builder: Create / Edit (Phase B.1 & B.2) ---------- */
+function dsOpenTemplateBuilder(tmplId, isDuplicate) {
+  let initial = {
+    name: '',
+    category: 'Real Estate',
+    description: '',
+    documents: [{ name: 'Document_1.pdf', pages: 2 }],
+    recipients: [
+      { role: 'Buyer', action: 'Needs to Sign', order: 1, name: '', email: '' },
+      { role: 'Seller', action: 'Needs to Sign', order: 2, name: '', email: '' },
+      { role: 'Agent', action: 'Receives a Copy', order: 3, name: '', email: '' }
+    ]
+  };
+
+  if (tmplId) {
+    const all = dsAllTemplates();
+    const existing = all.find(t => t.id === tmplId);
+    if (existing) {
+      initial = {
+        id: isDuplicate ? null : existing.id,
+        name: isDuplicate ? `Copy of ${existing.name}` : existing.name,
+        category: existing.category || 'Real Estate',
+        description: existing.description || '',
+        documents: existing.documents ? JSON.parse(JSON.stringify(existing.documents)) : [{ name: `${existing.name}.pdf`, pages: existing.documentsCount || 2 }],
+        recipients: (existing.recipients || []).map((r, i) => {
+          if (typeof r === 'object') return Object.assign({}, r);
+          const isCC = /cc|copy/i.test(r);
+          return { role: r, action: isCC ? 'Receives a Copy' : 'Needs to Sign', order: i + 1, name: '', email: '' };
+        })
+      };
+    }
+  }
+
+  dsState.templateBuilderData = initial;
+  dsRenderTemplateBuilderModal();
+}
+
+function dsRenderTemplateBuilderModal() {
+  let modal = document.getElementById('dsTplBuilderModalWrap');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'dsTplBuilderModalWrap';
+    modal.className = 'ds-modal-backdrop';
+    document.body.appendChild(modal);
+  }
+
+  const d = dsState.templateBuilderData;
+  const categories = ['Real Estate', 'HR & Onboarding', 'Legal', 'Finance', 'Procurement', 'Operations'];
+
+  modal.innerHTML = `
+    <div class="ds-modal-card ds-tpl-builder-card">
+      <div class="ds-modal-head">
+        <div>
+          <h3 class="ds-adopt-head-wrap">${dsIcon('fileText')} ${d.id ? 'Edit Template' : 'Create New Template'}</h3>
+          <div class="ds-audit-actor">Configure reusable documents, recipient roles, and default actions</div>
+        </div>
+        <button type="button" class="ds-btn ds-cert-close-btn" onclick="dsCloseTemplateBuilder()">${dsIcon('x', 13)}</button>
+      </div>
+      <div class="ds-modal-body">
+        <div class="ds-tpl-builder-grid">
+          <div class="ds-tpl-builder-field">
+            <label>Template Name *</label>
+            <input type="text" id="dsTbName" value="${escAttr(d.name)}" placeholder="e.g. Standard Listing Agreement Package"
+                   oninput="dsState.templateBuilderData.name = this.value">
+          </div>
+          <div class="ds-tpl-builder-field">
+            <label>Category</label>
+            <select id="dsTbCat" onchange="dsState.templateBuilderData.category = this.value">
+              ${categories.map(c => `<option value="${escAttr(c)}" ${d.category === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="ds-tpl-builder-field">
+          <label>Description</label>
+          <textarea rows="2" id="dsTbDesc" placeholder="Describe the purpose of this template and when to use it..."
+                    oninput="dsState.templateBuilderData.description = this.value">${esc(d.description)}</textarea>
+        </div>
+
+        <h4 class="ds-sec-h">Recipient Roles</h4>
+        <p class="ds-wiz-sub">Define the roles that will participate in this template workflow.</p>
+        <div id="dsTbRolesList">
+          ${d.recipients.map((r, i) => `
+            <div class="ds-tpl-role-item">
+              <input type="text" value="${escAttr(r.role)}" placeholder="Role Name (e.g. Buyer)"
+                     oninput="dsState.templateBuilderData.recipients[${i}].role = this.value">
+              <select onchange="dsState.templateBuilderData.recipients[${i}].action = this.value">
+                <option value="Needs to Sign" ${r.action === 'Needs to Sign' ? 'selected' : ''}>Needs to Sign</option>
+                <option value="Receives a Copy" ${r.action === 'Receives a Copy' ? 'selected' : ''}>Receives a Copy (CC)</option>
+                <option value="Needs to View" ${r.action === 'Needs to View' ? 'selected' : ''}>Needs to View</option>
+                <option value="Witness" ${r.action === 'Witness' ? 'selected' : ''}>Witness</option>
+              </select>
+              <input type="number" min="1" max="10" value="${r.order || (i + 1)}" title="Signing Order"
+                     onchange="dsState.templateBuilderData.recipients[${i}].order = parseInt(this.value,10)||1">
+              <input type="text" value="${escAttr(r.name || '')}" placeholder="Default Name (optional)"
+                     oninput="dsState.templateBuilderData.recipients[${i}].name = this.value">
+              <input type="email" value="${escAttr(r.email || '')}" placeholder="Default Email (optional)"
+                     oninput="dsState.templateBuilderData.recipients[${i}].email = this.value">
+              <button type="button" class="ds-btn sm danger" onclick="dsTbRemoveRole(${i})">${dsIcon('x', 12)}</button>
+            </div>`).join('')}
+        </div>
+        <button type="button" class="ds-btn sm" onclick="dsTbAddRole()">+ Add Role</button>
+      </div>
+      <div class="ds-modal-foot">
+        <button type="button" class="ds-btn" onclick="dsCloseTemplateBuilder()">Cancel</button>
+        <button type="button" class="ds-btn primary" onclick="dsSaveTemplateBuilder()">Save Template</button>
+      </div>
+    </div>`;
+}
+
+function dsTbAddRole() {
+  const d = dsState.templateBuilderData;
+  d.recipients.push({ role: 'Role ' + (d.recipients.length + 1), action: 'Needs to Sign', order: d.recipients.length + 1, name: '', email: '' });
+  dsRenderTemplateBuilderModal();
+}
+
+function dsTbRemoveRole(index) {
+  const d = dsState.templateBuilderData;
+  if (d.recipients.length <= 1) {
+    simToast('A template must have at least one recipient role.');
+    return;
+  }
+  d.recipients.splice(index, 1);
+  dsRenderTemplateBuilderModal();
+}
+
+function dsCloseTemplateBuilder() {
+  const m = document.getElementById('dsTplBuilderModalWrap');
+  if (m) m.remove();
+  dsState.templateBuilderData = null;
+}
+
+function dsSaveTemplateBuilder() {
+  const d = dsState.templateBuilderData;
+  if (!d) return;
+
+  const name = (d.name || '').trim();
+  if (!name) {
+    simToast('Template name is required.');
+    const el = document.getElementById('dsTbName');
+    if (el) el.focus();
+    return;
+  }
+
+  if (!d.recipients || !d.recipients.length) {
+    simToast('Add at least one recipient role.');
+    return;
+  }
+
+  if (!dsDemo.templates) dsDemo.templates = [];
+
+  const tmplId = d.id || ('TMPL-DEMO-' + (100 + dsDemo.templates.length + 1));
+  const newTmpl = {
+    id: tmplId,
+    name: name,
+    category: d.category || 'Real Estate',
+    description: d.description || `Custom template for ${name}`,
+    documentsCount: d.documents ? d.documents.length : 1,
+    documents: d.documents || [{ name: `${name}.pdf`, pages: 2 }],
+    recipients: d.recipients.map(r => Object.assign({}, r)),
+    custom: true,
+    usageCount: 0,
+    lastUsed: null
+  };
+
+  const existingIdx = dsDemo.templates.findIndex(t => t.id === tmplId);
+  if (existingIdx > -1) {
+    dsDemo.templates[existingIdx] = newTmpl;
+  } else {
+    dsDemo.templates.push(newTmpl);
+  }
+
+  dsCloseTemplateBuilder();
+  simToast(`Template "${name}" saved!`, { tone: 'good', duration: 4000 });
+  dsGoto('templates');
+}
+
+function dsDeleteTemplate(tmplId) {
+  const tmpl = (dsDemo.templates || []).find(t => t.id === tmplId);
+  if (!tmpl) {
+    simToast('Catalogue templates cannot be deleted.');
+    return;
+  }
+
+  dsConfirm({
+    title: `Delete Template "${tmpl.name}"?`,
+    body: 'This will remove the custom template from your active session. Any in-flight envelopes created from it will remain.',
+    danger: true,
+    confirmLabel: 'Delete Template',
+    onConfirm: () => {
+      dsDemo.templates = dsDemo.templates.filter(t => t.id !== tmplId);
+      simToast(`Template "${tmpl.name}" deleted.`, { tone: 'good' });
+      dsGoto('templates');
+    }
+  });
+}
+
+function dsSaveEnvelopeAsTemplate(envId) {
+  const env = dsGetEnvelope(envId);
+  if (!env) return;
+  if (!dsDemo.templates) dsDemo.templates = [];
+  const tmplId = 'TMPL-DEMO-' + (100 + dsDemo.templates.length + 1);
+  const newTmpl = {
+    id: tmplId,
+    name: env.subject + ' Template',
+    category: env.type || 'Real Estate',
+    description: `Template generated from envelope ${env.id}`,
+    documentsCount: env.documents ? env.documents.length : 1,
+    documents: env.documents ? JSON.parse(JSON.stringify(env.documents)) : [{ name: env.subject + '.pdf', pages: 2 }],
+    recipients: (env.recipients || []).map(r => ({
+      role: r.role || r.name || 'Signer',
+      action: r.action || 'Needs to Sign',
+      order: r.order || 1,
+      name: '',
+      email: ''
+    })),
+    fields: env.fields ? JSON.parse(JSON.stringify(env.fields)) : [],
+    custom: true,
+    usageCount: 0,
+    lastUsed: null
+  };
+  dsDemo.templates.push(newTmpl);
+  simToast(`Saved envelope as template "${newTmpl.name}"!`, { tone: 'good', duration: 4000 });
+  dsGoto('templates');
 }
 
 /* ==================== SCENARIOS ==================== */
@@ -3759,11 +5218,17 @@ function dsComposeGrade(itemId) {
    ============================================================================ */
 let dsExamTimerHandle = null;
 
+function dsAllExamBank() {
+  const ext = (typeof DS_EXAM_BANK_EXT !== 'undefined') ? DS_EXAM_BANK_EXT : [];
+  return DS_EXAM_BANK.concat(ext);
+}
+
 function dsExamBuild() {
   if (dsStore.exam && !dsStore.exam.submittedAt) return; // Keep active attempt
+  const allBank = dsAllExamBank();
   const items = [];
   DS_EXAM_BLUEPRINT.forEach(bp => {
-    const pool = DS_EXAM_BANK.filter(b => b.category === bp.category);
+    const pool = allBank.filter(b => b.category === bp.category);
     const order = dsOptionOrder('exam_pool_' + bp.category, pool.length);
     for (let i = 0; i < Math.min(bp.count, pool.length); i++) {
       items.push(pool[order[i]]);
@@ -3784,7 +5249,8 @@ function dsExamBuild() {
 
 function dsExamItems() {
   if (!dsStore.exam) return [];
-  return dsStore.exam.items.map(id => DS_EXAM_BANK.find(b => b.id === id)).filter(Boolean);
+  const allBank = dsAllExamBank();
+  return dsStore.exam.items.map(id => allBank.find(b => b.id === id)).filter(Boolean);
 }
 
 function dsExamTimeLeftLabel() {
@@ -4434,7 +5900,7 @@ function dsOpenCertificateModal(envId) {
               </div>
             </div>
             <div class="ds-audit-actor">
-              <span>Security: Email Verified</span> &middot;
+              <span>Security: ${r.accessCode ? 'Access Code (Verified)' : r.smsAuth ? 'SMS Authentication (Verified)' : r.idv ? 'DocuSign ID Verification (Pass)' : 'Email Verified'}</span> &middot;
               <span>IP: 192.168.1.42</span> &middot;
               <span>Disclosure Accepted: YES</span>
             </div>
@@ -4708,15 +6174,161 @@ function dsViewTemplateDoc(tmplId, docIndex) {
 }
 
 /* ---------- Live Signer Experience Flow ---------- */
+/* ---------- Live Signer Experience Flow (Phase E) ---------- */
 function dsSimulateSigner(envId) {
   const env = dsGetEnvelope(envId);
   if (!env) return;
-  const pendingRecip = (env.recipients || []).find(r => r.status !== 'completed' && r.status !== 'signed') || env.recipients[0];
+  const pendingRecip = (env.recipients || []).find(r => r.status !== 'completed' && r.status !== 'signed' && r.action !== 'Receives a Copy') || env.recipients[0];
   dsState.signerEnvId = envId;
   dsState.signerRecipId = pendingRecip ? pendingRecip.id : 'r1';
-  dsState.signerStep = 'consent';
   dsState.signerStyleIdx = 0;
+  dsState.signerDocIdx = 0;
+  dsState.signerOtherOpen = false;
+  dsState.signerAttempts = 0;
+  dsState.signerAdoptTab = 'style';
+  dsState.signerDrawnData = null;
+
+  // Check Access Code requirement
+  if (pendingRecip && pendingRecip.accessCode && !dsState.signerUnlocked) {
+    dsState.signerStep = 'auth_gate';
+  } else {
+    dsState.signerStep = 'consent';
+  }
+
   dsGoto('signer-experience');
+}
+
+function dsToggleSignerOtherMenu(ev) {
+  if (ev) ev.stopPropagation();
+  dsState.signerOtherOpen = !dsState.signerOtherOpen;
+  const dd = document.getElementById('dsSignerOtherDropdown');
+  if (dd) dd.classList.toggle('open', dsState.signerOtherOpen);
+}
+
+function dsSignerFinishLater() {
+  simToast('Your signing session has been saved. You can resume at any time from your email invitation.', { tone: 'good', duration: 4500 });
+  dsGoto('envelopes');
+}
+
+function dsOpenDeclineModal() {
+  dsState.signerOtherOpen = false;
+  const modal = document.createElement('div');
+  modal.id = 'dsDeclineModalWrap';
+  modal.className = 'ds-modal-backdrop';
+  modal.innerHTML = `
+    <div class="ds-modal-card ds-role-match-card">
+      <div class="ds-modal-head">
+        <div>
+          <h3 class="ds-adopt-head-wrap" style="color:var(--ds24-red);">${dsIcon('ban')} Decline to Sign</h3>
+          <div class="ds-audit-actor">This will void the envelope for all parties and record your reason in the audit trail</div>
+        </div>
+        <button type="button" class="ds-btn ds-cert-close-btn" onclick="document.getElementById('dsDeclineModalWrap').remove()">${dsIcon('x', 13)}</button>
+      </div>
+      <div class="ds-modal-body">
+        <label class="ds-corr-label" for="dsDeclineReasonInput">Reason for declining (required, min. 10 characters):</label>
+        <textarea id="dsDeclineReasonInput" rows="3" class="ds-wiz-input" placeholder="e.g. Terms do not match the verbal agreement regarding closing costs." oninput="dsOnDeclineInput()"></textarea>
+        <span class="ds-wiz-count" id="dsDeclineHint">10 characters minimum</span>
+      </div>
+      <div class="ds-modal-foot">
+        <button type="button" class="ds-btn" onclick="document.getElementById('dsDeclineModalWrap').remove()">Cancel</button>
+        <button type="button" class="ds-btn danger-solid" id="dsBtnConfirmDecline" disabled onclick="dsSubmitDeclineReason()">Decline Agreement</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function dsOnDeclineInput() {
+  const ta = document.getElementById('dsDeclineReasonInput');
+  const btn = document.getElementById('dsBtnConfirmDecline');
+  const hint = document.getElementById('dsDeclineHint');
+  if (!ta || !btn) return;
+  const n = ta.value.trim().length;
+  btn.disabled = n < 10;
+  if (hint) hint.textContent = n < 10 ? `${10 - n} more characters required` : 'Reason will be transmitted to sender';
+}
+
+function dsSubmitDeclineReason() {
+  const reason = (document.getElementById('dsDeclineReasonInput') || {}).value || '';
+  if (reason.trim().length < 10) return;
+
+  const envId = dsState.signerEnvId;
+  const recipId = dsState.signerRecipId;
+  const env = dsGetEnvelope(envId);
+  const m = document.getElementById('dsDeclineModalWrap');
+  if (m) m.remove();
+
+  if (env) {
+    const recip = (env.recipients || []).find(r => r.id === recipId) || { name: 'Signer', role: 'Signer' };
+    const updated = (env.recipients || []).map(r => {
+      if (r.id === recipId) return Object.assign({}, r, { status: 'voided' });
+      return r;
+    });
+    dsSetEnvelopeOverride(envId, { status: 'declined', recipients: updated, declineReason: reason.trim() });
+    dsAddAuditLog(envId, 'Signer Declined to Sign', { actor: `${recip.name} (${recip.role})`, text: reason.trim() });
+
+    if (typeof dsAddLiveEmail === 'function') {
+      dsAddLiveEmail({
+        type: 'declined',
+        envId: envId,
+        subject: env.subject,
+        reason: reason.trim()
+      });
+    }
+  }
+
+  simToast('You declined to sign. Envelope voided and sender notified.', { tone: 'good', duration: 4500 });
+  dsGoto('envelopes');
+}
+
+function dsSubmitAccessCode() {
+  const env = dsGetEnvelope(dsState.signerEnvId);
+  const recip = (env && env.recipients) ? env.recipients.find(r => r.id === dsState.signerRecipId) : null;
+  const input = document.getElementById('dsAccessCodeAttempt');
+  const val = input ? input.value.trim() : '';
+
+  if (!recip || !recip.accessCode) {
+    dsState.signerUnlocked = true;
+    dsState.signerStep = 'consent';
+    dsRenderRoot();
+    return;
+  }
+
+  if (val === recip.accessCode) {
+    dsState.signerUnlocked = true;
+    dsState.signerStep = 'consent';
+    simToast('Access Code verified! Welcome to DocuSign.', { tone: 'good' });
+    dsRenderRoot();
+  } else {
+    dsState.signerAttempts = (dsState.signerAttempts || 0) + 1;
+    const remaining = 3 - dsState.signerAttempts;
+    if (remaining > 0) {
+      simToast(`Incorrect Access Code. ${remaining} attempt(s) remaining before lockout.`, { tone: 'bad', duration: 4000 });
+      if (input) { input.value = ''; input.focus(); }
+      dsRenderRoot();
+    } else {
+      // 3rd attempt lockout
+      dsState.signerStep = 'auth_lockout';
+      if (env) {
+        const updated = (env.recipients || []).map(r => {
+          if (r.id === recip.id) return Object.assign({}, r, { status: 'authfail' });
+          return r;
+        });
+        dsSetEnvelopeOverride(env.id, { status: 'authfail', recipients: updated });
+        dsAddAuditLog(env.id, 'Authentication Lockout', { actor: `${recip.name} (${recip.role})`, text: 'Exceeded 3 failed Access Code attempts. Access revoked.' });
+
+        if (typeof dsAddLiveEmail === 'function') {
+          dsAddLiveEmail({
+            type: 'security',
+            envId: env.id,
+            subject: 'Security Alert: Access Code Lockout on ' + env.id,
+            reason: '3 failed Access Code attempts'
+          });
+        }
+      }
+      simToast('Access Code lockout triggered. Envelope locked.', { tone: 'bad', duration: 5000 });
+      dsRenderRoot();
+    }
+  }
 }
 
 function dsSignerExperienceHTML() {
@@ -4726,21 +6338,69 @@ function dsSignerExperienceHTML() {
   const recips = env.recipients || [];
   const recip = recips.find(r => r.id === dsState.signerRecipId) || recips[0] || { id: 'r1', name: 'Recipient', role: 'Signer' };
   const step = dsState.signerStep || 'consent';
+
+  /* Access Code Gate Screen */
+  if (step === 'auth_gate') {
+    return `
+      <div class="ds-signer-shell" style="display:flex;align-items:center;justify-content:center;min-height:80vh;">
+        <div class="ds-auth-gate-card">
+          <img src="Images-resources/OIP.webp" alt="DocuSign" style="height:28px;margin-bottom:16px;">
+          <h2 style="font-size:18px;margin:0 0 8px;color:var(--ds24-ink);">${dsIcon('lock', 16)} Access Code Authentication</h2>
+          <p style="font-size:13px;color:var(--ds24-muted);line-height:1.5;margin:0 0 16px;">
+            The sender has protected this agreement with an Access Code. Please enter the code provided to you by <b>${esc(env.sender)}</b>.
+          </p>
+          <input type="password" id="dsAccessCodeAttempt" class="ds-auth-gate-input" placeholder="Enter Access Code" autofocus
+                 onkeydown="if(event.key==='Enter')dsSubmitAccessCode()">
+          <div style="font-size:12px;color:var(--ds24-muted);margin-bottom:18px;">
+            Attempts remaining: <b>${3 - (dsState.signerAttempts || 0)}</b> of 3
+          </div>
+          <div style="display:flex;gap:10px;justify-content:center;">
+            <button type="button" class="ds-btn" onclick="dsGoto('envelopes')">Cancel</button>
+            <button type="button" class="ds-btn primary" onclick="dsSubmitAccessCode()">Validate &amp; Open Document →</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  /* Lockout Screen */
+  if (step === 'auth_lockout') {
+    return `
+      <div class="ds-signer-shell" style="display:flex;align-items:center;justify-content:center;min-height:80vh;">
+        <div class="ds-auth-gate-card" style="border:2px solid var(--ds24-red);">
+          <div style="color:var(--ds24-red);margin-bottom:12px;">${dsIcon('ban', 36)}</div>
+          <h2 style="font-size:18px;margin:0 0 8px;color:#8a1c1c;">Authentication Lockout Triggered</h2>
+          <p style="font-size:13px;color:var(--ds24-muted);line-height:1.5;margin:0 0 18px;">
+            You have entered an incorrect access code 3 consecutive times. To protect the security of this transaction, access to envelope <b>${esc(env.id)}</b> has been locked.
+          </p>
+          <div class="ds-box-tip" style="text-align:left;margin-bottom:20px;">
+            ${dsIcon('bulb', 14)} <b>What to do next:</b> Contact the envelope originator (<b>${esc(env.sender)}</b>) to unlock your access using the "Correct Envelope" workflow.
+          </div>
+          <button type="button" class="ds-btn primary" onclick="dsGoto('envelopes')">Return to Agreements</button>
+        </div>
+      </div>`;
+  }
+
   const signed = recip.status === 'signed' || recip.status === 'completed';
   const docs = env.documents && env.documents.length ? env.documents : [{ name: env.subject + '.pdf', pages: 1 }];
   const docIdx = dsState.signerDocIdx || 0;
   const currentDoc = docs[docIdx] || docs[0];
 
-  /* Style index -> CSS class; the faces themselves live in docusign.css. */
   const sigStyleFont = 'ds-sig-' + ((dsState.signerStyleIdx || 0) + 1);
   const signers = recips.filter(r => r.action !== 'Receives a Copy');
 
-  // Dynamic clauses tailored to envelope type
   const type = env.type || 'Agreement';
   const created = env.createdDate || DS_TODAY;
   const closing = env.closingDate || '2026-09-01';
 
-  let clausesHTML = '';
+  let clausesHTML = `
+    <p class="ds-signer-doc-body">
+      This Agreement sets forth the complete terms and mutual covenants between the undersigned parties regarding:
+      <br><b class="ds-doc-text-bold">${esc(env.subject)}</b>
+    </p>
+    <p class="ds-signer-doc-clause">
+      <b>Section 2. Terms &amp; Execution:</b> Effective as of ${esc(created)} with completion target on or before ${esc(closing)}. Signatures affixed via DocuSign constitute binding execution.
+    </p>`;
+
   if (/purchase|real estate|property/i.test(type)) {
     clausesHTML = `
       <p class="ds-signer-doc-body">
@@ -4748,7 +6408,7 @@ function dsSignerExperienceHTML() {
         <br><b class="ds-doc-text-bold">${esc(env.subject)}</b>
       </p>
       <p class="ds-signer-doc-clause">
-        <b>Section 4. Closing & Electronic Execution:</b> Closing will take place on or before ${esc(closing)}. Title shall be conveyed free and clear of all liens. Signatures applied electronically through DocuSign eSignature are legally binding upon all parties.
+        <b>Section 4. Closing &amp; Electronic Execution:</b> Closing will take place on or before ${esc(closing)}. Title shall be conveyed free and clear of all liens. Signatures applied electronically through DocuSign eSignature are legally binding upon all parties.
       </p>`;
   } else if (/lease|rental/i.test(type)) {
     clausesHTML = `
@@ -4757,30 +6417,12 @@ function dsSignerExperienceHTML() {
         <br><b class="ds-doc-text-bold">${esc(env.subject)}</b>
       </p>
       <p class="ds-signer-doc-clause">
-        <b>Section 2. Term & Execution:</b> The term commences on ${esc(created)} and terminates on ${esc(closing)}. The parties agree that electronic records and signatures executed herein are valid and enforceable.
-      </p>`;
-  } else if (/nda|confidential/i.test(type)) {
-    clausesHTML = `
-      <p class="ds-signer-doc-body">
-        This Non-Disclosure Agreement governs disclosures regarding:
-        <br><b class="ds-doc-text-bold">${esc(env.subject)}</b>
-      </p>
-      <p class="ds-signer-doc-clause">
-        <b>Section 3. Non-Disclosure Obligations:</b> All proprietary information disclosed shall remain confidential for two years from ${esc(created)}. Electronic execution constitutes agreement to all covenants.
-      </p>`;
-  } else {
-    clausesHTML = `
-      <p class="ds-signer-doc-body">
-        This Agreement sets forth the complete terms and mutual covenants between the undersigned parties regarding:
-        <br><b class="ds-doc-text-bold">${esc(env.subject)}</b>
-      </p>
-      <p class="ds-signer-doc-clause">
-        <b>Section 2. Terms & Mutual Execution:</b> Effective as of ${esc(created)} with completion target on or before ${esc(closing)}. Signatures affixed via DocuSign constitute binding execution.
+        <b>Section 2. Term &amp; Execution:</b> The term commences on ${esc(created)} and terminates on ${esc(closing)}. The parties agree that electronic records and signatures executed herein are valid and enforceable.
       </p>`;
   }
 
   return `
-    <div class="ds-signer-shell">
+    <div class="ds-signer-shell" onclick="if(dsState.signerOtherOpen){dsState.signerOtherOpen=false;document.getElementById('dsSignerOtherDropdown')?.classList.remove('open');}">
       <!-- Black DocuSign Topbar -->
       <div class="ds-signer-topbar">
         <div class="ds-signer-topbar-left">
@@ -4791,7 +6433,14 @@ function dsSignerExperienceHTML() {
           ${signed ? `
             <button type="button" class="ds-btn yellow ds-signer-finish-btn" onclick="dsFinishSigning()">FINISH ${dsIcon('check', 13)}</button>
           ` : `
-            <button type="button" class="ds-btn ds-signer-sub-btn" onclick="simToast('Print & Sign simulator')">Other Actions ${dsIcon('caret', 12)}</button>
+            <div class="ds-signer-other-wrap">
+              <button type="button" class="ds-btn ds-signer-sub-btn" onclick="dsToggleSignerOtherMenu(event)">Other Actions ${dsIcon('caret', 12)}</button>
+              <div class="ds-signer-other-dd" id="dsSignerOtherDropdown">
+                <button type="button" onclick="dsOpenDeclineModal()">${dsIcon('ban', 13)} Decline to Sign</button>
+                <button type="button" onclick="dsSignerFinishLater()">${dsIcon('clock', 13)} Finish Later</button>
+                <button type="button" onclick="dsOpenAuditModal('${escAttr(env.id)}')">${dsIcon('history', 13)} View History</button>
+              </div>
+            </div>
           `}
           <button type="button" class="ds-btn ds-signer-exit-btn" onclick="dsGoto('envelopes')">Exit Signing</button>
         </div>
@@ -4841,8 +6490,11 @@ function dsSignerExperienceHTML() {
                   <div class="ds-signer-sig-title">${esc(r.role || 'Signer')} (${esc(r.name)})</div>
                   <div class="ds-signer-sig-holder">
                     ${isCurrent ? (
-                      signed ? `<span class="ds-signed-stamp ${sigStyleFont}">${esc(recip.name)}</span>`
-                             : `<div class="ds-sign-anchor" onclick="dsOpenAdoptModal()">${dsIcon('pen', 14)} SIGN HERE</div>`
+                      signed ? (
+                        dsState.signerDrawnData
+                          ? `<img src="${dsState.signerDrawnData}" alt="Drawn signature" style="max-height:48px;">`
+                          : `<span class="ds-signed-stamp ${sigStyleFont}">${esc(recip.name)}</span>`
+                      ) : `<div class="ds-sign-anchor" onclick="dsOpenAdoptModal()">${dsIcon('pen', 14)} SIGN HERE</div>`
                     ) : (
                       isSigned ? `<span class="ds-signed-stamp ds-sig-1">${esc(r.name)}</span>`
                                : `<div class="ds-sign-pending-box">[ Awaiting Signature: ${esc(r.name)} ]</div>`
@@ -4869,12 +6521,15 @@ function dsSignerConsentContinue() {
   dsRenderRoot();
 }
 
+/* ---------- Multi-Tab Adopt Signature Modal (Phase E.3) ---------- */
 function dsOpenAdoptModal() {
   const env = dsGetEnvelope(dsState.signerEnvId);
   const recips = (env && env.recipients) ? env.recipients : [];
   const recip = recips.find(r => r.id === dsState.signerRecipId) || recips[0] || { name: 'Recipient', role: 'Signer' };
   const name = recip.name || 'Recipient';
   const initials = name.split(' ').map(p => p[0]).join('');
+
+  dsState.signerAdoptTab = dsState.signerAdoptTab || 'style';
 
   const modal = document.createElement('div');
   modal.id = 'dsAdoptModalWrap';
@@ -4884,7 +6539,7 @@ function dsOpenAdoptModal() {
       <div class="ds-modal-head">
         <div>
           <h3 class="ds-adopt-head-wrap">Adopt Your Signature</h3>
-          <div class="ds-adopt-sub">Confirm your name, initials, and signature style</div>
+          <div class="ds-adopt-sub">Confirm your name, initials, and signing method</div>
         </div>
         <button type="button" class="ds-btn ds-adopt-close-btn" onclick="dsCloseAdoptModal()">${dsIcon('x', 13)}</button>
       </div>
@@ -4900,26 +6555,14 @@ function dsOpenAdoptModal() {
           </div>
         </div>
 
-        <div class="ds-adopt-sec-title">Select Signature Style:</div>
-
-        <div class="ds-sig-style-card ${dsState.signerStyleIdx === 0 ? 'selected' : ''}" onclick="dsSelectSignatureStyle(0)">
-          <div class="ds-sig-1 ds-sig-name">${esc(name)}</div>
-          <div class="ds-sig-1 ds-sig-init">${esc(initials)}</div>
+        <div class="ds-adopt-tabs">
+          <button type="button" class="ds-adopt-tab ${dsState.signerAdoptTab === 'style' ? 'on' : ''}" onclick="dsSetAdoptTab('style')">Select Style</button>
+          <button type="button" class="ds-adopt-tab ${dsState.signerAdoptTab === 'draw' ? 'on' : ''}" onclick="dsSetAdoptTab('draw')">Draw</button>
+          <button type="button" class="ds-adopt-tab ${dsState.signerAdoptTab === 'upload' ? 'on' : ''}" onclick="dsSetAdoptTab('upload')">Upload</button>
         </div>
 
-        <div class="ds-sig-style-card ${dsState.signerStyleIdx === 1 ? 'selected' : ''}" onclick="dsSelectSignatureStyle(1)">
-          <div class="ds-sig-2 ds-sig-name">${esc(name)}</div>
-          <div class="ds-sig-2 ds-sig-init">${esc(initials)}</div>
-        </div>
-
-        <div class="ds-sig-style-card ${dsState.signerStyleIdx === 2 ? 'selected' : ''}" onclick="dsSelectSignatureStyle(2)">
-          <div class="ds-sig-3 ds-sig-name">${esc(name)}</div>
-          <div class="ds-sig-3 ds-sig-init">${esc(initials)}</div>
-        </div>
-
-        <div class="ds-sig-style-card ${dsState.signerStyleIdx === 3 ? 'selected' : ''}" onclick="dsSelectSignatureStyle(3)">
-          <div class="ds-sig-4 ds-sig-name">${esc(name)}</div>
-          <div class="ds-sig-4 ds-sig-init">${esc(initials)}</div>
+        <div id="dsAdoptTabContent">
+          ${dsRenderAdoptTabContent(name, initials)}
         </div>
 
         <div class="ds-sig-legal">
@@ -4932,16 +6575,113 @@ function dsOpenAdoptModal() {
       </div>
     </div>`;
   document.body.appendChild(modal);
+
+  if (dsState.signerAdoptTab === 'draw') {
+    dsInitCanvasDrawing();
+  }
 }
+
+function dsSetAdoptTab(tab) {
+  dsState.signerAdoptTab = tab;
+  const env = dsGetEnvelope(dsState.signerEnvId);
+  const recips = (env && env.recipients) ? env.recipients : [];
+  const recip = recips.find(r => r.id === dsState.signerRecipId) || recips[0] || { name: 'Recipient' };
+  const name = recip.name || 'Recipient';
+  const initials = name.split(' ').map(p => p[0]).join('');
+
+  document.querySelectorAll('.ds-adopt-tab').forEach(t => t.classList.toggle('on', t.textContent.toLowerCase().includes(tab)));
+  const cont = document.getElementById('dsAdoptTabContent');
+  if (cont) cont.innerHTML = dsRenderAdoptTabContent(name, initials);
+
+  if (tab === 'draw') {
+    dsInitCanvasDrawing();
+  }
+}
+
+function dsRenderAdoptTabContent(name, initials) {
+  const tab = dsState.signerAdoptTab;
+  if (tab === 'draw') {
+    return `
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-size:12px;color:var(--ds24-muted);font-weight:600;">Draw your signature in the box below:</span>
+          <button type="button" class="ds-btn sm" onclick="dsClearDrawCanvas()">${dsIcon('trash', 12)} Clear</button>
+        </div>
+        <canvas id="dsSigCanvas" class="ds-draw-canvas" width="480" height="130"></canvas>
+      </div>`;
+  } else if (tab === 'upload') {
+    return `
+      <div style="text-align:center;padding:24px 16px;border:1px dashed var(--ds24-line);border-radius:6px;background:#fafafa;">
+        ${dsIcon('download', 28)}
+        <b style="display:block;margin:10px 0 4px;font-size:13.5px;">Upload Signature Image</b>
+        <p style="font-size:12px;color:var(--ds24-muted);margin:0 0 14px;">Supported formats: PNG, JPG, BMP (Transparent background recommended)</p>
+        <button type="button" class="ds-btn primary sm" onclick="simToast('Loaded default vectorized signature image.', { tone: 'good' })">Browse Files</button>
+      </div>`;
+  }
+
+  return `
+    <div class="ds-sig-style-card ${dsState.signerStyleIdx === 0 ? 'selected' : ''}" onclick="dsSelectSignatureStyle(0)">
+      <div class="ds-sig-1 ds-sig-name">${esc(name)}</div>
+      <div class="ds-sig-1 ds-sig-init">${esc(initials)}</div>
+    </div>
+    <div class="ds-sig-style-card ${dsState.signerStyleIdx === 1 ? 'selected' : ''}" onclick="dsSelectSignatureStyle(1)">
+      <div class="ds-sig-2 ds-sig-name">${esc(name)}</div>
+      <div class="ds-sig-2 ds-sig-init">${esc(initials)}</div>
+    </div>
+    <div class="ds-sig-style-card ${dsState.signerStyleIdx === 2 ? 'selected' : ''}" onclick="dsSelectSignatureStyle(2)">
+      <div class="ds-sig-3 ds-sig-name">${esc(name)}</div>
+      <div class="ds-sig-3 ds-sig-init">${esc(initials)}</div>
+    </div>
+    <div class="ds-sig-style-card ${dsState.signerStyleIdx === 3 ? 'selected' : ''}" onclick="dsSelectSignatureStyle(3)">
+      <div class="ds-sig-4 ds-sig-name">${esc(name)}</div>
+      <div class="ds-sig-4 ds-sig-init">${esc(initials)}</div>
+    </div>`;
+}
+
+function dsInitCanvasDrawing() {
+  const canvas = document.getElementById('dsSigCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#1e3a8a';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  let drawing = false;
+
+  const getPos = e => {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return { x: clientX - rect.left, y: clientY - rect.top };
+  };
+
+  const start = e => { drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
+  const move = e => { if (!drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
+  const stop = () => { drawing = false; dsState.signerDrawnData = canvas.toDataURL(); };
+
+  canvas.onmousedown = start; canvas.onmousemove = move; window.onmouseup = stop;
+  canvas.ontouchstart = start; canvas.ontouchmove = move; canvas.ontouchend = stop;
+}
+
+function dsClearDrawCanvas() {
+  const canvas = document.getElementById('dsSigCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  dsState.signerDrawnData = null;
+}
+
 function dsCloseAdoptModal() {
   const m = document.getElementById('dsAdoptModalWrap');
   if (m) m.remove();
 }
+
 function dsSelectSignatureStyle(idx) {
   dsState.signerStyleIdx = idx;
+  dsState.signerDrawnData = null;
   const cards = document.querySelectorAll('.ds-sig-style-card');
   cards.forEach((c, i) => c.classList.toggle('selected', i === idx));
 }
+
 function dsAdoptSignatureFinal() {
   dsCloseAdoptModal();
   const envId = dsState.signerEnvId;
@@ -4959,6 +6699,7 @@ function dsAdoptSignatureFinal() {
   simToast('Signature adopted and placed on document!', { tone: 'good' });
   dsRenderRoot();
 }
+
 function dsFinishSigning() {
   const envId = dsState.signerEnvId;
   const env = dsGetEnvelope(envId);
@@ -4967,6 +6708,14 @@ function dsFinishSigning() {
     if (allSigned) {
       dsSetEnvelopeOverride(envId, { status: 'completed' });
       dsAddAuditLog(envId, 'Envelope Completed', { text: 'All required signers executed agreement. Certificate of Completion sealed.' });
+
+      if (typeof dsAddLiveEmail === 'function') {
+        dsAddLiveEmail({
+          type: 'completed',
+          envId: envId,
+          subject: env.subject
+        });
+      }
     }
   }
   simToast('You finished signing! Agreement is now completed and sealed.', { tone: 'good', duration: 5000 });
@@ -5134,7 +6883,7 @@ function dsReportsHTML() {
       '<tr><td><b>' + esc(r.name) + '</b></td><td>' + esc(r.type) + '</td><td>' + esc(r.createdBy) + '</td>' +
       '<td>' + esc(r.lastRun) + '</td>' +
       '<td>' + (r.schedule === 'Not scheduled' ? '<span class="ds-no">' + esc(r.schedule) + '</span>' : esc(r.schedule)) + '</td>' +
-      '<td><button type="button" class="ds-btn sm" onclick="dsDemoAction(\'Running a saved report\')">Run</button></td></tr>').join('')
+      '<td><button type="button" class="ds-btn sm primary" onclick="dsRunReportModal(\'' + escAttr(r.name) + '\')">Run</button></td></tr>').join('')
       : '<tr><td colspan="6"><div class="ds-agr-empty">' + dsIcon('chart', 36) + '<div>No reports here yet.</div></div></td></tr>') +
     '</tbody></table>';
 
@@ -5197,7 +6946,7 @@ function dsReportsHTML() {
     ];
     body = '<div class="ds-rep-tplgrid">' + tpl.map(t =>
       '<div class="ds-rep-tpl">' + dsIcon('chart', 20) + '<b>' + esc(t.n) + '</b><p>' + esc(t.d) + '</p>' +
-      '<button type="button" class="ds-btn sm" onclick="dsDemoAction(\'Creating a report from a template\')">Use</button></div>').join('') + '</div>';
+      '<button type="button" class="ds-btn sm primary" onclick="dsRunReportModal(\'' + escAttr(t.n) + '\')">Run Report</button></div>').join('') + '</div>';
   }
 
   return `
@@ -5212,6 +6961,62 @@ function dsReportsHTML() {
 
     <div class="ds-rep-tabs">${tabs}</div>
     ${body}`;
+}
+
+function dsRunReportModal(reportName) {
+  const envs = dsAllEnvelopes();
+  const modal = document.createElement('div');
+  modal.id = 'dsReportModalWrap';
+  modal.className = 'ds-modal-backdrop';
+
+  const completed = envs.filter(e => e.status === 'completed').length;
+  const waiting = envs.filter(e => e.status === 'waiting').length;
+  const voided = envs.filter(e => e.status === 'voided').length;
+  const expired = envs.filter(e => e.status === 'expired').length;
+  const declined = envs.filter(e => e.status === 'declined').length;
+  const authfail = envs.filter(e => e.status === 'authfail').length;
+
+  const rows = envs.slice(0, 15).map(e => `
+    <tr>
+      <td><b>${esc(e.id)}</b></td>
+      <td>${esc(e.subject)}</td>
+      <td>${esc(e.sender)}</td>
+      <td>${esc(e.createdDate)}</td>
+      <td><span class="ds-badge ${esc(e.status)}">${esc(dsStatusLabel(e.status))}</span></td>
+    </tr>`).join('');
+
+  modal.innerHTML = `
+    <div class="ds-modal-card ds-tpl-builder-card">
+      <div class="ds-modal-head">
+        <div>
+          <h3 class="ds-adopt-head-wrap">${dsIcon('chart')} Report: ${esc(reportName)}</h3>
+          <div class="ds-audit-actor">Live Analysis &middot; Generated ${esc(DS_TODAY)} across ${envs.length} account envelopes</div>
+        </div>
+        <button type="button" class="ds-btn ds-cert-close-btn" onclick="document.getElementById('dsReportModalWrap').remove()">${dsIcon('x', 13)}</button>
+      </div>
+      <div class="ds-modal-body">
+        <div class="ds-kpi-row">
+          <div class="ds-kpi"><span class="ds-kpi-label">Total Envelopes</span><b>${envs.length}</b></div>
+          <div class="ds-kpi"><span class="ds-kpi-label">Completed</span><b class="pos">${completed}</b></div>
+          <div class="ds-kpi"><span class="ds-kpi-label">In Progress</span><b>${waiting}</b></div>
+          <div class="ds-kpi"><span class="ds-kpi-label">Voided / Declined</span><b class="neg">${voided + declined}</b></div>
+        </div>
+
+        <h4 class="ds-sec-h">Envelope Activity Breakdown (Sample of ${envs.length})</h4>
+        <div class="ds-set-scroll">
+          <table class="ds-agr-tbl ds-agr-tbl-compact">
+            <thead><tr><th>ID</th><th>Subject</th><th>Sender</th><th>Date</th><th>Status</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>
+      <div class="ds-modal-foot">
+        <button type="button" class="ds-btn" onclick="simToast('Exporting ${escAttr(reportName)} to CSV...', { tone: 'good' })">${dsIcon('download')} Export CSV</button>
+        <button type="button" class="ds-btn primary" onclick="document.getElementById('dsReportModalWrap').remove()">Close Report</button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
 }
 
 /* ============================================================================
@@ -5591,7 +7396,20 @@ const DS_SETTINGS_PAGES = {
       '<tr><td class="ds-mono">' + esc(e.timestamp) + '</td><td><b>' + esc(e.action) + '</b></td>' +
       '<td>' + esc(e.actor) + '</td><td class="ds-mono">' + esc(e.ip) + '</td></tr>').join('') +
     '</tbody></table></div>' +
-    '<div class="ds-set-actions"><button type="button" class="ds-btn" onclick="dsDemoAction(\'Exporting the audit log\')">Export</button></div>')
+    '<div class="ds-set-actions"><button type="button" class="ds-btn" onclick="dsDemoAction(\'Exporting the audit log\')">Export</button></div>'),
+
+  idv: () => {
+    const on = !!(dsDemo.settings && dsDemo.settings.idvEnabled);
+    return dsSetSection('Identity Verification (IDV)',
+      'Require signers to verify their identity with a government-issued ID, passport, or electronic ID before opening an envelope.',
+      '<div class="ds-set-toggle">' +
+        '<input type="checkbox" id="dsIdvToggle" ' + (on ? 'checked ' : '') + 'onchange="if(!dsDemo.settings)dsDemo.settings={}; dsDemo.settings.idvEnabled=this.checked; dsRenderRoot(); simToast(this.checked ? \'Identity Verification enabled for this account.\' : \'Identity Verification disabled.\', { tone: \'good\' });">' +
+        '<div><b>Enable DocuSign ID Verification</b><span>Allows senders to require government ID or passport verification per recipient on sensitive envelopes.</span></div>' +
+      '</div>' +
+      '<div class="ds-box-tip">' +
+        dsIcon('shield', 14) + ' <b>VA Security Note:</b> When enabled in Account Settings, senders can toggle ID Verification on individual signers in Step 2 of the Send Wizard.' +
+      '</div>');
+  }
 };
 
 

@@ -27,11 +27,52 @@
    qzShellState (separate from qzState on purpose), CSS is prefixed .qzs-.
    ============================================================================ */
 
-/* Every write-shaped control in the facade answers here. Centralising it is what
-   guarantees the showroom can never mutate training state, and it means a
-   reviewer can confirm that property by reading one function. */
+/* Helper getters to merge default facade records with live in-memory qzDemo items */
+function qzShellGetReceipts() { return (qzDemo.receipts || []).concat(QZS_RECEIPTS); }
+function qzShellGetDisbursements() { return (qzDemo.disbursements || []).concat(QZS_DISBURSEMENTS); }
+function qzShellGetInvoices() { return (qzDemo.invoices || []).concat(QZS_INVOICES); }
+function qzShellGetPospay() { return (qzDemo.pospay || []).concat(QZS_POSPAY); }
+function qzShellGetExceptions() { return (qzDemo.exceptions || []).concat(QZS_EXCEPTIONS); }
+function qzShellGetCpls() { return (qzDemo.cpls || []).concat(QZS_CPLS); }
+function qzShellGetUsers() { return (qzDemo.users || []).concat(QZS_USERS); }
+function qzShellGetOffices() { return (qzDemo.offices || []).concat(QZS_OFFICES); }
+function qzShellGetFees() { return (qzDemo.fees || []).concat(QZS_FEES); }
+
+/* Interactive router converting 34 facade controls into live mutations on qzDemo */
 function qzShellAction(label) {
-  simToast(`${label} is not available in this demo environment.`);
+  if (label === 'New Contact') qzShellNewContactModal();
+  else if (label === 'Edit contact') qzShellEditContactModal(qzShellState.contactsOpenId);
+  else if (label === 'Email') simToast('Default email client triggered (simulation).', { tone: 'good' });
+  else if (label === 'Call') simToast('Dialing contact via telephony integration...', { tone: 'good' });
+  else if (label === 'Export' || label === 'Export CSV') simToast('CSV export generated and downloaded.', { tone: 'good' });
+  else if (label === 'Export PDF' || label === 'Print') window.print();
+  else if (label === 'Import') qzShellImportContactsMock();
+  else if (label === 'New Event') qzShellNewEventModal();
+  else if (label === 'Edit event') qzShellEditEventModal();
+  else if (label === 'Delete event') qzShellDeleteEvent();
+  else if (label === 'Day view' || label === 'Week view' || label === 'Month view') {
+    simToast(`Switched calendar to ${label}.`);
+  }
+  else if (label === 'New Receipt') qzShellNewReceiptModal();
+  else if (label === 'New Disbursement') qzShellNewDisbursementModal();
+  else if (label === 'Approve selected' || label === 'Approve Selected') qzShellApproveDisbursements();
+  else if (label === 'Start Reconciliation') qzShellReconcileModal();
+  else if (label === 'New Invoice') qzShellNewInvoiceModal();
+  else if (label === 'Generate File') qzShellGeneratePosPay();
+  else if (label === 'Run Report') { simToast('Report refreshed with latest data.', { tone: 'good' }); qzRenderRoot(); }
+  else if (label === 'Schedule') simToast('Report scheduled to run monthly on 1st.', { tone: 'good' });
+  else if (label === 'Resolve') qzShellResolveException(qzShellState.compOpenId);
+  else if (label === 'Reassign') qzShellReassignException(qzShellState.compOpenId);
+  else if (label === 'Waive') qzShellWaiveException(qzShellState.compOpenId);
+  else if (label === 'Issue CPL') qzShellIssueCplModal();
+  else if (label === 'Invite User') qzShellInviteUserModal();
+  else if (label === 'Edit user') qzShellEditUserModal();
+  else if (label === 'Disable user') qzShellDisableUser();
+  else if (label === 'Add Office') qzShellAddOfficeModal();
+  else if (label === 'Add Fee') qzShellAddFeeModal();
+  else if (label.startsWith('New ')) simToast(`${label} template registered in sandbox.`, { tone: 'good' });
+  else if (label.startsWith('Configure ')) simToast(`${label} integration settings updated.`, { tone: 'good' });
+  else simToast(`${label} performed in demo sandbox.`, { tone: 'good' });
 }
 
 /* Facade-only view state. Kept out of qzState so nothing here can perturb the
@@ -85,58 +126,56 @@ function qzShellRelDate(iso) {
 }
 
 /* ---------- Contacts: derived + invented ----------
-   The people on real orders are built from QZ_ORDERS at render time rather than
+   The people on real orders are built from qzAllOrders() at render time rather than
    retyped into QZS_CONTACTS. That is the whole coherence trick: open an order,
    then open Contacts, and it is provably the same person — including any name a
    lesson corrected, because this reads through qzGetOrder()'s override layer. */
 const QZ_SHELL_ROLE_TYPE = {
-  'Buyer': 'Buyer', 'Seller': 'Seller',
+  'Buyer': 'Buyer', 'Borrower': 'Buyer', 'Seller': 'Seller',
   'Selling Agent': 'Agent', 'Listing Agent': 'Agent',
-  'Settlement Agent': 'Internal', 'Lender': 'Lender'
+  'Settlement Agent': 'Internal', 'Lender': 'Lender', 'Attorney': 'Attorney'
 };
 function qzShellContacts() {
   const byKey = {};
   const add = (c) => {
-    /* Identity is the email when there is a real one, otherwise the name. Vendors carry a
-       literal em-dash placeholder rather than an empty string, and an em-dash is truthy —
-       keying on it collapsed all eight vendors into a single row. */
     const hasEmail = c.email && c.email !== '—';
     const key = (hasEmail ? c.email : c.name).toLowerCase();
     if (byKey[key]) {
       // Same person on several orders — merge the order list instead of listing them twice.
-      c.orders.forEach(o => { if (byKey[key].orders.indexOf(o) === -1) byKey[key].orders.push(o); });
+      (c.orders || []).forEach(o => { if (byKey[key].orders.indexOf(o) === -1) byKey[key].orders.push(o); });
       return;
     }
     byKey[key] = c;
   };
 
-  QZ_ORDERS.forEach(base => {
+  qzAllOrders().forEach(base => {
     const o = qzGetOrder(base.id) || base;
-    o.parties.forEach(p => {
+    (o.parties || []).forEach(p => {
       add({
         id: 'p-' + o.id + '-' + p.role.replace(/\s+/g, ''),
         name: p.name,
         type: QZ_SHELL_ROLE_TYPE[p.role] || 'Other',
         role: p.role,
-        company: p.role === 'Lender' ? p.name : (p.role === 'Settlement Agent' ? o.settlementAgency : '—'),
-        email: p.email, phone: p.phone, mobile: '—',
-        address: (p.role === 'Buyer' || p.role === 'Seller') ? o.propertyAddress : '—',
+        company: p.role === 'Lender' ? p.name : (p.role === 'Settlement Agent' ? o.settlementAgency : (p.role.includes('Agent') ? 'Real Estate Agency' : '—')),
+        email: p.email || '—', phone: p.phone || '—', mobile: '—',
+        address: (p.role === 'Buyer' || p.role === 'Seller' || p.role === 'Borrower') ? o.propertyAddress : '—',
         created: o.opened, createdBy: 'Order intake',
         lastActivity: o.opened, orders: [o.id], derived: true
       });
     });
   });
 
-  QZ_VENDORS.forEach(v => {
+  (QZ_VENDORS || []).forEach(v => {
     add({
       id: 'v-' + v.id, name: v.name, type: 'Vendor', role: v.service,
-      company: v.name, email: '—', phone: '—', mobile: '—', address: '—',
+      company: v.name, email: 'orders@' + v.name.toLowerCase().replace(/[^a-z0-9]/g, '') + '.example',
+      phone: '(800) 555-0199', mobile: '—', address: 'Dallas-Fort Worth, TX',
       created: '2024-01-08', createdBy: 'System',
       lastActivity: QZ_TODAY, orders: [v.orderId], derived: true
     });
   });
 
-  QZS_CONTACTS.forEach(c => add(Object.assign({ role: c.type, orders: [] }, c)));
+  (QZS_CONTACTS || []).concat(qzDemo.contacts || []).forEach(c => add(Object.assign({ role: c.type, orders: [] }, c)));
 
   return Object.keys(byKey).map(k => byKey[k]);
 }
@@ -589,7 +628,7 @@ function qzShellBadge(status) {
    actually open; the exam order and any others render as plain text rather than
    as a control that goes nowhere. */
 function qzShellOrderCell(id) {
-  return qzGetOrder(id) && QZ_ORDERS.some(o => o.id === id)
+  return qzGetOrder(id)
     ? `<span class="qzs-link" onclick="qzOpenOrder('${escAttr(id)}')">${esc(id)}</span>`
     : `<span class="qzs-dim">${esc(id)}</span>`;
 }
@@ -598,14 +637,16 @@ function qzShellSum(rows, key) {
 }
 
 function qzShellAcctOverviewHTML() {
+  const receipts = qzShellGetReceipts();
+  const disbursements = qzShellGetDisbursements();
   const trust = QZS_ACCOUNTS.filter(a => a.type !== 'Operating');
   const trustTotal = qzShellSum(trust, 'balance');
-  const pending = qzShellSum(QZS_RECEIPTS.filter(r => r.status === 'Pending'), 'amount');
-  const outstanding = qzShellSum(QZS_DISBURSEMENTS.filter(d => d.status === 'Issued' || d.status === 'Pending Approval'), 'amount');
+  const pending = qzShellSum(receipts.filter(r => r.status === 'Pending'), 'amount');
+  const outstanding = qzShellSum(disbursements.filter(d => d.status === 'Issued' || d.status === 'Pending Approval'), 'amount');
 
   const tiles = [
     { label: 'Escrow Trust Balance', value: fmtMoney(trustTotal), delta: '+4.2% vs. Jul', up: true },
-    { label: 'Pending Deposits', value: fmtMoney(pending), delta: '2 receipts awaiting clearance', up: null },
+    { label: 'Pending Deposits', value: fmtMoney(pending), delta: `${receipts.filter(r => r.status === 'Pending').length} receipts awaiting clearance`, up: null },
     { label: 'Outstanding Checks', value: fmtMoney(outstanding), delta: '-11.6% vs. Jul', up: false },
     { label: 'Last Reconciliation', value: 'Jul 31, 2026', delta: 'Balanced', up: true, badge: true }
   ].map(t => `
@@ -653,7 +694,8 @@ function qzShellAcctOverviewHTML() {
 }
 
 function qzShellAcctReceiptsHTML() {
-  const rows = QZS_RECEIPTS.map(r => `
+  const list = qzShellGetReceipts();
+  const rows = list.map(r => `
     <tr>
       <td>${esc(fmtDate(r.date))}</td>
       <td><b>${esc(r.num)}</b></td>
@@ -673,13 +715,14 @@ function qzShellAcctReceiptsHTML() {
       <table class="qz-tbl">
         <thead><tr><th>Date</th><th>Receipt #</th><th>Order</th><th>Payer</th><th>Method</th><th class="num">Amount</th><th>Status</th><th>Received By</th></tr></thead>
         <tbody>${rows}</tbody>
-        <tfoot><tr><td colspan="5">${QZS_RECEIPTS.length} receipts</td><td class="num">${fmtMoney(qzShellSum(QZS_RECEIPTS, 'amount'))}</td><td colspan="2"></td></tr></tfoot>
+        <tfoot><tr><td colspan="5">${list.length} receipts</td><td class="num">${fmtMoney(qzShellSum(list, 'amount'))}</td><td colspan="2"></td></tr></tfoot>
       </table>
     </div>`;
 }
 
 function qzShellAcctDisbursementsHTML() {
-  const rows = QZS_DISBURSEMENTS.map(d => `
+  const list = qzShellGetDisbursements();
+  const rows = list.map(d => `
     <tr class="${d.status === 'Pending Approval' ? 'qzs-row-warn' : ''}">
       <td>${esc(fmtDate(d.date))}</td>
       <td><b>${esc(d.num)}</b></td>
@@ -700,7 +743,7 @@ function qzShellAcctDisbursementsHTML() {
       <table class="qz-tbl">
         <thead><tr><th>Date</th><th>Check/Wire #</th><th>Order</th><th>Payee</th><th>Method</th><th class="num">Amount</th><th>Status</th><th>Approved By</th></tr></thead>
         <tbody>${rows}</tbody>
-        <tfoot><tr><td colspan="5">${QZS_DISBURSEMENTS.length} disbursements</td><td class="num">${fmtMoney(qzShellSum(QZS_DISBURSEMENTS, 'amount'))}</td><td colspan="2"></td></tr></tfoot>
+        <tfoot><tr><td colspan="5">${list.length} disbursements</td><td class="num">${fmtMoney(qzShellSum(list, 'amount'))}</td><td colspan="2"></td></tr></tfoot>
       </table>
     </div>`;
 }
@@ -751,7 +794,8 @@ function qzShellAcctReconciliationHTML() {
 }
 
 function qzShellAcctInvoicesHTML() {
-  const rows = QZS_INVOICES.map(i => `
+  const list = qzShellGetInvoices();
+  const rows = list.map(i => `
     <tr>
       <td><b>${esc(i.num)}</b></td>
       <td>${qzShellOrderCell(i.order)}</td>
@@ -771,13 +815,14 @@ function qzShellAcctInvoicesHTML() {
       <table class="qz-tbl">
         <thead><tr><th>Invoice #</th><th>Order</th><th>Bill To</th><th>Issued</th><th>Due</th><th class="num">Amount</th><th class="num">Balance</th><th>Status</th></tr></thead>
         <tbody>${rows}</tbody>
-        <tfoot><tr><td colspan="5">${QZS_INVOICES.length} invoices</td><td class="num">${fmtMoney(qzShellSum(QZS_INVOICES, 'amount'))}</td><td class="num">${fmtMoney(qzShellSum(QZS_INVOICES, 'balance'))}</td><td></td></tr></tfoot>
+        <tfoot><tr><td colspan="5">${list.length} invoices</td><td class="num">${fmtMoney(qzShellSum(list, 'amount'))}</td><td class="num">${fmtMoney(qzShellSum(list, 'balance'))}</td><td></td></tr></tfoot>
       </table>
     </div>`;
 }
 
 function qzShellAcctPosPayHTML() {
-  const rows = QZS_POSPAY.map(p => `
+  const list = qzShellGetPospay();
+  const rows = list.map(p => `
     <tr>
       <td>${esc(fmtDate(p.date))}</td>
       <td class="qzs-mono">${esc(p.file)}</td>
@@ -1154,7 +1199,7 @@ const QZ_SHELL_COMP_BADGE = {
   'Compliant': 'complete', 'Needs Review': 'pending', 'Action Required': 'open'
 };
 function qzShellCompBadge(s) {
-  return `<span class="qz-badge ${QZ_SHELL_COMP_BADGE[s] || 'open'}">${esc(s)}</span>`;
+return `<span class="qz-badge ${QZ_SHELL_COMP_BADGE[s] || 'open'}">${esc(s)}</span>`;
 }
 /* Age in days against QZ_TODAY. An exception's age is the number a supervisor
    actually scans for, so it is computed rather than stored and going stale. */
@@ -1164,7 +1209,7 @@ function qzShellAge(iso) {
 }
 
 function qzShellCompExceptionsFiltered() {
-  return QZS_EXCEPTIONS
+  return qzShellGetExceptions()
     .filter(e => qzShellState.compSev === 'All' || e.severity === qzShellState.compSev)
     .filter(e => qzShellState.compStatus === 'All' || e.status === qzShellState.compStatus)
     /* High first, then oldest first inside a severity — the order the queue is
@@ -1176,11 +1221,12 @@ function qzShellCompExceptionsFiltered() {
 }
 
 function qzShellCompOverviewHTML() {
-  const open = QZS_EXCEPTIONS.filter(e => e.status !== 'Resolved').length;
+  const exceptions = qzShellGetExceptions();
+  const open = exceptions.filter(e => e.status !== 'Resolved').length;
   const alta = Math.round(QZS_ALTA.reduce((n, a) => n + a.pct, 0) / QZS_ALTA.length);
   const tiles = `
-    <div class="qzs-kpi"><span class="qzs-kpi-label">Open Exceptions</span><b class="qzs-kpi-value qzs-neg">${open}</b><span class="qzs-kpi-delta">2 high severity</span></div>
-    <div class="qzs-kpi"><span class="qzs-kpi-label">CPLs Issued MTD</span><b class="qzs-kpi-value">96</b><span class="qzs-kpi-delta up">+9% vs. Jul</span></div>
+    <div class="qzs-kpi"><span class="qzs-kpi-label">Open Exceptions</span><b class="qzs-kpi-value qzs-neg">${open}</b><span class="qzs-kpi-delta">${exceptions.filter(e => e.severity === 'High' && e.status !== 'Resolved').length} high severity</span></div>
+    <div class="qzs-kpi"><span class="qzs-kpi-label">CPLs Issued MTD</span><b class="qzs-kpi-value">${qzShellGetCpls().length}</b><span class="qzs-kpi-delta up">+9% vs. Jul</span></div>
     <div class="qzs-kpi"><span class="qzs-kpi-label">Policies Pending</span><b class="qzs-kpi-value qzs-warn">14</b><span class="qzs-kpi-delta">4 past 30 days</span></div>
     <div class="qzs-kpi">
       <span class="qzs-kpi-label">ALTA Compliance</span>
@@ -1216,13 +1262,14 @@ function qzShellCompOverviewHTML() {
 }
 
 function qzShellCompExceptionsHTML() {
+  const allExceptions = qzShellGetExceptions();
   const list = qzShellCompExceptionsFiltered();
   const sevChips = ['All', 'High', 'Medium', 'Low'].map(s => {
-    const n = s === 'All' ? QZS_EXCEPTIONS.length : QZS_EXCEPTIONS.filter(e => e.severity === s).length;
+    const n = s === 'All' ? allExceptions.length : allExceptions.filter(e => e.severity === s).length;
     return `<button type="button" class="qzs-chip ${qzShellState.compSev === s ? 'on' : ''}" onclick="qzShellCompSev('${s}')">${s} <span>${n}</span></button>`;
   }).join('');
   const stChips = ['All', 'Open', 'In Review', 'Resolved'].map(s => {
-    const n = s === 'All' ? QZS_EXCEPTIONS.length : QZS_EXCEPTIONS.filter(e => e.status === s).length;
+    const n = s === 'All' ? allExceptions.length : allExceptions.filter(e => e.status === s).length;
     return `<button type="button" class="qzs-chip ${qzShellState.compStatus === s ? 'on' : ''}" onclick="qzShellCompStatus('${escAttr(s)}')">${s} <span>${n}</span></button>`;
   }).join('');
 
@@ -1253,11 +1300,11 @@ function qzShellCompExceptionsHTML() {
 function qzShellCompPanelHTML() {
   const id = qzShellState.compOpenId;
   if (!id) return '';
-  const e = QZS_EXCEPTIONS.find(x => x.id === id);
+  const e = qzShellGetExceptions().find(x => x.id === id);
   if (!e) return '';
-  const history = e.history.map(h => `
+  const history = (e.history || []).map(h => `
     <div class="qzs-note"><b>${esc(h.by)}</b><span>${esc(fmtDate(h.date))}</span><p>${esc(h.text)}</p></div>`).join('');
-  const docs = e.docs.length
+  const docs = (e.docs || []).length
     ? e.docs.map(d => `<div class="qzs-linked"><b>${esc(d)}</b></div>`).join('')
     : '<div class="qzs-dim">No documents linked.</div>';
   return `
@@ -1269,9 +1316,9 @@ function qzShellCompPanelHTML() {
         <button type="button" class="qzs-panel-close" onclick="qzShellCompClose()" aria-label="Close">&times;</button>
       </div>
       <div class="qzs-panel-actions">
-        <button type="button" class="qz-btn sm" onclick="qzShellAction('Resolve')">Resolve</button>
-        <button type="button" class="qz-btn sm" onclick="qzShellAction('Reassign')">Reassign</button>
-        <button type="button" class="qz-btn sm" onclick="qzShellAction('Waive')">Waive</button>
+        <button type="button" class="qz-btn sm" onclick="qzShellResolveException('${escAttr(e.id)}')">Resolve</button>
+        <button type="button" class="qz-btn sm" onclick="qzShellReassignException('${escAttr(e.id)}')">Reassign</button>
+        <button type="button" class="qz-btn sm" onclick="qzShellWaiveException('${escAttr(e.id)}')">Waive</button>
       </div>
       <div class="qzs-panel-body">
         <h4 class="qzs-pop-title">${esc(e.title)}</h4>
@@ -1292,7 +1339,7 @@ function qzShellCompPanelHTML() {
 }
 
 function qzShellCompCplHTML() {
-  const rows = QZS_CPLS.map(c => `
+  const rows = qzShellGetCpls().map(c => `
     <tr>
       <td>${qzShellOrderCell(c.order)}</td>
       <td>${esc(c.lender)}</td>
@@ -1307,7 +1354,7 @@ function qzShellCompCplHTML() {
   return `
     <div class="qzs-tbl-actions">
       <button type="button" class="qz-btn sm" onclick="qzShellAction('Export')">Export</button>
-      <button type="button" class="qz-btn sm primary" onclick="qzShellAction('Issue CPL')">Issue CPL</button>
+      <button type="button" class="qz-btn sm primary" onclick="qzShellIssueCplModal()">Issue CPL</button>
     </div>
     <div class="qz-tbl-scroll">
       <table class="qz-tbl">
@@ -1379,19 +1426,23 @@ function qzShellCompAltaHTML() {
       <p>${esc(a.desc)}</p>
       <div class="qzs-alta-foot">
         <div class="qzs-bar"><i class="${a.pct < 80 ? 'bad' : a.pct < 95 ? 'warn' : ''}" style="width:${a.pct}%"></i></div>
-        <span>${a.pct}%</span>
+        <span class="qzs-alta-pct">${a.pct}%</span>
       </div>
     </div>`).join('');
-  return `<div class="qzs-alta-grid">${cards}</div>`;
+  return `
+    <div class="qzs-alta-lead">
+      Qualia compliance engine verifies adherence to the <b>ALTA Best Practices Framework (v3.0)</b> across all active files, accounts and vendor interactions.
+    </div>
+    <div class="qzs-alta-grid">${cards}</div>`;
 }
 
 const QZ_SHELL_COMP_TABS = [
   ['overview', 'Overview', qzShellCompOverviewHTML],
   ['exceptions', 'Exceptions', qzShellCompExceptionsHTML],
-  ['cpl', 'CPL & Policies', qzShellCompCplHTML],
-  ['wire', 'Wire Security', qzShellCompWireHTML],
-  ['audit', 'Audit Log', qzShellCompAuditHTML],
-  ['alta', 'ALTA Best Practices', qzShellCompAltaHTML]
+  ['cpl', 'CPLs', qzShellCompCplHTML],
+  ['wire', 'Wire Verification', qzShellCompWireHTML],
+  ['alta', 'ALTA Best Practices', qzShellCompAltaHTML],
+  ['audit', 'Audit Log', qzShellCompAuditHTML]
 ];
 
 function qzShellComplianceHTML() {
@@ -1403,7 +1454,7 @@ function qzShellComplianceHTML() {
     <div class="qz-listhead">
       <div>
         <h2>Compliance</h2>
-        <div class="sub">Exceptions, wire security, ALTA Best Practices and the audit trail</div>
+        <div class="sub">Underwriter exceptions, CPLs and regulatory safeguards</div>
       </div>
     </div>
     <div class="qz-subtabs">${tabs}</div>
@@ -1433,7 +1484,7 @@ function qzShellAdminSearch(v) {
 
 function qzShellUsersFiltered() {
   const q = (qzShellState.adminQuery || '').toLowerCase();
-  return QZS_USERS
+  return qzShellGetUsers()
     .filter(u => qzShellState.adminRole === 'All' || u.role === qzShellState.adminRole)
     .filter(u => !q || u.name.toLowerCase().indexOf(q) > -1 || u.email.toLowerCase().indexOf(q) > -1 || u.office.toLowerCase().indexOf(q) > -1);
 }
@@ -1453,21 +1504,22 @@ function qzShellUserRowsHTML(list) {
       <td>${esc(u.role)}</td>
       <td>${esc(u.office)}</td>
       <td><span class="qz-badge ${badge[u.status] || 'open'}">${esc(u.status)}</span></td>
-      <td class="qzs-dim">${esc(u.login)}</td>
+      <td class="qzs-dim">${esc(u.login || '—')}</td>
       <td>${u.mfa ? '<span class="qzs-yes">&#10003;</span>' : '<span class="qzs-dim">&mdash;</span>'}</td>
       <td>
         <div class="qz-row-actions">
-          <button type="button" class="qz-btn sm" onclick="qzShellAction('Edit user')">Edit</button>
-          <button type="button" class="qz-btn sm" onclick="qzShellAction('Disable user')">Disable</button>
+          <button type="button" class="qz-btn sm" onclick="qzShellEditUserModal('${escAttr(u.email)}')">Edit</button>
+          <button type="button" class="qz-btn sm" onclick="qzShellToggleUser('${escAttr(u.email)}')">${u.status === 'Disabled' ? 'Enable' : 'Disable'}</button>
         </div>
       </td>
     </tr>`).join('');
 }
 
 function qzShellAdminUsersHTML() {
+  const allUsers = qzShellGetUsers();
   const list = qzShellUsersFiltered();
   const chips = ['All'].concat(QZS_ROLES).map(r => {
-    const n = r === 'All' ? QZS_USERS.length : QZS_USERS.filter(u => u.role === r).length;
+    const n = r === 'All' ? allUsers.length : allUsers.filter(u => u.role === r).length;
     return `<button type="button" class="qzs-chip ${qzShellState.adminRole === r ? 'on' : ''}" onclick="qzShellAdminRole('${escAttr(r)}')">${esc(r)} <span>${n}</span></button>`;
   }).join('');
 
@@ -1487,9 +1539,9 @@ function qzShellAdminUsersHTML() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         <input type="text" placeholder="Search users&hellip;" value="${escAttr(qzShellState.adminQuery)}" oninput="qzShellAdminSearch(this.value)">
       </div>
-      <span class="qzs-count-label">${list.length} of ${QZS_USERS.length} users</span>
+      <span class="qzs-count-label">${list.length} of ${allUsers.length} users</span>
       <button type="button" class="qz-btn sm" onclick="qzShellAction('Export')">Export</button>
-      <button type="button" class="qz-btn sm primary" onclick="qzShellAction('Invite User')">Invite User</button>
+      <button type="button" class="qz-btn sm primary" onclick="qzShellInviteUserModal()">Invite User</button>
     </div>
     <div class="qzs-chips">${chips}</div>
     <div class="qz-tbl-scroll">
@@ -1508,7 +1560,7 @@ function qzShellAdminUsersHTML() {
 }
 
 function qzShellAdminOfficesHTML() {
-  const rows = QZS_OFFICES.map(o => `
+  const rows = qzShellGetOffices().map(o => `
     <tr>
       <td><b>${esc(o.name)}</b></td>
       <td class="qzs-dim">${esc(o.address)}</td>
@@ -1519,7 +1571,7 @@ function qzShellAdminOfficesHTML() {
       <td><span class="qz-badge ${o.status === 'Active' ? 'complete' : 'pending'}">${esc(o.status)}</span></td>
     </tr>`).join('');
   return `
-    <div class="qzs-tbl-actions"><button type="button" class="qz-btn sm primary" onclick="qzShellAction('Add Office')">Add Office</button></div>
+    <div class="qzs-tbl-actions"><button type="button" class="qz-btn sm primary" onclick="qzShellAddOfficeModal()">Add Office</button></div>
     <div class="qz-tbl-scroll">
       <table class="qz-tbl">
         <thead><tr><th>Office</th><th>Address</th><th>Phone</th><th>States Licensed</th><th>Underwriters</th><th class="num">Users</th><th>Status</th></tr></thead>
@@ -1551,7 +1603,7 @@ function qzShellAdminWorkflowTplHTML() { return qzShellTemplateGridHTML(QZS_TEMP
 function qzShellAdminDocTplHTML() { return qzShellTemplateGridHTML(QZS_TEMPLATES.document, 'Document Template'); }
 
 function qzShellAdminFeesHTML() {
-  const rows = QZS_FEES.map(f => `
+  const rows = qzShellGetFees().map(f => `
     <tr>
       <td><b>${esc(f.name)}</b></td>
       <td>${esc(f.type)}</td>
@@ -1561,7 +1613,7 @@ function qzShellAdminFeesHTML() {
       <td>${esc(fmtDate(f.from))}</td>
     </tr>`).join('');
   return `
-    <div class="qzs-tbl-actions"><button type="button" class="qz-btn sm primary" onclick="qzShellAction('Add Fee')">Add Fee</button></div>
+    <div class="qzs-tbl-actions"><button type="button" class="qz-btn sm primary" onclick="qzShellAddFeeModal()">Add Fee</button></div>
     <div class="qz-tbl-scroll">
       <table class="qz-tbl">
         <thead><tr><th>Fee Name</th><th>Type</th><th>Basis</th><th class="num">Amount / Rate</th><th>Applies To</th><th>Effective Date</th></tr></thead>
@@ -1641,7 +1693,7 @@ function qzShellAdminHTML() {
     <div class="qz-listhead">
       <div>
         <h2>Admin</h2>
-        <div class="sub">Agency configuration &mdash; read-only in this environment</div>
+        <div class="sub">Agency configuration &mdash; interactive sandbox</div>
       </div>
     </div>
     <div class="qzs-rep-layout">
@@ -1659,12 +1711,570 @@ function qzShellAdminHTML() {
 }
 
 /* ============================================================================
+   LIVE MUTATION MODALS (Phase E)
+   ============================================================================ */
+
+function qzShellNewContactModal() {
+  const wrap = document.createElement('div');
+  wrap.id = 'qzsModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:460px">
+      <div class="ph"><h4>New Contact</h4><button class="qz-btn sm" onclick="document.getElementById('qzsModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field"><label>Full Name</label><input id="qzsCName" placeholder="e.g. Bennett Ashcroft"></div>
+        <div class="qz-field"><label>Type</label>
+          <select id="qzsCType">
+            <option value="Buyer">Buyer</option><option value="Seller">Seller</option><option value="Agent">Agent</option>
+            <option value="Lender">Lender</option><option value="Attorney">Attorney</option><option value="Vendor">Vendor</option>
+          </select>
+        </div>
+        <div class="qz-field"><label>Company</label><input id="qzsCCompany" placeholder="e.g. Ashcroft Law PLLC"></div>
+        <div class="qz-field"><label>Email</label><input id="qzsCEmail" placeholder="e.g. bennett@ashcroftlaw.example"></div>
+        <div class="qz-field wide"><label>Phone</label><input id="qzsCPhone" placeholder="e.g. (972) 555-0144"></div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzsModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzShellSaveNewContact()">Save Contact</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzShellSaveNewContact() {
+  const name = (document.getElementById('qzsCName').value || '').trim();
+  const type = document.getElementById('qzsCType').value;
+  const comp = (document.getElementById('qzsCCompany').value || '').trim() || '—';
+  const email = (document.getElementById('qzsCEmail').value || '').trim() || '—';
+  const phone = (document.getElementById('qzsCPhone').value || '').trim() || '—';
+  if (!name) { simToast('Please enter contact name.'); return; }
+  qzDemo.contacts = qzDemo.contacts || [];
+  qzDemo.contacts.push({
+    id: 'c-demo-' + (qzDemo.contacts.length + 1),
+    name: name,
+    type: type,
+    role: type,
+    company: comp,
+    email: email,
+    phone: phone,
+    mobile: '—',
+    address: 'Plano, TX',
+    created: QZ_TODAY,
+    createdBy: 'Training User',
+    lastActivity: QZ_TODAY,
+    orders: []
+  });
+  document.getElementById('qzsModal').remove();
+  simToast(`Contact ${name} created.`, { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzShellEditContactModal(id) {
+  const c = qzShellContacts().find(x => x.id === id);
+  if (!c) { simToast('Select a contact first.'); return; }
+  const wrap = document.createElement('div');
+  wrap.id = 'qzsModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:460px">
+      <div class="ph"><h4>Edit Contact &mdash; ${esc(c.name)}</h4><button class="qz-btn sm" onclick="document.getElementById('qzsModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field"><label>Full Name</label><input id="qzsEditCName" value="${escAttr(c.name)}"></div>
+        <div class="qz-field"><label>Company</label><input id="qzsEditCCompany" value="${escAttr(c.company)}"></div>
+        <div class="qz-field"><label>Email</label><input id="qzsEditCEmail" value="${escAttr(c.email)}"></div>
+        <div class="qz-field wide"><label>Phone</label><input id="qzsEditCPhone" value="${escAttr(c.phone)}"></div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzsModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzShellSaveEditContact('${escAttr(id)}')">Update Contact</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzShellSaveEditContact(id) {
+  const name = document.getElementById('qzsEditCName').value.trim();
+  const comp = document.getElementById('qzsEditCCompany').value.trim();
+  const email = document.getElementById('qzsEditCEmail').value.trim();
+  const phone = document.getElementById('qzsEditCPhone').value.trim();
+  document.getElementById('qzsModal').remove();
+  simToast(`Contact ${name} updated.`, { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzShellImportContactsMock() {
+  qzDemo.contacts = qzDemo.contacts || [];
+  qzDemo.contacts.push({
+    id: 'c-imp-1',
+    name: 'Harrison Sterling',
+    type: 'Lender',
+    role: 'Lender',
+    company: 'Sterling Capital Mortgage',
+    email: 'hsterling@sterlingcap.example',
+    phone: '(214) 555-0922',
+    mobile: '—',
+    address: 'Dallas, TX',
+    created: QZ_TODAY,
+    createdBy: 'CSV Import',
+    lastActivity: QZ_TODAY,
+    orders: []
+  });
+  simToast('Imported 1 contact record from CSV.', { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzShellNewEventModal() {
+  const wrap = document.createElement('div');
+  wrap.id = 'qzsModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:460px">
+      <div class="ph"><h4>Schedule Calendar Event</h4><button class="qz-btn sm" onclick="document.getElementById('qzsModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field wide"><label>Event Title</label><input id="qzsEvTitle" placeholder="e.g. Remote Online Notarization (RON) Signing"></div>
+        <div class="qz-field"><label>Calendar</label>
+          <select id="qzsEvCal">
+            <option value="closings">Closings</option><option value="signings">Signings</option>
+            <option value="deadlines">Deadlines</option><option value="recordings">Recordings</option>
+          </select>
+        </div>
+        <div class="qz-field"><label>Date</label><input id="qzsEvDate" type="date" value="${QZ_TODAY}"></div>
+        <div class="qz-field"><label>Time</label><input id="qzsEvTime" value="02:00 PM &ndash; 03:00 PM"></div>
+        <div class="qz-field"><label>Location</label><input id="qzsEvLoc" value="Plano Branch (Main Conference)"></div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzsModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzShellSaveNewEvent()">Add Event</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzShellSaveNewEvent() {
+  const title = (document.getElementById('qzsEvTitle').value || '').trim();
+  const cal = document.getElementById('qzsEvCal').value;
+  const date = document.getElementById('qzsEvDate').value || QZ_TODAY;
+  const time = document.getElementById('qzsEvTime').value;
+  const loc = document.getElementById('qzsEvLoc').value;
+  if (!title) { simToast('Please enter an event title.'); return; }
+  qzDemo.events = qzDemo.events || [];
+  qzDemo.events.push({
+    id: 'ev-demo-' + (qzDemo.events.length + 1),
+    date: date,
+    cal: cal,
+    title: title,
+    time: time,
+    location: loc,
+    people: ['Training User'],
+    notes: 'Created in calendar sandbox.'
+  });
+  document.getElementById('qzsModal').remove();
+  simToast(`Event "${title}" added to calendar.`, { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzShellEditEventModal() {
+  simToast('Event modified.', { tone: 'good' });
+  qzShellCloseCalPopup();
+}
+
+function qzShellDeleteEvent() {
+  simToast('Event removed from calendar.', { tone: 'good' });
+  qzShellCloseCalPopup();
+}
+
+function qzShellNewReceiptModal() {
+  const wrap = document.createElement('div');
+  wrap.id = 'qzsModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:460px">
+      <div class="ph"><h4>Post Escrow Receipt</h4><button class="qz-btn sm" onclick="document.getElementById('qzsModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field"><label>Order #</label><input id="qzsRcpOrder" value="ORD-2026-1483"></div>
+        <div class="qz-field"><label>Amount ($)</label><input id="qzsRcpAmount" type="number" value="5000"></div>
+        <div class="qz-field"><label>Payer Name</label><input id="qzsRcpPayer" value="Marcus Vance"></div>
+        <div class="qz-field"><label>Method</label>
+          <select id="qzsRcpMethod">
+            <option value="Wire">Incoming Wire</option><option value="Check">Cashier's Check</option><option value="Earnest">Earnest Money</option>
+          </select>
+        </div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzsModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzShellSaveNewReceipt()">Post Receipt</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzShellSaveNewReceipt() {
+  const order = (document.getElementById('qzsRcpOrder').value || '').trim();
+  const amount = Number(document.getElementById('qzsRcpAmount').value) || 0;
+  const payer = (document.getElementById('qzsRcpPayer').value || '').trim();
+  const method = document.getElementById('qzsRcpMethod').value;
+  qzDemo.receipts = qzDemo.receipts || [];
+  qzDemo.receipts.push({
+    num: 'REC-2026-0' + (440 + qzDemo.receipts.length),
+    date: QZ_TODAY,
+    order: order,
+    payer: payer,
+    method: method,
+    amount: amount,
+    status: 'Deposited',
+    by: 'Training User'
+  });
+  document.getElementById('qzsModal').remove();
+  simToast(`Receipt for ${fmtMoney(amount)} posted to ${order}.`, { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzShellNewDisbursementModal() {
+  const wrap = document.createElement('div');
+  wrap.id = 'qzsModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:460px">
+      <div class="ph"><h4>Issue Escrow Disbursement</h4><button class="qz-btn sm" onclick="document.getElementById('qzsModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field"><label>Order #</label><input id="qzsDisbOrder" value="ORD-2026-1483"></div>
+        <div class="qz-field"><label>Amount ($)</label><input id="qzsDisbAmount" type="number" value="12500"></div>
+        <div class="qz-field"><label>Payee Name</label><input id="qzsDisbPayee" value="Listing Broker Inc."></div>
+        <div class="qz-field"><label>Method</label>
+          <select id="qzsDisbMethod">
+            <option value="Wire">Outgoing Wire</option><option value="Check">Check</option><option value="ACH">ACH Transfer</option>
+          </select>
+        </div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzsModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzShellSaveNewDisbursement()">Issue Disbursement</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzShellSaveNewDisbursement() {
+  const order = (document.getElementById('qzsDisbOrder').value || '').trim();
+  const amount = Number(document.getElementById('qzsDisbAmount').value) || 0;
+  const payee = (document.getElementById('qzsDisbPayee').value || '').trim();
+  const method = document.getElementById('qzsDisbMethod').value;
+  qzDemo.disbursements = qzDemo.disbursements || [];
+  qzDemo.disbursements.push({
+    num: 'DIS-2026-0' + (890 + qzDemo.disbursements.length),
+    date: QZ_TODAY,
+    order: order,
+    payee: payee,
+    method: method,
+    amount: amount,
+    status: 'Issued',
+    by: 'Training User'
+  });
+  document.getElementById('qzsModal').remove();
+  simToast(`Disbursement of ${fmtMoney(amount)} issued to ${payee}.`, { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzShellApproveDisbursements() {
+  simToast('2 pending disbursements approved and queued for bank release.', { tone: 'good' });
+}
+
+function qzShellReconcileModal() {
+  qzConfirm({
+    title: 'Confirm Monthly Escrow 3-Way Reconciliation',
+    message: 'Frost Bank Operating Escrow (***4812) &middot; Bank Balance: $1,418,920.40 &middot; Book Balance: $1,418,920.40 &middot; Trial Balance: $1,418,920.40 &middot; Variance: $0.00.',
+    confirmText: 'Certify Reconciliation',
+    onConfirm: () => {
+      simToast('Reconciliation certified for August 2026. Auditor snapshot recorded.', { tone: 'good' });
+    }
+  });
+}
+
+function qzShellNewInvoiceModal() {
+  const wrap = document.createElement('div');
+  wrap.id = 'qzsModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:460px">
+      <div class="ph"><h4>Create Accounts Receivable Invoice</h4><button class="qz-btn sm" onclick="document.getElementById('qzsModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field"><label>Order #</label><input id="qzsInvOrder" value="ORD-2026-1483"></div>
+        <div class="qz-field"><label>Bill To</label><input id="qzsInvBillTo" value="Frisco Community Lending"></div>
+        <div class="qz-field"><label>Amount ($)</label><input id="qzsInvAmount" type="number" value="745"></div>
+        <div class="qz-field"><label>Due Date</label><input id="qzsInvDue" type="date" value="${QZ_TODAY}"></div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzsModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzShellSaveNewInvoice()">Create Invoice</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzShellSaveNewInvoice() {
+  const order = (document.getElementById('qzsInvOrder').value || '').trim();
+  const billTo = (document.getElementById('qzsInvBillTo').value || '').trim();
+  const amount = Number(document.getElementById('qzsInvAmount').value) || 0;
+  const due = document.getElementById('qzsInvDue').value || QZ_TODAY;
+  qzDemo.invoices = qzDemo.invoices || [];
+  qzDemo.invoices.push({
+    num: 'INV-2026-0' + (510 + qzDemo.invoices.length),
+    order: order,
+    billTo: billTo,
+    issued: QZ_TODAY,
+    due: due,
+    amount: amount,
+    balance: amount,
+    status: 'Open'
+  });
+  document.getElementById('qzsModal').remove();
+  simToast(`Invoice for ${fmtMoney(amount)} billed to ${billTo}.`, { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzShellGeneratePosPay() {
+  qzDemo.pospay = qzDemo.pospay || [];
+  qzDemo.pospay.push({
+    date: QZ_TODAY,
+    file: 'POSPAY_FROST_' + QZ_TODAY.replace(/-/g, '') + '.TXT',
+    account: 'Frost Bank — Escrow Trust',
+    items: 4,
+    total: 38400.00,
+    status: 'Sent',
+    sent: '10:15 AM'
+  });
+  simToast('Positive Pay file generated and transmitted to Frost Bank.', { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzShellResolveException(id) {
+  qzDemo.exceptions = qzDemo.exceptions || QZS_EXCEPTIONS.map(x => Object.assign({}, x));
+  const ex = qzDemo.exceptions.find(x => x.id === id);
+  if (ex) {
+    ex.status = 'Resolved';
+    ex.history = ex.history || [];
+    ex.history.unshift({ by: 'Training User', date: QZ_TODAY, text: 'Exception reviewed and marked resolved in sandbox.' });
+  }
+  simToast(`Exception ${id || ''} resolved.`, { tone: 'good' });
+  qzShellCompClose();
+  qzRenderRoot();
+}
+
+function qzShellReassignException(id) {
+  simToast(`Exception ${id || ''} reassigned to Marisol Tran.`, { tone: 'good' });
+  qzShellCompClose();
+}
+
+function qzShellWaiveException(id) {
+  qzDemo.exceptions = qzDemo.exceptions || QZS_EXCEPTIONS.map(x => Object.assign({}, x));
+  const ex = qzDemo.exceptions.find(x => x.id === id);
+  if (ex) {
+    ex.status = 'Resolved';
+    ex.history = ex.history || [];
+    ex.history.unshift({ by: 'Underwriter', date: QZ_TODAY, text: 'Exception waived by underwriter Old Republic Title.' });
+  }
+  simToast(`Exception ${id || ''} waived by underwriter.`, { tone: 'good' });
+  qzShellCompClose();
+  qzRenderRoot();
+}
+
+function qzShellIssueCplModal() {
+  const wrap = document.createElement('div');
+  wrap.id = 'qzsModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:460px">
+      <div class="ph"><h4>Issue Closing Protection Letter (CPL)</h4><button class="qz-btn sm" onclick="document.getElementById('qzsModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field"><label>Order #</label><input id="qzsCplOrder" value="ORD-2026-1483"></div>
+        <div class="qz-field"><label>Lender</label><input id="qzsCplLender" value="Frisco Community Lending"></div>
+        <div class="qz-field"><label>Policy Type</label><input id="qzsCplPolicy" value="Loan Policy (T-2)"></div>
+        <div class="qz-field"><label>Underwriter</label><input id="qzsCplUw" value="Old Republic National Title"></div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzsModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzShellSaveCpl()">Issue CPL</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzShellSaveCpl() {
+  const order = (document.getElementById('qzsCplOrder').value || '').trim();
+  const lender = (document.getElementById('qzsCplLender').value || '').trim();
+  const policy = (document.getElementById('qzsCplPolicy').value || '').trim();
+  const uw = (document.getElementById('qzsCplUw').value || '').trim();
+  qzDemo.cpls = qzDemo.cpls || [];
+  qzDemo.cpls.push({
+    order: order,
+    lender: lender,
+    cpl: 'CPL-' + (8920 + qzDemo.cpls.length),
+    issued: QZ_TODAY,
+    expires: '2026-10-12',
+    policy: policy,
+    jacket: 'OR-TX-4489' + (qzDemo.cpls.length + 1),
+    uw: uw,
+    status: 'Active'
+  });
+  document.getElementById('qzsModal').remove();
+  simToast(`CPL issued for ${lender}.`, { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzShellInviteUserModal() {
+  const wrap = document.createElement('div');
+  wrap.id = 'qzsModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:460px">
+      <div class="ph"><h4>Invite Team Member</h4><button class="qz-btn sm" onclick="document.getElementById('qzsModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field"><label>Full Name</label><input id="qzsUsrName" placeholder="e.g. Cameron Vance"></div>
+        <div class="qz-field"><label>Email Address</label><input id="qzsUsrEmail" placeholder="e.g. cvance@bestclosing.com"></div>
+        <div class="qz-field"><label>Role</label>
+          <select id="qzsUsrRole">
+            <option value="Escrow Officer">Escrow Officer</option><option value="Escrow Assistant">Escrow Assistant</option>
+            <option value="Title Examiner">Title Examiner</option><option value="Accounting">Accounting</option>
+          </select>
+        </div>
+        <div class="qz-field"><label>Office Location</label>
+          <select id="qzsUsrOffice">
+            <option value="Plano HQ">Plano HQ</option><option value="Frisco Branch">Frisco Branch</option><option value="Dallas Downtown">Dallas Downtown</option>
+          </select>
+        </div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzsModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzShellSaveUser()">Send Invite</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzShellSaveUser() {
+  const name = (document.getElementById('qzsUsrName').value || '').trim();
+  const email = (document.getElementById('qzsUsrEmail').value || '').trim();
+  const role = document.getElementById('qzsUsrRole').value;
+  const office = document.getElementById('qzsUsrOffice').value;
+  if (!name || !email) { simToast('Please fill in name and email.'); return; }
+  qzDemo.users = qzDemo.users || [];
+  qzDemo.users.push({
+    name: name,
+    email: email,
+    role: role,
+    office: office,
+    status: 'Invited',
+    login: 'Never',
+    mfa: false
+  });
+  document.getElementById('qzsModal').remove();
+  simToast(`Invitation sent to ${email}.`, { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzShellEditUserModal(email) {
+  simToast(`User configuration modal for ${email || 'user'}.`, { tone: 'good' });
+}
+
+function qzShellToggleUser(email) {
+  qzDemo.users = qzDemo.users || QZS_USERS.map(u => Object.assign({}, u));
+  const u = qzDemo.users.find(x => x.email === email);
+  if (u) {
+    u.status = u.status === 'Disabled' ? 'Active' : 'Disabled';
+    simToast(`User ${u.name} is now ${u.status}.`, { tone: 'good' });
+    qzRenderRoot();
+  } else {
+    simToast(`User status toggled.`, { tone: 'good' });
+  }
+}
+
+function qzShellAddOfficeModal() {
+  const wrap = document.createElement('div');
+  wrap.id = 'qzsModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:460px">
+      <div class="ph"><h4>Add Branch Office</h4><button class="qz-btn sm" onclick="document.getElementById('qzsModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field wide"><label>Office Name</label><input id="qzsOffName" placeholder="e.g. Fort Worth Branch"></div>
+        <div class="qz-field wide"><label>Address</label><input id="qzsOffAddr" placeholder="e.g. 777 Main St, Fort Worth, TX 76102"></div>
+        <div class="qz-field"><label>Phone</label><input id="qzsOffPhone" placeholder="(817) 555-0100"></div>
+        <div class="qz-field"><label>States Licensed</label><input id="qzsOffStates" value="TX"></div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzsModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzShellSaveOffice()">Save Office</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzShellSaveOffice() {
+  const name = (document.getElementById('qzsOffName').value || '').trim();
+  const addr = (document.getElementById('qzsOffAddr').value || '').trim();
+  const phone = (document.getElementById('qzsOffPhone').value || '').trim();
+  const states = (document.getElementById('qzsOffStates').value || 'TX').trim();
+  if (!name) { simToast('Please enter office name.'); return; }
+  qzDemo.offices = qzDemo.offices || [];
+  qzDemo.offices.push({
+    name: name,
+    address: addr,
+    phone: phone,
+    states: states,
+    underwriters: 'Old Republic, Stewart',
+    users: 1,
+    status: 'Active'
+  });
+  document.getElementById('qzsModal').remove();
+  simToast(`Office ${name} added.`, { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzShellAddFeeModal() {
+  const wrap = document.createElement('div');
+  wrap.id = 'qzsModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:460px">
+      <div class="ph"><h4>Add Agency Fee Schedule</h4><button class="qz-btn sm" onclick="document.getElementById('qzsModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field wide"><label>Fee Name</label><input id="qzsFeeName" placeholder="e.g. Remote Notary Administrative Fee"></div>
+        <div class="qz-field"><label>Type</label><input id="qzsFeeType" value="Closing"></div>
+        <div class="qz-field"><label>Amount</label><input id="qzsFeeAmt" value="$125.00"></div>
+        <div class="qz-field"><label>Basis</label><input id="qzsFeeBasis" value="Flat"></div>
+        <div class="qz-field"><label>Applies To</label><input id="qzsFeeApplies" value="Buyer"></div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzsModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzShellSaveFee()">Save Fee</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzShellSaveFee() {
+  const name = (document.getElementById('qzsFeeName').value || '').trim();
+  const type = document.getElementById('qzsFeeType').value;
+  const amt = document.getElementById('qzsFeeAmt').value;
+  const basis = document.getElementById('qzsFeeBasis').value;
+  const applies = document.getElementById('qzsFeeApplies').value;
+  if (!name) { simToast('Please enter fee name.'); return; }
+  qzDemo.fees = qzDemo.fees || [];
+  qzDemo.fees.push({
+    name: name,
+    type: type,
+    basis: basis,
+    amount: amt,
+    applies: applies,
+    from: QZ_TODAY
+  });
+  document.getElementById('qzsModal').remove();
+  simToast(`Fee "${name}" added to schedule.`, { tone: 'good' });
+  qzRenderRoot();
+}
+
+/* ============================================================================
    DEMO MODE (?demo=1)
-   ----------------------------------------------------------------------------
-   A clean link for a stakeholder: the product without the course scaffolding.
-   Driven by a class on <body> rather than by removing nodes, so it survives the
-   re-renders that rebuild the top bar, and it never touches the boot sequence in
-   qualia-app.js — this listener simply registers after that file's own.
    ============================================================================ */
 function qzShellDemoMode() {
   let on = false;

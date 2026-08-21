@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40" fill="none">
+  <!-- Qualia app icon: the mark on a white plate, sized for the 34px and 46px
+       squares in the Test Drive picker. Geometry and colours are documented in
+       qualia-mark.svg — keep the two files in step. -->
+  <rect width="40" height="40" rx="8" fill="#ffffff"/>
+  <g transform="translate(6.5 7.5) scale(0.27)">
+    <path d="M12 14H78M12 14L52 88" stroke="#3D3F41" stroke-width="17" fill="none"/>
+    <path d="M45 35L68 76L92 14" stroke="#6CC273" stroke-width="15" fill="none"/>
+  </g>
+</svg>

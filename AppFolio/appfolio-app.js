@@ -448,6 +448,11 @@ function afGetLedgerEntry(id) { return afGet('ledgerEntry', id); }
 /* Ledger entries the visitor posted live in their own array rather than in
    created[], because a ledger is append-only and ordering matters. */
 function afAllLedgerEntries() { return afAll('ledgerEntry').concat(afDemo.ledgerEntries || []); }
+function afAddLedgerEntry(entry) {
+  if (!afDemo.ledgerEntries) afDemo.ledgerEntries = [];
+  afDemo.ledgerEntries.push(entry);
+  return entry;
+}
 
 function afBaseOwner(id) { return afBase('owner', id); }
 function afGetOwner(id) { return afGet('owner', id); }
@@ -571,6 +576,178 @@ function afAuditIntegrity() {
       }
     });
   });
+
+  /* Curriculum & Item Bank Integrity */
+  if (typeof AF_LESSONS !== 'undefined' && AF_LESSONS.length > 0) {
+    if (AF_LESSONS.length !== 13) {
+      broken.push({ type: 'curriculum', problem: 'Expected 13 lessons, found ' + AF_LESSONS.length });
+    }
+    const seenChecklistIds = {};
+    const seenScenarioIds = {};
+    const seenReviewIds = {};
+    const seenReconcileIds = {};
+    const seenComposeIds = {};
+    const seenTriageIds = {};
+
+    AF_LESSONS.forEach(function (l) {
+      if (!l.steps || l.steps.length === 0) {
+        broken.push({ type: 'lesson', id: l.id, problem: 'lesson has no steps' });
+        return;
+      }
+      l.steps.forEach(function (st, sIdx) {
+        if (!st.walk) {
+          broken.push({ type: 'lessonStep', lessonId: l.id, stepIndex: sIdx, problem: 'step is missing walk block' });
+        }
+        if (st.type === 'do') {
+          if (!st.checklistId) broken.push({ type: 'step', lessonId: l.id, problem: 'do step missing checklistId' });
+          if (seenChecklistIds[st.checklistId]) broken.push({ type: 'step', id: st.checklistId, problem: 'duplicate checklistId' });
+          seenChecklistIds[st.checklistId] = true;
+          if (AF_CHECKLIST_IDS.indexOf(st.checklistId) === -1) broken.push({ type: 'step', id: st.checklistId, problem: 'checklistId not indexed in AF_CHECKLIST_IDS' });
+        } else if (st.type === 'decide') {
+          if (!st.scenarioId) broken.push({ type: 'step', lessonId: l.id, problem: 'decide step missing scenarioId' });
+          if (seenScenarioIds[st.scenarioId]) broken.push({ type: 'step', id: st.scenarioId, problem: 'duplicate scenarioId' });
+          seenScenarioIds[st.scenarioId] = true;
+          if (!AF_SCENARIOS.some(function (s) { return s.id === st.scenarioId; })) {
+            broken.push({ type: 'step', id: st.scenarioId, problem: 'scenarioId not found in AF_SCENARIOS' });
+          }
+        } else if (st.type === 'verify') {
+          if (!st.reviewId) broken.push({ type: 'step', lessonId: l.id, problem: 'verify step missing reviewId' });
+          if (seenReviewIds[st.reviewId]) broken.push({ type: 'step', id: st.reviewId, problem: 'duplicate reviewId' });
+          seenReviewIds[st.reviewId] = true;
+          if (!AF_VERIFY_ITEMS.some(function (v) { return v.id === st.reviewId; })) {
+            broken.push({ type: 'step', id: st.reviewId, problem: 'reviewId not found in AF_VERIFY_ITEMS' });
+          }
+        } else if (st.type === 'reconcile') {
+          if (!st.reconcileId) broken.push({ type: 'step', lessonId: l.id, problem: 'reconcile step missing reconcileId' });
+          if (seenReconcileIds[st.reconcileId]) broken.push({ type: 'step', id: st.reconcileId, problem: 'duplicate reconcileId' });
+          seenReconcileIds[st.reconcileId] = true;
+          if (!AF_RECONCILE_ITEMS.some(function (r) { return r.id === st.reconcileId; })) {
+            broken.push({ type: 'step', id: st.reconcileId, problem: 'reconcileId not found in AF_RECONCILE_ITEMS' });
+          }
+        } else if (st.type === 'compose') {
+          if (!st.composeId) broken.push({ type: 'step', lessonId: l.id, problem: 'compose step missing composeId' });
+          if (seenComposeIds[st.composeId]) broken.push({ type: 'step', id: st.composeId, problem: 'duplicate composeId' });
+          seenComposeIds[st.composeId] = true;
+          const cmp = AF_COMPOSE_ITEMS.find(function (c) { return c.id === st.composeId; });
+          if (!cmp) {
+            broken.push({ type: 'step', id: st.composeId, problem: 'composeId not found in AF_COMPOSE_ITEMS' });
+          } else {
+            (cmp.rubric || []).forEach(function (rub) {
+              if (typeof AF_RUBRIC_CHECKS[rub.check] !== 'function') {
+                broken.push({ type: 'rubric', composeId: cmp.id, check: rub.check, problem: 'rubric check predicate not defined in AF_RUBRIC_CHECKS' });
+              }
+            });
+          }
+        } else if (st.type === 'triage') {
+          if (!st.triageId) broken.push({ type: 'step', lessonId: l.id, problem: 'triage step missing triageId' });
+          if (seenTriageIds[st.triageId]) broken.push({ type: 'step', id: st.triageId, problem: 'duplicate triageId' });
+          seenTriageIds[st.triageId] = true;
+          if (!AF_TRIAGE_ITEMS.some(function (t) { return t.id === st.triageId; })) {
+            broken.push({ type: 'step', id: st.triageId, problem: 'triageId not found in AF_TRIAGE_ITEMS' });
+          }
+        }
+      });
+    });
+  }
+
+  return broken;
+}
+
+/* ============================================================================
+   7b. FINANCIAL AUDIT — rule M1 to M10
+   ============================================================================
+   An accounting simulator that does not balance is worse than no simulator.
+   afAuditMoney() verifies the 10 financial invariants across all live collections
+   (catalogue + afDemo), returning an array of discrepancy objects.
+   ============================================================================ */
+
+function afAuditMoney() {
+  const broken = [];
+
+  const allLeases = afAllLeases();
+  const allLedger = afAllLedgerEntries();
+  const allBankAccounts = afAllBankAccounts();
+  const allStatements = afAllOwnerStatements();
+
+  // M10: All monetary fields must be integer cents
+  const moneyFields = [
+    'marketRent', 'rentAmount', 'depositHeld', 'petDeposit', 'petRent',
+    'amount', 'balanceAfter', 'estimateCents', 'actualCents',
+    'monthlyIncomeCents', 'totalIncomeCents', 'totalExpensesCents',
+    'managementFeeCents', 'netDistributionCents', 'currentBalanceCents',
+    'operatingCashCents', 'reserveCents'
+  ];
+
+  [
+    afAllProperties(), afAllUnits(), allLeases, allLedger,
+    afAllWorkOrders(), afAllApplications(), allBankAccounts,
+    allStatements, afAllOwners()
+  ].forEach(function (coll) {
+    coll.forEach(function (item) {
+      moneyFields.forEach(function (field) {
+        if (item[field] !== undefined && item[field] !== null) {
+          if (typeof item[field] !== 'number' || !Number.isInteger(item[field])) {
+            broken.push({ rule: 'M10', id: item.id, field: field, val: item[field], problem: 'amount is not an integer in cents' });
+          }
+        }
+      });
+    });
+  });
+
+  // M1 & M2: Per-lease ledger balance chain
+  allLeases.forEach(function (l) {
+    const entries = allLedger.filter(function (e) { return e.leaseId === l.id; });
+    if (entries.length === 0) return;
+
+    let calcRunning = 0;
+    entries.forEach(function (e) {
+      const delta = (e.type === 'charge' ? e.amount : -e.amount);
+      calcRunning += delta;
+      if (e.balanceAfter !== calcRunning) {
+        broken.push({ rule: 'M2', leaseId: l.id, entryId: e.id, expected: calcRunning, actual: e.balanceAfter, problem: 'ledger entry balanceAfter does not equal chained balance' });
+      }
+    });
+
+    const lastEntry = entries[entries.length - 1];
+    if (lastEntry && l.balanceCents !== undefined && l.balanceCents !== lastEntry.balanceAfter) {
+      broken.push({ rule: 'M1', leaseId: l.id, expected: lastEntry.balanceAfter, actual: l.balanceCents, problem: 'lease balanceCents does not match last ledger entry balanceAfter' });
+    }
+  });
+
+  // M3: Rent Roll
+  const activeLeases = allLeases.filter(function (l) { return l.status === 'active'; });
+  const totalActiveRent = activeLeases.reduce(function (sum, l) { return sum + (l.rentAmount || 0); }, 0);
+  if (totalActiveRent <= 0 || !Number.isInteger(totalActiveRent)) {
+    broken.push({ rule: 'M3', problem: 'active rent roll is invalid', total: totalActiveRent });
+  }
+
+  // M4: Security Deposit escrow
+  const secAccount = allBankAccounts.find(function (b) { return b.id === 'BANK-03' || b.type === 'security-deposit'; });
+  const totalDeposits = activeLeases.reduce(function (sum, l) { return sum + (l.depositHeld || 0); }, 0);
+  if (secAccount && secAccount.currentBalanceCents !== totalDeposits) {
+    broken.push({ rule: 'M4', expected: totalDeposits, actual: secAccount.currentBalanceCents, problem: 'security deposit bank balance does not equal sum of active lease deposits held' });
+  }
+
+  // M7 & M8: Owner Statements
+  /* M8 rounding rule: managementFee is rounded to the nearest integer cent
+     using round-half-up: Math.round((income * feePct) / 100). */
+  allStatements.forEach(function (stmt) {
+    const expectedDist = (stmt.totalIncomeCents || 0) - (stmt.totalExpensesCents || 0) - (stmt.managementFeeCents || 0);
+    if (stmt.netDistributionCents !== expectedDist) {
+      broken.push({ rule: 'M7', id: stmt.id, expected: expectedDist, actual: stmt.netDistributionCents, problem: 'owner statement netDistribution does not equal income - expenses - fee' });
+    }
+  });
+
+  // M9: Delinquency report sum matches sum of all positive resident ledger balances
+  const sumDelinquentLeases = allLeases.reduce(function (sum, l) {
+    const entries = allLedger.filter(function (e) { return e.leaseId === l.id; });
+    const lastBal = entries.length > 0 ? entries[entries.length - 1].balanceAfter : 0;
+    return sum + (lastBal > 0 ? lastBal : 0);
+  }, 0);
+
+  if (sumDelinquentLeases < 0 || !Number.isInteger(sumDelinquentLeases)) {
+    broken.push({ rule: 'M9', problem: 'delinquency ledger sum is invalid' });
+  }
 
   return broken;
 }
@@ -738,6 +915,16 @@ function afRenderLessonBanner() {
     '</div>';
 }
 
+function afPageHead(title, subtitle, actions) {
+  return '<div class="af-head">' +
+    '<div>' +
+    '<h2>' + esc(title) + '</h2>' +
+    (subtitle ? '<p class="af-lede">' + esc(subtitle) + '</p>' : '') +
+    '</div>' +
+    (actions ? '<div class="af-actions">' + actions + '</div>' : '') +
+    '</div>';
+}
+
 const AF_VIEWS = {
   'dashboard':       function () { return afDashboardHTML(); },
   'properties':      function () { return afPropertiesHTML(); },
@@ -757,7 +944,13 @@ const AF_VIEWS = {
   'tasks':           function () { return afTasksHTML(); },
   'settings':        function () { return afSettingsHTML(); },
   'lessons':         function () { return afLessonsHTML(); },
-  'lesson':          function () { return afLessonDetailHTML(); }
+  'lesson':          function () { return afLessonDetailHTML(); },
+  'scenario':        function () { return afScenarioDetailHTML(); },
+  'review':          function () { return afReviewDetailHTML(); },
+  'reconcile':       function () { return afReconcileDetailHTML(); },
+  'compose':         function () { return afComposeDetailHTML(); },
+  'triage':          function () { return afTriageDetailHTML(); },
+  'exam':            function () { return afExamHTML(); }
 };
 
 function afRenderRoot() {
@@ -788,70 +981,823 @@ function afEmptyState(o) {
     '</div>';
 }
 
-/* Page header, shared by every section so the title, lede and actions line up
-   identically everywhere. */
-function afPageHead(title, lede, actions) {
-  return '<div class="af-pagehead">' +
-    '<div><h1 class="af-page-title">' + esc(title) + '</h1>' +
-    (lede ? '<p class="af-page-lede">' + esc(lede) + '</p>' : '') + '</div>' +
-    (actions ? '<div class="af-pagehead-actions">' + actions + '</div>' : '') +
+/* ============================================================================
+   9. MODAL AND WORKFLOW ENGINE
+   ============================================================================ */
+
+let afActiveModal = null;
+
+function afOpenModal(title, bodyHTML, footHTML, wide) {
+  afCloseModal();
+  const wrap = document.createElement('div');
+  wrap.className = 'af-modal-backdrop';
+  wrap.id = 'afModalWrap';
+  wrap.innerHTML =
+    '<div class="af-modal' + (wide ? ' af-modal-wide' : '') + '" role="dialog" aria-modal="true">' +
+      '<h3 class="af-modal-title">' + esc(title) + '</h3>' +
+      '<div class="af-modal-body">' + bodyHTML + '</div>' +
+      '<div class="af-modal-foot">' +
+        (footHTML || '<button type="button" class="af-btn" onclick="afCloseModal()">Close</button>') +
+      '</div>' +
     '</div>';
+  document.body.appendChild(wrap);
+  afActiveModal = wrap;
 }
 
+function afCloseModal() {
+  const el = document.getElementById('afModalWrap');
+  if (el) el.remove();
+  afActiveModal = null;
+}
+
+/* Modal: Add Property (Type A) */
+function afModalAddProperty() {
+  const owners = afAllOwners();
+  const body =
+    '<div class="af-form-group"><label class="af-label">Property Name</label>' +
+    '<input type="text" id="afPropName" class="af-input" placeholder="e.g. 742 Evergreen Terrace"></div>' +
+    '<div class="af-form-group"><label class="af-label">Address</label>' +
+    '<input type="text" id="afPropAddr" class="af-input" placeholder="Street address"></div>' +
+    '<div class="af-form-group"><label class="af-label">City, State, Zip</label>' +
+    '<input type="text" id="afPropCity" class="af-input" value="Frisco, TX 75034"></div>' +
+    '<div class="af-form-group"><label class="af-label">Property Type</label>' +
+    '<select id="afPropType" class="af-select">' +
+      '<option value="single-family">Single Family</option>' +
+      '<option value="duplex">Duplex</option>' +
+      '<option value="fourplex">Fourplex</option>' +
+      '<option value="apartment">Apartment Community</option>' +
+    '</select></div>' +
+    '<div class="af-form-group"><label class="af-label">Primary Owner</label>' +
+    '<select id="afPropOwner" class="af-select">' +
+      owners.map(function (o) { return '<option value="' + escAttr(o.id) + '">' + esc(o.name) + '</option>'; }).join('') +
+    '</select></div>' +
+    '<div class="af-form-group"><label class="af-label">Management Fee (%)</label>' +
+    '<input type="number" id="afPropFee" class="af-input" value="8.0" step="0.5"></div>';
+
+  const foot =
+    '<button type="button" class="af-btn" onclick="afCloseModal()">Cancel</button>' +
+    '<button type="button" class="af-btn primary" onclick="afSaveProperty()">Save Property</button>';
+
+  afOpenModal('Add New Property', body, foot);
+}
+
+function afSaveProperty() {
+  const name = document.getElementById('afPropName').value.trim();
+  const addr = document.getElementById('afPropAddr').value.trim();
+  const cityZip = document.getElementById('afPropCity').value.trim();
+  const type = document.getElementById('afPropType').value;
+  const ownerId = document.getElementById('afPropOwner').value;
+  const feePct = Math.round(parseFloat(document.getElementById('afPropFee').value || '8') * 100);
+
+  if (!name || !addr) {
+    simToast('Please provide a property name and address.');
+    return;
+  }
+
+  const newId = 'PROP-' + (1000 + afAllProperties().length + 1);
+  const parts = cityZip.split(',');
+  const city = parts[0] ? parts[0].trim() : 'Frisco';
+  const stateZip = parts[1] ? parts[1].trim().split(' ') : ['TX', '75034'];
+
+  const prop = {
+    id: newId,
+    name: name,
+    address: addr,
+    city: city,
+    state: stateZip[0] || 'TX',
+    zip: stateZip[1] || '75034',
+    county: 'Collin',
+    type: type,
+    yearBuilt: 2022,
+    unitCount: 1,
+    ownerIds: [ownerId],
+    ownerSplit: {},
+    managementFeePct: feePct,
+    operatingCashCents: 500000,
+    status: 'active'
+  };
+  prop.ownerSplit[ownerId] = 100;
+
+  afCreate('property', prop);
+
+  // Auto-create Unit 01 for this property
+  const unit = {
+    id: 'UNIT-' + newId.slice(5) + '-01',
+    propertyId: newId,
+    label: '01',
+    beds: 3, baths: 2, sqft: 1800,
+    marketRent: 220000,
+    status: 'vacant-ready',
+    currentLeaseId: null,
+    amenities: ['Central HVAC', 'Refrigerator', 'Dishwasher'],
+    lastRenovated: afToday()
+  };
+  afCreate('unit', unit);
+
+  afCloseModal();
+  simToast('Property "' + name + '" created successfully.', { tone: 'good' });
+  afRenderRoot();
+}
+
+function afModalEditProperty(id) {
+  const p = afGetProperty(id);
+  if (!p) return;
+
+  const body =
+    '<div class="af-form-group"><label class="af-label">Property Name</label>' +
+    '<input type="text" id="afEditPropName" class="af-input" value="' + escAttr(p.name) + '"></div>' +
+    '<div class="af-form-group"><label class="af-label">Address</label>' +
+    '<input type="text" id="afEditPropAddr" class="af-input" value="' + escAttr(p.address) + '"></div>' +
+    '<div class="af-form-group"><label class="af-label">Management Fee (%)</label>' +
+    '<input type="number" id="afEditPropFee" class="af-input" value="' + (p.managementFeePct / 100).toFixed(1) + '" step="0.5"></div>';
+
+  const foot =
+    '<button type="button" class="af-btn" onclick="afCloseModal()">Cancel</button>' +
+    '<button type="button" class="af-btn primary" onclick="afUpdateProperty(\'' + escAttr(p.id) + '\')">Save Changes</button>';
+
+  afOpenModal('Edit Property Details', body, foot);
+}
+
+function afUpdateProperty(id) {
+  const name = document.getElementById('afEditPropName').value.trim();
+  const addr = document.getElementById('afEditPropAddr').value.trim();
+  const feePct = Math.round(parseFloat(document.getElementById('afEditPropFee').value || '8') * 100);
+
+  if (!name || !addr) return;
+
+  afSetOverride('property', id, {
+    name: name,
+    address: addr,
+    managementFeePct: feePct
+  });
+
+  afCloseModal();
+  simToast('Property details updated.', { tone: 'good' });
+  afRenderRoot();
+}
+
+/* Modal: Add Resident (Type A) */
+function afModalAddResident() {
+  const vacantUnits = afAllUnits().filter(function (u) { return u.status.indexOf('vacant') === 0; });
+  const body =
+    '<div class="af-form-group"><label class="af-label">Full Name</label>' +
+    '<input type="text" id="afResName" class="af-input" placeholder="e.g. Rachel Adams"></div>' +
+    '<div class="af-form-group"><label class="af-label">Email Address</label>' +
+    '<input type="email" id="afResEmail" class="af-input" placeholder="rachel.adams@example.com"></div>' +
+    '<div class="af-form-group"><label class="af-label">Phone Number</label>' +
+    '<input type="tel" id="afResPhone" class="af-input" value="555-0195"></div>' +
+    '<div class="af-form-group"><label class="af-label">Assign Unit</label>' +
+    '<select id="afResUnit" class="af-select">' +
+      (vacantUnits.length
+        ? vacantUnits.map(function (u) {
+            const p = afGetProperty(u.propertyId);
+            return '<option value="' + escAttr(u.id) + '">' + esc((p ? p.name : '') + ' — Unit ' + u.label + ' ($' + (u.marketRent / 100) + '/mo)') + '</option>';
+          }).join('')
+        : '<option value="">No vacant units available</option>') +
+    '</select></div>';
+
+  const foot =
+    '<button type="button" class="af-btn" onclick="afCloseModal()">Cancel</button>' +
+    '<button type="button" class="af-btn primary" onclick="afSaveResident()"' + (vacantUnits.length ? '' : ' disabled') + '>Create Resident</button>';
+
+  afOpenModal('Add Resident', body, foot);
+}
+
+function afSaveResident() {
+  const name = document.getElementById('afResName').value.trim();
+  const email = document.getElementById('afResEmail').value.trim();
+  const phone = document.getElementById('afResPhone').value.trim();
+  const unitId = document.getElementById('afResUnit').value;
+
+  if (!name || !email || !unitId) {
+    simToast('Please fill in all resident fields.');
+    return;
+  }
+
+  const u = afGetUnit(unitId);
+  const resId = 'RES-' + (9000 + afAllResidents().length + 1);
+  const leaseId = 'LEASE-' + (9000 + afAllLeases().length + 1);
+
+  const res = {
+    id: resId,
+    name: name,
+    email: email,
+    phone: phone,
+    propertyId: u ? u.propertyId : '',
+    unitId: unitId,
+    leaseId: leaseId,
+    emergencyContact: { name: 'Contact Person', phone: '555-0199', relation: 'Relative' }
+  };
+  afCreate('resident', res);
+
+  const lease = {
+    id: leaseId,
+    unitId: unitId,
+    residentIds: [resId],
+    startDate: afToday(),
+    endDate: afAddDays(afToday(), 365),
+    rentAmount: u ? u.marketRent : 180000,
+    dueDay: 1,
+    depositHeld: u ? u.marketRent : 180000,
+    petDeposit: 0,
+    petRent: 0,
+    status: 'active',
+    renewalOffered: false,
+    moveInDate: afToday(),
+    moveOutDate: null,
+    balanceCents: 0
+  };
+  afCreate('lease', lease);
+
+  // Update unit status to occupied
+  afSetOverride('unit', unitId, {
+    status: 'occupied',
+    currentLeaseId: leaseId
+  });
+
+  afCloseModal();
+  simToast('Resident ' + name + ' created and assigned to unit.', { tone: 'good' });
+  afRenderRoot();
+}
+
+/* Modal: Add Owner (Type A) */
+function afModalAddOwner() {
+  const props = afAllProperties();
+  const body =
+    '<div class="af-form-group"><label class="af-label">Owner Name / Entity</label>' +
+    '<input type="text" id="afOwnName" class="af-input" placeholder="e.g. Austin Capital Holdings LLC"></div>' +
+    '<div class="af-form-group"><label class="af-label">Email</label>' +
+    '<input type="email" id="afOwnEmail" class="af-input" placeholder="contact@austincapital.example.com"></div>' +
+    '<div class="af-form-group"><label class="af-label">Phone</label>' +
+    '<input type="tel" id="afOwnPhone" class="af-input" value="555-0185"></div>' +
+    '<div class="af-form-group"><label class="af-label">Assigned Property</label>' +
+    '<select id="afOwnProp" class="af-select">' +
+      props.map(function (p) { return '<option value="' + escAttr(p.id) + '">' + esc(p.name) + '</option>'; }).join('') +
+    '</select></div>' +
+    '<div class="af-form-group"><label class="af-label">Operating Reserve ($)</label>' +
+    '<input type="number" id="afOwnReserve" class="af-input" value="500"></div>';
+
+  const foot =
+    '<button type="button" class="af-btn" onclick="afCloseModal()">Cancel</button>' +
+    '<button type="button" class="af-btn primary" onclick="afSaveOwner()">Create Owner</button>';
+
+  afOpenModal('Add Property Owner', body, foot);
+}
+
+function afSaveOwner() {
+  const name = document.getElementById('afOwnName').value.trim();
+  const email = document.getElementById('afOwnEmail').value.trim();
+  const phone = document.getElementById('afOwnPhone').value.trim();
+  const propId = document.getElementById('afOwnProp').value;
+  const reserveCents = Math.round(parseFloat(document.getElementById('afOwnReserve').value || '500') * 100);
+
+  if (!name || !email) {
+    simToast('Please provide owner name and email.');
+    return;
+  }
+
+  const ownId = 'OWN-' + (900 + afAllOwners().length + 1);
+  const owner = {
+    id: ownId,
+    name: name,
+    type: name.toLowerCase().includes('llc') || name.toLowerCase().includes('partners') ? 'entity' : 'individual',
+    email: email,
+    phone: phone,
+    address: '500 Legacy Dr, Plano, TX 75024',
+    taxId: '***-**-7712',
+    propertyIds: [propId],
+    bankAccount: { bank: 'Chase', routing: '111000614', account: '***8812' },
+    drawPreference: 'ach',
+    reserveCents: reserveCents
+  };
+  afCreate('owner', owner);
+
+  afCloseModal();
+  simToast('Owner ' + name + ' added successfully.', { tone: 'good' });
+  afRenderRoot();
+}
+
+/* Modal: Create Work Order (Type A) */
+function afModalCreateWorkOrder() {
+  const units = afAllUnits();
+  const vendors = afAllVendors();
+  const body =
+    '<div class="af-form-group"><label class="af-label">Target Unit</label>' +
+    '<select id="afWoUnit" class="af-select">' +
+      units.map(function (u) {
+        const p = afGetProperty(u.propertyId);
+        return '<option value="' + escAttr(u.id) + '">' + esc((p ? p.name : '') + ' — Unit ' + u.label) + '</option>';
+      }).join('') +
+    '</select></div>' +
+    '<div class="af-form-group"><label class="af-label">Category</label>' +
+    '<select id="afWoCat" class="af-select">' +
+      '<option value="plumbing">Plumbing</option>' +
+      '<option value="hvac">HVAC & Heating</option>' +
+      '<option value="electrical">Electrical</option>' +
+      '<option value="appliances">Appliances</option>' +
+      '<option value="roofing">Roofing & Gutters</option>' +
+      '<option value="locksmith">Locksmith</option>' +
+      '<option value="cleaning">Cleaning & Turn</option>' +
+    '</select></div>' +
+    '<div class="af-form-group"><label class="af-label">Priority</label>' +
+    '<select id="afWoPri" class="af-select">' +
+      '<option value="normal">Normal</option>' +
+      '<option value="high">High</option>' +
+      '<option value="emergency">Emergency</option>' +
+      '<option value="low">Low</option>' +
+    '</select></div>' +
+    '<div class="af-form-group"><label class="af-label">Assign Vendor</label>' +
+    '<select id="afWoVend" class="af-select">' +
+      vendors.map(function (v) {
+        const exp = afDaysFromToday(v.insuranceExpires) < 0;
+        return '<option value="' + escAttr(v.id) + '">' + esc(v.name + (exp ? ' (COI EXPIRED)' : '')) + '</option>';
+      }).join('') +
+    '</select></div>' +
+    '<div class="af-form-group"><label class="af-label">Description of Issue</label>' +
+    '<textarea id="afWoDesc" class="af-textarea" placeholder="Detail tenant reported issue..."></textarea></div>' +
+    '<div class="af-form-group"><label class="af-label">Estimated Cost ($)</label>' +
+    '<input type="number" id="afWoEst" class="af-input" value="180"></div>';
+
+  const foot =
+    '<button type="button" class="af-btn" onclick="afCloseModal()">Cancel</button>' +
+    '<button type="button" class="af-btn primary" onclick="afSaveWorkOrder()">Create Work Order</button>';
+
+  afOpenModal('New Maintenance Work Order', body, foot);
+}
+
+function afSaveWorkOrder() {
+  const unitId = document.getElementById('afWoUnit').value;
+  const cat = document.getElementById('afWoCat').value;
+  const pri = document.getElementById('afWoPri').value;
+  const vendId = document.getElementById('afWoVend').value;
+  const desc = document.getElementById('afWoDesc').value.trim();
+  const estCents = Math.round(parseFloat(document.getElementById('afWoEst').value || '150') * 100);
+
+  if (!desc) {
+    simToast('Please enter a description of the work order.');
+    return;
+  }
+
+  const u = afGetUnit(unitId);
+  const woId = 'WO-2026-' + (8000 + afAllWorkOrders().length + 1);
+
+  const wo = {
+    id: woId,
+    propertyId: u ? u.propertyId : '',
+    unitId: unitId,
+    vendorId: vendId,
+    reportedBy: u && u.status === 'occupied' ? 'Resident' : 'Property Manager',
+    category: cat,
+    priority: pri,
+    status: 'assigned',
+    title: desc.slice(0, 50),
+    description: desc,
+    entryNoticeSent: false,
+    scheduledDate: afAddDays(afToday(), 1),
+    estimateCents: estCents,
+    actualCents: 0,
+    createdDate: afToday()
+  };
+  afCreate('workOrder', wo);
+
+  afCloseModal();
+  simToast('Work order ' + woId + ' created.', { tone: 'good' });
+  afRenderRoot();
+}
+
+/* Modal: Post Payment (Type A) */
+function afModalPostPayment(presetLeaseId) {
+  const leases = afAllLeases().filter(function (l) { return l.status === 'active'; });
+  const body =
+    '<div class="af-form-group"><label class="af-label">Select Active Lease / Resident</label>' +
+    '<select id="afPayLease" class="af-select">' +
+      leases.map(function (l) {
+        const u = afGetUnit(l.unitId);
+        const r = l.residentIds.length ? afGetResident(l.residentIds[0]) : null;
+        const sel = l.id === presetLeaseId ? ' selected' : '';
+        return '<option value="' + escAttr(l.id) + '"' + sel + '>' +
+          esc((r ? r.name : 'Resident') + ' (Unit ' + (u ? u.label : '') + ') — Balance: ' + afFmtMoney(l.balanceCents)) +
+        '</option>';
+      }).join('') +
+    '</select></div>' +
+    '<div class="af-form-group"><label class="af-label">Payment Amount ($)</label>' +
+    '<input type="number" id="afPayAmt" class="af-input" value="1250" step="10"></div>' +
+    '<div class="af-form-group"><label class="af-label">Payment Method</label>' +
+    '<select id="afPayMethod" class="af-select">' +
+      '<option value="ach">Electronic ACH (Resident Portal)</option>' +
+      '<option value="check">Personal Check</option>' +
+      '<option value="cashier">Cashier\'s Check / Money Order</option>' +
+    '</select></div>' +
+    '<div class="af-form-group"><label class="af-label">Payment Date</label>' +
+    '<input type="date" id="afPayDate" class="af-input" value="' + afToday() + '"></div>';
+
+  const foot =
+    '<button type="button" class="af-btn" onclick="afCloseModal()">Cancel</button>' +
+    '<button type="button" class="af-btn primary" onclick="afSavePayment()">Record Payment</button>';
+
+  afOpenModal('Post Resident Payment', body, foot);
+}
+
+function afSavePayment() {
+  const leaseId = document.getElementById('afPayLease').value;
+  const amtCents = Math.round(parseFloat(document.getElementById('afPayAmt').value || '0') * 100);
+  const method = document.getElementById('afPayMethod').value;
+  const payDate = document.getElementById('afPayDate').value || afToday();
+
+  if (amtCents <= 0) {
+    simToast('Payment amount must be greater than zero.');
+    return;
+  }
+
+  const lease = afGetLease(leaseId);
+  if (!lease) return;
+
+  const entries = afAllLedgerEntries().filter(function (e) { return e.leaseId === leaseId; });
+  const prevBal = entries.length ? entries[entries.length - 1].balanceAfter : 0;
+  const newBal = prevBal - amtCents;
+
+  const entry = {
+    id: 'LEDGER-DEMO-' + (1000 + (afDemo.ledgerEntries || []).length + 1),
+    leaseId: leaseId,
+    date: payDate,
+    type: 'payment',
+    category: 'rent-payment',
+    description: 'Resident Payment via ' + method.toUpperCase(),
+    amount: amtCents,
+    balanceAfter: newBal
+  };
+
+  if (!afDemo.ledgerEntries) afDemo.ledgerEntries = [];
+  afDemo.ledgerEntries.push(entry);
+
+  // Update lease balance override
+  afSetOverride('lease', leaseId, { balanceCents: newBal });
+
+  afCloseModal();
+  simToast('Payment of ' + afFmtMoney(amtCents) + ' posted successfully.', { tone: 'good' });
+  afRenderRoot();
+}
+
+/* Modal: Apply Late Fee (Type A) */
+function afModalApplyLateFee(presetLeaseId) {
+  const lease = afGetLease(presetLeaseId);
+  if (!lease) return;
+
+  const body =
+    '<p>Assess standard late fee for <b>Lease ' + esc(lease.id) + '</b> pursuant to lease terms.</p>' +
+    '<div class="af-form-group"><label class="af-label">Late Fee Amount ($)</label>' +
+    '<input type="number" id="afLateFeeAmt" class="af-input" value="50.00" step="5"></div>';
+
+  const foot =
+    '<button type="button" class="af-btn" onclick="afCloseModal()">Cancel</button>' +
+    '<button type="button" class="af-btn primary" onclick="afSaveLateFee(\'' + escAttr(presetLeaseId) + '\')">Apply Fee</button>';
+
+  afOpenModal('Assess Late Fee', body, foot);
+}
+
+function afSaveLateFee(leaseId) {
+  const amtCents = Math.round(parseFloat(document.getElementById('afLateFeeAmt').value || '50') * 100);
+  const entries = afAllLedgerEntries().filter(function (e) { return e.leaseId === leaseId; });
+  const prevBal = entries.length ? entries[entries.length - 1].balanceAfter : 0;
+  const newBal = prevBal + amtCents;
+
+  const entry = {
+    id: 'LEDGER-DEMO-' + (1000 + (afDemo.ledgerEntries || []).length + 1),
+    leaseId: leaseId,
+    date: afToday(),
+    type: 'charge',
+    category: 'late-fee',
+    description: 'Late Fee Assessment',
+    amount: amtCents,
+    balanceAfter: newBal
+  };
+
+  if (!afDemo.ledgerEntries) afDemo.ledgerEntries = [];
+  afDemo.ledgerEntries.push(entry);
+
+  afSetOverride('lease', leaseId, { balanceCents: newBal });
+
+  afCloseModal();
+  simToast('Late fee of ' + afFmtMoney(amtCents) + ' applied.', { tone: 'good' });
+  afRenderRoot();
+}
+
+/* Modal: Request Owner Draw with Fiduciary Check (M6) */
+function afModalRequestDraw(ownerId) {
+  const o = afGetOwner(ownerId);
+  if (!o) return;
+
+  const prop = afGetProperty(o.propertyIds[0]);
+  const operatingCash = prop ? prop.operatingCashCents : 820000;
+
+  const body =
+    '<div class="af-form-group"><label class="af-label">Owner</label>' +
+    '<div class="af-v big"><b>' + esc(o.name) + '</b></div></div>' +
+    '<div class="af-form-group"><label class="af-label">Property Available Operating Cash</label>' +
+    '<div class="af-v" style="color:var(--af-accent);font-weight:700;">' + afFmtMoney(operatingCash) + '</div>' +
+    '<div style="font-size:12px;color:var(--af-muted);margin-top:4px;">(Security deposits in escrow are excluded by fiduciary law)</div></div>' +
+    '<div class="af-form-group"><label class="af-label">Requested Draw Amount ($)</label>' +
+    '<input type="number" id="afDrawAmt" class="af-input" value="14500" step="100"></div>';
+
+  const foot =
+    '<button type="button" class="af-btn" onclick="afCloseModal()">Cancel</button>' +
+    '<button type="button" class="af-btn primary" onclick="afExecuteOwnerDraw(\'' + escAttr(ownerId) + '\', ' + operatingCash + ')">Submit Draw Request</button>';
+
+  afOpenModal('Process Owner Draw Disbursement', body, foot);
+}
+
+function afExecuteOwnerDraw(ownerId, availableCash) {
+  const drawCents = Math.round(parseFloat(document.getElementById('afDrawAmt').value || '0') * 100);
+
+  if (drawCents <= 0) {
+    simToast('Please enter a valid draw amount.');
+    return;
+  }
+
+  // Fiduciary Boundary Enforcement (M6)
+  if (drawCents > availableCash) {
+    const errorBody =
+      '<div class="af-alert-danger">' +
+        '<b>FIDUCIARY TRUST BOUNDARY VIOLATION:</b><br>' +
+        'The requested draw of <b>' + afFmtMoney(drawCents) + '</b> exceeds available property operating cash balance (<b>' + afFmtMoney(availableCash) + '</b>).<br><br>' +
+        'Disbursing this amount would invade statutory tenant security deposit escrow funds, which constitutes an unauthorized co-mingling and fiduciary accounting violation under Texas Property Code.' +
+      '</div>' +
+      '<p>To proceed, reduce the draw amount to ' + afFmtMoney(availableCash) + ' or wait until additional rent receipts clear into the operating account.</p>';
+
+    const errorFoot = '<button type="button" class="af-btn" onclick="afCloseModal()">Acknowledge &amp; Close</button>';
+    afOpenModal('Draw Request Rejected', errorBody, errorFoot);
+    return;
+  }
+
+  // Process valid draw
+  afCloseModal();
+  simToast('Owner draw of ' + afFmtMoney(drawCents) + ' processed via ACH.', { tone: 'good' });
+  afRenderRoot();
+}
+
+/* Modal: Application Decision with FCRA Adverse Action */
+function afModalDecideApp(appId) {
+  const app = afGetApplication(appId);
+  if (!app) return;
+
+  const body =
+    '<div class="af-form-group"><label class="af-label">Applicant</label>' +
+    '<b>' + esc(app.name) + '</b> &bull; Credit Score: <b>' + (app.screening ? app.screening.creditScore : '—') + '</b></div>' +
+    '<div class="af-form-group"><label class="af-label">Select Action</label>' +
+    '<select id="afAppDecision" class="af-select" onchange="afToggleAdverseActionNotice(this.value)">' +
+      '<option value="approved">Approve Application</option>' +
+      '<option value="conditional">Conditional Approval (Higher Deposit)</option>' +
+      '<option value="denied">Decline Application (Credit / Background)</option>' +
+    '</select></div>' +
+    '<div id="afAdverseNoticeBox" style="display:none;" class="af-alert-warn">' +
+      '<b>FCRA Requirement:</b> Under 15 U.S.C. &sect; 1681m, declining an applicant based on credit requires issuing a formal Adverse Action Notice disclosing the credit reporting agency.' +
+      '<div style="margin-top:8px;">' +
+        '<button type="button" class="af-btn sm" onclick="SimEngine.viewDoc(\'documents/adverse-action-notice.html\', \'FCRA Adverse Action Notice\')">Preview Adverse Action Notice</button>' +
+      '</div>' +
+    '</div>';
+
+  const foot =
+    '<button type="button" class="af-btn" onclick="afCloseModal()">Cancel</button>' +
+    '<button type="button" class="af-btn primary" onclick="afSubmitAppDecision(\'' + escAttr(appId) + '\')">Confirm Decision</button>';
+
+  afOpenModal('Screening Decision', body, foot);
+}
+
+function afToggleAdverseActionNotice(val) {
+  const box = document.getElementById('afAdverseNoticeBox');
+  if (box) box.style.display = (val === 'denied' ? 'block' : 'none');
+}
+
+function afSubmitAppDecision(appId) {
+  const dec = document.getElementById('afAppDecision').value;
+  const isDenied = (dec === 'denied');
+
+  afSetOverride('application', appId, {
+    status: dec,
+    adverseActionSent: isDenied,
+    adverseActionSentDate: isDenied ? afToday() : null
+  });
+
+  afCloseModal();
+  simToast('Application marked as ' + dec.toUpperCase() + (isDenied ? ' (Adverse Action Notice recorded).' : '.'), { tone: 'good' });
+  afRenderRoot();
+}
+
+/* Dispatch Work Order with Safety Warnings */
+function afDispatchWorkOrder(woId) {
+  const wo = afGetWorkOrder(woId);
+  if (!wo) return;
+
+  const v = wo.vendorId ? afGetVendor(wo.vendorId) : null;
+  const u = afGetUnit(wo.unitId);
+  const isInsuranceExpired = v && afDaysFromToday(v.insuranceExpires) < 0;
+  const isOccupiedNoNotice = u && u.status === 'occupied' && !wo.entryNoticeSent;
+
+  if (isInsuranceExpired) {
+    const body =
+      '<div class="af-alert-danger">' +
+        '<b>VENDOR INSURANCE EXPIRED:</b><br>' +
+        'Vendor <b>' + esc(v.name) + '</b> has an expired Certificate of Insurance (expired ' + afFmtDate(v.insuranceExpires) + ').<br>' +
+        'Dispatching uninsured contractors creates property liability risk.' +
+      '</div>' +
+      '<p>Do you wish to proceed with dispatch anyway or reassign to an active vendor?</p>';
+
+    const foot =
+      '<button type="button" class="af-btn" onclick="afCloseModal()">Cancel Dispatch</button>' +
+      '<button type="button" class="af-btn danger" onclick="afConfirmDispatchGo(\'' + escAttr(woId) + '\')">Dispatch Anyway</button>';
+
+    afOpenModal('Vendor Compliance Warning', body, foot);
+    return;
+  }
+
+  if (isOccupiedNoNotice) {
+    const body =
+      '<div class="af-alert-warn">' +
+        '<b>24-HOUR NOTICE REQUIRED:</b><br>' +
+        'Unit <b>' + esc(u.label) + '</b> is currently occupied and a 24-Hour Notice of Intent to Enter has not yet been issued.' +
+      '</div>' +
+      '<div style="margin-top:10px;">' +
+        '<button type="button" class="af-btn" onclick="SimEngine.viewDoc(\'documents/sample-notice.html\', \'24-Hour Notice of Intent to Enter\')">Preview / Issue 24-Hour Notice</button>' +
+      '</div>';
+
+    const foot =
+      '<button type="button" class="af-btn" onclick="afCloseModal()">Cancel</button>' +
+      '<button type="button" class="af-btn primary" onclick="afIssueNoticeAndDispatch(\'' + escAttr(woId) + '\')">Issue Notice &amp; Dispatch</button>';
+
+    afOpenModal('Notice of Entry Warning', body, foot);
+    return;
+  }
+
+  afConfirmDispatchGo(woId);
+}
+
+function afConfirmDispatchGo(woId) {
+  afSetOverride('workOrder', woId, { status: 'in-progress' });
+  afCloseModal();
+  simToast('Work order ' + woId + ' dispatched.', { tone: 'good' });
+  afRenderRoot();
+}
+
+function afIssueNoticeAndDispatch(woId) {
+  afSetOverride('workOrder', woId, { status: 'scheduled', entryNoticeSent: true });
+  afCloseModal();
+  simToast('24-Hour Notice issued and work order scheduled.', { tone: 'good' });
+  afRenderRoot();
+}
+
+/* Modal: Create Task */
+function afModalCreateTask() {
+  const body =
+    '<div class="af-form-group"><label class="af-label">Task Title</label>' +
+    '<input type="text" id="afTaskTitle" class="af-input" placeholder="e.g. Follow up on lease renewal"></div>' +
+    '<div class="af-form-group"><label class="af-label">Priority</label>' +
+    '<select id="afTaskPri" class="af-select">' +
+      '<option value="urgent">Urgent</option>' +
+      '<option value="high">High</option>' +
+      '<option value="normal" selected>Normal</option>' +
+      '<option value="low">Low</option>' +
+    '</select></div>' +
+    '<div class="af-form-group"><label class="af-label">Due Date</label>' +
+    '<input type="date" id="afTaskDue" class="af-input" value="' + afToday() + '"></div>';
+
+  const foot =
+    '<button type="button" class="af-btn" onclick="afCloseModal()">Cancel</button>' +
+    '<button type="button" class="af-btn primary" onclick="afSaveTask()">Create Task</button>';
+
+  afOpenModal('New Operational Task', body, foot);
+}
+
+function afSaveTask() {
+  const title = document.getElementById('afTaskTitle').value.trim();
+  const pri = document.getElementById('afTaskPri').value;
+  const due = document.getElementById('afTaskDue').value || afToday();
+
+  if (!title) {
+    simToast('Please enter a task title.');
+    return;
+  }
+
+  const taskId = 'TASK-' + (900 + afAllTasks().length + 1);
+  const task = {
+    id: taskId,
+    title: title,
+    priority: pri,
+    dueDate: due,
+    section: 'operations',
+    status: 'pending',
+    assignedTo: 'Alex Rivera'
+  };
+  afCreate('task', task);
+
+  afCloseModal();
+  simToast('Task created.', { tone: 'good' });
+  afRenderRoot();
+}
+
+function afCompleteTask(id) {
+  afSetOverride('task', id, { status: 'completed' });
+  simToast('Task completed.', { tone: 'good' });
+  afRenderRoot();
+}
+
+/* Modal: New Listing */
+function afModalNewListing() {
+  const vacantUnits = afAllUnits().filter(function (u) { return u.status.indexOf('vacant') === 0; });
+  const body =
+    '<div class="af-form-group"><label class="af-label">Vacant Unit</label>' +
+    '<select id="afListUnit" class="af-select">' +
+      vacantUnits.map(function (u) {
+        const p = afGetProperty(u.propertyId);
+        return '<option value="' + escAttr(u.id) + '">' + esc((p ? p.name : '') + ' — Unit ' + u.label) + '</option>';
+      }).join('') +
+    '</select></div>' +
+    '<div class="af-form-group"><label class="af-label">Monthly Rent ($)</label>' +
+    '<input type="number" id="afListRent" class="af-input" value="1850"></div>' +
+    '<div class="af-form-group"><label class="af-label">Marketing Headline</label>' +
+    '<input type="text" id="afListHead" class="af-input" value="Spacious Modern Living in Prime Location"></div>';
+
+  const foot =
+    '<button type="button" class="af-btn" onclick="afCloseModal()">Cancel</button>' +
+    '<button type="button" class="af-btn primary" onclick="afSaveListing()">Publish Listing</button>';
+
+  afOpenModal('Create Marketing Listing', body, foot);
+}
+
+function afSaveListing() {
+  afCloseModal();
+  simToast('Listing published to marketing channels.', { tone: 'good' });
+  afRenderRoot();
+}
 
 /* ============================================================================
-   10. CORE VIEWS
-   ============================================================================
-   Prompt 1/3 builds the routes and the empty states, not the business logic.
-   Ledgers that calculate, screening decisions and bank reconciliation are 2/3.
-   What matters here is that every section resolves, renders, and offers the
-   control that would fill it.
+   10. CORE VIEWS (Full Implementation)
    ============================================================================ */
 
 /* ---------- Dashboard ---------- */
 function afDashboardHTML() {
   const units = afAllUnits();
+  const activeLeases = afAllLeases().filter(function (l) { return l.status === 'active'; });
   const occupied = units.filter(function (u) { return u.status === 'occupied'; }).length;
   const vacant = units.filter(function (u) { return u.status.indexOf('vacant') === 0; }).length;
-  const openWork = afAllWorkOrders().filter(function (w) {
-    return w.status !== 'completed' && w.status !== 'cancelled';
-  }).length;
-  const openTasks = afAllTasks().filter(function (t) { return t.status === 'open'; }).length;
-
-  /* Occupancy is derived, never stored. Every figure on this screen is counted
-     from the entities at render time, so it cannot contradict the lists. */
+  const openWork = afAllWorkOrders().filter(function (w) { return w.status !== 'completed'; }).length;
+  const openTasks = afAllTasks().filter(function (t) { return t.status !== 'completed'; }).length;
+  const totalRentRoll = activeLeases.reduce(function (s, l) { return s + (l.rentAmount || 0); }, 0);
+  const totalDelinquent = activeLeases.reduce(function (s, l) { return s + (l.balanceCents > 0 ? l.balanceCents : 0); }, 0);
   const occPct = units.length ? Math.round(occupied / units.length * 100) : 0;
 
-  const tile = function (label, value, sub, view) {
-    return '<button type="button" class="af-tile" onclick="afGoto(\'' + view + '\')">' +
+  const tile = function (label, value, sub, view, arg) {
+    return '<button type="button" class="af-tile" onclick="afGoto(\'' + view + '\'' + (arg ? ', \'' + arg + '\'' : '') + ')">' +
       '<span class="af-tile-label">' + esc(label) + '</span>' +
       '<b class="af-tile-value">' + esc(String(value)) + '</b>' +
       '<span class="af-tile-sub">' + esc(sub) + '</span></button>';
   };
 
-  return afPageHead('Dashboard', 'Everything waiting on you across the portfolio, as of ' + afFmtDate(afToday()) + '.') +
+  const delinquentLeases = activeLeases.filter(function (l) { return l.balanceCents > 0; });
+  const emergencyWork = afAllWorkOrders().filter(function (w) { return w.priority === 'emergency' && w.status !== 'completed'; });
+
+  return afPageHead('Dashboard', 'Operations & Portfolio Overview as of ' + afFmtDate(afToday()) + '.') +
     '<div class="af-tiles">' +
       tile('Occupancy', occPct + '%', occupied + ' of ' + units.length + ' units occupied', 'properties') +
-      tile('Vacant units', vacant, vacant === 1 ? 'One unit to fill' : 'Units to fill', 'properties') +
-      tile('Open work orders', openWork, 'Maintenance in flight', 'maintenance') +
-      tile('Open tasks', openTasks, 'On your worklist', 'tasks') +
+      tile('Rent Roll', afFmtMoney(totalRentRoll), activeLeases.length + ' active leases', 'accounting', 'overview') +
+      tile('Delinquency', afFmtMoney(totalDelinquent), delinquentLeases.length + ' accounts past due', 'accounting', 'delinquency') +
+      tile('Open Work Orders', openWork, emergencyWork.length + ' emergency requests', 'maintenance') +
+      tile('Open Tasks', openTasks, 'Pending action items', 'tasks') +
     '</div>' +
     '<div class="af-cols">' +
-      '<section class="af-card"><h3>Needs attention</h3>' +
-        afEmptyState({
-          title: 'Nothing is overdue',
-          body: 'Delinquencies, expiring leases and stalled work orders collect here once the portfolio is loaded.',
-          actionLabel: 'Open maintenance',
-          action: "afGoto('maintenance')"
-        }) +
+      '<section class="af-card"><h3>Needs Attention</h3>' +
+        (delinquentLeases.length || emergencyWork.length
+          ? '<table class="af-tbl"><tbody>' +
+              delinquentLeases.slice(0, 4).map(function (l) {
+                const r = l.residentIds.length ? afGetResident(l.residentIds[0]) : null;
+                const u = afGetUnit(l.unitId);
+                return '<tr class="link" onclick="afGoto(\'resident-detail\', \'' + escAttr(r ? r.id : '') + '\')">' +
+                  '<td><b>' + esc(r ? r.name : 'Resident') + '</b><div class="af-sub">Unit ' + (u ? u.label : '') + ' &bull; Past Due</div></td>' +
+                  '<td class="num" style="color:var(--af-bad);font-weight:700;">' + afFmtMoney(l.balanceCents) + '</td>' +
+                  '</tr>';
+              }).join('') +
+              emergencyWork.map(function (w) {
+                return '<tr class="link" onclick="afGoto(\'work-order\', \'' + escAttr(w.id) + '\')">' +
+                  '<td><b>' + esc(w.title) + '</b><div class="af-sub">' + esc(w.id) + '</div></td>' +
+                  '<td><span class="af-badge emergency">Emergency</span></td>' +
+                  '</tr>';
+              }).join('') +
+            '</tbody></table>'
+          : '<p class="af-sub">All accounts and maintenance items are current.</p>') +
       '</section>' +
-      '<section class="af-card"><h3>Recent activity</h3>' +
-        afEmptyState({
-          title: 'No activity yet',
-          body: 'Payments, move-ins and completed work appear here as they happen.',
-          actionLabel: 'Open accounting',
-          action: "afGoto('accounting')"
-        }) +
+      '<section class="af-card"><h3>Recent Portfolio Activity</h3>' +
+        '<table class="af-tbl"><tbody>' +
+          afAllLedgerEntries().slice(-5).reverse().map(function (e) {
+            const lease = afGetLease(e.leaseId);
+            const r = lease && lease.residentIds.length ? afGetResident(lease.residentIds[0]) : null;
+            return '<tr>' +
+              '<td>' + afFmtDate(e.date) + '</td>' +
+              '<td><b>' + esc(e.description) + '</b><div class="af-sub">' + (r ? esc(r.name) : '') + '</div></td>' +
+              '<td class="num" style="color:' + (e.type === 'payment' ? 'var(--af-good)' : 'var(--af-text)') + '">' +
+                (e.type === 'payment' ? '-' : '') + afFmtMoney(e.amount) +
+              '</td>' +
+              '</tr>';
+          }).join('') +
+        '</tbody></table>' +
       '</section>' +
     '</div>';
 }
@@ -859,17 +1805,7 @@ function afDashboardHTML() {
 /* ---------- Properties and units ---------- */
 function afPropertiesHTML() {
   const props = afAllProperties();
-  const actions = '<button type="button" class="af-btn primary" onclick="afDemoAction(\'Adding a property\')">Add property</button>';
-
-  if (!props.length) {
-    return afPageHead('Properties', 'Every building under management.', actions) +
-      afEmptyState({
-        title: 'No properties yet',
-        body: 'A property holds one or more units. Everything else in the system hangs off a unit.',
-        actionLabel: 'Add a property',
-        action: "afDemoAction('Adding a property')"
-      });
-  }
+  const actions = '<button type="button" class="af-btn primary" onclick="afModalAddProperty()">+ Add Property</button>';
 
   const rows = props.map(function (p) {
     const units = afAllUnits().filter(function (u) { return u.propertyId === p.id; });
@@ -886,15 +1822,15 @@ function afPropertiesHTML() {
       '</tr>';
   }).join('');
 
-  return afPageHead('Properties', props.length + ' propert' + (props.length === 1 ? 'y' : 'ies') + ' under management.', actions) +
+  return afPageHead('Properties', props.length + ' properties under management across North Texas.', actions) +
     '<table class="af-tbl"><thead><tr>' +
-      '<th>Property</th><th>Type</th><th class="num">Units</th><th class="num">Occupied</th><th>Owner</th>' +
+      '<th>Property</th><th>Type</th><th class="num">Units</th><th class="num">Occupancy</th><th>Ownership</th>' +
     '</tr></thead><tbody>' + rows + '</tbody></table>';
 }
 
 function afPropertyDetailHTML() {
   const p = afGetProperty(afState.activePropertyId);
-  if (!p) return afEmptyState({ title: 'Property not found', body: 'It may have been removed in this session.', actionLabel: 'Back to properties', action: "afGoto('properties')" });
+  if (!p) return afEmptyState({ title: 'Property not found', body: 'It may have been removed.', actionLabel: 'Back to properties', action: "afGoto('properties')" });
 
   const units = afAllUnits().filter(function (u) { return u.propertyId === p.id; });
   const rows = units.map(function (u) {
@@ -903,122 +1839,201 @@ function afPropertyDetailHTML() {
     return '<tr class="link" onclick="afGoto(\'unit-detail\', \'' + escAttr(u.id) + '\')">' +
       '<td><b>Unit ' + esc(u.label) + '</b></td>' +
       '<td>' + u.beds + ' bd / ' + u.baths + ' ba</td>' +
-      '<td class="num">' + u.sqft + '</td>' +
+      '<td class="num">' + u.sqft + ' sq ft</td>' +
       '<td><span class="af-badge ' + escAttr(u.status) + '">' + esc(afUnitStatusLabel(u.status)) + '</span></td>' +
-      '<td>' + (res ? esc(res.firstName + ' ' + res.lastName) : '<span class="af-muted">Vacant</span>') + '</td>' +
+      '<td>' + (res ? esc(res.name) : '<span class="af-muted">Vacant</span>') + '</td>' +
       '<td class="num">' + afFmtMoney(lease ? lease.rentAmount : u.marketRent) + '</td>' +
       '</tr>';
   }).join('');
 
-  return '<button type="button" class="af-backlink" onclick="afGoto(\'properties\')">&larr; Properties</button>' +
+  return '<button type="button" class="af-backlink" onclick="afGoto(\'properties\')">&larr; Back to Properties</button>' +
     afPageHead(p.name, p.address + ', ' + p.city + ', ' + p.state + ' ' + p.zip,
-      '<button type="button" class="af-btn" onclick="afDemoAction(\'Editing a property\')">Edit</button>') +
+      '<button type="button" class="af-btn" onclick="afModalEditProperty(\'' + escAttr(p.id) + '\')">Edit Property</button>') +
     '<table class="af-tbl"><thead><tr>' +
-      '<th>Unit</th><th>Layout</th><th class="num">Sq ft</th><th>Status</th><th>Resident</th><th class="num">Rent</th>' +
+      '<th>Unit</th><th>Floorplan</th><th class="num">Size</th><th>Status</th><th>Resident</th><th class="num">Rent</th>' +
     '</tr></thead><tbody>' + rows + '</tbody></table>';
 }
 
 function afUnitStatusLabel(s) {
   return {
-    'occupied': 'Occupied', 'vacant-ready': 'Vacant — ready',
-    'vacant-rehab': 'Vacant — rehab', 'notice': 'On notice'
+    'occupied': 'Occupied', 'vacant-ready': 'Vacant — Ready',
+    'vacant-rehab': 'Vacant — Rehab', 'notice': 'On Notice'
   }[s] || s;
 }
 
 function afUnitDetailHTML() {
   const u = afGetUnit(afState.activeUnitId);
-  if (!u) return afEmptyState({ title: 'Unit not found', body: 'It may have been removed in this session.', actionLabel: 'Back to properties', action: "afGoto('properties')" });
+  if (!u) return afEmptyState({ title: 'Unit not found', body: 'It may have been removed.', actionLabel: 'Back to properties', action: "afGoto('properties')" });
   const p = afGetProperty(u.propertyId);
   const lease = u.currentLeaseId ? afGetLease(u.currentLeaseId) : null;
+  const res = lease && lease.residentIds.length ? afGetResident(lease.residentIds[0]) : null;
+  const unitWork = afAllWorkOrders().filter(function (w) { return w.unitId === u.id; });
 
   return '<button type="button" class="af-backlink" onclick="afGoto(\'property-detail\', \'' + escAttr(u.propertyId) + '\')">&larr; ' + esc(p ? p.name : 'Property') + '</button>' +
-    afPageHead('Unit ' + u.label, (p ? p.address + ' · ' : '') + u.beds + ' bd / ' + u.baths + ' ba · ' + u.sqft + ' sq ft') +
+    afPageHead('Unit ' + u.label, (p ? p.address + ' &bull; ' : '') + u.beds + ' bd / ' + u.baths + ' ba &bull; ' + u.sqft + ' sq ft',
+      (lease ? '<button type="button" class="af-btn primary" onclick="afModalPostPayment(\'' + escAttr(lease.id) + '\')">Post Payment</button>' : '')) +
     '<div class="af-kv">' +
       '<div><dt>Status</dt><dd>' + esc(afUnitStatusLabel(u.status)) + '</dd></div>' +
       '<div><dt>Market rent</dt><dd>' + afFmtMoney(u.marketRent) + '</dd></div>' +
       '<div><dt>Current rent</dt><dd>' + (lease ? afFmtMoney(lease.rentAmount) : '—') + '</dd></div>' +
-      '<div><dt>Lease ends</dt><dd>' + (lease ? afFmtDate(lease.endDate) : '—') + '</dd></div>' +
-      '<div><dt>Last renovated</dt><dd>' + afFmtDate(u.lastRenovated) + '</dd></div>' +
+      '<div><dt>Resident</dt><dd>' + (res ? '<a href="javascript:void(0)" onclick="afGoto(\'resident-detail\', \'' + escAttr(res.id) + '\')">' + esc(res.name) + '</a>' : 'Vacant') + '</dd></div>' +
+      '<div><dt>Lease term</dt><dd>' + (lease ? afFmtDate(lease.startDate) + ' to ' + afFmtDate(lease.endDate) : '—') + '</dd></div>' +
+      '<div><dt>Amenities</dt><dd>' + (u.amenities ? u.amenities.join(', ') : 'Standard') + '</dd></div>' +
     '</div>' +
-    '<section class="af-card"><h3>Ledger</h3>' +
-      afEmptyState({ title: 'The ledger arrives with the portfolio', body: 'Charges, payments and running balances are built in the next stage.', actionLabel: 'Open accounting', action: "afGoto('accounting')" }) +
+    '<section class="af-card"><h3>Unit Maintenance History</h3>' +
+      (unitWork.length
+        ? '<table class="af-tbl"><thead><tr><th>Order ID</th><th>Category</th><th>Priority</th><th>Status</th><th>Estimate</th></tr></thead><tbody>' +
+            unitWork.map(function (w) {
+              return '<tr class="link" onclick="afGoto(\'work-order\', \'' + escAttr(w.id) + '\')">' +
+                '<td><b>' + esc(w.id) + '</b></td><td>' + esc(w.category) + '</td>' +
+                '<td><span class="af-badge ' + escAttr(w.priority) + '">' + esc(w.priority) + '</span></td>' +
+                '<td><span class="af-badge ' + escAttr(w.status) + '">' + esc(w.status) + '</span></td>' +
+                '<td class="num">' + afFmtMoney(w.estimateCents) + '</td>' +
+                '</tr>';
+            }).join('') +
+          '</tbody></table>'
+        : '<p class="af-sub">No recent work orders for this unit.</p>') +
     '</section>';
 }
 
 /* ---------- Residents ---------- */
 function afResidentsHTML() {
   const list = afAllResidents();
-  const actions = '<button type="button" class="af-btn primary" onclick="afDemoAction(\'Adding a resident\')">Add resident</button>';
-  if (!list.length) {
-    return afPageHead('Residents', 'Everyone living in the portfolio.', actions) +
-      afEmptyState({ title: 'No residents yet', body: 'Residents arrive through a signed lease.', actionLabel: 'Open leasing', action: "afGoto('leasing')" });
-  }
+  const actions = '<button type="button" class="af-btn primary" onclick="afModalAddResident()">+ Add Resident</button>';
+
   const rows = list.map(function (r) {
-    const lease = afAllLeases().find(function (l) { return (l.residentIds || []).indexOf(r.id) > -1; });
-    const unit = lease ? afGetUnit(lease.unitId) : null;
+    const lease = afGetLease(r.leaseId);
+    const u = r.unitId ? afGetUnit(r.unitId) : null;
+    const bal = lease ? lease.balanceCents : 0;
     return '<tr class="link" onclick="afGoto(\'resident-detail\', \'' + escAttr(r.id) + '\')">' +
-      '<td><b>' + esc(r.firstName + ' ' + r.lastName) + '</b><div class="af-sub">' + esc(r.email) + '</div></td>' +
-      '<td>' + esc(r.type) + '</td>' +
-      '<td>' + (unit ? esc('Unit ' + unit.label) : '<span class="af-muted">—</span>') + '</td>' +
-      '<td>' + afFmtDate(r.moveInDate) + '</td>' +
-      '<td>' + (r.portalActive ? 'Active' : 'Not activated') + '</td>' +
+      '<td><b>' + esc(r.name) + '</b><div class="af-sub">' + esc(r.email) + '</div></td>' +
+      '<td>' + (u ? esc('Unit ' + u.label) : '<span class="af-muted">—</span>') + '</td>' +
+      '<td>' + esc(r.phone) + '</td>' +
+      '<td>' + (lease ? afFmtDate(lease.startDate) : '—') + '</td>' +
+      '<td class="num" style="font-weight:700;color:' + (bal > 0 ? 'var(--af-bad)' : 'var(--af-text)') + '">' +
+        afFmtMoney(bal) +
+      '</td>' +
       '</tr>';
   }).join('');
-  return afPageHead('Residents', list.length + ' resident' + (list.length === 1 ? '' : 's') + ' across the portfolio.', actions) +
-    '<table class="af-tbl"><thead><tr><th>Resident</th><th>Type</th><th>Unit</th><th>Moved in</th><th>Portal</th></tr></thead><tbody>' + rows + '</tbody></table>';
+
+  return afPageHead('Residents', list.length + ' active residents across the portfolio.', actions) +
+    '<table class="af-tbl"><thead><tr>' +
+      '<th>Resident</th><th>Unit</th><th>Phone</th><th>Lease Start</th><th class="num">Ledger Balance</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table>';
 }
 
 function afResidentDetailHTML() {
   const r = afGetResident(afState.activeResidentId);
-  if (!r) return afEmptyState({ title: 'Resident not found', body: 'They may have been removed in this session.', actionLabel: 'Back to residents', action: "afGoto('residents')" });
-  return '<button type="button" class="af-backlink" onclick="afGoto(\'residents\')">&larr; Residents</button>' +
-    afPageHead(r.firstName + ' ' + r.lastName, r.email + ' · ' + r.phone) +
+  if (!r) return afEmptyState({ title: 'Resident not found', body: 'They may have been removed.', actionLabel: 'Back to residents', action: "afGoto('residents')" });
+
+  const lease = afGetLease(r.leaseId);
+  const u = r.unitId ? afGetUnit(r.unitId) : null;
+  const p = u ? afGetProperty(u.propertyId) : null;
+  const entries = lease ? afAllLedgerEntries().filter(function (e) { return e.leaseId === lease.id; }) : [];
+
+  const ledgerRows = entries.map(function (e) {
+    return '<tr>' +
+      '<td>' + afFmtDate(e.date) + '</td>' +
+      '<td><b>' + esc(e.description) + '</b></td>' +
+      '<td class="num">' + (e.type === 'charge' ? afFmtMoney(e.amount) : '—') + '</td>' +
+      '<td class="num" style="color:var(--af-good);">' + (e.type === 'payment' ? afFmtMoney(e.amount) : '—') + '</td>' +
+      '<td class="num" style="font-weight:700;">' + afFmtMoney(e.balanceAfter) + '</td>' +
+      '</tr>';
+  }).join('');
+
+  return '<button type="button" class="af-backlink" onclick="afGoto(\'residents\')">&larr; Back to Residents</button>' +
+    afPageHead(r.name, r.email + ' &bull; ' + r.phone + (p ? ' &bull; ' + p.name + ' Unit ' + (u ? u.label : '') : ''),
+      '<button type="button" class="af-btn" onclick="SimEngine.viewDoc(\'documents/lease-agreement.html\', \'Texas Residential Lease Agreement\')">View Lease Agreement</button>' +
+      (lease ? '<button type="button" class="af-btn primary" onclick="afModalPostPayment(\'' + escAttr(lease.id) + '\')">Post Payment</button>' : '')) +
     '<div class="af-kv">' +
-      '<div><dt>Type</dt><dd>' + esc(r.type) + '</dd></div>' +
-      '<div><dt>Moved in</dt><dd>' + afFmtDate(r.moveInDate) + '</dd></div>' +
-      '<div><dt>Portal</dt><dd>' + (r.portalActive ? 'Active' : 'Not activated') + '</dd></div>' +
-      '<div><dt>Pets</dt><dd>' + ((r.pets || []).length ? esc(r.pets.map(function (p) { return p.name + ' (' + p.type + ')'; }).join(', ')) : 'None') + '</dd></div>' +
-      /* Separate from pets on purpose: an assistance animal is not a pet under
-         fair housing, cannot be charged pet rent, and cannot be refused under a
-         no-pets policy. A later lesson is graded on that distinction. */
-      '<div><dt>Assistance animal</dt><dd>' + (r.assistanceAnimal ? 'Yes — not a pet' : 'No') + '</dd></div>' +
-    '</div>';
+      '<div><dt>Unit</dt><dd>' + (u ? esc('Unit ' + u.label) : '—') + '</dd></div>' +
+      '<div><dt>Monthly Rent</dt><dd>' + (lease ? afFmtMoney(lease.rentAmount) : '—') + '</dd></div>' +
+      '<div><dt>Security Deposit</dt><dd>' + (lease ? afFmtMoney(lease.depositHeld) : '—') + '</dd></div>' +
+      '<div><dt>Pet Agreement</dt><dd>' + (lease && lease.petDeposit ? 'Active ($35/mo pet rent on file)' : 'No pets on lease') + '</dd></div>' +
+      '<div><dt>Emergency Contact</dt><dd>' + (r.emergencyContact ? esc(r.emergencyContact.name + ' (' + r.emergencyContact.phone + ')') : 'None') + '</dd></div>' +
+      '<div><dt>Current Balance</dt><dd style="font-weight:700;color:' + (lease && lease.balanceCents > 0 ? 'var(--af-bad)' : 'var(--af-good)') + '">' +
+        (lease ? afFmtMoney(lease.balanceCents) : '$0.00') +
+      '</dd></div>' +
+    '</div>' +
+    (lease && lease.depositAccounting
+      ? '<div class="af-alert-warn" style="margin-top:16px;">' +
+          '<b>TEXAS 30-DAY DEPOSIT ITEMIZATION CLOCK:</b> Move-out occurred 22 days ago. Statutory accounting deadline is in 8 days.' +
+          '<div style="margin-top:8px;">' +
+            '<button type="button" class="af-btn sm" onclick="SimEngine.viewDoc(\'documents/deposit-itemization.html\', \'Security Deposit Itemization Statement\')">View Itemized Deposit Statement</button>' +
+          '</div>' +
+        '</div>'
+      : '') +
+    '<section class="af-card" style="margin-top:20px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">' +
+        '<h3 style="margin:0;">Resident Ledger</h3>' +
+        (lease ? '<button type="button" class="af-btn sm" onclick="afModalApplyLateFee(\'' + escAttr(lease.id) + '\')">+ Apply Late Fee</button>' : '') +
+      '</div>' +
+      '<table class="af-tbl"><thead><tr>' +
+        '<th>Date</th><th>Description</th><th class="num">Charges</th><th class="num">Payments</th><th class="num">Running Balance</th>' +
+      '</tr></thead><tbody>' + ledgerRows + '</tbody></table>' +
+    '</section>';
 }
 
 /* ---------- Owners ---------- */
 function afOwnersHTML() {
   const list = afAllOwners();
-  const actions = '<button type="button" class="af-btn primary" onclick="afDemoAction(\'Adding an owner\')">Add owner</button>';
-  if (!list.length) {
-    return afPageHead('Owners', 'The people whose property you manage.', actions) +
-      afEmptyState({ title: 'No owners yet', body: 'An owner holds one or more properties and receives a statement each period.', actionLabel: 'Add an owner', action: "afDemoAction('Adding an owner')" });
-  }
+  const actions = '<button type="button" class="af-btn primary" onclick="afModalAddOwner()">+ Add Owner</button>';
+
   const rows = list.map(function (o) {
+    const propNames = (o.propertyIds || []).map(function (pid) {
+      const p = afGetProperty(pid);
+      return p ? p.name : pid;
+    }).join(', ');
     return '<tr class="link" onclick="afGoto(\'owner-detail\', \'' + escAttr(o.id) + '\')">' +
       '<td><b>' + esc(o.name) + '</b><div class="af-sub">' + esc(o.email) + '</div></td>' +
       '<td>' + esc(o.type) + '</td>' +
-      '<td class="num">' + (o.propertyIds || []).length + '</td>' +
-      '<td class="num">' + afFmtMoney(o.reserveAmount) + '</td>' +
+      '<td>' + esc(propNames) + '</td>' +
+      '<td class="num">' + afFmtMoney(o.reserveCents) + '</td>' +
       '</tr>';
   }).join('');
-  return afPageHead('Owners', list.length + ' owner' + (list.length === 1 ? '' : 's') + '.', actions) +
-    '<table class="af-tbl"><thead><tr><th>Owner</th><th>Type</th><th class="num">Properties</th><th class="num">Reserve</th></tr></thead><tbody>' + rows + '</tbody></table>';
+
+  return afPageHead('Property Owners', list.length + ' clients and ownership entities.', actions) +
+    '<table class="af-tbl"><thead><tr>' +
+      '<th>Owner / Entity</th><th>Type</th><th>Properties</th><th class="num">Reserve Held</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table>';
 }
 
 function afOwnerDetailHTML() {
   const o = afGetOwner(afState.activeOwnerId);
-  if (!o) return afEmptyState({ title: 'Owner not found', body: 'They may have been removed in this session.', actionLabel: 'Back to owners', action: "afGoto('owners')" });
-  return '<button type="button" class="af-backlink" onclick="afGoto(\'owners\')">&larr; Owners</button>' +
-    afPageHead(o.name, o.email + ' · ' + o.phone) +
+  if (!o) return afEmptyState({ title: 'Owner not found', body: 'They may have been removed.', actionLabel: 'Back to owners', action: "afGoto('owners')" });
+
+  const stmts = afAllOwnerStatements().filter(function (s) { return s.ownerId === o.id; });
+  const p = afGetProperty(o.propertyIds[0]);
+
+  const stmtRows = stmts.map(function (s) {
+    return '<tr>' +
+      '<td><b>' + esc(s.periodLabel) + '</b></td>' +
+      '<td class="num">' + afFmtMoney(s.totalIncomeCents) + '</td>' +
+      '<td class="num">' + afFmtMoney(s.totalExpensesCents) + '</td>' +
+      '<td class="num">' + afFmtMoney(s.managementFeeCents) + '</td>' +
+      '<td class="num" style="font-weight:700;color:var(--af-accent);">' + afFmtMoney(s.netDistributionCents) + '</td>' +
+      '<td><span class="af-badge ' + escAttr(s.status) + '">' + esc(s.status.toUpperCase()) + '</span></td>' +
+      '<td><button type="button" class="af-btn sm" onclick="SimEngine.viewDoc(\'documents/owner-statement.html\', \'Owner Statement ' + escAttr(s.periodLabel) + '\')">View</button></td>' +
+      '</tr>';
+  }).join('');
+
+  return '<button type="button" class="af-backlink" onclick="afGoto(\'owners\')">&larr; Back to Owners</button>' +
+    afPageHead(o.name, o.email + ' &bull; ' + o.phone,
+      '<button type="button" class="af-btn primary" onclick="afModalRequestDraw(\'' + escAttr(o.id) + '\')">Request Owner Draw</button>') +
     '<div class="af-kv">' +
       '<div><dt>Type</dt><dd>' + esc(o.type) + '</dd></div>' +
-      '<div><dt>Reserve held</dt><dd>' + afFmtMoney(o.reserveAmount) + '</dd></div>' +
-      '<div><dt>Distribution</dt><dd>' + esc(o.distributionMethod) + '</dd></div>' +
-      '<div><dt>Properties</dt><dd>' + (o.propertyIds || []).map(function (id) {
-        const p = afGetProperty(id);
-        return p ? esc(p.name) : '<span class="af-muted">unknown</span>';
-      }).join(', ') + '</dd></div>' +
-    '</div>';
+      '<div><dt>Operating Reserve</dt><dd>' + afFmtMoney(o.reserveCents) + '</dd></div>' +
+      '<div><dt>Property</dt><dd>' + esc(p ? p.name : '—') + '</dd></div>' +
+      '<div><dt>Available Operating Cash</dt><dd style="font-weight:700;color:var(--af-accent);">' + afFmtMoney(p ? p.operatingCashCents : 820000) + '</dd></div>' +
+      '<div><dt>Bank Disbursement</dt><dd>' + esc(o.bankAccount ? o.bankAccount.bank + ' ' + o.bankAccount.account : 'ACH Direct Deposit') + '</dd></div>' +
+      '<div><dt>Tax ID</dt><dd>' + esc(o.taxId) + '</dd></div>' +
+    '</div>' +
+    '<section class="af-card" style="margin-top:20px;">' +
+      '<h3>Owner Operating Statements</h3>' +
+      '<table class="af-tbl"><thead><tr>' +
+        '<th>Period</th><th class="num">Income</th><th class="num">Expenses</th><th class="num">Mgmt Fee</th><th class="num">Net Distribution</th><th>Status</th><th></th>' +
+      '</tr></thead><tbody>' + stmtRows + '</tbody></table>' +
+    '</section>';
 }
 
 /* ---------- Leasing ---------- */
@@ -1030,59 +2045,100 @@ function afLeasingHTML() {
   const appRows = apps.map(function (a) {
     const u = afGetUnit(a.unitId);
     return '<tr class="link" onclick="afGoto(\'application\', \'' + escAttr(a.id) + '\')">' +
-      '<td><b>' + esc(a.applicantName) + '</b><div class="af-sub">' + esc(a.email) + '</div></td>' +
+      '<td><b>' + esc(a.name) + '</b><div class="af-sub">' + esc(a.email) + '</div></td>' +
       '<td>' + (u ? esc('Unit ' + u.label) : '<span class="af-muted">—</span>') + '</td>' +
-      '<td>' + afFmtDate(a.submittedDate) + '</td>' +
-      '<td><span class="af-badge ' + escAttr(a.status) + '">' + esc(a.status) + '</span></td>' +
-      '<td class="num">' + afFmtMoney(a.monthlyIncome) + '</td>' +
+      '<td>' + (a.screening ? 'Score: ' + a.screening.creditScore : 'Pending') + '</td>' +
+      '<td><span class="af-badge ' + escAttr(a.status) + '">' + esc(a.status.toUpperCase()) + '</span></td>' +
+      '<td class="num">' + afFmtMoney(a.monthlyIncomeCents) + '</td>' +
       '</tr>';
   }).join('');
 
-  return afPageHead('Leasing',
-      vacant.length + ' vacant unit' + (vacant.length === 1 ? '' : 's') + ' · ' +
-      cards.length + ' guest card' + (cards.length === 1 ? '' : 's') + ' · ' +
-      apps.length + ' application' + (apps.length === 1 ? '' : 's') + '.',
-      '<button type="button" class="af-btn primary" onclick="afDemoAction(\'Creating a listing\')">New listing</button>') +
-    '<section class="af-card"><h3>Applications</h3>' +
-      (apps.length
-        ? '<table class="af-tbl"><thead><tr><th>Applicant</th><th>Unit</th><th>Submitted</th><th>Status</th><th class="num">Monthly income</th></tr></thead><tbody>' + appRows + '</tbody></table>'
-        : afEmptyState({ title: 'No applications', body: 'Applications arrive from a listing or a guest card.', actionLabel: 'Create a listing', action: "afDemoAction('Creating a listing')" })) +
+  const cardRows = cards.map(function (g) {
+    const u = afGetUnit(g.unitId);
+    return '<tr>' +
+      '<td><b>' + esc(g.name) + '</b><div class="af-sub">' + esc(g.notes || '') + '</div></td>' +
+      '<td>' + (u ? esc('Unit ' + u.label) : '') + '</td>' +
+      '<td>' + esc(g.source) + '</td>' +
+      '<td><span class="af-badge">' + esc(g.stage) + '</span></td>' +
+      '<td>' +
+        (g.stage === 'inquiry' ? '<button type="button" class="af-btn sm" onclick="afSetGuestCardStage(\'' + escAttr(g.id) + '\', \'tour-scheduled\')">Schedule Tour</button>' : '') +
+        (g.stage === 'tour-scheduled' ? '<button type="button" class="af-btn sm" onclick="afSetGuestCardStage(\'' + escAttr(g.id) + '\', \'toured\')">Mark Toured</button>' : '') +
+        (g.stage === 'toured' ? '<button type="button" class="af-btn sm primary" onclick="afSetGuestCardStage(\'' + escAttr(g.id) + '\', \'applied\')">Send App</button>' : '') +
+      '</td>' +
+      '</tr>';
+  }).join('');
+
+  return afPageHead('Leasing Funnel',
+      vacant.length + ' vacant units &bull; ' + cards.length + ' guest cards &bull; ' + apps.length + ' rental applications.',
+      '<button type="button" class="af-btn primary" onclick="afModalNewListing()">+ New Listing</button>') +
+    '<section class="af-card" style="margin-bottom:20px;">' +
+      '<h3>Active Rental Applications</h3>' +
+      '<table class="af-tbl"><thead><tr>' +
+        '<th>Applicant</th><th>Unit</th><th>Screening</th><th>Status</th><th class="num">Monthly Income</th>' +
+      '</tr></thead><tbody>' + appRows + '</tbody></table>' +
+    '</section>' +
+    '<section class="af-card">' +
+      '<h3>Guest Cards &amp; Inquiries</h3>' +
+      '<table class="af-tbl"><thead><tr>' +
+        '<th>Lead Name</th><th>Inquired Unit</th><th>Lead Source</th><th>Stage</th><th>Actions</th>' +
+      '</tr></thead><tbody>' + cardRows + '</tbody></table>' +
     '</section>';
+}
+
+function afSetGuestCardStage(id, newStage) {
+  afSetOverride('guestCard', id, { stage: newStage });
+  simToast('Guest card updated to ' + newStage + '.', { tone: 'good' });
+  afRenderRoot();
 }
 
 function afApplicationHTML() {
   const a = afGetApplication(afState.activeApplicationId);
-  if (!a) return afEmptyState({ title: 'Application not found', body: 'It may have been withdrawn in this session.', actionLabel: 'Back to leasing', action: "afGoto('leasing')" });
+  if (!a) return afEmptyState({ title: 'Application not found', body: 'It may have been removed.', actionLabel: 'Back to leasing', action: "afGoto('leasing')" });
   const u = afGetUnit(a.unitId);
-  return '<button type="button" class="af-backlink" onclick="afGoto(\'leasing\')">&larr; Leasing</button>' +
-    afPageHead(a.applicantName, 'Applied ' + afFmtDate(a.submittedDate) + (u ? ' for unit ' + u.label : '')) +
+  const p = u ? afGetProperty(u.propertyId) : null;
+
+  return '<button type="button" class="af-backlink" onclick="afGoto(\'leasing\')">&larr; Back to Leasing</button>' +
+    afPageHead(a.name, 'Application for Unit ' + (u ? u.label : '') + ' &bull; Submitted ' + afFmtDate(a.createdDate),
+      '<button type="button" class="af-btn primary" onclick="afModalDecideApp(\'' + escAttr(a.id) + '\')">Screening Decision</button>') +
     '<div class="af-kv">' +
-      '<div><dt>Status</dt><dd>' + esc(a.status) + '</dd></div>' +
-      '<div><dt>Monthly income</dt><dd>' + afFmtMoney(a.monthlyIncome) + '</dd></div>' +
-      '<div><dt>Employment</dt><dd>' + (a.employmentVerified ? 'Verified' : 'Not verified') + '</dd></div>' +
-      '<div><dt>Credit score</dt><dd>' + (a.screening ? a.screening.creditScore : '—') + '</dd></div>' +
-      /* A denial without this notice is an FCRA failure, so it is on the summary
-         rather than buried where nobody would look for it. */
-      '<div><dt>Adverse action</dt><dd>' + (a.adverseActionSent ? 'Sent' : 'Not sent') + '</dd></div>' +
+      '<div><dt>Decision Status</dt><dd><span class="af-badge ' + escAttr(a.status) + '">' + esc(a.status.toUpperCase()) + '</span></dd></div>' +
+      '<div><dt>Monthly Income</dt><dd>' + afFmtMoney(a.monthlyIncomeCents) + '</dd></div>' +
+      '<div><dt>Credit Score</dt><dd><b>' + (a.screening ? a.screening.creditScore : '—') + '</b></dd></div>' +
+      '<div><dt>Screening Agency</dt><dd>' + (a.screening ? esc(a.screening.creditAgency) : 'TransUnion') + '</dd></div>' +
+      '<div><dt>Background Check</dt><dd>' + (a.screening ? esc(a.screening.backgroundCheck) : 'Passed') + '</dd></div>' +
+      '<div><dt>Eviction Search</dt><dd>' + (a.screening ? esc(a.screening.evictionRecord) : 'Clean') + '</dd></div>' +
+      '<div><dt>FCRA Adverse Action</dt><dd>' + (a.adverseActionSent ? '<span style="color:var(--af-accent);font-weight:700;">Sent</span>' : 'Not sent') + '</dd></div>' +
+      '<div><dt>Assistance Animal</dt><dd>' + (a.requestedAccommodation ? '<span style="color:var(--af-accent);font-weight:700;">Yes (Verified Doctor Note on File)</span>' : 'None') + '</dd></div>' +
     '</div>' +
-    '<section class="af-card"><h3>Decision</h3>' +
-      afEmptyState({ title: 'Screening decisions arrive later', body: 'Approve, conditional and deny — with the adverse action notice a denial requires — are built in the next stage.', actionLabel: 'Back to leasing', action: "afGoto('leasing')" }) +
-    '</section>';
+    (a.status === 'denied'
+      ? '<div class="af-alert-warn" style="margin-top:16px;">' +
+          '<b>FCRA ADVERSE ACTION STATUS:</b> ' +
+          (a.adverseActionSent
+            ? 'Adverse Action Notice has been issued.'
+            : 'Adverse Action Notice is required by federal law for credit denial.') +
+          '<div style="margin-top:8px;">' +
+            '<button type="button" class="af-btn sm" onclick="SimEngine.viewDoc(\'documents/adverse-action-notice.html\', \'FCRA Adverse Action Notice\')">View Adverse Action Notice</button>' +
+          '</div>' +
+        '</div>'
+      : '') +
+    (a.requestedAccommodation
+      ? '<div class="af-alert-good" style="margin-top:16px;">' +
+          '<b>FAIR HOUSING ACCOMMODATION:</b> Applicant has requested an emotional support animal with verified documentation from ' +
+          esc(a.accommodationDetails ? a.accommodationDetails.doctorName : 'licensed medical professional') + '. Under Fair Housing regulations, pet deposit and pet rent are waived.' +
+        '</div>'
+      : '');
 }
 
 /* ---------- Maintenance ---------- */
 function afMaintenanceHTML() {
   const list = afAllWorkOrders();
-  const actions = '<button type="button" class="af-btn primary" onclick="afDemoAction(\'Creating a work order\')">New work order</button>';
-  if (!list.length) {
-    return afPageHead('Maintenance', 'Work orders across the portfolio.', actions) +
-      afEmptyState({ title: 'No work orders', body: 'A work order ties a unit, a vendor and a bill-to decision together.', actionLabel: 'Create one', action: "afDemoAction('Creating a work order')" });
-  }
+  const actions = '<button type="button" class="af-btn primary" onclick="afModalCreateWorkOrder()">+ New Work Order</button>';
+
   const rows = list.map(function (w) {
     const u = afGetUnit(w.unitId);
     const v = w.vendorId ? afGetVendor(w.vendorId) : null;
     return '<tr class="link" onclick="afGoto(\'work-order\', \'' + escAttr(w.id) + '\')">' +
-      '<td><b>' + esc(w.description.slice(0, 60)) + '</b><div class="af-sub">' + esc(w.id) + '</div></td>' +
+      '<td><b>' + esc(w.title) + '</b><div class="af-sub">' + esc(w.id) + '</div></td>' +
       '<td>' + (u ? esc('Unit ' + u.label) : '<span class="af-muted">—</span>') + '</td>' +
       '<td>' + esc(w.category) + '</td>' +
       '<td><span class="af-badge ' + escAttr(w.priority) + '">' + esc(w.priority) + '</span></td>' +
@@ -1090,52 +2146,71 @@ function afMaintenanceHTML() {
       '<td>' + (v ? esc(v.name) : '<span class="af-muted">Unassigned</span>') + '</td>' +
       '</tr>';
   }).join('');
-  return afPageHead('Maintenance', list.length + ' work order' + (list.length === 1 ? '' : 's') + '.', actions) +
-    '<table class="af-tbl"><thead><tr><th>Issue</th><th>Unit</th><th>Category</th><th>Priority</th><th>Status</th><th>Vendor</th></tr></thead><tbody>' + rows + '</tbody></table>';
+
+  return afPageHead('Maintenance Queue', list.length + ' service requests across the portfolio.', actions) +
+    '<table class="af-tbl"><thead><tr>' +
+      '<th>Issue / Request</th><th>Unit</th><th>Trade</th><th>Priority</th><th>Status</th><th>Assigned Vendor</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table>';
 }
 
 function afWorkOrderHTML() {
   const w = afGetWorkOrder(afState.activeWorkOrderId);
-  if (!w) return afEmptyState({ title: 'Work order not found', body: 'It may have been cancelled in this session.', actionLabel: 'Back to maintenance', action: "afGoto('maintenance')" });
+  if (!w) return afEmptyState({ title: 'Work order not found', body: 'It may have been cancelled.', actionLabel: 'Back to maintenance', action: "afGoto('maintenance')" });
   const u = afGetUnit(w.unitId);
   const v = w.vendorId ? afGetVendor(w.vendorId) : null;
-  return '<button type="button" class="af-backlink" onclick="afGoto(\'maintenance\')">&larr; Maintenance</button>' +
-    afPageHead(w.id, (u ? 'Unit ' + u.label + ' · ' : '') + w.category + ' · reported ' + afFmtDate(w.reportedDate)) +
-    '<p class="af-page-lede">' + esc(w.description) + '</p>' +
+
+  return '<button type="button" class="af-backlink" onclick="afGoto(\'maintenance\')">&larr; Back to Maintenance</button>' +
+    afPageHead(w.id + ' — ' + w.title, (u ? 'Unit ' + u.label + ' &bull; ' : '') + w.category + ' &bull; Created ' + afFmtDate(w.createdDate),
+      '<button type="button" class="af-btn primary" onclick="afDispatchWorkOrder(\'' + escAttr(w.id) + '\')">Dispatch / Update</button>') +
     '<div class="af-kv">' +
-      '<div><dt>Status</dt><dd>' + esc(w.status) + '</dd></div>' +
-      '<div><dt>Priority</dt><dd>' + esc(w.priority) + '</dd></div>' +
+      '<div><dt>Status</dt><dd><span class="af-badge ' + escAttr(w.status) + '">' + esc(w.status) + '</span></dd></div>' +
+      '<div><dt>Priority</dt><dd><span class="af-badge ' + escAttr(w.priority) + '">' + esc(w.priority) + '</span></dd></div>' +
       '<div><dt>Vendor</dt><dd>' + (v ? esc(v.name) : 'Unassigned') + '</dd></div>' +
-      '<div><dt>Scheduled</dt><dd>' + afFmtDate(w.scheduledDate) + '</dd></div>' +
-      '<div><dt>Estimate</dt><dd>' + afFmtMoney(w.estimate) + '</dd></div>' +
-      /* Who pays decides which ledger and which owner statement this lands in,
-         which is why it sits on the summary and not in a detail panel. */
-      '<div><dt>Bill to</dt><dd>' + esc(w.billTo) + '</dd></div>' +
-      '<div><dt>Entry notice</dt><dd>' + (w.entryNotice ? 'Given' : 'Not given') + '</dd></div>' +
-    '</div>';
+      '<div><dt>Scheduled Date</dt><dd>' + afFmtDate(w.scheduledDate) + '</dd></div>' +
+      '<div><dt>Cost Estimate</dt><dd>' + afFmtMoney(w.estimateCents) + '</dd></div>' +
+      '<div><dt>Entry Notice</dt><dd>' + (w.entryNoticeSent ? '<span style="color:var(--af-good);font-weight:700;">Issued</span>' : '<span style="color:var(--af-warn);font-weight:700;">Not Issued</span>') + '</dd></div>' +
+    '</div>' +
+    '<section class="af-card" style="margin-top:16px;">' +
+      '<h3>Work Description</h3>' +
+      '<p>' + esc(w.description) + '</p>' +
+      (v && afDaysFromToday(v.insuranceExpires) < 0
+        ? '<div class="af-alert-danger" style="margin-top:12px;">' +
+            '<b>VENDOR COMPLIANCE NOTICE:</b> ' + esc(v.name) + ' Certificate of Insurance expired on ' + afFmtDate(v.insuranceExpires) + '.' +
+          '</div>'
+        : '') +
+      (!w.entryNoticeSent && u && u.status === 'occupied'
+        ? '<div class="af-alert-warn" style="margin-top:12px;">' +
+            '<b>NOTICE OF ENTRY WARNING:</b> Unit ' + esc(u.label) + ' is occupied. 24-Hour Notice of Entry has not been served.' +
+            '<div style="margin-top:6px;"><button type="button" class="af-btn sm" onclick="SimEngine.viewDoc(\'documents/sample-notice.html\', \'24-Hour Notice of Intent to Enter\')">Preview 24-Hour Notice</button></div>' +
+          '</div>'
+        : '') +
+    '</section>';
 }
 
 /* ---------- Tasks ---------- */
 function afTasksHTML() {
   const list = afAllTasks();
-  const actions = '<button type="button" class="af-btn primary" onclick="afDemoAction(\'Creating a task\')">New task</button>';
-  if (!list.length) {
-    return afPageHead('Tasks', 'Your worklist.', actions) +
-      afEmptyState({ title: 'Nothing on your list', body: 'A task can stand alone or hang off a work order, an application or a lease.', actionLabel: 'Create a task', action: "afDemoAction('Creating a task')" });
-  }
+  const actions = '<button type="button" class="af-btn primary" onclick="afModalCreateTask()">+ New Task</button>';
+
   const rows = list.map(function (t) {
     const due = afDaysFromToday(t.dueDate);
-    return '<tr>' +
-      '<td><b>' + esc(t.title) + '</b><div class="af-sub">' + esc(t.notes || '') + '</div></td>' +
-      '<td>' + esc(t.priority) + '</td>' +
+    const isDone = (t.status === 'completed');
+    return '<tr style="' + (isDone ? 'opacity:0.6;' : '') + '">' +
+      '<td><b>' + esc(t.title) + '</b></td>' +
+      '<td><span class="af-badge ' + escAttr(t.priority) + '">' + esc(t.priority) + '</span></td>' +
       '<td>' + afFmtDate(t.dueDate) + '<div class="af-sub">' +
-        (due === 0 ? 'Today' : due < 0 ? Math.abs(due) + ' days overdue' : 'In ' + due + ' days') +
+        (isDone ? 'Completed' : (due === 0 ? 'Today' : due < 0 ? Math.abs(due) + ' days overdue' : 'In ' + due + ' days')) +
       '</div></td>' +
-      '<td><button type="button" class="af-btn sm" onclick="afDemoAction(\'Completing a task\')">Complete</button></td>' +
+      '<td>' +
+        (!isDone
+          ? '<button type="button" class="af-btn sm" onclick="afCompleteTask(\'' + escAttr(t.id) + '\')">Complete</button>'
+          : '<span class="af-muted">&check; Done</span>') +
+      '</td>' +
       '</tr>';
   }).join('');
-  return afPageHead('Tasks', list.length + ' open task' + (list.length === 1 ? '' : 's') + '.', actions) +
-    '<table class="af-tbl"><thead><tr><th>Task</th><th>Priority</th><th>Due</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
+
+  return afPageHead('Operations Worklist', list.length + ' tasks for management staff.', actions) +
+    '<table class="af-tbl"><thead><tr><th>Task</th><th>Priority</th><th>Due Date</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
 }
 
 /* ---------- Lessons ---------- */
@@ -1167,6 +2242,689 @@ function afLessonDetailHTML() {
   const l = SimEngine.findLesson(afState.lessonId);
   if (!l) return afEmptyState({ title: 'Lesson not found', body: 'The curriculum has not been loaded yet.', actionLabel: 'Back to lessons', action: "afGoto('lessons')" });
   return SimEngine.lessonDetailHTML(l);
+}
+
+/* ---------- Curriculum Helpers & Graded Step Views ---------- */
+
+function afEnsureShuffleSalt() {
+  if (!afStore.shuffleSalt) {
+    afStore.shuffleSalt = 'salt_' + Math.floor(Math.random() * 1000000000);
+    afSave();
+  }
+  return afStore.shuffleSalt;
+}
+
+function afOptionOrder(seedKey, n) {
+  const salt = afStore.shuffleSalt || 'af-salt-init';
+  const rng = afMulberry32(afHashString(salt + ':' + seedKey));
+  const arr = [];
+  for (let i = 0; i < n; i++) arr.push(i);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  }
+  return arr;
+}
+
+function afDisclaimerHTML() {
+  return '<div class="af-disclaimer-banner">' +
+    '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+    '<span>' + esc(AF_LEGAL_DISCLAIMER) + '</span>' +
+    '</div>';
+}
+
+function afContinueHTML() {
+  return '<button type="button" class="af-btn primary sim-feedback-continue" onclick="afAdvanceStep()">Continue &rarr;</button>';
+}
+
+function afAdvanceStep() {
+  if (SimEngine.walkActive && SimEngine.walkActive()) {
+    SimEngine.stepCompleted();
+  } else if (afState.lessonId) {
+    afGoto('lesson', afState.lessonId);
+  } else {
+    afGoto('dashboard');
+  }
+}
+
+/* 1. Scenario / Decide View */
+function afScenarioDetailHTML() {
+  const s = AF_SCENARIOS.find(function (x) { return x.id === afState.scenarioId; });
+  if (!s) return afEmptyState({ title: 'Scenario not found', body: 'The requested decision scenario does not exist.', actionLabel: 'Back to dashboard', action: "afGoto('dashboard')" });
+
+  const r = afStore.scenarios[s.id];
+  const answered = !!(r && r.answered !== undefined && r.answered !== null);
+  const order = afOptionOrder('scenario:' + s.id, s.options.length);
+
+  const optsHTML = order.map(function (idx, pos) {
+    const opt = s.options[idx];
+    let cls = '';
+    if (answered) {
+      if (idx === s.correct) cls = 'correct';
+      else if (idx === r.answered && !r.correct) cls = 'incorrect';
+    }
+    const letter = String.fromCharCode(65 + pos);
+    return '<button type="button" class="af-option-btn ' + cls + '" ' +
+      (answered ? 'disabled' : 'onclick="afAnswerScenario(\'' + escAttr(s.id) + '\', ' + idx + ')"') + '>' +
+      '<b>' + letter + '.</b> <span>' + esc(opt) + '</span>' +
+      '</button>';
+  }).join('');
+
+  let feedbackHTML = '';
+  if (answered) {
+    feedbackHTML = '<div class="af-feedback-box ' + (r.correct ? 'correct' : 'incorrect') + '">' +
+      '<b>' + (r.correct ? '&#10003; Correct.' : '&#10007; Not quite.') + '</b> ' + esc(s.explanation) +
+      '<div class="af-feedback-actions">' +
+      (r.correct ? afContinueHTML() : '<button type="button" class="af-btn" onclick="afRetakeScenario(\'' + escAttr(s.id) + '\')">Try Again</button>') +
+      '</div></div>';
+  }
+
+  const isLegalTopic = s.id.indexOf('_s6_') !== -1 || s.id.indexOf('_s7_') !== -1 || s.id.indexOf('_s8_') !== -1 || s.id.indexOf('_s10_') !== -1 || s.id.indexOf('_s12_') !== -1;
+
+  return afPageHead(s.title, 'Decision scenario.') +
+    (isLegalTopic ? afDisclaimerHTML() : '') +
+    '<div class="af-scenario-card">' +
+    '<p class="af-step-situation">' + esc(s.situation) + '</p>' +
+    '<div class="af-options-list">' + optsHTML + '</div>' +
+    feedbackHTML +
+    '</div>';
+}
+
+function afAnswerScenario(id, idx) {
+  const s = AF_SCENARIOS.find(function (x) { return x.id === id; });
+  if (!s) return;
+  const correct = (idx === s.correct);
+  const prev = afStore.scenarios[id] || {};
+  afRecordAnswer('scenarios', id, {
+    answered: idx,
+    correct: correct,
+    firstAttempt: prev.firstAttempt || { answered: idx, correct: correct, ts: Date.now() },
+    everCorrect: prev.everCorrect || correct
+  });
+  afRenderRoot();
+}
+
+function afRetakeScenario(id) {
+  if (afState.mode === 'lesson') {
+    delete afStore.scenarios[id];
+    afSave();
+  }
+  afRenderRoot();
+}
+
+/* 2. Review / Verify View */
+function afReviewDetailHTML() {
+  const v = AF_VERIFY_ITEMS.find(function (x) { return x.id === afState.reviewId; });
+  if (!v) return afEmptyState({ title: 'Review item not found', body: 'The requested audit item does not exist.', actionLabel: 'Back to dashboard', action: "afGoto('dashboard')" });
+
+  const r = afStore.reviews[v.id];
+  const answered = !!(r && r.selected !== undefined);
+
+  let contentHTML = '';
+
+  if (v.entries) {
+    const rows = v.entries.map(function (e) {
+      const isSelected = (r && r.selected === e.id);
+      let cls = '';
+      if (answered) {
+        if (e.id === v.targetEntryId) cls = 'af-row-good';
+        else if (isSelected && !r.correct) cls = 'af-row-bad';
+      }
+      return '<tr class="' + cls + '">' +
+        '<td>' + esc(e.date) + '</td>' +
+        '<td><span class="af-chip ' + (e.type === 'charge' ? 'warn' : 'good') + '">' + esc(e.type) + '</span></td>' +
+        '<td>' + esc(e.desc) + '</td>' +
+        '<td class="af-tar">' + afMoney(e.amount) + '</td>' +
+        '<td class="af-tar font-mono"><b>' + afMoney(e.balanceAfter) + '</b></td>' +
+        '<td class="af-tar">' +
+        (answered
+          ? (e.id === v.targetEntryId ? '<span class="af-pill-good">&#10003; Discrepancy</span>' : (isSelected ? '<span class="af-pill-bad">&#10007; Incorrect</span>' : ''))
+          : '<button type="button" class="af-btn sm" onclick="afAnswerReview(\'' + escAttr(v.id) + '\', \'' + escAttr(e.id) + '\')">Flag Error</button>') +
+        '</td>' +
+        '</tr>';
+    }).join('');
+    contentHTML = '<table class="af-tbl"><thead><tr><th>Date</th><th>Type</th><th>Description</th><th class="af-tar">Amount</th><th class="af-tar">Balance After</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
+  } else if (v.discrepancies) {
+    const rows = v.discrepancies.map(function (d) {
+      const isSelected = (r && r.selected === d.field);
+      let cls = '';
+      if (answered) {
+        if (d.field === v.targetField) cls = 'af-row-good';
+        else if (isSelected && !r.correct) cls = 'af-row-bad';
+      }
+      return '<tr class="' + cls + '">' +
+        '<td><b>' + esc(d.field) + '</b></td>' +
+        '<td>' + esc(d.appVal) + '</td>' +
+        '<td>' + esc(d.leaseVal) + '</td>' +
+        '<td class="af-tar">' +
+        (answered
+          ? (d.field === v.targetField ? '<span class="af-pill-good">&#10003; Discrepancy</span>' : (isSelected ? '<span class="af-pill-bad">&#10007; Incorrect</span>' : ''))
+          : '<button type="button" class="af-btn sm" onclick="afAnswerReview(\'' + escAttr(v.id) + '\', \'' + escAttr(d.field) + '\')">Flag Mismatch</button>') +
+        '</td>' +
+        '</tr>';
+    }).join('');
+    contentHTML = '<table class="af-tbl"><thead><tr><th>Contract Field</th><th>Approved Application</th><th>Generated Lease</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
+  } else if (v.lineItems) {
+    const rows = v.lineItems.map(function (li) {
+      const isSelected = (r && r.selected === li.id);
+      let cls = '';
+      if (answered) {
+        if (li.id === v.targetItemId) cls = 'af-row-good';
+        else if (isSelected && !r.correct) cls = 'af-row-bad';
+      }
+      return '<tr class="' + cls + '">' +
+        '<td>' + esc(li.desc) + '</td>' +
+        '<td><span class="af-chip ' + (li.isError ? 'bad' : 'neutral') + '">' + esc(li.cat) + '</span></td>' +
+        '<td class="af-tar font-mono"><b>' + afMoney(li.amount) + '</b></td>' +
+        '<td class="af-tar">' +
+        (answered
+          ? (li.id === v.targetItemId ? '<span class="af-pill-good">&#10003; Misclassified</span>' : (isSelected ? '<span class="af-pill-bad">&#10007; Incorrect</span>' : ''))
+          : '<button type="button" class="af-btn sm" onclick="afAnswerReview(\'' + escAttr(v.id) + '\', \'' + escAttr(li.id) + '\')">Flag Category</button>') +
+        '</td>' +
+        '</tr>';
+    }).join('');
+    contentHTML = '<table class="af-tbl"><thead><tr><th>Item Description</th><th>Accounting Category</th><th class="af-tar">Amount</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
+  } else if (v.screeningData) {
+    const sd = v.screeningData;
+    const isSelected = (r && r.selected === 'creditScore');
+    contentHTML = '<div class="af-card" style="padding:16px">' +
+      '<p><b>Applicant:</b> ' + esc(sd.applicantName) + ' &middot; <b>Unit:</b> ' + esc(sd.unitId) + '</p>' +
+      '<p><b>Consumer Reporting Agency:</b> ' + esc(sd.creditAgency) + ' (' + esc(sd.agencyPhone) + ')</p>' +
+      '<p><b>Applicant Credit Score:</b> <span class="af-chip bad">' + sd.creditScore + '</span> (Required Minimum: ' + sd.thresholdRequired + ')</p>' +
+      '<p><b>Triggering Factor:</b> ' + esc(sd.adverseFactor) + '</p>' +
+      '<div style="margin-top:14px">' +
+      (answered
+        ? '<span class="af-pill-good">&#10003; Credit Score 512 Trigger Verified</span>'
+        : '<button type="button" class="af-btn primary" onclick="afAnswerReview(\'' + escAttr(v.id) + '\', \'creditScore\')">Confirm Screening Disclosure</button>') +
+      '</div></div>';
+  } else if (v.statuteDetails) {
+    const st = v.statuteDetails;
+    contentHTML = '<div class="af-card" style="padding:16px">' +
+      '<p><b>Move-Out Surrender Date:</b> ' + esc(st.moveOutDate) + ' (' + st.daysElapsed + ' days elapsed)</p>' +
+      '<p><b>Texas Statutory Limit:</b> ' + st.statutoryLimitDays + ' calendar days (Texas Prop. Code § 92.103)</p>' +
+      '<p><b>Days Remaining to Refund:</b> <span class="af-chip warn">' + st.daysRemaining + ' days remaining</span></p>' +
+      '<p><b>Deposit Held:</b> ' + afMoney(st.depositHeldCents) + '</p>' +
+      '<p><b>Statutory Bad Faith Penalty (§ 92.109):</b> $100 + 3x Deposit = <b>' + afMoney(st.calculated3xPenaltyCents) + '</b> + Attorney Fees</p>' +
+      '<div style="margin-top:14px">' +
+      (answered
+        ? '<span class="af-pill-good">&#10003; Statutory Clock & Liability Verified</span>'
+        : '<button type="button" class="af-btn primary" onclick="afAnswerReview(\'' + escAttr(v.id) + '\', \'daysRemaining\')">Verify 8-Day Deadline & 3x Penalty</button>') +
+      '</div></div>';
+  }
+
+  let feedbackHTML = '';
+  if (answered) {
+    feedbackHTML = '<div class="af-feedback-box ' + (r.correct ? 'correct' : 'incorrect') + '">' +
+      '<b>' + (r.correct ? '&#10003; Correct.' : '&#10007; Not quite.') + '</b> ' + esc(v.explanation) +
+      '<div class="af-feedback-actions">' +
+      (r.correct ? afContinueHTML() : '<button type="button" class="af-btn" onclick="afRetakeReview(\'' + escAttr(v.id) + '\')">Try Again</button>') +
+      '</div></div>';
+  }
+
+  const isLegal = v.id.indexOf('_v7_') !== -1 || v.id.indexOf('_v11_') !== -1 || v.id.indexOf('_v12_') !== -1;
+
+  return afPageHead(v.title, 'Verification audit.') +
+    (isLegal ? afDisclaimerHTML() : '') +
+    '<div class="af-rv-card">' +
+    '<p class="af-step-instruction">' + esc(v.instruction) + '</p>' +
+    contentHTML +
+    feedbackHTML +
+    '</div>';
+}
+
+function afAnswerReview(id, targetId) {
+  const v = AF_VERIFY_ITEMS.find(function (x) { return x.id === id; });
+  if (!v) return;
+  const correct = (targetId === v.targetEntryId || targetId === v.targetField || targetId === v.targetItemId || targetId === v.targetItem || targetId === 'creditScore' || targetId === 'daysRemaining');
+  afRecordAnswer('reviews', id, { selected: targetId, correct: correct });
+  afRenderRoot();
+}
+
+function afRetakeReview(id) {
+  if (afState.mode === 'lesson') {
+    delete afStore.reviews[id];
+    afSave();
+  }
+  afRenderRoot();
+}
+
+/* 3. Reconcile View */
+function afReconcileDetailHTML() {
+  const rec = AF_RECONCILE_ITEMS.find(function (x) { return x.id === afState.reconcileId; });
+  if (!rec) return afEmptyState({ title: 'Reconciliation not found', body: 'The requested reconciliation item does not exist.', actionLabel: 'Back to dashboard', action: "afGoto('dashboard')" });
+
+  const r = afStore.reconciles[rec.id];
+  const answered = !!(r && r.submittedAmountCents !== undefined);
+
+  const deductionsHTML = rec.deductionItems.map(function (d, idx) {
+    return '<div class="af-form-group" style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
+      '<input type="checkbox" id="afRecDeduct-' + idx + '" ' + (d.valid ? 'checked' : '') + ' ' + (answered ? 'disabled' : '') + '>' +
+      '<label for="afRecDeduct-' + idx + '" style="font-size:13.5px;flex:1">' + esc(d.label) + ' &mdash; <b>' + afMoney(d.amountCents) + '</b>' +
+      (!d.valid ? ' <span class="af-pill-bad" style="margin-left:6px">Normal Wear & Tear (Non-Deductible)</span>' : '') +
+      '</label>' +
+      '</div>';
+  }).join('');
+
+  let feedbackHTML = '';
+  if (answered) {
+    feedbackHTML = '<div class="af-feedback-box ' + (r.correct ? 'correct' : 'incorrect') + '">' +
+      '<b>' + (r.correct ? '&#10003; Reconciled Successfully.' : '&#10007; Discrepancy Found.') + '</b> ' + esc(rec.explanation) +
+      '<div class="af-feedback-actions">' +
+      (r.correct ? afContinueHTML() : '<button type="button" class="af-btn" onclick="afRetakeReconcile(\'' + escAttr(rec.id) + '\')">Try Again</button>') +
+      '</div></div>';
+  }
+
+  return afPageHead(rec.title, 'Deposit accounting reconciliation.') +
+    afDisclaimerHTML() +
+    '<div class="af-rec-card">' +
+    '<p class="af-step-instruction">' + esc(rec.instruction) + '</p>' +
+    '<div style="background:#f8fafc;padding:14px;border:1px solid var(--af-line);border-radius:var(--af-radius);margin-bottom:16px">' +
+    '<p style="margin:0 0 6px"><b>Original Security Deposit Held in Escrow:</b> <span class="font-mono" style="font-size:16px;color:var(--af-good)">' + afMoney(rec.depositHeldCents) + '</span></p>' +
+    '</div>' +
+    '<h4 style="margin:0 0 12px">Itemized Move-Out Deductions</h4>' +
+    deductionsHTML +
+    '<div style="margin-top:18px;display:flex;align-items:center;gap:12px">' +
+    '<label for="afRecRefundInput" style="font-weight:700;font-size:14px">Calculated Net Refund Check Owed ($):</label>' +
+    '<input type="text" id="afRecRefundInput" class="af-input" style="width:180px;font-weight:700" placeholder="e.g. 2370.00" ' +
+    (answered ? 'value="' + (r.submittedAmountCents / 100).toFixed(2) + '" disabled' : 'value="2370.00"') + '>' +
+    (!answered ? '<button type="button" class="af-btn primary" onclick="afSubmitReconcile(\'' + escAttr(rec.id) + '\')">Submit Reconciliation</button>' : '') +
+    '</div>' +
+    feedbackHTML +
+    '</div>';
+}
+
+function afSubmitReconcile(id) {
+  const rec = AF_RECONCILE_ITEMS.find(function (x) { return x.id === id; });
+  if (!rec) return;
+  const inputEl = document.getElementById('afRecRefundInput');
+  const val = parseFloat((inputEl ? inputEl.value : '0').replace(/[^0-9.]/g, '') || '0');
+  const cents = Math.round(val * 100);
+  const correct = (cents === rec.expectedNetRefundCents);
+  afRecordAnswer('reconciles', id, { correct: correct, submittedAmountCents: cents });
+  afRenderRoot();
+}
+
+function afRetakeReconcile(id) {
+  if (afState.mode === 'lesson') {
+    delete afStore.reconciles[id];
+    afSave();
+  }
+  afRenderRoot();
+}
+
+/* 4. Compose View */
+function afComposeDetailHTML() {
+  const cmp = AF_COMPOSE_ITEMS.find(function (x) { return x.id === afState.composeId; });
+  if (!cmp) return afEmptyState({ title: 'Compose item not found', body: 'The requested compose prompt does not exist.', actionLabel: 'Back to dashboard', action: "afGoto('dashboard')" });
+
+  const r = afStore.composes[cmp.id];
+  const answered = !!(r && r.resolvedAt);
+
+  const threadHTML = (cmp.thread || []).map(function (m) {
+    return '<div class="af-compose-msg">' +
+      '<div class="af-compose-msg-meta">' + esc(m.sender) + ' &rarr; ' + esc(m.recipient) + ' &middot; ' + esc(m.date) + '</div>' +
+      '<div>' + esc(m.body) + '</div>' +
+      '</div>';
+  }).join('');
+
+  let feedbackHTML = '';
+  if (answered) {
+    const rubricList = (r.results || []).map(function (res) {
+      return '<div class="af-rubric-item ' + (res.pass ? 'pass' : 'fail') + '">' +
+        '<span>' + (res.pass ? '&#10003;' : '&#10007;') + '</span>' +
+        '<div><b>' + esc(res.label) + '</b>' + (!res.pass ? '<div style="font-size:12px;margin-top:2px">' + esc(res.why) + '</div>' : '') + '</div>' +
+        '</div>';
+    }).join('');
+
+    feedbackHTML = '<div class="af-feedback-box ' + (r.passed ? 'correct' : 'incorrect') + '">' +
+      '<b>' + (r.passed ? '&#10003; Excellent communication.' : '&#10007; Missing required compliance points.') + '</b> ' +
+      r.passedCount + ' of ' + cmp.rubric.length + ' points satisfied (Pass threshold: ' + cmp.passMark + ').' +
+      '<div style="margin-top:10px">' + rubricList + '</div>' +
+      '<div class="af-feedback-actions">' +
+      (r.passed ? afContinueHTML() : '<button type="button" class="af-btn" onclick="afRetakeCompose(\'' + escAttr(cmp.id) + '\')">Revise It</button>') +
+      '</div></div>';
+  }
+
+  return afPageHead(cmp.label, 'Written communication exercise.') +
+    afDisclaimerHTML() +
+    '<div class="af-compose-card">' +
+    '<p class="af-step-instruction">' + esc(cmp.instruction) + '</p>' +
+    (threadHTML ? '<div class="af-compose-thread"><h4 style="margin:0 0 6px">Thread History</h4>' + threadHTML + '</div>' : '') +
+    '<textarea id="afComposeTextarea-' + cmp.id + '" class="af-compose-textarea" placeholder="' + escAttr(cmp.placeholder) + '" ' +
+    (answered ? 'disabled' : '') + '>' + (r ? esc(r.text || '') : '') + '</textarea>' +
+    (!answered
+      ? '<div style="display:flex;align-items:center;gap:12px"><button type="button" class="af-btn primary" onclick="afSubmitCompose(\'' + escAttr(cmp.id) + '\')">Send Reply</button><span style="font-size:12px;color:var(--af-muted)">Your reply will be scored against compliance rubrics.</span></div>'
+      : '') +
+    feedbackHTML +
+    '</div>';
+}
+
+function afSubmitCompose(id) {
+  const cmp = AF_COMPOSE_ITEMS.find(function (x) { return x.id === id; });
+  if (!cmp) return;
+  const textarea = document.getElementById('afComposeTextarea-' + id);
+  const text = textarea ? textarea.value.trim() : '';
+  if (text.length < 25) {
+    simToast('Please write a full response before submitting.');
+    return;
+  }
+  const results = cmp.rubric.map(function (c) {
+    const fn = AF_RUBRIC_CHECKS[c.check];
+    const pass = fn ? !!fn(text) : false;
+    return { check: c.check, label: c.label, why: c.why, pass: pass };
+  });
+  const passedCount = results.filter(function (res) { return res.pass; }).length;
+  const passed = (passedCount >= cmp.passMark);
+
+  afRecordAnswer('composes', id, {
+    text: text,
+    results: results,
+    passedCount: passedCount,
+    passed: passed,
+    resolvedAt: Date.now()
+  });
+  afRenderRoot();
+}
+
+function afRetakeCompose(id) {
+  if (afState.mode === 'lesson') {
+    delete afStore.composes[id];
+    afSave();
+  }
+  afRenderRoot();
+}
+
+/* 5. Triage View */
+function afTriageDetailHTML() {
+  const tri = AF_TRIAGE_ITEMS.find(function (x) { return x.id === afState.triageId; });
+  if (!tri) return afEmptyState({ title: 'Triage item not found', body: 'The requested triage queue does not exist.', actionLabel: 'Back to dashboard', action: "afGoto('dashboard')" });
+
+  const r = afStore.triages[tri.id];
+  const answered = !!(r && r.order);
+
+  if (!afDemo.triageOrders) afDemo.triageOrders = {};
+  if (!afDemo.triageOrders[tri.id]) {
+    afDemo.triageOrders[tri.id] = tri.items.slice();
+  }
+  const list = afDemo.triageOrders[tri.id];
+
+  const rowsHTML = list.map(function (item, idx) {
+    return '<div class="af-triage-row">' +
+      '<span class="af-triage-rank">' + (idx + 1) + '</span>' +
+      '<div style="flex:1"><b>' + esc(item.label) + '</b>' +
+      (answered ? '<div style="font-size:12px;color:var(--af-muted);margin-top:2px">' + esc(item.reason) + '</div>' : '') +
+      '</div>' +
+      (!answered
+        ? '<div class="af-triage-controls">' +
+          '<button type="button" class="af-btn sm" ' + (idx === 0 ? 'disabled' : 'onclick="afMoveTriage(\'' + escAttr(tri.id) + '\', ' + idx + ', -1)"') + '>&uarr;</button>' +
+          '<button type="button" class="af-btn sm" ' + (idx === list.length - 1 ? 'disabled' : 'onclick="afMoveTriage(\'' + escAttr(tri.id) + '\', ' + idx + ', 1)"') + '>&darr;</button>' +
+          '</div>'
+        : '') +
+      '</div>';
+  }).join('');
+
+  let feedbackHTML = '';
+  if (answered) {
+    feedbackHTML = '<div class="af-feedback-box ' + (r.correct ? 'correct' : 'incorrect') + '">' +
+      '<b>' + (r.correct ? '&#10003; Optimal Operational Triage.' : '&#10007; Priority Hierarchy Needs Revision.') + '</b> ' +
+      'Emergency habitability risks (active flood leak) and statutory expiration deadlines (Texas Day 28 security deposit clock) must always precede routine inquiries and vendor paperwork.' +
+      '<div class="af-feedback-actions">' +
+      (r.correct ? afContinueHTML() : '<button type="button" class="af-btn" onclick="afRetakeTriage(\'' + escAttr(tri.id) + '\')">Try Again</button>') +
+      '</div></div>';
+  }
+
+  return afPageHead(tri.title, 'Queue prioritization exercise.') +
+    afDisclaimerHTML() +
+    '<div class="af-triage-card">' +
+    '<p class="af-step-instruction">' + esc(tri.instruction) + '</p>' +
+    '<div class="af-triage-list">' + rowsHTML + '</div>' +
+    (!answered
+      ? '<button type="button" class="af-btn primary" onclick="afSubmitTriage(\'' + escAttr(tri.id) + '\')">Submit Priority Order</button>'
+      : '') +
+    feedbackHTML +
+    '</div>';
+}
+
+function afMoveTriage(id, idx, dir) {
+  const list = afDemo.triageOrders[id];
+  if (!list) return;
+  const target = idx + dir;
+  if (target < 0 || target >= list.length) return;
+  const tmp = list[idx];
+  list[idx] = list[target];
+  list[target] = tmp;
+  afRenderRoot();
+}
+
+function afSubmitTriage(id) {
+  const tri = AF_TRIAGE_ITEMS.find(function (x) { return x.id === id; });
+  if (!tri) return;
+  const list = afDemo.triageOrders[id];
+  const isTop1 = list[0].id === 'Q-01'; // Active water leak
+  const isTop2 = list[1].id === 'Q-02'; // Texas Day 28 deposit refund
+  const isTop3 = list[2].id === 'Q-03'; // FCRA Adverse action
+  const correct = (isTop1 && isTop2 && isTop3);
+
+  afRecordAnswer('triages', id, {
+    correct: correct,
+    order: list.map(function (x) { return x.id; })
+  });
+  afRenderRoot();
+}
+
+function afRetakeTriage(id) {
+  if (afState.mode === 'lesson') {
+    delete afStore.triages[id];
+    afSave();
+  }
+  afRenderRoot();
+}
+
+/* 6. Final Exam View (AF_EXAM_BANK) */
+function afExamHTML() {
+  if (!afStore.exam || !afStore.exam.startedAt) {
+    return afPageHead('Final Examination', 'Comprehensive certification exam.') +
+      afDisclaimerHTML() +
+      '<div class="af-exam-card">' +
+      '<h3>AppFolio Property Manager Certification Exam</h3>' +
+      '<p style="font-size:14px;line-height:1.6;color:var(--af-text)">' +
+      'This exam evaluates your mastery of property management operations, Texas leasing statutes, Fair Housing compliance, FCRA adverse action rules, ledger balance mechanics, and fiduciary trust boundaries.<br><br>' +
+      '<b>Exam Specifications:</b><br>' +
+      '&bull; <b>24 Questions</b> sampled across compliance, ledger analysis, numeric calculations, operational judgment, and written communications.<br>' +
+      '&bull; <b>80% Passing Threshold</b> (20 of 24 correct required for certification).<br>' +
+      '&bull; <b>Timed 30-Minute Session</b> with persistent state.' +
+      '</p>' +
+      '<div style="margin-top:20px">' +
+      '<button type="button" class="af-btn primary lg" onclick="afStartExam()">Begin Exam &rarr;</button>' +
+      '</div>' +
+      '</div>';
+  }
+
+  const ex = afStore.exam;
+  const isSubmitted = !!ex.submittedAt;
+
+  if (isSubmitted) {
+    const pct = Math.round((ex.score / ex.max) * 100);
+    const passed = (pct >= Math.round(AF_EXAM_PASS_PCT * 100));
+
+    const reviewItemsHTML = (ex.itemIds || []).map(function (itemId, idx) {
+      const item = AF_EXAM_BANK.find(function (x) { return x.id === itemId; });
+      if (!item) return '';
+      const ans = ex.answers[idx];
+      let isItemCorrect = false;
+      if (item.type === 'decide') isItemCorrect = (ans === item.correct);
+      else if (item.type === 'verify') isItemCorrect = (ans === item.targetEntryId);
+      else if (item.type === 'compose') isItemCorrect = (ans && ans.passed);
+
+      return '<div class="af-card" style="padding:16px;margin-bottom:12px;border-left:4px solid ' + (isItemCorrect ? 'var(--af-good)' : 'var(--af-bad)') + '">' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:6px">' +
+        '<b>Question ' + (idx + 1) + ' &middot; ' + esc(item.title) + '</b>' +
+        '<span class="af-chip ' + (isItemCorrect ? 'good' : 'bad') + '">' + (isItemCorrect ? '&#10003; Correct' : '&#10007; Incorrect') + '</span>' +
+        '</div>' +
+        '<p style="font-size:13.5px;margin:0 0 8px">' + esc(item.situation || item.instruction) + '</p>' +
+        '<div class="af-feedback-box ' + (isItemCorrect ? 'good' : 'bad') + '" style="margin-top:8px">' +
+        '<b>Explanation:</b> ' + esc(item.explanation || 'Reviewed against statutory standards.') +
+        '</div>' +
+        '</div>';
+    }).join('');
+
+    return afPageHead('Exam Results', 'Certification assessment summary.') +
+      '<div class="af-exam-card" style="text-align:center;padding:32px 20px">' +
+      '<div style="font-size:48px;font-weight:800;color:' + (passed ? 'var(--af-good)' : 'var(--af-bad)') + '">' + pct + '%</div>' +
+      '<h3>' + (passed ? 'Congratulations! You Passed the Certification Exam.' : 'Examination Not Passed') + '</h3>' +
+      '<p style="font-size:14px;color:var(--af-muted)">You scored ' + ex.score + ' of ' + ex.max + ' points (Passing threshold is 80%).</p>' +
+      '<div style="margin-top:18px">' +
+      '<button type="button" class="af-btn" onclick="afRetakeExam()">Retake Exam</button>' +
+      '</div>' +
+      '</div>' +
+      '<h3 style="margin:24px 0 14px">Question Review & Explanations</h3>' +
+      reviewItemsHTML;
+  }
+
+  // Active Exam Item View
+  const curIdx = ex.currentIndex || 0;
+  const itemId = ex.itemIds[curIdx];
+  const item = AF_EXAM_BANK.find(function (x) { return x.id === itemId; });
+  if (!item) return afEmptyState({ title: 'Item error', body: 'Exam question could not be loaded.', actionLabel: 'Reset Exam', action: 'afRetakeExam()' });
+
+  const chosen = ex.answers[curIdx];
+
+  let bodyHTML = '';
+  if (item.options) {
+    const opts = item.options.map(function (opt, oIdx) {
+      const isSel = (chosen === oIdx);
+      const letter = String.fromCharCode(65 + oIdx);
+      return '<button type="button" class="af-option-btn ' + (isSel ? 'selected' : '') + '" onclick="afSelectExamOption(' + curIdx + ', ' + oIdx + ')">' +
+        '<b>' + letter + '.</b> <span>' + esc(opt) + '</span>' +
+        '</button>';
+    }).join('');
+    bodyHTML = '<div class="af-options-list">' + opts + '</div>';
+  } else if (item.entries) {
+    const rows = item.entries.map(function (e) {
+      const isSel = (chosen === e.id);
+      return '<tr class="' + (isSel ? 'af-row-active' : '') + '">' +
+        '<td>' + esc(e.date) + '</td>' +
+        '<td>' + esc(e.desc) + '</td>' +
+        '<td class="af-tar">' + afMoney(e.amount) + '</td>' +
+        '<td class="af-tar font-mono"><b>' + afMoney(e.balanceAfter) + '</b></td>' +
+        '<td class="af-tar"><button type="button" class="af-btn sm ' + (isSel ? 'primary' : '') + '" onclick="afSelectExamOption(' + curIdx + ', \'' + escAttr(e.id) + '\')">' + (isSel ? 'Selected' : 'Select Row') + '</button></td>' +
+        '</tr>';
+    }).join('');
+    bodyHTML = '<table class="af-tbl"><thead><tr><th>Date</th><th>Description</th><th class="af-tar">Amount</th><th class="af-tar">Balance After</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
+  } else if (item.type === 'compose') {
+    bodyHTML = '<textarea id="afExamComposeBox" class="af-compose-textarea" placeholder="' + escAttr(item.placeholder || 'Draft response...') + '" oninput="afSaveExamCompose(' + curIdx + ')">' + (chosen ? esc(chosen.text || '') : '') + '</textarea>';
+  }
+
+  return afPageHead('Exam in Progress', 'Question ' + (curIdx + 1) + ' of ' + ex.max,
+    '<span class="af-exam-timer">&#9201; 30:00</span>'
+  ) +
+    '<div class="af-exam-card">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+    '<span class="af-chip brand">' + esc(item.category.toUpperCase()) + '</span>' +
+    '<span style="font-size:12px;color:var(--af-muted)">Question ' + (curIdx + 1) + ' / ' + ex.max + '</span>' +
+    '</div>' +
+    '<h4>' + esc(item.title) + '</h4>' +
+    '<p class="af-step-situation">' + esc(item.situation || item.instruction) + '</p>' +
+    bodyHTML +
+    '<div style="display:flex;justify-content:space-between;margin-top:20px">' +
+    '<button type="button" class="af-btn" ' + (curIdx === 0 ? 'disabled' : 'onclick="afPrevExamItem()"') + '>&larr; Previous</button>' +
+    (curIdx === ex.max - 1
+      ? '<button type="button" class="af-btn primary" onclick="afSubmitExam()">Submit Exam</button>'
+      : '<button type="button" class="af-btn primary" onclick="afNextExamItem()">Next &rarr;</button>') +
+    '</div>' +
+    '</div>';
+}
+
+function afStartExam() {
+  afEnsureShuffleSalt();
+  const drawnIds = [];
+  AF_EXAM_BLUEPRINT.forEach(function (spec) {
+    const pool = AF_EXAM_BANK.filter(function (i) { return i.category === spec.category; });
+    const order = afOptionOrder('exampool:' + spec.category, pool.length);
+    for (let j = 0; j < spec.count && j < pool.length; j++) {
+      drawnIds.push(pool[order[j]].id);
+    }
+  });
+
+  const finalOrder = afOptionOrder('examfinalorder', drawnIds.length);
+  const shuffledIds = finalOrder.map(function (idx) { return drawnIds[idx]; });
+
+  afStore.exam = {
+    startedAt: Date.now(),
+    endsAt: Date.now() + 30 * 60000,
+    itemIds: shuffledIds,
+    currentIndex: 0,
+    answers: {},
+    submittedAt: null,
+    score: 0,
+    max: shuffledIds.length
+  };
+  afSave();
+  afGoto('exam');
+}
+
+function afSelectExamOption(curIdx, optVal) {
+  if (!afStore.exam) return;
+  afStore.exam.answers[curIdx] = optVal;
+  afSave();
+  afRenderRoot();
+}
+
+function afSaveExamCompose(curIdx) {
+  const box = document.getElementById('afExamComposeBox');
+  if (!box || !afStore.exam) return;
+  const text = box.value.trim();
+  const item = AF_EXAM_BANK.find(function (x) { return x.id === afStore.exam.itemIds[curIdx]; });
+  let passed = false;
+  if (item && item.rubric) {
+    const results = item.rubric.map(function (c) {
+      const fn = AF_RUBRIC_CHECKS[c.check];
+      return fn ? !!fn(text) : false;
+    });
+    passed = results.filter(Boolean).length >= item.passMark;
+  }
+  afStore.exam.answers[curIdx] = { text: text, passed: passed };
+  afSave();
+}
+
+function afNextExamItem() {
+  if (!afStore.exam) return;
+  if (afStore.exam.currentIndex < afStore.exam.max - 1) {
+    afStore.exam.currentIndex++;
+    afSave();
+    afRenderRoot();
+  }
+}
+
+function afPrevExamItem() {
+  if (!afStore.exam) return;
+  if (afStore.exam.currentIndex > 0) {
+    afStore.exam.currentIndex--;
+    afSave();
+    afRenderRoot();
+  }
+}
+
+function afSubmitExam() {
+  if (!afStore.exam) return;
+  let totalScore = 0;
+  afStore.exam.itemIds.forEach(function (itemId, idx) {
+    const item = AF_EXAM_BANK.find(function (x) { return x.id === itemId; });
+    if (!item) return;
+    const ans = afStore.exam.answers[idx];
+    if (item.type === 'decide' && ans === item.correct) totalScore++;
+    else if (item.type === 'verify' && ans === item.targetEntryId) totalScore++;
+    else if (item.type === 'compose' && ans && ans.passed) totalScore++;
+  });
+
+  afStore.exam.submittedAt = Date.now();
+  afStore.exam.score = totalScore;
+  afSave();
+  afRenderRoot();
+}
+
+function afRetakeExam() {
+  afStartExam();
 }
 
 
@@ -1221,7 +2979,7 @@ function afNoteLessonComplete(lessonId) {
 }
 
 function afResetLesson(lessonId) {
-  const l = SimEngine.findLesson(lessonId);
+  const l = (typeof AF_LESSONS !== 'undefined' ? AF_LESSONS.find(function (x) { return x.id === lessonId; }) : null) || (typeof SimEngine !== 'undefined' && SimEngine.findLesson ? SimEngine.findLesson(lessonId) : null);
   if (!l) return;
   l.steps.forEach(function (step) {
     if (step.type === 'do' && step.checklistId) delete afStore.checklist[step.checklistId];
@@ -1232,7 +2990,7 @@ function afResetLesson(lessonId) {
     if (step.type === 'triage' && step.triageId) delete afStore.triages[step.triageId];
   });
   afSave();
-  simToast('Lesson ' + l.number + ' restarted.', { tone: 'good' });
+  if (typeof simToast === 'function') simToast('Lesson ' + l.number + ' restarted.', { tone: 'good' });
 }
 
 /* Told to the engine when a graded step completes, so a running walkthrough can

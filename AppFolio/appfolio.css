@@ -309,13 +309,13 @@ body.af-demo .af-nav-item.training { display: none; }
   height: var(--af-subnav-h);
   background: var(--af-panel);
   border-bottom: 1px solid var(--af-line);
-  display: flex;
+  display: none;
   align-items: center;
   gap: 16px;
   padding: 0 24px;
   flex: none;
 }
-.af-subnav[hidden] { display: none !important; }
+.af-subnav:not([hidden]) { display: flex; }
 
 .af-body {
   flex: 1;
@@ -632,6 +632,62 @@ body.af-demo .af-nav-item.training { display: none; }
 .af-modal-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
 
 /* =====================================================================
+   FORM CONTROLS AND INTERACTION ALERTS
+   ===================================================================== */
+.af-modal-wide { max-width: 640px; }
+.af-form-group { margin-bottom: 14px; text-align: left; }
+.af-label { display: block; font-size: 12px; font-weight: 700; color: var(--af-muted); margin-bottom: 5px; }
+.af-input, .af-select, .af-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--af-text);
+  background: var(--af-panel);
+  box-sizing: border-box;
+}
+.af-input:focus, .af-select:focus, .af-textarea:focus {
+  outline: none;
+  border-color: var(--af-accent);
+}
+.af-textarea { min-height: 80px; resize: vertical; }
+.af-alert-warn {
+  padding: 12px 14px;
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  border-left: 4px solid var(--af-warn);
+  border-radius: var(--af-radius);
+  font-size: 13px;
+  line-height: 1.5;
+  color: #92400e;
+  margin-bottom: 14px;
+}
+.af-alert-danger {
+  padding: 12px 14px;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-left: 4px solid var(--af-bad);
+  border-radius: var(--af-radius);
+  font-size: 13px;
+  line-height: 1.5;
+  color: #991b1b;
+  margin-bottom: 14px;
+}
+.af-alert-good {
+  padding: 12px 14px;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  border-left: 4px solid var(--af-good);
+  border-radius: var(--af-radius);
+  font-size: 13px;
+  line-height: 1.5;
+  color: #166534;
+  margin-bottom: 14px;
+}
+
+/* =====================================================================
    GUIDED TOUR
    ===================================================================== */
 .af-tour { position: fixed; inset: 0; z-index: 300; }
@@ -699,4 +755,233 @@ body.af-demo .af-nav-item.training { display: none; }
     z-index: 110;
     background: var(--af-scrim-backdrop);
   }
+}
+
+/* =====================================================================
+   GRADED STEP & CURRICULUM VIEWS (Decide, Verify, Reconcile, Compose, Triage, Exam)
+   ===================================================================== */
+
+.af-disclaimer-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--af-warn-light);
+  border: 1px solid var(--af-warn);
+  border-radius: var(--af-radius);
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: #92400e;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.af-scenario-card,
+.af-rv-card,
+.af-rec-card,
+.af-compose-card,
+.af-triage-card,
+.af-exam-card {
+  background: var(--af-panel);
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.af-step-situation,
+.af-step-instruction {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--af-text);
+  margin-bottom: 20px;
+}
+
+.af-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.af-option-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  text-align: left;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--af-text);
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.af-option-btn:hover:not(:disabled) {
+  background: var(--af-blue-light);
+  border-color: var(--af-blue);
+}
+
+.af-option-btn.selected {
+  border-color: var(--af-blue);
+  background: var(--af-blue-light);
+}
+
+.af-option-btn.correct {
+  background: var(--af-good-light);
+  border-color: var(--af-good);
+  color: #065f46;
+  font-weight: 600;
+}
+
+.af-option-btn.incorrect {
+  background: var(--af-bad-light);
+  border-color: var(--af-bad);
+  color: var(--af-bad-dark);
+}
+
+.af-feedback-box {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-radius: var(--af-radius);
+  font-size: 13.5px;
+  line-height: 1.55;
+  background: #f8fafc;
+  border: 1px solid var(--af-line);
+}
+
+.af-feedback-box.correct,
+.af-feedback-box.good {
+  background: var(--af-good-light);
+  border-color: var(--af-good);
+  color: #065f46;
+}
+
+.af-feedback-box.incorrect,
+.af-feedback-box.bad {
+  background: var(--af-bad-light);
+  border-color: var(--af-bad);
+  color: var(--af-bad-dark);
+}
+
+.af-feedback-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.af-compose-thread {
+  background: #f8fafc;
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  font-size: 13px;
+}
+
+.af-compose-msg {
+  padding: 10px 12px;
+  background: var(--af-panel);
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  margin-top: 8px;
+}
+
+.af-compose-msg-meta {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--af-muted);
+  margin-bottom: 4px;
+}
+
+.af-compose-textarea {
+  width: 100%;
+  min-height: 140px;
+  padding: 12px 14px;
+  font-family: var(--af-font);
+  font-size: 13.5px;
+  line-height: 1.5;
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  margin-bottom: 14px;
+  resize: vertical;
+}
+
+.af-compose-textarea:focus {
+  outline: none;
+  border-color: var(--af-blue);
+  box-shadow: 0 0 0 3px rgba(0, 112, 186, 0.15);
+}
+
+.af-rubric-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: var(--af-radius);
+  margin-bottom: 6px;
+}
+
+.af-rubric-item.pass {
+  background: var(--af-good-light);
+  color: #065f46;
+}
+
+.af-rubric-item.fail {
+  background: var(--af-bad-light);
+  color: var(--af-bad-dark);
+}
+
+.af-triage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.af-triage-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  font-size: 13px;
+}
+
+.af-triage-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--af-brand);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 12px;
+  flex: none;
+}
+
+.af-triage-controls {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  flex: none;
+}
+
+.af-exam-timer {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--af-warn);
+  background: var(--af-warn-light);
+  padding: 4px 10px;
+  border-radius: 20px;
 }
