@@ -188,3 +188,158 @@
   -webkit-text-fill-color: var(--af-muted);
   opacity: 1;
 }
+
+/* =====================================================================
+   THE LEASE FLOW STRIP
+   Five steps, in order, on the lease detail screen. It exists because the
+   order is the lesson: sign before you take money, take money before you
+   hand over keys. A row of five buttons would invite doing it any way.
+   ===================================================================== */
+.af-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  list-style: none;
+  margin: 0 0 var(--af-gap);
+  padding: 0;
+  counter-reset: afflow;
+}
+.af-flow li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px 9px 14px;
+  background: var(--af-panel);
+  border: 1px solid var(--af-line);
+  border-right: none;
+  font-size: 13px;
+  color: var(--af-muted);
+  counter-increment: afflow;
+}
+.af-flow li:first-child { border-radius: var(--af-radius) 0 0 var(--af-radius); }
+.af-flow li:last-child { border-right: 1px solid var(--af-line); border-radius: 0 var(--af-radius) var(--af-radius) 0; }
+.af-flow li::before {
+  content: counter(afflow);
+  width: 20px;
+  height: 20px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--af-line);
+  color: var(--af-muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+/* A completed step is stated plainly rather than merely tinted: at a glance you
+   should be able to see how far along a lease is without reading the labels. */
+.af-flow li.done { color: var(--af-text); font-weight: 600; }
+.af-flow li.done::before {
+  content: '\2713';
+  background: var(--af-good);
+  color: var(--af-on-brand);
+}
+@media (max-width: 760px) {
+  .af-flow { flex-direction: column; }
+  .af-flow li { border-right: 1px solid var(--af-line); border-bottom: none; border-radius: 0; }
+  .af-flow li:first-child { border-radius: var(--af-radius) var(--af-radius) 0 0; }
+  .af-flow li:last-child { border-bottom: 1px solid var(--af-line); border-radius: 0 0 var(--af-radius) var(--af-radius); }
+}
+
+/* An invoice that came in over its estimate. Stated in red beside the amount
+   rather than buried in a variance column, because catching it before the owner
+   sees it on a statement is the whole point of noticing. */
+.af-over {
+  color: var(--af-bad);
+  font-weight: 700;
+  font-size: 12.5px;
+}
+
+/* =====================================================================
+   SELF TEST PANEL — only ever rendered under ?selftest=1
+   Fixed to the right so it can be read next to the application it is
+   describing, rather than replacing it.
+   ===================================================================== */
+.af-selftest {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  z-index: 9999;
+  width: 460px;
+  max-width: 100vw;
+  display: flex;
+  flex-direction: column;
+  background: var(--af-panel);
+  border-left: 3px solid var(--af-line);
+  box-shadow: var(--af-shadow-lg);
+  font-family: var(--af-font);
+  font-size: 13px;
+}
+.af-selftest header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  color: var(--af-on-brand);
+}
+.af-selftest header.good { background: var(--af-good); }
+.af-selftest header.bad { background: var(--af-bad); }
+.af-selftest header b { font-size: 15px; letter-spacing: .5px; }
+.af-selftest header span { flex: 1; font-size: 12px; opacity: .9; }
+.af-selftest header button {
+  background: rgba(255, 255, 255, .18);
+  border: none;
+  border-radius: 4px;
+  color: var(--af-on-brand);
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.af-selftest header button:hover { background: rgba(255, 255, 255, .3); }
+
+.af-selftest-body { flex: 1; overflow-y: auto; padding: 4px 0 14px; }
+.af-selftest-body h4 {
+  margin: 16px 16px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: var(--af-muted);
+}
+.af-selftest-body > div {
+  display: flex;
+  gap: 10px;
+  padding: 7px 16px;
+  border-bottom: 1px solid var(--af-line);
+  align-items: flex-start;
+}
+.af-selftest-body > div > span {
+  flex: none;
+  width: 38px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  padding-top: 2px;
+}
+.af-selftest-body > div.p > span { color: var(--af-good); }
+/* A failure has to be findable by scrolling fast, so it gets a tinted row
+   rather than only a coloured word. */
+.af-selftest-body > div.f { background: var(--af-bad-bg); }
+.af-selftest-body > div.f > span { color: var(--af-bad); }
+.af-selftest-body b { display: block; font-weight: 600; line-height: 1.45; }
+.af-selftest-body em {
+  display: block;
+  margin-top: 3px;
+  font-style: normal;
+  font-size: 11.5px;
+  color: var(--af-muted);
+  word-break: break-word;
+}
+.af-selftest footer {
+  flex: none;
+  padding: 10px 16px;
+  border-top: 1px solid var(--af-line);
+  font-size: 11.5px;
+  color: var(--af-muted);
+}

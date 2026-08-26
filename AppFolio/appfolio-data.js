@@ -213,7 +213,7 @@ const AF_LESSONS = [
         label: 'Open Residents Directory',
         view: 'residents',
         walk: {
-          target: 'a[data-section="residents"]',
+          target: 'a[data-section="people"]',
           text: 'Navigate to the Residents directory.',
           setup: function () { afGoto('dashboard'); }
         }
@@ -378,9 +378,9 @@ const AF_LESSONS = [
         checklistId: 'af_c5_2',
         label: 'Advance Guest Card to Contacted',
         view: 'leasing',
-        effect: function () { const gc = afGetGuestCard('GC-0001'); return gc && gc.stage !== 'new'; },
+        effect: function () { const gc = afGetGuestCard('GC-FH-01'); return gc && gc.stage !== 'new'; },
         walk: {
-          target: 'button[data-gc-advance="GC-0001"]',
+          target: 'button[data-gc-advance="GC-FH-01"]',
           text: 'Advance guest card GC-0001 (Michael Chang) from "New" to "Contacted".',
           setup: function () { afGoto('leasing'); }
         }
@@ -390,9 +390,9 @@ const AF_LESSONS = [
         checklistId: 'af_c5_3',
         label: 'Schedule Property Showing',
         view: 'leasing',
-        effect: function () { const gc = afGetGuestCard('GC-0001'); return gc && gc.stage === 'showing'; },
+        effect: function () { const gc = afGetGuestCard('GC-FH-01'); return gc && gc.stage === 'showing'; },
         walk: {
-          target: 'button[data-gc-showing="GC-0001"]',
+          target: 'button[data-gc-showing="GC-FH-01"]',
           text: 'Schedule an on-site property tour for Michael Chang.',
           setup: function () { afGoto('leasing'); }
         }
@@ -402,11 +402,11 @@ const AF_LESSONS = [
         checklistId: 'af_c5_4',
         label: 'View Submitted Rental Application',
         view: 'application',
-        viewArg: 'APP-0001',
+        viewArg: 'APP-2026-005',
         walk: {
           target: '.af-app-card',
           text: 'Open the rental application submitted by Michael Chang for Unit 11-104.',
-          setup: function () { afGoto('application', 'APP-0001'); }
+          setup: function () { afGoto('application', 'APP-2026-005'); }
         }
       }
     ]
@@ -554,11 +554,11 @@ const AF_LESSONS = [
         checklistId: 'af_c9_1',
         label: 'Open Approved Applicant Profile',
         view: 'application',
-        viewArg: 'APP-0004',
+        viewArg: 'APP-ADA-01',
         walk: {
           target: '.af-app-card',
-          text: 'Open approved applicant profile for Priya Patel (APP-0004).',
-          setup: function () { afGoto('application', 'APP-0004'); }
+          text: 'Open approved applicant profile for Priya Patel (APP-ADA-01).',
+          setup: function () { afGoto('application', 'APP-ADA-01'); }
         }
       },
       {
@@ -566,12 +566,12 @@ const AF_LESSONS = [
         checklistId: 'af_c9_2',
         label: 'Generate Lease Agreement',
         view: 'application',
-        viewArg: 'APP-0004',
-        effect: function () { const a = afGetApplication('APP-0004'); return a && a.leaseGenerated; },
+        viewArg: 'APP-ADA-01',
+        effect: function () { const a = afGetApplication('APP-ADA-01'); return a && a.leaseGenerated; },
         walk: {
           target: 'button[data-action="generate-lease"]',
           text: 'Click "Generate Lease Agreement" to create the Texas Standard Lease Agreement.',
-          setup: function () { afGoto('application', 'APP-0004'); }
+          setup: function () { afGoto('application', 'APP-ADA-01'); }
         }
       },
       {
@@ -579,12 +579,12 @@ const AF_LESSONS = [
         checklistId: 'af_c9_3',
         label: 'Post Move-In Security Deposit',
         view: 'application',
-        viewArg: 'APP-0004',
+        viewArg: 'APP-ADA-01',
         effect: function () { return afAllLedgerEntries().some(function (e) { return e.category === 'deposit' && e.amount === 215000; }); },
         walk: {
           target: 'button[data-action="collect-deposit"]',
           text: 'Post the $2,150.00 security deposit to Bank Account 03 (Escrow).',
-          setup: function () { afGoto('application', 'APP-0004'); }
+          setup: function () { afGoto('application', 'APP-ADA-01'); }
         }
       },
       {
@@ -592,12 +592,12 @@ const AF_LESSONS = [
         checklistId: 'af_c9_4',
         label: 'Execute Move-In Inspection Checklist',
         view: 'application',
-        viewArg: 'APP-0004',
-        effect: function () { const a = afGetApplication('APP-0004'); return a && a.moveInChecklistComplete; },
+        viewArg: 'APP-ADA-01',
+        effect: function () { const a = afGetApplication('APP-ADA-01'); return a && a.moveInChecklistComplete; },
         walk: {
           target: 'button[data-action="complete-inspection"]',
           text: 'Complete the Move-In Inventory & Condition Checklist with the new resident.',
-          setup: function () { afGoto('application', 'APP-0004'); }
+          setup: function () { afGoto('application', 'APP-ADA-01'); }
         }
       },
       {
@@ -1102,7 +1102,7 @@ const AF_VERIFY_ITEMS = [
 const AF_RECONCILE_ITEMS = [
   {
     id: 'af_rec11_1',
-    title: 'Security Deposit Itemization Statement Reconciliation',
+    title: 'Security Deposit Itemization Statement Reconciliation (Samuel Oak)',
     instruction: 'Reconcile the security deposit accounting statement for Samuel Oak (LEASE-MO-01). Enter the itemized deductions and calculate the exact net refund check owed to the former tenant.',
     depositHeldCents: 290000, // $2,900.00
     deductionItems: [
@@ -1114,6 +1114,48 @@ const AF_RECONCILE_ITEMS = [
     expectedTotalDeductionsCents: 53000, // $530.00
     expectedNetRefundCents: 237000,      // $2,370.00
     explanation: 'Under Texas Property Code § 92.104(b), the landlord may NOT deduct for normal wear and tear. Deducting $350.00 (drywall) and $180.00 (carpet cleaning) totals $530.00 in deductions, leaving an exact refund balance of $2,370.00.'
+  },
+  {
+    id: 'af_rec11_2',
+    title: 'Pet Deposit & Move-Out Damage Reconciliation (Jordan Reed)',
+    instruction: 'Reconcile the security deposit and pet deposit held for Jordan Reed. Deduct tenant damage while excluding normal wear and tear.',
+    depositHeldCents: 185000, // $1,850.00
+    deductionItems: [
+      { id: 'DED-201', label: 'Broken sliding patio door glass latch', amountCents: 12000, valid: true },
+      { id: 'DED-202', label: 'Faded wall paint from natural sunlight', amountCents: 0, valid: false },
+      { id: 'DED-203', label: 'Professional odor remediation for pet urine', amountCents: 25000, valid: true }
+    ],
+    expectedTotalDeductionsCents: 37000,
+    expectedNetRefundCents: 148000,
+    explanation: 'Sunlight fading is normal wear and tear. Legitimate deductions are the broken latch ($120.00) and pet odor remediation ($250.00), leaving a refund of $1,480.00.'
+  },
+  {
+    id: 'af_rec11_3',
+    title: 'Unreturned Keys & Statutory Rekey Reconciliation (Marcus Vance)',
+    instruction: 'Reconcile deductions for unreturned electronic key fobs and unpaid final trash pass-through fee.',
+    depositHeldCents: 215000, // $2,150.00
+    deductionItems: [
+      { id: 'DED-301', label: 'Unreturned electronic gate fob & pool key replacement', amountCents: 15000, valid: true },
+      { id: 'DED-302', label: 'Mandatory landlord rekeying between tenants (§ 92.156)', amountCents: 0, valid: false },
+      { id: 'DED-303', label: 'Final utility pass-through invoice (City of Plano)', amountCents: 8500, valid: true }
+    ],
+    expectedTotalDeductionsCents: 23500,
+    expectedNetRefundCents: 191500,
+    explanation: 'Under Texas Property Code § 92.156, standard turnover rekeying must be performed at landlord expense and cannot be deducted unless keys were lost. Fob replacement and unpaid utilities total $235.00, refunding $1,915.00.'
+  },
+  {
+    id: 'af_rec11_4',
+    title: 'Trash Haul & Move-Out Cleaning Reconciliation (Elena Rostova)',
+    instruction: 'Reconcile move-out deductions for abandoned bulky furniture and professional deep clean.',
+    depositHeldCents: 240000, // $2,400.00
+    deductionItems: [
+      { id: 'DED-401', label: 'Haul away abandoned mattress and sofa left in living room', amountCents: 30000, valid: true },
+      { id: 'DED-402', label: 'Minor carpet matting in high-traffic hallway', amountCents: 0, valid: false },
+      { id: 'DED-403', label: 'Oven and range degreasing deep clean', amountCents: 14000, valid: true }
+    ],
+    expectedTotalDeductionsCents: 44000,
+    expectedNetRefundCents: 196000,
+    explanation: 'Carpet matting from ordinary foot traffic is normal wear. Trash haul ($300) and heavy kitchen cleaning ($140) total $440.00, leaving $1,960.00 refunded.'
   }
 ];
 
@@ -1196,6 +1238,45 @@ const AF_TRIAGE_ITEMS = [
       { id: 'Q-07', label: 'Reply to rental inquiry received over weekend on available vacant unit', correctRank: 7, reason: 'Leasing lead conversion within standard 24-48 hour response window.' },
       { id: 'Q-08', label: 'Review and approve routine landscaping vendor invoice', correctRank: 8, reason: 'Standard accounts payable processing within 30-day net vendor terms.' },
       { id: 'Q-09', label: 'Review draft July monthly owner operating statement', correctRank: 9, reason: 'Routine monthly accounting deliverable due by 15th of the month.' }
+    ]
+  },
+  {
+    id: 'af_tri13_2',
+    title: 'Friday Afternoon Emergency & Notice Escalation Triage',
+    instruction: 'Rank the following 6 tasks before closing the management office for the weekend.',
+    items: [
+      { id: 'Q2-01', label: 'Main gas line smell reported by resident in building breezeway', correctRank: 1, reason: 'Life safety hazard requiring immediate 911/utility call and evacuation.' },
+      { id: 'Q2-02', label: 'Day 29 Security Deposit refund itemization check mailing deadline', correctRank: 2, reason: 'Statutory deadline under Texas Property Code § 92.103 expires at midnight.' },
+      { id: 'Q2-03', label: 'Deliver 24-Hour Notice of Entry for Monday morning HVAC coil replacement', correctRank: 3, reason: 'Required notice must be posted 24 hours in advance of entry.' },
+      { id: 'Q2-04', label: 'Post 3-Day Notice to Vacate for tenant 35 days delinquent', correctRank: 4, reason: 'Pre-eviction statutory notice.' },
+      { id: 'Q2-05', label: 'Send lease renewal offer for agreement expiring in 50 days', correctRank: 5, reason: 'Renewal pipeline workflow.' },
+      { id: 'Q2-06', label: 'File weekly property marketing tour log', correctRank: 6, reason: 'Internal administrative record.' }
+    ]
+  },
+  {
+    id: 'af_tri13_3',
+    title: 'Month-End Fiduciary Accounting & Trust Closing Triage',
+    instruction: 'Prioritize accounting operations during month-end bank reconciliation and owner distribution closing.',
+    items: [
+      { id: 'Q3-01', label: 'Investigate $1,500 bank overdraft alert on Operating Account', correctRank: 1, reason: 'Immediate banking and liquidity emergency.' },
+      { id: 'Q3-02', label: 'Verify Tenant Security Deposit Escrow segregation before owner draw calculation', correctRank: 2, reason: 'TREC Rule § 535.146 forbids commingling or invading tenant escrow funds.' },
+      { id: 'Q3-03', label: 'Disburse monthly net owner distributions after confirming clear funds', correctRank: 3, reason: 'Fiduciary obligation to transfer surplus operating earnings.' },
+      { id: 'Q3-04', label: 'Execute monthly bank account reconciliation across all 3 GL accounts', correctRank: 4, reason: 'Core monthly fiduciary reconciliation control.' },
+      { id: 'Q3-05', label: 'Process routine utility pass-through water bills to tenant ledgers', correctRank: 5, reason: 'Monthly recurring ledger charges.' },
+      { id: 'Q3-06', label: 'Archive signed vendor lien waivers for completed capital repairs', correctRank: 6, reason: 'Routine vendor compliance recordkeeping.' }
+    ]
+  },
+  {
+    id: 'af_tri13_4',
+    title: 'Winter Freeze Weather Crisis Property Triage',
+    instruction: 'Rank crisis response operations during sub-freezing Texas weather event affecting 5 properties.',
+    items: [
+      { id: 'Q4-01', label: 'Burst fire sprinkler pipe flooding 4 units at Legacy Park', correctRank: 1, reason: 'Active structural destruction and immediate life safety risk.' },
+      { id: 'Q4-02', label: 'Complete heating outage (furnace failure) in occupied unit during 18°F freeze', correctRank: 2, reason: 'Habitability emergency under Texas Property Code § 92.056.' },
+      { id: 'Q4-03', label: 'Dispatch salt and de-icing crew for exterior stairs and property walkways', correctRank: 3, reason: 'Premises liability prevention for slip and fall hazards.' },
+      { id: 'Q4-04', label: 'Send broadcast SMS to all residents with freeze drip faucet instructions', correctRank: 4, reason: 'Preventative tenant communication.' },
+      { id: 'Q4-05', label: 'Reschedule prospective renter property tour due to icy road conditions', correctRank: 5, reason: 'Leasing scheduling adjustment.' },
+      { id: 'Q4-06', label: 'Review quarterly vendor insurance renewals', correctRank: 6, reason: 'Routine vendor compliance review.' }
     ]
   }
 ];

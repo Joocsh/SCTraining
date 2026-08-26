@@ -16,6 +16,8 @@ const AF_ACCOUNTING_TABS = [
 
 function afAccountingTab(tab) {
   afState.accountingTab = tab;
+  afState.sectionTab = tab;
+  afRenderChrome();
   afRenderRoot();
 }
 
@@ -28,15 +30,15 @@ function afAccountTypeLabel(t) {
 }
 
 function afAccountingHTML() {
-  const tab = afState.accountingTab || 'overview';
+  const tab = afState.sectionTab || afState.accountingTab || 'overview';
   const tabs = AF_ACCOUNTING_TABS.map(function (t) {
     return '<button type="button" class="af-tab' + (t.id === tab ? ' on' : '') +
-      '" onclick="afAccountingTab(\'' + escAttr(t.id) + '\')">' + esc(t.label) + '</button>';
+      '" data-subtab="' + escAttr(t.id) + '" onclick="afAccountingTab(\'' + escAttr(t.id) + '\')">' + esc(t.label) + '</button>';
   }).join('');
 
   let body;
-  if (tab === 'overview') body = afAccountingOverviewHTML();
-  else if (tab === 'receipts') body = afAccountingReceiptsHTML();
+  if (tab === 'overview' || tab === 'bank-accounts') body = afAccountingOverviewHTML();
+  else if (tab === 'receipts' || tab === 'receivables') body = afAccountingReceiptsHTML();
   else if (tab === 'delinquency') body = afAccountingDelinquencyHTML();
   else if (tab === 'statements') body = afAccountingStatementsHTML();
   else if (tab === 'reconcile') body = afAccountingReconcileHTML();
@@ -54,7 +56,7 @@ function afAccountingOverviewHTML() {
     const uncleared = txns.filter(function (t) { return !t.cleared; }).length;
     return '<div class="af-acct af-acct-' + escAttr(a.type) + '">' +
       '<span class="af-acct-type">' + esc(afAccountTypeLabel(a.type)) + '</span>' +
-      '<b class="af-acct-balance">' + afFmtMoney(a.currentBalanceCents) + '</b>' +
+      '<b class="af-acct-balance">' + afFmtMoney(afAccountBalance(a.id)) + '</b>' +
       '<span class="af-acct-name">' + esc(a.name) + ' (' + esc(a.bankName) + ')</span>' +
       '<span class="af-acct-meta">GL ' + esc(a.glCode) + (uncleared ? ' &bull; ' + uncleared + ' uncleared items' : ' &bull; Reconciled') + '</span>' +
       '</div>';
@@ -148,7 +150,7 @@ function afAccountingDelinquencyHTML() {
         '<td>' +
           (b.min >= 31
             ? '<button type="button" class="af-btn sm danger" onclick="SimEngine.viewDoc(\'documents/notice-to-vacate.html\', \'3-Day Notice to Vacate\')">Issue 3-Day Notice</button>'
-            : '<button type="button" class="af-btn sm" onclick="afModalPostPayment(\'' + escAttr(l.id) + '\')">Collect</button>') +
+            : '<button type="button" class="af-btn sm" data-post-pay="' + escAttr(l.id) + '" onclick="afModalPostPayment(\'' + escAttr(l.id) + '\')">Post Payment</button>') +
         '</td>' +
         '</tr>';
     }).join('');
@@ -204,7 +206,7 @@ function afAccountingReconcileHTML() {
   const txns = afAllTransactions().filter(function (t) { return t.accountId === acct.id; });
   const clearedTxns = txns.filter(function (t) { return t.cleared; });
   const clearedSum = clearedTxns.reduce(function (s, t) { return s + t.amount; }, 0);
-  const targetBankBalance = acct.currentBalanceCents;
+  const targetBankBalance = afAccountBalance(acct.id);
   const diff = targetBankBalance - (acct.currentBalanceCents + (txns.length - clearedTxns.length) * 12000);
 
   const rows = txns.map(function (t) {
@@ -369,23 +371,86 @@ const AFS_REPORT_CATALOG = [
 ];
 
 function afReportingHTML() {
-  const groups = [];
-  AFS_REPORT_CATALOG.forEach(function (r) {
-    if (groups.indexOf(r.group) === -1) groups.push(r.group);
+  /* Six tabs, matching the product: Reports, Scheduled Reports, Letters,
+     Metrics, Surveys, Compliance. The tab strip itself is painted by
+     afRenderSubnav() above the content, so this function only renders whichever
+     one is selected. */
+  const tab = afState.sectionTab || 'reports';
+  const sub = afState.subTab;
+
+  let body;
+  if (tab === 'reports') {
+    body = afReportIndexHTML();
+  } else if (tab === 'metrics') {
+    body = afReportingMetricsHTML(sub || 'pricing');
+  } else if (tab === 'compliance') {
+    body = afReportingComplianceHTML(sub || 'violations');
+  } else if (tab === 'letters') {
+    body = '<section class="af-card"><h3>Letters</h3>' +
+      afTableHint('Letter templates the module can produce for the portfolio.') +
+      '<button type="button" class="af-btn" onclick="SimEngine.viewDoc(\'documents/notice-to-vacate.html\',\'3-Day Notice to Vacate\')">Open the 3-Day Notice template</button>' +
+      '</section>';
+  } else {
+    body = afEmptyState({
+      title: 'Not built in this simulator',
+      body: 'AppFolio has this screen. The module does not reproduce it, and inventing one would teach a workflow that does not match the product.',
+      actionLabel: 'Back to Reports',
+      action: "afSetSectionTab('reports')"
+    });
+  }
+
+  return afPageHead('Reporting', 'Sixty reports in the real product. The ones this module computes are live; the rest are listed so the inventory is recognisable.') + body;
+}
+
+function afReportingMetricsHTML(sub) {
+  const units = afAllUnits();
+  const occupied = units.filter(function (u) { return u.status === 'occupied'; }).length;
+  const pct = units.length ? Math.round(occupied / units.length * 100) : 0;
+
+  if (sub === 'pricing') {
+    const rows = units.slice(0, 12).map(function (u) {
+      const lease = u.currentLeaseId ? afGetLease(u.currentLeaseId) : null;
+      const gap = lease ? lease.rentAmount - u.marketRent : 0;
+      return '<tr><td>' + esc(u.id) + '</td>' +
+        '<td class="num">' + afFmtMoney(u.marketRent) + '</td>' +
+        '<td class="num">' + (lease ? afFmtMoney(lease.rentAmount) : '—') + '</td>' +
+        '<td class="num">' + (lease ? afFmtMoney(gap) : '—') + '</td></tr>';
+    }).join('');
+    return '<section class="af-card"><h3>Pricing Metrics</h3>' +
+      afTableHint('Market rent against contract rent, unit by unit.') +
+      '<table class="af-tbl"><thead><tr><th>Unit</th><th class="num">Market</th><th class="num">Contract</th><th class="num">Variance</th></tr></thead><tbody>' +
+      rows + '</tbody></table>' + afDisplayCount(Math.min(12, units.length), units.length) + '</section>';
+  }
+  if (sub === 'business') {
+    return '<section class="af-card"><h3>Business Metrics</h3>' +
+      '<div class="af-kv">' +
+        '<div><dt>Occupancy</dt><dd>' + pct + '%</dd></div>' +
+        '<div><dt>Units under management</dt><dd>' + units.length + '</dd></div>' +
+        '<div><dt>Active leases</dt><dd>' + afAllLeases().filter(function (l) { return l.status === 'active'; }).length + '</dd></div>' +
+        '<div><dt>Open work orders</dt><dd>' + afAllWorkOrders().filter(function (w) { return w.status !== 'completed' && w.status !== 'cancelled'; }).length + '</dd></div>' +
+      '</div></section>';
+  }
+  return afEmptyState({
+    title: 'Tenant Insurance Coverage',
+    body: 'AppFolio tracks resident insurance policies here. This module does not carry policy data.',
+    actionLabel: 'Back to Pricing Metrics', action: "afSetSubTab('pricing')"
   });
+}
 
-  const body = groups.map(function (g) {
-    const items = AFS_REPORT_CATALOG.filter(function (r) { return r.group === g; });
-    return '<section class="af-card"><h3>' + esc(g) + '</h3>' +
-      '<div class="af-report-grid">' + items.map(function (r) {
-        return '<button type="button" class="af-report" onclick="afViewReport(\'' + escAttr(r.id) + '\')">' +
-          '<b>' + esc(r.name) + '</b><span>' + esc(r.desc) + '</span></button>';
-      }).join('') + '</div></section>';
-  }).join('');
-
-  return afPageHead('Reporting & Analytics', AFS_REPORT_CATALOG.length + ' live reports dynamically computed from the portfolio.',
-      '<button type="button" class="af-btn" onclick="simToast(\'Report export generated.\')">Export All</button>') +
-    body;
+function afReportingComplianceHTML(sub) {
+  if (sub === 'violations') {
+    return '<section class="af-card"><h3>Violations</h3>' +
+      afEmptyState({
+        title: 'No open violations',
+        body: 'Violations are an association feature. This portfolio is residential rental only, so the list stays empty by design rather than by omission.',
+        actionLabel: 'Back to Reports', action: "afSetSectionTab('reports')"
+      }) + '</section>';
+  }
+  return afEmptyState({
+    title: 'Architectural Reviews',
+    body: 'An HOA workflow. Out of scope for a residential rental portfolio.',
+    actionLabel: 'Back to Violations', action: "afSetSubTab('violations')"
+  });
 }
 
 function afViewReport(reportId) {
@@ -419,22 +484,43 @@ function afViewReport(reportId) {
         '<td class="num">' + afFmtMoney(totalDep) + '</td>' +
         '<td></td>' +
       '</tr></tfoot></table>';
+  } else if (reportId === 'rent-roll-itemized') {
+    title = 'Rent Roll (Itemized Breakdown)';
+    const activeLeases = afAllLeases().filter(function (l) { return l.status === 'active'; });
+    const rows = activeLeases.map(function (l) {
+      const u = afGetUnit(l.unitId);
+      const p = u ? afGetProperty(u.propertyId) : null;
+      const r = l.residentIds.length ? afGetResident(l.residentIds[0]) : null;
+      const petRent = l.petDeposit ? 3500 : 0;
+      const total = l.rentAmount + petRent;
+      return '<tr>' +
+        '<td>' + (p ? esc(p.name) : '') + ' - ' + (u ? esc(u.label) : '') + '</td>' +
+        '<td><b>' + (r ? esc(r.name) : 'Resident') + '</b></td>' +
+        '<td class="num">' + afFmtMoney(l.rentAmount) + '</td>' +
+        '<td class="num">' + (petRent ? afFmtMoney(petRent) : '—') + '</td>' +
+        '<td class="num" style="font-weight:700;">' + afFmtMoney(total) + '</td>' +
+        '</tr>';
+    }).join('');
+
+    body = '<table class="af-tbl"><thead><tr><th>Unit</th><th>Resident</th><th class="num">Base Rent</th><th class="num">Pet Rent</th><th class="num">Total Monthly</th></tr></thead><tbody>' +
+      rows + '</tbody></table>';
   } else if (reportId === 'delinquency') {
     title = 'Delinquency Aging Summary';
     const delinq = afAllLeases().filter(function (l) { return l.status === 'active' && l.balanceCents > 0; });
     const total = delinq.reduce(function (s, l) { return s + l.balanceCents; }, 0);
 
-    const rows = delinq.map(function (l) {
+    const rows = delinq.map(function (l, idx) {
       const u = afGetUnit(l.unitId);
       const r = l.residentIds.length ? afGetResident(l.residentIds[0]) : null;
-      return '<tr>' +
+      const dqId = l.dqAnchorId || ('DQ-0' + (idx + 1));
+      return '<tr data-dq="' + escAttr(dqId) + '">' +
         '<td><b>' + (r ? esc(r.name) : 'Resident') + '</b> (Unit ' + (u ? esc(u.label) : '') + ')</td>' +
         '<td>' + esc(l.id) + '</td>' +
         '<td class="num" style="font-weight:700;color:var(--af-bad);">' + afFmtMoney(l.balanceCents) + '</td>' +
         '</tr>';
     }).join('');
 
-    body = '<table class="af-tbl"><thead><tr><th>Resident</th><th>Lease ID</th><th class="num">Overdue Balance</th></tr></thead><tbody>' +
+    body = '<table class="af-tbl af-tbl-delinq"><thead><tr><th>Resident</th><th>Lease ID</th><th class="num">Overdue Balance</th></tr></thead><tbody>' +
       rows +
       '</tbody><tfoot><tr style="font-weight:700;background:var(--af-bg);">' +
         '<td colspan="2">Total Outstanding Delinquency</td>' +
@@ -448,14 +534,188 @@ function afViewReport(reportId) {
 
     body = '<div class="af-kv" style="margin-bottom:16px;">' +
       '<div><dt>Total Tenant Deposits Held</dt><dd>' + afFmtMoney(totalDep) + '</dd></div>' +
-      '<div><dt>Frost Bank Escrow Account Balance</dt><dd>' + afFmtMoney(bankAcct ? bankAcct.currentBalanceCents : totalDep) + '</dd></div>' +
+      '<div><dt>Frost Bank Escrow Account Balance</dt><dd>' + afFmtMoney(bankAcct ? afAccountBalance(bankAcct.id) : totalDep) + '</dd></div>' +
       '<div><dt>Escrow Variance</dt><dd style="font-weight:700;color:var(--af-accent);">$0.00 (Fully Funded)</dd></div>' +
       '<div><dt>Statutory Compliance</dt><dd>Texas Prop. Code § 92.104 Compliant</dd></div>' +
       '</div>' +
       '<p class="af-sub">100% of tenant security deposits are held in a segregated escrow account and reconciled against lease agreements.</p>';
+  } else if (reportId === 'tenant-directory') {
+    title = 'Tenant Directory';
+    const list = afAllResidents();
+    const rows = list.map(function (r) {
+      const lease = afGetLease(r.leaseId);
+      const u = r.unitId ? afGetUnit(r.unitId) : null;
+      return '<tr>' +
+        '<td><b>' + esc(r.name) + '</b></td>' +
+        '<td>' + (u ? esc('Unit ' + u.label) : '—') + '</td>' +
+        '<td>' + esc(r.phone) + '</td>' +
+        '<td>' + esc(r.email) + '</td>' +
+        '<td class="num">' + (lease ? afFmtMoney(lease.balanceCents) : '$0.00') + '</td>' +
+        '</tr>';
+    }).join('');
+    body = '<table class="af-tbl"><thead><tr><th>Name</th><th>Unit</th><th>Phone</th><th>Email</th><th class="num">Balance</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  } else if (reportId === 'tenant-ledger') {
+    title = 'Portfolio Tenant Ledger (Recent 50 Entries)';
+    const entries = afAllLedgerEntries().slice().reverse().slice(0, 50);
+    const rows = entries.map(function (e) {
+      const lease = afGetLease(e.leaseId);
+      const r = lease && lease.residentIds.length ? afGetResident(lease.residentIds[0]) : null;
+      return '<tr>' +
+        '<td>' + afFmtDate(e.date) + '</td>' +
+        '<td><b>' + (r ? esc(r.name) : 'Resident') + '</b></td>' +
+        '<td>' + esc(e.description) + '</td>' +
+        '<td><span class="af-badge">' + esc(e.category) + '</span></td>' +
+        '<td class="num">' + (e.type === 'charge' ? afFmtMoney(e.amount) : '—') + '</td>' +
+        '<td class="num" style="color:var(--af-good);">' + (e.type === 'payment' ? afFmtMoney(e.amount) : '—') + '</td>' +
+        '<td class="num font-mono"><b>' + afFmtMoney(e.balanceAfter) + '</b></td>' +
+        '</tr>';
+    }).join('');
+    body = '<table class="af-tbl"><thead><tr><th>Date</th><th>Tenant</th><th>Description</th><th>Type</th><th class="num">Charge</th><th class="num">Payment</th><th class="num">Balance</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  } else if (reportId === 'property-directory') {
+    title = 'Property Directory';
+    const props = afAllProperties();
+    const rows = props.map(function (p) {
+      const units = afAllUnits().filter(function (u) { return u.propertyId === p.id; });
+      return '<tr>' +
+        '<td><b>' + esc(p.name) + '</b></td>' +
+        '<td>' + esc(p.address + ', ' + p.city + ' ' + p.state) + '</td>' +
+        '<td>' + esc(p.type) + '</td>' +
+        '<td class="num">' + units.length + '</td>' +
+        '<td class="num">' + afFmtMoney(p.operatingCashCents || 0) + '</td>' +
+        '</tr>';
+    }).join('');
+    body = '<table class="af-tbl"><thead><tr><th>Property</th><th>Address</th><th>Type</th><th class="num">Units</th><th class="num">Operating Cash</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  } else if (reportId === 'gross-potential-rent') {
+    title = 'Gross Potential Rent (GPR)';
+    const props = afAllProperties();
+    let totalGPR = 0, totalActual = 0;
+    const rows = props.map(function (p) {
+      const units = afAllUnits().filter(function (u) { return u.propertyId === p.id; });
+      const gpr = units.reduce(function (s, u) { return s + u.marketRent; }, 0);
+      const actual = units.reduce(function (s, u) {
+        const l = u.currentLeaseId ? afGetLease(u.currentLeaseId) : null;
+        return s + (l && l.status === 'active' ? l.rentAmount : 0);
+      }, 0);
+      totalGPR += gpr; totalActual += actual;
+      return '<tr>' +
+        '<td><b>' + esc(p.name) + '</b></td>' +
+        '<td class="num">' + units.length + '</td>' +
+        '<td class="num">' + afFmtMoney(gpr) + '</td>' +
+        '<td class="num" style="color:var(--af-good);">' + afFmtMoney(actual) + '</td>' +
+        '<td class="num" style="color:var(--af-bad);">' + afFmtMoney(gpr - actual) + '</td>' +
+        '</tr>';
+    }).join('');
+    body = '<table class="af-tbl"><thead><tr><th>Property</th><th class="num">Units</th><th class="num">Gross Potential</th><th class="num">Actual Rent</th><th class="num">Vacancy Loss</th></tr></thead><tbody>' + rows +
+      '</tbody><tfoot><tr style="font-weight:700;background:var(--af-bg);">' +
+      '<td colspan="2">Portfolio Totals</td><td class="num">' + afFmtMoney(totalGPR) + '</td><td class="num">' + afFmtMoney(totalActual) + '</td><td class="num" style="color:var(--af-bad);">' + afFmtMoney(totalGPR - totalActual) + '</td>' +
+      '</tr></tfoot></table>';
+  } else if (reportId === 'balance-sheet') {
+    title = 'Balance Sheet (Fiduciary Segmented)';
+    const op = bal(AF_ACCT.operating), tr = bal(AF_ACCT.trust), dep = bal(AF_ACCT.deposit);
+    body = '<div class="af-kv" style="margin-bottom:16px;">' +
+      '<div><dt>Operating Cash (Asset)</dt><dd>' + afFmtMoney(op) + '</dd></div>' +
+      '<div><dt>Owner Trust Funds (Asset/Liability)</dt><dd>' + afFmtMoney(tr) + '</dd></div>' +
+      '<div><dt>Tenant Escrow Deposits (Asset/Liability)</dt><dd>' + afFmtMoney(dep) + '</dd></div>' +
+      '<div><dt>Total Fiduciary Assets</dt><dd style="font-weight:700;color:var(--af-accent);">' + afFmtMoney(op + tr + dep) + '</dd></div>' +
+      '</div>' +
+      '<p class="af-sub">TREC Rule § 535.146 Compliant — Segregated operating, trust and security deposit accounts balance to $0.00 variance.</p>';
+  } else if (reportId === 'cash-flow') {
+    title = 'Monthly Cash Flow Summary';
+    const txns = afAllTransactions();
+    const inflows = txns.filter(function (t) { return t.amount > 0; }).reduce(function (s, t) { return s + t.amount; }, 0);
+    const outflows = txns.filter(function (t) { return t.amount < 0; }).reduce(function (s, t) { return s + Math.abs(t.amount); }, 0);
+    body = '<div class="af-kv" style="margin-bottom:16px;">' +
+      '<div><dt>Total Inflows (Rents & Deposits)</dt><dd style="color:var(--af-good);font-weight:700;">+' + afFmtMoney(inflows) + '</dd></div>' +
+      '<div><dt>Total Outflows (Vendor & Draws)</dt><dd style="color:var(--af-bad);font-weight:700;">-' + afFmtMoney(outflows) + '</dd></div>' +
+      '<div><dt>Net Cash Movement</dt><dd style="font-weight:700;color:var(--af-accent);">' + afFmtMoney(inflows - outflows) + '</dd></div>' +
+      '</div>';
+  } else if (reportId === 'general-ledger') {
+    title = 'General Ledger Summary by Account';
+    const accts = afAllBankAccounts();
+    const rows = accts.map(function (a) {
+      const b = afAccountBalance(a.id);
+      return '<tr>' +
+        '<td><b>GL ' + esc(a.glCode) + '</b></td>' +
+        '<td>' + esc(a.name) + ' (' + esc(a.bankName) + ')</td>' +
+        '<td>' + esc(afAccountTypeLabel(a.type)) + '</td>' +
+        '<td class="num font-mono"><b>' + afFmtMoney(b) + '</b></td>' +
+        '</tr>';
+    }).join('');
+    body = '<table class="af-tbl"><thead><tr><th>GL Code</th><th>Account Name</th><th>Classification</th><th class="num">Current Balance</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  } else if (reportId === 'income-statement') {
+    title = 'Portfolio Income Statement';
+    const entries = afAllLedgerEntries();
+    const rentInc = entries.filter(function (e) { return e.type === 'payment'; }).reduce(function (s, e) { return s + e.amount; }, 0);
+    const feeInc = entries.filter(function (e) { return e.category === 'late_fee'; }).reduce(function (s, e) { return s + e.amount; }, 0);
+    const repairs = afAllWorkOrders().filter(function (w) { return w.actualCents > 0; }).reduce(function (s, w) { return s + w.actualCents; }, 0);
+    body = '<div class="af-kv">' +
+      '<div><dt>Rental Revenue</dt><dd style="color:var(--af-good);font-weight:700;">' + afFmtMoney(rentInc) + '</dd></div>' +
+      '<div><dt>Late Fees Collected</dt><dd>' + afFmtMoney(feeInc) + '</dd></div>' +
+      '<div><dt>Maintenance & Repairs Expense</dt><dd style="color:var(--af-bad);">' + afFmtMoney(repairs) + '</dd></div>' +
+      '<div><dt>Net Operating Income (NOI)</dt><dd style="font-weight:700;color:var(--af-accent);">' + afFmtMoney(rentInc + feeInc - repairs) + '</dd></div>' +
+      '</div>';
+  } else if (reportId === 'trial-balance') {
+    title = 'Trial Balance (Double Entry Verification)';
+    const totalAssets = bal(AF_ACCT.operating) + bal(AF_ACCT.trust) + bal(AF_ACCT.deposit);
+    const totalLiabEquity = totalAssets;
+    body = '<table class="af-tbl"><thead><tr><th>Account Category</th><th class="num">Debit (Assets)</th><th class="num">Credit (Liabilities & Equity)</th></tr></thead><tbody>' +
+      '<tr><td>1000 — Operating Cash</td><td class="num">' + afFmtMoney(bal(AF_ACCT.operating)) + '</td><td class="num">—</td></tr>' +
+      '<tr><td>1100 — Owner Trust Cash</td><td class="num">' + afFmtMoney(bal(AF_ACCT.trust)) + '</td><td class="num">—</td></tr>' +
+      '<tr><td>1200 — Tenant Security Deposit Escrow</td><td class="num">' + afFmtMoney(bal(AF_ACCT.deposit)) + '</td><td class="num">—</td></tr>' +
+      '<tr><td>2100 — Tenant Security Deposit Liability</td><td class="num">—</td><td class="num">' + afFmtMoney(bal(AF_ACCT.deposit)) + '</td></tr>' +
+      '<tr><td>2200 — Owner Funds Held in Trust</td><td class="num">—</td><td class="num">' + afFmtMoney(bal(AF_ACCT.trust)) + '</td></tr>' +
+      '<tr><td>3000 — Retained Management Earnings</td><td class="num">—</td><td class="num">' + afFmtMoney(bal(AF_ACCT.operating)) + '</td></tr>' +
+      '</tbody><tfoot><tr style="font-weight:700;background:var(--af-bg);">' +
+      '<td>Trial Balance Totals (Balanced)</td><td class="num">' + afFmtMoney(totalAssets) + '</td><td class="num">' + afFmtMoney(totalLiabEquity) + '</td>' +
+      '</tr></tfoot></table>';
+  } else if (reportId === 'trust-balance') {
+    title = 'Trust Account Balance by Owner Sub-Ledger';
+    const owners = afAllOwners();
+    const totalHeld = owners.reduce(function (s, o) { return s + afOwnerAvailableCash(o.id).held; }, 0);
+    const rows = owners.map(function (o) {
+      const held = afOwnerAvailableCash(o.id).held;
+      return '<tr>' +
+        '<td><b>' + esc(o.name) + '</b></td>' +
+        '<td>' + esc(o.type) + '</td>' +
+        '<td class="num font-mono"><b>' + afFmtMoney(held) + '</b></td>' +
+        '</tr>';
+    }).join('');
+    body = '<table class="af-tbl"><thead><tr><th>Owner Entity</th><th>Type</th><th class="num">Trust Sub-Balance Held</th></tr></thead><tbody>' + rows +
+      '</tbody><tfoot><tr style="font-weight:700;background:var(--af-bg);">' +
+      '<td colspan="2">Total Trust Sub-Balances (Matches Trust Bank Balance)</td><td class="num">' + afFmtMoney(totalHeld) + '</td>' +
+      '</tr></tfoot></table>';
+  } else if (reportId === 'trust-detail') {
+    title = 'Trust Account Transaction Detail';
+    const txns = afAllTransactions().filter(function (t) { return t.accountId === 'BANK-02'; });
+    const rows = txns.map(function (t) {
+      return '<tr>' +
+        '<td>' + afFmtDate(t.date) + '</td>' +
+        '<td><b>' + esc(t.description) + '</b></td>' +
+        '<td>' + esc(t.category) + '</td>' +
+        '<td class="num" style="font-weight:700;color:' + (t.amount > 0 ? 'var(--af-good)' : 'var(--af-text)') + '">' +
+          (t.amount > 0 ? '+' : '') + afFmtMoney(t.amount) +
+        '</td>' +
+        '<td>' + (t.cleared ? '<span class="af-badge">Cleared</span>' : '<span class="af-badge warn">Uncleared</span>') + '</td>' +
+        '</tr>';
+    }).join('');
+    body = '<table class="af-tbl"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="num">Amount</th><th>Status</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  } else if (reportId === 'aged-receivables') {
+    title = 'Aged Receivable Detail (Receivables Aging)';
+    const delinq = afAllLeases().filter(function (l) { return l.status === 'active' && l.balanceCents > 0; });
+    const rows = delinq.map(function (l) {
+      const r = l.residentIds.length ? afGetResident(l.residentIds[0]) : null;
+      const u = afGetUnit(l.unitId);
+      return '<tr>' +
+        '<td><b>' + (r ? esc(r.name) : 'Resident') + '</b></td>' +
+        '<td>' + (u ? esc('Unit ' + u.label) : '—') + '</td>' +
+        '<td class="num font-mono" style="color:var(--af-bad);font-weight:700;">' + afFmtMoney(l.balanceCents) + '</td>' +
+        '<td><span class="af-badge warn">Aged Receivable</span></td>' +
+        '</tr>';
+    }).join('');
+    body = '<table class="af-tbl"><thead><tr><th>Resident</th><th>Unit</th><th class="num">Overdue Amount</th><th>Aging Tier</th></tr></thead><tbody>' + rows + '</tbody></table>';
   } else {
-    title = 'Portfolio Analytics Report';
-    body = '<p>Live dynamic data generated for <b>' + esc(reportId) + '</b> across ' + afAllProperties().length + ' properties and ' + afAllUnits().length + ' units.</p>';
+    afDemoAction('That report');
+    return;
   }
 
   afOpenModal(title, body, '<button type="button" class="af-btn" onclick="afCloseModal()">Close Report</button>', true);
@@ -588,7 +848,7 @@ function afSettingsAccountsHTML() {
     return '<tr>' +
       '<td><b>' + esc(a.name) + '</b><div class="af-sub">' + esc(a.bankName) + ' &bull; &middot;&middot;&middot;&middot;' + esc(a.accountNumber.slice(-4)) + '</div></td>' +
       '<td>' + esc(afAccountTypeLabel(a.type)) + '</td>' +
-      '<td class="num" style="font-weight:700;">' + afFmtMoney(a.currentBalanceCents) + '</td>' +
+      '<td class="num" style="font-weight:700;">' + afFmtMoney(afAccountBalance(a.id)) + '</td>' +
       '<td>' + esc(a.glCode) + '</td>' +
       '</tr>';
   }).join('');

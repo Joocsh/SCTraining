@@ -27,32 +27,50 @@
    qzShellState (separate from qzState on purpose), CSS is prefixed .qzs-.
    ============================================================================ */
 
-/* Helper getters to merge default facade records with live in-memory qzDemo items */
-function qzShellGetReceipts() { return (qzDemo.receipts || []).concat(QZS_RECEIPTS); }
-function qzShellGetDisbursements() { return (qzDemo.disbursements || []).concat(QZS_DISBURSEMENTS); }
-function qzShellGetInvoices() { return (qzDemo.invoices || []).concat(QZS_INVOICES); }
-function qzShellGetPospay() { return (qzDemo.pospay || []).concat(QZS_POSPAY); }
-function qzShellGetExceptions() { return (qzDemo.exceptions || []).concat(QZS_EXCEPTIONS); }
-function qzShellGetCpls() { return (qzDemo.cpls || []).concat(QZS_CPLS); }
-function qzShellGetUsers() { return (qzDemo.users || []).concat(QZS_USERS); }
-function qzShellGetOffices() { return (qzDemo.offices || []).concat(QZS_OFFICES); }
-function qzShellGetFees() { return (qzDemo.fees || []).concat(QZS_FEES); }
+/* Helper getters to retrieve live records directly from mutable qzDB engine */
+function qzShellGetReceipts() { return qzList('receipts'); }
+function qzShellGetDisbursements() { return qzList('disbursements'); }
+function qzShellGetInvoices() { return qzList('invoices'); }
+function qzShellGetPospay() { return qzList('pospay'); }
+function qzShellGetExceptions() { return qzList('exceptions'); }
+function qzShellGetCpls() { return qzList('cpls'); }
+function qzShellGetUsers() { return qzList('users'); }
+function qzShellGetOffices() { return qzList('offices'); }
+function qzShellGetFees() { return qzList('fees'); }
 
-/* Interactive router converting 34 facade controls into live mutations on qzDemo */
+/* Interactive router converting facade controls into live mutations on qzDB */
+/* Which collection the visible screen is showing, so Export sends the right
+   table rather than a fixed one. */
+function qzShellExportTarget() {
+  if (qzState.view === 'contacts') return 'contacts';
+  if (qzState.view === 'orders') return 'orders';
+  if (qzState.view === 'accounting') {
+    const t = qzShellState.acctTab || '';
+    if (t.indexOf('receipt') > -1) return 'receipts';
+    if (t.indexOf('disburse') > -1) return 'disbursements';
+    if (t.indexOf('invoice') > -1) return 'invoices';
+    return 'receipts';
+  }
+  return 'orders';
+}
+
 function qzShellAction(label) {
   if (label === 'New Contact') qzShellNewContactModal();
   else if (label === 'Edit contact') qzShellEditContactModal(qzShellState.contactsOpenId);
   else if (label === 'Email') simToast('Default email client triggered (simulation).', { tone: 'good' });
   else if (label === 'Call') simToast('Dialing contact via telephony integration...', { tone: 'good' });
-  else if (label === 'Export' || label === 'Export CSV') simToast('CSV export generated and downloaded.', { tone: 'good' });
+  /* This used to announce a download that never happened. It now exports the
+     table actually on screen, and says so honestly when there is none. */
+  else if (label === 'Export' || label === 'Export CSV') qzExportTableCSV(qzShellExportTarget());
   else if (label === 'Export PDF' || label === 'Print') window.print();
   else if (label === 'Import') qzShellImportContactsMock();
   else if (label === 'New Event') qzShellNewEventModal();
   else if (label === 'Edit event') qzShellEditEventModal();
   else if (label === 'Delete event') qzShellDeleteEvent();
-  else if (label === 'Day view' || label === 'Week view' || label === 'Month view') {
-    simToast(`Switched calendar to ${label}.`);
-  }
+  else if (label === 'Day view' || label === 'Day') { qzShellState.calView = 'Day'; qzRenderRoot(); }
+  else if (label === 'Week view' || label === 'Week') { qzShellState.calView = 'Week'; qzRenderRoot(); }
+  else if (label === 'Month view' || label === 'Month') { qzShellState.calView = 'Month'; qzRenderRoot(); }
+  else if (label === 'Agenda view' || label === 'Agenda') { qzShellState.calView = 'Agenda'; qzRenderRoot(); }
   else if (label === 'New Receipt') qzShellNewReceiptModal();
   else if (label === 'New Disbursement') qzShellNewDisbursementModal();
   else if (label === 'Approve selected' || label === 'Approve Selected') qzShellApproveDisbursements();
@@ -70,9 +88,9 @@ function qzShellAction(label) {
   else if (label === 'Disable user') qzShellDisableUser();
   else if (label === 'Add Office') qzShellAddOfficeModal();
   else if (label === 'Add Fee') qzShellAddFeeModal();
-  else if (label.startsWith('New ')) simToast(`${label} template registered in sandbox.`, { tone: 'good' });
+  else if (label.startsWith('New ')) simToast(`${label} template registered in database.`, { tone: 'good' });
   else if (label.startsWith('Configure ')) simToast(`${label} integration settings updated.`, { tone: 'good' });
-  else simToast(`${label} performed in demo sandbox.`, { tone: 'good' });
+  else simToast(`${label} performed in Qualia Core simulator.`, { tone: 'good' });
 }
 
 /* Facade-only view state. Kept out of qzState so nothing here can perturb the
@@ -83,6 +101,7 @@ const qzShellState = {
   contactsOpenId: null,
   /* Calendar starts on the simulator's 'today' rather than the real one, so the month
      that opens is always the one the dataset is written around. */
+  calView: 'Month',  // 'Month' | 'Week' | 'Day' | 'Agenda'
   calYear: Number(QZ_TODAY.slice(0, 4)),
   calMonth: Number(QZ_TODAY.slice(5, 7)) - 1,
   calOff: [],        // calendar ids the trainee has unchecked
@@ -175,7 +194,7 @@ function qzShellContacts() {
     });
   });
 
-  (QZS_CONTACTS || []).concat(qzDemo.contacts || []).forEach(c => add(Object.assign({ role: c.type, orders: [] }, c)));
+  qzList('contacts').forEach(c => add(Object.assign({ role: c.type, orders: [] }, c)));
 
   return Object.keys(byKey).map(k => byKey[k]);
 }
@@ -515,38 +534,7 @@ function qzShellCalPopoverHTML() {
 
 function qzShellCalendarHTML() {
   const y = qzShellState.calYear, m = qzShellState.calMonth;
-  const first = new Date(y, m, 1).getDay();
-  const days = new Date(y, m + 1, 0).getDate();
-  const weeks = Math.ceil((first + days) / 7);
-  const prevDays = new Date(y, m, 0).getDate();
-
-  const dowHead = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-    .map(d => `<div class="qzs-cal-dow">${d}</div>`).join('');
-
-  const cells = [];
-  for (let i = 0; i < weeks * 7; i++) {
-    const dayNum = i - first + 1;
-    const inMonth = dayNum >= 1 && dayNum <= days;
-    const shown = inMonth ? dayNum : (dayNum < 1 ? prevDays + dayNum : dayNum - days);
-    if (!inMonth) {
-      cells.push(`<div class="qzs-cal-cell out"><span class="qzs-cal-num">${shown}</span></div>`);
-      continue;
-    }
-    const iso = qzShellISO(y, m, dayNum);
-    const list = qzShellEventsFor(iso);
-    const isToday = iso === QZ_TODAY;
-    /* Three pills fit; beyond that the cell grows and breaks the grid rhythm, so
-       the rest collapse behind an overflow link that opens the full day. */
-    const visible = list.slice(0, 3).map((e, i2) =>
-      `<button type="button" class="qzs-cal-pill" style="border-left-color:${qzShellCalColor(e.cal)}"
-         onclick="qzShellCalOpenEvent('${escAttr(iso)}',${i2})" title="${escAttr(e.title)}">${esc(e.title)}</button>`).join('');
-    const more = list.length > 3
-      ? `<button type="button" class="qzs-cal-more" onclick="qzShellCalOpenDay('${escAttr(iso)}')">+${list.length - 3} more</button>`
-      : '';
-    cells.push(`<div class="qzs-cal-cell ${isToday ? 'today' : ''}">
-      <span class="qzs-cal-num">${dayNum}</span>${visible}${more}
-    </div>`);
-  }
+  const currentView = qzShellState.calView || 'Month';
 
   const calRows = QZS_CALENDARS.map(c => {
     const on = qzShellState.calOff.indexOf(c.id) === -1;
@@ -560,9 +548,116 @@ function qzShellCalendarHTML() {
     `<label class="qzs-callist-row dim"><input type="checkbox" checked disabled><span>${esc(o.name.split('—')[0].trim())}</span></label>`).join('');
 
   const views = ['Month', 'Week', 'Day', 'Agenda'].map(v =>
-    v === 'Month'
-      ? `<button type="button" class="qzs-seg on">Month</button>`
+    v === currentView
+      ? `<button type="button" class="qzs-seg on">${v}</button>`
       : `<button type="button" class="qzs-seg" onclick="qzShellAction('${v} view')">${v}</button>`).join('');
+
+  let mainContent = '';
+
+  if (currentView === 'Month') {
+    const first = new Date(y, m, 1).getDay();
+    const days = new Date(y, m + 1, 0).getDate();
+    const weeks = Math.ceil((first + days) / 7);
+    const prevDays = new Date(y, m, 0).getDate();
+    const dowHead = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+      .map(d => `<div class="qzs-cal-dow">${d}</div>`).join('');
+
+    const cells = [];
+    for (let i = 0; i < weeks * 7; i++) {
+      const dayNum = i - first + 1;
+      const inMonth = dayNum >= 1 && dayNum <= days;
+      const shown = inMonth ? dayNum : (dayNum < 1 ? prevDays + dayNum : dayNum - days);
+      if (!inMonth) {
+        cells.push(`<div class="qzs-cal-cell out"><span class="qzs-cal-num">${shown}</span></div>`);
+        continue;
+      }
+      const iso = qzShellISO(y, m, dayNum);
+      const list = qzShellEventsFor(iso);
+      const isToday = iso === QZ_TODAY;
+      const visible = list.slice(0, 3).map((e, i2) =>
+        `<button type="button" class="qzs-cal-pill" style="border-left-color:${qzShellCalColor(e.cal)}"
+           onclick="qzShellCalOpenEvent('${escAttr(iso)}',${i2})" title="${escAttr(e.title)}">${esc(e.title)}</button>`).join('');
+      const more = list.length > 3
+        ? `<button type="button" class="qzs-cal-more" onclick="qzShellCalOpenDay('${escAttr(iso)}')">+${list.length - 3} more</button>`
+        : '';
+      cells.push(`<div class="qzs-cal-cell ${isToday ? 'today' : ''}">
+        <span class="qzs-cal-num">${dayNum}</span>${visible}${more}
+      </div>`);
+    }
+    mainContent = `<div class="qzs-cal-grid">${dowHead}${cells.join('')}</div>`;
+  } else if (currentView === 'Week') {
+    const todayDate = new Date(QZ_TODAY + 'T00:00:00');
+    const dayOfWeek = todayDate.getDay();
+    const startOfWeek = new Date(todayDate);
+    startOfWeek.setDate(todayDate.getDate() - dayOfWeek);
+
+    const weekCols = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startOfWeek);
+      d.setDate(startOfWeek.getDate() + i);
+      const iso = qzShellISO(d.getFullYear(), d.getMonth(), d.getDate());
+      const isToday = iso === QZ_TODAY;
+      const list = qzShellEventsFor(iso);
+      const eventCards = list.map((e, idx) => `
+        <div class="qzs-cal-pill" style="margin-bottom:6px;border-left-color:${qzShellCalColor(e.cal)};white-space:normal" onclick="qzShellCalOpenEvent('${escAttr(iso)}',${idx})">
+          <b>${esc(e.title)}</b>
+          <div style="font-size:11px;color:var(--qz-muted)">${esc(e.time)}</div>
+        </div>`).join('');
+
+      weekCols.push(`
+        <div class="qzs-cal-cell ${isToday ? 'today' : ''}" style="min-height:360px">
+          <div class="qzs-cal-dow" style="margin-bottom:8px">${d.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' })}</div>
+          ${eventCards || '<span style="font-size:11px;color:var(--qz-muted)">No events</span>'}
+        </div>`);
+    }
+    mainContent = `<div class="qzs-cal-grid" style="grid-template-columns:repeat(7, 1fr)">${weekCols.join('')}</div>`;
+  } else if (currentView === 'Day') {
+    const iso = QZ_TODAY;
+    const list = qzShellEventsFor(iso);
+    const eventCards = list.map((e, idx) => `
+      <div class="qz-calc-card" style="margin-bottom:12px;cursor:pointer" onclick="qzShellCalOpenEvent('${escAttr(iso)}',${idx})">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <b style="color:var(--qz-navy);font-size:14px">${esc(e.title)}</b>
+          <span class="qz-badge complete">${esc(e.time)}</span>
+        </div>
+        <div class="qz-kv"><b>Location</b>${esc(e.location || 'Best Closing Inc.')}</div>
+        <div class="qz-kv"><b>People</b>${esc((e.people || []).join(', ') || 'Staff')}</div>
+        ${e.notes ? `<div class="qz-kv"><b>Notes</b>${esc(e.notes)}</div>` : ''}
+      </div>`).join('');
+
+    mainContent = `
+      <div class="qz-panel">
+        <div class="ph"><h4>Schedule for Today &mdash; ${fmtDate(iso)}</h4></div>
+        ${eventCards || '<div class="qzs-dim" style="padding:24px;text-align:center">No events scheduled for today.</div>'}
+      </div>`;
+  } else {
+    // Agenda View
+    const allEvents = qzShellEvents().sort((a, b) => a.date.localeCompare(b.date));
+    const grouped = {};
+    allEvents.forEach(e => {
+      grouped[e.date] = grouped[e.date] || [];
+      grouped[e.date].push(e);
+    });
+
+    const agendaBlocks = Object.keys(grouped).map(date => {
+      const isToday = date === QZ_TODAY;
+      const rows = grouped[date].map(e => `
+        <div class="qzs-cal-dayrow link" onclick="qzShellCalOpenEvent('${escAttr(e.date)}', 0)" style="padding:8px 0;border-bottom:1px solid var(--qz-line)">
+          <span class="qzs-dot" style="background:${qzShellCalColor(e.cal)}"></span>
+          <b style="width:200px">${esc(e.time)}</b>
+          <span style="flex:1"><b>${esc(e.title)}</b> &middot; <span class="qzs-dim">${esc(e.location || '')}</span></span>
+          <span class="qz-badge">${esc(e.cal)}</span>
+        </div>`).join('');
+
+      return `
+        <div class="qz-panel" style="margin-bottom:14px">
+          <div class="ph"><h4>${fmtDate(date)} ${isToday ? '<span class="qz-badge complete">Today</span>' : ''}</h4></div>
+          ${rows}
+        </div>`;
+    }).join('');
+
+    mainContent = `<div style="padding:10px 0">${agendaBlocks || '<div class="qzs-dim">No upcoming events.</div>'}</div>`;
+  }
 
   return `
     <div class="qz-listhead">
@@ -592,7 +687,7 @@ function qzShellCalendarHTML() {
         ${officeRows}
       </aside>
       <div class="qzs-cal-main">
-        <div class="qzs-cal-grid">${dowHead}${cells.join('')}</div>
+        ${mainContent}
       </div>
     </div>
     ${qzShellCalPopoverHTML()}`;
@@ -1748,9 +1843,8 @@ function qzShellSaveNewContact() {
   const email = (document.getElementById('qzsCEmail').value || '').trim() || '—';
   const phone = (document.getElementById('qzsCPhone').value || '').trim() || '—';
   if (!name) { simToast('Please enter contact name.'); return; }
-  qzDemo.contacts = qzDemo.contacts || [];
-  qzDemo.contacts.push({
-    id: 'c-demo-' + (qzDemo.contacts.length + 1),
+
+  qzInsert('contacts', {
     name: name,
     type: type,
     role: type,
@@ -1758,20 +1852,20 @@ function qzShellSaveNewContact() {
     email: email,
     phone: phone,
     mobile: '—',
-    address: 'Plano, TX',
+    address: 'Texas, USA',
     created: QZ_TODAY,
-    createdBy: 'Training User',
+    createdBy: 'Manual Entry',
     lastActivity: QZ_TODAY,
     orders: []
   });
-  document.getElementById('qzsModal').remove();
-  simToast(`Contact ${name} created.`, { tone: 'good' });
+  document.getElementById('qzsModal')?.remove();
+  simToast(`Contact ${name} saved.`, { tone: 'good' });
   qzRenderRoot();
 }
 
 function qzShellEditContactModal(id) {
-  const c = qzShellContacts().find(x => x.id === id);
-  if (!c) { simToast('Select a contact first.'); return; }
+  const c = qzList('contacts').find(x => x.id === id);
+  if (!c) return;
   const wrap = document.createElement('div');
   wrap.id = 'qzsModal';
   wrap.className = 'qz-modal-backdrop';
@@ -1793,18 +1887,30 @@ function qzShellEditContactModal(id) {
 }
 
 function qzShellSaveEditContact(id) {
-  const name = document.getElementById('qzsEditCName').value.trim();
-  const comp = document.getElementById('qzsEditCCompany').value.trim();
-  const email = document.getElementById('qzsEditCEmail').value.trim();
-  const phone = document.getElementById('qzsEditCPhone').value.trim();
-  document.getElementById('qzsModal').remove();
+  const name = document.getElementById('qzsEditCName')?.value.trim();
+  const comp = document.getElementById('qzsEditCCompany')?.value.trim();
+  const email = document.getElementById('qzsEditCEmail')?.value.trim();
+  const phone = document.getElementById('qzsEditCPhone')?.value.trim();
+
+  const c = qzFind('contacts', id);
+  if (c) {
+    qzUpdate('contacts', id, { name, company: comp, email, phone });
+  } else {
+    // If it's derived from order party, update the order party
+    const o = qzList('orders').find(ord => ord.parties && ord.parties.some(p => p.name === name || p.email === email));
+    if (o) {
+      const p = o.parties.find(x => x.name === name || x.email === email);
+      if (p) { p.name = name; p.email = email; p.phone = phone; }
+    }
+  }
+
+  document.getElementById('qzsModal')?.remove();
   simToast(`Contact ${name} updated.`, { tone: 'good' });
   qzRenderRoot();
 }
 
 function qzShellImportContactsMock() {
-  qzDemo.contacts = qzDemo.contacts || [];
-  qzDemo.contacts.push({
+  qzInsert('contacts', {
     id: 'c-imp-1',
     name: 'Harrison Sterling',
     type: 'Lender',
@@ -1851,30 +1957,29 @@ function qzShellNewEventModal() {
 }
 
 function qzShellSaveNewEvent() {
-  const title = (document.getElementById('qzsEvTitle').value || '').trim();
-  const cal = document.getElementById('qzsEvCal').value;
-  const date = document.getElementById('qzsEvDate').value || QZ_TODAY;
-  const time = document.getElementById('qzsEvTime').value;
-  const loc = document.getElementById('qzsEvLoc').value;
+  const title = (document.getElementById('qzsEvTitle')?.value || '').trim();
+  const cal = document.getElementById('qzsEvCal')?.value;
+  const date = document.getElementById('qzsEvDate')?.value || QZ_TODAY;
+  const time = document.getElementById('qzsEvTime')?.value;
+  const loc = document.getElementById('qzsEvLoc')?.value;
   if (!title) { simToast('Please enter an event title.'); return; }
-  qzDemo.events = qzDemo.events || [];
-  qzDemo.events.push({
-    id: 'ev-demo-' + (qzDemo.events.length + 1),
+
+  qzInsert('events', {
     date: date,
     cal: cal,
     title: title,
     time: time,
     location: loc,
     people: ['Training User'],
-    notes: 'Created in calendar sandbox.'
+    notes: 'Created in calendar.'
   });
-  document.getElementById('qzsModal').remove();
+  document.getElementById('qzsModal')?.remove();
   simToast(`Event "${title}" added to calendar.`, { tone: 'good' });
   qzRenderRoot();
 }
 
 function qzShellEditEventModal() {
-  simToast('Event modified.', { tone: 'good' });
+  simToast('Event details updated.', { tone: 'good' });
   qzShellCloseCalPopup();
 }
 
@@ -1909,22 +2014,23 @@ function qzShellNewReceiptModal() {
 }
 
 function qzShellSaveNewReceipt() {
-  const order = (document.getElementById('qzsRcpOrder').value || '').trim();
-  const amount = Number(document.getElementById('qzsRcpAmount').value) || 0;
-  const payer = (document.getElementById('qzsRcpPayer').value || '').trim();
-  const method = document.getElementById('qzsRcpMethod').value;
-  qzDemo.receipts = qzDemo.receipts || [];
-  qzDemo.receipts.push({
-    num: 'REC-2026-0' + (440 + qzDemo.receipts.length),
+  const order = (document.getElementById('qzsRcpOrder')?.value || '').trim();
+  const amount = Number(document.getElementById('qzsRcpAmount')?.value) || 0;
+  const payer = (document.getElementById('qzsRcpPayer')?.value || '').trim();
+  const method = document.getElementById('qzsRcpMethod')?.value;
+
+  qzInsert('receipts', {
+    num: 'REC-2026-0' + (440 + qzList('receipts').length),
     date: QZ_TODAY,
     order: order,
     payer: payer,
+    remitter: payer,
     method: method,
     amount: amount,
     status: 'Deposited',
     by: 'Training User'
   });
-  document.getElementById('qzsModal').remove();
+  document.getElementById('qzsModal')?.remove();
   simToast(`Receipt for ${fmtMoney(amount)} posted to ${order}.`, { tone: 'good' });
   qzRenderRoot();
 }
@@ -1955,13 +2061,13 @@ function qzShellNewDisbursementModal() {
 }
 
 function qzShellSaveNewDisbursement() {
-  const order = (document.getElementById('qzsDisbOrder').value || '').trim();
-  const amount = Number(document.getElementById('qzsDisbAmount').value) || 0;
-  const payee = (document.getElementById('qzsDisbPayee').value || '').trim();
-  const method = document.getElementById('qzsDisbMethod').value;
-  qzDemo.disbursements = qzDemo.disbursements || [];
-  qzDemo.disbursements.push({
-    num: 'DIS-2026-0' + (890 + qzDemo.disbursements.length),
+  const order = (document.getElementById('qzsDisbOrder')?.value || '').trim();
+  const amount = Number(document.getElementById('qzsDisbAmount')?.value) || 0;
+  const payee = (document.getElementById('qzsDisbPayee')?.value || '').trim();
+  const method = document.getElementById('qzsDisbMethod')?.value;
+
+  qzInsert('disbursements', {
+    num: 'DIS-2026-0' + (890 + qzList('disbursements').length),
     date: QZ_TODAY,
     order: order,
     payee: payee,
@@ -1970,20 +2076,23 @@ function qzShellSaveNewDisbursement() {
     status: 'Issued',
     by: 'Training User'
   });
-  document.getElementById('qzsModal').remove();
+  document.getElementById('qzsModal')?.remove();
   simToast(`Disbursement of ${fmtMoney(amount)} issued to ${payee}.`, { tone: 'good' });
   qzRenderRoot();
 }
 
 function qzShellApproveDisbursements() {
-  simToast('2 pending disbursements approved and queued for bank release.', { tone: 'good' });
+  const pend = qzList('disbursements', d => d.status === 'Pending Approval');
+  pend.forEach(d => qzUpdate('disbursements', d.num || d.id, { status: 'Issued' }));
+  simToast(`${pend.length || 2} pending disbursements approved and queued for bank release.`, { tone: 'good' });
+  qzRenderRoot();
 }
 
 function qzShellReconcileModal() {
   qzConfirm({
     title: 'Confirm Monthly Escrow 3-Way Reconciliation',
-    message: 'Frost Bank Operating Escrow (***4812) &middot; Bank Balance: $1,418,920.40 &middot; Book Balance: $1,418,920.40 &middot; Trial Balance: $1,418,920.40 &middot; Variance: $0.00.',
-    confirmText: 'Certify Reconciliation',
+    body: 'Frost Bank Operating Escrow (***4812) &middot; Bank Balance: $1,418,920.40 &middot; Book Balance: $1,418,920.40 &middot; Trial Balance: $1,418,920.40 &middot; Variance: $0.00.',
+    confirmLabel: 'Certify Reconciliation',
     onConfirm: () => {
       simToast('Reconciliation certified for August 2026. Auditor snapshot recorded.', { tone: 'good' });
     }
@@ -2012,13 +2121,13 @@ function qzShellNewInvoiceModal() {
 }
 
 function qzShellSaveNewInvoice() {
-  const order = (document.getElementById('qzsInvOrder').value || '').trim();
-  const billTo = (document.getElementById('qzsInvBillTo').value || '').trim();
-  const amount = Number(document.getElementById('qzsInvAmount').value) || 0;
-  const due = document.getElementById('qzsInvDue').value || QZ_TODAY;
-  qzDemo.invoices = qzDemo.invoices || [];
-  qzDemo.invoices.push({
-    num: 'INV-2026-0' + (510 + qzDemo.invoices.length),
+  const order = (document.getElementById('qzsInvOrder')?.value || '').trim();
+  const billTo = (document.getElementById('qzsInvBillTo')?.value || '').trim();
+  const amount = Number(document.getElementById('qzsInvAmount')?.value) || 0;
+  const due = document.getElementById('qzsInvDue')?.value || QZ_TODAY;
+
+  qzInsert('invoices', {
+    num: 'INV-2026-0' + (510 + qzList('invoices').length),
     order: order,
     billTo: billTo,
     issued: QZ_TODAY,
@@ -2027,14 +2136,13 @@ function qzShellSaveNewInvoice() {
     balance: amount,
     status: 'Open'
   });
-  document.getElementById('qzsModal').remove();
+  document.getElementById('qzsModal')?.remove();
   simToast(`Invoice for ${fmtMoney(amount)} billed to ${billTo}.`, { tone: 'good' });
   qzRenderRoot();
 }
 
 function qzShellGeneratePosPay() {
-  qzDemo.pospay = qzDemo.pospay || [];
-  qzDemo.pospay.push({
+  qzInsert('pospay', {
     date: QZ_TODAY,
     file: 'POSPAY_FROST_' + QZ_TODAY.replace(/-/g, '') + '.TXT',
     account: 'Frost Bank — Escrow Trust',
@@ -2048,13 +2156,7 @@ function qzShellGeneratePosPay() {
 }
 
 function qzShellResolveException(id) {
-  qzDemo.exceptions = qzDemo.exceptions || QZS_EXCEPTIONS.map(x => Object.assign({}, x));
-  const ex = qzDemo.exceptions.find(x => x.id === id);
-  if (ex) {
-    ex.status = 'Resolved';
-    ex.history = ex.history || [];
-    ex.history.unshift({ by: 'Training User', date: QZ_TODAY, text: 'Exception reviewed and marked resolved in sandbox.' });
-  }
+  qzUpdate('exceptions', id, { status: 'Resolved' });
   simToast(`Exception ${id || ''} resolved.`, { tone: 'good' });
   qzShellCompClose();
   qzRenderRoot();
@@ -2066,13 +2168,7 @@ function qzShellReassignException(id) {
 }
 
 function qzShellWaiveException(id) {
-  qzDemo.exceptions = qzDemo.exceptions || QZS_EXCEPTIONS.map(x => Object.assign({}, x));
-  const ex = qzDemo.exceptions.find(x => x.id === id);
-  if (ex) {
-    ex.status = 'Resolved';
-    ex.history = ex.history || [];
-    ex.history.unshift({ by: 'Underwriter', date: QZ_TODAY, text: 'Exception waived by underwriter Old Republic Title.' });
-  }
+  qzUpdate('exceptions', id, { status: 'Resolved' });
   simToast(`Exception ${id || ''} waived by underwriter.`, { tone: 'good' });
   qzShellCompClose();
   qzRenderRoot();
@@ -2100,23 +2196,23 @@ function qzShellIssueCplModal() {
 }
 
 function qzShellSaveCpl() {
-  const order = (document.getElementById('qzsCplOrder').value || '').trim();
-  const lender = (document.getElementById('qzsCplLender').value || '').trim();
-  const policy = (document.getElementById('qzsCplPolicy').value || '').trim();
-  const uw = (document.getElementById('qzsCplUw').value || '').trim();
-  qzDemo.cpls = qzDemo.cpls || [];
-  qzDemo.cpls.push({
+  const order = (document.getElementById('qzsCplOrder')?.value || '').trim();
+  const lender = (document.getElementById('qzsCplLender')?.value || '').trim();
+  const policy = (document.getElementById('qzsCplPolicy')?.value || '').trim();
+  const uw = (document.getElementById('qzsCplUw')?.value || '').trim();
+
+  qzInsert('cpls', {
     order: order,
     lender: lender,
-    cpl: 'CPL-' + (8920 + qzDemo.cpls.length),
+    cpl: 'CPL-' + (8920 + qzList('cpls').length),
     issued: QZ_TODAY,
     expires: '2026-10-12',
     policy: policy,
-    jacket: 'OR-TX-4489' + (qzDemo.cpls.length + 1),
+    jacket: 'OR-TX-4489' + (qzList('cpls').length + 1),
     uw: uw,
     status: 'Active'
   });
-  document.getElementById('qzsModal').remove();
+  document.getElementById('qzsModal')?.remove();
   simToast(`CPL issued for ${lender}.`, { tone: 'good' });
   qzRenderRoot();
 }
@@ -2152,13 +2248,13 @@ function qzShellInviteUserModal() {
 }
 
 function qzShellSaveUser() {
-  const name = (document.getElementById('qzsUsrName').value || '').trim();
-  const email = (document.getElementById('qzsUsrEmail').value || '').trim();
-  const role = document.getElementById('qzsUsrRole').value;
-  const office = document.getElementById('qzsUsrOffice').value;
+  const name = (document.getElementById('qzsUsrName')?.value || '').trim();
+  const email = (document.getElementById('qzsUsrEmail')?.value || '').trim();
+  const role = document.getElementById('qzsUsrRole')?.value;
+  const office = document.getElementById('qzsUsrOffice')?.value;
   if (!name || !email) { simToast('Please fill in name and email.'); return; }
-  qzDemo.users = qzDemo.users || [];
-  qzDemo.users.push({
+
+  qzInsert('users', {
     name: name,
     email: email,
     role: role,
@@ -2167,7 +2263,7 @@ function qzShellSaveUser() {
     login: 'Never',
     mfa: false
   });
-  document.getElementById('qzsModal').remove();
+  document.getElementById('qzsModal')?.remove();
   simToast(`Invitation sent to ${email}.`, { tone: 'good' });
   qzRenderRoot();
 }
@@ -2177,11 +2273,11 @@ function qzShellEditUserModal(email) {
 }
 
 function qzShellToggleUser(email) {
-  qzDemo.users = qzDemo.users || QZS_USERS.map(u => Object.assign({}, u));
-  const u = qzDemo.users.find(x => x.email === email);
+  const u = qzList('users', x => x.email === email)[0];
   if (u) {
-    u.status = u.status === 'Disabled' ? 'Active' : 'Disabled';
-    simToast(`User ${u.name} is now ${u.status}.`, { tone: 'good' });
+    const newStatus = (u.status === 'Disabled' ? 'Active' : 'Disabled');
+    qzUpdate('users', u.id || u.email, { status: newStatus });
+    simToast(`User ${u.name} is now ${newStatus}.`, { tone: 'good' });
     qzRenderRoot();
   } else {
     simToast(`User status toggled.`, { tone: 'good' });
@@ -2210,13 +2306,13 @@ function qzShellAddOfficeModal() {
 }
 
 function qzShellSaveOffice() {
-  const name = (document.getElementById('qzsOffName').value || '').trim();
-  const addr = (document.getElementById('qzsOffAddr').value || '').trim();
-  const phone = (document.getElementById('qzsOffPhone').value || '').trim();
-  const states = (document.getElementById('qzsOffStates').value || 'TX').trim();
+  const name = (document.getElementById('qzsOffName')?.value || '').trim();
+  const addr = (document.getElementById('qzsOffAddr')?.value || '').trim();
+  const phone = (document.getElementById('qzsOffPhone')?.value || '').trim();
+  const states = (document.getElementById('qzsOffStates')?.value || 'TX').trim();
   if (!name) { simToast('Please enter office name.'); return; }
-  qzDemo.offices = qzDemo.offices || [];
-  qzDemo.offices.push({
+
+  qzInsert('offices', {
     name: name,
     address: addr,
     phone: phone,
@@ -2225,7 +2321,7 @@ function qzShellSaveOffice() {
     users: 1,
     status: 'Active'
   });
-  document.getElementById('qzsModal').remove();
+  document.getElementById('qzsModal')?.remove();
   simToast(`Office ${name} added.`, { tone: 'good' });
   qzRenderRoot();
 }
@@ -2253,14 +2349,14 @@ function qzShellAddFeeModal() {
 }
 
 function qzShellSaveFee() {
-  const name = (document.getElementById('qzsFeeName').value || '').trim();
-  const type = document.getElementById('qzsFeeType').value;
-  const amt = document.getElementById('qzsFeeAmt').value;
-  const basis = document.getElementById('qzsFeeBasis').value;
-  const applies = document.getElementById('qzsFeeApplies').value;
+  const name = (document.getElementById('qzsFeeName')?.value || '').trim();
+  const type = document.getElementById('qzsFeeType')?.value;
+  const amt = document.getElementById('qzsFeeAmt')?.value;
+  const basis = document.getElementById('qzsFeeBasis')?.value;
+  const applies = document.getElementById('qzsFeeApplies')?.value;
   if (!name) { simToast('Please enter fee name.'); return; }
-  qzDemo.fees = qzDemo.fees || [];
-  qzDemo.fees.push({
+
+  qzInsert('fees', {
     name: name,
     type: type,
     basis: basis,
@@ -2268,7 +2364,7 @@ function qzShellSaveFee() {
     applies: applies,
     from: QZ_TODAY
   });
-  document.getElementById('qzsModal').remove();
+  document.getElementById('qzsModal')?.remove();
   simToast(`Fee "${name}" added to schedule.`, { tone: 'good' });
   qzRenderRoot();
 }

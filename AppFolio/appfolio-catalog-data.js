@@ -928,15 +928,30 @@ function afBuildCompletePortfolio() {
     createdDate: afcDay(-2)
   });
 
-  // Bulk Work Orders across properties
+  // Bulk Work Orders across properties (Expanded to 22 realistic titles per D8)
   const WO_TITLES = [
-    { cat: 'hvac', p: 'emergency', t: 'HVAC AC Unit Blowing Warm Air', v: 'VEND-01', est: 42000, s: 'in-progress' },
+    { cat: 'hvac', p: 'emergency', t: 'HVAC AC Unit Blowing Warm Air (Compressor Overheat)', v: 'VEND-01', est: 42000, s: 'in-progress' },
     { cat: 'plumbing', p: 'high', t: 'Kitchen Sink P-Trap Leak Under Cabinet', v: 'VEND-02', est: 18500, s: 'completed' },
-    { cat: 'electrical', p: 'normal', t: 'Hallway GFCI Outlet Tripping', v: 'VEND-03', est: 12000, s: 'new' },
+    { cat: 'electrical', p: 'normal', t: 'Hallway GFCI Outlet Tripping Repeatedly', v: 'VEND-03', est: 12000, s: 'new' },
     { cat: 'appliances', p: 'normal', t: 'Dishwasher Not Draining at End of Cycle', v: 'VEND-04', est: 16000, s: 'assigned' },
     { cat: 'locksmith', p: 'emergency', t: 'Front Door Electronic Lock Deadbolt Malfunction', v: 'VEND-07', est: 15000, s: 'completed' },
-    { cat: 'pest-control', p: 'low', t: 'Quarterly Preventive Pest Treatment', v: 'VEND-09', est: 8500, s: 'scheduled' },
-    { cat: 'painting', p: 'low', t: 'Make-Ready Touchup Paint Living Room', v: 'VEND-10', est: 25000, s: 'completed' }
+    { cat: 'pest-control', p: 'low', t: 'Quarterly Preventive Pest & Termite Treatment', v: 'VEND-09', est: 8500, s: 'scheduled' },
+    { cat: 'painting', p: 'low', t: 'Make-Ready Touchup Paint Living Room & Baseboards', v: 'VEND-10', est: 25000, s: 'completed' },
+    { cat: 'plumbing', p: 'emergency', t: 'Water Heater Pressure Relief Valve Leaking in Closet', v: 'VEND-02', est: 32000, s: 'in-progress' },
+    { cat: 'hvac', p: 'high', t: 'Capacitor Replacement and Filter Clean for Condenser', v: 'VEND-01', est: 19500, s: 'completed' },
+    { cat: 'electrical', p: 'high', t: 'Breaker Box Buzzing on Laundry Circuit', v: 'VEND-03', est: 22000, s: 'assigned' },
+    { cat: 'appliances', p: 'normal', t: 'Refrigerator Ice Maker Water Line Clogged', v: 'VEND-04', est: 14500, s: 'new' },
+    { cat: 'roofing', p: 'emergency', t: 'Shingle Wind Damage & Gutter Overflow After Storm', v: 'VEND-08', est: 65000, s: 'new' },
+    { cat: 'landscaping', p: 'low', t: 'Irrigation Sprinkler Head Broken Near Building Breezeway', v: 'VEND-06', est: 9500, s: 'scheduled' },
+    { cat: 'plumbing', p: 'normal', t: 'Garbage Disposal Jammed with Humming Motor', v: 'VEND-02', est: 11000, s: 'completed' },
+    { cat: 'general', p: 'normal', t: 'Balcony Screen Door Off Track and Torn Mesh', v: 'VEND-05', est: 13500, s: 'completed' },
+    { cat: 'hvac', p: 'normal', t: 'Digital Thermostat Screen Blank After Power Fluctuation', v: 'VEND-01', est: 16500, s: 'assigned' },
+    { cat: 'plumbing', p: 'high', t: 'Running Toilet Flapper Replacement & Fill Valve Tune-Up', v: 'VEND-02', est: 9500, s: 'completed' },
+    { cat: 'appliances', p: 'high', t: 'Electric Range Oven Heating Element Burned Out', v: 'VEND-04', est: 17500, s: 'in-progress' },
+    { cat: 'locksmith', p: 'normal', t: 'Mailbox Key Replacement and Cylinder Rekey', v: 'VEND-07', est: 8000, s: 'completed' },
+    { cat: 'general', p: 'low', t: 'Ceiling Fan Light Kit Pull Chain Broken', v: 'VEND-05', est: 7500, s: 'completed' },
+    { cat: 'pest-control', p: 'high', t: 'Wasp Nest Removal Near 2nd Floor Stairwell', v: 'VEND-09', est: 12500, s: 'completed' },
+    { cat: 'painting', p: 'low', t: 'Drywall Patch and Texture from Previous Wall Mount', v: 'VEND-10', est: 18000, s: 'new' }
   ];
 
   for (let w = 1; w <= 38; w++) {
@@ -1017,7 +1032,7 @@ function afBuildCompletePortfolio() {
     email: 'darren.hopkins@example.com',
     phone: '555-0341',
     propertyId: 'PROP-11',
-    unitId: 'UNIT-11-204',
+    unitId: 'UNIT-11-104',
     monthlyIncomeCents: 320000,
     requestedMoveIn: afcDay(10),
     status: 'denied',
@@ -1041,7 +1056,7 @@ function afBuildCompletePortfolio() {
     email: 'clara.r@example.com',
     phone: '555-0342',
     propertyId: 'PROP-12',
-    unitId: 'UNIT-12-108',
+    unitId: 'UNIT-12-102',
     monthlyIncomeCents: 480000,
     requestedMoveIn: afcDay(15),
     status: 'conditional',
@@ -1064,8 +1079,8 @@ function afBuildCompletePortfolio() {
     name: 'Elena Rostova',
     email: 'elena.rostova@example.com',
     phone: '555-0343',
-    propertyId: 'PROP-01', // No-pets single family home
-    unitId: 'UNIT-01-01',
+    propertyId: 'PROP-06', // No-pets single family home, vacant and ready
+    unitId: 'UNIT-06-01',
     monthlyIncomeCents: 850000,
     requestedMoveIn: afcDay(7),
     status: 'approved',
@@ -1089,8 +1104,12 @@ function afBuildCompletePortfolio() {
   });
 
   // Bulk Applications (7 more)
+  /* Drawn from the vacant pool only. Falling back to the whole list would
+     quietly reintroduce the bug the moment the portfolio filled up, so an
+     empty pool is left to fail loudly instead. */
+  const vacantPool = units.filter(function (u) { return String(u.status).indexOf('vacant') === 0; });
   for (let a = 4; a <= 10; a++) {
-    const targetUnit = units[(a * 7) % units.length];
+    const targetUnit = vacantPool[(a * 3) % vacantPool.length];
     applications.push({
       id: 'APP-2026-' + String(a).padStart(3, '0'),
       name: FIRST_NAMES[a * 3] + ' ' + LAST_NAMES[a * 3],
@@ -1171,10 +1190,14 @@ function afBuildCompletePortfolio() {
     const accId = t % 3 === 0 ? 'BANK-03' : (t % 2 === 0 ? 'BANK-02' : 'BANK-01');
     const isCredit = t % 2 === 0;
     const amt = (15000 + (t * 2300));
+    /* Trust and deposit money always belongs to a specific property, and
+       therefore to a specific owner. Only operating money is the management
+       company's own and needs no attribution. */
+    const attributed = accId === 'BANK-01' ? null : AFC_PROPERTIES[t % AFC_PROPERTIES.length].id;
     transactions.push({
       id: 'TXN-2026-' + String(t).padStart(4, '0'),
       accountId: accId,
-      propertyId: null,
+      propertyId: attributed,
       leaseId: null,
       date: afcDay(- (t * 5)),
       description: isCredit ? 'ACH Electronic Rent Collection Batch' : 'Vendor Service Disbursement',

@@ -23,9 +23,9 @@ const AF_TOUR_STEPS = [
     text: 'Sandbox is yours to break: nothing you do counts towards the course. Lesson mode grades your work. Opening a lesson switches you over automatically, so you will never be scored by accident.'
   },
   {
-    target: '#afNav',
+    target: '#afSidebar',
     title: 'The portfolio',
-    text: 'Properties hold units, and the unit is the centre of everything — occupied or vacant, it is what leases, work orders and money all hang off.'
+    text: 'Every section lives in this left rail, the way it does in AppFolio. Properties hold units, and the unit is the centre of everything — occupied or vacant, it is what leases, work orders and money all hang off.'
   },
   {
     target: '[data-section="accounting"]',

@@ -39,31 +39,1761 @@ const QZ_STORE_DEFAULTS = {
 function qzDefaultStore() { return JSON.parse(JSON.stringify(QZ_STORE_DEFAULTS)); }
 let qzStore = qzDefaultStore();
 
-/* In-memory sandbox/demo store (cleared on F5 reload). All product mutations live here. */
-const QZ_DEMO_DEFAULTS = {
-  overrides: {},
-  docStatus: {},
-  taskStatus: {},
-  notes: {},
-  replies: {},
-  orders: [],
-  parties: {},
-  documents: {},
-  tasks: {},
-  vendors: {},
-  contacts: [],
-  events: [],
-  receipts: [],
-  disbursements: [],
-  invoices: [],
-  users: [],
-  exceptions: []
+/* ============================================================================
+   qzDB — In-memory database (reset on F5 / qzHydrate).
+   Holds all 24 mutable collections in memory. No views read frozen consts.
+   ============================================================================ */
+let QZ_SEED = null;
+
+const qzDB = {
+  orders: [], parties: [], documents: [], tasks: [], taskGroups: [], threads: [], messages: [],
+  notes: [], vendors: [], contacts: [], events: [], receipts: [], disbursements: [],
+  invoices: [], ledgerLines: [], exceptions: [], cpls: [], users: [], offices: [], fees: [],
+  templates: { order: [], workflow: [], document: [] }, integrations: [], accounts: [], auditLog: [],
+  pospay: [], reconciliations: [], wireLog: [], alta: [], permissions: [], security: [], notifications: [],
+  /* Charge lines are the settlement statement itself: the ten Charges pages
+     used to be literals inside the renderer. */
+  chargeLines: [],
+  /* Schedule B. Clearing an exception is curative work, so it is a record
+     with a status rather than a printed paragraph. */
+  titleExceptions: []
 };
-function qzDefaultDemo() { return JSON.parse(JSON.stringify(QZ_DEMO_DEFAULTS)); }
-let qzDemo = qzDefaultDemo();
+
+let _qzIdCounters = {};
+
+function qzResetIdCounters() {
+  _qzIdCounters = {
+    orders: 2000,
+    parties: 100,
+    documents: 5000,
+    tasks: 5000,
+    taskGroups: 100,
+    threads: 100,
+    messages: 500,
+    notes: 100,
+    vendors: 100,
+    contacts: 500,
+    events: 500,
+    receipts: 25000,
+    disbursements: 12000,
+    invoices: 6000,
+    ledgerLines: 1000,
+    exceptions: 4000,
+    cpls: 9500,
+    users: 200,
+    offices: 50,
+    fees: 50,
+    templates: 100,
+    accounts: 50,
+    auditLog: 1000,
+    chargeLines: 3000,
+    ledgerLines: 1000
+  };
+}
+
+/* ============================================================================
+   ORDER ENRICHMENT — widening the order from 16 fields to a real file
+   ============================================================================
+
+   Basic Info reads 28 values. The order object carried 16. The missing 12 were
+   painted as literals inside the renderer:
+
+       ${esc(o.paralegal || "Travis Jones")}
+
+   o.paralegal existed on none of the 75 orders, so every order in the system
+   showed Travis Jones as its closer, Collin County as its county, and the same
+   $5,000.00 of earnest money. The field looked real, read as real, and was a
+   constant in disguise. That is the defect this function closes.
+
+   WHY IT LIVES HERE AND NOT IN THE DATA FILES
+
+   qualia-data.js is frozen: it carries the curriculum and the three orders the
+   lessons are written against. Widening the orders where they enter the
+   database instead leaves that file untouched, and gives the catalogue orders
+   and the exam order the same treatment through one code path rather than
+   three copies of the same literal table.
+
+   EVERYTHING IS DERIVED, NOTHING IS RANDOM
+
+   The values come from what the order already knows (its city and zip, its
+   type, its price, its own parties) or from a deterministic hash of its id.
+   Reload the page and every order comes back identical. That matters because a
+   lesson that says "look at the closer on 1483" has to find the same closer
+   tomorrow.
+
+   The cast is the one that already exists in the user directory. No parallel
+   roster.
+   ============================================================================ */
+
+/* Deterministic, so the same order always draws the same people. FNV-1a. */
+function qzHashString(s) {
+  let h = 0x811c9dc5;
+  const str = String(s);
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+  }
+  return h >>> 0;
+}
+function qzPick(list, seed, salt) {
+  if (!list || !list.length) return null;
+  return list[qzHashString(String(seed) + '|' + (salt || '')) % list.length];
+}
+
+/* The county a property actually sits in. Collin, Dallas and Denton are the
+   three this portfolio touches: every Plano, Frisco, McKinney and Allen zip in
+   the data is Collin; Richardson 75080 and Dallas 75206 are Dallas; Lewisville
+   75067 is Denton. Spreading the orders over more counties would mean inventing
+   geography that contradicts the addresses. */
+const QZ_COUNTY_BY_CITY = {
+  'Plano': 'Collin County',
+  'Frisco': 'Collin County',
+  'McKinney': 'Collin County',
+  'Allen': 'Collin County',
+  'Wylie': 'Collin County',
+  'Richardson': 'Dallas County',
+  'Dallas': 'Dallas County',
+  'Garland': 'Dallas County',
+  'Lewisville': 'Denton County',
+  'Flower Mound': 'Denton County'
+};
+
+/* The five branches are the offices that already exist in the directory, and
+   the underwriters each one is licensed with come from that same record: an
+   Allen order cannot be written on a policy its office does not carry. */
+const QZ_BRANCHES = [
+  { key: 'Plano',      agency: 'Best Closing Inc. — Plano',      underwriters: ['Old Republic National Title Insurance Co.', 'First American Title Insurance Co.'] },
+  { key: 'Frisco',     agency: 'Best Closing Inc. — Frisco',     underwriters: ['Old Republic National Title Insurance Co.'] },
+  { key: 'McKinney',   agency: 'Best Closing Inc. — McKinney',   underwriters: ['Old Republic National Title Insurance Co.', 'Stewart Title Guaranty Co.'] },
+  { key: 'Allen',      agency: 'Best Closing Inc. — Allen',      underwriters: ['First American Title Insurance Co.'] },
+  { key: 'Richardson', agency: 'Best Closing Inc. — Richardson', underwriters: ['Old Republic National Title Insurance Co.'] }
+];
+const QZ_JACKET_PREFIX = {
+  'Old Republic National Title Insurance Co.': 'OR-TX',
+  'First American Title Insurance Co.': 'FA-TX',
+  'Stewart Title Guaranty Co.': 'ST-TX'
+};
+
+/* Staff pools, filtered out of the live user directory by role, so adding a
+   user in Admin widens the pool instead of leaving it stale. */
+function qzStaffPool(roles) {
+  const users = (typeof QZS_USERS !== 'undefined' ? QZS_USERS : []);
+  return users
+    .filter(function (u) { return roles.indexOf(u.role) > -1; })
+    .map(function (u) { return u.name; });
+}
+
+function qzAttorneyPool() {
+  const cs = (typeof QZS_CONTACTS !== 'undefined' ? QZS_CONTACTS : []);
+  return cs.filter(function (c) { return c.type === 'Attorney'; })
+           .map(function (c) { return c.name; });
+}
+
+function qzAddDaysISO(iso, n) {
+  const p = String(iso || '').split('-');
+  if (p.length !== 3) return iso;
+  const d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+/* Money never disburses on a weekend. */
+function qzNextBusinessDay(iso) {
+  let out = iso;
+  for (let i = 0; i < 7; i++) {
+    const p = String(out).split('-');
+    if (p.length !== 3) return out;
+    const day = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])).getUTCDay();
+    if (day !== 0 && day !== 6) return out;
+    out = qzAddDaysISO(out, 1);
+  }
+  return out;
+}
+
+function qzEnrichOrder(o) {
+  const parts = String(o.propertyAddress || '').split(',');
+  const city = (parts[1] || '').trim();
+
+  const openers   = qzStaffPool(['Processor', 'Escrow Officer', 'Virtual Assistant']);
+  const closers   = qzStaffPool(['Closer', 'Title Examiner', 'Escrow Officer']);
+  /* Counsel is engaged, not employed: attorneys live in the contacts
+     directory as outside firms, which is where the two the system already
+     knew about were sitting all along. */
+  const attorneys = qzAttorneyPool();
+  const assists   = qzStaffPool(['Processor', 'Virtual Assistant', 'Accounting']);
+  const marketers = qzStaffPool(['Escrow Officer', 'Closer']);
+
+  const branch = qzPick(QZ_BRANCHES, o.id, 'branch') || QZ_BRANCHES[0];
+  const underwriter = qzPick(branch.underwriters, o.id, 'uw') || branch.underwriters[0];
+
+  const isRefi = o.type === 'Refinance';
+  const isCash = o.type === 'Cash';
+  const financed = !!o.loanAmount && o.loanAmount > 0;
+
+  /* A refinance of a primary residence carries the three-day right of
+     rescission, so the money cannot fund on the day it signs. A purchase funds
+     and disburses the same day. This is exactly the kind of difference a VA is
+     meant to notice on a file, so the dates have to genuinely differ. */
+  const funding = isRefi
+    ? qzNextBusinessDay(qzAddDaysISO(o.closingDate, 3))
+    : qzNextBusinessDay(o.closingDate);
+  const disbursement = funding;
+
+  /* Earnest money is a purchase concept. A refinance has no buyer and no
+     earnest deposit, so showing $5,000 on one was simply wrong. Purchases carry
+     1-3 % of the price, rounded the way a contract writes it. */
+  let earnest = 0;
+  if (!isRefi) {
+    const pctBasis = 100 + (qzHashString(o.id + '|em') % 201); /* 1.00 % - 3.00 % */
+    earnest = Math.round((o.purchasePrice || 0) * (pctBasis / 10000) / 500) * 500;
+    if (earnest < 1000) earnest = 1000;
+  }
+
+  /* Source of business is whoever actually referred the file, so it is read off
+     the order's own parties rather than drawn from an invented list. */
+  const pl = (o.parties || []);
+  const referrer = pl.find(function (p) { return p.role === 'Listing Agent'; })
+    || pl.find(function (p) { return p.role === 'Selling Agent'; })
+    || pl.find(function (p) { return p.role === 'Lender'; });
+  const sourceOfBusiness = referrer
+    ? referrer.name + (referrer.role === 'Lender' ? ' (Lender referral)' : ' (Agent referral)')
+    : 'Repeat client — direct';
+
+  const purpose = isRefi ? 'Refinance'
+    : isCash ? 'Cash Purchase'
+    : o.type === 'Commercial' ? 'Commercial Purchase'
+    : 'Purchase';
+
+  /* You represent the party who engaged you. On a refinance that is the
+     borrower. */
+  const representing = isRefi ? 'Borrower' : qzPick(['Buyer', 'Seller', 'Buyer', 'Buyer'], o.id, 'rep');
+
+  /* TRID's Closing Disclosure applies to consumer mortgages. A cash deal or a
+     commercial file settles on an ALTA statement instead. */
+  const statementType = (financed && !isCash && o.type !== 'Commercial')
+    ? 'Closing Disclosure (CD)'
+    : 'ALTA Settlement Statement';
+
+  const jacketPrefix = QZ_JACKET_PREFIX[underwriter] || 'XX-TX';
+  const jacketNo = 400000 + (qzHashString(o.id + '|jkt') % 99999);
+
+  /* Most residential closings have no unit number. The only ones that do are
+     those whose street line already carries one. */
+  const unitMatch = String(parts[0] || '').match(/(?:apt|unit|ste|#)\s*([\w-]+)/i);
+  const aptSuite = unitMatch ? unitMatch[1] : '';
+
+  const patch = {
+    /* Dates */
+    fundingDate: funding,
+    disbursementDate: disbursement,
+    /* Amounts */
+    earnestAmount: earnest,
+    /* Type and identifiers */
+    purpose: purpose,
+    representing: representing,
+    statementType: statementType,
+    /* Reporting. A refinance produces no seller proceeds, so no 1099-S. */
+    sourceOfBusiness: sourceOfBusiness,
+    eligible1099: !isRefi,
+    underwriter: underwriter,
+    policyJacket: jacketPrefix + '-' + jacketNo,
+    /* Settlement team */
+    settlementAgency: branch.agency,
+    orderOpener: qzPick(openers, o.id, 'opener'),
+    paralegal: qzPick(closers, o.id, 'closer'),
+    attorney: qzPick(attorneys, o.id, 'atty'),
+    assistants: qzPick(assists, o.id, 'asst'),
+    marketers: qzPick(marketers, o.id, 'mktr'),
+    /* Place of closing */
+    aptSuite: aptSuite,
+    county: QZ_COUNTY_BY_CITY[city] || '',
+    /* Property and loan identifiers the Loan page was faking */
+    propertyType: o.type === 'Commercial'
+      ? qzPick(['Office Condominium', 'Retail Building', 'Mixed-Use Building'], o.id, 'ptype')
+      : qzPick(['Single Family Residence', 'Single Family Residence', 'Townhouse', 'Condominium'], o.id, 'ptype'),
+    loanPurpose: purpose,
+    loanIdNumber: financed
+      ? 'FCL-' + (1000 + (qzHashString(o.id + '|lid') % 8999)) + '-0' + (1 + (qzHashString(o.id) % 9))
+      : '',
+    /* Private mortgage insurance only exists above 80 % loan-to-value. */
+    /* Figures the calculation pages used to print as constants: the same
+       2.15 % tax rate, the same $135 HOA due and the same courier tracking
+       number on all 75 files. They are per-order facts, so they are fields. */
+    taxRatePct: (2.0 + (qzHashString(o.id + '|tax%') % 45) / 100).toFixed(2),
+    hoaAssessment: ((qzHashString(o.id + '|hoa') % 3) > 0 && !isRefi)
+      ? 40 + (qzHashString(o.id + '|dues') % 36) * 10 : 0,
+    hoaCycle: qzPick(['Quarterly', 'Quarterly', 'Monthly', 'Annual'], o.id, 'cyc'),
+    hoaPaidStatus: 'Paid in advance by Seller',
+    escrowBank: 'Frost Bank (Escrow Trust — Operating)',
+    earnestDepositDate: isRefi ? '' : qzAddDaysISO(o.opened, 2),
+    earnestStatus: isRefi ? 'Not Yet Received' : 'Deposited & Cleared',
+    commissionPct: isRefi ? 0 : (5 + (qzHashString(o.id + '|comm') % 2)),
+    listingSplitPct: 50,
+    commissionSource: isRefi ? '' : 'Paid from Seller proceeds at closing',
+    /* A refinance pays off the existing loan; a purchase pays off the
+       seller's. A cash purchase of an unencumbered property pays off nothing. */
+    payoffLender: qzPick(['Summit Ridge Mortgage', 'Rocket Mortgage', 'Chase Home Lending', 'PennyMac Loan Services'], o.id, 'po'),
+    payoffPrincipal: Math.round((o.purchasePrice || 0) * (0.45 + (qzHashString(o.id + '|po') % 30) / 100)),
+    payoffRatePct: (4.5 + (qzHashString(o.id + '|rate') % 350) / 100).toFixed(3),
+    payoffGoodThrough: qzAddDaysISO(o.closingDate, (qzHashString(o.id + '|gt') % 9) - 2),
+    prepaymentPenalty: 0,
+    releaseFee: 95,
+    payoffWireFee: 30,
+    proceedsVerified: 'Not yet verified',
+    proceedsVerifiedBy: '',
+    proceedsMethod: 'Wire',
+    cplNumber: 'CPL-' + (90000 + (qzHashString(o.id + '|cpl') % 9999)),
+    cplIssued: qzAddDaysISO(o.opened, 14),
+    cplExpires: qzAddDaysISO(o.closingDate, 30),
+    cplStatus: financed ? 'Issued & Delivered' : 'Not Required',
+    ownerPolicyForm: 'T-1 Owner Policy',
+    lenderPolicyForm: financed ? 'T-2 Loan Policy' : 'None — cash transaction',
+    reissueCredit: 'No',
+    commitmentEffective: qzAddDaysISO(o.opened, 10),
+    estateType: 'Fee Simple',
+    commitmentStatus: (o.stageIndex || 0) >= 2 ? 'Issued' : 'In preparation',
+    finalPolicyNumber: (o.stageIndex || 0) >= 5 ? jacketPrefix + '-P-' + jacketNo : '',
+    finalPolicyDate: (o.stageIndex || 0) >= 5 ? qzAddDaysISO(o.closingDate, 21) : '',
+    finalPolicyStatus: (o.stageIndex || 0) >= 5 ? 'Issued' : 'Not yet issued',
+    shipCarrier: (o.stageIndex || 0) >= 4 ? 'FedEx Priority Overnight' : 'Not yet shipped',
+    shipTracking: (o.stageIndex || 0) >= 4
+      ? String(7000 + (qzHashString(o.id + '|trk') % 2999)) + '-' + (1000 + (qzHashString(o.id + '|trk2') % 8999)) + '-' + (1000 + (qzHashString(o.id + '|trk3') % 8999))
+      : '',
+    shipRecipient: financed ? qzLenderFor(o) + ' · Post-Closing Intake' : '',
+    shipDate: (o.stageIndex || 0) >= 4 ? qzAddDaysISO(o.closingDate, 1) : '',
+    shipStatus: (o.stageIndex || 0) >= 5 ? 'Delivered & signed' : (o.stageIndex || 0) >= 4 ? 'In transit' : 'Not yet shipped',
+    recordingMethod: 'e-Recording',
+    recordingSubmitted: (o.stageIndex || 0) >= 4 ? qzAddDaysISO(o.closingDate, 1) : '',
+    recordingInstrument: (o.stageIndex || 0) >= 5 ? 'D2' + (100000 + (qzHashString(o.id + '|rec') % 899999)) : '',
+    recordingFee: qzFeeVary(85, o, 'deed') + (financed ? qzFeeVary(100, o, 'mtg') : 0),
+    recordingStatus: (o.stageIndex || 0) >= 5 ? 'Accepted & recorded' : (o.stageIndex || 0) >= 4 ? 'Submitted' : 'Not yet submitted',
+    erecordVendor: qzPick(['Simplifile', 'CSC eRecording', 'ePN'], o.id, 'ers'),
+    erecordPackage: (o.stageIndex || 0) >= 4 ? 'PKG-' + (10000 + (qzHashString(o.id + '|pkg') % 89999)) : '',
+    erecordStatus: (o.stageIndex || 0) >= 5 ? 'Recorded' : (o.stageIndex || 0) >= 4 ? 'Submitted' : 'Not submitted',
+    underwriterAgencyNo: 'AG-' + (1000 + (qzHashString(branch.key) % 8999)),
+    underwriterApprovalNeeded: (o.purchasePrice || 0) > 900000 ? 'Yes — over agency authority' : 'No',
+    underwriterApprovalRef: '',
+    esignProvider: qzPick(['DocuSign', 'DocuSign', 'Adobe Sign', 'Wet signature only'], o.id, 'esp'),
+    esignEnvelope: (o.stageIndex || 0) >= 3 ? 'ENV-' + (100000 + (qzHashString(o.id + '|env') % 899999)) : '',
+    esignSent: (o.stageIndex || 0) >= 3 ? qzAddDaysISO(o.closingDate, -2) : '',
+    esignStatus: (o.stageIndex || 0) >= 4 ? 'Completed' : (o.stageIndex || 0) >= 3 ? 'Sent — awaiting signature' : 'Not sent',
+    mortgageInsCaseNumber: (financed && o.loanAmount / (o.purchasePrice || 1) > 0.8)
+      ? 'TX-' + (100 + (qzHashString(o.id + '|mic') % 899)) + '-' + (1000 + (qzHashString(o.id + '|mic2') % 8999))
+      : ''
+  };
+
+  /* Never overwrite something the curriculum deliberately set. A lesson that
+     depends on a value written in qualia-data.js has to keep winning.
+
+     The one exception is the bare firm name. All 75 orders carried the literal
+     'Best Closing Inc.', which is not a fact about any particular order but the
+     absence of one, and it is precisely the sameness this widening exists to
+     remove. A file belongs to the branch that opened it, so the generic value
+     is upgraded to its branch while a genuinely specific one is left alone. */
+  if (o.settlementAgency === 'Best Closing Inc.' && QZ_CURRICULUM_ORDERS.indexOf(o.id) < 0) {
+    o.settlementAgency = patch.settlementAgency;
+  }
+  for (const k in patch) {
+    if (o[k] === undefined || o[k] === null || o[k] === '') o[k] = patch[k];
+  }
+  return o;
+}
+
+function qzEnrichOrders(orders) {
+  (orders || []).forEach(qzEnrichOrder);
+  return orders;
+}
+
+/* ============================================================================
+   CHARGE LINES — the settlement statement as data
+   ============================================================================
+
+   The ten Charges pages were built by a table of literals inside the renderer:
+
+       'cd-a': () => [
+         { desc: 'Application Fee', payee: 'Lender', amount: 350.00, ... },
+         ...
+
+   The same two-to-five lines for all 75 orders, scaled by price, painted into
+   read-only cells. A VA could not add a fee, correct a payee, or move a charge
+   from the borrower to the seller, which is most of what the job actually is.
+   Charges is where an escrow assistant spends the day; it was the emptiest
+   screen in the product.
+
+   Lines now live in their own collection, keyed to an order, and the grid edits
+   them. Generation is deterministic and driven by the order itself, so a cash
+   purchase carries no origination charges, a refinance has no sale price and no
+   broker commission, and the recording fee is payable to the clerk of the
+   county the property is actually in.
+   ============================================================================ */
+
+const QZ_CHARGE_SECTIONS = ['A', 'B', 'C', 'E', 'F', 'G', 'H', 'J', 'KM', 'LN'];
+
+/* Section key on the order tab -> section letter in the collection. */
+const QZ_TAB_TO_SECTION = {
+  'cd-a': 'A', 'accounting': 'B', 'cd-c': 'C', 'cd-e': 'E', 'cd-f': 'F',
+  'cd-g': 'G', 'cd-h': 'H', 'cd-j': 'J', 'cd-km': 'KM', 'cd-ln': 'LN'
+};
+
+/* Vary a base fee by a few percent per order, rounded to the nearest $5, so two
+   files do not quote an identical survey fee to the cent. Deterministic. */
+function qzFeeVary(base, o, salt) {
+  const swing = 0.85 + (qzHashString(o.id + '|' + salt) % 31) / 100; /* 0.85 - 1.15 */
+  return Math.round(base * swing / 5) * 5;
+}
+function qzPickFor(o, salt, list) { return qzPick(list, o.id, salt); }
+
+const QZ_PEST_CO    = ['Ace Home Inspections', 'Lone Star Pest & Termite', 'Guardian Property Inspections', 'BrightPath Home Services'];
+const QZ_SURVEY_CO  = ['Precision Land Surveying', 'Trinity Metes & Bounds', 'North Texas Survey Group', 'Benchmark Land Services'];
+const QZ_INSURE_CO  = ['State Farm', 'Allstate', 'Travelers', 'Chubb Personal Risk', 'Germania Insurance'];
+const QZ_WARRANTY   = ['Choice Home Warranty', 'American Home Shield', 'Old Republic Home Protection'];
+const QZ_APPRAISAL  = ['Cornerstone Appraisal Group', 'Metroplex Valuation Services', 'Sterling Appraisal Co.'];
+const QZ_HOA_MGMT   = ['FirstService Residential', 'Goodwin & Company', 'CMA Management', 'Real Manage'];
+
+/* The clerk who records the deed is the clerk of the county the land is in.
+   Every order used to pay Collin County regardless of where the house was. */
+function qzClerkFor(o) {
+  return (o.county ? o.county.replace(/ County$/, '') : 'County') + ' County Clerk';
+}
+function qzLenderFor(o) {
+  const p = (o.parties || []).find(function (x) { return x.role === 'Lender'; });
+  return p ? p.name : 'Lender';
+}
+
+/* Build one section's lines for one order. Returns [] where a section does not
+   apply, which is itself information: an empty Section A on a cash purchase is
+   correct, and a VA should see that rather than three invented loan fees. */
+function qzGenChargeLines(o, section) {
+  const L = [];
+  const financed = !!o.loanAmount && o.loanAmount > 0;
+  const isRefi = o.type === 'Refinance';
+  const price = o.purchasePrice || 0;
+  const add = function (description, payee, col, amount) {
+    if (amount == null || isNaN(amount)) return;
+    const row = { description: description, payee: payee,
+      borrowerAt: 0, borrowerBefore: 0, sellerAt: 0, sellerBefore: 0, byOthers: 0 };
+    row[col] = Math.round(amount * 100) / 100;
+    L.push(row);
+  };
+
+  if (section === 'A') {
+    if (!financed) return L;   /* no loan, no origination charges */
+    const pts = (qzHashString(o.id + '|pts') % 4) * 0.25;   /* 0, .25, .5, .75 */
+    if (pts > 0) add(pts.toFixed(2) + ' % of Loan Amount (Points)', qzLenderFor(o), 'borrowerAt', o.loanAmount * pts / 100);
+    add('Application Fee', qzLenderFor(o), 'borrowerBefore', qzFeeVary(350, o, 'app'));
+    add('Underwriting Fee', qzLenderFor(o), 'borrowerAt', qzFeeVary(795, o, 'uw'));
+    add('Loan Origination Fee', qzLenderFor(o), 'borrowerAt', qzFeeVary(o.loanAmount * 0.005, o, 'orig'));
+  }
+
+  if (section === 'B') {
+    /* Services the borrower could not shop for. Without a loan there is no
+       lender ordering an appraisal or a flood determination. */
+    add('Title &mdash; Settlement or Closing Fee', o.settlementAgency, 'borrowerAt', qzFeeVary(price * 0.0014, o, 'settle'));
+    add("Title &mdash; Lender's Title Policy", o.underwriter, 'borrowerAt', financed ? qzFeeVary(o.loanAmount * 0.0043, o, 'lpol') : null);
+    if (financed) {
+      add('Appraisal Fee', qzPickFor(o, 'apr', QZ_APPRAISAL), 'borrowerBefore', qzFeeVary(575, o, 'apr$'));
+      add('Credit Report Fee', qzLenderFor(o), 'borrowerBefore', qzFeeVary(65, o, 'cr'));
+      add('Flood Determination Fee', 'CoreLogic Flood Services', 'borrowerAt', qzFeeVary(25, o, 'fl'));
+      add('Tax Service Fee', qzLenderFor(o), 'borrowerAt', qzFeeVary(85, o, 'tax'));
+    }
+    if (o.inspectionCharge) add('Home Inspection Fee', qzPickFor(o, 'pest', QZ_PEST_CO), 'borrowerBefore', o.inspectionCharge);
+  }
+
+  if (section === 'C') {
+    if (!isRefi) add('Pest Inspection Fee', qzPickFor(o, 'pest', QZ_PEST_CO), 'borrowerBefore', qzFeeVary(125, o, 'pest$'));
+    add('Survey Fee', qzPickFor(o, 'srv', QZ_SURVEY_CO), 'borrowerBefore', qzFeeVary(640, o, 'srv$'));
+    add('Title &mdash; Closing Protection Letter', o.underwriter, 'borrowerAt', 50);
+    add('Title &mdash; Settlement Agent Fee', o.settlementAgency, 'borrowerAt', qzFeeVary(595, o, 'sa'));
+    add('Title &mdash; Title Examination Fee', o.settlementAgency, 'borrowerAt', qzFeeVary(150, o, 'exam'));
+  }
+
+  if (section === 'E') {
+    const deed = qzFeeVary(85, o, 'deed');
+    const mtg = financed ? qzFeeVary(100, o, 'mtg') : 0;
+    add('Recording Fees (Deed: ' + fmtMoney(deed) + (financed ? ', Mortgage: ' + fmtMoney(mtg) : '') + ')',
+        qzClerkFor(o), 'borrowerAt', deed + mtg);
+    /* Texas levies no real estate transfer tax. The line stays visible at zero,
+       because its absence is a thing a VA is asked about. */
+    add('Transfer Taxes', 'State of Texas (none levied)', 'borrowerAt', 0);
+  }
+
+  if (section === 'F') {
+    if (!isRefi || financed) {
+      add("Homeowner's Insurance Premium (12 mo)", qzPickFor(o, 'ins', QZ_INSURE_CO), 'borrowerBefore', qzFeeVary(1680, o, 'ins$'));
+    }
+    if (financed) {
+      const daily = Math.round(o.loanAmount * 0.06375 / 365 * 100) / 100;
+      const days = 3 + (qzHashString(o.id + '|days') % 26);
+      add('Prepaid Interest (' + fmtMoney(daily) + '/day for ' + days + ' days)', qzLenderFor(o), 'borrowerAt', daily * days);
+    }
+  }
+
+  if (section === 'G') {
+    if (!financed) return L;   /* no lender, no escrow account to fund */
+    const insMo = Math.round(qzFeeVary(1680, o, 'ins$') / 12);
+    const taxMo = Math.round(price * 0.021 / 12);
+    add("Homeowner's Insurance (" + fmtMoney(insMo) + '/mo for 2 mo)', 'Lender Escrow Account', 'borrowerAt', insMo * 2);
+    add('Property Taxes (' + fmtMoney(taxMo) + '/mo for 2 mo)', 'Lender Escrow Account', 'borrowerAt', taxMo * 2);
+    add('Aggregate Adjustment', 'Lender Escrow Account', 'borrowerAt', -qzFeeVary(180, o, 'agg'));
+  }
+
+  if (section === 'H') {
+    const hasHoa = (qzHashString(o.id + '|hoa') % 3) > 0;
+    if (hasHoa && !isRefi) add('HOA Capital Contribution', qzPickFor(o, 'hoa', QZ_HOA_MGMT), 'borrowerAt', qzFeeVary(350, o, 'hoa$'));
+    if (!isRefi) {
+      add('Home Warranty Plan', qzPickFor(o, 'war', QZ_WARRANTY), 'sellerAt', qzFeeVary(625, o, 'war$'));
+      add("Title &mdash; Owner's Title Policy (optional)", o.underwriter, 'sellerAt', qzFeeVary(price * 0.0057, o, 'opol'));
+    }
+  }
+
+  if (section === 'J') {
+    /* A total is a total. It is summed from the sections it totals rather than
+       typed, which is why these two rows are the only ones the grid refuses to
+       let you edit. */
+    return L;
+  }
+
+  if (section === 'KM') {
+    if (isRefi) {
+      add('Payoff of Existing Loan', 'Existing Lender', 'borrowerAt', Math.round(price * 0.58));
+      add('Principal Amount of New Loan', qzLenderFor(o), 'borrowerBefore', o.loanAmount || 0);
+    } else {
+      add('Sale Price of Property', 'Seller', 'borrowerAt', price);
+      add('Deposit / Earnest Money Already Paid', o.settlementAgency + ' Escrow', 'borrowerBefore', o.earnestAmount || 0);
+      if (financed) add('Principal Amount of New Loan', qzLenderFor(o), 'borrowerBefore', o.loanAmount);
+    }
+  }
+
+  if (section === 'LN') {
+    /* A refinance has no seller, so there is no seller summary to draw. */
+    if (isRefi) return L;
+    add('Sale Price of Property (Due to Seller)', 'Seller Gross', 'sellerAt', price);
+    const payoff = Math.round(price * (0.45 + (qzHashString(o.id + '|po') % 30) / 100));
+    add('Payoff of First Mortgage Loan', qzPickFor(o, 'po', ['Summit Ridge Mortgage', 'Rocket Mortgage', 'Chase Home Lending', 'PennyMac Loan Services']), 'sellerAt', payoff);
+    const rate = 5 + (qzHashString(o.id + '|comm') % 2);   /* 5 % or 6 % */
+    add('Total Real Estate Broker Commissions (' + rate + '%)', 'Listing & Selling Brokers', 'sellerAt', Math.round(price * rate / 100));
+  }
+
+  return L;
+}
+
+/* Materialise every line for every order into the collection. Runs once at
+   hydrate, so an F5 restores the generated statement exactly. */
+function qzBuildChargeLines(orders) {
+  const out = [];
+  let n = 0;
+  (orders || []).forEach(function (o) {
+    QZ_CHARGE_SECTIONS.forEach(function (sec) {
+      qzGenChargeLines(o, sec).forEach(function (row, i) {
+        out.push(Object.assign({
+          id: 'chg-' + (++n),
+          orderId: o.id,
+          section: sec,
+          lineNo: i + 1
+        }, row));
+      });
+    });
+  });
+  return out;
+}
+
+/* ============================================================================
+   THE MONEY, ATTACHED TO THE ORDER IT BELONGS TO
+   ============================================================================
+
+   Accounting and the order file were two separate worlds. 30 receipts, 30
+   disbursements and 15 invoices existed, all of them naming one of three
+   orders; the other 72 files had no money at all. The order ledger was empty
+   for all 75, because ledgerLines held zero rows, while Accounting showed a
+   balance by falling back to a literal:
+
+       ${fmtMoney(totalReceipts || 5000)}
+
+   So the escrow balance a trainee read was $5,000 on every order, whether or
+   not a cent had ever been received.
+
+   Three things happen here.
+
+   1. Every money record carries orderId, one name for the relationship. The
+      collections that genuinely are not per-order keep their own shape and are
+      documented below rather than given a fake key.
+
+   2. The money spreads across the open portfolio instead of piling onto three
+      files, so opening a random order shows a real escrow position.
+
+   3. ledgerLines is generated FROM the receipts and disbursements rather than
+      written alongside them, which is what makes the ledger and the balance
+      agree by construction. A ledger that can disagree with its own receipts
+      is worse than no ledger, because it teaches a VA to trust a number that
+      is wrong.
+
+   WHAT DELIBERATELY HAS NO orderId
+
+     reconciliations  a bank reconciliation is an account and a period, not a
+                      file. Jul 2026 on the trust account covers every order at
+                      once.
+     pospay           a positive-pay file is a batch sent to the bank. It spans
+                      orders by nature, so it references its disbursements
+                      instead.
+     notifications    these are the user's alert preferences. They were never
+                      about an order.
+   ============================================================================ */
+
+/* Orders that can carry money: anything opened, plus closed files that
+   obviously settled. Cancelled files never funded. */
+function qzFundedOrders(orders) {
+  return (orders || []).filter(function (o) { return o.status === 'Open' || o.status === 'Closed'; });
+}
+
+/* Receipts a file would really have: the earnest deposit, the lender's wire on
+   a financed deal, and the buyer's cash to close. */
+function qzGenReceiptsFor(o, seq) {
+  const out = [];
+  const financed = !!o.loanAmount && o.loanAmount > 0;
+  const isRefi = o.type === 'Refinance';
+  const buyer = (o.parties || []).find(function (p) { return p.role === 'Buyer' || p.role === 'Borrower'; });
+  const lender = (o.parties || []).find(function (p) { return p.role === 'Lender'; });
+  const push = function (payer, method, amount, status, dayOffset, kind) {
+    if (!amount || amount <= 0) return;
+    out.push({
+      id: 'R-' + (30000 + seq * 10 + out.length),
+      num: 'R-' + (30000 + seq * 10 + out.length),
+      orderId: o.id,
+      order: o.id,
+      date: qzAddDaysISO(o.closingDate, dayOffset),
+      payer: payer, method: method,
+      amount: Math.round(amount * 100) / 100,
+      status: status,
+      kind: kind,
+      by: o.orderOpener
+    });
+  };
+
+  if (!isRefi && o.earnestAmount) {
+    push(buyer ? buyer.name : 'Buyer', 'Wire', o.earnestAmount, 'Cleared', -30, 'earnest');
+  }
+  if (financed) {
+    push(lender ? lender.name : 'Lender', 'Wire', o.loanAmount,
+         o.status === 'Closed' ? 'Cleared' : 'Pending', -1, 'loan');
+  }
+  /* Cash to close: what the buyer still owes after the loan and the deposit. */
+  if (!isRefi) {
+    const costs = qzChargeTotals(o.id, 'B').borrowerAt + qzChargeTotals(o.id, 'C').borrowerAt +
+                  qzChargeTotals(o.id, 'E').borrowerAt + qzChargeTotals(o.id, 'F').borrowerAt +
+                  qzChargeTotals(o.id, 'G').borrowerAt + qzChargeTotals(o.id, 'A').borrowerAt;
+    const cash = (o.purchasePrice || 0) + costs - (o.loanAmount || 0) - (o.earnestAmount || 0);
+    push(buyer ? buyer.name : 'Buyer', qzPick(['Wire', 'Wire', 'Cashier Check'], o.id, 'ctc'), cash,
+         o.status === 'Closed' ? 'Cleared' : 'Pending', 0, 'cash-to-close');
+  }
+  return out;
+}
+
+/* Disbursements: the payees on the statement actually get paid. */
+function qzGenDisbursementsFor(o, seq) {
+  const out = [];
+  const push = function (payee, method, amount, status, memo) {
+    if (!amount || amount <= 0) return;
+    out.push({
+      id: 'CK-' + (20000 + seq * 20 + out.length),
+      num: (method === 'Wire' ? 'W-' : 'CK-') + (20000 + seq * 20 + out.length),
+      orderId: o.id,
+      order: o.id,
+      date: o.disbursementDate || o.closingDate,
+      payee: payee, method: method,
+      amount: Math.round(amount * 100) / 100,
+      status: status,
+      memo: memo || '',
+      by: o.paralegal || '—'
+    });
+  };
+  const settled = o.status === 'Closed';
+
+  /* Seller-side payoff and commission are the two big wires on a purchase. */
+  qzChargeLines(o.id, 'LN').forEach(function (l) {
+    const amt = Number(l.sellerAt) || 0;
+    if (amt > 0 && !/Sale Price/.test(l.description)) {
+      push(l.payee, amt > 50000 ? 'Wire' : 'Check', amt,
+           settled ? 'Cleared' : 'Pending Approval', l.description);
+    }
+  });
+  /* Third-party fees on the borrower side that leave the escrow account. */
+  qzChargeLines(o.id, 'C').forEach(function (l) {
+    const amt = Number(l.borrowerAt) || 0;
+    if (amt > 0) push(l.payee, 'Check', amt, settled ? 'Cleared' : 'Scheduled', l.description);
+  });
+  qzChargeLines(o.id, 'E').forEach(function (l) {
+    const amt = Number(l.borrowerAt) || 0;
+    if (amt > 0) push(l.payee, 'Check', amt, settled ? 'Cleared' : 'Scheduled', l.description);
+  });
+  return out;
+}
+
+/* ---------- the ledger ----------
+   Built from the receipts and disbursements, in date order, with a running
+   balance. Nothing here is invented: every line points at the record that
+   caused it, so a trainee can click from the ledger to the receipt. */
+function qzBuildLedgerFor(orderId, receipts, disbursements) {
+  const rows = [];
+  receipts.forEach(function (r) {
+    rows.push({
+      orderId: orderId, date: r.date, ref: r.num, party: r.payer,
+      type: r.kind === 'earnest' ? 'Earnest Money Deposit'
+          : r.kind === 'loan' ? 'Loan Funding'
+          : 'Cash to Close',
+      credit: r.amount, debit: 0, status: r.status, sourceId: r.id, sourceColl: 'receipts'
+    });
+  });
+  disbursements.forEach(function (d) {
+    rows.push({
+      orderId: orderId, date: d.date, ref: d.num, party: d.payee,
+      type: 'Disbursement', credit: 0, debit: d.amount,
+      status: d.status, sourceId: d.id, sourceColl: 'disbursements', memo: d.memo
+    });
+  });
+  /* A record that is already void arrives with its debit intact, because the
+     money did leave and then came back. The ledger has to say both things: the
+     original line and its reversal. Posting only the debit is what made the
+     running balance disagree with the escrow position by the voided amount. */
+  const voids = [];
+  rows.forEach(function (r) {
+    if (String(r.status) !== 'Void') return;
+    voids.push({
+      orderId: orderId, date: r.date, ref: 'VOID ' + r.ref, party: r.party,
+      type: 'Void of ' + r.type, credit: r.debit || 0, debit: r.credit || 0,
+      status: 'Void', sourceId: r.sourceId, sourceColl: r.sourceColl,
+      memo: r.memo || 'Reversed'
+    });
+  });
+  voids.forEach(function (v) { rows.push(v); });
+
+  rows.sort(function (a, b) { return String(a.date).localeCompare(String(b.date)); });
+  let bal = 0;
+  rows.forEach(function (r, i) {
+    bal += (r.credit || 0) - (r.debit || 0);
+    r.balance = Math.round(bal * 100) / 100;
+    r.id = 'led-' + orderId + '-' + (i + 1);
+    r.lineNo = i + 1;
+  });
+  return rows;
+}
+
+/* The escrow position of a file, derived — never stored, never faked. */
+function qzOrderEscrow(orderId) {
+  const rec = qzList('receipts').filter(function (r) { return r.orderId === orderId; });
+  const dis = qzList('disbursements').filter(function (d) { return d.orderId === orderId && d.status !== 'Void'; });
+  const totalIn = rec.reduce(function (s, r) { return s + (Number(r.amount) || 0); }, 0);
+  const totalOut = dis.reduce(function (s, d) { return s + (Number(d.amount) || 0); }, 0);
+  return {
+    receipts: rec, disbursements: dis,
+    totalIn: Math.round(totalIn * 100) / 100,
+    totalOut: Math.round(totalOut * 100) / 100,
+    balance: Math.round((totalIn - totalOut) * 100) / 100
+  };
+}
+
+/* ---------- generation at hydrate ---------- */
+
+function qzBuildMoney(seed) {
+  const funded = qzFundedOrders(seed.orders);
+
+  /* The three curriculum orders keep the records the lessons were written
+     against; those rows are re-keyed, not replaced. */
+  const CURRICULUM = ['ORD-2026-1483', 'ORD-2026-1512', 'ORD-2026-1398'];
+  const reKey = function (list, field) {
+    (list || []).forEach(function (row) {
+      if (row.order && !row.orderId) row.orderId = row.order;
+    });
+    return list;
+  };
+  reKey(seed.receipts); reKey(seed.disbursements); reKey(seed.invoices);
+
+  /* Every other funded order gets its own money. */
+  let seq = 0;
+  funded.forEach(function (o) {
+    if (CURRICULUM.indexOf(o.id) > -1) return;
+    seq++;
+    /* Not every open file has funded yet; the ones still in title work
+       legitimately show only the earnest deposit. */
+    const stage = o.stageIndex || 0;
+    const rs = qzGenReceiptsFor(o, seq).filter(function (r) {
+      return stage >= 3 || r.kind === 'earnest';
+    });
+    const ds = stage >= 3 ? qzGenDisbursementsFor(o, seq) : [];
+    rs.forEach(function (r) { seed.receipts.push(r); });
+    ds.forEach(function (d) { seed.disbursements.push(d); });
+  });
+
+  /* Ledger last, so it sees every receipt and disbursement that exists. */
+  seed.ledgerLines = [];
+  const byOrder = {};
+  seed.receipts.forEach(function (r) { (byOrder[r.orderId] = byOrder[r.orderId] || { r: [], d: [] }).r.push(r); });
+  seed.disbursements.forEach(function (d) { (byOrder[d.orderId] = byOrder[d.orderId] || { r: [], d: [] }).d.push(d); });
+  Object.keys(byOrder).forEach(function (oid) {
+    if (!oid || oid === 'undefined') return;
+    qzBuildLedgerFor(oid, byOrder[oid].r, byOrder[oid].d)
+      .forEach(function (row) { seed.ledgerLines.push(row); });
+  });
+
+  /* Invoices spread over the funded portfolio instead of stacking on three
+     files, and each one names the order it bills for. */
+  (seed.invoices || []).forEach(function (inv, i) {
+    if (i < CURRICULUM.length) return;   /* the three the lessons read */
+    const o = funded[(i * 7 + 5) % funded.length];
+    inv.orderId = o.id; inv.order = o.id;
+  });
+
+  /* A calendar entry that belongs to nobody's file cannot be navigated from
+     the order it concerns. Signings, funding dates and recording deadlines all
+     belong to one. */
+  (seed.events || []).forEach(function (ev, i) {
+    if (ev.orderId) return;
+    const o = funded[(i * 11 + 3) % funded.length];
+    ev.orderId = o.id;
+  });
+
+  /* CPLs and wire logs already named their order in prose; give them the key. */
+  (seed.cpls || []).forEach(function (c) { if (!c.orderId && c.order) c.orderId = c.order; });
+  (seed.wireLog || []).forEach(function (w) { if (!w.orderId && w.order) w.orderId = w.order; });
+
+  /* A positive-pay file is a batch sent to the bank, so it references the
+     disbursements it covers rather than pretending to belong to one order. */
+  (seed.pospay || []).forEach(function (p, i) {
+    if (p.disbursementIds) return;
+    const pool = seed.disbursements.filter(function (d) { return d.method === 'Check'; });
+    p.disbursementIds = pool.slice(i * 3, i * 3 + (p.items || 3)).map(function (d) { return d.id; });
+  });
+
+  return seed;
+}
+
+/* ---------- posting from the UI ---------- */
+
+/* Appends a ledger line for a disbursement recorded through the Payments
+   panel, keeping the running balance correct. */
+function qzPostLedgerForDisbursement(d) {
+  if (!d || !d.orderId) return;
+  const existing = qzList('ledgerLines')
+    .filter(function (l) { return l.orderId === d.orderId; })
+    .sort(function (a, b) { return (a.lineNo || 0) - (b.lineNo || 0); });
+  const prev = existing.length ? existing[existing.length - 1].balance : 0;
+  qzInsert('ledgerLines', {
+    orderId: d.orderId, date: d.date, ref: d.num || d.id, party: d.payee,
+    type: 'Disbursement', credit: 0, debit: d.amount,
+    balance: Math.round((prev - d.amount) * 100) / 100,
+    lineNo: existing.length + 1,
+    status: d.status, sourceId: d.id, sourceColl: 'disbursements', memo: d.memo
+  });
+}
+
+function qzPostLedgerForReceipt(r) {
+  if (!r || !r.orderId) return;
+  const existing = qzList('ledgerLines')
+    .filter(function (l) { return l.orderId === r.orderId; })
+    .sort(function (a, b) { return (a.lineNo || 0) - (b.lineNo || 0); });
+  const prev = existing.length ? existing[existing.length - 1].balance : 0;
+  qzInsert('ledgerLines', {
+    orderId: r.orderId, date: r.date, ref: r.num || r.id, party: r.payer,
+    type: r.kind === 'earnest' ? 'Earnest Money Deposit' : 'Receipt',
+    credit: r.amount, debit: 0,
+    balance: Math.round((prev + r.amount) * 100) / 100,
+    lineNo: existing.length + 1,
+    status: r.status, sourceId: r.id, sourceColl: 'receipts'
+  });
+}
+
+/* ---------- voiding, which is daily work in escrow ---------- */
+
+/* A receipt captured wrong is not deleted. It is voided, and the void stays
+   visible: an escrow account that can lose a row silently is an escrow account
+   nobody can reconcile. */
+function qzVoidMoneyRecord(coll, id, reason) {
+  const rec = qzFind(coll, id);
+  if (!rec) return;
+  if (rec.status === 'Void') { simToast('That record is already void.'); return; }
+  if (!reason || String(reason).trim().length < 5) {
+    simToast('A void needs a written reason. It has to survive an audit.');
+    return;
+  }
+  qzUpdate(coll, id, { status: 'Void', voidReason: String(reason).trim(), voidedOn: QZ_TODAY });
+  /* Reverse it in the ledger rather than removing the original line. */
+  const led = qzList('ledgerLines').find(function (l) { return l.sourceId === id; });
+  if (led) {
+    const rows = qzList('ledgerLines')
+      .filter(function (l) { return l.orderId === led.orderId; })
+      .sort(function (a, b) { return (a.lineNo || 0) - (b.lineNo || 0); });
+    const prev = rows.length ? rows[rows.length - 1].balance : 0;
+    const delta = (led.debit || 0) - (led.credit || 0);
+    qzInsert('ledgerLines', {
+      orderId: led.orderId, date: QZ_TODAY, ref: 'VOID ' + led.ref, party: led.party,
+      type: 'Void of ' + led.type, credit: led.debit || 0, debit: led.credit || 0,
+      balance: Math.round((prev + delta) * 100) / 100,
+      lineNo: rows.length + 1, status: 'Void', sourceId: id, sourceColl: coll,
+      memo: String(reason).trim()
+    });
+  }
+  simToast('Voided. The reversal is on the ledger.', { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzVoidMoneyModal(coll, id) {
+  const rec = qzFind(coll, id);
+  if (!rec) return;
+  const label = coll === 'receipts' ? 'Receipt' : coll === 'disbursements' ? 'Disbursement' : 'Invoice';
+  const old = document.getElementById('qzVoidModal');
+  if (old) old.remove();
+  const wrap = document.createElement('div');
+  wrap.id = 'qzVoidModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML =
+    '<div class="qz-modal-card" style="max-width:460px">' +
+      '<div class="ph"><h4>Void ' + esc(label) + ' &mdash; ' + esc(rec.num || rec.id) + '</h4>' +
+      '<button class="qz-btn sm" onclick="document.getElementById(\'qzVoidModal\').remove()">&times;</button></div>' +
+      '<p class="qz-note">' + fmtMoney(rec.amount || 0) + ' &middot; ' +
+        esc(rec.payer || rec.payee || rec.billTo || '') + '. Voiding does not delete the record: ' +
+        'it posts a reversing line so the ledger still reconciles.</p>' +
+      '<div class="qz-field wide"><label for="qzVoidReason">Reason</label>' +
+        '<textarea id="qzVoidReason" rows="2" placeholder="e.g. wire returned by the receiving bank"></textarea></div>' +
+      '<div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">' +
+        '<button class="qz-btn" onclick="document.getElementById(\'qzVoidModal\').remove()">Cancel</button>' +
+        '<button class="qz-btn primary" onclick="qzConfirmVoid(\'' + escAttr(coll) + '\', \'' + escAttr(id) + '\')">Void it</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(wrap);
+}
+
+function qzConfirmVoid(coll, id) {
+  const reason = (document.getElementById('qzVoidReason') || {}).value || '';
+  if (!reason.trim() || reason.trim().length < 5) {
+    simToast('A void needs a written reason. It has to survive an audit.');
+    return;
+  }
+  const m = document.getElementById('qzVoidModal');
+  if (m) m.remove();
+  qzVoidMoneyRecord(coll, id, reason);
+}
+
+/* ============================================================================
+   EXPORT — a file that actually arrives
+   ============================================================================
+
+   The shell answered every Export button with:
+
+       simToast('CSV export generated and downloaded.', { tone: 'good' });
+
+   Nothing was generated and nothing was downloaded. A toast that describes an
+   event which did not happen is worse than a disabled button, because a VA
+   learns to trust the confirmation instead of checking the folder.
+
+   These build a real CSV in memory and hand it to the browser.
+   ============================================================================ */
+
+/* RFC 4180: quote everything, double any embedded quote. Descriptions on a
+   settlement statement routinely contain commas. */
+function qzCsvCell(v) {
+  const s = String(v == null ? '' : v).replace(/&mdash;/g, '-').replace(/&middot;/g, '-');
+  return '"' + s.replace(/"/g, '""') + '"';
+}
+function qzCsvRows(rows) {
+  return rows.map(function (r) { return r.map(qzCsvCell).join(','); }).join('\r\n');
+}
+
+function qzDownloadCSV(filename, rows) {
+  const csv = qzCsvRows(rows);
+  try {
+    /* The BOM is what makes Excel open UTF-8 correctly on Windows, which is
+       where these files are going to be opened. */
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    simToast(filename + ' downloaded (' + (rows.length - 1) + ' rows).', { tone: 'good' });
+  } catch (e) {
+    /* If the browser refuses the download, say so rather than claiming success. */
+    simToast('This browser blocked the download. Nothing was saved.');
+  }
+}
+
+function qzExportLedgerCSV(orderId) {
+  const led = qzList('ledgerLines')
+    .filter(function (l) { return l.orderId === orderId; })
+    .sort(function (a, b) { return (a.lineNo || 0) - (b.lineNo || 0); });
+  if (!led.length) { simToast('There is nothing on this ledger to export yet.'); return; }
+  const rows = [['Date', 'Reference', 'Party', 'Type', 'Debit', 'Credit', 'Balance', 'Status', 'Memo']];
+  led.forEach(function (l) {
+    rows.push([l.date, l.ref, l.party, l.type,
+      l.debit ? l.debit.toFixed(2) : '', l.credit ? l.credit.toFixed(2) : '',
+      (l.balance || 0).toFixed(2), l.status, l.memo || '']);
+  });
+  qzDownloadCSV('ledger-' + orderId + '.csv', rows);
+}
+
+function qzExportChargesCSV(orderId, section) {
+  const lines = qzChargeLines(orderId, section);
+  if (!lines.length) { simToast('This section has no lines to export.'); return; }
+  const rows = [['Line', 'Description', 'Payee', 'Borrower at closing', 'Borrower before closing',
+                 'Seller at closing', 'Seller before closing', 'By others']];
+  lines.forEach(function (l) {
+    rows.push([l.lineNo, l.description, l.payee,
+      (l.borrowerAt || 0).toFixed(2), (l.borrowerBefore || 0).toFixed(2),
+      (l.sellerAt || 0).toFixed(2), (l.sellerBefore || 0).toFixed(2), (l.byOthers || 0).toFixed(2)]);
+  });
+  qzDownloadCSV('charges-' + orderId + '-section-' + section + '.csv', rows);
+}
+
+/* The shell's generic Export button, now told which table it is looking at. */
+function qzExportTableCSV(what) {
+  const map = {
+    'orders':        { coll: 'orders',        cols: ['id', 'titleNumber', 'propertyAddress', 'type', 'status', 'closingDate', 'purchasePrice', 'settlementAgency', 'paralegal'] },
+    'receipts':      { coll: 'receipts',      cols: ['num', 'orderId', 'date', 'payer', 'method', 'amount', 'status'] },
+    'disbursements': { coll: 'disbursements', cols: ['num', 'orderId', 'date', 'payee', 'method', 'amount', 'status'] },
+    'invoices':      { coll: 'invoices',      cols: ['num', 'orderId', 'billTo', 'issued', 'due', 'amount', 'balance', 'status'] },
+    'contacts':      { coll: 'contacts',      cols: ['name', 'type', 'company', 'email', 'phone'] },
+    'vendors':       { coll: 'vendors',       cols: ['name', 'orderId', 'service', 'status'] },
+    'tasks':         { coll: 'tasks',         cols: ['id', 'orderId', 'title', 'taskGroup', 'due', 'status', 'assignee'] },
+    'documents':     { coll: 'documents',     cols: ['id', 'orderId', 'name', 'type', 'status'] }
+  };
+  const spec = map[what];
+  if (!spec) { simToast('There is no table here to export.'); return; }
+  const list = qzList(spec.coll);
+  if (!list.length) { simToast('That table is empty.'); return; }
+  const rows = [spec.cols.slice()];
+  list.forEach(function (r) { rows.push(spec.cols.map(function (c) { return r[c]; })); });
+  qzDownloadCSV(what + '-export.csv', rows);
+}
+
+/* ============================================================================
+   PARAMETERISED DOCUMENTS — the paperwork a VA has to actually read
+   ============================================================================
+
+   Nine of 220 documents opened. The other 211 were rows with a name and a
+   status, and the single most important habit in this job — open the source and
+   read what it really says — worked on four per cent of the file.
+
+   Writing one HTML file per document would mean hundreds of near-identical
+   files. Instead each document type is a template that draws from the order it
+   belongs to, so the deed on order 1449 names the parties on order 1449 and
+   quotes its own legal description. That also makes the documents useful for
+   verification practice: they agree with the file, so a discrepancy is a real
+   discrepancy rather than template drift.
+
+   The rendered page is handed to the existing viewer as a blob URL, because
+   sim-engine.js owns the modal and points an iframe at whatever it is given.
+   ============================================================================ */
+
+function qzDocParty(o, role) {
+  const p = (o.parties || []).find(function (x) { return x.role === role; });
+  return p || null;
+}
+function qzDocPartyName(o, role, fallback) {
+  const p = qzDocParty(o, role);
+  return p ? p.name : (fallback || '—');
+}
+function qzDocRow(label, value) {
+  return '<div class="row"><span class="l">' + label + '</span><span class="f">' + (value == null || value === '' ? '&mdash;' : value) + '</span></div>';
+}
+
+const QZ_DOC_TEMPLATES = {
+
+  'Purchase Agreement': function (o) {
+    return '<h2 class="sec">Parties</h2>' +
+      qzDocRow('Buyer', esc(qzDocPartyName(o, 'Buyer'))) +
+      qzDocRow('Seller', esc(qzDocPartyName(o, 'Seller'))) +
+      '<h2 class="sec">Property</h2>' +
+      qzDocRow('Address', esc(o.propertyAddress)) +
+      qzDocRow('Legal description', esc(o.legalDescription || '')) +
+      qzDocRow('County', esc(o.county)) +
+      '<h2 class="sec">Price and terms</h2>' +
+      qzDocRow('Purchase price', fmtMoney(o.purchasePrice)) +
+      qzDocRow('Earnest money', o.earnestAmount ? fmtMoney(o.earnestAmount) : 'None') +
+      qzDocRow('Financing', o.loanAmount ? fmtMoney(o.loanAmount) + ' conventional' : 'All cash, no financing contingency') +
+      qzDocRow('Closing date', fmtDate(o.closingDate)) +
+      '<p class="clause">Time is of the essence. Should the Buyer fail to close on the date stated above, ' +
+      'the earnest money shall be subject to the default provisions of paragraph 15.</p>';
+  },
+
+  'Source Deed': function (o) {
+    return '<h2 class="sec">Grant</h2>' +
+      '<p class="clause">That the Grantor, for and in consideration of the sum of TEN DOLLARS ($10.00) ' +
+      'and other good and valuable consideration, the receipt of which is hereby acknowledged, does ' +
+      'GRANT, SELL AND CONVEY unto the Grantee the property described below.</p>' +
+      qzDocRow('Grantor', esc(qzDocPartyName(o, 'Seller'))) +
+      qzDocRow('Grantee', esc(qzDocPartyName(o, 'Buyer'))) +
+      qzDocRow('Recorded', fmtDate(qzAddDaysISO(o.opened, -(400 + (qzHashString(o.id) % 2000))))) +
+      qzDocRow('Instrument no.', 'D2' + (100000 + (qzHashString(o.id + '|inst') % 899999))) +
+      '<h2 class="sec">Property conveyed</h2>' +
+      qzDocRow('Legal description', esc(o.legalDescription || '')) +
+      qzDocRow('County', esc(o.county)) +
+      '<p class="clause">TO HAVE AND TO HOLD the above described premises, together with all and singular ' +
+      'the rights and appurtenances thereto in anywise belonging, unto the said Grantee, its heirs and ' +
+      'assigns forever.</p>';
+  },
+
+  'Title Commitment': function (o) {
+    return '<h2 class="sec">Schedule A</h2>' +
+      qzDocRow('Commitment no.', esc(o.titleNumber)) +
+      qzDocRow('Effective date', fmtDate(qzAddDaysISO(o.opened, 10))) +
+      qzDocRow('Underwriter', esc(o.underwriter)) +
+      qzDocRow('Proposed insured', esc(qzDocPartyName(o, 'Buyer'))) +
+      qzDocRow('Policy amount', fmtMoney(o.purchasePrice)) +
+      qzDocRow('Estate', 'Fee Simple') +
+      qzDocRow('Title vested in', esc(qzDocPartyName(o, 'Seller'))) +
+      '<h2 class="sec">Schedule B &mdash; Exceptions</h2>' +
+      '<p class="clause">1. Restrictive covenants of record.<br>' +
+      '2. Any discrepancy, conflict or shortage in area or boundary lines.<br>' +
+      '3. Standby fees, taxes and assessments for the year ' + String(o.closingDate).slice(0, 4) + ' and subsequent years.<br>' +
+      '4. Rights of parties in possession.<br>' +
+      '5. Easement recorded in Volume ' + (1000 + (qzHashString(o.id + '|ez') % 8999)) + ', Page ' + (10 + (qzHashString(o.id + '|pg') % 400)) + '.</p>';
+  },
+
+  'Closing Disclosure': function (o) {
+    const b = qzChargeTotals(o.id, 'B'), c = qzChargeTotals(o.id, 'C'), a = qzChargeTotals(o.id, 'A');
+    const loanCosts = a.borrowerAt + a.borrowerBefore + b.borrowerAt + b.borrowerBefore + c.borrowerAt + c.borrowerBefore;
+    return '<h2 class="sec">Closing information</h2>' +
+      qzDocRow('Date issued', fmtDate(qzAddDaysISO(o.closingDate, -3))) +
+      qzDocRow('Closing date', fmtDate(o.closingDate)) +
+      qzDocRow('Disbursement date', fmtDate(o.disbursementDate)) +
+      qzDocRow('Settlement agent', esc(o.settlementAgency)) +
+      qzDocRow('File no.', esc(o.id)) +
+      qzDocRow('Property', esc(o.propertyAddress)) +
+      qzDocRow('Sale price', fmtMoney(o.purchasePrice)) +
+      '<h2 class="sec">Loan terms</h2>' +
+      qzDocRow('Loan amount', o.loanAmount ? fmtMoney(o.loanAmount) : 'None') +
+      qzDocRow('Loan purpose', esc(o.loanPurpose)) +
+      qzDocRow('Product', esc(o.loanProduct || '30-Year Fixed Rate')) +
+      '<h2 class="sec">Costs at closing</h2>' +
+      qzDocRow('Total loan costs (A + B + C)', fmtMoney(loanCosts)) +
+      qzDocRow('Cash to close', fmtMoney(Math.max(0, (o.purchasePrice || 0) + loanCosts - (o.loanAmount || 0) - (o.earnestAmount || 0))));
+  },
+
+  'Homeowners Insurance Binder': function (o) {
+    const premium = qzFeeVary(1680, o, 'ins$');
+    return '<h2 class="sec">Binder</h2>' +
+      qzDocRow('Named insured', esc(qzDocPartyName(o, 'Buyer'))) +
+      qzDocRow('Insured location', esc(o.propertyAddress)) +
+      qzDocRow('Carrier', esc(qzPick(QZ_INSURE_CO, o.id, 'ins'))) +
+      qzDocRow('Policy no.', 'HO-' + (qzHashString(o.id + '|ho') % 9000000 + 1000000)) +
+      qzDocRow('Effective', fmtDate(o.closingDate)) +
+      qzDocRow('Expires', fmtDate(qzAddDaysISO(o.closingDate, 365))) +
+      '<h2 class="sec">Coverage</h2>' +
+      qzDocRow('Dwelling (Coverage A)', fmtMoney(Math.round((o.purchasePrice || 0) * 0.82))) +
+      qzDocRow('Annual premium', fmtMoney(premium)) +
+      qzDocRow('Deductible', fmtMoney(1000 + (qzHashString(o.id + '|ded') % 4) * 500)) +
+      qzDocRow('Mortgagee clause', o.loanAmount ? esc(qzLenderFor(o)) + ', ISAOA/ATIMA' : 'None &mdash; cash transaction');
+  },
+
+  'Payoff Statement': function (o) {
+    const principal = Math.round((o.purchasePrice || 0) * (0.45 + (qzHashString(o.id + '|po') % 30) / 100));
+    const perDiem = Math.round(principal * 0.0625 / 365 * 100) / 100;
+    return '<h2 class="sec">Payoff</h2>' +
+      qzDocRow('Borrower', esc(qzDocPartyName(o, 'Seller', qzDocPartyName(o, 'Borrower')))) +
+      qzDocRow('Property', esc(o.propertyAddress)) +
+      qzDocRow('Loan no.', 'LN-' + (qzHashString(o.id + '|ln') % 900000 + 100000)) +
+      '<h2 class="sec">Amounts</h2>' +
+      qzDocRow('Unpaid principal balance', fmtMoney(principal)) +
+      qzDocRow('Interest to good-through date', fmtMoney(Math.round(perDiem * 18 * 100) / 100)) +
+      qzDocRow('Recording / release fee', fmtMoney(95)) +
+      qzDocRow('Total payoff', fmtMoney(principal + Math.round(perDiem * 18 * 100) / 100 + 95)) +
+      '<h2 class="sec">Critical dates</h2>' +
+      qzDocRow('Good through', fmtDate(qzAddDaysISO(o.closingDate, 5))) +
+      qzDocRow('Per diem after that date', fmtMoney(perDiem)) +
+      '<p class="clause">Funds received after the good-through date require an updated statement. ' +
+      'Wiring the figure below after that date will leave the loan short and the lien unreleased.</p>';
+  },
+
+  'HOA Resale Certificate': function (o) {
+    const dues = 40 + (qzHashString(o.id + '|dues') % 36) * 10;
+    return '<h2 class="sec">Association</h2>' +
+      qzDocRow('Management company', esc(qzPick(QZ_HOA_MGMT, o.id, 'hoa'))) +
+      qzDocRow('Property', esc(o.propertyAddress)) +
+      qzDocRow('Owner of record', esc(qzDocPartyName(o, 'Seller'))) +
+      '<h2 class="sec">Assessments</h2>' +
+      qzDocRow('Regular assessment', fmtMoney(dues) + ' per month') +
+      qzDocRow('Paid through', fmtDate(qzAddDaysISO(o.closingDate, -15))) +
+      qzDocRow('Balance owing', fmtMoney((qzHashString(o.id + '|bal') % 4) * dues)) +
+      qzDocRow('Transfer fee', fmtMoney(qzFeeVary(350, o, 'hoa$'))) +
+      qzDocRow('Capital contribution', fmtMoney(qzFeeVary(350, o, 'hoa$'))) +
+      '<h2 class="sec">Violations</h2>' +
+      '<p class="clause">' + ((qzHashString(o.id + '|viol') % 4) === 0
+        ? 'One open violation of record: unapproved exterior paint colour, notice dated ' +
+          fmtDate(qzAddDaysISO(o.closingDate, -60)) + '. Must be cured prior to transfer.'
+        : 'No open violations of record as of the date of this certificate.') + '</p>';
+  },
+
+  'Survey': function (o) {
+    return '<h2 class="sec">Survey</h2>' +
+      qzDocRow('Surveyor', esc(qzPick(QZ_SURVEY_CO, o.id, 'srv'))) +
+      qzDocRow('Registration no.', 'RPLS ' + (4000 + (qzHashString(o.id + '|rpls') % 2999))) +
+      qzDocRow('Date of survey', fmtDate(qzAddDaysISO(o.opened, 18))) +
+      qzDocRow('Property', esc(o.propertyAddress)) +
+      qzDocRow('Legal description', esc(o.legalDescription || '')) +
+      '<h2 class="sec">Surveyor&rsquo;s findings</h2>' +
+      '<p class="clause">' + ((qzHashString(o.id + '|enc') % 5) === 0
+        ? 'A storage structure along the rear boundary encroaches approximately 1.4 feet into the ' +
+          'platted utility easement. No other encroachments observed.'
+        : 'No visible encroachments, protrusions or overlapping of improvements were observed, ' +
+          'and the improvements lie wholly within the boundaries of the subject tract.') + '</p>';
+  }
+};
+
+/* ---------- rendering and opening ---------- */
+
+function qzRenderTemplatedDoc(doc, o) {
+  const fn = QZ_DOC_TEMPLATES[doc.template || doc.name];
+  if (!fn) return null;
+  /* The stylesheet is resolved against the page rather than the blob, which has
+     no base URL of its own. */
+  let css = 'documents/doc.css';
+  try { css = new URL('documents/doc.css', location.href).href; } catch (e) {}
+
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
+    '<title>' + esc(doc.name) + '</title>' +
+    '<link rel="stylesheet" href="' + escAttr(css) + '">' +
+    '</head><body>' +
+    '<div class="banner">Training document &mdash; generated from order ' + esc(o.id) +
+      '. Not a real instrument.</div>' +
+    '<div class="paper">' +
+      '<div class="letterhead">' +
+        '<h1>' + esc(doc.name) + '</h1>' +
+        '<p>' + esc(o.settlementAgency) + ' &middot; File ' + esc(o.id) +
+        ' &middot; ' + esc(o.titleNumber) + '</p>' +
+      '</div>' +
+      fn(o) +
+      '<div class="sigrow"><div><span class="line"></span>' + esc(qzDocPartyName(o, 'Buyer')) + '</div>' +
+      '<div><span class="line"></span>' + esc(qzDocPartyName(o, 'Seller')) + '</div></div>' +
+    '</div></body></html>';
+}
+
+function qzViewGeneratedDoc(docId) {
+  const d = qzFind('documents', docId);
+  if (!d) return;
+  const o = qzFind('orders', d.orderId);
+  if (!o) return;
+  const html = qzRenderTemplatedDoc(d, o);
+  if (!html) { simToast('There is no document body on file for this item yet.'); return; }
+  qzMark('docs-download');
+  try {
+    const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+    simViewDoc(url, d.name);
+    /* Released once the iframe has had time to load it. */
+    setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
+  } catch (e) {
+    simToast('This browser blocked the document preview.');
+  }
+}
+
+/* True when a row can actually be opened, whichever way it is backed. */
+function qzDocIsOpenable(d) {
+  return !!(d && (d.file || QZ_DOC_TEMPLATES[d.template || d.name]));
+}
+
+/* ============================================================================
+   FILLING THE CATALOGUE — 72 of the 75 orders were shells
+   ============================================================================
+
+   All eight vendors, all three message threads and every reviewable item sat on
+   the three curriculum orders. Open any other file and Marketplace was empty,
+   Connect was empty, Review was empty, and the document list held an average of
+   2.9 rows drawn from a vocabulary of twelve names.
+
+   That is not a small cosmetic gap. A trainee who has finished the lessons is
+   supposed to practise on unfamiliar files, and every unfamiliar file was
+   visibly hollow: the moment they left 1483 the product stopped pretending.
+
+   Everything here is generated from the order it belongs to and a hash of its
+   id, so it is stable across reloads, and the three curriculum orders are left
+   exactly as the lessons expect to find them.
+   ============================================================================ */
+
+const QZ_CURRICULUM_ORDERS = ['ORD-2026-1483', 'ORD-2026-1512', 'ORD-2026-1398'];
+
+/* ---------- documents ----------
+   A real title file runs to dozens of documents. The set depends on the deal:
+   a refinance has no purchase contract and no seller, a cash purchase has no
+   loan package, and only a file inside an association pulls HOA paperwork. */
+const QZ_DOC_CATALOG = [
+  /* name,                              type,        stage, appliesTo */
+  ['Purchase Agreement',                'Contract',   0, 'sale'],
+  ['Earnest Money Receipt',             'Contract',   0, 'sale'],
+  ['Seller Disclosure Notice',          'Contract',   0, 'sale'],
+  ['Survey',                            'Property',   1, 'all'],
+  ['Prior Title Policy',                'Title',      1, 'all'],
+  ['Title Commitment',                  'Title',      1, 'all'],
+  ['Title Search Report',               'Title',      1, 'all'],
+  ['Chain of Title Abstract',           'Title',      1, 'all'],
+  ['Source Deed',                       'Title',      1, 'all'],
+  ['Tax Certificate',                   'Property',   1, 'all'],
+  ['Property Tax Statement',            'Property',   1, 'all'],
+  ['Judgment Search Results',           'Title',      1, 'all'],
+  ['UCC Search Results',                'Title',      1, 'commercial'],
+  ['Loan Estimate',                     'Lender',     2, 'financed'],
+  ['Lender Instructions',               'Lender',     2, 'financed'],
+  ['Loan Approval Letter',              'Lender',     2, 'financed'],
+  ['Payoff Statement',                  'Lender',     2, 'payoff'],
+  ['Mortgage Payoff Authorization',     'Lender',     2, 'payoff'],
+  ['Homeowners Insurance Binder',       'Insurance',  2, 'all'],
+  ['Flood Certificate',                 'Insurance',  2, 'financed'],
+  ['HOA Resale Certificate',            'HOA',        2, 'hoa'],
+  ['HOA Statement of Account',          'HOA',        2, 'hoa'],
+  ['HOA Bylaws & Restrictions',         'HOA',        2, 'hoa'],
+  ['Home Inspection Invoice',           'Invoice',    2, 'sale'],
+  ['Pest Inspection Report',            'Property',   2, 'sale'],
+  ['Repair Amendment',                  'Contract',   2, 'sale'],
+  ['Proposed Deed (Draft)',             'Title',      3, 'all'],
+  ['Closing Disclosure',                'Lender',     3, 'financed'],
+  ['Closing Disclosure (Lender)',       'Lender',     3, 'financed'],
+  ['ALTA Settlement Statement',         'Title',      3, 'all'],
+  ['Wiring Instructions',               'Escrow',     3, 'all'],
+  ['Identity Verification',             'Compliance', 3, 'all'],
+  ['Final Loan Documents',              'Lender',     4, 'financed'],
+  ['Signed Deed',                       'Title',      4, 'all'],
+  ['Deed of Trust',                     'Lender',     4, 'financed'],
+  ['Bill of Sale',                      'Contract',   4, 'commercial'],
+  ['Recorded Deed',                     'Title',      5, 'all'],
+  ['Final Title Policy',                'Title',      5, 'all'],
+  ["Owner's Policy Jacket",             'Title',      5, 'all'],
+  ['Disbursement Summary',              'Escrow',     5, 'all'],
+  ['1099-S Filing Copy',                'Compliance', 5, 'reportable'],
+  ['Post-Closing Audit Checklist',      'Compliance', 5, 'all']
+];
+
+function qzDocApplies(rule, o) {
+  const financed = !!o.loanAmount && o.loanAmount > 0;
+  const isRefi = o.type === 'Refinance';
+  const hasHoa = (qzHashString(o.id + '|hoa') % 3) > 0;
+  switch (rule) {
+    case 'all': return true;
+    case 'sale': return !isRefi;
+    case 'financed': return financed;
+    case 'payoff': return isRefi || (qzHashString(o.id + '|po2') % 3) > 0;
+    case 'hoa': return hasHoa && !isRefi;
+    case 'commercial': return o.type === 'Commercial';
+    case 'reportable': return !!o.eligible1099;
+    default: return false;
+  }
+}
+
+const QZ_DOC_STATUS = ['Received', 'Reviewed', 'Pending', 'Requested'];
+
+function qzBuildDocuments(orders, existing) {
+  const out = existing.slice();
+  let n = 6000;
+  orders.forEach(function (o) {
+    if (QZ_CURRICULUM_ORDERS.indexOf(o.id) > -1) return;   /* lessons own these */
+    const stage = o.stageIndex || 0;
+    QZ_DOC_CATALOG.forEach(function (spec, idx) {
+      const name = spec[0], type = spec[1], docStage = spec[2], rule = spec[3];
+      if (!qzDocApplies(rule, o)) return;
+      /* A file that has not reached a stage does not yet hold its paperwork,
+         and a document still outstanding is the whole point of the Documents
+         screen: it is the list of what is missing. */
+      if (docStage > stage + 1) return;
+      const outstanding = docStage > stage;
+      out.push({
+        id: 'doc-' + (++n),
+        orderId: o.id,
+        name: name,
+        type: type,
+        status: outstanding
+          ? (docStage === stage + 1 ? 'Requested' : 'Pending')
+          : QZ_DOC_STATUS[qzHashString(o.id + name) % 2],
+        uploadedBy: outstanding ? '—' : o.orderOpener,
+        date: outstanding ? '' : qzAddDaysISO(o.opened, 3 + (qzHashString(o.id + name) % 40)),
+        /* Parameterised viewer rather than a file per document. */
+        template: QZ_DOC_TEMPLATES[name] ? name : null
+      });
+    });
+  });
+  return out;
+}
+
+/* ---------- tasks ----------
+   Every task now belongs to one of the five groups the product actually shows,
+   because the Tasks screen is organised by group and 221 ungrouped rows could
+   not be drawn that way. */
+const QZ_TASK_CATALOG = [
+  ['tg-open',   'Confirm buyer contact information'],
+  ['tg-open',   'Confirm seller contact information'],
+  ['tg-open',   'Open order and assign settlement team'],
+  ['tg-open',   'Send opening package to all parties'],
+  ['tg-open',   'Verify earnest money received'],
+  ['tg-open',   'Confirm commission split with brokers'],
+  ['tg-open',   'Collect signed engagement letter'],
+  ['tg-title',  'Order title search'],
+  ['tg-title',  'Examine Title Commitment & Exceptions'],
+  ['tg-title',  'Clear Schedule B exceptions'],
+  ['tg-title',  'Order tax certificate'],
+  ['tg-title',  'Review survey for encroachments'],
+  ['tg-title',  'Confirm vesting matches the source deed'],
+  ['tg-title',  'Request prior title policy for reissue credit'],
+  ['tg-title',  'Order judgment and lien search'],
+  ['tg-pre',    'Upload homeowners insurance binder to file'],
+  ['tg-pre',    'Follow up with lender on Loan Estimate'],
+  ['tg-pre',    'Request HOA Resale Certificate from management company'],
+  ['tg-pre',    'Notify buyer’s agent of outstanding HOA item'],
+  ['tg-pre',    'Prepare draft Closing Disclosure'],
+  ['tg-pre',    'Balance CD with lender'],
+  ['tg-pre',    'Schedule signing appointment'],
+  ['tg-pre',    'Verify wiring instructions with parties'],
+  ['tg-pre',    'Send closing package to the signing agent'],
+  ['tg-pre',    'Confirm buyer cash to close'],
+  ['tg-payoff', 'Order mortgage payoff statement'],
+  ['tg-payoff', 'Verify payoff good-through date'],
+  ['tg-payoff', 'Request HOA payoff figures'],
+  ['tg-payoff', 'Confirm property tax proration'],
+  ['tg-payoff', 'Obtain lien release authorization'],
+  ['tg-post',   'Disburse seller proceeds'],
+  ['tg-post',   'Send deed for recording'],
+  ['tg-post',   'Confirm recording returned from county'],
+  ['tg-post',   'Issue final title policy'],
+  ['tg-post',   'File 1099-S with the IRS'],
+  ['tg-post',   'Reconcile the escrow file to zero'],
+  ['tg-post',   'Archive the closed file'],
+  ['tg-post',   'Send post-closing survey to the client']
+];
+const QZ_TASK_STAGE = { 'tg-open': 0, 'tg-title': 1, 'tg-pre': 2, 'tg-payoff': 2, 'tg-post': 4 };
+
+function qzBuildTasks(orders, existing) {
+  /* Existing curriculum tasks keep their identity but gain a group, so the
+     grouped screen can draw them alongside everything else. */
+  const out = existing.map(function (t) {
+    const copy = Object.assign({}, t);
+    if (!copy.orderId) copy.orderId = copy.relatedOrderId;
+    if (!copy.taskGroup) {
+      const hit = QZ_TASK_CATALOG.find(function (c) {
+        return c[1].toLowerCase() === String(copy.title).toLowerCase();
+      });
+      copy.taskGroup = hit ? hit[0] : 'tg-pre';
+    }
+    return copy;
+  });
+
+  let n = 6000;
+  orders.forEach(function (o) {
+    if (QZ_CURRICULUM_ORDERS.indexOf(o.id) > -1) return;
+    const stage = o.stageIndex || 0;
+    QZ_TASK_CATALOG.forEach(function (spec) {
+      const grp = spec[0], title = spec[1];
+      const taskStage = QZ_TASK_STAGE[grp];
+      if (taskStage > stage + 1) return;
+      /* Not every file needs every task: a cash deal orders no payoff. */
+      if (grp === 'tg-payoff' && !(o.type === 'Refinance' || (qzHashString(o.id + '|po2') % 3) > 0)) return;
+      const done = taskStage < stage;
+      out.push({
+        id: 't-' + (++n),
+        orderId: o.id,
+        relatedOrderId: o.id,
+        taskGroup: grp,
+        title: title,
+        assignedTo: qzPick([o.orderOpener, o.paralegal, 'You (VA)'], o.id + title, 'asgn'),
+        dueDate: qzAddDaysISO(o.closingDate, taskStage * 5 - 20),
+        status: done ? 'Complete' : (taskStage === stage ? 'In Progress' : 'Open')
+      });
+    });
+  });
+  return out;
+}
+
+/* ---------- vendors (Marketplace) ---------- */
+const QZ_VENDOR_CATALOG = [
+  ['Title & Settlement', null],
+  ['Survey', QZ_SURVEY_CO],
+  ['Pest Inspection', QZ_PEST_CO],
+  ['Home Warranty', QZ_WARRANTY],
+  ['Appraisal', QZ_APPRAISAL],
+  ['Homeowners Insurance', QZ_INSURE_CO],
+  ['HOA Management', QZ_HOA_MGMT],
+  ['Courier & Recording', ['Metroplex Courier', 'SwiftFile Recording', 'Lone Star Document Services']],
+  ['Notary / Signing Agent', ['North Texas Notary Group', 'Mobile Signing Partners', 'Statewide Notary Network']],
+  ['Payoff & Lien Release', ['NationalLink Payoff', 'LienClear Services']]
+];
+const QZ_VENDOR_STATUS = ['Ordered', 'In Progress', 'Complete', 'Delayed'];
+
+function qzBuildVendors(orders, existing) {
+  const out = existing.slice();
+  let n = 500;
+  orders.forEach(function (o) {
+    if (QZ_CURRICULUM_ORDERS.indexOf(o.id) > -1) return;
+    const stage = o.stageIndex || 0;
+    const isRefi = o.type === 'Refinance';
+    QZ_VENDOR_CATALOG.forEach(function (spec, i) {
+      const service = spec[0], pool = spec[1];
+      if (service === 'Pest Inspection' && isRefi) return;
+      if (service === 'Home Warranty' && isRefi) return;
+      if (service === 'HOA Management' && !((qzHashString(o.id + '|hoa') % 3) > 0)) return;
+      if (service === 'Appraisal' && !(o.loanAmount > 0)) return;
+      /* Two or three orders in five would not have engaged every vendor yet. */
+      if ((qzHashString(o.id + service) % 5) === 0) return;
+      out.push({
+        id: 'v-' + (++n),
+        orderId: o.id,
+        name: pool ? qzPick(pool, o.id, 'v' + i) : o.settlementAgency,
+        service: service,
+        status: stage >= 4 ? 'Complete' : QZ_VENDOR_STATUS[qzHashString(o.id + service) % 3],
+        ordered: qzAddDaysISO(o.opened, 2 + (qzHashString(o.id + service) % 20))
+      });
+    });
+  });
+  return out;
+}
+
+/* ---------- Connect threads ---------- */
+const QZ_THREAD_TOPICS = [
+  ['Loan Estimate still pending', 'Lender',
+   'Checking in on the Loan Estimate for {addr}. Can you share a status?',
+   'Underwriting is finishing review. We expect to send it by end of week.'],
+  ['Survey received — encroachment noted', 'Selling Agent',
+   'The survey on {addr} shows the shed crossing the rear setback. Flagging before we go further.',
+   'Understood. The seller has agreed to obtain a variance letter from the HOA.'],
+  ['HOA resale certificate ordered', 'Listing Agent',
+   'Ordered the resale certificate for {addr}. Management quotes ten business days.',
+   'That lands after our contract deadline. Can it be expedited?'],
+  ['Confirming closing date', 'Buyer',
+   'Confirming we are still on track to close {addr} on {close}.',
+   'Yes, that date still works for us. Please send the wire instructions.'],
+  ['Payoff figures requested', 'Lender',
+   'Requested payoff figures for {addr}, good through the end of the month.',
+   'Payoff statement attached, good through the 30th with per diem noted.'],
+  ['Wire instructions — verify by phone', 'Buyer',
+   'Do not act on wire instructions sent by email. We will call you to confirm before you send anything.',
+   'Understood, I will call the number on your website rather than any number in an email.'],
+  ['Commission split confirmation', 'Listing Agent',
+   'Confirming the commission split on {addr} before we prepare the statement.',
+   'Split is as written in the listing agreement. No changes.'],
+  ['Insurance binder outstanding', 'Buyer',
+   'We still need the homeowners insurance binder for {addr} before the lender will fund.',
+   'My agent is sending it today. Sorry for the delay.']
+];
+
+function qzBuildThreads(orders, existing) {
+  const out = existing.slice();
+  let n = 500;
+  orders.forEach(function (o) {
+    if (QZ_CURRICULUM_ORDERS.indexOf(o.id) > -1) return;
+    /* Roughly two thirds of live files have correspondence on them. */
+    if ((qzHashString(o.id + '|th') % 3) === 0) return;
+    const count = 1 + (qzHashString(o.id + '|thn') % 3);
+    for (let i = 0; i < count; i++) {
+      const topic = QZ_THREAD_TOPICS[(qzHashString(o.id + '|t' + i)) % QZ_THREAD_TOPICS.length];
+      const counterparty = (o.parties || []).find(function (p) { return p.role === topic[1]; });
+      const who = counterparty ? counterparty.name : topic[1];
+      const addr = String(o.propertyAddress || '').split(',')[0];
+      const fill = function (s) {
+        return s.replace('{addr}', addr).replace('{close}', fmtDate(o.closingDate));
+      };
+      out.push({
+        id: 'th-' + (++n),
+        orderId: o.id,
+        subject: topic[0],
+        thread: [
+          { sender: 'You (VA)', recipient: who,
+            date: qzAddDaysISO(o.closingDate, -21 + i * 3), body: fill(topic[2]) },
+          { sender: who, recipient: 'You (VA)',
+            date: qzAddDaysISO(o.closingDate, -19 + i * 3), body: fill(topic[3]) }
+        ]
+      });
+    }
+  });
+  return out;
+}
+
+function qzBuildCatalog(seed) {
+  seed.documents = qzBuildDocuments(seed.orders, seed.documents || []);
+  seed.tasks     = qzBuildTasks(seed.orders, seed.tasks || []);
+  seed.vendors   = qzBuildVendors(seed.orders, seed.vendors || []);
+  seed.threads   = qzBuildThreads(seed.orders, seed.threads || []);
+  return seed;
+}
+
+function qzBuildSeed() {
+  const deep = (x) => (x ? JSON.parse(JSON.stringify(x)) : []);
+  const seedOrders = deep(typeof QZ_ORDERS !== 'undefined' ? QZ_ORDERS : [])
+    .concat(deep(typeof QZC_ORDERS !== 'undefined' ? QZC_ORDERS : []))
+    .concat(typeof QZ_EXAM_ORDER !== 'undefined' ? [deep(QZ_EXAM_ORDER)] : []);
+
+  const seed = {
+    orders: seedOrders,
+    parties: [],
+    documents: deep(typeof QZ_DOCUMENTS !== 'undefined' ? QZ_DOCUMENTS : [])
+      .concat(deep(typeof QZC_DOCUMENTS !== 'undefined' ? QZC_DOCUMENTS : []))
+      .concat(deep(typeof QZ_EXAM_DOCUMENTS !== 'undefined' ? QZ_EXAM_DOCUMENTS : [])),
+    tasks: deep(typeof QZ_TASKS !== 'undefined' ? QZ_TASKS : [])
+      .concat(deep(typeof QZC_TASKS !== 'undefined' ? QZC_TASKS : [])),
+    taskGroups: [
+      { id: 'tg-open', name: 'Order Opening', order: 1 },
+      { id: 'tg-title', name: 'Title', order: 2 },
+      { id: 'tg-pre', name: 'Pre-Closing', order: 3 },
+      { id: 'tg-payoff', name: 'Payoff Tasks', order: 4 },
+      { id: 'tg-post', name: 'Post-Closing', order: 5 }
+    ],
+    threads: deep(typeof QZ_MESSAGES !== 'undefined' ? QZ_MESSAGES : []),
+    messages: [],
+    notes: [],
+    vendors: deep(typeof QZ_VENDORS !== 'undefined' ? QZ_VENDORS : []),
+    contacts: deep(typeof QZS_CONTACTS !== 'undefined' ? QZS_CONTACTS : []),
+    events: deep(typeof QZS_EVENTS !== 'undefined' ? QZS_EVENTS : []),
+    receipts: deep(typeof QZS_RECEIPTS !== 'undefined' ? QZS_RECEIPTS : []),
+    disbursements: deep(typeof QZS_DISBURSEMENTS !== 'undefined' ? QZS_DISBURSEMENTS : []),
+    invoices: deep(typeof QZS_INVOICES !== 'undefined' ? QZS_INVOICES : []),
+    ledgerLines: [],
+    exceptions: deep(typeof QZS_EXCEPTIONS !== 'undefined' ? QZS_EXCEPTIONS : []),
+    cpls: deep(typeof QZS_CPLS !== 'undefined' ? QZS_CPLS : []),
+    users: deep(typeof QZS_USERS !== 'undefined' ? QZS_USERS : []),
+    offices: deep(typeof QZS_OFFICES !== 'undefined' ? QZS_OFFICES : []),
+    fees: deep(typeof QZS_FEES !== 'undefined' ? QZS_FEES : []),
+    templates: deep(typeof QZS_TEMPLATES !== 'undefined' ? QZS_TEMPLATES : { order: [], workflow: [], document: [] }),
+    integrations: deep(typeof QZS_INTEGRATIONS !== 'undefined' ? QZS_INTEGRATIONS : []),
+    accounts: deep(typeof QZS_ACCOUNTS !== 'undefined' ? QZS_ACCOUNTS : []),
+    auditLog: deep(typeof QZS_AUDIT !== 'undefined' ? QZS_AUDIT : []),
+    pospay: deep(typeof QZS_POSPAY !== 'undefined' ? QZS_POSPAY : []),
+    reconciliations: deep(typeof QZS_RECONCILIATIONS !== 'undefined' ? QZS_RECONCILIATIONS : []),
+    wireLog: deep(typeof QZS_WIRE_LOG !== 'undefined' ? QZS_WIRE_LOG : []),
+    alta: deep(typeof QZS_ALTA !== 'undefined' ? QZS_ALTA : []),
+    permissions: deep(typeof QZS_PERMISSIONS !== 'undefined' ? QZS_PERMISSIONS : []),
+    security: deep(typeof QZS_SECURITY !== 'undefined' ? QZS_SECURITY : []),
+    notifications: deep(typeof QZS_NOTIFICATIONS !== 'undefined' ? QZS_NOTIFICATIONS : [])
+  };
+  qzEnrichOrders(seed.orders);
+  /* Charges first: the money generator reads the statement to know what a
+     file actually has to pay out. qzDB is pointed at the lines here because
+     the generators call qzChargeLines, which reads through qzList. */
+  seed.chargeLines = qzBuildChargeLines(seed.orders);
+  qzDB.chargeLines = seed.chargeLines;
+  qzBuildMoney(seed);
+  /* Catalogue last: it reads the widened order, and nothing reads it back. */
+  seed.titleExceptions = qzBuildTitleExceptions(seed.orders);
+  qzBuildCatalog(seed);
+  return seed;
+}
+
+function qzHydrate() {
+  if (!QZ_SEED) {
+    QZ_SEED = qzBuildSeed();
+  }
+  qzResetIdCounters();
+  for (const k in QZ_SEED) {
+    if (Array.isArray(QZ_SEED[k])) {
+      qzDB[k] = JSON.parse(JSON.stringify(QZ_SEED[k]));
+    } else if (typeof QZ_SEED[k] === 'object' && QZ_SEED[k] !== null) {
+      qzDB[k] = JSON.parse(JSON.stringify(QZ_SEED[k]));
+    } else {
+      qzDB[k] = QZ_SEED[k];
+    }
+  }
+}
+
+/* ---------- The 5 Access Functions (qzList, qzFind, qzInsert, qzUpdate, qzRemove) ---------- */
+function qzList(coll, filterFn) {
+  const item = qzDB[coll];
+  if (!item) return [];
+  let list = [];
+  if (Array.isArray(item)) {
+    list = item;
+  } else if (typeof item === 'object' && item !== null) {
+    list = Object.keys(item).flatMap(k => Array.isArray(item[k]) ? item[k].map(x => Object.assign({ category: k }, x)) : []);
+  }
+  if (typeof filterFn === 'function') {
+    return list.filter(filterFn);
+  }
+  return list.slice();
+}
+
+function qzFind(coll, idOrPredicate) {
+  const list = qzList(coll);
+  if (typeof idOrPredicate === 'function') {
+    return list.find(idOrPredicate) || null;
+  }
+  return list.find(item => {
+    if (!item) return false;
+    if (item.id !== undefined && String(item.id) === String(idOrPredicate)) return true;
+    if (item.num !== undefined && String(item.num) === String(idOrPredicate)) return true;
+    if (item.name !== undefined && String(item.name) === String(idOrPredicate)) return true;
+    if (item.email !== undefined && String(item.email) === String(idOrPredicate)) return true;
+    return false;
+  }) || null;
+}
+
+function qzNextId(coll) {
+  _qzIdCounters[coll] = (_qzIdCounters[coll] || 1000) + 1;
+  const num = _qzIdCounters[coll];
+  if (coll === 'orders') return `ORD-2026-${num}`;
+  if (coll === 'tasks') return `t-${num}`;
+  if (coll === 'documents') return `doc-${num}`;
+  if (coll === 'parties') return `p-${num}`;
+  if (coll === 'vendors') return `v-${num}`;
+  if (coll === 'notes') return `n-${num}`;
+  if (coll === 'threads') return `th-${num}`;
+  if (coll === 'messages') return `msg-${num}`;
+  if (coll === 'contacts') return `c-${num}`;
+  if (coll === 'events') return `ev-${num}`;
+  if (coll === 'receipts') return `R-${num}`;
+  if (coll === 'disbursements') return `CK-${num}`;
+  if (coll === 'invoices') return `INV-${num}`;
+  if (coll === 'exceptions') return `EX-${num}`;
+  if (coll === 'cpls') return `CPL-${num}`;
+  if (coll === 'offices') return `off-${num}`;
+  if (coll === 'fees') return `fee-${num}`;
+  if (coll === 'users') return `u-${num}`;
+  if (coll === 'templates') return `tpl-${num}`;
+  return `${coll}-${num}`;
+}
+
+function qzLogAudit(action, object, orderId) {
+  const auditCount = (qzDB.auditLog ? qzDB.auditLog.length : 0);
+  const min = String((15 + auditCount) % 60).padStart(2, '0');
+  const sec = String((auditCount * 7) % 60).padStart(2, '0');
+  const entry = {
+    ts: `${QZ_TODAY} 09:${min}:${sec}`,
+    user: 'Training User',
+    action: action,
+    object: object || '—',
+    order: orderId || (qzState && qzState.orderId) || '—',
+    ip: '198.51.100.24'
+  };
+  if (!qzDB.auditLog) qzDB.auditLog = [];
+  qzDB.auditLog.unshift(entry);
+}
+
+function qzInsert(coll, record) {
+  if (!qzDB[coll]) qzDB[coll] = [];
+  const item = Object.assign({}, record);
+  if (item.id === undefined || item.id === null) {
+    item.id = qzNextId(coll);
+  }
+  qzDB[coll].push(item);
+  qzLogAudit('CREATE', `${coll.slice(0, -1)} ${item.id || item.name || item.num || ''}`);
+  return item;
+}
+
+function qzUpdate(coll, id, patch) {
+  const item = qzFind(coll, id);
+  if (!item) return null;
+  Object.assign(item, patch);
+  qzLogAudit('UPDATE', `${coll.slice(0, -1)} ${item.id || item.name || item.num || id}`);
+  return item;
+}
+
+function qzRemove(coll, id) {
+  if (!qzDB[coll]) return false;
+  const idx = qzDB[coll].findIndex(item => {
+    if (!item) return false;
+    if (item.id !== undefined && String(item.id) === String(id)) return true;
+    if (item.num !== undefined && String(item.num) === String(id)) return true;
+    if (item.name !== undefined && String(item.name) === String(id)) return true;
+    if (item.email !== undefined && String(item.email) === String(id)) return true;
+    return false;
+  });
+  if (idx === -1) return false;
+  const removed = qzDB[coll].splice(idx, 1)[0];
+  qzLogAudit('DELETE', `${coll.slice(0, -1)} ${removed.id || removed.name || removed.num || id}`);
+  return true;
+}
 
 let qzState = {
-  view: 'dashboard', orderId: null, orderTab: 'overview', deTab: 'property', threadId: null,
+  view: 'orders', orderId: null, orderTab: 'overview', deTab: 'property', threadId: null,
   composeId: null,   // a compose exercise the trainee opened by hand from the thread list
   scenarioId: null, orderFilter: '', lessonId: null, examIndex: 0,
   railOpen: false,     // narrow-screen only: is the order rail showing as an overlay drawer?
@@ -78,7 +1808,6 @@ function qzLoad() {
     const raw = localStorage.getItem(QZ_LS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      // Silent migration: delete old sandbox keys if present in legacy stores
       delete parsed.overrides;
       delete parsed.docStatus;
       delete parsed.taskStatus;
@@ -143,7 +1872,7 @@ function qzResetSandbox() {
     confirmLabel: 'Reset Sandbox',
     danger: true,
     onConfirm: () => {
-      qzDemo = qzDefaultDemo();
+      qzHydrate();
       simToast('Sandbox reset to factory defaults. Academic progress preserved.', { tone: 'good' });
       qzRenderRoot();
     }
@@ -157,24 +1886,15 @@ function qzSetMode(mode) {
 }
 
 function qzSyncModeSwitch() {
-  const isDemoUrl = window.location.search.indexOf('demo=1') !== -1;
   const wrap = document.getElementById('qzModeSwitch');
   if (wrap) {
-    if (isDemoUrl) {
-      wrap.style.display = 'none';
-      return;
-    }
-    wrap.style.display = 'inline-flex';
-    wrap.innerHTML = `
-      <button type="button" class="qz-mode-btn ${qzState.qzMode === 'sandbox' ? 'active' : ''}" onclick="qzSetMode('sandbox')" title="Free exploration mode. Edits do not affect lesson scoring.">Sandbox</button>
-      <button type="button" class="qz-mode-btn ${qzState.qzMode === 'lesson' ? 'active lesson' : ''}" onclick="qzSetMode('lesson')" title="Lesson mode. Actions contribute to coursework and checklist progress.">Lesson</button>
-    `;
+    wrap.style.display = 'none'; // Mode switch removed in favor of automatic lesson state
   }
 }
 
 function qzMark(id) {
-  // Navigation and exploration in Sandbox mode never grades or marks checklist items
-  if (qzState.qzMode !== 'lesson') return;
+  // Without an active lesson open, NEVER mark any step or grade anything
+  if (!qzState.lessonId) return;
 
   const scopedKey = qzScopedChecklistKey(id, qzState.orderId);
   const alreadyDone = !!qzStore.checklist[scopedKey];
@@ -347,64 +2067,48 @@ function qzDueChipHTML(iso) {
 
 
 
-/* ---------- data lookups (respect in-session overrides) ---------- */
+/* ---------- data lookups (reads directly from qzDB) ---------- */
 function qzDocsForOrder(orderId) {
-  const custom = (qzDemo.documents && qzDemo.documents[orderId]) || [];
-  const base = QZ_DOCUMENTS.filter(d => d.orderId === orderId);
-  const cat = typeof QZC_DOCUMENTS !== 'undefined' ? QZC_DOCUMENTS.filter(d => d.orderId === orderId) : [];
-  const exam = typeof QZ_EXAM_DOCUMENTS !== 'undefined' ? QZ_EXAM_DOCUMENTS.filter(d => d.orderId === orderId) : [];
-  return base.concat(cat).concat(custom).concat(exam);
+  return qzList('documents', d => d.orderId === orderId);
 }
-function qzDocStatus(d) { return qzDemo.docStatus[d.id] || d.status; }
+function qzDocStatus(d) {
+  if (!d) return '';
+  return typeof d === 'object' ? (d.status || '') : (qzFind('documents', d)?.status || '');
+}
 function qzTasksForOrder(orderId) {
-  const custom = (qzDemo.tasks && qzDemo.tasks[orderId]) || [];
-  const base = QZ_TASKS.filter(t => t.relatedOrderId === orderId);
-  const cat = typeof QZC_TASKS !== 'undefined' ? QZC_TASKS.filter(t => t.relatedOrderId === orderId) : [];
-  return base.concat(cat).concat(custom);
+  return qzList('tasks', t => t.relatedOrderId === orderId);
 }
-function qzTaskStatus(t) { return qzDemo.taskStatus[t.id] || t.status; }
+function qzTaskStatus(t) {
+  if (!t) return '';
+  return typeof t === 'object' ? (t.status || '') : (qzFind('tasks', t)?.status || '');
+}
 
-/* ---------- per-order override layer (persists edits made in Data Entry / Review) ---------- */
+/* ---------- per-order layer (direct reads and writes to qzDB) ---------- */
 function qzBaseOrder(orderId) {
-  const curric = QZ_ORDERS.find(o => o.id === orderId);
-  if (curric) return curric;
-  const demoOrder = (qzDemo.orders && qzDemo.orders.find(o => o.id === orderId));
-  if (demoOrder) return demoOrder;
-  const catalogOrder = (typeof QZC_ORDERS !== 'undefined' && QZC_ORDERS.find(o => o.id === orderId));
-  if (catalogOrder) return catalogOrder;
-  if (typeof QZ_EXAM_ORDER !== 'undefined' && QZ_EXAM_ORDER.id === orderId) return QZ_EXAM_ORDER;
-  return null;
+  return qzFind('orders', orderId);
 }
-function qzOverrideOrder(orderId) { return qzDemo.overrides[orderId] || {}; }
 function qzAllOrders() {
-  const all = QZ_ORDERS.concat(qzDemo.orders || []).concat(typeof QZC_ORDERS !== 'undefined' ? QZC_ORDERS : []);
-  return all.map(o => qzGetOrder(o.id));
+  return qzList('orders');
 }
 function qzGetOrder(orderId) {
-  const base = qzBaseOrder(orderId);
-  if (!base) return null;
-  const ov = qzOverrideOrder(orderId);
-  const customParties = (qzDemo.parties && qzDemo.parties[orderId]) || [];
-  const initialParties = (base.parties || []).concat(customParties);
-  if (!ov.scalars && !ov.parties && !customParties.length) return base;
-  const merged = Object.assign({}, base, ov.scalars || {});
-  merged.parties = initialParties.map(p => {
-    const po = ov.parties && ov.parties[p.role];
-    return po ? Object.assign({}, p, po) : p;
-  });
-  return merged;
+  return qzFind('orders', orderId);
 }
 function qzSetPartyOverride(orderId, role, patch) {
-  const ov = qzDemo.overrides[orderId] = qzDemo.overrides[orderId] || {};
-  ov.parties = ov.parties || {};
-  ov.parties[role] = Object.assign({}, ov.parties[role], patch);
+  const o = qzFind('orders', orderId);
+  if (o && o.parties) {
+    const p = o.parties.find(x => x.role === role);
+    if (p) {
+      Object.assign(p, patch);
+      qzLogAudit('UPDATE', `Party ${role} in ${orderId}`);
+    }
+  }
 }
 /* Explicit list, never guessed by regex: these order fields are consumed as numbers
    (fmtMoney, Number(), arithmetic in Accounting). A trainee typing a perfectly reasonable
    "$425.00" into a correction field used to be stored verbatim, and Number("$425.00") is
    NaN, which rendered "$NaN" rows and an NaN total in Accounting. Every write path that can
    set one of these goes through qzCoerceFieldValue. */
-const QZ_NUMERIC_FIELDS = ['purchasePrice', 'loanAmount', 'inspectionCharge'];
+const QZ_NUMERIC_FIELDS = ['purchasePrice', 'loanAmount', 'inspectionCharge', 'earnestAmount'];
 /* Currency/'$'/comma-tolerant parse. Returns null when there's no number in there at all,
    so callers can reject the input instead of silently storing NaN. */
 function qzParseNumeric(v) {
@@ -428,9 +2132,11 @@ function qzNormalizeValue(v) {
   return s;
 }
 function qzSetScalarOverride(orderId, field, value) {
-  const ov = qzDemo.overrides[orderId] = qzDemo.overrides[orderId] || {};
-  ov.scalars = ov.scalars || {};
-  ov.scalars[field] = qzCoerceFieldValue(field, value);
+  const o = qzFind('orders', orderId);
+  if (o) {
+    o[field] = qzCoerceFieldValue(field, value);
+    qzLogAudit('UPDATE', `Order ${orderId} field ${field}`);
+  }
 }
 
 /* ---------- lesson progress: ledger + per-lesson restart ----------
@@ -445,15 +2151,24 @@ function qzNoteLessonComplete(lessonId) {
 }
 
 function qzClearPartyOverride(orderId, role, field) {
-  const ov = qzDemo.overrides[orderId];
-  if (!ov || !ov.parties || !ov.parties[role]) return;
-  delete ov.parties[role][field];
-  if (!Object.keys(ov.parties[role]).length) delete ov.parties[role];
+  if (!QZ_SEED) return;
+  const seedOrder = QZ_SEED.orders.find(x => x.id === orderId);
+  const o = qzFind('orders', orderId);
+  if (o && o.parties && seedOrder && seedOrder.parties) {
+    const seedParty = seedOrder.parties.find(x => x.role === role);
+    const p = o.parties.find(x => x.role === role);
+    if (p && seedParty && field in seedParty) {
+      p[field] = seedParty[field];
+    }
+  }
 }
 function qzClearScalarOverride(orderId, field) {
-  const ov = qzDemo.overrides[orderId];
-  if (!ov || !ov.scalars) return;
-  delete ov.scalars[field];
+  if (!QZ_SEED) return;
+  const seedOrder = QZ_SEED.orders.find(x => x.id === orderId);
+  const o = qzFind('orders', orderId);
+  if (o && seedOrder && field in seedOrder) {
+    o[field] = seedOrder[field];
+  }
 }
 
 /* Wipes an item's working state but keeps firstAttempt. Replaying a lesson is practice; it
@@ -468,52 +2183,51 @@ function qzResetItemState(bag, id) {
 /* Undoes the world-state changes a lesson makes, so a replay starts where the first run did. */
 const QZ_LESSON_UNDO = {
   'l02-data-entry': () => qzClearPartyOverride('ORD-2026-1483', 'Buyer', 'phone'),
-  'l04-documents': () => { if (qzDemo.docStatus) delete qzDemo.docStatus[3]; },
-  'l05-communication': () => { if (qzDemo.replies) delete qzDemo.replies[3]; },
-  'l06-tasks': () => { if (qzDemo.taskStatus) delete qzDemo.taskStatus[7]; }
+  'l04-documents': () => { const d = qzFind('documents', 3); if (d) d.status = 'Pending'; },
+  'l05-communication': () => {},
+  'l06-tasks': () => { const t = qzFind('tasks', 7); if (t) t.status = 'In Progress'; }
 };
 
 /* Auto-repair helper to detect and restore orders referenced in lessons */
 function qzOrderHasDemoEdits(orderId) {
-  if (!qzDemo) return false;
-  if (qzDemo.overrides && qzDemo.overrides[orderId] && Object.keys(qzDemo.overrides[orderId]).length > 0) return true;
-  if (qzDemo.notes && qzDemo.notes[orderId]) return true;
-  if (qzDemo.parties && qzDemo.parties[orderId] && qzDemo.parties[orderId].length > 0) return true;
-  if (qzDemo.documents && qzDemo.documents[orderId] && qzDemo.documents[orderId].length > 0) return true;
-  if (qzDemo.tasks && qzDemo.tasks[orderId] && qzDemo.tasks[orderId].length > 0) return true;
-  const docs = qzDocsForOrder(orderId);
-  for (const d of docs) {
-    if (qzDemo.docStatus && qzDemo.docStatus[d.id]) return true;
-  }
-  const tasks = qzTasksForOrder(orderId);
-  for (const t of tasks) {
-    if (qzDemo.taskStatus && qzDemo.taskStatus[t.id]) return true;
-  }
+  if (!QZ_SEED) return false;
+  const seedOrder = QZ_SEED.orders.find(o => o.id === orderId);
+  const currOrder = qzFind('orders', orderId);
+  if (!seedOrder || !currOrder) return true;
+  if (JSON.stringify(seedOrder) !== JSON.stringify(currOrder)) return true;
+  const seedDocs = QZ_SEED.documents.filter(d => d.orderId === orderId);
+  const currDocs = qzList('documents', d => d.orderId === orderId);
+  if (JSON.stringify(seedDocs) !== JSON.stringify(currDocs)) return true;
+  const seedTasks = QZ_SEED.tasks.filter(t => t.relatedOrderId === orderId);
+  const currTasks = qzList('tasks', t => t.relatedOrderId === orderId);
+  if (JSON.stringify(seedTasks) !== JSON.stringify(currTasks)) return true;
   return false;
 }
 
 function qzRestoreOrder(orderId) {
-  if (!qzDemo) return;
-  if (qzDemo.overrides) delete qzDemo.overrides[orderId];
-  if (qzDemo.notes) delete qzDemo.notes[orderId];
-  if (qzDemo.parties) delete qzDemo.parties[orderId];
-  if (qzDemo.documents) delete qzDemo.documents[orderId];
-  if (qzDemo.tasks) delete qzDemo.tasks[orderId];
-
-  const docs = qzDocsForOrder(orderId);
-  docs.forEach(d => {
-    if (qzDemo.docStatus) delete qzDemo.docStatus[d.id];
-  });
-  const tasks = qzTasksForOrder(orderId);
-  tasks.forEach(t => {
-    if (qzDemo.taskStatus) delete qzDemo.taskStatus[t.id];
-  });
-  if (typeof QZ_MESSAGES !== 'undefined') {
-    const orderThreads = QZ_MESSAGES.filter(m => m.orderId === orderId);
-    orderThreads.forEach(t => {
-      if (qzDemo.replies) delete qzDemo.replies[t.id];
-    });
+  if (!QZ_SEED) return;
+  const seedOrder = QZ_SEED.orders.find(o => o.id === orderId);
+  if (!seedOrder) return;
+  const currIdx = qzDB.orders.findIndex(o => o.id === orderId);
+  if (currIdx !== -1) {
+    qzDB.orders[currIdx] = JSON.parse(JSON.stringify(seedOrder));
+  } else {
+    qzDB.orders.push(JSON.parse(JSON.stringify(seedOrder)));
   }
+
+  qzDB.documents = qzDB.documents.filter(d => d.orderId !== orderId);
+  const seedDocs = QZ_SEED.documents.filter(d => d.orderId === orderId);
+  seedDocs.forEach(d => qzDB.documents.push(JSON.parse(JSON.stringify(d))));
+
+  qzDB.tasks = qzDB.tasks.filter(t => t.relatedOrderId !== orderId);
+  const seedTasks = QZ_SEED.tasks.filter(t => t.relatedOrderId === orderId);
+  seedTasks.forEach(t => qzDB.tasks.push(JSON.parse(JSON.stringify(t))));
+
+  qzDB.threads = qzDB.threads.filter(m => m.orderId !== orderId);
+  const seedThreads = QZ_SEED.threads.filter(m => m.orderId === orderId);
+  seedThreads.forEach(m => qzDB.threads.push(JSON.parse(JSON.stringify(m))));
+
+  qzDB.notes = qzDB.notes.filter(n => n.orderId !== orderId);
 }
 
 function qzOpenLesson(lessonId) {
@@ -599,7 +2313,7 @@ function qzLoginHTML() {
   const su = window.SCApp && SCApp.currentUser && SCApp.currentUser();
   const email = su ? su.email : 'va.trainee@skillcloud.demo';
   return `<div class="qz-login"><div class="qz-login-card">
-    <div class="mark"><img src="Images-resourses/qualia-mark.svg" alt=""><span class="wordmark">Qualia</span></div>
+    <div class="mark"><img src="Images-resourses/brand/qualia-mark.svg" alt=""><span class="wordmark">Qualia</span></div>
     <h1>Log in to Qualia</h1>
     <p>Training environment, no real credentials needed.</p>
     <div class="fld"><label>Email</label><input type="text" value="${esc(email)}" readonly></div>
@@ -609,6 +2323,9 @@ function qzLoginHTML() {
   </div></div>`;
 }
 function qzEnter() {
+  if (!qzDB.orders || qzDB.orders.length === 0) {
+    qzHydrate();
+  }
   const su = window.SCApp && SCApp.currentUser && SCApp.currentUser();
   const label = document.getElementById('qzUserLabel');
   const av = document.getElementById('qzUserAvatar');
@@ -618,29 +2335,22 @@ function qzEnter() {
   }
   document.getElementById('qzTopbar').style.display = 'flex';
   document.getElementById('qzLoginWrap').style.display = 'none';
-  // Clears the inline display:none the markup ships with, rather than replacing it with an
-  // inline display:block. An inline value beats every selector, so hardcoding 'block' here
-  // silently killed `.qz-body.core #qzRoot { display: flex }`: #qzRoot stopped being a flex
-  // container, .qz-core stopped being a flex item, its `flex:1; min-height:0` never applied,
-  // and the Core rail grew to its content height instead of the viewport's — overflowing
-  // .qz-body (overflow:hidden) by ~725px and clipping the bottom of the sidebar for good.
-  // Empty string hands the decision back to the stylesheet, which sets block or flex per view.
   document.getElementById('qzRoot').style.display = '';
   qzSyncModeSwitch();
   qzRenderCoreSections();
-  qzGoto('dashboard');
+  qzGoto('orders');
   qzUpdateBellBadge();
   if (!qzStore.tourSeen && window.qzTourStart) setTimeout(qzTourStart, 350);
 }
 
 /* ---------- notification bell ---------- */
-function qzOpenTasks() { return QZ_TASKS.filter(t => qzTaskStatus(t) !== 'Complete'); }
+function qzOpenTasks() { return qzList('tasks', t => t.status !== 'Complete'); }
 function qzUpdateBellBadge() {
   const badge = document.querySelector('#qzBell .n');
   if (badge) badge.textContent = qzOpenTasks().length;
   const mail = document.getElementById('qzMailBadge');
   if (mail) {
-    const threads = typeof QZ_MESSAGES !== 'undefined' ? QZ_MESSAGES.length : 0;
+    const threads = qzList('threads').length;
     mail.textContent = threads;
     mail.style.display = threads ? 'flex' : 'none';
   }
@@ -684,28 +2394,27 @@ function qzGotoOrderTasks(orderId) {
   qzCloseBellDropdown();
 }
 
-/* ---------- Qualia Core: top-level section nav ----------
-   Core's topbar carries the whole product, not just the two views this trainer implements.
-   The sections that aren't part of the training still render — a VA has to recognise the
-   real chrome — but they answer with an explicit "not part of this module" instead of
-   being dead links that make the trainee wonder whether they broke something.
-   Training-only entries (Dashboard) are marked so they read as scaffolding, not product. */
+/* ---------- Qualia Core: top-level section nav ---------- */
 const QZ_CORE_SECTIONS = [
-  { id: 'dashboard', label: 'Training', view: 'dashboard', training: true },
   { id: 'orders', label: 'Orders', view: 'orders' },
-  /* These six are the Core facade (Quialia/qualia-shell.js): real screens to walk
-     through, no persistence. `view` matches `id` on purpose — qzSyncTopTabs compares
-     el.dataset.view against qzState.view, so the active underline works with no change
-     to that function. */
   { id: 'contacts', label: 'Contacts', view: 'contacts' },
   { id: 'calendar', label: 'Calendar', view: 'calendar' },
   { id: 'accounting', label: 'Accounting', view: 'accounting' },
   { id: 'reports', label: 'Reports', view: 'reports' },
   { id: 'compliance', label: 'Compliance', view: 'compliance' },
-  { id: 'admin', label: 'Admin', view: 'admin' }
+  { id: 'admin', label: 'Admin', view: 'admin' },
+  { id: 'dashboard', label: 'Training', view: 'dashboard', training: true }
 ];
 function qzCoreStub(label) {
-  simToast(`${label} is part of Qualia Core but not part of this training module.`);
+  if (label === 'Documents') {
+    qzGoto('documents');
+    return;
+  }
+  if (label === 'Messages') {
+    qzGoto('communication');
+    return;
+  }
+  simToast(`${label} is part of Qualia Core.`);
 }
 function qzRenderCoreSections() {
   const host = document.getElementById('qzCoreSections');
@@ -1277,16 +2986,21 @@ function qzDashboardHTML() {
 
 /* ---------- orders list ---------- */
 function qzOrderParty(o, role) {
+  if (!o || !o.parties || !Array.isArray(o.parties)) return 'Not set';
   const p = o.parties.find(x => x.role === role);
   return p ? p.name : 'Not set';
 }
 function qzOrderMatchesFilter(o, filter) {
+  if (!o) return false;
   const f = (filter || '').toLowerCase().trim();
   if (qzState.ordersFilterStatus && qzState.ordersFilterStatus !== 'all' && o.status !== qzState.ordersFilterStatus) return false;
   if (qzState.ordersFilterStage && qzState.ordersFilterStage !== 'all' && QZ_STAGES[o.stageIndex] !== qzState.ordersFilterStage) return false;
   if (qzState.ordersFilterType && qzState.ordersFilterType !== 'all' && o.type !== qzState.ordersFilterType) return false;
   if (!f) return true;
-  return o.propertyAddress.toLowerCase().includes(f) || o.id.toLowerCase().includes(f) || o.parties.some(p => p.name.toLowerCase().includes(f));
+  const addr = (o.propertyAddress || '').toLowerCase();
+  const id = (o.id || '').toLowerCase();
+  const partyMatch = o.parties && Array.isArray(o.parties) && o.parties.some(p => p && (p.name || '').toLowerCase().includes(f));
+  return addr.includes(f) || id.includes(f) || partyMatch;
 }
 function qzSetOrdersFilter(key, val) {
   qzState[key] = val;
@@ -1325,7 +3039,7 @@ function qzOrdersRowsHTML() {
   const curPage = Math.min(Math.max(1, Math.ceil(filtered.length / perPage)), Math.max(1, qzState.ordersPage || 1));
   const start = (curPage - 1) * perPage;
   const rows = filtered.slice(start, start + perPage);
-  if (!rows.length) return '<tr><td colspan="9" style="text-align:center;color:var(--qz-muted);padding:26px">No orders match that search.</td></tr>';
+  if (!rows.length) return '<tr><td colspan="10" style="text-align:center;color:var(--qz-muted);padding:26px">No orders match that search.</td></tr>';
   return rows.map(o => `<tr class="link" data-order-id="${escAttr(o.id)}" onclick="qzOpenOrder('${o.id}')">
       <td>${esc(o.status)}</td>
       <td>${esc(QZ_STAGES[o.stageIndex])}</td>
@@ -1336,6 +3050,12 @@ function qzOrdersRowsHTML() {
       <td>${esc(o.type)}</td>
       <td>${esc(qzOrderParty(o, 'Settlement Agent'))}</td>
       <td>${fmtDate(o.closingDate)}</td>
+      <td onclick="event.stopPropagation()">
+        <div style="display:flex;gap:4px">
+          <button type="button" class="qz-btn xs" onclick="qzEditOrderModal('${o.id}')" title="Edit Order">Edit</button>
+          <button type="button" class="qz-btn xs danger" onclick="qzDeleteOrderModal('${o.id}')" title="Delete Order">&times;</button>
+        </div>
+      </td>
     </tr>`).join('');
 }
 function qzOrdersStatsHTML() {
@@ -1355,12 +3075,12 @@ function qzOrdersHTML() {
       <h2>Skill Cloud Training</h2>
       <div class="qz-orders-hero-btns">
         <button class="qz-btn" type="button" onclick="qzOpenQuoteModal()">Get a Quote</button>
-        <button class="qz-btn primary" type="button" onclick="qzOpenNewOrderWizard(1)">Place Order</button>
+        <button class="qz-btn primary" type="button" onclick="qzOpenNewOrderWizard(1)">+ New Order</button>
       </div>
       <div class="qz-orders-stats">${qzOrdersStatsHTML()}</div>
     </div>
     <div class="qz-listhead">
-      <div><h2>Orders</h2><div class="sub">Search and open a file the way you would in a live queue</div></div>
+      <div><h2>Orders</h2><div class="sub">Search, create, edit, or open a file the way you would in a live queue</div></div>
     </div>
     <div class="qz-tbl-toolbar">
       <div class="qz-tbl-filters">
@@ -1384,7 +3104,7 @@ function qzOrdersHTML() {
       <div id="qzOrdersPagination" class="qz-pagination">${qzOrdersPaginationHTML()}</div>
     </div>
     <div class="qz-tbl-scroll">
-      <table class="qz-tbl"><thead><tr><th>Status</th><th>Stage</th><th>Order</th><th>Borrower</th><th>Seller</th><th>Property</th><th>Type</th><th>Agent</th><th>Closing</th></tr></thead>
+      <table class="qz-tbl"><thead><tr><th>Status</th><th>Stage</th><th>Order</th><th>Borrower</th><th>Seller</th><th>Property</th><th>Type</th><th>Agent</th><th>Closing</th><th>Actions</th></tr></thead>
       <tbody id="qzOrdersBody">${qzOrdersRowsHTML()}</tbody></table>
     </div>
   `;
@@ -1464,7 +3184,7 @@ const QZ_CORE_NAV = [
       { label: 'Basic Info', tab: 'overview' },
       { label: 'Properties', tab: 'dataentry', deTab: 'property' },
       { label: 'Contacts', tab: 'dataentry', deTab: 'parties' },
-      { label: 'Loan', tab: 'dataentry', deTab: 'transaction' },
+      { label: 'Loan', tab: 'loan' },
       { label: 'Earnest & Commissions', tab: 'earnest' },
       { label: 'Taxes & Prorations', tab: 'prorations' },
       { label: 'Payoffs', tab: 'payoffs' }
@@ -1473,6 +3193,8 @@ const QZ_CORE_NAV = [
       { label: 'CPL', tab: 'cpl' },
       { label: 'Policy Info & Rates', tab: 'policy-info' },
       { label: 'Commitment', tab: 'commitment' },
+      { label: 'Requirements', tab: 'requirements' },
+      { label: 'Exceptions', tab: 'exceptions' },
       { label: 'Final Policy', tab: 'final-policy' }
     ] }
   ] },
@@ -1491,8 +3213,20 @@ const QZ_CORE_NAV = [
     ] },
     { label: 'Closing File', items: [
       { label: 'Disclosures', tab: 'closing' },
+      { label: 'CD Preview', tab: 'preview-cd' },
+      { label: 'Settlement Statement', tab: 'preview-settlement' },
+      { label: 'Mailing', tab: 'mailing' },
+      { label: 'e-Recording', tab: 'recording' },
       { label: 'Proceeds', tab: 'proceeds' },
       { label: 'Workflow', tab: 'workflow' }
+    ] }
+  ] },
+  { section: 'Integrations', groups: [
+    { label: '', items: [
+      { label: 'Marketplace', tab: 'marketplace', icon: 'market' },
+      { label: 'e-Recording Gateway', tab: 'erecording', icon: 'doc' },
+      { label: 'Title Underwriter', tab: 'underwriter', icon: 'acct' },
+      { label: 'Qualia Sign (RON)', tab: 'esign', icon: 'connect' }
     ] }
   ] },
   { section: 'Tasks', groups: [
@@ -1563,6 +3297,10 @@ function qzOrderSidebarHTML(o) {
   }).join('');
 
   return `<div class="qz-order-side">
+    <button type="button" class="qz-dash-btn" onclick="qzNavGo('overview')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Order Dashboard
+    </button>
     <div class="qz-side-head">
       <span class="pin">${QZ_ICONS.pin}</span>
       <div class="addr">${esc(o.propertyAddress.split(',')[0])}</div>
@@ -1586,6 +3324,7 @@ const QZ_CORE_PRESENCE = [
 const QZ_PANEL_HELP = {
   overview: 'Basic Info shows the file at a glance: stage, key dates, parties and figures. Confirm where a file stands here before telling anyone anything about it.',
   dataentry: 'Properties, Contacts and Loan hold the data entered at intake. Every field here should be traceable to a document in the file.',
+  loan: 'Loan Information configures amortization, interest schedules, underwriter identifiers, and document generation.',
   documents: 'Documents tracks each file\'s paperwork through Pending, Received and Reviewed. A status is a statement of fact other people rely on.',
   review: 'Document Review is a training instrument, not a Qualia Core screen. It walks the comparison a VA does by eye: open the source, report what it says, decide what to do.',
   tasks: 'Order Tasks lists what is outstanding on this file. Prioritise by closing impact and by whether the next step belongs to someone else.',
@@ -1593,7 +3332,7 @@ const QZ_PANEL_HELP = {
   communication: 'Connect is where correspondence with agents, lenders and clients lives. Everything written here is part of the file record.',
   vendors: 'Marketplace tracks the vendors engaged on this order and their confirmation status.',
   closing: 'Disclosures collects what must be complete before the file can be called closing-ready.',
-  accounting: 'The charges grid is read-only for a VA. Review the figures, and route anything that looks wrong to someone with authority to change it.'
+  accounting: 'The charges grid is read-only for a VA in Lesson mode, or a full double-entry trust ledger in Sandbox.'
 };
 function qzTogglePanel(key) {
   qzState.panel[key] = !qzState.panel[key];
@@ -1602,7 +3341,8 @@ function qzTogglePanel(key) {
 function qzSaveNote(orderId) {
   const el = document.getElementById('qzNoteBox');
   if (!el) return;
-  qzDemo.notes[orderId] = el.value;
+  const val = el.value;
+  qzInsert('notes', { orderId, body: val, author: 'Training User', date: QZ_TODAY });
   simToast('Note saved to this file in current session.', { tone: 'good' });
 }
 function qzPanelSectionHTML(key, title, bodyHTML, extraHead) {
@@ -1631,8 +3371,9 @@ function qzOrderPanelHTML(o) {
     <div class="qz-kb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input type="text" placeholder="Search knowledge base&hellip;" onkeydown="if(event.key==='Enter') qzCoreStub('The knowledge base')"></div>
     <div class="qz-kb-btns"><button type="button" class="qz-btn sm" onclick="qzCoreStub('Help Center')">Help Center</button><button type="button" class="qz-btn sm" onclick="qzCoreStub('Contact Us')">Contact Us</button></div>`;
 
-  const note = (qzDemo.notes && qzDemo.notes[o.id]) || '';
-  const notesBody = `<textarea id="qzNoteBox" class="qz-note-box" placeholder="Record what you did on this file, who you contacted, and what you are waiting on&hellip;">${esc(note)}</textarea>
+  const orderNotes = qzList('notes', n => n.orderId === o.id);
+  const noteText = orderNotes.map(n => n.body).join('\n') || '';
+  const notesBody = `<textarea id="qzNoteBox" class="qz-note-box" placeholder="Record what you did on this file, who you contacted, and what you are waiting on&hellip;">${esc(noteText)}</textarea>
     <button type="button" class="qz-btn sm primary" onclick="qzSaveNote('${o.id}')">Save note</button>`;
 
   return `<div class="qz-order-panel">
@@ -1642,11 +3383,12 @@ function qzOrderPanelHTML(o) {
     ${qzPanelSectionHTML('notes', 'Notes', notesBody)}
   </div>`;
 }
+
 /* Human title for the page currently open, shown in the Core content header next to the
    house glyph the way Core titles each section of an order. */
 const QZ_TAB_TITLE = {
-  overview: 'Basic Info', dataentry: 'Properties & Contacts', documents: 'Documents',
-  review: 'Document Review', tasks: 'Order Tasks', workflow: 'Workflow',
+  overview: 'Basic Info', dataentry: 'Properties & Contacts', loan: 'Loan Information',
+  documents: 'Documents', review: 'Document Review', tasks: 'Order Tasks', workflow: 'Workflow',
   communication: 'Connect', vendors: 'Marketplace', closing: 'Disclosures',
   accounting: 'Services Borrower Did Not Shop For (Section B)',
   earnest: 'Earnest Money & Brokerage Commissions',
@@ -1655,7 +3397,19 @@ const QZ_TAB_TITLE = {
   cpl: 'Closing Protection Letter (CPL)',
   'policy-info': 'Title Policy Information & Promulgated Rates',
   commitment: 'Title Commitment (Schedules A & B)',
+  requirements: 'Title Requirements (Schedule B - Part I)',
+  exceptions: 'Title Exceptions (Schedule B - Part II)',
   'final-policy': 'Final Policy Production',
+  'preview-cd': 'Closing Disclosure Live Preview',
+  'preview-settlement': 'ALTA Settlement Statement',
+  mailing: 'Mailing & Courier Tracking',
+  recording: 'e-Recording Submission',
+  marketplace: 'Qualia Marketplace',
+  erecording: 'Simplifile / CSC Gateway',
+  underwriter: 'Old Republic Underwriter Portal',
+  esign: 'Qualia Sign / RON e-Signature',
+  'global-docs': 'Documents',
+  'global-messages': 'Connect Messages',
   'cd-a': 'Origination Charges (Section A)',
   'cd-c': 'Services Borrower Did Shop For (Section C)',
   'cd-e': 'Taxes & Government Recording Fees (Section E)',
@@ -1667,6 +3421,7 @@ const QZ_TAB_TITLE = {
   'cd-ln': 'Seller Net Proceeds (Sections L & N)',
   proceeds: 'Seller Net Proceeds & Wire Verification'
 };
+
 function qzOrderHTML() {
   const o = qzGetOrder(qzState.orderId);
   if (!o) return '<p>Order not found.</p>';
@@ -1677,6 +3432,7 @@ function qzOrderHTML() {
 
   let body = '';
   if (qzState.orderTab === 'overview') body = qzOverviewHTML(o);
+  else if (qzState.orderTab === 'loan') body = qzLoanHTML(o);
   else if (qzState.orderTab === 'review') body = qzReviewHTML(o);
   else if (qzState.orderTab === 'dataentry') body = qzDataEntryHTML(o);
   else if (qzState.orderTab === 'documents') body = qzDocumentsHTML(o);
@@ -1692,7 +3448,17 @@ function qzOrderHTML() {
   else if (qzState.orderTab === 'cpl') body = qzCplHTML(o);
   else if (qzState.orderTab === 'policy-info') body = qzPolicyInfoHTML(o);
   else if (qzState.orderTab === 'commitment') body = qzCommitmentHTML(o);
+  else if (qzState.orderTab === 'requirements') body = qzRequirementsHTML(o);
+  else if (qzState.orderTab === 'exceptions') body = qzExceptionsTabHTML(o);
   else if (qzState.orderTab === 'final-policy') body = qzFinalPolicyHTML(o);
+  else if (qzState.orderTab === 'preview-cd') body = qzPreviewCdHTML(o);
+  else if (qzState.orderTab === 'preview-settlement') body = qzPreviewSettlementHTML(o);
+  else if (qzState.orderTab === 'mailing') body = qzMailingHTML(o);
+  else if (qzState.orderTab === 'recording') body = qzRecordingHTML(o);
+  else if (qzState.orderTab === 'marketplace') body = qzMarketplaceHTML(o);
+  else if (qzState.orderTab === 'erecording') body = qzErecordingHTML(o);
+  else if (qzState.orderTab === 'underwriter') body = qzUnderwriterHTML(o);
+  else if (qzState.orderTab === 'esign') body = qzEsignHTML(o);
   else if (['cd-a', 'cd-c', 'cd-e', 'cd-f', 'cd-g', 'cd-h', 'cd-j', 'cd-km', 'cd-ln'].includes(qzState.orderTab)) {
     body = qzClosingDisclosureSectionHTML(o, qzState.orderTab);
   } else if (qzState.orderTab === 'proceeds') body = qzProceedsHTML(o);
@@ -1725,36 +3491,296 @@ function qzOrderHTML() {
   </div>`;
 }
 
-/* ---------- Overview ---------- */
+/* ---------- Overview (D.1 Basic Info Parity — 7 Groups) ---------- */
+/* ============================================================================
+   BASIC INFO — from a printed page to a working form
+   ============================================================================
+
+   Overview carried 28 values and exactly one control: the 1099 checkbox. A VA
+   could read the file and change nothing on it, which makes the first screen of
+   the product a poster.
+
+   These helpers turn a qz-kv row into an editable one without inventing a
+   second editing convention: every write goes through qzSetScalarOverride, the
+   same path Data Entry and the Review corrections already use, so coercion of
+   money fields and the audit entry come along for free.
+   ============================================================================ */
+
+/* One write path for every control on this page. Blank is allowed through:
+   clearing a field a VA cannot verify is a legitimate act, and an empty field
+   is honest where an invented default is not. */
+function qzOrderFieldSet(orderId, field, value) {
+  qzSetScalarOverride(orderId, field, typeof value === 'string' ? value.trim() : value);
+  qzRenderRoot();
+}
+function qzOrderFieldSetNoRender(orderId, field, value) {
+  qzSetScalarOverride(orderId, field, typeof value === 'string' ? value.trim() : value);
+}
+
+/* The address is stored as one line, so editing a part means recomposing it
+   rather than keeping five fields that can drift out of agreement with the
+   string every other screen reads. */
+function qzSetAddressPart(orderId, part, value) {
+  const o = qzFind('orders', orderId);
+  if (!o) return;
+  const p = String(o.propertyAddress || '').split(',');
+  const street = (p[0] || '').trim();
+  const city = (p[1] || '').trim();
+  const stateZip = (p[2] || '').trim();
+  const state = stateZip.split(' ')[0] || 'TX';
+  const zip = stateZip.split(' ')[1] || '';
+
+  const next = { street: street, city: city, state: state, zip: zip };
+  next[part] = String(value == null ? '' : value).trim();
+
+  const line = next.street + ', ' + next.city + ', ' + (next.state + ' ' + next.zip).trim();
+  qzSetScalarOverride(orderId, 'propertyAddress', line);
+  /* The county follows the city, the way it does on a real file: move the
+     property and it is recorded somewhere else. */
+  if (part === 'city' && QZ_COUNTY_BY_CITY[next.city]) {
+    qzSetScalarOverride(orderId, 'county', QZ_COUNTY_BY_CITY[next.city]);
+  }
+  qzRenderRoot();
+}
+
+/* ---------- row builders ---------- */
+
+function qzKvInput(o, label, field, opts) {
+  opts = opts || {};
+  const v = o[field];
+  return '<div class="qz-kv"><b>' + label + '</b>' +
+    '<input class="qz-kv-in' + (opts.strong ? ' strong' : '') + '"' +
+    (opts.type ? ' type="' + opts.type + '"' : '') +
+    ' value="' + escAttr(v == null ? '' : v) + '"' +
+    (opts.placeholder ? ' placeholder="' + escAttr(opts.placeholder) + '"' : '') +
+    ' onchange="qzOrderFieldSet(\'' + escAttr(o.id) + '\', \'' + escAttr(field) + '\', this.value)"></div>';
+}
+
+function qzKvSelect(o, label, field, options) {
+  const v = o[field];
+  const opts = options.map(function (x) {
+    const val = Array.isArray(x) ? x[0] : x;
+    const txt = Array.isArray(x) ? x[1] : x;
+    return '<option value="' + escAttr(val) + '"' + (String(v) === String(val) ? ' selected' : '') + '>' + esc(txt) + '</option>';
+  }).join('');
+  return '<div class="qz-kv"><b>' + label + '</b>' +
+    '<select class="qz-kv-in" onchange="qzOrderFieldSet(\'' + escAttr(o.id) + '\', \'' + escAttr(field) + '\', this.value)">' +
+    opts + '</select></div>';
+}
+
+/* A money field is typed the way people type money. qzSetScalarOverride runs it
+   through qzCoerceFieldValue, so "$425,000.00" is stored as a number and
+   Accounting does not end up totalling NaN. */
+function qzKvMoney(o, label, field, opts) {
+  opts = opts || {};
+  const v = o[field];
+  const shown = (v === 0 || v) ? fmtMoney(v) : '';
+  return '<div class="qz-kv"><b>' + label + '</b>' +
+    '<input class="qz-kv-in' + (opts.strong ? ' strong' : '') + '" value="' + escAttr(shown) + '"' +
+    (opts.placeholder ? ' placeholder="' + escAttr(opts.placeholder) + '"' : '') +
+    ' onchange="qzOrderFieldSet(\'' + escAttr(o.id) + '\', \'' + escAttr(field) + '\', this.value)"></div>';
+}
+
+/* ---------- the people picker ---------- */
+
+/* Typing a name into the settlement team is how it goes wrong: a closer who
+   left, a paralegal spelled two ways across four orders. The picker offers the
+   directory, and the magnifier opens the full list filtered to the roles that
+   can actually hold the seat. The field stays typeable, because a real Qualia
+   install lets you name somebody outside the directory. */
+function qzDirectoryNames(roles) {
+  if (roles === 'attorney') return qzAttorneyPool();
+  return qzList('users')
+    .filter(function (u) { return roles.indexOf(u.role) > -1 && u.status !== 'Disabled'; })
+    .map(function (u) { return u.name; });
+}
+
+function qzKvPeople(o, label, field, roles) {
+  const names = qzDirectoryNames(roles);
+  const listId = 'qzDir_' + field;
+  const rolesArg = roles === 'attorney' ? '\'attorney\'' : JSON.stringify(roles).replace(/"/g, '&quot;');
+  return '<div class="qz-kv"><b>' + label + '</b>' +
+    '<span class="qz-people">' +
+      '<input class="qz-kv-in" list="' + listId + '" value="' + escAttr(o[field] == null ? '' : o[field]) + '"' +
+      ' onchange="qzOrderFieldSet(\'' + escAttr(o.id) + '\', \'' + escAttr(field) + '\', this.value)">' +
+      '<datalist id="' + listId + '">' +
+        names.map(function (n) { return '<option value="' + escAttr(n) + '"></option>'; }).join('') +
+      '</datalist>' +
+      '<button type="button" class="qz-people-btn" title="Browse the directory"' +
+      ' onclick="qzOpenPeoplePicker(\'' + escAttr(o.id) + '\', \'' + escAttr(field) + '\', ' + rolesArg + ', \'' + escAttr(label) + '\')">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">' +
+        '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/></svg>' +
+      '</button>' +
+    '</span></div>';
+}
+
+function qzOpenPeoplePicker(orderId, field, roles, label) {
+  const isAtty = roles === 'attorney';
+  const people = isAtty
+    ? qzList('contacts').filter(function (c) { return c.type === 'Attorney'; })
+        .map(function (c) { return { name: c.name, role: c.company || 'Outside counsel', office: c.email || '' }; })
+    : qzList('users').filter(function (u) { return roles.indexOf(u.role) > -1; })
+        .map(function (u) { return { name: u.name, role: u.role, office: u.office, status: u.status }; });
+
+  const old = document.getElementById('qzPeoplePicker');
+  if (old) old.remove();
+  const wrap = document.createElement('div');
+  wrap.id = 'qzPeoplePicker';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML =
+    '<div class="qz-modal-card" style="max-width:520px">' +
+      '<div class="ph"><h4>Assign ' + esc(label || field) + '</h4>' +
+      '<button class="qz-btn sm" onclick="document.getElementById(\'qzPeoplePicker\').remove()">&times;</button></div>' +
+      '<div class="qz-picker-list">' +
+        people.map(function (p) {
+          const disabled = p.status === 'Disabled';
+          return '<button type="button" class="qz-picker-row' + (disabled ? ' is-off' : '') + '"' +
+            (disabled ? ' disabled title="This account is disabled and cannot take new work."' : '') +
+            ' onclick="qzPickPerson(\'' + escAttr(orderId) + '\', \'' + escAttr(field) + '\', \'' + escAttr(p.name) + '\')">' +
+            '<b>' + esc(p.name) + '</b><span>' + esc(p.role || '') +
+            (p.office ? ' &middot; ' + esc(p.office) : '') + '</span></button>';
+        }).join('') +
+      '</div>' +
+      '<div style="text-align:right;padding-top:10px">' +
+        '<button class="qz-btn" onclick="qzPickPerson(\'' + escAttr(orderId) + '\', \'' + escAttr(field) + '\', \'\')">Clear this seat</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(wrap);
+}
+
+function qzPickPerson(orderId, field, name) {
+  const el = document.getElementById('qzPeoplePicker');
+  if (el) el.remove();
+  qzOrderFieldSet(orderId, field, name);
+}
+
 function qzOverviewHTML(o) {
+  const addrParts = (o.propertyAddress || '').split(',');
+  const street = (addrParts[0] || '').trim();
+  const city = (addrParts[1] || '').trim();
+  const stateZip = (addrParts[2] || '').trim();
+  const state = stateZip.split(' ')[0] || 'TX';
+  const zip = stateZip.split(' ')[1] || '75024';
+
   return `
     <div class="qz-panel">
-      <div class="ph"><h4><span class="dot gold">${QZ_ICONS.overview}</span> Overview</h4></div>
+      <div class="ph">
+        <h4><span class="dot gold">${QZ_ICONS.overview}</span> Overview &amp; Timeline</h4>
+        <div style="display:flex;gap:8px">
+          <button class="qz-btn sm" type="button" onclick="qzEditOrderModal('${o.id}')">Edit Order</button>
+          <button class="qz-btn sm danger" type="button" onclick="qzDeleteOrderModal('${o.id}')">Delete Order</button>
+        </div>
+      </div>
       ${qzTimelineHTML(o)}
       <div class="qz-tl-status"><b>Your order is currently in <span>${esc(QZ_STAGES[o.stageIndex])}</span></b><p>${esc(o.statusNote)}</p></div>
     </div>
+
     <div class="qz-grid2">
+      <!-- 1. Important Dates.
+           Funding and disbursement are not decoration: a refinance of a primary
+           residence cannot fund until the three-day rescission period runs out,
+           so on a refi these genuinely differ from the closing date. -->
       <div class="qz-panel">
-        <div class="ph"><h4><span class="dot">${QZ_ICONS.summary}</span> Summary</h4></div>
-        <div class="qz-kv"><b>Property</b><span class="addr-box">${esc(o.propertyAddress)}</span></div>
-        <div class="qz-kv"><b>Settlement Agency</b>${esc(o.settlementAgency)}</div>
-        <div class="qz-kv"><b>Order #</b>${esc(o.id)}</div>
-        <div class="qz-kv"><b>Order Opened</b>${fmtDate(o.opened)}</div>
-        <div class="qz-kv"><b>Estimated Close</b>${fmtDate(o.closingDate)}</div>
-        <div class="qz-kv"><b>Purchase Price</b>${fmtMoney(o.purchasePrice)}</div>
-        <div class="qz-kv"><b>Loan Amount</b>${fmtMoney(o.loanAmount)}</div>
-        <div class="qz-kv"><b>Title #</b>${esc(o.titleNumber)}</div>
+        <div class="ph"><h4><span class="dot">${QZ_ICONS.summary}</span> 1. Important Dates</h4></div>
+        ${qzKvInput(o, 'Closing Date', 'closingDate', { type: 'date', strong: true })}
+        ${qzKvInput(o, 'Funding Date', 'fundingDate', { type: 'date' })}
+        ${qzKvInput(o, 'Disbursement Date', 'disbursementDate', { type: 'date' })}
+        ${qzKvInput(o, 'Order Opened', 'opened', { type: 'date' })}
       </div>
+
+      <!-- 2. Amounts -->
       <div class="qz-panel">
-        <div class="ph"><h4><span class="dot gold">${QZ_ICONS.parties}</span> Parties</h4></div>
-        <table class="qz-parties"><thead><tr><th>Role</th><th>Name</th><th class="ic">Message</th><th class="ic">Cell</th><th class="ic">Work</th></tr></thead><tbody>
-          ${o.parties.map(p => `<tr><td class="role">${esc(p.role)}</td><td class="name">${esc(p.name)}</td>
-            <td class="ic"><button type="button" title="Message" onclick="simToast('Training only, no real message is sent.')">${QZ_ICONS.message}</button></td>
-            <td class="ic"><button type="button" title="Cell" onclick="simToast('Training only, no real call is placed.')">${QZ_ICONS.cell}</button></td>
-            <td class="ic"><button type="button" title="Work" onclick="simToast('Training only, no real call is placed.')">${QZ_ICONS.phone}</button></td>
+        <div class="ph"><h4><span class="dot">${QZ_ICONS.summary}</span> 2. Amounts</h4></div>
+        ${qzKvMoney(o, 'Purchase Price', 'purchasePrice', { strong: true })}
+        ${qzKvMoney(o, 'Loan Amount', 'loanAmount', { strong: true, placeholder: 'None (Cash)' })}
+        ${qzKvMoney(o, 'Earnest Money Deposit', 'earnestAmount', { placeholder: 'None' })}
+      </div>
+    </div>
+
+    <div class="qz-grid2" style="margin-top:14px">
+      <!-- 3. Type & Representation -->
+      <div class="qz-panel">
+        <div class="ph"><h4><span class="dot">${QZ_ICONS.summary}</span> 3. Type &amp; Order Identifiers</h4></div>
+        ${qzKvSelect(o, 'Purpose', 'purpose', ['Purchase', 'Cash Purchase', 'Refinance', 'Commercial Purchase', 'Construction', 'Equity Loan'])}
+        ${qzKvSelect(o, 'Representing', 'representing', ['Buyer', 'Seller', 'Borrower', 'Lender', 'Both'])}
+        <div class="qz-kv"><b>Order #</b><span>${esc(o.id)} <button class="qz-btn sm" style="margin-left:8px;padding:2px 8px;font-size:11px" onclick="qzChangeOrderNumberModal('${o.id}')">Change Order #</button></span></div>
+        <div class="qz-kv"><b>Settlement Statement</b><span>${esc(o.statementType)} <button class="qz-btn sm" style="margin-left:8px;padding:2px 8px;font-size:11px" onclick="qzToggleSettlementType('${o.id}')">Toggle HUD/CD</button></span></div>
+        ${qzKvInput(o, 'Title #', 'titleNumber')}
+      </div>
+
+      <!-- 4. Reporting & Taxes.
+           A refinance produces no seller proceeds, so it files no 1099-S. The
+           checkbox reflects that instead of defaulting to checked. -->
+      <div class="qz-panel">
+        <div class="ph"><h4><span class="dot">${QZ_ICONS.summary}</span> 4. Reporting &amp; Tax Compliance</h4></div>
+        ${qzKvInput(o, 'Source of Business', 'sourceOfBusiness', { placeholder: 'Referring agent, lender or firm' })}
+        <div class="qz-kv"><b>1099 Eligible</b>
+          <label style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;cursor:pointer">
+            <input type="checkbox" ${o.eligible1099 ? 'checked' : ''} onchange="qzToggle1099('${o.id}', this.checked)"> 1099-S Real Estate Proceeds
+          </label>
+        </div>
+        ${qzKvSelect(o, 'Underwriter', 'underwriter', ['Old Republic National Title Insurance Co.', 'First American Title Insurance Co.', 'Stewart Title Guaranty Co.'])}
+        ${qzKvInput(o, 'Policy Jacket', 'policyJacket')}
+      </div>
+    </div>
+
+    <div class="qz-grid2" style="margin-top:14px">
+      <!-- 5. Settlement Team.
+           Six seats, each one a directory lookup. Counsel is engaged rather than
+           employed, so the Attorney seat reads the contacts directory where the
+           outside firms live. -->
+      <div class="qz-panel">
+        <div class="ph"><h4><span class="dot gold">${QZ_ICONS.parties}</span> 5. Settlement Team</h4></div>
+        ${qzKvSelect(o, 'Settlement Agency', 'settlementAgency', QZ_BRANCHES.map(b => b.agency))}
+        ${qzKvPeople(o, 'Order Opener', 'orderOpener', ['Processor', 'Escrow Officer', 'Virtual Assistant'])}
+        ${qzKvPeople(o, 'Paralegal / Closer', 'paralegal', ['Closer', 'Title Examiner', 'Escrow Officer'])}
+        ${qzKvPeople(o, 'Attorney', 'attorney', 'attorney')}
+        ${qzKvPeople(o, 'Assistants', 'assistants', ['Processor', 'Virtual Assistant', 'Accounting'])}
+        ${qzKvPeople(o, 'Marketers', 'marketers', ['Escrow Officer', 'Closer'])}
+      </div>
+
+      <!-- 6. Place of Closing.
+           Street, city, state and zip write back into the single address line
+           the rest of the product reads, so they cannot drift apart from it. -->
+      <div class="qz-panel">
+        <div class="ph"><h4><span class="dot">${QZ_ICONS.summary}</span> 6. Place of Closing</h4></div>
+        <div class="qz-kv"><b>Street Address</b><input class="qz-kv-in" value="${escAttr(street)}" onchange="qzSetAddressPart('${o.id}', 'street', this.value)"></div>
+        ${qzKvInput(o, 'Apt / Suite', 'aptSuite', { placeholder: 'None' })}
+        <div class="qz-kv"><b>City</b><input class="qz-kv-in" value="${escAttr(city)}" onchange="qzSetAddressPart('${o.id}', 'city', this.value)"></div>
+        ${qzKvSelect(o, 'County', 'county', ['Collin County', 'Dallas County', 'Denton County', 'Tarrant County', 'Rockwall County', 'Grayson County'])}
+        <div class="qz-kv"><b>State</b>
+          <select class="qz-kv-in" onchange="qzSetAddressPart('${o.id}', 'state', this.value)">
+            ${['TX', 'OK', 'AR', 'LA', 'NM'].map(s => `<option value="${s}" ${state === s ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="qz-kv"><b>Zipcode</b><input class="qz-kv-in" value="${escAttr(zip)}" onchange="qzSetAddressPart('${o.id}', 'zip', this.value)"></div>
+        <div class="qz-kv"><b>Legal Description</b><input class="qz-kv-in" value="${escAttr(o.legalDescription == null ? '' : o.legalDescription)}" placeholder="Not yet supplied by the examiner" onchange="qzOrderFieldSet('${o.id}', 'legalDescription', this.value)"></div>
+      </div>
+    </div>
+
+    <!-- 7. Parties Summary Table -->
+    <div class="qz-panel" style="margin-top:14px">
+      <div class="ph">
+        <h4><span class="dot gold">${QZ_ICONS.parties}</span> 7. Parties to Transaction</h4>
+        <button class="qz-btn sm primary" type="button" onclick="qzAddPartyModal('${o.id}')">+ Add Party</button>
+      </div>
+      <table class="qz-parties">
+        <thead><tr><th>Role</th><th>Name</th><th>Email</th><th>Phone</th><th class="ic">Actions</th></tr></thead>
+        <tbody>
+          ${(o.parties || []).map(p => `<tr>
+            <td class="role"><b>${esc(p.role)}</b></td>
+            <td class="name">${esc(p.name)}</td>
+            <td><a href="mailto:${escAttr(p.email || '')}" style="color:var(--qz-ocean)">${esc(p.email || '&mdash;')}</a></td>
+            <td>${esc(p.phone || '&mdash;')}</td>
+            <td class="ic">
+              <div class="qz-row-actions">
+                <button type="button" class="qz-btn sm" title="Edit Party" onclick="qzEditPartyModal('${o.id}', '${escAttr(p.role)}')">Edit</button>
+                <button type="button" class="qz-btn sm danger" title="Delete Party" onclick="qzDeletePartyModal('${o.id}', '${escAttr(p.role)}')">&times;</button>
+              </div>
+            </td>
           </tr>`).join('')}
-        </tbody></table>
-      </div>
+        </tbody>
+      </table>
     </div>
   `;
 }
@@ -2255,7 +4281,7 @@ function qzDataEntryHTML(o) {
       <div class="qz-field"><label>Street Address</label><input id="qzDeStreet" value="${escAttr(parts[0] || '')}" oninput="qzDeMarkDirty()"></div>
       <div class="qz-field"><label>City</label><input id="qzDeCity" value="${escAttr((parts[1] || '').trim())}" oninput="qzDeMarkDirty()"></div>
       <div class="qz-field"><label>State / Zip</label><input id="qzDeStateZip" value="${escAttr((parts[2] || '').trim())}" oninput="qzDeMarkDirty()"></div>
-      <div class="qz-field"><label>Property Type</label><input id="qzDePropType" value="${escAttr(o.propertyType || 'Single Family Residence')}" oninput="qzDeMarkDirty()"></div>
+      <div class="qz-field"><label>Property Type</label><input id="qzDePropType" value="${escAttr(o.propertyType)}" oninput="qzDeMarkDirty()"></div>
       <div class="qz-field wide"><label>Legal Description</label><input id="qzDeLegal" value="${escAttr(o.legalDescription || '')}" oninput="qzDeMarkDirty()"></div>
     </div>`;
   } else if (sub === 'parties') {
@@ -2281,106 +4307,927 @@ function qzDataEntryHTML(o) {
   return `<div class="qz-panel"><div class="qz-de-head"><div class="qz-subtabs">${subtabs}</div>${saveBtn}</div>${body}</div>`;
 }
 
-/* ---------- Documents ---------- */
+/* ---------- Loan Information (D.2 Parity — 6 Groups) ---------- */
+function qzSaveLoanInfo(orderId) {
+  const o = qzFind('orders', orderId);
+  if (!o) return;
+  const loanType = document.getElementById('qzLoanType')?.value;
+  const loanAmount = qzParseNumeric(document.getElementById('qzLoanAmount')?.value);
+  const fundingType = document.getElementById('qzLoanFundingType')?.value;
+  const loanPurpose = document.getElementById('qzLoanPurpose')?.value;
+  const loanProduct = document.getElementById('qzLoanProduct')?.value;
+  const loanIdNumber = document.getElementById('qzLoanIdNum')?.value;
+  const mic = document.getElementById('qzLoanMicNum')?.value;
+  const graceDays = parseInt(document.getElementById('qzLoanGraceDays')?.value) || 15;
+  const penaltyAmt = parseFloat(document.getElementById('qzLoanPenaltyAmount')?.value) || 5.0;
+  const penaltyType = document.getElementById('qzLoanPenaltyType')?.value;
+  const interestOnly = document.getElementById('qzLoanInterestOnly')?.value === 'Yes';
+  const interestRate = document.getElementById('qzLoanRate')?.value;
+  const interestType = document.getElementById('qzLoanInterestType')?.value;
+  const genDocs = !!document.getElementById('qzLoanGenMortgageDocs')?.checked;
+
+  const patch = {
+    loanType, fundingType, loanPurpose, loanProduct, loanIdNumber,
+    mortgageInsCaseNumber: mic, gracePeriodDays: graceDays,
+    latePenaltyAmount: penaltyAmt, latePenaltyType: penaltyType,
+    interestOnly, interestRate, interestType, generatingMortgageDocs: genDocs
+  };
+  if (loanAmount !== null) patch.loanAmount = loanAmount;
+  qzUpdate('orders', orderId, patch);
+  simToast('Loan details saved successfully.', { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzLoanHTML(o) {
+  return `
+    <div class="qz-panel">
+      <div class="ph">
+        <h4>Loan Information</h4>
+        <button class="qz-btn sm primary" type="button" onclick="qzSaveLoanInfo('${o.id}')">Save Loan Info</button>
+      </div>
+      <p style="font-size:12.5px;color:var(--qz-muted);margin-bottom:16px">Origination, amortization schedule, underwriting identifiers and interest calculations for this file.</p>
+      
+      <div class="qz-grid2">
+        <div class="qz-calc-card">
+          <h5 style="margin:0 0 10px 0;color:var(--qz-navy)">1. Loan Overview</h5>
+          <div class="qz-form-grid">
+            <div class="qz-field"><label>Loan Type</label>
+              <select id="qzLoanType">
+                <option value="Conventional" ${(o.loanType||'Conventional')==='Conventional'?'selected':''}>Conventional</option>
+                <option value="FHA" ${(o.loanType||'')==='FHA'?'selected':''}>FHA</option>
+                <option value="VA" ${(o.loanType||'')==='VA'?'selected':''}>VA</option>
+                <option value="USDA" ${(o.loanType||'')==='USDA'?'selected':''}>USDA / Rural Housing</option>
+                <option value="Commercial" ${(o.loanType||'')==='Commercial'?'selected':''}>Commercial</option>
+              </select>
+            </div>
+            <div class="qz-field"><label>Loan Amount ($)</label><input id="qzLoanAmount" value="${fmtMoney(o.loanAmount)}"></div>
+            <div class="qz-field"><label>Funding Type</label>
+              <select id="qzLoanFundingType">
+                <option value="Net" ${(o.fundingType||'Net')==='Net'?'selected':''}>Net Funding</option>
+                <option value="Gross" ${(o.fundingType||'')==='Gross'?'selected':''}>Gross Funding</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="qz-calc-card">
+          <h5 style="margin:0 0 10px 0;color:var(--qz-navy)">2. Term &amp; Dates</h5>
+          <div class="qz-form-grid">
+            <div class="qz-field"><label>Loan Term</label><input id="qzLoanTerm" value="${o.loanTermYears || 30} yr / ${o.loanTermMonths || 360} mo"></div>
+            <div class="qz-field"><label>First Payment Date</label><input id="qzLoanFirstPayment" type="date" value="${o.firstPaymentDate || '2026-10-01'}"></div>
+            <div class="qz-field"><label>Maturity Date</label><input id="qzLoanLastPayment" type="date" value="${o.lastPaymentDate || '2056-09-01'}"></div>
+            <div class="qz-field"><label>Mortgage Commitment Date</label><input id="qzLoanCommitmentDate" type="date" value="${o.mortgageCommitmentDate || '2026-08-15'}"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="qz-grid2" style="margin-top:14px">
+        <div class="qz-calc-card">
+          <h5 style="margin:0 0 10px 0;color:var(--qz-navy)">3. Disclosures &amp; Tracking</h5>
+          <div class="qz-form-grid">
+            <div class="qz-field"><label>Loan Purpose</label><input id="qzLoanPurpose" value="${escAttr(o.loanPurpose)}"></div>
+            <div class="qz-field"><label>Loan Product</label><input id="qzLoanProduct" value="${escAttr(o.loanProduct || '30-Year Fixed Rate')}"></div>
+            <div class="qz-field"><label>Loan ID #</label><input id="qzLoanIdNum" value="${escAttr(o.loanIdNumber)}" placeholder="No loan on this file"></div>
+            <div class="qz-field"><label>Mortgage Ins. Case #</label><input id="qzLoanMicNum" value="${escAttr(o.mortgageInsCaseNumber)}" placeholder="Not required below 80% LTV"></div>
+          </div>
+        </div>
+
+        <div class="qz-calc-card">
+          <h5 style="margin:0 0 10px 0;color:var(--qz-navy)">4. Late Penalty</h5>
+          <div class="qz-form-grid">
+            <div class="qz-field"><label>Grace Period (Days)</label><input id="qzLoanGraceDays" type="number" value="${o.gracePeriodDays || 15}"></div>
+            <div class="qz-field"><label>Late Penalty Amount</label><input id="qzLoanPenaltyAmount" value="${o.latePenaltyAmount || 5.0}"></div>
+            <div class="qz-field"><label>Penalty Type</label>
+              <select id="qzLoanPenaltyType">
+                <option value="%" ${(o.latePenaltyType||'%')==='%'?'selected':''}>% of Monthly P&amp;I</option>
+                <option value="$" ${(o.latePenaltyType||'')==='$'?'selected':''}>Fixed Dollar ($)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="qz-calc-card" style="margin-top:14px">
+        <h5 style="margin:0 0 10px 0;color:var(--qz-navy)">5. Interest &amp; Rate Configuration</h5>
+        <div class="qz-form-grid">
+          <div class="qz-field"><label>Interest Only?</label>
+            <select id="qzLoanInterestOnly">
+              <option value="No" ${!o.interestOnly?'selected':''}>No (Amortizing P&amp;I)</option>
+              <option value="Yes" ${o.interestOnly?'selected':''}>Yes (Interest-Only Period)</option>
+            </select>
+          </div>
+          <div class="qz-field"><label>Interest Rate</label><input id="qzLoanRate" value="${escAttr(o.interestRate || '6.375%')}"></div>
+          <div class="qz-field"><label>Interest Type</label>
+            <select id="qzLoanInterestType">
+              <option value="Fixed" ${(o.interestType||'Fixed')==='Fixed'?'selected':''}>Fixed Rate</option>
+              <option value="Adjustable" ${(o.interestType||'')==='Adjustable'?'selected':''}>Adjustable Rate (ARM)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;padding:12px;background:var(--qz-bg);border:1px solid var(--qz-line);border-radius:6px;display:flex;align-items:center;justify-content:space-between">
+        <label style="display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer">
+          <input type="checkbox" id="qzLoanGenMortgageDocs" ${o.generatingMortgageDocs ? 'checked' : ''}>
+          Generate Mortgage Closing Documents from Qualia Document Engine
+        </label>
+        <button class="qz-btn sm primary" type="button" onclick="qzSaveLoanInfo('${o.id}')">Save Changes</button>
+      </div>
+    </div>`;
+}
+
+/* ---------- Documents (D.5 Parity — Folder Tree & Template Library) ---------- */
+let qzDocActiveFolder = 'All Documents';
+let qzDocQuery = '';
+
+function qzSelectDocFolder(f) {
+  qzDocActiveFolder = f;
+  qzRenderRoot();
+}
+
 function qzUploadDoc(id) {
-  qzDemo.docStatus[id] = 'Received';
+  qzUpdate('documents', id, { status: 'Received' });
   qzMark('docs-upload');
-  const d = QZ_DOCUMENTS.find(x => x.id === id) || (typeof QZ_EXAM_DOCUMENTS !== 'undefined' ? QZ_EXAM_DOCUMENTS.find(x => x.id === id) : undefined);
+  const d = qzFind('documents', id);
   if (d && d.type === 'HOA') {
-    const o = qzBaseOrder(d.orderId);
+    const o = qzFind('orders', d.orderId);
     if (o && o.flag === 'missing-document') {
-      qzSetScalarOverride(d.orderId, 'flag', null);
-      qzSetScalarOverride(d.orderId, 'stageIndex', o.stageIndex + 1);
-      qzSetScalarOverride(d.orderId, 'statusNote', 'The HOA Resale Certificate has been received. Closing prep can continue.');
+      qzUpdate('orders', d.orderId, {
+        flag: null,
+        stageIndex: o.stageIndex + 1,
+        statusNote: 'The HOA Resale Certificate has been received. Closing prep can continue.'
+      });
     }
   }
   qzRenderRoot();
 }
-/* Opening a document from the Documents table is the "I looked at it" step of the lifecycle,
-   so it has to mark docs-download the same way the Download button does. The refactor pointed
-   this button straight at the engine's simViewDoc, which only opens the modal — so Lesson 4
-   step 2 opened the file and then waited forever for a step that could never complete.
-   Review items deliberately keep calling simViewDoc directly: they track their own docOpened. */
+
 function qzViewDoc(file, title) {
   qzMark('docs-download');
   simViewDoc(file, title);
 }
 function qzDownloadDoc() { qzMark('docs-download'); simToast('Downloaded (training only, no real file was transferred).'); }
-function qzReviewDoc(id) { qzDemo.docStatus[id] = 'Reviewed'; qzMark('docs-review'); qzRenderRoot(); }
-
+function qzReviewDoc(id) { qzUpdate('documents', id, { status: 'Reviewed' }); qzMark('docs-review'); qzRenderRoot(); }
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') simCloseDoc();
 });
+
 function qzDocumentsHTML(o) {
   const o2 = qzGetOrder(o.id);
   const daysToClosing = o2 ? qzDaysFromToday(o2.closingDate) : null;
-  const rows = qzDocsForOrder(o.id).map(d => {
+  const allDocs = qzDocsForOrder(o.id);
+  const folders = ['All Documents', 'Buyer', 'Seller', 'Title & Escrow', 'Lender', 'Closing Packages', 'Archive'];
+  
+  const folderList = folders.map(f => {
+    const count = f === 'All Documents' ? allDocs.length : allDocs.filter(d => (d.folder || 'Title & Escrow') === f).length;
+    const on = (qzDocActiveFolder === f);
+    return `<div class="qz-doc-folder ${on ? 'active' : ''}" onclick="qzSelectDocFolder('${escAttr(f)}')">
+      <span>&#128193; ${esc(f)}</span>
+      <span class="qz-badge ${count ? '' : 'open'}">${count}</span>
+    </div>`;
+  }).join('');
+
+  const q = (qzDocQuery || '').toLowerCase();
+  const filtered = allDocs
+    .filter(d => qzDocActiveFolder === 'All Documents' || (d.folder || 'Title & Escrow') === qzDocActiveFolder)
+    .filter(d => !q || d.name.toLowerCase().indexOf(q) > -1 || d.type.toLowerCase().indexOf(q) > -1);
+
+  const rows = filtered.map(d => {
     const st = qzDocStatus(d);
     const badgeClass = st === 'Pending' ? 'pending' : st === 'Received' ? 'received' : 'reviewed';
-    // A pending document only matters in relation to the closing it's holding up — showing
-    // that pressure in the row is what makes "which of these is urgent" a real question.
     const pressure = (st === 'Pending' && daysToClosing !== null)
       ? ` <span class="qz-due ${daysToClosing < 0 ? 'overdue' : daysToClosing <= 7 ? 'soon' : 'far'}">closing in ${daysToClosing}d</span>`
       : '';
     let actions = '';
     if (st === 'Pending') actions = `<button class="qz-btn sm primary" data-doc-action="upload" onclick="qzUploadDoc(${d.id})">Upload</button>`;
     else {
+      /* A document is openable when it has a file on disk OR a template that
+         can be rendered from the order. Only a row with neither falls back to
+         the download button. */
       actions = d.file
         ? `<button class="qz-btn sm" data-doc-action="view" onclick="qzViewDoc('${d.file}','${esc(d.name)}')">View</button>`
-        : `<button class="qz-btn sm" data-doc-action="download" onclick="qzDownloadDoc()">Download</button>`;
+        : (qzDocIsOpenable(d)
+          ? `<button class="qz-btn sm" data-doc-action="view" onclick="qzViewGeneratedDoc('${escAttr(d.id)}')">View</button>`
+          : `<button class="qz-btn sm" data-doc-action="download" onclick="qzDownloadDoc()">Download</button>`);
       if (st === 'Received') actions += ` <button class="qz-btn sm" data-doc-action="review" onclick="qzReviewDoc(${d.id})">Mark Reviewed</button>`;
     }
-    return `<tr data-doc-id="${d.id}"><td>${esc(d.name)}</td><td>${esc(d.type)}</td><td><span class="qz-badge ${badgeClass}">${st}</span>${pressure}</td><td>${esc(d.uploadedBy)}</td><td>${fmtDate(d.date)}</td><td><div class="qz-row-actions">${actions}</div></td></tr>`;
+    actions += ` <button class="qz-btn sm" title="Edit Document" onclick="qzEditDocModal(${d.id})">&#9998;</button>`;
+    actions += ` <button class="qz-btn sm danger" title="Delete Document" onclick="qzDeleteDocModal(${d.id})">&times;</button>`;
+
+    return `<tr data-doc-id="${d.id}">
+      <td><input type="checkbox" class="qz-doc-chk" data-id="${d.id}"></td>
+      <td><b>${esc(d.name)}</b></td>
+      <td>${esc(d.type)}</td>
+      <td class="qzs-dim">${esc(d.folder || 'Title & Escrow')}</td>
+      <td><span class="qz-badge ${badgeClass}">${st}</span>${pressure}</td>
+      <td>${esc(d.uploadedBy)}</td>
+      <td>${fmtDate(d.date)}</td>
+      <td><div class="qz-row-actions">${actions}</div></td>
+    </tr>`;
   }).join('');
-  return `<div class="qz-panel"><div class="ph"><h4>Documents</h4><button class="qz-btn sm primary" type="button" onclick="qzAddDocumentModal('${o.id}')">+ Add Document</button></div>
-    <table class="qz-tbl"><thead><tr><th>Name</th><th>Type</th><th>Status</th><th>Uploaded By</th><th>Date</th><th>Actions</th></tr></thead><tbody>${rows}</tbody></table>
-  </div>`;
+
+  return `
+    <div class="qz-doc-container">
+      <aside class="qz-doc-tree">
+        <div class="qz-doc-tree-head">
+          <b>Folders</b>
+          <button class="qz-btn sm" onclick="qzNewFolderModal('${o.id}')">+ Folder</button>
+        </div>
+        <div class="qz-doc-folder-list">${folderList}</div>
+      </aside>
+      <main class="qz-doc-content">
+        <div class="qz-panel" style="margin-bottom:0">
+          <div class="ph">
+            <h4>Documents &mdash; ${esc(qzDocActiveFolder)}</h4>
+            <div style="display:flex;gap:8px">
+              <input type="text" placeholder="Search documents..." class="qz-input sm" style="max-width:200px" value="${escAttr(qzDocQuery)}" oninput="qzDocQuery=this.value;qzRenderRoot()">
+              <button class="qz-btn sm" type="button" onclick="qzTemplateLibraryModal('${o.id}')">Template Library</button>
+              <button class="qz-btn sm primary" type="button" onclick="qzAddDocumentModal('${o.id}')">+ Add Document</button>
+            </div>
+          </div>
+          <div class="qz-tbl-scroll">
+            <table class="qz-tbl">
+              <thead><tr><th style="width:30px"><input type="checkbox" onchange="document.querySelectorAll('.qz-doc-chk').forEach(c=>c.checked=this.checked)"></th><th>Name</th><th>Type</th><th>Folder</th><th>Status</th><th>Uploaded By</th><th>Date</th><th>Actions</th></tr></thead>
+              <tbody>${rows || '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--qz-muted)">No documents in this folder.</td></tr>'}</tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>`;
 }
 
-/* ---------- Tasks ---------- */
-function qzCompleteTask(id) { qzDemo.taskStatus[id] = 'Complete'; qzMark('tasks-complete'); qzRenderRoot(); qzUpdateBellBadge(); }
-function qzTasksHTML(o) {
-  const rows = qzTasksForOrder(o.id).map(t => {
-    const st = qzTaskStatus(t);
-    const badgeClass = st === 'Complete' ? 'complete' : st === 'In Progress' ? 'progress' : 'open';
-    const action = st !== 'Complete' ? `<button class="qz-btn sm primary" onclick="qzCompleteTask(${t.id})">Mark Complete</button>` : '<span style="color:var(--qz-muted);font-size:12px">Done</span>';
-    // A completed task's countdown is noise — only what's still open can be "overdue".
-    const due = st === 'Complete' ? fmtDate(t.dueDate) : `${fmtDate(t.dueDate)} ${qzDueChipHTML(t.dueDate)}`;
-    return `<tr data-task-id="${t.id}"><td>${esc(t.title)}</td><td>${esc(t.assignedTo)}</td><td>${due}</td><td><span class="qz-badge ${badgeClass}">${st}</span></td><td>${action}</td></tr>`;
+/* ---------- Tasks (D.4 Parity — Workflow Groups & Progress) ---------- */
+function qzCompleteTask(id) {
+  qzUpdate('tasks', id, { status: 'Complete' });
+  qzMark('tasks-complete');
+  qzRenderRoot();
+  qzUpdateBellBadge();
+}
+
+function qzToggleTaskStatus(id, done) {
+  qzUpdate('tasks', id, { status: done ? 'Complete' : 'Open' });
+  if (done) qzMark('tasks-complete');
+  qzRenderRoot();
+  qzUpdateBellBadge();
+}
+
+/* ============================================================================
+   EDITABLE CALCULATION ROWS
+   ============================================================================
+
+   Fifteen pages were built out of 85 qz-calc-row elements, and every one of
+   them was a printed value. Some were derived from the order and correct;
+   many were constants wearing a label:
+
+       <span>Effective Combined Tax Rate:</span><span class="qz-calc-val">2.15% / year</span>
+       <span>Tracking Number:</span><span class="qz-calc-val">7894-2201-9941</span>
+
+   The same tax rate and the same FedEx tracking number on all 75 files.
+
+   These helpers are the calc-row equivalent of what qzKvInput did for Basic
+   Info: the row keeps looking like a printed statement, and it writes to the
+   order through the one path that coerces money and logs an audit entry.
+
+   A row that is genuinely CALCULATED stays read-only, and says so, because a
+   trainee who can type over a computed total learns nothing about where the
+   total came from. qzCalcOut is that row.
+   ============================================================================ */
+
+function qzCalcIn(o, label, field, opts) {
+  opts = opts || {};
+  const v = o[field];
+  const shown = opts.money ? ((v === 0 || v) ? fmtMoney(v) : '') : (v == null ? '' : v);
+  return '<div class="qz-calc-row"><span>' + label + '</span>' +
+    '<input class="qz-calc-in" value="' + escAttr(shown) + '"' +
+    (opts.type ? ' type="' + opts.type + '"' : '') +
+    (opts.placeholder ? ' placeholder="' + escAttr(opts.placeholder) + '"' : '') +
+    ' aria-label="' + escAttr(String(label).replace(/:$/, '')) + '"' +
+    ' onchange="qzOrderFieldSet(\'' + escAttr(o.id) + '\', \'' + escAttr(field) + '\', this.value)"></div>';
+}
+
+function qzCalcSelect(o, label, field, options) {
+  const v = o[field];
+  return '<div class="qz-calc-row"><span>' + label + '</span>' +
+    '<select class="qz-calc-in" onchange="qzOrderFieldSet(\'' + escAttr(o.id) + '\', \'' + escAttr(field) + '\', this.value)">' +
+    options.map(function (x) {
+      return '<option value="' + escAttr(x) + '"' + (String(v) === String(x) ? ' selected' : '') + '>' + esc(x) + '</option>';
+    }).join('') + '</select></div>';
+}
+
+/* A derived figure. Read-only on purpose, and marked so the distinction between
+   "what was entered" and "what was worked out" stays visible. */
+function qzCalcOut(label, value, opts) {
+  opts = opts || {};
+  return '<div class="qz-calc-row' + (opts.total ? ' total' : '') + '"><span>' + label + '</span>' +
+    '<span class="qz-calc-val' + (opts.cls ? ' ' + opts.cls : '') + '" title="Calculated from the fields above">' +
+    value + '</span></div>';
+}
+
+/* ---------- the pages ---------- */
+
+function qzEarnestHTML(o) {
+  const pct = Number(o.commissionPct) || 6;
+  const total = Math.round((o.purchasePrice || 0) * pct / 100);
+  const listing = Math.round(total * (Number(o.listingSplitPct) || 50) / 100);
+  return '<div class="qz-panel">' +
+    '<div class="ph"><h4>Earnest Money &amp; Brokerage Commissions</h4></div>' +
+    '<div class="qz-calc-card">' +
+      '<h5 class="qz-calc-h">Earnest Money Escrow Deposit</h5>' +
+      qzCalcIn(o, 'Earnest Money Deposit Amount:', 'earnestAmount', { money: true, placeholder: 'None on a refinance' }) +
+      qzCalcIn(o, 'Escrow Account Held At:', 'escrowBank') +
+      qzCalcIn(o, 'Deposit Date:', 'earnestDepositDate', { type: 'date' }) +
+      qzCalcSelect(o, 'Receipt Status:', 'earnestStatus', ['Deposited & Cleared', 'Deposited, Pending Clearance', 'Not Yet Received', 'Released']) +
+    '</div>' +
+    '<div class="qz-calc-card" style="margin-top:12px">' +
+      '<h5 class="qz-calc-h">Real Estate Brokerage Commissions</h5>' +
+      qzCalcIn(o, 'Total Commission Rate (% of sale price):', 'commissionPct') +
+      qzCalcOut('Total Commission (' + pct + '% of ' + fmtMoney(o.purchasePrice) + '):', fmtMoney(total)) +
+      qzCalcIn(o, 'Listing Broker Share (%):', 'listingSplitPct') +
+      qzCalcOut('Listing Broker &mdash; ' + esc(qzOrderParty(o, 'Listing Agent')) + ':', fmtMoney(listing)) +
+      qzCalcOut('Selling Broker &mdash; ' + esc(qzOrderParty(o, 'Selling Agent')) + ':', fmtMoney(total - listing)) +
+      qzCalcIn(o, 'Disbursement Source:', 'commissionSource') +
+    '</div></div>';
+}
+
+function qzProrationsHTML(o) {
+  const price = o.purchasePrice || 0;
+  const rate = Number(o.taxRatePct) || 0;
+  const annualTax = Math.round(price * rate / 100);
+  const cm = Number(String(o.closingDate || '').slice(5, 7));
+  const cd = Number(String(o.closingDate || '').slice(8, 10));
+  const daysElapsed = Math.min(365, (cm - 1) * 30 + cd);
+  const sellerTaxShare = Math.round(annualTax * (daysElapsed / 365) * 100) / 100;
+  const hoa = Number(o.hoaAssessment) || 0;
+  const cycleDays = o.hoaCycle === 'Monthly' ? 30 : o.hoaCycle === 'Annual' ? 365 : 90;
+  const dayInCycle = cd % cycleDays;
+  const sellerHoa = Math.round(hoa * (dayInCycle / cycleDays) * 100) / 100;
+
+  return '<div class="qz-panel">' +
+    '<div class="ph"><h4>Taxes &amp; Prorations Calculator</h4></div>' +
+    '<p class="qz-note">Prorated through midnight preceding ' + fmtDate(o.closingDate) +
+      ' on the Texas statutory 365-day convention. Change a figure and the totals below follow it.</p>' +
+    '<div class="qz-grid2">' +
+      '<div class="qz-calc-card">' +
+        '<h5 class="qz-calc-h">County &amp; Municipal Real Estate Taxes</h5>' +
+        qzCalcIn(o, 'Assessed Property Valuation:', 'purchasePrice', { money: true }) +
+        qzCalcIn(o, 'Effective Combined Tax Rate (% / year):', 'taxRatePct') +
+        qzCalcOut('Total Annual Taxes:', fmtMoney(annualTax)) +
+        qzCalcOut('Proration Period (Jan 1 &rarr; ' + fmtDate(o.closingDate) + '):', daysElapsed + ' of 365 days') +
+        qzCalcOut('Seller Tax Debit / Buyer Credit:', fmtMoney(sellerTaxShare), { total: true, cls: 'ocean' }) +
+      '</div>' +
+      '<div class="qz-calc-card">' +
+        '<h5 class="qz-calc-h">Homeowners Association Assessments</h5>' +
+        (hoa
+          ? qzCalcSelect(o, 'Assessment Cycle:', 'hoaCycle', ['Monthly', 'Quarterly', 'Annual']) +
+            qzCalcIn(o, 'Assessment Amount:', 'hoaAssessment', { money: true }) +
+            qzCalcSelect(o, 'Current Period Status:', 'hoaPaidStatus', ['Paid in advance by Seller', 'Owed by Seller', 'Paid by Buyer']) +
+            qzCalcOut('Days owned by Buyer this period:', (cycleDays - dayInCycle) + ' days') +
+            qzCalcOut('Buyer HOA Debit / Seller Reimbursement:', fmtMoney(Math.max(0, hoa - sellerHoa)), { total: true, cls: 'ocean' })
+          : '<p class="qz-empty">This property is not in an association, so there is nothing to prorate. ' +
+            'Enter an assessment below if that turns out to be wrong.</p>' +
+            qzCalcIn(o, 'Assessment Amount:', 'hoaAssessment', { money: true, placeholder: 'None' })) +
+      '</div>' +
+    '</div></div>';
+}
+
+function qzPayoffsHTML(o) {
+  const principal = Number(o.payoffPrincipal) || 0;
+  const rate = Number(o.payoffRatePct) || 0;
+  const perDiem = Math.round(principal * (rate / 100) / 365 * 100) / 100;
+  const goodThrough = o.payoffGoodThrough || '';
+  const stale = goodThrough && goodThrough < o.closingDate;
+  const total = principal + (Number(o.prepaymentPenalty) || 0) +
+                (Number(o.releaseFee) || 0) + (Number(o.payoffWireFee) || 0);
+  return '<div class="qz-panel">' +
+    '<div class="ph"><h4>Loan Payoffs</h4></div>' +
+    (stale
+      ? '<div class="qz-alert-bad"><b>This payoff has expired.</b> The good-through date is before closing, ' +
+        'so the figure below is short. Order an updated statement before wiring anything.</div>'
+      : '') +
+    '<div class="qz-calc-card">' +
+      '<h5 class="qz-calc-h">First Lien Payoff &mdash; ' + esc(o.payoffLender || 'lender not yet identified') + '</h5>' +
+      qzCalcIn(o, 'Payoff Lender:', 'payoffLender') +
+      qzCalcIn(o, 'Unpaid Principal Balance:', 'payoffPrincipal', { money: true }) +
+      qzCalcIn(o, 'Interest Rate (%):', 'payoffRatePct') +
+      qzCalcOut('Per diem interest:', fmtMoney(perDiem) + ' / day') +
+      qzCalcIn(o, 'Statement Good-Through Date:', 'payoffGoodThrough', { type: 'date' }) +
+      qzCalcIn(o, 'Prepayment Penalty:', 'prepaymentPenalty', { money: true }) +
+      qzCalcIn(o, 'County Lien Release Fee:', 'releaseFee', { money: true }) +
+      qzCalcIn(o, 'Outgoing Payoff Wire Fee:', 'payoffWireFee', { money: true }) +
+      qzCalcOut('Total Estimated Payoff Wire:', fmtMoney(total), { total: true, cls: 'ocean' }) +
+    '</div></div>';
+}
+
+function qzProceedsHTML(o) {
+  const price = o.purchasePrice || 0;
+  const payoff = Number(o.payoffPrincipal) || 0;
+  const commission = Math.round(price * (Number(o.commissionPct) || 6) / 100);
+  const titleFees = qzChargeTotals(o.id, 'H').sellerAt + qzChargeTotals(o.id, 'C').sellerAt;
+  const taxes = Math.round(price * (Number(o.taxRatePct) || 0) / 100 *
+    (Math.min(365, (Number(String(o.closingDate).slice(5, 7)) - 1) * 30 + Number(String(o.closingDate).slice(8, 10))) / 365));
+  const net = price - payoff - commission - titleFees - taxes;
+  const seller = (o.parties || []).find(function (p) { return p.role === 'Seller'; });
+  return '<div class="qz-panel">' +
+    '<div class="ph"><h4>Seller Net Proceeds</h4></div>' +
+    '<div class="qz-calc-card">' +
+      qzCalcOut('1. Gross Sale Price:', fmtMoney(price)) +
+      qzCalcOut('2. Less Existing Mortgage Payoff:', '- ' + fmtMoney(payoff), { cls: 'bad' }) +
+      qzCalcOut('3. Less Broker Commissions:', '- ' + fmtMoney(commission), { cls: 'bad' }) +
+      qzCalcOut('4. Less Settlement &amp; Title Charges:', '- ' + fmtMoney(titleFees), { cls: 'bad' }) +
+      qzCalcOut('5. Less Prorated Taxes:', '- ' + fmtMoney(taxes), { cls: 'bad' }) +
+      qzCalcOut('Estimated Seller Net Proceeds:', fmtMoney(net), { total: true, cls: 'ocean' }) +
+    '</div>' +
+    '<div class="qz-calc-card" style="margin-top:12px">' +
+      '<h5 class="qz-calc-h">Disbursement Verification</h5>' +
+      '<p class="qz-note">Call the seller on a number you already had on file. Never on a number that ' +
+        'arrived with the wire instructions.</p>' +
+      qzCalcOut('Seller of record:', esc(seller ? seller.name : '&mdash;')) +
+      qzCalcOut('Telephone on file:', esc(seller && seller.phone ? seller.phone : '&mdash;')) +
+      qzCalcIn(o, 'Verification Officer:', 'proceedsVerifiedBy', { placeholder: 'Who called' }) +
+      qzCalcSelect(o, 'Verification Status:', 'proceedsVerified', ['Not yet verified', 'Verified by callback', 'Verified in person', 'Unable to reach seller']) +
+      qzCalcSelect(o, 'Delivery Method:', 'proceedsMethod', ['Wire', 'Check', 'Hold in escrow']) +
+    '</div></div>';
+}
+
+function qzCplHTML(o) {
+  return '<div class="qz-panel">' +
+    '<div class="ph"><h4>Closing Protection Letter</h4></div>' +
+    '<div class="qz-calc-card">' +
+      qzCalcIn(o, 'CPL Certificate Number:', 'cplNumber') +
+      qzCalcSelect(o, 'Title Underwriter:', 'underwriter', ['Old Republic National Title Insurance Co.', 'First American Title Insurance Co.', 'Stewart Title Guaranty Co.']) +
+      qzCalcIn(o, 'Policy Jacket Number:', 'policyJacket') +
+      qzCalcOut('Insured Lender:', esc(qzOrderParty(o, 'Lender') || '&mdash; no lender on a cash file')) +
+      qzCalcOut('Insured Borrower / Buyer:', esc(qzOrderParty(o, 'Buyer'))) +
+      qzCalcOut('Insured Amount:', fmtMoney(o.loanAmount || o.purchasePrice)) +
+      qzCalcIn(o, 'Date Issued:', 'cplIssued', { type: 'date' }) +
+      qzCalcIn(o, 'Expiration Date:', 'cplExpires', { type: 'date' }) +
+      qzCalcSelect(o, 'CPL Status:', 'cplStatus', ['Issued & Delivered', 'Requested', 'Expired', 'Not Required']) +
+    '</div></div>';
+}
+
+function qzPolicyInfoHTML(o) {
+  return '<div class="qz-panel">' +
+    '<div class="ph"><h4>Policy Information</h4></div>' +
+    '<div class="qz-calc-card">' +
+      qzCalcSelect(o, 'Underwriter:', 'underwriter', ['Old Republic National Title Insurance Co.', 'First American Title Insurance Co.', 'Stewart Title Guaranty Co.']) +
+      qzCalcIn(o, 'Policy Jacket:', 'policyJacket') +
+      qzCalcSelect(o, "Owner's Policy Form:", 'ownerPolicyForm', ['T-1 Owner Policy', 'T-1R Residential Owner Policy', 'None ordered']) +
+      qzCalcIn(o, "Owner's Policy Amount:", 'purchasePrice', { money: true }) +
+      qzCalcSelect(o, "Lender's Policy Form:", 'lenderPolicyForm', ['T-2 Loan Policy', 'T-2R Short Form', 'None &mdash; cash transaction']) +
+      qzCalcIn(o, "Lender's Policy Amount:", 'loanAmount', { money: true, placeholder: 'None (cash)' }) +
+      qzCalcSelect(o, 'Reissue Credit Applied:', 'reissueCredit', ['No', 'Yes — prior policy within 7 years']) +
+    '</div></div>';
+}
+
+function qzCommitmentHTML(o) {
+  return '<div class="qz-panel">' +
+    '<div class="ph"><h4>Title Commitment &mdash; ' + esc(o.titleNumber) + '</h4></div>' +
+    '<div class="qz-calc-card">' +
+      '<h5 class="qz-calc-h">Schedule A</h5>' +
+      qzCalcIn(o, 'Commitment Number:', 'titleNumber') +
+      qzCalcIn(o, 'Effective Date:', 'commitmentEffective', { type: 'date' }) +
+      qzCalcSelect(o, 'Estate or Interest:', 'estateType', ['Fee Simple', 'Leasehold', 'Easement']) +
+      qzCalcOut('Proposed Insured:', esc(qzOrderParty(o, 'Buyer'))) +
+      qzCalcOut('Title Currently Vested In:', esc(qzOrderParty(o, 'Seller'))) +
+      qzCalcIn(o, 'Policy Amount:', 'purchasePrice', { money: true }) +
+      qzCalcIn(o, 'Legal Description:', 'legalDescription', { placeholder: 'Not yet supplied by the examiner' }) +
+      qzCalcSelect(o, 'Commitment Status:', 'commitmentStatus', ['In preparation', 'Issued', 'Amended', 'Cleared to close']) +
+    '</div></div>';
+}
+
+function qzFinalPolicyHTML(o) {
+  return '<div class="qz-panel">' +
+    '<div class="ph"><h4>Final Policy</h4></div>' +
+    '<div class="qz-calc-card">' +
+      qzCalcIn(o, 'Policy Number:', 'finalPolicyNumber', { placeholder: 'Issued after recording' }) +
+      qzCalcIn(o, 'Date of Policy:', 'finalPolicyDate', { type: 'date' }) +
+      qzCalcIn(o, 'Amount of Insurance:', 'purchasePrice', { money: true }) +
+      qzCalcSelect(o, 'Underwriter:', 'underwriter', ['Old Republic National Title Insurance Co.', 'First American Title Insurance Co.', 'Stewart Title Guaranty Co.']) +
+      qzCalcSelect(o, 'Policy Status:', 'finalPolicyStatus', ['Not yet issued', 'Issued', 'Delivered to insured', 'Remitted to underwriter']) +
+    '</div></div>';
+}
+
+function qzMailingHTML(o) {
+  return '<div class="qz-panel">' +
+    '<div class="ph"><h4>Mailing &amp; Courier Tracking</h4></div>' +
+    '<p class="qz-note">Physical closing packages, deeds going to the county, and lender post-closing shipments.</p>' +
+    '<div class="qz-calc-card">' +
+      qzCalcSelect(o, 'Carrier / Service:', 'shipCarrier', ['FedEx Priority Overnight', 'FedEx 2Day', 'UPS Next Day Air', 'USPS Certified Mail', 'Local courier', 'Not yet shipped']) +
+      qzCalcIn(o, 'Tracking Number:', 'shipTracking', { placeholder: 'Nothing shipped yet' }) +
+      qzCalcIn(o, 'Recipient:', 'shipRecipient', { placeholder: 'Who receives the package' }) +
+      qzCalcIn(o, 'Ship Date:', 'shipDate', { type: 'date' }) +
+      qzCalcSelect(o, 'Shipment Status:', 'shipStatus', ['Not yet shipped', 'In transit', 'Delivered', 'Delivered & signed', 'Exception — see carrier']) +
+    '</div></div>';
+}
+
+function qzRecordingHTML(o) {
+  return '<div class="qz-panel">' +
+    '<div class="ph"><h4>Recording</h4></div>' +
+    '<div class="qz-calc-card">' +
+      qzCalcOut('Recording Jurisdiction:', esc(o.county ? o.county + ' Clerk' : '&mdash;')) +
+      qzCalcSelect(o, 'Submission Method:', 'recordingMethod', ['e-Recording', 'Courier to counter', 'Mail']) +
+      qzCalcIn(o, 'Submitted On:', 'recordingSubmitted', { type: 'date' }) +
+      qzCalcIn(o, 'Instrument Number:', 'recordingInstrument', { placeholder: 'Assigned by the county on acceptance' }) +
+      qzCalcIn(o, 'Recording Fees:', 'recordingFee', { money: true }) +
+      qzCalcSelect(o, 'Recording Status:', 'recordingStatus', ['Not yet submitted', 'Submitted', 'Accepted & recorded', 'Rejected — see county notice']) +
+    '</div></div>';
+}
+
+function qzErecordingHTML(o) {
+  return '<div class="qz-panel">' +
+    '<div class="ph"><h4>e-Recording</h4></div>' +
+    '<div class="qz-calc-card">' +
+      qzCalcSelect(o, 'e-Recording Vendor:', 'erecordVendor', ['Simplifile', 'CSC eRecording', 'ePN', 'Not enrolled for this county']) +
+      qzCalcOut('County:', esc(o.county || '&mdash;')) +
+      qzCalcIn(o, 'Package ID:', 'erecordPackage', { placeholder: 'Assigned on submission' }) +
+      qzCalcSelect(o, 'Package Status:', 'erecordStatus', ['Not submitted', 'Submitted', 'In review by county', 'Recorded', 'Rejected']) +
+    '</div></div>';
+}
+
+function qzUnderwriterHTML(o) {
+  return '<div class="qz-panel">' +
+    '<div class="ph"><h4>Underwriter</h4></div>' +
+    '<div class="qz-calc-card">' +
+      qzCalcSelect(o, 'Underwriter:', 'underwriter', ['Old Republic National Title Insurance Co.', 'First American Title Insurance Co.', 'Stewart Title Guaranty Co.']) +
+      qzCalcIn(o, 'Agency Number:', 'underwriterAgencyNo', { placeholder: 'Agency identifier with this underwriter' }) +
+      qzCalcSelect(o, 'Approval Required:', 'underwriterApprovalNeeded', ['No', 'Yes — over agency authority', 'Yes — curative question']) +
+      qzCalcIn(o, 'Approval Reference:', 'underwriterApprovalRef', { placeholder: 'None required' }) +
+    '</div></div>';
+}
+
+function qzEsignHTML(o) {
+  return '<div class="qz-panel">' +
+    '<div class="ph"><h4>e-Sign</h4></div>' +
+    '<div class="qz-calc-card">' +
+      qzCalcSelect(o, 'e-Sign Provider:', 'esignProvider', ['DocuSign', 'Adobe Sign', 'Notarize', 'Wet signature only']) +
+      qzCalcIn(o, 'Envelope ID:', 'esignEnvelope', { placeholder: 'Assigned when the envelope is sent' }) +
+      qzCalcIn(o, 'Sent On:', 'esignSent', { type: 'date' }) +
+      qzCalcSelect(o, 'Signing Status:', 'esignStatus', ['Not sent', 'Sent — awaiting signature', 'Partially signed', 'Completed', 'Declined']) +
+    '</div></div>';
+}
+
+/* The last five printed pages. Each one gets the control the job actually
+   needs on it, rather than a form for its own sake:
+
+     Closing      the checklist is checkable. It was rendered <input disabled>,
+                  which is a picture of a checklist.
+     Workflow     the status note is the sentence every other screen quotes, so
+                  it is written here rather than being immutable prose.
+     Marketplace  the provider list was three fixed company names; it is now the
+                  vendors actually engaged on this file.
+     Vendors      status is a dropdown, because chasing a vendor and recording
+                  what they said is the whole task.
+     Exceptions   a title exception is either cleared or it is not, and saying
+                  which is curative work, not decoration.
+*/
+
+function qzClosingHTML(o) {
+  const docs = qzDocsForOrder(o.id);
+  const outstanding = docs.filter(function (d) { return qzDocStatus(d) !== 'Reviewed'; });
+  const items = outstanding.length
+    ? outstanding.map(function (d) {
+        return '<label class="qz-check-item">' +
+          '<input type="checkbox" onchange="qzReviewDoc(' + JSON.stringify(d.id) + ')">' +
+          '<span>' + esc(d.name) + ' &mdash; ' + esc(qzDocStatus(d)) + '</span></label>';
+      }).join('')
+    : '<div class="qz-empty">Every document on this file has been reviewed.</div>';
+
+  return '<div class="qz-grid2">' +
+    '<div class="qz-panel">' +
+      '<div class="ph"><h4>Closing Checklist</h4>' +
+        '<span class="qz-chg-note">' + (docs.length - outstanding.length) + ' of ' + docs.length + ' reviewed</span></div>' +
+      '<div class="qz-checklist">' + items + '</div>' +
+      '<p class="qz-note">Ticking an item marks that document reviewed on the Documents tab. ' +
+        'It is the same record, not a second copy of it.</p>' +
+    '</div>' +
+    '<div class="qz-panel"><div class="ph"><h4>Key Dates</h4></div>' +
+      qzKvInput(o, 'Closing Date', 'closingDate', { type: 'date', strong: true }) +
+      (o.originalClosingDate
+        ? '<div class="qz-kv"><b>Original Date</b>' + fmtDate(o.originalClosingDate) + '</div>'
+        : '') +
+      qzKvInput(o, 'Funding Date', 'fundingDate', { type: 'date' }) +
+      qzKvInput(o, 'Disbursement Date', 'disbursementDate', { type: 'date' }) +
+      qzKvSelect(o, 'Settlement Agency', 'settlementAgency', QZ_BRANCHES.map(function (b) { return b.agency; })) +
+    '</div>' +
+  '</div>';
+}
+
+function qzWorkflowHTML(o) {
+  const delayed = o.flag === 'closing-delay';
+  return '<div class="qz-panel">' +
+    '<div class="ph"><h4>Workflow</h4>' +
+      '<button class="qz-btn sm primary" type="button" onclick="qzAdvanceStageModal(\'' + escAttr(o.id) + '\')">Advance Stage &rarr;</button>' +
+    '</div>' +
+    qzTimelineHTML(o) +
+    '<div class="qz-tl-status"><b>Current stage: <span>' + esc(QZ_STAGES[o.stageIndex]) + '</span></b></div>' +
+    '<div class="qz-field wide" style="margin-top:12px">' +
+      '<label for="qzWfNote">Status note &mdash; this is the sentence every other screen quotes</label>' +
+      '<textarea id="qzWfNote" rows="2" onchange="qzOrderFieldSet(\'' + escAttr(o.id) + '\', \'statusNote\', this.value)">' +
+        esc(o.statusNote || '') + '</textarea>' +
+    '</div>' +
+    (delayed
+      ? '<p class="qz-note" style="color:var(--qz-bad)">The original closing date was ' +
+        fmtDate(o.originalClosingDate) + '. Workflow structure is configured by administrators; ' +
+        'a date change is escalated, not edited away.</p>'
+      : '<p class="qz-note">Milestones track the order through its stages. Advancing a stage is a ' +
+        'deliberate act, so it goes through the confirmation above.</p>') +
+  '</div>';
+}
+
+function qzMarketplaceHTML(o) {
+  const engaged = qzList('vendors', function (v) { return v.orderId === o.id; });
+  const names = engaged.map(function (v) { return v.name; });
+  const unique = names.filter(function (n, i) { return names.indexOf(n) === i; });
+  const open = engaged.filter(function (v) { return v.status !== 'Complete'; }).length;
+
+  return '<div class="qz-panel">' +
+    '<div class="ph"><h4>Qualia Marketplace &mdash; Integrated Vendor Orders</h4>' +
+      '<button class="qz-btn sm primary" onclick="qzAddVendorModal(\'' + escAttr(o.id) + '\')">+ Order Service</button></div>' +
+    '<p class="qz-note">Order title searches, surveys, tax certificates, payoff statements and mobile ' +
+      'notaries without leaving the file.</p>' +
+    '<div class="qz-calc-card">' +
+      qzCalcOut('Providers engaged on this order:',
+        unique.length ? esc(unique.join(', ')) : '<span class="qz-muted">None ordered yet</span>') +
+      qzCalcOut('Services tracked:', engaged.length + (open ? ' &middot; ' + open + ' still open' : ' &middot; all complete')) +
+      qzCalcSelect(o, 'Marketplace routing:', 'marketplaceRouting',
+        ['Automatic — use preferred vendors', 'Manual — choose per order', 'Disabled for this file']) +
+      qzCalcIn(o, 'Standing instructions to vendors:', 'marketplaceNote',
+        { placeholder: 'e.g. deliver survey directly to the lender' }) +
+    '</div></div>';
+}
+
+function qzVendorsHTML(o) {
+  const list = qzList('vendors', function (v) { return v.orderId === o.id; });
+  const statuses = ['Ordered', 'In Progress', 'Delayed', 'Complete', 'Cancelled'];
+  const rows = list.map(function (v) {
+    const cls = v.status === 'Complete' ? 'completed'
+      : v.status === 'Delayed' ? 'pending'
+      : v.status === 'In Progress' ? 'progress' : 'scheduled';
+    return '<tr>' +
+      '<td><b>' + esc(v.name) + '</b></td>' +
+      '<td>' + esc(v.service) + '</td>' +
+      '<td>' + (v.ordered ? fmtDate(v.ordered) : '&mdash;') + '</td>' +
+      '<td><select class="qz-calc-in qz-vendor-st ' + cls + '"' +
+        ' aria-label="Status for ' + escAttr(v.name) + '"' +
+        ' onchange="qzSetVendorStatus(' + JSON.stringify(v.id) + ', this.value)">' +
+        statuses.map(function (s) {
+          return '<option value="' + s + '"' + (v.status === s ? ' selected' : '') + '>' + s + '</option>';
+        }).join('') + '</select></td>' +
+      '<td><div class="qz-row-actions">' +
+        '<button class="qz-btn sm" onclick="qzCheckVendor(' + JSON.stringify(v.id) + ')">Check Status</button>' +
+        '<button class="qz-btn sm" onclick="qzEditVendorModal(' + JSON.stringify(v.id) + ')">&#9998;</button>' +
+        '<button class="qz-btn sm danger" onclick="qzDeleteVendorModal(' + JSON.stringify(v.id) + ')">&times;</button>' +
+      '</div></td></tr>';
   }).join('');
-  const o2 = qzGetOrder(o.id);
-  const closingLine = o2 && o2.closingDate
-    ? `<div class="qz-due-context">Today is ${fmtDate(QZ_TODAY)}. This file is scheduled to close ${qzDaysPhrase(o2.closingDate)}, on ${fmtDate(o2.closingDate)}.</div>`
-    : '';
-  return `<div class="qz-panel"><div class="ph"><h4>Tasks</h4><button class="qz-btn sm primary" type="button" onclick="qzAddTaskModal('${o.id}')">+ Add Task</button></div>
-    ${closingLine}
-    <table class="qz-tbl"><thead><tr><th>Task</th><th>Assigned To</th><th>Due</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-  </div>`;
+
+  return '<div class="qz-panel">' +
+    '<div class="ph"><h4>Vendors &amp; Service Providers</h4>' +
+      '<button class="qz-btn sm primary" onclick="qzAddVendorModal(\'' + escAttr(o.id) + '\')">+ Add Vendor</button></div>' +
+    '<table class="qz-tbl">' +
+      '<thead><tr><th>Vendor</th><th>Service</th><th>Ordered</th><th>Status</th><th>Actions</th></tr></thead>' +
+      '<tbody>' + (rows ||
+        '<tr><td colspan="5" class="qz-empty">No vendors are engaged on this order yet.</td></tr>') + '</tbody>' +
+    '</table></div>';
+}
+
+/* Changing a vendor's status is the single most common thing a VA does on this
+   screen, so it happens in place rather than through a modal. */
+function qzSetVendorStatus(id, status) {
+  qzUpdate('vendors', id, { status: status });
+  const v = qzFind('vendors', id);
+  simToast((v ? v.name : 'Vendor') + ' set to ' + status + '.', { tone: 'good' });
+  qzRenderRoot();
+}
+
+/* ============================================================================
+   SCHEDULE B EXCEPTIONS
+   ============================================================================
+   The tab printed four fixed exceptions and named Collin County on every file,
+   including the ones in Dallas and Denton. Schedule B is the list of what the
+   policy will NOT cover, and clearing an item off it is curative work: the
+   single most consequential thing a title assistant does. It cannot be a
+   picture.
+
+   Each exception is now a record on the order, and each one can be cleared,
+   waived or endorsed with a reason. Standard exceptions that survive on every
+   Texas policy are marked as such, because trying to clear one is a mistake
+   worth catching early.
+   ============================================================================ */
+
+function qzGenTitleExceptions(o) {
+  const county = o.county || 'the county';
+  const year = String(o.closingDate || '2026').slice(0, 4);
+  const rows = [
+    { text: 'Standby fees, taxes and assessments for ' + year + ' and subsequent years.', standard: true },
+    { text: 'Restrictive covenants and architectural guidelines recorded in the Map Records of ' + county + '.', standard: true },
+    { text: 'Rights of parties in possession.', standard: true },
+    { text: 'Any discrepancy, conflict or shortage in area or boundary lines, or any encroachment or protrusion.', standard: true }
+  ];
+  const utilFt = 5 + (qzHashString(o.id + '|ease') % 4) * 5;
+  rows.push({ text: utilFt + '-foot utility easement along the rear boundary as shown on the recorded plat.', standard: false });
+  if ((qzHashString(o.id + '|min') % 2) === 0) {
+    rows.push({ text: 'All oil, gas and other minerals previously reserved or conveyed of record.', standard: false });
+  }
+  if ((qzHashString(o.id + '|lien') % 5) === 0) {
+    rows.push({ text: 'Abstract of judgment against a party with a similar name; identity affidavit required.', standard: false });
+  }
+  if (o.type === 'Commercial') {
+    rows.push({ text: 'Terms and conditions of any unrecorded lease affecting the premises.', standard: false });
+  }
+  return rows.map(function (r, i) {
+    return {
+      id: 'tex-' + o.id + '-' + (i + 1),
+      orderId: o.id,
+      num: i + 1,
+      text: r.text,
+      standard: r.standard,
+      /* A standard exception is never cleared; it prints on the policy. */
+      status: r.standard ? 'Standard — remains' : 'Open',
+      note: ''
+    };
+  });
+}
+
+function qzBuildTitleExceptions(orders) {
+  const out = [];
+  (orders || []).forEach(function (o) {
+    qzGenTitleExceptions(o).forEach(function (r) { out.push(r); });
+  });
+  return out;
+}
+
+function qzSetExceptionStatus(id, status) {
+  const ex = qzFind('titleExceptions', id);
+  if (!ex) return;
+  if (ex.standard && status !== 'Standard — remains') {
+    simToast('That is a standard Texas exception. It prints on every policy and cannot be cleared.');
+    qzRenderRoot();
+    return;
+  }
+  qzUpdate('titleExceptions', id, { status: status });
+  qzRenderRoot();
+}
+function qzSetExceptionNote(id, note) {
+  qzUpdate('titleExceptions', id, { note: String(note || '').trim() });
+}
+function qzAddException(orderId) {
+  const rows = qzList('titleExceptions', function (x) { return x.orderId === orderId; });
+  qzInsert('titleExceptions', {
+    orderId: orderId,
+    num: rows.length + 1,
+    text: '',
+    standard: false,
+    status: 'Open',
+    note: ''
+  });
+  simToast('Exception added. Type what the examiner found.', { tone: 'good' });
+  qzRenderRoot();
+}
+function qzSetExceptionText(id, text) {
+  qzUpdate('titleExceptions', id, { text: String(text || '').trim() });
+}
+function qzDeleteException(id) {
+  const ex = qzFind('titleExceptions', id);
+  if (ex && ex.standard) {
+    simToast('A standard exception cannot be removed from Schedule B.');
+    return;
+  }
+  qzRemove('titleExceptions', id);
+  simToast('Exception removed.', { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzExceptionsTabHTML(o) {
+  const rows = qzList('titleExceptions', function (x) { return x.orderId === o.id; })
+    .sort(function (a, b) { return (a.num || 0) - (b.num || 0); });
+  const open = rows.filter(function (r) { return r.status === 'Open'; }).length;
+  const STATUSES = ['Open', 'Cleared', 'Waived by underwriter', 'Endorsed over', 'Standard — remains'];
+
+  const items = rows.map(function (r) {
+    return '<div class="qz-sched-item' + (r.standard ? ' is-standard' : '') + '">' +
+      '<span class="num">' + r.num + '.</span>' +
+      '<div class="qz-ex-body">' +
+        '<textarea class="qz-ex-text" rows="2"' +
+          (r.standard ? ' readonly title="Standard Texas exception — its wording is fixed."' : '') +
+          ' aria-label="Exception ' + r.num + '"' +
+          ' onchange="qzSetExceptionText(\'' + escAttr(r.id) + '\', this.value)">' + esc(r.text) + '</textarea>' +
+        '<div class="qz-ex-foot">' +
+          '<select class="qz-calc-in" aria-label="Status of exception ' + r.num + '"' +
+            ' onchange="qzSetExceptionStatus(\'' + escAttr(r.id) + '\', this.value)">' +
+            STATUSES.map(function (st) {
+              return '<option value="' + escAttr(st) + '"' + (r.status === st ? ' selected' : '') + '>' + esc(st) + '</option>';
+            }).join('') +
+          '</select>' +
+          '<input class="qz-calc-in qz-ex-note" value="' + escAttr(r.note || '') + '"' +
+            ' placeholder="How it was cleared, and by whom"' +
+            ' aria-label="Curative note for exception ' + r.num + '"' +
+            ' onchange="qzSetExceptionNote(\'' + escAttr(r.id) + '\', this.value)">' +
+          (r.standard ? '' :
+            '<button type="button" class="qz-chg-del" title="Remove this exception"' +
+            ' onclick="qzDeleteException(\'' + escAttr(r.id) + '\')">&minus;</button>') +
+        '</div>' +
+      '</div></div>';
+  }).join('');
+
+  return '<div class="qz-panel">' +
+    '<div class="ph"><h4>Title Exceptions (Schedule B &middot; Part II)</h4>' +
+      '<button class="qz-btn sm primary" onclick="qzAddException(\'' + escAttr(o.id) + '\')">+ Add Exception</button></div>' +
+    '<p class="qz-note">Matters excluded from policy coverage unless cleared or specifically endorsed. ' +
+      open + ' of ' + rows.length + ' still open. The four standard Texas exceptions print on every ' +
+      'policy and are not curable.</p>' +
+    '<div class="qz-sched-box"><div class="qz-sched-body">' +
+      (items || '<div class="qz-empty">No exceptions have been raised on this commitment.</div>') +
+    '</div></div></div>';
+}
+
+function qzTasksHTML(o) {
+  const allTasks = qzTasksForOrder(o.id);
+  const groups = [
+    { id: 'tg-open', name: 'Order Opening' },
+    { id: 'tg-title', name: 'Title' },
+    { id: 'tg-pre', name: 'Pre-Closing' },
+    { id: 'tg-payoff', name: 'Payoff Tasks' },
+    { id: 'tg-post', name: 'Post-Closing' }
+  ];
+
+  const groupBlocks = groups.map(g => {
+    const gTasks = allTasks.filter(function (t) {
+      if (t.taskGroup) return t.taskGroup === g.id;
+      if (t.group) return t.group === g.name;
+      return g.id === 'tg-open';
+    });
+    const doneCount = gTasks.filter(t => qzTaskStatus(t) === 'Complete').length;
+    const totalCount = gTasks.length;
+    const pct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
+
+    const taskRows = gTasks.map(t => {
+      const isDone = qzTaskStatus(t) === 'Complete';
+      const badgeClass = isDone ? 'complete' : t.status === 'In Progress' ? 'progress' : 'open';
+      const due = isDone ? fmtDate(t.dueDate) : `${fmtDate(t.dueDate)} ${qzDueChipHTML(t.dueDate)}`;
+      return `
+        <tr data-task-id="${t.id}" class="${isDone ? 'qz-task-done' : ''}">
+          <td style="width:36px"><input type="checkbox" ${isDone ? 'checked' : ''} onchange="qzToggleTaskStatus(${t.id}, this.checked)"></td>
+          <td><b>${esc(t.title)}</b></td>
+          <td>${esc(t.assignedTo)}</td>
+          <td>${due}</td>
+          <td><span class="qz-badge ${badgeClass}">${esc(t.status || 'Open')}</span></td>
+          <td>
+            <div class="qz-row-actions">
+              <button class="qz-btn sm" title="Edit Task" onclick="qzEditTaskModal(${t.id})">&#9998;</button>
+              <button class="qz-btn sm danger" title="Delete Task" onclick="qzDeleteTaskModal(${t.id})">&times;</button>
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+
+    return `
+      <div class="qz-task-group-card">
+        <div class="qz-tg-head">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span class="qz-tg-star">&#9733;</span>
+            <b class="qz-tg-title">${esc(g.name)}</b>
+            <span class="qz-tg-count">${doneCount}/${totalCount} (${pct}%)</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="qz-tg-bar"><i style="width:${pct}%"></i></div>
+            <button class="qz-btn sm" onclick="qzAddTaskModal('${o.id}', '${escAttr(g.name)}')">+ Add Task</button>
+          </div>
+        </div>
+        ${gTasks.length ? `
+        <table class="qz-tbl" style="margin-top:8px">
+          <thead><tr><th></th><th>Task Title</th><th>Assigned To</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>${taskRows}</tbody>
+        </table>` : '<div class="qz-tg-empty">No tasks in this milestone group.</div>'}
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="qz-panel">
+      <div class="ph">
+        <div>
+          <h4>Order Tasks &mdash; Purchase &middot; Standard Milestones</h4>
+          <span class="sub">Workflow automated rules active &middot; Assigned to Plano Escrow Team</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="qz-btn sm" onclick="qzAddTaskGroupModal('${o.id}')">+ Add Task Group</button>
+          <button class="qz-btn sm primary" onclick="qzAddTaskModal('${o.id}')">+ Add Task</button>
+        </div>
+      </div>
+      <div class="qz-task-groups">${groupBlocks}</div>
+    </div>`;
 }
 
 /* ---------- Workflow ---------- */
-function qzWorkflowHTML(o) {
-  const note = o.flag === 'closing-delay'
-    ? `<p class="qz-tl-readonly-note" style="margin-top:14px;font-size:12.5px;color:var(--qz-bad)">Original closing date was ${fmtDate(o.originalClosingDate)}. Workflow structure is configured by admins, always escalate date changes per protocol.</p>`
-    : `<p class="qz-tl-readonly-note" style="margin-top:14px;font-size:12.5px;color:var(--qz-muted)">Workflow milestones track order stage progression.</p>`;
-  const advanceBtn = `<button class="qz-btn sm primary" style="margin-top:14px" type="button" onclick="qzAdvanceStageModal('${o.id}')">Advance Stage &rarr;</button>`;
-  return `<div class="qz-panel"><div class="ph"><h4>Workflow</h4>${advanceBtn}</div>
-    ${qzTimelineHTML(o)}
-    <div class="qz-tl-status"><b>Current stage: <span>${esc(QZ_STAGES[o.stageIndex])}</span></b><p>${esc(o.statusNote)}</p></div>
-    ${note}
-  </div>`;
-}
+
 
 /* ---------- Communication ---------- */
 function qzOpenThread(id) { qzState.threadId = id; qzMark('comm-open'); qzRenderRoot(); }
-/* Merges a thread's original messages with whatever the trainee has replied in this
-   session, replies are stored in qzDemo.replies so they reset on F5 reload. */
 function qzThreadMessages(threadId) {
-  const t = QZ_MESSAGES.find(m => m.id === threadId);
+  const t = qzFind('threads', threadId);
   if (!t) return [];
-  const stored = (qzDemo.replies && qzDemo.replies[threadId]) || [];
-  return t.thread.concat(stored);
+  const stored = qzList('messages', m => m.threadId === threadId);
+  return (t.thread || []).concat(stored);
 }
 function qzSendReply(threadId) {
   const box = document.getElementById('qzReplyBox');
@@ -2388,54 +5235,47 @@ function qzSendReply(threadId) {
   if (!text) { simToast('Write a reply before sending.'); return; }
   if (text.length < 20) { simToast('Your reply should be at least 20 characters. Write a professional response.'); return; }
   const msgs = qzThreadMessages(threadId);
-  const last = msgs[msgs.length - 1];
-  const recipient = last.sender === 'You (VA)' ? last.recipient : last.sender;
-  qzDemo.replies[threadId] = qzDemo.replies[threadId] || [];
-  qzDemo.replies[threadId].push({ sender: 'You (VA)', recipient: recipient, date: QZ_TODAY, body: text });
+  const last = msgs[msgs.length - 1] || {};
+  const recipient = last.sender === 'You (VA)' ? last.recipient : (last.sender || 'Participant');
+  qzInsert('messages', { threadId: threadId, sender: 'You (VA)', recipient: recipient, date: QZ_TODAY, body: text });
   qzMark('comm-reply');
   qzRenderRoot();
 }
 function qzLogFollowup() { qzMark('comm-followup'); simToast('Follow-up logged on this file (training only).'); }
+
 function qzCommunicationHTML(o) {
-  const threads = QZ_MESSAGES.filter(m => m.orderId === o.id);
+  const threads = qzList('threads', m => m.orderId === o.id);
   if (!qzState.threadId || !threads.some(t => t.id === qzState.threadId)) qzState.threadId = threads[0] ? threads[0].id : null;
   const list = threads.map(t => {
     const count = qzThreadMessages(t.id).length;
-    return `<div class="qz-thread-item ${t.id === qzState.threadId ? 'active' : ''}" onclick="qzOpenThread(${t.id})"><b>${esc(t.subject)}</b><span>${count} message${count !== 1 ? 's' : ''}</span></div>`;
+    return `
+      <div class="qz-thread-item ${t.id === qzState.threadId ? 'active' : ''}" onclick="qzOpenThread(${t.id})">
+        <b>${esc(t.subject)}</b>
+        <span>${count} message${count !== 1 ? 's' : ''}</span>
+      </div>`;
   }).join('');
-  // A compose exercise takes over this tab while it's the active thing to do: it carries its
-  // own thread context and its own graded reply box, so showing the ordinary reply UI beside
-  // it would just offer a second, ungraded way to answer the same message.
-  // The takeover needs a REASON, though. ORD-2026-1398 carries two compose exercises, and
-  // while merely having one was reason enough, this tab never rendered its thread list, reply
-  // box or Log Follow-up button on that order at all — which is every interactive step of
-  // Lesson 5. The trainee got a walkthrough tip pointing at controls that were not on screen.
+
   const composes = (typeof QZ_COMPOSES !== 'undefined' ? QZ_COMPOSES : []).filter(c => c.orderId === o.id);
   const walkStep = (SimEngine.walkActive()) ? SimEngine.currentStep() : null;
   const activeCompose = composes.length ? qzActiveComposeFor(o, composes, walkStep) : null;
   if (activeCompose) {
-    // Only reachable by choice (no walkthrough driving it) does it need a way back.
     const back = (!walkStep && qzState.composeId === activeCompose.id)
       ? '<button class="qz-btn sm" style="margin-bottom:12px" onclick="qzCloseCompose()">&larr; Back to messages</button>'
       : '';
     return `<div class="qz-panel">${back}${qzComposeItemHTML(activeCompose.id)}</div>`;
   }
-  /* Free navigation still has to be able to REACH the exercise, so when the tab is showing
-     ordinary threads the order's exercises sit at the top of the thread list as openable
-     entries rather than disappearing. */
+
   const exerciseList = composes.map(c => {
     const st = qzComposeGet(c.id);
     const state = st.resolvedAt ? (st.correct ? 'Completed' : 'Needs revision') : 'Not started';
-    // Deliberately NOT .qz-thread-item: that selector is the walkthrough's handle on a real
-    // message thread (Lesson 5 step 1), and an exercise entry sitting above the threads would
-    // otherwise be the first thing it matched.
     return `<div class="qz-thread-exercise" onclick="qzOpenCompose('${escAttr(c.id)}')"><b>Exercise &middot; ${esc(c.label)}</b><span>${esc(state)}</span></div>`;
   }).join('');
+
   const active = threads.find(t => t.id === qzState.threadId);
   let detail = '<div class="qz-panel">Select a thread.</div>';
   if (active) {
     const msgs = qzThreadMessages(active.id).map(m => `<div class="qz-msg ${m.sender === 'You (VA)' ? 'mine' : ''}"><div class="meta">${esc(m.sender)} &rarr; ${esc(m.recipient)} &middot; ${fmtDate(m.date)}</div>${esc(m.body)}</div>`).join('');
-    detail = `<div class="qz-panel"><div class="ph"><h4>${esc(active.subject)}</h4></div>
+    detail = `<div class="qz-panel"><div class="ph"><h4>${esc(active.subject)}</h4><button class="qz-btn sm danger" onclick="qzDeleteThreadModal(${active.id})">Delete Thread</button></div>
       ${msgs}
       <div class="qz-reply"><textarea id="qzReplyBox" placeholder="Write a reply..." oninput="qzSyncReplyStep()"></textarea>
       <div class="row"><button class="qz-btn" data-comm-action="followup" onclick="qzLogFollowup()">Log Follow-up</button><button class="qz-btn primary" data-comm-action="reply" onclick="qzSendReply(${active.id})">Send Reply</button></div></div>
@@ -2444,19 +5284,11 @@ function qzCommunicationHTML(o) {
   const newBtn = `<div style="padding:0 0 10px 0"><button class="qz-btn sm primary" style="width:100%" onclick="qzNewThreadModal('${o.id}')">+ New Message</button></div>`;
   return `<div class="qz-comm-grid"><div class="qz-thread-list">${newBtn}${exerciseList}${list}</div>${detail}</div>`;
 }
-/* Which compose exercise (if any) owns the Communication tab right now. In order:
-     1. the walkthrough is standing on a compose step for this order,
-     2. the trainee opened one from the thread list,
-     3. the lesson being worked has a compose step for this order (Lesson 14 has no
-        walkthrough at all, so nothing else would surface its exercise).
-   Everything else — free navigation, and any lesson whose steps use the ordinary thread
-   controls, Lesson 5 above all — gets the normal messages view. */
+
 function qzActiveComposeFor(o, composes, walkStep) {
   if (walkStep && walkStep.type === 'compose') {
     return composes.find(c => c.id === walkStep.composeId) || null;
   }
-  // A walkthrough parked on a `do` step for THIS order wants the real controls that step
-  // points at, never an exercise panel covering them.
   if (walkStep && walkStep.type === 'do' && walkStep.orderId === o.id) return null;
   if (qzState.composeId) {
     const chosen = composes.find(c => c.id === qzState.composeId);
@@ -2474,50 +5306,28 @@ function qzActiveComposeFor(o, composes, walkStep) {
 function qzOpenCompose(id) { qzState.composeId = id; qzRenderRoot(); }
 function qzCloseCompose() { qzState.composeId = null; qzRenderRoot(); }
 
-/* ---------- Vendors ---------- */
+/* ---------- Vendors (Universal CRUD) ---------- */
 function qzCheckVendor(id) {
-  const v = QZ_VENDORS.find(x => x.id === id);
+  const v = qzFind('vendors', id);
+  if (!v) return;
   qzMark('vendors-check');
-  simToast(v.name + ': ' + v.status);
+  simToast(`${v.name}: ${v.status}`, { tone: 'good' });
 }
-function qzVendorsHTML(o) {
-  const rows = QZ_VENDORS.filter(v => v.orderId === o.id).map(v => {
-    const cls = v.status === 'Completed' ? 'completed' : v.status === 'Scheduled' ? 'scheduled' : v.status === 'In Progress' ? 'progress' : 'pending';
-    return `<tr><td>${esc(v.name)}</td><td>${esc(v.service)}</td><td><span class="qz-badge ${cls}">${esc(v.status)}</span></td><td><button class="qz-btn sm" onclick="qzCheckVendor(${v.id})">Check Status</button></td></tr>`;
-  }).join('');
-  return `<div class="qz-panel"><div class="ph"><h4>Vendors</h4></div>
-    <table class="qz-tbl"><thead><tr><th>Vendor</th><th>Service</th><th>Status</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-  </div>`;
-}
+
+
 
 /* ---------- Closing ---------- */
-function qzReviewClosing() { qzMark('closing-review'); simToast('Closing checklist reviewed (training only).'); }
-function qzClosingHTML(o) {
-  const outstanding = qzDocsForOrder(o.id).filter(d => qzDocStatus(d) !== 'Reviewed');
-  const items = outstanding.length
-    ? outstanding.map(d => `<div><input type="checkbox" disabled> ${esc(d.name)} — ${qzDocStatus(d)}</div>`).join('')
-    : '<div style="color:var(--qz-muted);font-size:13px">All documents reviewed.</div>';
-  return `<div class="qz-grid2">
-    <div class="qz-panel"><div class="ph"><h4>Closing Checklist</h4></div><div class="qz-checklist">${items}</div>
-      <button class="qz-btn primary" style="margin-top:14px" onclick="qzReviewClosing()">Mark Checklist Reviewed</button>
-    </div>
-    <div class="qz-panel"><div class="ph"><h4>Key Dates</h4></div>
-      <div class="qz-kv"><b>Closing Date</b>${fmtDate(o.closingDate)}</div>
-      ${o.originalClosingDate ? '<div class="qz-kv"><b>Original Date</b>' + fmtDate(o.originalClosingDate) + '</div>' : ''}
-      <div class="qz-kv"><b>Settlement Agency</b>${esc(o.settlementAgency)}</div>
-    </div>
-  </div>`;
+function qzReviewClosing() { qzMark('closing-review'); simToast('Closing checklist reviewed (training only).', { tone: 'good' }); }
+
+
+/* ---------- Accounting (D.6 Parity — Editable Ledger in Sandbox) ---------- */
+let qzExpandedLedgerRow = null;
+
+function qzToggleLedgerRow(rowId) {
+  qzExpandedLedgerRow = (qzExpandedLedgerRow === rowId ? null : rowId);
+  qzRenderRoot();
 }
 
-/* ---------- Accounting (read-only) ---------- */
-/* ---------- Accounting: settlement statement grid ----------
-   Core does not show charges as a flat three-column list. It shows numbered lines against
-   who pays them and when: Paid by Borrower (At Closing / Before Closing), Paid by Seller
-   (same split), and By Others. Reading that grid — and understanding that the same total
-   can sit in very different columns — is the actual skill, so the layout is the lesson.
-   Blank numbered lines are rendered deliberately: the real grid is a fixed-length section,
-   not a list that shrinks to its contents.
-   Each charge declares which column it lands in; `col` is one of the five column keys. */
 const QZ_ACCT_COLS = ['borrowerAt', 'borrowerBefore', 'sellerAt', 'sellerBefore', 'byOthers'];
 function qzAcctLines(o) {
   const lines = [
@@ -2531,338 +5341,33 @@ function qzAcctLines(o) {
   }
   return lines;
 }
+
 function qzAccountingHTML(o) {
-  const lines = qzAcctLines(o);
-  const MIN_ROWS = 8;
-  const totals = { borrowerAt: 0, borrowerBefore: 0, sellerAt: 0, sellerBefore: 0, byOthers: 0 };
-  lines.forEach(l => { if (totals[l.col] != null) totals[l.col] += l.amount; });
+  // In Lesson mode on the 3 curriculum orders, present the read-only Settlement Statement grid
+  const isCurriculumOrderInLesson = qzState.lessonId && ['ORD-2026-1483', 'ORD-2026-1512', 'ORD-2026-1398'].includes(o.id);
+  if (isCurriculumOrderInLesson) {
+    const lines = qzAcctLines(o);
+    const MIN_ROWS = 8;
+    const totals = { borrowerAt: 0, borrowerBefore: 0, sellerAt: 0, sellerBefore: 0, byOthers: 0 };
+    lines.forEach(l => { if (totals[l.col] != null) totals[l.col] += l.amount; });
 
-  const rowHTML = (l, i) => {
-    const cells = QZ_ACCT_COLS.map(c =>
-      `<td class="num ${l && l.col === c ? 'has' : ''}">${l && l.col === c ? fmtMoney(l.amount) : ''}</td>`
-    ).join('');
-    return `<tr class="${l ? '' : 'empty'}">
-      <td class="ln">${String(i + 1).padStart(2, '0')}</td>
-      <td class="desc">${l ? esc(l.desc) : ''}</td>
-      <td class="payee">${l ? 'to ' + esc(l.payee) : ''}</td>
-      ${cells}
-    </tr>`;
-  };
-  const body = [];
-  for (let i = 0; i < Math.max(MIN_ROWS, lines.length); i++) body.push(rowHTML(lines[i] || null, i));
-  const totalCells = QZ_ACCT_COLS.map(c => `<td class="num">${fmtMoney(totals[c])}</td>`).join('');
+    const rowHTML = (l, i) => {
+      const cells = QZ_ACCT_COLS.map(c =>
+        `<td class="num ${l && l.col === c ? 'has' : ''}">${l && l.col === c ? fmtMoney(l.amount) : ''}</td>`
+      ).join('');
+      return `<tr class="${l ? '' : 'empty'}">
+        <td class="ln">${String(i + 1).padStart(2, '0')}</td>
+        <td class="desc">${l ? esc(l.desc) : ''}</td>
+        <td class="payee">${l ? 'to ' + esc(l.payee) : ''}</td>
+        ${cells}
+      </tr>`;
+    };
+    const body = [];
+    for (let i = 0; i < Math.max(MIN_ROWS, lines.length); i++) body.push(rowHTML(lines[i] || null, i));
+    const totalCells = QZ_ACCT_COLS.map(c => `<td class="num">${fmtMoney(totals[c])}</td>`).join('');
 
-  return `<div class="qz-panel">
-    <div class="qz-readonly-note">This grid is read-only for a VA. Review the figures and route anything that looks wrong to someone with authority to change it, funds are never modified from here.</div>
-    <div class="qz-tbl-scroll">
-      <table class="qz-acct-grid">
-        <thead>
-          <tr class="grp">
-            <th colspan="3"></th>
-            <th colspan="2">Paid by Borrower</th>
-            <th colspan="2">Paid by Seller</th>
-            <th rowspan="2" class="by-others">By Others</th>
-          </tr>
-          <tr>
-            <th class="ln"></th><th class="desc">Description</th><th class="payee">Payee</th>
-            <th class="num">At Closing</th><th class="num">Before Closing</th>
-            <th class="num">At Closing</th><th class="num">Before Closing</th>
-          </tr>
-        </thead>
-        <tbody>${body.join('')}</tbody>
-        <tfoot><tr><td colspan="3" class="tl">TOTALS</td>${totalCells}</tr></tfoot>
-      </table>
-    </div>
-  </div>`;
-}
-
-/* ---------- 17 Rail Pages (Phase D) ---------- */
-
-function qzCommitmentHTML(o) {
-  const buyer = o.parties.find(p => p.role === 'Buyer' || p.role === 'Borrower') || { name: 'Not set' };
-  const lender = o.parties.find(p => p.role === 'Lender') || { name: 'None (Cash)' };
-  return `
-    <div class="qz-panel">
-      <div class="ph"><h4>Title Commitment &mdash; ${esc(o.titleNumber || 'TX-2026-0000')}</h4></div>
-      <p style="font-size:12.5px;color:var(--qz-muted);margin-bottom:14px">Issued pursuant to Texas Insurance Code Title 11 &middot; Underwriter: Old Republic National Title Insurance Company</p>
-      
-      <div class="qz-sched-box">
-        <div class="qz-sched-head"><span>Schedule A &middot; Policy Information & Vesting</span><span class="qz-badge complete">Effective ${fmtDate(o.opened)}</span></div>
-        <div class="qz-sched-body">
-          <div class="qz-calc-row"><span>1. Commitment Number:</span><span class="qz-calc-val">${esc(o.titleNumber || o.id)}</span></div>
-          <div class="qz-calc-row"><span>2. Policy Amount (Owner's Policy):</span><span class="qz-calc-val">${fmtMoney(o.purchasePrice)}</span></div>
-          <div class="qz-calc-row"><span>&nbsp;&nbsp;&nbsp;Proposed Insured:</span><span class="qz-calc-val">${esc(buyer.name)}</span></div>
-          <div class="qz-calc-row"><span>3. Policy Amount (Lender's Policy):</span><span class="qz-calc-val">${o.loanAmount ? fmtMoney(o.loanAmount) : 'None'}</span></div>
-          <div class="qz-calc-row"><span>&nbsp;&nbsp;&nbsp;Proposed Insured:</span><span class="qz-calc-val">${esc(lender.name)}</span></div>
-          <div class="qz-calc-row"><span>4. Estate or Interest Insured:</span><span class="qz-calc-val">Fee Simple</span></div>
-          <div class="qz-calc-row"><span>5. Title currently vested in:</span><span class="qz-calc-val">${esc(qzOrderParty(o, 'Seller'))}</span></div>
-          <div class="qz-calc-row"><span>6. Legal Description:</span><span class="qz-calc-val">${esc(o.legalDescription || 'See Exhibit A on file')}</span></div>
-        </div>
-      </div>
-
-      <div class="qz-sched-box">
-        <div class="qz-sched-head"><span>Schedule B &middot; Part I &mdash; Requirements</span><span class="qz-badge progress">5 Requirements</span></div>
-        <div class="qz-sched-body">
-          <div class="qz-sched-item"><span class="num">1.</span><div>Instruments creating the estate/interest to be insured must be approved, executed, and filed for record: General Warranty Deed from <b>${esc(qzOrderParty(o, 'Seller'))}</b> to <b>${esc(buyer.name)}</b>.</div></div>
-          <div class="qz-sched-item"><span class="num">2.</span><div>Pay and satisfy full purchase consideration of <b>${fmtMoney(o.purchasePrice)}</b> to the grantor.</div></div>
-          <div class="qz-sched-item"><span class="num">3.</span><div>Pay all taxes, charges, and assessments levied and due prior to closing.</div></div>
-          <div class="qz-sched-item"><span class="num">4.</span><div>Payoff and full release of prior recorded deed of trust and liens against the subject property.</div></div>
-          <div class="qz-sched-item"><span class="num">5.</span><div>Identity Affidavit and marital status statement executed by all parties to the transaction.</div></div>
-        </div>
-      </div>
-
-      <div class="qz-sched-box">
-        <div class="qz-sched-head"><span>Schedule B &middot; Part II &mdash; Standard Exceptions</span><span class="qz-badge">Standard Exceptions</span></div>
-        <div class="qz-sched-body">
-          <div class="qz-sched-item"><span class="num">1.</span><div>Standby fees, taxes and assessments by any taxing authority for current and subsequent years (prorated).</div></div>
-          <div class="qz-sched-item"><span class="num">2.</span><div>Restrictive covenants affecting property recorded in Collin/Dallas County map and deed records.</div></div>
-          <div class="qz-sched-item"><span class="num">3.</span><div>Utility easements, building setback lines, and drainage easements as shown on recorded subdivision plat.</div></div>
-          <div class="qz-sched-item"><span class="num">4.</span><div>Any mineral reservations, oil/gas leases, and royalty interests of record in chain of title.</div></div>
-        </div>
-      </div>
-    </div>`;
-}
-
-function qzProrationsHTML(o) {
-  const price = o.purchasePrice || 400000;
-  const taxRate = 0.0215; // 2.15% average property tax
-  const annualTax = Math.round(price * taxRate);
-  const closingMonth = Number((o.closingDate || '2026-08-28').slice(5, 7));
-  const closingDay = Number((o.closingDate || '2026-08-28').slice(8, 10));
-  const daysElapsed = Math.min(365, (closingMonth - 1) * 30 + closingDay);
-  const sellerTaxShare = Math.round(annualTax * (daysElapsed / 365) * 100) / 100;
-  const hoaQuarterly = 135.00;
-  const hoaQuarterDay = closingDay % 90;
-  const sellerHoaShare = Math.round(hoaQuarterly * (hoaQuarterDay / 90) * 100) / 100;
-
-  return `
-    <div class="qz-panel">
-      <div class="ph"><h4>Taxes & Prorations Calculator</h4><button class="qz-btn sm" onclick="simToast('Proration recalculated with statutory 365-day Texas convention.')">Recalculate</button></div>
-      <p style="font-size:12.5px;color:var(--qz-muted);margin-bottom:14px">Prorations calculated through midnight preceding closing date (${fmtDate(o.closingDate)}) using Texas statutory 365-day calendar convention.</p>
-      
-      <div class="qz-grid2">
-        <div class="qz-calc-card">
-          <h5 style="margin:0 0 10px 0;color:var(--qz-navy)">County & Municipal Real Estate Taxes</h5>
-          <div class="qz-calc-row"><span>Assessed Property Valuation:</span><span class="qz-calc-val">${fmtMoney(price)}</span></div>
-          <div class="qz-calc-row"><span>Effective Combined Tax Rate:</span><span class="qz-calc-val">2.15% / year</span></div>
-          <div class="qz-calc-row"><span>Total Annual Taxes (estimated):</span><span class="qz-calc-val">${fmtMoney(annualTax)}</span></div>
-          <div class="qz-calc-row"><span>Proration Period (Jan 1 &rarr; ${fmtDate(o.closingDate)}):</span><span class="qz-calc-val">${daysElapsed} of 365 days</span></div>
-          <div class="qz-calc-row total"><span>Seller Tax Debit / Buyer Credit:</span><span class="qz-calc-val" style="color:var(--qz-ocean)">${fmtMoney(sellerTaxShare)}</span></div>
-        </div>
-
-        <div class="qz-calc-card">
-          <h5 style="margin:0 0 10px 0;color:var(--qz-navy)">Homeowners Association (HOA) Assessments</h5>
-          <div class="qz-calc-row"><span>HOA Assessment Cycle:</span><span class="qz-calc-val">Quarterly ($135.00)</span></div>
-          <div class="qz-calc-row"><span>Current Quarter Assessment Status:</span><span class="qz-calc-val">Paid in advance by Seller</span></div>
-          <div class="qz-calc-row"><span>Days owned by Buyer this quarter:</span><span class="qz-calc-val">${90 - hoaQuarterDay} days</span></div>
-          <div class="qz-calc-row total"><span>Buyer HOA Debit / Seller Reimbursement:</span><span class="qz-calc-val" style="color:var(--qz-ocean)">${fmtMoney(Math.max(0, hoaQuarterly - sellerHoaShare))}</span></div>
-        </div>
-      </div>
-    </div>`;
-}
-
-function qzPayoffsHTML(o) {
-  const payoffPrincipal = Math.round(o.purchasePrice * 0.58);
-  const perDiem = Math.round((payoffPrincipal * 0.0575 / 365) * 100) / 100;
-  const goodThrough = '2026-08-10';
-  const isStale = (goodThrough < (o.closingDate || '2026-08-28'));
-  const wireFee = 25.00;
-  const releaseFee = 75.00;
-  const totalPayoff = payoffPrincipal + (perDiem * 15) + wireFee + releaseFee;
-
-  return `
-    <div class="qz-panel">
-      <div class="ph"><h4>Existing Mortgage Payoffs</h4><button class="qz-btn sm primary" onclick="simToast('Payoff update request transmitted to loan servicer.')">Request Updated Payoff</button></div>
-      
-      ${isStale ? `
-      <div class="qz-wire-verify-box" style="margin-top:0;margin-bottom:16px;background:#fef2f2;border-color:#fecaca">
-        <h5 style="color:#991b1b">&sim; Payoff Statement Expiration Notice</h5>
-        <p style="margin:0;font-size:12.5px;color:#7f1d1d">The payoff statement on file is valid through <b>${fmtDate(goodThrough)}</b>, which precedes scheduled funding date <b>${fmtDate(o.closingDate)}</b>. Funding on this stale balance will cause an escrow shortage. An updated statement must be obtained.</p>
-      </div>` : ''}
-
-      <div class="qz-calc-card">
-        <h5 style="margin:0 0 10px 0;color:var(--qz-navy)">1st Lien &mdash; Summit Ridge Mortgage Servicing (Loan #8842-117093)</h5>
-        <div class="qz-calc-row"><span>Unpaid Principal Balance:</span><span class="qz-calc-val">${fmtMoney(payoffPrincipal)}</span></div>
-        <div class="qz-calc-row"><span>Interest Rate:</span><span class="qz-calc-val">5.750% (Per diem: ${fmtMoney(perDiem)} / day)</span></div>
-        <div class="qz-calc-row"><span>Statement Good-Through Date:</span><span class="qz-calc-val ${isStale ? 'bad' : ''}">${fmtDate(goodThrough)} ${isStale ? '(Expired)' : '(Valid)'}</span></div>
-        <div class="qz-calc-row"><span>Prepayment Penalty:</span><span class="qz-calc-val">$0.00</span></div>
-        <div class="qz-calc-row"><span>County Lien Release & Escrow Fee:</span><span class="qz-calc-val">${fmtMoney(releaseFee)}</span></div>
-        <div class="qz-calc-row"><span>Outgoing Payoff Wire Fee:</span><span class="qz-calc-val">${fmtMoney(wireFee)}</span></div>
-        <div class="qz-calc-row total"><span>Total Estimated Payoff Wire:</span><span class="qz-calc-val" style="color:var(--qz-navy)">${fmtMoney(totalPayoff)}</span></div>
-      </div>
-    </div>`;
-}
-
-function qzCplHTML(o) {
-  const lender = o.parties.find(p => p.role === 'Lender') || { name: 'Frisco Community Lending' };
-  const cplRecord = (typeof QZS_CPLS !== 'undefined' && QZS_CPLS.find(c => c.order === o.id)) || {
-    cpl: 'CPL-' + (8900 + (parseInt(o.id.replace('ORD-2026-', '')) % 100)),
-    issued: '2026-07-05',
-    expires: '2026-09-05',
-    uw: 'Old Republic National Title',
-    jacket: 'OR-TX-' + (448000 + (parseInt(o.id.replace('ORD-2026-', '')) % 1000)),
-    status: 'Active'
-  };
-
-  return `
-    <div class="qz-panel">
-      <div class="ph">
-        <h4>Closing Protection Letter (CPL)</h4>
-        <button class="qz-btn sm primary" onclick="simToast('CPL reissued for 60 days. Jacket updated in underwriter portal.', {tone:'good'})">Reissue CPL</button>
-      </div>
-      <p style="font-size:12.5px;color:var(--qz-muted);margin-bottom:14px">Indemnification agreement issued by underwriter insuring lender against fraud, dishonesty, or handling negligence by settlement agent.</p>
-
-      <div class="qz-calc-card">
-        <div class="qz-calc-row"><span>CPL Certificate Number:</span><span class="qz-calc-val">${esc(cplRecord.cpl)}</span></div>
-        <div class="qz-calc-row"><span>Title Underwriter:</span><span class="qz-calc-val">${esc(cplRecord.uw)}</span></div>
-        <div class="qz-calc-row"><span>Policy Jacket Number:</span><span class="qz-calc-val">${esc(cplRecord.jacket)}</span></div>
-        <div class="qz-calc-row"><span>Insured Lender:</span><span class="qz-calc-val">${esc(lender.name)}</span></div>
-        <div class="qz-calc-row"><span>Insured Borrower / Buyer:</span><span class="qz-calc-val">${esc(qzOrderParty(o, 'Buyer'))}</span></div>
-        <div class="qz-calc-row"><span>Insured Amount (Loan Amount):</span><span class="qz-calc-val">${fmtMoney(o.loanAmount || o.purchasePrice)}</span></div>
-        <div class="qz-calc-row"><span>Date Issued:</span><span class="qz-calc-val">${fmtDate(cplRecord.issued)}</span></div>
-        <div class="qz-calc-row"><span>Expiration Date:</span><span class="qz-calc-val">${fmtDate(cplRecord.expires)}</span></div>
-        <div class="qz-calc-row total"><span>CPL Status:</span><span class="qz-cpl-badge ${cplRecord.status.toLowerCase()}">${esc(cplRecord.status)}</span></div>
-      </div>
-    </div>`;
-}
-
-function qzPolicyInfoHTML(o) {
-  // Texas Department of Insurance (TDI) basic manual promulgated rate calculation
-  const p = o.purchasePrice || 350000;
-  let basicRate = 0;
-  if (p <= 100000) basicRate = 875;
-  else if (p <= 200000) basicRate = 875 + ((p - 100000) / 1000) * 5.54;
-  else if (p <= 400000) basicRate = 1429 + ((p - 200000) / 1000) * 4.56;
-  else basicRate = 2341 + ((p - 400000) / 1000) * 3.85;
-  basicRate = Math.round(basicRate);
-
-  const simultaneousLenderFee = o.loanAmount ? 100 : 0;
-  const t19Fee = 25.00;
-  const t30Fee = 20.00;
-  const totalPremium = basicRate + simultaneousLenderFee + t19Fee + t30Fee;
-
-  return `
-    <div class="qz-panel">
-      <div class="ph"><h4>Title Policy Info & Promulgated Rates</h4></div>
-      <p style="font-size:12.5px;color:var(--qz-muted);margin-bottom:14px">Texas title insurance rates are set by the Texas Department of Insurance (TDI Schedule R-1) and non-negotiable.</p>
-
-      <div class="qz-calc-card">
-        <h5 style="margin:0 0 10px 0;color:var(--qz-navy)">Promulgated Premium Calculation</h5>
-        <div class="qz-calc-row"><span>Owner's Title Policy (Basic Schedule R-1 on ${fmtMoney(o.purchasePrice)}):</span><span class="qz-calc-val">${fmtMoney(basicRate)}</span></div>
-        <div class="qz-calc-row"><span>Lender's Title Policy (Simultaneous Issue Schedule R-5):</span><span class="qz-calc-val">${fmtMoney(simultaneousLenderFee)}</span></div>
-        <div class="qz-calc-row"><span>T-19 Restrictive Covenants & Encroachments Endorsement:</span><span class="qz-calc-val">${fmtMoney(t19Fee)}</span></div>
-        <div class="qz-calc-row"><span>T-30 Tax Deletion Endorsement:</span><span class="qz-calc-val">${fmtMoney(t30Fee)}</span></div>
-        <div class="qz-calc-row total"><span>Total Promulgated Premium:</span><span class="qz-calc-val" style="color:var(--qz-navy)">${fmtMoney(totalPremium)}</span></div>
-      </div>
-
-      <div class="qz-calc-card" style="margin-top:12px">
-        <h5 style="margin:0 0 10px 0;color:var(--qz-navy)">Premium Remittance Split</h5>
-        <div class="qz-calc-row"><span>Title Agency Retention (85%):</span><span class="qz-calc-val">${fmtMoney(totalPremium * 0.85)}</span></div>
-        <div class="qz-calc-row"><span>Underwriter Remittance Due (15%):</span><span class="qz-calc-val">${fmtMoney(totalPremium * 0.15)}</span></div>
-      </div>
-    </div>`;
-}
-
-function qzFinalPolicyHTML(o) {
-  const isClosed = o.stageIndex >= 4;
-  return `
-    <div class="qz-panel">
-      <div class="ph"><h4>Final Policy Production</h4></div>
-      <p style="font-size:12.5px;color:var(--qz-muted);margin-bottom:14px">Post-closing document verification, recording confirmation, and policy jacket delivery to insureds.</p>
-
-      <div class="qz-calc-card">
-        <div class="qz-calc-row"><span>Recorded Deed Instrument:</span><span class="qz-calc-val">${isClosed ? 'Doc #2026-0811904 (Collin Co.)' : 'Pending Recording'}</span></div>
-        <div class="qz-calc-row"><span>Owner's Policy Jacket Assigned:</span><span class="qz-calc-val">OR-TX-448120</span></div>
-        <div class="qz-calc-row"><span>Lender's Policy Jacket Assigned:</span><span class="qz-calc-val">${o.loanAmount ? 'OR-TX-448121' : 'None'}</span></div>
-        <div class="qz-calc-row"><span>Underwriter Remittance Status:</span><span class="qz-calc-val">${isClosed ? 'Remitted' : 'Pending Month-End'}</span></div>
-        <div class="qz-calc-row total"><span>Policy Production Status:</span><span class="qz-badge ${isClosed ? 'complete' : 'progress'}">${isClosed ? 'Policies Issued & Delivered' : 'Pending Post-Closing'}</span></div>
-      </div>
-    </div>`;
-}
-
-function qzClosingDisclosureSectionHTML(o, secKey) {
-  const titles = {
-    'cd-a': 'Section A &middot; Origination Charges',
-    'cd-c': 'Section C &middot; Services Borrower Did Shop For',
-    'cd-e': 'Section E &middot; Taxes and Other Government Fees',
-    'cd-f': 'Section F &middot; Prepaids',
-    'cd-g': 'Section G &middot; Initial Escrow Payment at Closing',
-    'cd-h': 'Section H &middot; Other Charges',
-    'cd-j': 'Section J &middot; Total Closing Costs for Borrower',
-    'cd-km': 'Sections K & M &middot; Calculating Cash to Close',
-    'cd-ln': 'Sections L & N &middot; Summaries of Transactions (Seller)'
-  };
-
-  const lineGenerators = {
-    'cd-a': () => [
-      { desc: '0.50 % of Loan Amount (Points)', payee: 'Lender', amount: Math.round((o.loanAmount || 300000) * 0.005), col: 'borrowerAt' },
-      { desc: 'Application Fee', payee: 'Lender', amount: 350.00, col: 'borrowerBefore' },
-      { desc: 'Underwriting Fee', payee: 'Lender', amount: 795.00, col: 'borrowerAt' }
-    ],
-    'cd-c': () => [
-      { desc: 'Pest Inspection Fee', payee: 'Ace Home Inspections', amount: 125.00, col: 'borrowerBefore' },
-      { desc: 'Survey Fee', payee: 'Precision Land Surveying', amount: 640.00, col: 'borrowerBefore' },
-      { desc: 'Title &mdash; Closing Protection Letter', payee: 'Old Republic Title', amount: 50.00, col: 'borrowerAt' },
-      { desc: 'Title &mdash; Settlement Agent Fee', payee: 'Best Closing Inc.', amount: 595.00, col: 'borrowerAt' },
-      { desc: 'Title &mdash; Title Examination Fee', payee: 'Best Closing Inc.', amount: 150.00, col: 'borrowerAt' }
-    ],
-    'cd-e': () => [
-      { desc: 'Recording Fees (Deed: $85.00, Mortgage: $100.00)', payee: 'Collin County Clerk', amount: 185.00, col: 'borrowerAt' },
-      { desc: 'Transfer Taxes', payee: 'State / County', amount: 0.00, col: 'borrowerAt' }
-    ],
-    'cd-f': () => [
-      { desc: "Homeowner's Insurance Premium (12 mo)", payee: 'Insurance Carrier', amount: 1680.00, col: 'borrowerBefore' },
-      { desc: 'Prepaid Interest ($42.10/day for 14 days)', payee: 'Lender', amount: 589.40, col: 'borrowerAt' }
-    ],
-    'cd-g': () => [
-      { desc: "Homeowner's Insurance ($140/mo for 2 mo)", payee: 'Lender Escrow Account', amount: 280.00, col: 'borrowerAt' },
-      { desc: 'Property Taxes ($650/mo for 2 mo)', payee: 'Lender Escrow Account', amount: 1300.00, col: 'borrowerAt' }
-    ],
-    'cd-h': () => [
-      { desc: 'HOA Capital Contribution', payee: 'HOA Management', amount: 350.00, col: 'borrowerAt' },
-      { desc: 'Home Warranty Plan', payee: 'Choice Home Warranty', amount: 625.00, col: 'sellerAt' },
-      { desc: "Title &mdash; Owner's Title Policy (optional)", payee: 'Best Closing Inc.', amount: Math.round(o.purchasePrice * 0.0057), col: 'sellerAt' }
-    ],
-    'cd-j': () => [
-      { desc: 'Total Loan Costs (Borrower-Paid Sections A + B + C)', payee: 'Various Providers', amount: 3420.00, col: 'borrowerAt' },
-      { desc: 'Total Other Costs (Borrower-Paid Sections E + F + G + H)', payee: 'Various Providers', amount: 4389.40, col: 'borrowerAt' }
-    ],
-    'cd-km': () => [
-      { desc: 'Sale Price of Property', payee: 'Seller', amount: o.purchasePrice, col: 'borrowerAt' },
-      { desc: 'Closing Costs Financed / Paid at Closing', payee: 'Settlement Escrow', amount: 7809.40, col: 'borrowerAt' },
-      { desc: 'Deposit / Earnest Money Already Paid', payee: 'Best Closing Escrow', amount: 5000.00, col: 'borrowerBefore' },
-      { desc: 'Principal Amount of New Loan', payee: 'Lender', amount: o.loanAmount || 0, col: 'borrowerBefore' }
-    ],
-    'cd-ln': () => [
-      { desc: 'Sale Price of Property (Due to Seller)', payee: 'Seller Gross', amount: o.purchasePrice, col: 'sellerAt' },
-      { desc: 'Payoff of First Mortgage Loan', payee: 'Summit Ridge Mortgage', amount: Math.round(o.purchasePrice * 0.58), col: 'sellerAt' },
-      { desc: 'Total Real Estate Broker Commissions (6%)', payee: 'Listing & Selling Brokers', amount: Math.round(o.purchasePrice * 0.06), col: 'sellerAt' }
-    ]
-  };
-
-  const lines = (lineGenerators[secKey] ? lineGenerators[secKey]() : []);
-  const MIN_ROWS = 6;
-  const totals = { borrowerAt: 0, borrowerBefore: 0, sellerAt: 0, sellerBefore: 0, byOthers: 0 };
-  lines.forEach(l => { if (totals[l.col] != null) totals[l.col] += l.amount; });
-
-  const body = [];
-  for (let i = 0; i < Math.max(MIN_ROWS, lines.length); i++) {
-    const l = lines[i] || null;
-    const cells = QZ_ACCT_COLS.map(c =>
-      `<td class="num ${l && l.col === c ? 'has' : ''}">${l && l.col === c ? fmtMoney(l.amount) : ''}</td>`
-    ).join('');
-    body.push(`<tr class="${l ? '' : 'empty'}">
-      <td class="ln">${String(i + 1).padStart(2, '0')}</td>
-      <td class="desc">${l ? esc(l.desc) : ''}</td>
-      <td class="payee">${l ? 'to ' + esc(l.payee) : ''}</td>
-      ${cells}
-    </tr>`);
-  }
-  const totalCells = QZ_ACCT_COLS.map(c => `<td class="num">${fmtMoney(totals[c])}</td>`).join('');
-
-  return `
-    <div class="qz-panel">
-      <div class="ph"><h4>${titles[secKey] || 'Closing Disclosure Section'}</h4></div>
+    return `<div class="qz-panel">
+      <div class="qz-readonly-note">This grid is read-only for a VA in Lesson mode. Review figures and verify calculations.</div>
       <div class="qz-tbl-scroll">
         <table class="qz-acct-grid">
           <thead>
@@ -2883,65 +5388,408 @@ function qzClosingDisclosureSectionHTML(o, secKey) {
         </table>
       </div>
     </div>`;
+  }
+
+  // In Sandbox mode: Full Editable Qualia Core Order Ledger
+  /* The escrow position is derived from the receipts and disbursements that
+     actually exist on this file. It used to fall back to a literal $5,000, so
+     every order in the system reported the same balance whether or not a cent
+     had ever been received. */
+  const esc$ = qzOrderEscrow(o.id);
+  const orderReceipts = esc$.receipts;
+  const orderDisbursements = esc$.disbursements;
+  const escrowBalance = esc$.balance;
+
+  const led = qzList('ledgerLines')
+    .filter(function (l) { return l.orderId === o.id; })
+    .sort(function (x, y) { return (x.lineNo || 0) - (y.lineNo || 0); });
+
+  const tableRows = led.map(function (l) {
+    const isVoid = String(l.status) === 'Void';
+    return '<tr' + (isVoid ? ' class="qz-void"' : '') + '>' +
+      '<td>' + fmtDate(l.date) + '</td>' +
+      '<td>' + esc(l.ref || '') + '</td>' +
+      '<td>' + esc(l.party || '') + '</td>' +
+      '<td>' + esc(l.type || '') + '</td>' +
+      '<td class="num">' + (l.debit ? fmtMoney(l.debit) : '') + '</td>' +
+      '<td class="num">' + (l.credit ? fmtMoney(l.credit) : '') + '</td>' +
+      '<td class="num">' + fmtMoney(l.balance || 0) + '</td>' +
+      '<td><span class="qz-badge ' + (isVoid ? 'bad' : 'complete') + '">' + esc(l.status || '') + '</span></td>' +
+      '<td>' + (l.sourceColl && !isVoid
+        ? '<button type="button" class="qz-btn sm" onclick="qzVoidMoneyModal(\'' + l.sourceColl + '\', \'' + escAttr(l.sourceId) + '\')">Void</button>'
+        : '') + '</td>' +
+    '</tr>';
+  }).join('');
+
+  /* A file is ready to disburse when the money is in and it covers the fees
+     due. Saying so unconditionally, as this tile used to, taught a trainee to
+     ignore the one check that matters. */
+  const owed = qzChargeTotals(o.id, 'B').borrowerAt + qzChargeTotals(o.id, 'C').borrowerAt;
+  const ready = escrowBalance >= owed && orderReceipts.length > 0;
+
+  return '' +
+    '<div class="qz-panel">' +
+      '<div class="ph"><h4>Escrow Ledger &mdash; ' + esc(o.id) + '</h4>' +
+        '<div style="display:flex;gap:8px">' +
+          '<button class="qz-btn sm" onclick="qzExportLedgerCSV(\'' + escAttr(o.id) + '\')">Export CSV</button>' +
+          '<button class="qz-btn sm primary" onclick="qzAddLedgerLineModal(\'' + escAttr(o.id) + '\')">+ Add Transaction</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="qzs-kpi-row" style="margin-bottom:16px">' +
+        '<div class="qzs-kpi"><span class="qzs-kpi-label">Total Deposits (Receipts)</span>' +
+          '<b class="qzs-kpi-value">' + fmtMoney(esc$.totalIn) + '</b>' +
+          '<span class="qzs-kpi-delta up">' + orderReceipts.length + ' receipt' + (orderReceipts.length === 1 ? '' : 's') + '</span></div>' +
+        '<div class="qzs-kpi"><span class="qzs-kpi-label">Total Disbursements</span>' +
+          '<b class="qzs-kpi-value">' + fmtMoney(esc$.totalOut) + '</b>' +
+          '<span class="qzs-kpi-delta">' + orderDisbursements.length + ' checks / wires</span></div>' +
+        '<div class="qzs-kpi"><span class="qzs-kpi-label">Escrow Trust File Balance</span>' +
+          '<b class="qzs-kpi-value" style="color:var(--qz-ocean)">' + fmtMoney(escrowBalance) + '</b>' +
+          '<span class="qz-badge ' + (escrowBalance >= 0 ? 'complete' : 'bad') + '">' +
+            (escrowBalance >= 0 ? 'Balanced' : 'Overdrawn') + '</span></div>' +
+        '<div class="qzs-kpi"><span class="qzs-kpi-label">Ready to Disburse</span>' +
+          '<b class="qzs-kpi-value">' + (ready ? 'Authorized' : 'Pending Funding') + '</b>' +
+          '<span class="qzs-kpi-delta' + (ready ? '' : ' up') + '">' +
+            (ready ? 'Funds received cover the fees due' : 'Short ' + fmtMoney(Math.max(0, owed - escrowBalance))) + '</span></div>' +
+      '</div>' +
+      '<div class="qz-tbl-scroll"><table class="qz-tbl">' +
+        '<thead><tr><th>Date</th><th>Ref #</th><th>Party</th><th>Transaction Type</th>' +
+          '<th class="num">Debit ($)</th><th class="num">Credit ($)</th><th class="num">Balance</th>' +
+          '<th>Status</th><th>Actions</th></tr></thead>' +
+        '<tbody>' + (tableRows ||
+          '<tr><td colspan="9" class="qz-empty">No money has moved on this order yet.</td></tr>') + '</tbody>' +
+      '</table></div>' +
+    '</div>' +
+    '<div class="qz-chg-layout" style="margin-top:14px">' +
+      qzChargeGridHTML(o, 'B', 'Section B &middot; Services Borrower Did Not Shop For') +
+      qzPaymentsPanelHTML(o, 'B') +
+    '</div>';
 }
 
-function qzEarnestHTML(o) {
-  const totalCommission = Math.round(o.purchasePrice * 0.06);
-  const listingComm = Math.round(o.purchasePrice * 0.03);
-  const sellingComm = Math.round(o.purchasePrice * 0.03);
-  return `
-    <div class="qz-panel">
-      <div class="ph"><h4>Earnest Money & Brokerage Commissions</h4></div>
-      
-      <div class="qz-calc-card">
-        <h5 style="margin:0 0 10px 0;color:var(--qz-navy)">Earnest Money Escrow Deposit</h5>
-        <div class="qz-calc-row"><span>Earnest Money Deposit Amount:</span><span class="qz-calc-val">$5,000.00</span></div>
-        <div class="qz-calc-row"><span>Escrow Account Held At:</span><span class="qz-calc-val">Frost Bank (Escrow Trust &mdash; Operating)</span></div>
-        <div class="qz-calc-row"><span>Deposit Date:</span><span class="qz-calc-val">${fmtDate(o.opened)}</span></div>
-        <div class="qz-calc-row total"><span>Receipt Status:</span><span class="qz-badge complete">Deposited & Cleared</span></div>
-      </div>
+/* ---------- 17 Rail Pages (Phase D) ---------- */
 
-      <div class="qz-calc-card" style="margin-top:12px">
-        <h5 style="margin:0 0 10px 0;color:var(--qz-navy)">Real Estate Brokerage Commissions (6.00% Total)</h5>
-        <div class="qz-calc-row"><span>Total Commission (6.00% of ${fmtMoney(o.purchasePrice)}):</span><span class="qz-calc-val">${fmtMoney(totalCommission)}</span></div>
-        <div class="qz-calc-row"><span>Listing Broker (3.00% &mdash; ${esc(qzOrderParty(o, 'Listing Agent'))}):</span><span class="qz-calc-val">${fmtMoney(listingComm)}</span></div>
-        <div class="qz-calc-row"><span>Selling Broker (3.00% &mdash; ${esc(qzOrderParty(o, 'Selling Agent'))}):</span><span class="qz-calc-val">${fmtMoney(sellingComm)}</span></div>
-        <div class="qz-calc-row total"><span>Disbursement Source:</span><span class="qz-calc-val">Paid from Seller proceeds at closing</span></div>
-      </div>
-    </div>`;
+
+
+
+
+
+
+
+
+
+
+
+
+/* ============================================================================
+   THE CHARGES GRID — editable cells, and the Payments panel beside it
+   ============================================================================
+   Modelled on Images-resourses/real-screenshots/core-charges-section-b.png:
+   a numbered grid whose Description, Payee and five money columns are all
+   typed into, a Sort Lines / + / - control set in the header, and a Payments
+   panel to the right carrying the six disbursement methods.
+   ============================================================================ */
+
+const QZ_CHARGE_COL_LABEL = {
+  borrowerAt: 'Borrower at closing', borrowerBefore: 'Borrower before closing',
+  sellerAt: 'Seller at closing', sellerBefore: 'Seller before closing',
+  byOthers: 'By others'
+};
+
+function qzChargeLines(orderId, section) {
+  return qzList('chargeLines')
+    .filter(function (l) { return l.orderId === orderId && l.section === section; })
+    .sort(function (a, b) { return (a.lineNo || 0) - (b.lineNo || 0); });
 }
 
-function qzProceedsHTML(o) {
-  const price = o.purchasePrice || 400000;
-  const payoffs = Math.round(price * 0.58);
-  const commissions = Math.round(price * 0.06);
-  const titleFees = Math.round(price * 0.007);
-  const taxes = 3200;
-  const netProceeds = Math.max(0, price - payoffs - commissions - titleFees - taxes);
+/* ---------- writes ---------- */
 
-  return `
-    <div class="qz-panel">
-      <div class="ph"><h4>Seller Net Proceeds & Wire Verification</h4></div>
-      <p style="font-size:12.5px;color:var(--qz-muted);margin-bottom:14px">Disbursement calculation of net cash due to seller upon funding authorization.</p>
-
-      <div class="qz-calc-card">
-        <div class="qz-calc-row"><span>1. Gross Sale Price:</span><span class="qz-calc-val">${fmtMoney(price)}</span></div>
-        <div class="qz-calc-row"><span>2. Less Existing 1st Mortgage Payoff:</span><span class="qz-calc-val" style="color:var(--qz-bad)">- ${fmtMoney(payoffs)}</span></div>
-        <div class="qz-calc-row"><span>3. Less Real Estate Broker Commissions (6%):</span><span class="qz-calc-val" style="color:var(--qz-bad)">- ${fmtMoney(commissions)}</span></div>
-        <div class="qz-calc-row"><span>4. Less Settlement & Title Policy Charges:</span><span class="qz-calc-val" style="color:var(--qz-bad)">- ${fmtMoney(titleFees)}</span></div>
-        <div class="qz-calc-row"><span>5. Less Prorated County/ISD Taxes:</span><span class="qz-calc-val" style="color:var(--qz-bad)">- ${fmtMoney(taxes)}</span></div>
-        <div class="qz-calc-row total"><span>Estimated Seller Net Wire Proceeds:</span><span class="qz-calc-val" style="color:var(--qz-ocean);font-size:16px">${fmtMoney(netProceeds)}</span></div>
-      </div>
-
-      <div class="qz-wire-verify-box">
-        <h5>&#128222; Wire Transfer Verification Protocol (ALTA Best Practice #3)</h5>
-        <p style="margin:0 0 10px 0;font-size:12.5px;color:#78350f">Prior to executing outgoing wire disbursements, wiring instructions MUST be verbally verified with the seller via outbound call to a trusted telephone number established at file intake.</p>
-        <div class="qz-calc-row"><span>Seller Verified Telephone:</span><span class="qz-calc-val">${esc(o.parties.find(p => p.role === 'Seller') ? o.parties.find(p => p.role === 'Seller').phone : '(972) 555-0100')}</span></div>
-        <div class="qz-calc-row"><span>Verification Officer:</span><span class="qz-calc-val">Barbara Runolfsson (Escrow Accounting)</span></div>
-        <div class="qz-calc-row total"><span>Verification Status:</span><span class="qz-badge complete">&#10003; Verbal Callback Confirmed</span></div>
-      </div>
-    </div>`;
+function qzChargeSet(id, field, value) {
+  const isMoney = QZ_ACCT_COLS.indexOf(field) > -1;
+  const v = isMoney ? (qzParseNumeric(value) || 0) : String(value == null ? '' : value).trim();
+  qzUpdate('chargeLines', id, (function () { const p = {}; p[field] = v; return p; })());
+  qzRenderRoot();
 }
+
+function qzChargeAdd(orderId, section) {
+  const rows = qzChargeLines(orderId, section);
+  qzInsert('chargeLines', {
+    orderId: orderId, section: section,
+    lineNo: rows.length ? Math.max.apply(null, rows.map(function (r) { return r.lineNo || 0; })) + 1 : 1,
+    description: '', payee: '',
+    borrowerAt: 0, borrowerBefore: 0, sellerAt: 0, sellerBefore: 0, byOthers: 0
+  });
+  simToast('Line added. Fill in the description and the payee.', { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzChargeDelete(id) {
+  const l = qzFind('chargeLines', id);
+  if (!l) return;
+  /* A charge that has already been disbursed cannot simply vanish from the
+     statement: the money left the account and the statement has to keep saying
+     where it went. */
+  const paid = qzList('disbursements').some(function (d) { return d.chargeLineId === id; });
+  if (paid) {
+    simToast('This line has already been disbursed. Void the disbursement first.');
+    return;
+  }
+  qzRemove('chargeLines', id);
+  simToast('Line removed.', { tone: 'good' });
+  qzRenderRoot();
+}
+
+/* Sorts by description and renumbers, which is what the Sort Lines button does
+   in the product: the numbering is positional, not an identifier. */
+function qzChargeSort(orderId, section) {
+  const rows = qzChargeLines(orderId, section)
+    .slice()
+    .sort(function (a, b) { return String(a.description).localeCompare(String(b.description)); });
+  rows.forEach(function (r, i) { qzUpdate('chargeLines', r.id, { lineNo: i + 1 }); });
+  simToast('Lines sorted by description and renumbered.', { tone: 'good' });
+  qzRenderRoot();
+}
+
+/* ---------- totals ---------- */
+
+function qzChargeTotals(orderId, section) {
+  const t = { borrowerAt: 0, borrowerBefore: 0, sellerAt: 0, sellerBefore: 0, byOthers: 0 };
+  qzChargeLines(orderId, section).forEach(function (l) {
+    QZ_ACCT_COLS.forEach(function (c) { t[c] += Number(l[c]) || 0; });
+  });
+  return t;
+}
+/* Section J totals the sections it says it totals, rather than carrying two
+   hard-coded numbers that agreed with nothing on the other nine pages. */
+function qzChargeSectionJ(orderId) {
+  const sum = function (secs, col) {
+    return secs.reduce(function (s, sec) { return s + qzChargeTotals(orderId, sec)[col]; }, 0);
+  };
+  return [
+    { label: 'Total Loan Costs (Borrower-Paid, Sections A + B + C)',
+      borrowerAt: sum(['A', 'B', 'C'], 'borrowerAt'), borrowerBefore: sum(['A', 'B', 'C'], 'borrowerBefore') },
+    { label: 'Total Other Costs (Borrower-Paid, Sections E + F + G + H)',
+      borrowerAt: sum(['E', 'F', 'G', 'H'], 'borrowerAt'), borrowerBefore: sum(['E', 'F', 'G', 'H'], 'borrowerBefore') }
+  ];
+}
+
+/* ---------- the grid ---------- */
+
+function qzChargeGridHTML(o, section, title) {
+  const isJ = section === 'J';
+  const lines = qzChargeLines(o.id, section);
+  const MIN_ROWS = 6;
+  const body = [];
+
+  if (isJ) {
+    /* Derived, so it is displayed rather than typed. */
+    qzChargeSectionJ(o.id).forEach(function (r, i) {
+      body.push('<tr><td class="ln">' + String(i + 1).padStart(2, '0') + '</td>' +
+        '<td class="desc">' + r.label + '</td><td class="payee">Various providers</td>' +
+        '<td class="num has">' + fmtMoney(r.borrowerAt) + '</td>' +
+        '<td class="num has">' + fmtMoney(r.borrowerBefore) + '</td>' +
+        '<td class="num"></td><td class="num"></td><td class="num"></td><td class="act"></td></tr>');
+    });
+  } else {
+    for (let i = 0; i < Math.max(MIN_ROWS, lines.length); i++) {
+      const l = lines[i] || null;
+      if (!l) {
+        body.push('<tr class="empty"><td class="ln">' + String(i + 1).padStart(2, '0') + '</td>' +
+          '<td class="desc"></td><td class="payee"></td>' +
+          QZ_ACCT_COLS.map(function () { return '<td class="num"></td>'; }).join('') +
+          '<td class="act"></td></tr>');
+        continue;
+      }
+      const cells = QZ_ACCT_COLS.map(function (c) {
+        const v = Number(l[c]) || 0;
+        return '<td class="num' + (v ? ' has' : '') + '">' +
+          '<input class="qz-chg-in num" value="' + escAttr(v ? fmtMoney(v) : '') + '"' +
+          ' aria-label="' + escAttr(QZ_CHARGE_COL_LABEL[c]) + '"' +
+          ' onchange="qzChargeSet(\'' + escAttr(l.id) + '\', \'' + c + '\', this.value)"></td>';
+      }).join('');
+      body.push('<tr>' +
+        '<td class="ln">' + String(l.lineNo || i + 1).padStart(2, '0') + '</td>' +
+        '<td class="desc"><input class="qz-chg-in" value="' + escAttr(l.description) + '"' +
+          ' placeholder="Description" aria-label="Description"' +
+          ' onchange="qzChargeSet(\'' + escAttr(l.id) + '\', \'description\', this.value)"></td>' +
+        '<td class="payee"><input class="qz-chg-in" value="' + escAttr(l.payee) + '"' +
+          ' placeholder="Payee" aria-label="Payee"' +
+          ' onchange="qzChargeSet(\'' + escAttr(l.id) + '\', \'payee\', this.value)"></td>' +
+        cells +
+        '<td class="act"><button type="button" class="qz-chg-del" title="Remove this line"' +
+          ' onclick="qzChargeDelete(\'' + escAttr(l.id) + '\')">&minus;</button></td>' +
+      '</tr>');
+    }
+  }
+
+  const t = isJ ? (function () {
+    const j = qzChargeSectionJ(o.id);
+    return { borrowerAt: j[0].borrowerAt + j[1].borrowerAt,
+             borrowerBefore: j[0].borrowerBefore + j[1].borrowerBefore,
+             sellerAt: 0, sellerBefore: 0, byOthers: 0 };
+  })() : qzChargeTotals(o.id, section);
+  const totalCells = QZ_ACCT_COLS.map(function (c) { return '<td class="num">' + fmtMoney(t[c]) + '</td>'; }).join('');
+
+  const tools = isJ
+    ? '<span class="qz-chg-note">Totalled from the other sections &mdash; not typed.</span>'
+    : '<button type="button" class="qz-btn sm" onclick="qzChargeSort(\'' + escAttr(o.id) + '\', \'' + section + '\')">Sort Lines</button>' +
+      '<button type="button" class="qz-btn sm" title="Add a line" onclick="qzChargeAdd(\'' + escAttr(o.id) + '\', \'' + section + '\')">+</button>';
+
+  return '<div class="qz-panel">' +
+      '<div class="ph"><h4>' + title + '</h4><div class="qz-chg-tools">' + tools + '</div></div>' +
+      '<div class="qz-tbl-scroll"><table class="qz-acct-grid">' +
+        '<thead>' +
+          '<tr class="grp"><th colspan="3"></th>' +
+            '<th colspan="2">Paid by Borrower</th><th colspan="2">Paid by Seller</th>' +
+            '<th rowspan="2" class="by-others">By Others</th><th rowspan="2" class="act"></th></tr>' +
+          '<tr><th class="ln"></th><th class="desc">Description</th><th class="payee">Payee</th>' +
+            '<th class="num">At Closing</th><th class="num">Before Closing</th>' +
+            '<th class="num">At Closing</th><th class="num">Before Closing</th></tr>' +
+        '</thead>' +
+        '<tbody>' + body.join('') + '</tbody>' +
+        '<tfoot><tr><td colspan="3" class="tl">TOTALS</td>' + totalCells + '<td class="act"></td></tr></tfoot>' +
+      '</table></div>' +
+    '</div>';
+}
+
+/* ---------- the Payments panel ---------- */
+
+const QZ_PAY_METHODS = ['Check', 'Wire', 'Net Funded', 'Aggregate', 'Transfer', 'Holdback'];
+let qzPayMethod = 'Check';
+let qzPaySeparate = false;
+
+function qzSetPayMethod(m) { qzPayMethod = m; qzRenderRoot(); }
+function qzTogglePaySeparate(on) { qzPaySeparate = !!on; }
+
+function qzPaymentsPanelHTML(o, section) {
+  const t = qzChargeTotals(o.id, section);
+  const due = t.borrowerAt + t.sellerAt;
+  const tabs = QZ_PAY_METHODS.map(function (m) {
+    return '<button type="button" class="qz-pay-tab' + (qzPayMethod === m ? ' active' : '') + '"' +
+      ' onclick="qzSetPayMethod(\'' + m + '\')">' + m + '</button>';
+  }).join('');
+
+  /* Wires and checks need somewhere to go; the other four settle inside the
+     file and have no mailing address to collect. */
+  const needsAddress = qzPayMethod === 'Check' || qzPayMethod === 'Wire';
+
+  return '<div class="qz-panel qz-pay">' +
+      '<div class="ph"><h4>Payments</h4>' +
+        '<button type="button" class="qz-btn sm" onclick="qzChargeAdd(\'' + escAttr(o.id) + '\', \'' + section + '\')">Add Contact</button>' +
+      '</div>' +
+      '<div class="qz-pay-tabs">' + tabs + '</div>' +
+      '<div class="qz-form-grid">' +
+        '<div class="qz-field"><label for="qzPayName">Name</label>' +
+          '<input id="qzPayName" placeholder="Payee on the ' + esc(qzPayMethod.toLowerCase()) + '"></div>' +
+        '<div class="qz-field"><label for="qzPayAmount">Payment Amount</label>' +
+          '<input id="qzPayAmount" value="' + escAttr(due ? fmtMoney(due) : '') + '"></div>' +
+        '<div class="qz-field"><label for="qzPayLabel">Label</label>' +
+          '<input id="qzPayLabel" placeholder="How this shows on the statement"></div>' +
+        '<div class="qz-field"><label for="qzPayRef">Reference #</label>' +
+          '<input id="qzPayRef" placeholder="' + (qzPayMethod === 'Wire' ? 'IMAD / confirmation' : 'Check number') + '"></div>' +
+      '</div>' +
+      '<label class="qz-pay-sep">' +
+        '<input type="checkbox" ' + (qzPaySeparate ? 'checked' : '') + ' onchange="qzTogglePaySeparate(this.checked)">' +
+        ' Disburse Separately' +
+      '</label>' +
+      (needsAddress
+        ? '<div class="qz-pay-addr">' +
+            '<div class="qz-field wide"><label for="qzPayAddr">Mailing Address</label>' +
+              '<input id="qzPayAddr" placeholder="Street, city, state, zip"></div>' +
+          '</div>'
+        : '<div class="qz-pay-addr muted">A ' + esc(qzPayMethod.toLowerCase()) +
+          ' settles inside the file, so there is nothing to mail.</div>') +
+      '<div class="qz-pay-foot">' +
+        '<button type="button" class="qz-btn sm" onclick="qzItemizePayment(\'' + escAttr(o.id) + '\', \'' + section + '\')">Itemize</button>' +
+        '<span class="sp"></span>' +
+        '<button type="button" class="qz-btn sm" onclick="qzClearPaymentForm()">Clear</button>' +
+        '<button type="button" class="qz-btn sm primary" onclick="qzRecordPayment(\'' + escAttr(o.id) + '\', \'' + section + '\')">Record</button>' +
+      '</div>' +
+    '</div>';
+}
+
+function qzClearPaymentForm() {
+  ['qzPayName', 'qzPayAmount', 'qzPayLabel', 'qzPayRef', 'qzPayAddr'].forEach(function (id) {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+function qzItemizePayment(orderId, section) {
+  const lines = qzChargeLines(orderId, section);
+  const rows = lines.length
+    ? lines.map(function (l) {
+        const amt = QZ_ACCT_COLS.reduce(function (s, c) { return s + (Number(l[c]) || 0); }, 0);
+        return '<tr><td>' + String(l.lineNo).padStart(2, '0') + '</td><td>' + (l.description || '&mdash;') +
+               '</td><td>' + esc(l.payee || '&mdash;') + '</td><td class="num">' + fmtMoney(amt) + '</td></tr>';
+      }).join('')
+    : '<tr><td colspan="4" class="qz-empty">This section has no lines yet.</td></tr>';
+
+  const old = document.getElementById('qzItemizeModal');
+  if (old) old.remove();
+  const wrap = document.createElement('div');
+  wrap.id = 'qzItemizeModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML =
+    '<div class="qz-modal-card" style="max-width:640px">' +
+      '<div class="ph"><h4>Itemisation &mdash; Section ' + esc(section) + '</h4>' +
+      '<button class="qz-btn sm" onclick="document.getElementById(\'qzItemizeModal\').remove()">&times;</button></div>' +
+      '<div class="qz-tbl-scroll"><table class="qz-tbl">' +
+        '<thead><tr><th>#</th><th>Description</th><th>Payee</th><th class="num">Amount</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody></table></div>' +
+    '</div>';
+  document.body.appendChild(wrap);
+}
+
+/* Records the payment as a real disbursement against the order, so the money
+   shows up in the ledger rather than in a toast that claims something happened. */
+function qzRecordPayment(orderId, section) {
+  const name = (document.getElementById('qzPayName') || {}).value || '';
+  const amt = qzParseNumeric((document.getElementById('qzPayAmount') || {}).value || '');
+  const label = (document.getElementById('qzPayLabel') || {}).value || '';
+  const ref = (document.getElementById('qzPayRef') || {}).value || '';
+
+  if (!name.trim()) { simToast('A payment needs a payee. Type the name it is going to.'); return; }
+  if (amt === null || amt <= 0) { simToast('Enter a payment amount greater than zero.'); return; }
+
+  const rec = qzInsert('disbursements', {
+    orderId: orderId,
+    payee: name.trim(),
+    amount: amt,
+    method: qzPayMethod,
+    reference: ref.trim(),
+    memo: label.trim() || ('Section ' + section),
+    date: QZ_TODAY,
+    status: qzPaySeparate ? 'Pending Approval' : 'Scheduled',
+    separate: qzPaySeparate
+  });
+  qzPostLedgerForDisbursement(rec);
+  qzClearPaymentForm();
+  simToast('Disbursement ' + rec.id + ' recorded for ' + fmtMoney(amt) + '.', { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzClosingDisclosureSectionHTML(o, secKey) {
+  const titles = {
+    'cd-a': 'Section A &middot; Origination Charges',
+    'cd-c': 'Section C &middot; Services Borrower Did Shop For',
+    'cd-e': 'Section E &middot; Taxes and Other Government Fees',
+    'cd-f': 'Section F &middot; Prepaids',
+    'cd-g': 'Section G &middot; Initial Escrow Payment at Closing',
+    'cd-h': 'Section H &middot; Other Charges',
+    'cd-j': 'Section J &middot; Total Closing Costs for Borrower',
+    'cd-km': 'Sections K &amp; M &middot; Calculating Cash to Close',
+    'cd-ln': 'Sections L &amp; N &middot; Summaries of Transactions (Seller)'
+  };
+  const section = QZ_TAB_TO_SECTION[secKey] || 'A';
+  /* Grid on the left, Payments on the right, the way the real screen is laid
+     out. Section J is a derived total, so it has nothing to disburse. */
+  const grid = qzChargeGridHTML(o, section, titles[secKey] || 'Closing Disclosure Section');
+  if (section === 'J') return grid;
+  return '<div class="qz-chg-layout">' + grid + qzPaymentsPanelHTML(o, section) + '</div>';
+}
+
+
+
+
 
 /* ============================================================================
    MECHANIC: New Order Wizard & Live CRUD (Phase C)
@@ -3062,9 +5910,9 @@ function qzSaveNewOrder() {
   const mod = document.getElementById('qzWizModal');
   if (mod) mod.remove();
 
-  const newNum = 1530 + (qzDemo.orders ? qzDemo.orders.length : 0);
+  const newNum = 1530 + qzList('orders').length;
   const newId = 'ORD-2026-' + newNum;
-  const newTitle = 'TX-2026-0' + (4530 + (qzDemo.orders ? qzDemo.orders.length : 0));
+  const newTitle = 'TX-2026-0' + (4530 + qzList('orders').length);
 
   const newOrder = {
     id: newId,
@@ -3083,8 +5931,8 @@ function qzSaveNewOrder() {
     flag: null,
     statusNote: 'Order opened in intake. Title search requested.',
     parties: [
-      { name: qzWizState.buyer, role: 'Buyer', email: qzWizState.buyerEmail, phone: qzWizState.buyerPhone },
-      { name: qzWizState.seller, role: 'Seller', email: qzWizState.sellerEmail, phone: qzWizState.sellerPhone },
+      { name: qzWizState.buyer, role: 'Buyer', email: qzWizState.buyerEmail, phone: qzWizState.buyerPhone || '(214) 555-0789' },
+      { name: qzWizState.seller, role: 'Seller', email: qzWizState.sellerEmail, phone: qzWizState.sellerPhone || '(972) 555-0456' },
       { name: qzWizState.sellingAgent, role: 'Selling Agent', email: 'sbee@friscorealty.com', phone: '(972) 555-0110' },
       { name: qzWizState.listingAgent, role: 'Listing Agent', email: 'peinhorn@friscorealty.com', phone: '(972) 555-0187' },
       { name: qzWizState.settlementAgent, role: 'Settlement Agent', email: 'ladminton@bestclosing.com', phone: '(214) 555-0166' },
@@ -3092,23 +5940,124 @@ function qzSaveNewOrder() {
     ]
   };
 
-  qzDemo.orders = qzDemo.orders || [];
-  qzDemo.orders.push(newOrder);
+  qzInsert('orders', newOrder);
 
-  qzDemo.documents = qzDemo.documents || {};
-  qzDemo.documents[newId] = [
-    { id: 9001 + qzDemo.orders.length, orderId: newId, name: 'Purchase Contract', type: 'Contract', status: 'Reviewed', uploadedBy: qzWizState.sellingAgent, date: QZ_TODAY, file: null },
-    { id: 9002 + qzDemo.orders.length, orderId: newId, name: 'Title Commitment', type: 'Title', status: 'Pending', uploadedBy: '—', date: '—', file: null }
-  ];
+  qzInsert('documents', { orderId: newId, name: 'Purchase Contract', type: 'Contract', status: 'Reviewed', uploadedBy: qzWizState.sellingAgent, date: QZ_TODAY, file: null, folder: 'Buyer' });
+  qzInsert('documents', { orderId: newId, name: 'Title Commitment', type: 'Title', status: 'Pending', uploadedBy: '—', date: '—', file: null, folder: 'Title & Escrow' });
 
-  qzDemo.tasks = qzDemo.tasks || {};
-  qzDemo.tasks[newId] = [
-    { id: 9501 + qzDemo.orders.length, relatedOrderId: newId, title: 'Perform Title Search & Examination', assignedTo: 'Travis Jones', dueDate: QZ_TODAY, status: 'In Progress' },
-    { id: 9502 + qzDemo.orders.length, relatedOrderId: newId, title: 'Verify Earnest Money Wire Receipt', assignedTo: 'Barbara Runolfsson', dueDate: qzWizState.closingDate, status: 'Open' }
-  ];
+  qzInsert('tasks', { relatedOrderId: newId, title: 'Perform Title Search & Examination', assignedTo: 'Travis Jones', dueDate: QZ_TODAY, status: 'In Progress', group: 'Title' });
+  qzInsert('tasks', { relatedOrderId: newId, title: 'Verify Earnest Money Wire Receipt', assignedTo: 'Barbara Runolfsson', dueDate: qzWizState.closingDate, status: 'Open', group: 'Order Opening' });
 
   simToast(`Order ${newId} created successfully.`, { tone: 'good' });
   qzOpenOrder(newId);
+}
+
+function qzEditOrderModal(orderId) {
+  const o = qzFind('orders', orderId);
+  if (!o) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'qzEditOrderModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:480px">
+      <div class="ph"><h4>Edit Order Details &mdash; ${esc(o.id)}</h4><button class="qz-btn sm" onclick="document.getElementById('qzEditOrderModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field wide"><label>Property Address</label><input id="qzEditOrderAddr" value="${escAttr(o.propertyAddress)}"></div>
+        <div class="qz-field"><label>Order Status</label>
+          <select id="qzEditOrderStatus">
+            <option value="Open" ${o.status==='Open'?'selected':''}>Open</option>
+            <option value="Closed" ${o.status==='Closed'?'selected':''}>Closed</option>
+            <option value="Cancelled" ${o.status==='Cancelled'?'selected':''}>Cancelled</option>
+          </select>
+        </div>
+        <div class="qz-field"><label>Closing Date</label><input id="qzEditOrderClose" type="date" value="${o.closingDate}"></div>
+        <div class="qz-field"><label>Purchase Price ($)</label><input id="qzEditOrderPrice" value="${o.purchasePrice}"></div>
+        <div class="qz-field"><label>Loan Amount ($)</label><input id="qzEditOrderLoan" value="${o.loanAmount || 0}"></div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzEditOrderModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzSaveEditOrder('${o.id}')">Save Changes</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzSaveEditOrder(orderId) {
+  const addr = (document.getElementById('qzEditOrderAddr')?.value || '').trim();
+  const status = document.getElementById('qzEditOrderStatus')?.value || 'Open';
+  const close = document.getElementById('qzEditOrderClose')?.value;
+  const price = qzParseNumeric(document.getElementById('qzEditOrderPrice')?.value);
+  const loan = qzParseNumeric(document.getElementById('qzEditOrderLoan')?.value);
+
+  const patch = { status };
+  if (addr) patch.propertyAddress = addr;
+  if (close) patch.closingDate = close;
+  if (price !== null) patch.purchasePrice = price;
+  if (loan !== null) patch.loanAmount = loan;
+
+  qzUpdate('orders', orderId, patch);
+  document.getElementById('qzEditOrderModal')?.remove();
+  simToast(`Order ${orderId} updated.`, { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzDeleteOrderModal(orderId) {
+  const o = qzFind('orders', orderId);
+  if (!o) return;
+  qzConfirm({
+    title: 'Delete Order',
+    body: `Are you sure you want to permanently delete order ${o.id} (${o.propertyAddress})? All associated documents, tasks, messages, and ledger entries will be removed.`,
+    confirmLabel: 'Delete Order',
+    danger: true,
+    onConfirm: () => {
+      qzRemove('orders', orderId);
+      const docs = qzList('documents', d => d.orderId === orderId);
+      docs.forEach(d => qzRemove('documents', d.id));
+      const tasks = qzList('tasks', t => t.relatedOrderId === orderId);
+      tasks.forEach(t => qzRemove('tasks', t.id));
+      const threads = qzList('threads', m => m.orderId === orderId);
+      threads.forEach(m => qzRemove('threads', m.id));
+      const receipts = qzList('receipts', r => r.order === orderId);
+      receipts.forEach(r => qzRemove('receipts', r.num || r.id));
+      const disbursements = qzList('disbursements', d => d.order === orderId);
+      disbursements.forEach(d => qzRemove('disbursements', d.num || d.id));
+
+      if (qzState.orderId === orderId) {
+        qzCloseOrderTab(orderId);
+        qzState.view = 'orders';
+        qzState.orderId = null;
+      }
+      simToast(`Order ${orderId} deleted.`, { tone: 'good' });
+      qzRenderRoot();
+    }
+  });
+}
+
+function qzChangeOrderNumberModal(orderId) {
+  const newNum = prompt('Enter new Order Number (e.g. ORD-2026-9999):', orderId);
+  if (newNum && newNum.trim() && newNum !== orderId) {
+    const o = qzFind('orders', orderId);
+    if (o) {
+      o.id = newNum.trim();
+      qzLogAudit('UPDATE', `Order number changed from ${orderId} to ${o.id}`);
+      if (qzState.orderId === orderId) qzState.orderId = o.id;
+      simToast(`Order number updated to ${o.id}`, { tone: 'good' });
+      qzRenderRoot();
+    }
+  }
+}
+
+function qzToggleSettlementType(orderId) {
+  const o = qzFind('orders', orderId);
+  if (!o) return;
+  o.statementType = (o.statementType === 'HUD-1 Settlement Statement' ? 'Closing Disclosure (CD)' : 'HUD-1 Settlement Statement');
+  simToast(`Settlement statement format set to ${o.statementType}`, { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzToggle1099(orderId, checked) {
+  qzUpdate('orders', orderId, { eligible1099: checked });
+  simToast(`1099-S tax reporting ${checked ? 'enabled' : 'disabled'}.`, { tone: 'good' });
 }
 
 function qzOpenQuoteModal() {
@@ -3117,7 +6066,7 @@ function qzOpenQuoteModal() {
   wrap.className = 'qz-modal-backdrop';
   wrap.innerHTML = `
     <div class="qz-modal-card" style="max-width:440px">
-      <div class="ph"><h4>Rate & Fee Calculator</h4><button class="qz-btn sm" onclick="document.getElementById('qzQuoteModal').remove()">&times;</button></div>
+      <div class="ph"><h4>Rate &amp; Fee Calculator</h4><button class="qz-btn sm" onclick="document.getElementById('qzQuoteModal').remove()">&times;</button></div>
       <div class="qz-form-grid" style="padding:14px 0">
         <div class="qz-field"><label>Purchase Price ($)</label><input id="qzQPrice" type="number" value="450000" oninput="qzCalcQuote()"></div>
         <div class="qz-field"><label>Loan Amount ($)</label><input id="qzQLoan" type="number" value="360000" oninput="qzCalcQuote()"></div>
@@ -3181,13 +6130,78 @@ function qzSaveNewParty(orderId) {
   const phone = (document.getElementById('qzNewPartyPhone').value || '').trim();
   if (!name) { simToast('Please enter a party name.'); return; }
   
-  qzDemo.parties = qzDemo.parties || {};
-  qzDemo.parties[orderId] = qzDemo.parties[orderId] || [];
-  qzDemo.parties[orderId].push({ role, name, email, phone });
+  const o = qzFind('orders', orderId);
+  if (o) {
+    if (!o.parties) o.parties = [];
+    o.parties.push({ role, name, email, phone });
+    qzLogAudit('CREATE', `Party ${role} (${name}) on ${orderId}`);
+  }
   
-  document.getElementById('qzAddPartyModal').remove();
+  document.getElementById('qzAddPartyModal')?.remove();
   simToast(`Added ${name} (${role}) to file.`, { tone: 'good' });
   qzRenderRoot();
+}
+
+function qzEditPartyModal(orderId, role) {
+  const o = qzFind('orders', orderId);
+  const p = o && o.parties && o.parties.find(x => x.role === role);
+  if (!p) return;
+
+  const wrap = document.createElement('div');
+  wrap.id = 'qzEditPartyModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:440px">
+      <div class="ph"><h4>Edit Party &mdash; ${esc(role)}</h4><button class="qz-btn sm" onclick="document.getElementById('qzEditPartyModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field wide"><label>Full Name</label><input id="qzEditPartyName" value="${escAttr(p.name)}"></div>
+        <div class="qz-field wide"><label>Email</label><input id="qzEditPartyEmail" value="${escAttr(p.email || '')}"></div>
+        <div class="qz-field wide"><label>Phone</label><input id="qzEditPartyPhone" value="${escAttr(p.phone || '')}"></div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzEditPartyModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzSaveEditParty('${orderId}', '${escAttr(role)}')">Save Changes</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzSaveEditParty(orderId, role) {
+  const name = (document.getElementById('qzEditPartyName')?.value || '').trim();
+  const email = (document.getElementById('qzEditPartyEmail')?.value || '').trim();
+  const phone = (document.getElementById('qzEditPartyPhone')?.value || '').trim();
+  if (!name) { simToast('Name cannot be empty.'); return; }
+
+  const o = qzFind('orders', orderId);
+  const p = o && o.parties && o.parties.find(x => x.role === role);
+  if (p) {
+    p.name = name;
+    p.email = email;
+    p.phone = phone;
+    qzLogAudit('UPDATE', `Party ${role} on ${orderId}`);
+  }
+  document.getElementById('qzEditPartyModal')?.remove();
+  simToast(`Party ${role} updated.`, { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzDeletePartyModal(orderId, role) {
+  qzConfirm({
+    title: 'Delete Party',
+    body: `Are you sure you want to remove the ${role} party from order ${orderId}?`,
+    confirmLabel: 'Remove Party',
+    danger: true,
+    onConfirm: () => {
+      const o = qzFind('orders', orderId);
+      if (o && o.parties) {
+        const idx = o.parties.findIndex(p => p.role === role);
+        if (idx !== -1) o.parties.splice(idx, 1);
+        qzLogAudit('DELETE', `Party ${role} on ${orderId}`);
+      }
+      simToast(`Party ${role} removed.`, { tone: 'good' });
+      qzRenderRoot();
+    }
+  });
 }
 
 function qzAddDocumentModal(orderId) {
@@ -3206,10 +6220,22 @@ function qzAddDocumentModal(orderId) {
             <option value="Pest Inspection">Pest Inspection Report</option>
             <option value="Closing Disclosure">Closing Disclosure</option>
             <option value="Deed">Warranty Deed</option>
+            <option value="Title Commitment">Title Commitment</option>
             <option value="Other">Other Document</option>
           </select>
         </div>
-        <div class="qz-field"><label>Document Name</label><input id="qzNewDocName" value="Survey &mdash; Precision Land Surveying"></div>
+        <div class="qz-field"><label>Folder</label>
+          <select id="qzNewDocFolder">
+            <option value="All Documents">All Documents</option>
+            <option value="Buyer">Buyer</option>
+            <option value="Seller">Seller</option>
+            <option value="Title & Escrow" selected>Title & Escrow</option>
+            <option value="Lender">Lender</option>
+            <option value="Closing Packages">Closing Packages</option>
+            <option value="Archive">Archive</option>
+          </select>
+        </div>
+        <div class="qz-field wide"><label>Document Name</label><input id="qzNewDocName" value="Survey &mdash; Precision Land Surveying"></div>
       </div>
       <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
         <button class="qz-btn" onclick="document.getElementById('qzAddDocModal').remove()">Cancel</button>
@@ -3221,25 +6247,147 @@ function qzAddDocumentModal(orderId) {
 
 function qzSaveNewDocument(orderId) {
   const type = document.getElementById('qzNewDocType').value;
+  const folder = document.getElementById('qzNewDocFolder')?.value || 'Title & Escrow';
   const name = (document.getElementById('qzNewDocName').value || '').trim() || type;
-  qzDemo.documents = qzDemo.documents || {};
-  qzDemo.documents[orderId] = qzDemo.documents[orderId] || [];
-  qzDemo.documents[orderId].push({
-    id: 9800 + Math.floor(Math.random() * 100),
+
+  qzInsert('documents', {
     orderId: orderId,
     name: name,
     type: type,
+    folder: folder,
     status: 'Received',
     uploadedBy: 'Training User',
     date: QZ_TODAY,
     file: null
   });
-  document.getElementById('qzAddDocModal').remove();
+  document.getElementById('qzAddDocModal')?.remove();
   simToast(`Document "${name}" uploaded.`, { tone: 'good' });
   qzRenderRoot();
 }
 
-function qzAddTaskModal(orderId) {
+function qzEditDocModal(docId) {
+  const d = qzFind('documents', docId);
+  if (!d) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'qzEditDocModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:440px">
+      <div class="ph"><h4>Edit Document</h4><button class="qz-btn sm" onclick="document.getElementById('qzEditDocModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field wide"><label>Document Name</label><input id="qzEditDocName" value="${escAttr(d.name)}"></div>
+        <div class="qz-field"><label>Type</label><input id="qzEditDocType" value="${escAttr(d.type)}"></div>
+        <div class="qz-field"><label>Folder</label>
+          <select id="qzEditDocFolder">
+            <option value="Buyer" ${d.folder==='Buyer'?'selected':''}>Buyer</option>
+            <option value="Seller" ${d.folder==='Seller'?'selected':''}>Seller</option>
+            <option value="Title & Escrow" ${(d.folder||'Title & Escrow')==='Title & Escrow'?'selected':''}>Title & Escrow</option>
+            <option value="Lender" ${d.folder==='Lender'?'selected':''}>Lender</option>
+            <option value="Closing Packages" ${d.folder==='Closing Packages'?'selected':''}>Closing Packages</option>
+            <option value="Archive" ${d.folder==='Archive'?'selected':''}>Archive</option>
+          </select>
+        </div>
+        <div class="qz-field wide"><label>Status</label>
+          <select id="qzEditDocStatus">
+            <option value="Pending" ${d.status==='Pending'?'selected':''}>Pending</option>
+            <option value="Received" ${d.status==='Received'?'selected':''}>Received</option>
+            <option value="Reviewed" ${d.status==='Reviewed'?'selected':''}>Reviewed</option>
+          </select>
+        </div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzEditDocModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzSaveEditDoc(${d.id})">Save Changes</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzSaveEditDoc(docId) {
+  const name = (document.getElementById('qzEditDocName')?.value || '').trim();
+  const type = (document.getElementById('qzEditDocType')?.value || '').trim();
+  const folder = document.getElementById('qzEditDocFolder')?.value;
+  const status = document.getElementById('qzEditDocStatus')?.value;
+  if (!name) { simToast('Document name cannot be empty.'); return; }
+
+  qzUpdate('documents', docId, { name, type, folder, status });
+  document.getElementById('qzEditDocModal')?.remove();
+  simToast(`Document updated.`, { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzDeleteDocModal(docId) {
+  const d = qzFind('documents', docId);
+  if (!d) return;
+  qzConfirm({
+    title: 'Delete Document',
+    body: `Are you sure you want to permanently delete "${d.name}"?`,
+    confirmLabel: 'Delete Document',
+    danger: true,
+    onConfirm: () => {
+      qzRemove('documents', docId);
+      simToast(`Document "${d.name}" deleted.`, { tone: 'good' });
+      qzRenderRoot();
+    }
+  });
+}
+
+function qzNewFolderModal(orderId) {
+  const folderName = prompt('Enter new folder name:');
+  if (folderName && folderName.trim()) {
+    qzDocActiveFolder = folderName.trim();
+    simToast(`Folder "${qzDocActiveFolder}" created.`, { tone: 'good' });
+    qzRenderRoot();
+  }
+}
+
+function qzTemplateLibraryModal(orderId) {
+  const wrap = document.createElement('div');
+  wrap.id = 'qzTemplateModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:600px">
+      <div class="ph"><h4>Qualia Document Template Library</h4><button class="qz-btn sm" onclick="document.getElementById('qzTemplateModal').remove()">&times;</button></div>
+      <p style="font-size:12.5px;color:var(--qz-muted);margin:8px 0 14px">Select a standard or custom document template to merge with current order data.</p>
+      <div class="qz-subtabs" style="margin-bottom:12px">
+        <span class="active">Standard Templates</span>
+        <span>Custom Agency Templates</span>
+        <span>Generated Closing Docs</span>
+      </div>
+      <div class="qz-tbl-scroll" style="max-height:260px">
+        <table class="qz-tbl">
+          <thead><tr><th>Template Name</th><th>Category</th><th>Source</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td><b>Texas General Warranty Deed</b></td><td>Deed & Conveyance</td><td>Standard (TDI)</td><td><button class="qz-btn sm primary" onclick="qzGenerateFromTemplate('${orderId}','General Warranty Deed','Deed')">Generate</button></td></tr>
+            <tr><td><b>Owner & Lender Title Commitment</b></td><td>Commitment</td><td>Old Republic</td><td><button class="qz-btn sm primary" onclick="qzGenerateFromTemplate('${orderId}','Title Commitment','Title')">Generate</button></td></tr>
+            <tr><td><b>Closing Protection Letter (CPL)</b></td><td>Compliance</td><td>Old Republic</td><td><button class="qz-btn sm primary" onclick="qzGenerateFromTemplate('${orderId}','Closing Protection Letter','Compliance')">Generate</button></td></tr>
+            <tr><td><b>Affidavit of Marital Status & Identity</b></td><td>Affidavits</td><td>Custom Agency</td><td><button class="qz-btn sm primary" onclick="qzGenerateFromTemplate('${orderId}','Identity Affidavit','Affidavit')">Generate</button></td></tr>
+            <tr><td><b>Wiring Instructions Acknowledgment</b></td><td>Escrow</td><td>ALTA Best Practice</td><td><button class="qz-btn sm primary" onclick="qzGenerateFromTemplate('${orderId}','Wire Acknowledgment','Escrow')">Generate</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="text-align:right;padding-top:14px"><button class="qz-btn" onclick="document.getElementById('qzTemplateModal').remove()">Close</button></div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzGenerateFromTemplate(orderId, name, type) {
+  document.getElementById('qzTemplateModal')?.remove();
+  qzInsert('documents', {
+    orderId: orderId,
+    name: name,
+    type: type,
+    folder: 'Closing Packages',
+    status: 'Received',
+    uploadedBy: 'Template Engine',
+    date: QZ_TODAY,
+    file: null
+  });
+  simToast(`Generated document "${name}" from template.`, { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzAddTaskModal(orderId, groupName) {
   const wrap = document.createElement('div');
   wrap.id = 'qzAddTaskModal';
   wrap.className = 'qz-modal-backdrop';
@@ -3256,7 +6404,16 @@ function qzAddTaskModal(orderId) {
             <option value="Training User">Training User (VA)</option>
           </select>
         </div>
-        <div class="qz-field"><label>Due Date</label><input id="qzNewTaskDue" type="date" value="${QZ_TODAY}"></div>
+        <div class="qz-field"><label>Task Group</label>
+          <select id="qzNewTaskGroup">
+            <option value="Order Opening" ${(groupName||'')==='Order Opening'?'selected':''}>Order Opening</option>
+            <option value="Title" ${(groupName||'')==='Title'?'selected':''}>Title</option>
+            <option value="Pre-Closing" ${(groupName||'')==='Pre-Closing'?'selected':''}>Pre-Closing</option>
+            <option value="Payoff Tasks" ${(groupName||'')==='Payoff Tasks'?'selected':''}>Payoff Tasks</option>
+            <option value="Post-Closing" ${(groupName||'')==='Post-Closing'?'selected':''}>Post-Closing</option>
+          </select>
+        </div>
+        <div class="qz-field wide"><label>Due Date</label><input id="qzNewTaskDue" type="date" value="${QZ_TODAY}"></div>
       </div>
       <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
         <button class="qz-btn" onclick="document.getElementById('qzAddTaskModal').remove()">Cancel</button>
@@ -3269,21 +6426,88 @@ function qzAddTaskModal(orderId) {
 function qzSaveNewTask(orderId) {
   const title = (document.getElementById('qzNewTaskTitle').value || '').trim();
   const assign = document.getElementById('qzNewTaskAssign').value;
+  const group = document.getElementById('qzNewTaskGroup')?.value || 'Order Opening';
   const due = document.getElementById('qzNewTaskDue').value || QZ_TODAY;
   if (!title) { simToast('Please enter a task title.'); return; }
-  qzDemo.tasks = qzDemo.tasks || {};
-  qzDemo.tasks[orderId] = qzDemo.tasks[orderId] || [];
-  qzDemo.tasks[orderId].push({
-    id: 9900 + Math.floor(Math.random() * 100),
+
+  qzInsert('tasks', {
     relatedOrderId: orderId,
     title: title,
     assignedTo: assign,
     dueDate: due,
-    status: 'Open'
+    status: 'Open',
+    group: group
   });
-  document.getElementById('qzAddTaskModal').remove();
+  document.getElementById('qzAddTaskModal')?.remove();
   simToast(`Task "${title}" assigned to ${assign}.`, { tone: 'good' });
   qzRenderRoot();
+}
+
+function qzEditTaskModal(taskId) {
+  const t = qzFind('tasks', taskId);
+  if (!t) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'qzEditTaskModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:440px">
+      <div class="ph"><h4>Edit Task</h4><button class="qz-btn sm" onclick="document.getElementById('qzEditTaskModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field wide"><label>Task Title</label><input id="qzEditTaskTitle" value="${escAttr(t.title)}"></div>
+        <div class="qz-field"><label>Assigned To</label><input id="qzEditTaskAssign" value="${escAttr(t.assignedTo)}"></div>
+        <div class="qz-field"><label>Status</label>
+          <select id="qzEditTaskStatus">
+            <option value="Open" ${t.status==='Open'?'selected':''}>Open</option>
+            <option value="In Progress" ${t.status==='In Progress'?'selected':''}>In Progress</option>
+            <option value="Complete" ${t.status==='Complete'?'selected':''}>Complete</option>
+          </select>
+        </div>
+        <div class="qz-field wide"><label>Due Date</label><input id="qzEditTaskDue" type="date" value="${t.dueDate}"></div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzEditTaskModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzSaveEditTask(${t.id})">Save Changes</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzSaveEditTask(taskId) {
+  const title = (document.getElementById('qzEditTaskTitle')?.value || '').trim();
+  const assign = (document.getElementById('qzEditTaskAssign')?.value || '').trim();
+  const status = document.getElementById('qzEditTaskStatus')?.value;
+  const due = document.getElementById('qzEditTaskDue')?.value;
+  if (!title) { simToast('Task title cannot be empty.'); return; }
+
+  qzUpdate('tasks', taskId, { title, assignedTo: assign, status, dueDate: due });
+  document.getElementById('qzEditTaskModal')?.remove();
+  simToast('Task updated.', { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzDeleteTaskModal(taskId) {
+  const t = qzFind('tasks', taskId);
+  if (!t) return;
+  qzConfirm({
+    title: 'Delete Task',
+    body: `Are you sure you want to permanently delete task "${t.title}"?`,
+    confirmLabel: 'Delete Task',
+    danger: true,
+    onConfirm: () => {
+      qzRemove('tasks', taskId);
+      simToast(`Task "${t.title}" deleted.`, { tone: 'good' });
+      qzRenderRoot();
+    }
+  });
+}
+
+function qzAddTaskGroupModal(orderId) {
+  const name = prompt('Enter new task group name:');
+  if (name && name.trim()) {
+    qzInsert('taskGroups', { name: name.trim() });
+    simToast(`Task Group "${name}" created.`, { tone: 'good' });
+    qzRenderRoot();
+  }
 }
 
 function qzAdvanceStageModal(orderId) {
@@ -3291,23 +6515,12 @@ function qzAdvanceStageModal(orderId) {
   const nextStage = QZ_STAGES[Math.min(QZ_STAGES.length - 1, o.stageIndex + 1)];
   qzConfirm({
     title: `Advance Stage to "${nextStage}"?`,
-    message: `Are you sure you want to advance this order from "${QZ_STAGES[o.stageIndex]}" to "${nextStage}"? This will update the milestone timeline.`,
-    confirmText: 'Advance Stage',
+    body: `Are you sure you want to advance this order from "${QZ_STAGES[o.stageIndex]}" to "${nextStage}"? This will update the milestone timeline.`,
+    confirmLabel: 'Advance Stage',
     onConfirm: () => {
       qzSetScalarOverride(orderId, 'stageIndex', Math.min(QZ_STAGES.length - 1, o.stageIndex + 1));
       simToast(`Order advanced to stage: ${nextStage}`, { tone: 'good' });
       qzRenderRoot();
-    }
-  });
-}
-
-function qzOrderServiceModal(orderId) {
-  qzConfirm({
-    title: 'Order Marketplace Service',
-    message: 'Select vendor to dispatch: Precision Land Surveying (Survey: $640.00). Standard turnaround 5-7 business days.',
-    confirmText: 'Dispatch Order',
-    onConfirm: () => {
-      simToast('Service order submitted to Qualia Marketplace.', { tone: 'good' });
     }
   });
 }
@@ -3336,8 +6549,390 @@ function qzSaveNewThread(orderId) {
   const sub = (document.getElementById('qzNewSubject').value || '').trim() || 'General Inquiry';
   const rec = (document.getElementById('qzNewRecipient').value || '').trim() || 'Party';
   const body = (document.getElementById('qzNewMsgBody').value || '').trim() || 'Message sent.';
-  document.getElementById('qzNewThreadModal').remove();
+
+  const thread = qzInsert('threads', {
+    orderId: orderId,
+    subject: sub,
+    thread: [{ sender: 'You (VA)', recipient: rec, date: QZ_TODAY, body: body }]
+  });
+  document.getElementById('qzNewThreadModal')?.remove();
   simToast(`Message "${sub}" sent to ${rec}.`, { tone: 'good' });
+  qzState.threadId = thread.id;
+  qzRenderRoot();
+}
+
+function qzDeleteThreadModal(threadId) {
+  qzConfirm({
+    title: 'Delete Message Thread',
+    body: 'Are you sure you want to delete this message thread and its history?',
+    confirmLabel: 'Delete Thread',
+    danger: true,
+    onConfirm: () => {
+      qzRemove('threads', threadId);
+      qzState.threadId = null;
+      simToast('Thread deleted.', { tone: 'good' });
+      qzRenderRoot();
+    }
+  });
+}
+
+function qzAddVendorModal(orderId) {
+  const wrap = document.createElement('div');
+  wrap.id = 'qzAddVendorModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:440px">
+      <div class="ph"><h4>Add Vendor to Order</h4><button class="qz-btn sm" onclick="document.getElementById('qzAddVendorModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field wide"><label>Vendor Name</label><input id="qzNewVendorName" placeholder="e.g. Lone Star Surveying"></div>
+        <div class="qz-field"><label>Service Provided</label><input id="qzNewVendorService" placeholder="e.g. Survey"></div>
+        <div class="qz-field"><label>Status</label>
+          <select id="qzNewVendorStatus">
+            <option value="Pending">Pending</option>
+            <option value="Scheduled">Scheduled</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzAddVendorModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzSaveNewVendor('${orderId}')">Add Vendor</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzSaveNewVendor(orderId) {
+  const name = (document.getElementById('qzNewVendorName')?.value || '').trim();
+  const service = (document.getElementById('qzNewVendorService')?.value || '').trim() || 'General';
+  const status = document.getElementById('qzNewVendorStatus')?.value || 'Pending';
+  if (!name) { simToast('Vendor name cannot be empty.'); return; }
+
+  qzInsert('vendors', { orderId, name, service, status });
+  document.getElementById('qzAddVendorModal')?.remove();
+  simToast(`Vendor "${name}" added to order.`, { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzEditVendorModal(vendorId) {
+  const v = qzFind('vendors', vendorId);
+  if (!v) return;
+  const wrap = document.createElement('div');
+  wrap.id = 'qzEditVendorModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:440px">
+      <div class="ph"><h4>Edit Vendor</h4><button class="qz-btn sm" onclick="document.getElementById('qzEditVendorModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field wide"><label>Vendor Name</label><input id="qzEditVendorName" value="${escAttr(v.name)}"></div>
+        <div class="qz-field"><label>Service</label><input id="qzEditVendorService" value="${escAttr(v.service)}"></div>
+        <div class="qz-field"><label>Status</label>
+          <select id="qzEditVendorStatus">
+            <option value="Pending" ${v.status==='Pending'?'selected':''}>Pending</option>
+            <option value="Scheduled" ${v.status==='Scheduled'?'selected':''}>Scheduled</option>
+            <option value="In Progress" ${v.status==='In Progress'?'selected':''}>In Progress</option>
+            <option value="Completed" ${v.status==='Completed'?'selected':''}>Completed</option>
+          </select>
+        </div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzEditVendorModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzSaveEditVendor(${v.id})">Save Changes</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzSaveEditVendor(vendorId) {
+  const name = (document.getElementById('qzEditVendorName')?.value || '').trim();
+  const service = (document.getElementById('qzEditVendorService')?.value || '').trim();
+  const status = document.getElementById('qzEditVendorStatus')?.value;
+  if (!name) { simToast('Vendor name cannot be empty.'); return; }
+
+  qzUpdate('vendors', vendorId, { name, service, status });
+  document.getElementById('qzEditVendorModal')?.remove();
+  simToast('Vendor updated.', { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzDeleteVendorModal(vendorId) {
+  const v = qzFind('vendors', vendorId);
+  if (!v) return;
+  qzConfirm({
+    title: 'Delete Vendor',
+    body: `Are you sure you want to remove vendor "${v.name}" from this file?`,
+    confirmLabel: 'Delete Vendor',
+    danger: true,
+    onConfirm: () => {
+      qzRemove('vendors', vendorId);
+      simToast(`Vendor "${v.name}" deleted.`, { tone: 'good' });
+      qzRenderRoot();
+    }
+  });
+}
+
+function qzAddLedgerLineModal(orderId) {
+  const wrap = document.createElement('div');
+  wrap.id = 'qzAddLedgerModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:480px">
+      <div class="ph"><h4>Add Ledger Transaction</h4><button class="qz-btn sm" onclick="document.getElementById('qzAddLedgerModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field"><label>Transaction Type</label>
+          <select id="qzLedgerKind">
+            <option value="receipt">Receipt (Deposit / Credit)</option>
+            <option value="disbursement">Disbursement (Check / Debit)</option>
+          </select>
+        </div>
+        <div class="qz-field"><label>Amount ($)</label><input id="qzLedgerAmount" type="number" step="0.01" placeholder="e.g. 1500.00"></div>
+        <div class="qz-field wide"><label>Payee / Remitter</label><input id="qzLedgerParty" placeholder="e.g. Frost Bank / Buyer Name"></div>
+        <div class="qz-field"><label>Payment Method</label>
+          <select id="qzLedgerMethod">
+            <option value="Wire Transfer">Wire Transfer</option>
+            <option value="Check">Check</option>
+            <option value="ACH">ACH</option>
+            <option value="Cashier Check">Cashier's Check</option>
+          </select>
+        </div>
+        <div class="qz-field"><label>Reference / Check #</label><input id="qzLedgerRef" placeholder="e.g. R-2409 / CK-1092"></div>
+        <div class="qz-field wide"><label>Memo / Description</label><input id="qzLedgerMemo" placeholder="e.g. Additional Earnest Money Deposit"></div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzAddLedgerModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzSaveLedgerLine('${orderId}')">Record Transaction</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzSaveLedgerLine(orderId) {
+  const kind = document.getElementById('qzLedgerKind').value;
+  const amt = parseFloat(document.getElementById('qzLedgerAmount').value) || 0;
+  const party = (document.getElementById('qzLedgerParty').value || '').trim() || 'Payee';
+  const method = document.getElementById('qzLedgerMethod').value;
+  const ref = (document.getElementById('qzLedgerRef').value || '').trim() || (kind === 'receipt' ? 'R-' + Date.now().toString().slice(-4) : 'CK-' + Date.now().toString().slice(-4));
+  const memo = (document.getElementById('qzLedgerMemo').value || '').trim() || 'Escrow Settlement Transaction';
+
+  if (amt <= 0) { simToast('Please enter a valid dollar amount.'); return; }
+
+  if (kind === 'receipt') {
+    qzInsert('receipts', {
+      order: orderId,
+      num: ref,
+      date: QZ_TODAY,
+      amount: amt,
+      remitter: party,
+      method: method,
+      memo: memo,
+      status: 'Deposited'
+    });
+  } else {
+    qzInsert('disbursements', {
+      order: orderId,
+      num: ref,
+      date: QZ_TODAY,
+      amount: amt,
+      payee: party,
+      method: method,
+      memo: memo,
+      status: 'Issued'
+    });
+  }
+  document.getElementById('qzAddLedgerModal')?.remove();
+  simToast(`Ledger transaction ${ref} recorded for ${fmtMoney(amt)}.`, { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzEditLedgerLineModal(lineId) {
+  const isReceipt = lineId.startsWith('r-');
+  const rawId = lineId.replace(/^[rd]-/, '');
+  const coll = isReceipt ? 'receipts' : 'disbursements';
+  const item = qzFind(coll, rawId);
+  if (!item) return;
+
+  const wrap = document.createElement('div');
+  wrap.id = 'qzEditLedgerModal';
+  wrap.className = 'qz-modal-backdrop';
+  wrap.innerHTML = `
+    <div class="qz-modal-card" style="max-width:440px">
+      <div class="ph"><h4>Edit Ledger Line &mdash; ${esc(item.num || rawId)}</h4><button class="qz-btn sm" onclick="document.getElementById('qzEditLedgerModal').remove()">&times;</button></div>
+      <div class="qz-form-grid" style="padding:14px 0">
+        <div class="qz-field wide"><label>Payee / Remitter</label><input id="qzEditLedgerParty" value="${escAttr(item.remitter || item.payee || '')}"></div>
+        <div class="qz-field"><label>Amount ($)</label><input id="qzEditLedgerAmount" type="number" step="0.01" value="${item.amount}"></div>
+        <div class="qz-field"><label>Status</label>
+          <select id="qzEditLedgerStatus">
+            <option value="Pending" ${item.status==='Pending'?'selected':''}>Pending</option>
+            <option value="Deposited" ${item.status==='Deposited'?'selected':''}>Deposited</option>
+            <option value="Cleared" ${item.status==='Cleared'?'selected':''}>Cleared</option>
+            <option value="Issued" ${item.status==='Issued'?'selected':''}>Issued</option>
+            <option value="Void" ${item.status==='Void'?'selected':''}>Void</option>
+          </select>
+        </div>
+        <div class="qz-field wide"><label>Memo</label><input id="qzEditLedgerMemo" value="${escAttr(item.memo || '')}"></div>
+      </div>
+      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" onclick="document.getElementById('qzEditLedgerModal').remove()">Cancel</button>
+        <button class="qz-btn primary" onclick="qzSaveEditLedgerLine('${coll}', '${rawId}')">Save Changes</button>
+      </div>
+    </div>`;
+  document.body.appendChild(wrap);
+}
+
+function qzSaveEditLedgerLine(coll, rawId) {
+  const party = document.getElementById('qzEditLedgerParty')?.value;
+  const amount = parseFloat(document.getElementById('qzEditLedgerAmount')?.value) || 0;
+  const status = document.getElementById('qzEditLedgerStatus')?.value;
+  const memo = document.getElementById('qzEditLedgerMemo')?.value;
+
+  const patch = { amount, status, memo };
+  if (coll === 'receipts') patch.remitter = party; else patch.payee = party;
+
+  qzUpdate(coll, rawId, patch);
+  document.getElementById('qzEditLedgerModal')?.remove();
+  simToast('Ledger entry updated.', { tone: 'good' });
+  qzRenderRoot();
+}
+
+function qzDeleteLedgerLineModal(lineId) {
+  const isReceipt = lineId.startsWith('r-');
+  const rawId = lineId.replace(/^[rd]-/, '');
+  const coll = isReceipt ? 'receipts' : 'disbursements';
+  qzConfirm({
+    title: 'Delete Ledger Transaction',
+    body: `Are you sure you want to delete transaction ${rawId} from the accounting ledger?`,
+    confirmLabel: 'Delete Transaction',
+    danger: true,
+    onConfirm: () => {
+      qzRemove(coll, rawId);
+      simToast('Transaction removed from ledger.', { tone: 'good' });
+      qzRenderRoot();
+    }
+  });
+}
+
+/* ---------- Additional Rail Tabs (D.3) ---------- */
+function qzRequirementsHTML(o) {
+  return `
+    <div class="qz-panel">
+      <div class="ph"><h4>Title Requirements (Schedule B &middot; Part I)</h4><button class="qz-btn sm primary" onclick="simToast('Requirement satisfied and cleared in title engine.')">Clear Selected</button></div>
+      <p style="font-size:12.5px;color:var(--qz-muted);margin-bottom:14px">Specific instruments, releases, and actions that must be completed prior to closing and policy delivery.</p>
+      <div class="qz-sched-box">
+        <div class="qz-sched-body">
+          <div class="qz-sched-item"><input type="checkbox"><div>General Warranty Deed from <b>${esc(qzOrderParty(o, 'Seller'))}</b> to <b>${esc(qzOrderParty(o, 'Buyer'))}</b>.</div></div>
+          <div class="qz-sched-item"><input type="checkbox"><div>Full satisfaction and release of Deed of Trust (1st Lien Summit Ridge Mortgage).</div></div>
+          <div class="qz-sched-item"><input type="checkbox"><div>Payment of 2026 ad valorem taxes and municipal assessments through funding date.</div></div>
+          <div class="qz-sched-item"><input type="checkbox"><div>Receipt and examination of acceptable boundary survey and surveyor inspection report.</div></div>
+          <div class="qz-sched-item"><input type="checkbox"><div>Executed marital status and non-homestead affidavit by grantor.</div></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+
+
+function qzPreviewCdHTML(o) {
+  return `
+    <div class="qz-panel">
+      <div class="ph">
+        <div>
+          <h4>Closing Disclosure &mdash; Live Preview</h4>
+          <span class="sub">5-page standard CFPB TRID Closing Disclosure generated from file state</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="qz-btn sm" onclick="simToast('CD exported as PDF (training mode).')">Export PDF</button>
+          <button class="qz-btn sm primary" onclick="simToast('CD transmitted to lender via Connect.', {tone:'good'})">Send to Lender</button>
+        </div>
+      </div>
+      <div class="qz-calc-card">
+        <div class="qz-calc-row"><span>Borrower:</span><span class="qz-calc-val">${esc(qzOrderParty(o, 'Buyer'))}</span></div>
+        <div class="qz-calc-row"><span>Seller:</span><span class="qz-calc-val">${esc(qzOrderParty(o, 'Seller'))}</span></div>
+        <div class="qz-calc-row"><span>Settlement Agent:</span><span class="qz-calc-val">${esc(o.settlementAgency)}</span></div>
+        <div class="qz-calc-row"><span>Sale Price:</span><span class="qz-calc-val">${fmtMoney(o.purchasePrice)}</span></div>
+        <div class="qz-calc-row"><span>Loan Amount:</span><span class="qz-calc-val">${fmtMoney(o.loanAmount || 0)}</span></div>
+        <div class="qz-calc-row total"><span>Estimated Cash to Close (Borrower):</span><span class="qz-calc-val" style="color:var(--qz-ocean);font-size:16px">${fmtMoney(Math.max(0, o.purchasePrice - (o.loanAmount||0) + 7800 - 5000))}</span></div>
+      </div>
+    </div>`;
+}
+
+function qzPreviewSettlementHTML(o) {
+  return `
+    <div class="qz-panel">
+      <div class="ph">
+        <div>
+          <h4>Settlement Statement (ALTA Combined)</h4>
+          <span class="sub">Standard combined buyer and seller settlement accounting breakdown</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="qz-btn sm" onclick="simToast('Statement printed (training mode).')">Print Statement</button>
+        </div>
+      </div>
+      <div class="qz-calc-card">
+        <div class="qz-calc-row"><span>Property Address:</span><span class="qz-calc-val">${esc(o.propertyAddress)}</span></div>
+        <div class="qz-calc-row"><span>File Number:</span><span class="qz-calc-val">${esc(o.id)}</span></div>
+        <div class="qz-calc-row"><span>Closing Date:</span><span class="qz-calc-val">${fmtDate(o.closingDate)}</span></div>
+        <div class="qz-calc-row total"><span>Escrow Account Status:</span><span class="qz-badge complete">&#10003; In Balance ($0.00 Variance)</span></div>
+      </div>
+    </div>`;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+function qzGlobalDocsHTML() {
+  const allDocs = qzList('documents');
+  const rows = allDocs.map(d => `
+    <tr>
+      <td><b>${esc(d.name)}</b></td>
+      <td>${esc(d.type)}</td>
+      <td><span class="qzs-link" onclick="qzOpenOrder('${escAttr(d.orderId)}')">${esc(d.orderId)}</span></td>
+      <td><span class="qz-badge ${d.status==='Reviewed'?'reviewed':d.status==='Received'?'received':'pending'}">${esc(d.status)}</span></td>
+      <td>${esc(d.uploadedBy)}</td>
+      <td>${fmtDate(d.date)}</td>
+    </tr>`).join('');
+
+  return `
+    <div class="qz-listhead">
+      <div><h2>Documents</h2><div class="sub">All agency documents across all active and archived files</div></div>
+    </div>
+    <div class="qz-tbl-scroll">
+      <table class="qz-tbl">
+        <thead><tr><th>Document Name</th><th>Type</th><th>Order</th><th>Status</th><th>Uploaded By</th><th>Date</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--qz-muted)">No documents in database.</td></tr>'}</tbody>
+      </table>
+    </div>`;
+}
+
+function qzGlobalMessagesHTML() {
+  const allThreads = qzList('threads');
+  const rows = allThreads.map(t => `
+    <tr>
+      <td><b>${esc(t.subject)}</b></td>
+      <td><span class="qzs-link" onclick="qzOpenOrder('${escAttr(t.orderId)}')">${esc(t.orderId)}</span></td>
+      <td>${(t.thread || []).length} messages</td>
+      <td>${t.thread && t.thread[t.thread.length - 1] ? esc(t.thread[t.thread.length - 1].sender) : '—'}</td>
+    </tr>`).join('');
+
+  return `
+    <div class="qz-listhead">
+      <div><h2>Connect Messages</h2><div class="sub">Agency-wide communication threads and client correspondence</div></div>
+    </div>
+    <div class="qz-tbl-scroll">
+      <table class="qz-tbl">
+        <thead><tr><th>Subject</th><th>Order</th><th>Thread Length</th><th>Last Sender</th></tr></thead>
+        <tbody>${rows || '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--qz-muted)">No message threads.</td></tr>'}</tbody>
+      </table>
+    </div>`;
 }
 
 
@@ -4428,6 +8023,7 @@ function qzInitEngine() {
   });
 }
 document.addEventListener('DOMContentLoaded', function () {
+  qzHydrate();
   qzLoad();
   qzMigrateChecklistScope();
   qzInitEngine();

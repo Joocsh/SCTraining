@@ -30,3 +30,54 @@ table.line-items tfoot td { font-weight: 800; border-top: 2px solid var(--ink); 
 .timeline-entry b { display: block; color: var(--ink); }
 .timeline-entry span { color: var(--muted); font-size: 12px; }
 .foot { margin-top: 30px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; color: var(--muted); }
+
+/* =====================================================================
+   MULTI-PAGE DOCUMENTS
+   One .paper element is one page. The library documents in DS_DOC_LIBRARY
+   carry data-page / data-pages so the envelope wizard can address a page
+   by number and, later, anchor a field to a coordinate inside it.
+   ===================================================================== */
+.paper[data-page] { position: relative; margin-bottom: 26px; }
+.paper[data-page]:last-of-type { margin-bottom: 0; }
+.pagenum {
+  position: absolute;
+  bottom: 18px;
+  right: 60px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 10.5px;
+  letter-spacing: .4px;
+  color: var(--muted);
+}
+.contd {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+  margin-bottom: 22px;
+}
+.initials {
+  display: flex;
+  justify-content: flex-end;
+  gap: 30px;
+  margin-top: 26px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+.initials .ibox { text-align: center; }
+.initials .ibox .slot {
+  width: 74px;
+  height: 30px;
+  border-bottom: 1px solid var(--ink);
+}
+.initials .ibox label {
+  display: block;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--muted);
+  margin-top: 5px;
+}
