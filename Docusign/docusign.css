@@ -7,45 +7,78 @@
 
 /* ---- Design tokens (on :root so .ds-tour can access them too) ----
 
-   Two layers on purpose. The --ds24-* set is the 2024 rebrand palette, read off
-   Screenshot-2024-05-16-at-9.08.45-AM.webp. The older --ds-* names are kept
-   because ~400 declarations across this file reference them; instead of touching
-   all of them they are re-pointed at the new palette, which rebrands every
-   downstream surface in one move. The most important consequence is --ds-yellow:
-   it no longer resolves to yellow, so the "NEW" button and every .yellow CTA turn
-   blue without a single call site changing. */
+   Three layers, and the order matters. The --ds26-* set is the source of truth:
+   sampled with getComputedStyle() against a signed-in session on
+   apps.docusign.com, not read off a screenshot. Everything else re-points at it.
+
+   The --ds24-* and --ds-* names survive because ~400 declarations across this
+   file reference them; re-pointing beats touching all of them, and it rebrands
+   every downstream surface in one move.
+
+   Two consequences worth knowing before you edit a call site:
+
+   1. --ds-yellow no longer resolves to yellow. Every .yellow CTA renders in
+      Cobalt, because that is what the send flow actually uses.
+   2. Chrome buttons and action CTAs are DIFFERENT colours on purpose.
+      --ds26-chrome (#260559) is Start Now / Apply / Create Template.
+      --ds26-cta (#4C00FB) is Next: Add Fields / Upload. Do not unify them.
+
+   Text colour is an alpha ladder over a single ink (#130032), not a set of
+   greys. That is why --ds24-muted and friends point at rgba() values. */
 :root {
-  /* --- 2024 rebrand --- */
-  --ds24-blue:      #2b57d9;   /* Start button, links, focus ring */
-  --ds24-blue-h:    #1f45b8;
-  --ds24-ink:       #1a1a1a;   /* page titles */
-  --ds24-text:      #333333;
-  --ds24-muted:     #6b6b6b;   /* "From: …" lines, column labels */
-  --ds24-line:      #e0e0e0;
+  /* --- 2026, medido en producto (apps.docusign.com) --- */
+  --ds26-chrome:    #260559;   /* Start Now, Apply, Create Template */
+  --ds26-chrome-h:  #1b0340;
+  --ds26-cta:       #4C00FB;   /* Next: Add Fields, Upload */
+  --ds26-cta-h:     #3d00c9;
+
+  --ds26-ink-90:    rgba(19, 0, 50, .9);   /* Primary text, page titles */
+  --ds26-ink-70:    rgba(19, 0, 50, .7);   /* Secondary text, inactive tab */
+  --ds26-ink-50:    rgba(19, 0, 50, .5);   /* Control borders (chips, inputs) */
+  --ds26-ink-05:    rgba(19, 0, 50, .05);  /* Subtle fill (secondary buttons) */
+  --ds26-hairline:  rgba(19, 0, 50, .15);  /* Table separators, card borders */
+
+  --ds26-font:      "DS Indigo", DSIndigo, Helvetica, Arial, sans-serif;
+
+  /* --- legacy aliases re-pointed to 2026 measured palette --- */
+  --ds24-blue:      var(--ds26-chrome);
+  --ds24-blue-h:    var(--ds26-chrome-h);
+  --ds24-ink:       var(--ds26-ink-90);
+  --ds24-text:      var(--ds26-ink-90);
+  --ds24-muted:     var(--ds26-ink-70);
+  --ds24-line:      var(--ds26-ink-50);
   --ds24-bg:        #ffffff;
-  --ds24-sidebar:   #f7f7f7;
-  --ds24-sel:       #ececec;   /* selected sidebar item */
-  --ds24-green:     #1a8a4a;   /* Completed */
+  --ds24-sidebar:   #f6f5f6;
+  --ds24-sel:       #dfdee0;   /* selected sidebar item */
+  --ds24-green:     #007641;   /* Completed */
   --ds24-amber:     #b26a00;   /* Waiting */
   --ds24-red:       #c62828;   /* Voided / Declined */
-  --ds24-pill:      #1c2b3a;   /* active filter pill, dark fill */
-  --ds24-radius:    6px;
+  --ds24-pill:      #272532;   /* active filter pill */
+  --ds24-radius:    4px;
+
+  /* --- published brand palette (brand.docusign.com/color) --- */
+  --ds-cobalt:      #4C00FB;
+  --ds-poppy:       #FF5252;
+  --ds-inkwell:     #130032;
+  --ds-deep-violet: #260559;
+  --ds-mist:        #CBC2FF;
+  --ds-ecru:        #F8F3F0;
 
   /* --- legacy names, re-pointed --- */
-  --ds-yellow:      var(--ds24-blue);
-  --ds-yellow-h:    var(--ds24-blue-h);
-  --ds-blue:        var(--ds24-blue);
-  --ds-blue-h:      var(--ds24-blue-h);
+  --ds-yellow:      var(--ds26-cta);
+  --ds-yellow-h:    var(--ds26-cta-h);
+  --ds-blue:        var(--ds26-chrome);
+  --ds-blue-h:      var(--ds26-chrome-h);
   --ds-navy:        var(--ds24-ink);
   --ds-teal:        var(--ds24-green);
   --ds-red:         var(--ds24-red);
   --ds-ink:         var(--ds24-text);
   --ds-muted:       var(--ds24-muted);
-  --ds-line:        var(--ds24-line);
+  --ds-line:        var(--ds26-hairline);
   --ds-bg:          #f7f8f9;
   --ds-card:        var(--ds24-bg);
-  --ds-sidebar-w:   248px;
-  --ds-topbar-h:    60px;
+  --ds-sidebar-w:   280px;
+  --ds-topbar-h:    64px;
 }
 
 /* =====================================================================
@@ -78,18 +111,18 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--ds26-font);
   color: var(--ds-ink);
   background: var(--ds-card);
   overflow: hidden;
 }
 .ds-app * { box-sizing: border-box; }
 .ds-app button { font-family: inherit; }
-.ds-app a { color: var(--ds-blue); text-decoration: none; }
+.ds-app a { color: var(--ds26-cta); text-decoration: none; }
 .ds-app a:hover { text-decoration: underline; }
 
 /* =====================================================================
-   TOP BAR  — white, matches DocuSign eSignature screenshot exactly
+   TOP BAR  — white, matches DocuSign 2026 chrome
    ===================================================================== */
 .ds-topbar {
   flex: none;
@@ -104,29 +137,16 @@
   z-index: 10;
 }
 
-/* 3×3 dot grid (Google-style apps icon) */
 .ds-brand {
   display: flex;
   align-items: center;
   gap: 10px;
   flex: none;
-  margin-right: 6px;
+  margin-right: 12px;
 }
-.ds-logo-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 5px);
-  grid-template-rows:    repeat(3, 5px);
-  gap: 3px;
-  cursor: default;
-  padding: 5px;
-}
-.ds-logo-grid span {
-  display: block;
-  width: 5px;
-  height: 5px;
-  background: #6b778c;
-  border-radius: 1px;
-}
+/* The 3x3 dot grid that used to live here is gone. DocuSign's topbar carries the
+   logo and wordmark and nothing else — there is no Google-style apps launcher.
+   The markup stopped rendering it; these rules were dead weight. */
 .ds-logo-img {
   height: 22px;
   width: auto;
@@ -141,7 +161,7 @@
   border-left: 1.5px solid var(--ds-line);
 }
 
-/* Top nav tabs: Home | Agreements | Templates | Scenarios */
+/* Top nav tabs: Home | Agreements | Templates | Reports | Admin */
 .ds-topnav {
   display: flex;
   align-items: center;
@@ -149,28 +169,35 @@
   gap: 0;
   flex: 1;
 }
-.ds-topnav-item {
+/* Scoped with .ds-app on purpose. Bare `.ds-topnav-item` (0,1,0) loses to
+   `.ds-app a` (0,1,1) further down this file, which paints every link Cobalt —
+   so idle tabs rendered as bright links instead of ink at 70%. Only the active
+   tab escaped, because `.active` pushed it to 0,2,0. Matching the .ds-app
+   prefix puts these rules back on top without touching the link colour. */
+.ds-app .ds-topnav-item {
   display: flex;
   align-items: center;
   height: 100%;
-  padding: 0 18px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--ds24-text);
-  border-bottom: 4px solid transparent;
+  padding: 1px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  color: var(--ds26-ink-70);
+  border-bottom: 3px solid transparent;
   cursor: pointer;
   transition: color .15s, border-color .15s;
   white-space: nowrap;
   text-decoration: none;
   user-select: none;
+  background: transparent;
 }
 /* Specificity rather than !important: .ds-app a:hover underlines every link in the
    shell, so the nav rules simply outrank it. */
-.ds-app .ds-topnav-item:hover { color: var(--ds-ink); text-decoration: none; }
+.ds-app .ds-topnav-item:hover { color: var(--ds26-ink-90); text-decoration: none; }
 .ds-topnav-item.active {
-  color: var(--ds24-ink);
-  border-bottom-color: var(--ds24-ink);
-  font-weight: 700;
+  color: var(--ds26-ink-90);
+  border-bottom-color: var(--ds26-chrome);
+  font-weight: 600;
 }
 
 /* Right side: help + avatar */
@@ -178,39 +205,39 @@
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 .ds-help-btn {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  border: 1.5px solid var(--ds-line);
+  border: 1.5px solid var(--ds26-ink-50);
   background: transparent;
-  color: var(--ds-muted);
-  font-size: 13px;
+  color: var(--ds26-ink-70);
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   display: grid;
   place-items: center;
   transition: background .12s;
 }
-.ds-help-btn:hover { background: var(--ds-bg); }
+.ds-help-btn:hover { background: var(--ds26-ink-05); }
 .ds-user-avatar {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: #5c6bc0;
-  color: #fff;
-  font-size: 11px;
+  background: #e2dcff;
+  color: #260559;
+  font-size: 12px;
   font-weight: 800;
   display: grid;
   place-items: center;
-  cursor: default;
+  cursor: pointer;
   letter-spacing: .5px;
 }
 
 /* =====================================================================
-   LAYOUT  — sidebar (fixed width) + scrollable main
+   LAYOUT  — sidebar (fixed width 280px) + scrollable main
    ===================================================================== */
 .ds-layout {
   display: flex;
@@ -218,15 +245,31 @@
   min-height: 0;
   min-height: 620px;          /* keeps the app tall enough to be useful */
 }
+.ds-layout.no-sidebar .ds-sidebar,
+.ds-sidebar.hidden {
+  display: none !important;
+}
+.ds-layout.no-sidebar .ds-main {
+  padding: 0;
+}
+.ds-layout.no-sidebar .ds-home-hero {
+  margin: 0;
+}
+.ds-layout.no-sidebar .ds-home-first-doc,
+.ds-layout.no-sidebar .ds-home-promo-grid {
+  max-width: 1080px;
+  margin-left: auto;
+  margin-right: auto;
+}
 
 /* =====================================================================
-   LEFT SIDEBAR  — white, matches DocuSign screenshot
+   LEFT SIDEBAR  — white, matches DocuSign 2026 chrome
    ===================================================================== */
 .ds-sidebar {
   width: var(--ds-sidebar-w);
   flex: none;
   background: var(--ds24-sidebar);
-  border-right: 1px solid var(--ds24-line);
+  border-right: 1px solid var(--ds26-hairline);
   padding: 16px 0 24px;
   display: flex;
   flex-direction: column;
@@ -234,61 +277,69 @@
   overflow-y: auto;
 }
 
-/* Blue full-width "Start" button. The class name is deliberately unchanged: the
-   lesson walkthroughs target .ds-new-btn, so renaming it would break Lesson 2. */
+/* Dark violet full-width "Start" button (40px high, 248px wide inside 280px bar).
+   The class name is deliberately unchanged: the lesson walkthroughs target .ds-new-btn. */
 .ds-new-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   width: calc(100% - 32px);
-  background: var(--ds24-blue);
+  height: 40px;
+  background: var(--ds26-chrome);
   color: #fff;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
+  line-height: 19.6px;
   letter-spacing: .1px;
-  border: 1px solid var(--ds24-blue);
+  border: 1px solid var(--ds26-chrome);
   border-radius: var(--ds24-radius);
-  padding: 11px 20px;
-  margin: 0 16px 10px;
+  padding: 0 20px;
+  margin: 0 16px 12px;
   cursor: pointer;
   transition: background .15s;
 }
-.ds-new-btn:hover { background: var(--ds24-blue-h); border-color: var(--ds24-blue-h); }
+.ds-new-btn:hover { background: var(--ds26-chrome-h); border-color: var(--ds26-chrome-h); }
 .ds-new-btn-caret { display: inline-flex; opacity: .85; }
 
-/* Sits directly under Start: outlined, white, same width. */
+/* Outlined white button */
 .ds-shared-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   width: calc(100% - 32px);
+  height: 36px;
   background: #fff;
-  color: var(--ds24-ink);
+  color: var(--ds26-ink-90);
   font-size: 14px;
-  font-weight: 600;
-  border: 1px solid #b8b8b8;
+  font-weight: 500;
+  border: 1px solid var(--ds26-ink-50);
   border-radius: var(--ds24-radius);
-  padding: 10px 20px;
-  margin: 0 16px 18px;
+  padding: 0 20px;
+  margin: 0 16px 16px;
   cursor: pointer;
   transition: background .15s, border-color .15s;
 }
-.ds-shared-btn:hover { background: #f0f0f0; border-color: #8f8f8f; }
+.ds-shared-btn:hover { background: var(--ds26-ink-05); border-color: var(--ds26-ink-70); }
 
 /* Section headers ("ENVELOPES", "QUICK VIEWS") */
 .ds-sidebar-section { margin-bottom: 6px; }
+/* Measured on the live product: the "ENVELOPES" rule is 12px/600 with almost no
+   tracking, not the 11px/700 wide-tracked label this was. text-transform stays
+   because the markup passes sentence case ("Training"); DocuSign's own markup
+   ships the caps in the content, which renders identically. */
 .ds-sidebar-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .7px;
-  color: var(--ds24-muted);
-  padding: 6px 20px 3px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  letter-spacing: .12px;
+  color: var(--ds26-ink-70);
+  padding: 8px 24px 4px;
   text-transform: uppercase;
 }
 
-/* Nav links */
+/* Nav links (48px high rows, 16px font weight 400) */
 .ds-sidebar-nav {
   list-style: none;
   margin: 0;
@@ -298,33 +349,35 @@
 .ds-sidebar-nav a {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 9px 20px 9px 34px;
-  font-size: 14px;
+  gap: 12px;
+  padding: 0 20px 0 24px;
+  height: 48px;
+  font-size: 16px;
   font-weight: 400;
-  color: var(--ds24-ink);
+  line-height: 24px;
+  color: var(--ds26-ink-90);
   cursor: pointer;
   transition: background .12s;
   text-decoration: none;
   user-select: none;
 }
+/* 24px, measured. The 18px here made every row read lighter than the product. */
 .ds-sidebar-nav a svg {
-  width: 17px;
-  height: 17px;
+  width: 24px;
+  height: 24px;
   flex: none;
-  color: var(--ds24-text);
+  color: var(--ds26-ink-70);
 }
 .ds-app .ds-sidebar-nav a:hover {
-  background: #efefef;
+  background: var(--ds26-ink-05);
   text-decoration: none;
 }
-/* Selected reads as a full-bleed grey band with a filled glyph — the 2024 list
-   has no coloured left rail. */
+/* Selected reads as a full-bleed grey band with a filled glyph */
 .ds-sidebar-nav a.ds-active {
   background: var(--ds24-sel);
   font-weight: 600;
 }
-.ds-sidebar-nav a.ds-active svg { color: var(--ds24-ink); }
+.ds-sidebar-nav a.ds-active svg { color: var(--ds26-ink-90); }
 
 /* =====================================================================
    MAIN CONTENT AREA
@@ -632,16 +685,18 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
 .ds-badge.declined::before { background: var(--ds-red); }
 
 /* =====================================================================
-   BUTTONS
+   BUTTONS (2026 measured: 14px, 500 weight, 19.6px line-height, 32px height, 4px radius)
    ===================================================================== */
 .ds-btn {
-  border: 1px solid #c1c7d0;
+  border: 1px solid var(--ds26-ink-50);
   background: #fff;
-  color: var(--ds-ink);
-  font-size: 13px;
-  font-weight: 600;
-  padding: 8px 16px;
-  border-radius: 6px;
+  color: var(--ds26-ink-90);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 19.6px;
+  padding: 5px 12px;
+  min-height: 32px;
+  border-radius: var(--ds24-radius);
   cursor: pointer;
   transition: all .15s;
   display: inline-flex;
@@ -650,16 +705,39 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
   font-family: inherit;
   white-space: nowrap;
 }
-.ds-btn:hover { border-color: var(--ds-blue); color: var(--ds-blue); background: #f0f4ff; }
-.ds-btn.primary { background: var(--ds-blue); border-color: var(--ds-blue); color: #fff; }
-.ds-btn.primary:hover { background: var(--ds-blue-h); border-color: var(--ds-blue-h); }
-/* .yellow is the legacy name for the primary CTA. --ds-yellow now resolves to the
-   2024 blue, so the only thing that had to change here is the text colour: dark ink
-   on a saturated blue was unreadable. Kept as an alias rather than renamed, so the
-   four remaining call sites in the wizard stay untouched. */
-.ds-btn.yellow  { background: var(--ds24-blue); border-color: var(--ds24-blue); color: #fff; font-weight: 700; }
-.ds-btn.yellow:hover { background: var(--ds24-blue-h); border-color: var(--ds24-blue-h); color: #fff; }
-.ds-btn.danger  { background: #ffebe6; border-color: #ffbdad; color: var(--ds-red); }
+.ds-btn:hover { border-color: var(--ds26-ink-70); background: var(--ds26-ink-05); }
+.ds-btn.primary {
+  background: var(--ds26-chrome);
+  border-color: var(--ds26-chrome);
+  color: #fff;
+  font-weight: 600;
+}
+.ds-btn.primary:hover { background: var(--ds26-chrome-h); border-color: var(--ds26-chrome-h); color: #fff; }
+.ds-btn.cta,
+.ds-btn.yellow {
+  background: var(--ds26-cta);
+  border-color: var(--ds26-cta);
+  color: #fff;
+  font-weight: 600;
+}
+.ds-btn.cta:hover,
+.ds-btn.yellow:hover {
+  background: var(--ds26-cta-h);
+  border-color: var(--ds26-cta-h);
+  color: #fff;
+}
+.ds-btn.secondary {
+  background: var(--ds26-ink-05);
+  border-color: transparent;
+  color: var(--ds26-ink-90);
+}
+.ds-btn.secondary:hover { background: rgba(19, 0, 50, .10); }
+.ds-btn.sm {
+  font-size: 12.5px;
+  padding: 3px 8px;
+  min-height: 26px;
+}
+.ds-btn.danger { background: #ffebe6; border-color: #ffbdad; color: var(--ds-red); }
 .ds-btn.danger:hover { background: #ffbdad; }
 
 /* =====================================================================
@@ -1537,13 +1615,78 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
   color: #111;
   user-select: none;
 }
+
+/* ---- Step 3 canvas: the real document ----
+   .ds-doc-frame carries a library document; markers are injected onto its pages
+   by dsPaintCanvasFields(). The bar above it switches document and page.
+   .ds-fld-area used to live inside the white .ds-doc-page and now sits directly
+   on the dark canvas, so it carries its own surface. */
+.ds-canvas-docbar {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.ds-canvas-doctabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.ds-canvas-doctab {
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, .28);
+  border-radius: var(--ds24-radius);
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.ds-canvas-doctab.on { background: #fff; color: var(--ds26-chrome); border-color: #fff; font-weight: 600; }
+.ds-canvas-pager { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.ds-canvas-pagecount { color: #fff; font-size: 12px; font-weight: 600; }
+.ds-canvas-pagebtn {
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, .28);
+  border-radius: var(--ds24-radius);
+  padding: 3px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.ds-canvas-pagebtn:disabled { opacity: .35; cursor: not-allowed; }
+/* flex: none on all three children is load-bearing. .ds-doc-canvas is a flex
+   column with a max-height, so its items shrink by default — the frame's 520px
+   collapsed to about 180 and the document had no room to read. */
+.ds-doc-frame {
+  flex: none;
+  width: 100%;
+  max-width: 640px;
+  height: 520px;
+  border: 0;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .3);
+}
+.ds-canvas-docbar { flex: none; }
+.ds-doc-canvas > .ds-fld-area {
+  flex: none;
+  width: 100%;
+  max-width: 640px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 0;
+  border-radius: 6px;
+}
 .ds-placed-tag {
   position: absolute;
   padding: 6px 12px;
   border-radius: 4px;
   font-size: 11px;
   font-weight: 700;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--ds26-font);
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   border: 2px solid #005cb9;
@@ -1591,8 +1734,8 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
   flex: none;
 }
 .ds-signer-banner {
-  background: #ffc400;
-  color: #111;
+  background: linear-gradient(135deg, #001f3f 0%, #003366 100%);
+  color: #ffffff;
   padding: 12px 24px;
   display: flex;
   align-items: center;
@@ -1600,7 +1743,11 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
   font-size: 13px;
   font-weight: 600;
   flex: none;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+.ds-signer-banner label {
+  color: #ffffff;
 }
 .ds-signer-body {
   flex: 1;
@@ -1627,8 +1774,8 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
 .ds-start-marker {
   position: absolute;
   left: -80px;
-  background: #ffc400;
-  color: #111;
+  background: var(--ds24-blue, #0066cc);
+  color: #fff;
   font-size: 12px;
   font-weight: 800;
   padding: 8px 12px;
@@ -1648,7 +1795,7 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
   transform: translateY(-50%);
   border-width: 6px 0 6px 8px;
   border-style: solid;
-  border-color: transparent transparent transparent #ffc400;
+  border-color: transparent transparent transparent var(--ds24-blue, #0066cc);
 }
 @keyframes dsBounce {
   0%, 100% { transform: translateX(0); }
@@ -1662,7 +1809,7 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
   color: #e65100;
   padding: 10px 24px;
   border-radius: 4px;
-  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--ds26-font);
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
@@ -1764,7 +1911,6 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
 /* ---- topbar tweaks ---- */
 .ds-topbar { padding: 0 22px; }
 .ds-brand { gap: 12px; }
-.ds-logo-grid span { background: #55555c; }
 
 /* ---- sidebar: collapsible groups ----
    The 2024 sidebar nests its quick views under a caret + icon header rather than
@@ -1830,40 +1976,74 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
 }
 .ds-sb-training .ds-sidebar-label { color: #8a8a8a; }
 
-/* ---- page title ----
-   ~34px bold is the single biggest fidelity cue in the capture; the classic
-   layout used a 20px heading with a course subtitle under it. */
+/* ---- page title (2026 measured: 32px, 400 weight, 40px line-height, -.32px letter-spacing) ---- */
 .ds-page-title {
-  margin: 0 0 20px;
-  font-size: 34px;
-  line-height: 1.15;
-  font-weight: 700;
-  letter-spacing: -.5px;
-  color: var(--ds24-ink);
+  margin: 0 0 16px;
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 400;
+  letter-spacing: -.32px;
+  color: var(--ds26-ink-90);
 }
-.ds-page-title.sm { font-size: 26px; margin-bottom: 16px; }
+.ds-page-title.sm { font-size: 24px; line-height: 32px; margin-bottom: 14px; }
 
-/* ---- filter row: rounded pills ---- */
+/* Content header row with Shared Access top-right (F6) */
+.ds-agr-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.ds-agr-header .ds-page-title { margin: 0; }
+
+.ds-shared-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--ds26-ink-50);
+  border-radius: var(--ds24-radius);
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ds26-ink-90);
+  cursor: pointer;
+  transition: all .12s;
+}
+.ds-shared-header-btn:hover {
+  background: var(--ds26-ink-05);
+  border-color: var(--ds26-ink-70);
+}
+
+/* ---- filter bar (F7: Search, Date chip with X, Divider, Dropdowns, Clear All) ---- */
 .ds-filterbar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: 26px;
+  margin-bottom: 22px;
 }
+
 .ds-searchpill {
   display: flex;
   align-items: center;
-  gap: 9px;
-  min-width: 240px;
-  flex: 0 1 244px;
-  border: 1px solid #a6a6a6;
-  border-radius: 999px;
+  gap: 8px;
+  min-width: 230px;
+  flex: 0 1 250px;
+  height: 32px;
+  border: 1px solid var(--ds26-ink-50);
+  border-radius: var(--ds24-radius);
   background: #fff;
-  padding: 9px 16px;
-  color: var(--ds24-muted);
+  padding: 0 10px;
+  color: var(--ds26-ink-70);
 }
-.ds-searchpill:focus-within { border-color: var(--ds24-blue); box-shadow: 0 0 0 1px var(--ds24-blue); }
+.ds-searchpill:focus-within {
+  border-color: var(--ds26-chrome);
+  box-shadow: 0 0 0 1px var(--ds26-chrome);
+}
 .ds-searchpill input {
   flex: 1;
   min-width: 0;
@@ -1871,41 +2051,81 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
   outline: none;
   background: none;
   font: inherit;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  color: var(--ds26-ink-90);
+}
+.ds-searchpill input::placeholder {
   font-size: 14px;
-  color: var(--ds24-ink);
+  color: var(--ds26-ink-70);
 }
 .ds-searchpill button {
   background: none;
   border: none;
   padding: 0;
-  color: var(--ds24-muted);
+  color: var(--ds26-ink-70);
   cursor: pointer;
   display: flex;
 }
 
-.ds-pill {
+.ds-filter-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--ds26-hairline);
+  margin: 0 4px;
+  flex: none;
+}
+
+/* Filter chips & buttons (14px, 400 weight, 19.6px line-height, 32px height, 4px radius) */
+.ds-pill,
+.ds-filter-chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  border: 1px solid #a6a6a6;
-  border-radius: 999px;
+  gap: 6px;
+  height: 32px;
+  border: 1px solid var(--ds26-ink-50);
+  border-radius: var(--ds24-radius);
   background: #fff;
-  color: var(--ds24-ink);
+  color: var(--ds26-ink-90);
   font-size: 14px;
-  font-weight: 500;
-  padding: 9px 18px;
+  font-weight: 400;
+  line-height: 19.6px;
+  padding: 0 10px;
   cursor: pointer;
   transition: background .12s, border-color .12s;
   white-space: nowrap;
+  user-select: none;
 }
-.ds-pill:hover { background: #f2f2f2; }
-/* Active filter is a dark solid fill, not a tint — see "Last 6 months" in the capture. */
-.ds-pill.on {
-  background: var(--ds24-pill);
-  border-color: var(--ds24-pill);
-  color: #fff;
+.ds-pill:hover,
+.ds-filter-chip:hover {
+  background: var(--ds26-ink-05);
+  border-color: var(--ds26-ink-70);
 }
-.ds-pill.on:hover { background: #16232f; }
+.ds-pill.on,
+.ds-filter-chip.applied {
+  background: var(--ds26-ink-05);
+  border-color: var(--ds26-ink-90);
+  font-weight: 500;
+}
+.ds-filter-chip-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 2px;
+  color: var(--ds26-ink-70);
+  cursor: pointer;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+}
+.ds-filter-chip-close:hover {
+  color: var(--ds26-ink-90);
+  background: rgba(19, 0, 50, .10);
+}
 
 .ds-clearlink {
   margin-left: auto;
@@ -1913,13 +2133,98 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
   border: none;
   font: inherit;
   font-size: 14px;
-  color: var(--ds24-ink);
+  font-weight: 400;
+  color: var(--ds26-ink-70);
   cursor: pointer;
-  padding: 6px 4px;
+  padding: 4px 6px;
 }
-.ds-clearlink:hover { text-decoration: underline; }
+.ds-clearlink:hover {
+  color: var(--ds26-ink-90);
+  text-decoration: underline;
+}
 
-/* Dropdown that the pills open. */
+/* Status Popover (F7) */
+.ds-popover-anchor {
+  position: relative;
+  display: inline-flex;
+}
+.ds-status-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 50;
+  width: 250px;
+  background: #fff;
+  border: 1px solid var(--ds26-hairline);
+  border-radius: var(--ds24-radius);
+  box-shadow: 0 8px 24px rgba(19, 0, 50, 0.16);
+  padding: 16px;
+  display: none;
+  text-align: left;
+}
+.ds-popover-anchor.open .ds-status-popover { display: block; }
+.ds-status-pop-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ds26-ink-90);
+  margin: 0 0 2px;
+}
+.ds-status-pop-sub {
+  font-size: 12px;
+  color: var(--ds26-ink-70);
+  margin: 0 0 14px;
+}
+.ds-status-radios {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.ds-status-radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--ds26-ink-90);
+  cursor: pointer;
+  user-select: none;
+}
+.ds-status-radio-label input[type="radio"] {
+  margin: 0;
+  accent-color: var(--ds26-chrome);
+  cursor: pointer;
+}
+.ds-status-pop-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ds26-hairline);
+}
+.ds-status-btn-cancel {
+  background: var(--ds26-ink-05);
+  border: none;
+  border-radius: var(--ds24-radius);
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds26-ink-90);
+  cursor: pointer;
+}
+.ds-status-btn-cancel:hover { background: rgba(19, 0, 50, .10); }
+.ds-status-btn-apply {
+  background: var(--ds26-chrome);
+  border: none;
+  border-radius: var(--ds24-radius);
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+}
+.ds-status-btn-apply:hover { background: var(--ds26-chrome-h); }
+
+/* Dropdown that other pills open */
 .ds-pillmenu {
   position: relative;
   display: inline-flex;
@@ -1932,9 +2237,9 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
   z-index: 40;
   min-width: 210px;
   background: #fff;
-  border: 1px solid var(--ds24-line);
+  border: 1px solid var(--ds26-hairline);
   border-radius: var(--ds24-radius);
-  box-shadow: 0 6px 20px rgba(0,0,0,.14);
+  box-shadow: 0 6px 20px rgba(19, 0, 50, .14);
   padding: 6px 0;
 }
 .ds-pillmenu.open .ds-pillmenu-list { display: block; }
@@ -1946,12 +2251,12 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
   border: none;
   font: inherit;
   font-size: 13.5px;
-  color: var(--ds24-ink);
+  color: var(--ds26-ink-90);
   padding: 8px 16px;
   cursor: pointer;
 }
-.ds-pillmenu-list button:hover { background: #f2f2f2; }
-.ds-pillmenu-list button.on { font-weight: 700; }
+.ds-pillmenu-list button:hover { background: var(--ds26-ink-05); }
+.ds-pillmenu-list button.on { font-weight: 700; color: var(--ds26-chrome); }
 
 /* ---- the agreements list ----
    Still a <table> with tr[data-env-id] because the lesson walkthroughs target
@@ -2606,16 +2911,96 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
 .ds-donut-key span { flex: 1; }
 .ds-donut-key b { font-variant-numeric: tabular-nums; color: var(--ds24-ink); }
 
-.ds-rep-tplgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
-.ds-rep-tpl {
-  border: 1px solid var(--ds24-line);
-  border-radius: var(--ds24-radius);
-  background: #fff;
-  padding: 16px 18px;
-  color: var(--ds24-blue);
+.ds-rep-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
 }
-.ds-rep-tpl b { display: block; margin: 10px 0 5px; font-size: 14px; color: var(--ds24-ink); }
-.ds-rep-tpl p { margin: 0 0 14px; font-size: 12.5px; line-height: 1.5; color: var(--ds24-muted); }
+@media (max-width: 900px) {
+  .ds-rep-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+.ds-rep-rail {
+  background: transparent;
+  padding: 8px 0;
+}
+.ds-rep-rail-sec {
+  padding: 8px 12px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: var(--ds24-muted);
+}
+.ds-rep-rail-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13.5px;
+  color: var(--ds26-ink-90);
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  border-radius: var(--ds24-radius);
+  transition: background .12s;
+}
+.ds-rep-rail-item:hover { background: var(--ds26-ink-05); }
+.ds-rep-rail-item.active { background: #e5e5ea; font-weight: 600; }
+.ds-rep-rail-divider {
+  height: 1px;
+  background: var(--ds26-hairline);
+  margin: 12px 0;
+}
+
+.ds-rep-main {
+  min-width: 0;
+}
+.ds-rep-card {
+  background: #fff;
+  border: 1px solid var(--ds26-hairline);
+  border-radius: var(--ds24-radius);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.ds-rep-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.ds-rep-card-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--ds26-ink-90);
+}
+.ds-rep-card-period {
+  font-size: 12px;
+  color: var(--ds24-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ds-rep-card-empty {
+  background: #f7f7f9;
+  border-radius: 4px;
+  padding: 48px 24px;
+  text-align: center;
+}
+.ds-rep-card-empty h4 {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--ds26-ink-90);
+  margin: 0 0 8px;
+}
+.ds-rep-card-empty p {
+  font-size: 13px;
+  color: var(--ds24-muted);
+  margin: 0 0 16px;
+}
 
 /* Avatar menu: the two sandbox controls are training tools, so they are fenced
    off from the product actions above them rather than sitting in Settings. */
@@ -2636,112 +3021,219 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
 }
 
 /* =====================================================================
-   HOME
+   TOPBAR RIGHT 2026 CONTROLS
    ===================================================================== */
-.ds-home-actions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 14px;
-  margin-bottom: 24px;
-}
-.ds-home-action {
-  display: block;
-  text-align: left;
-  background: #fff;
-  border: 1px solid var(--ds24-line);
-  border-radius: var(--ds24-radius);
-  padding: 18px 20px;
+/* .ds-trial-text and .ds-buy-btn used to live here, styling a "14 Days Left"
+   counter and a "Buy Now" pill. Both were removed from the markup: they are
+   trial-account upsell, not part of the product being taught. */
+.ds-avatar-wrap {
+  position: relative;
   cursor: pointer;
-  font: inherit;
-  transition: border-color .12s, box-shadow .12s;
+  display: inline-block;
 }
-.ds-home-action:hover {
-  border-color: var(--ds24-blue);
-  box-shadow: 0 2px 10px rgba(43, 87, 217, .10);
+.ds-avatar-dot {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 2px solid #fff;
 }
-.ds-home-ico {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--ds24-radius);
-  background: #eef2fb;
-  color: var(--ds24-blue);
-  margin-bottom: 12px;
-}
-.ds-home-action b { display: block; font-size: 15px; color: var(--ds24-ink); margin-bottom: 4px; }
-.ds-home-action > span:last-child { display: block; font-size: 13px; line-height: 1.5; color: var(--ds24-muted); }
 
-.ds-home-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 14px;
-  margin-bottom: 24px;
-}
-.ds-kpi.link {
-  display: block;
-  text-align: left;
-  font: inherit;
-  cursor: pointer;
-  transition: border-color .12s;
-}
-.ds-kpi.link:hover { border-color: var(--ds24-blue); }
-.ds-kpi b.neg { color: var(--ds24-red); }
+/* The .ds-onboarding-* rules used to live here: a grey strip with a
+   "Get started" label, a 1-of-5 progress bar and a Send a Document button.
+   The markup was removed — that strip is trial onboarding, not product. */
 
-.ds-home-cols {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 16px;
+/* =====================================================================
+   HOME 2026 HERO & SECTIONS
+   ===================================================================== */
+/* The .ds-invite-banner / .ds-invite-close rules used to live here, styling the
+   "4 Invites available" seat-upsell strip. The markup went; these follow. */
+
+.ds-home-hero {
+  background: linear-gradient(135deg, #18003b 0%, #29055e 100%);
+  color: #fff;
+  padding: 44px 24px;
+  text-align: center;
+  border-radius: 0;
+  margin: -24px -28px 28px;
 }
-.ds-home-card {
-  border: 1px solid var(--ds24-line);
-  border-radius: var(--ds24-radius);
-  background: #fff;
-  padding: 18px 20px;
-  min-width: 0;
+.ds-hero-title {
+  font-size: 26px;
+  font-weight: 500;
+  margin: 0 0 24px;
+  color: #ffffff;
 }
-.ds-home-card h3 { margin: 0 0 10px; font-size: 15px; font-weight: 700; color: var(--ds24-ink); }
-.ds-home-list { list-style: none; margin: 0 0 12px; padding: 0; }
-.ds-home-list li {
+.ds-hero-actions {
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 11px 0;
-  border-bottom: 1px solid #f2f2f2;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.ds-hero-start-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #e0d7f5;
+  color: #260559;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: background .12s;
+}
+.ds-hero-start-btn:hover { background: #fff; }
+.ds-hero-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 18px;
+  border-radius: 4px;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all .12s;
+}
+.ds-hero-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: #fff;
+}
+
+.ds-home-first-doc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  background: #fff;
+  border-radius: var(--ds24-radius);
+  padding: 36px 32px;
+  margin-bottom: 24px;
+}
+@media (max-width: 768px) {
+  .ds-home-first-doc { flex-direction: column; text-align: center; }
+}
+.ds-first-doc-art { flex: none; }
+.ds-first-doc-text { max-width: 480px; }
+.ds-first-doc-text h2 {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ds26-ink-90);
+  margin: 0 0 10px;
+}
+.ds-first-doc-text p {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ds24-muted);
+  margin: 0 0 16px;
+}
+.ds-first-doc-link {
+  color: var(--ds26-chrome);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: underline;
   cursor: pointer;
 }
-.ds-home-list li:last-child { border-bottom: none; }
-.ds-home-list li:hover b { color: var(--ds24-blue); }
-.ds-home-list li > div { flex: 1; min-width: 0; }
-.ds-home-list b {
-  display: block;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--ds24-ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.ds-home-list span { display: block; margin-top: 2px; font-size: 12.5px; color: var(--ds24-muted); }
-.ds-home-list li > svg:last-child { color: #bdbdbd; }
 
-/* The training block is deliberately fenced off: everything above it is the
-   product, everything inside it is the course. */
-.ds-train-block {
-  margin-top: 34px;
-  padding-top: 26px;
-  border-top: 2px solid var(--ds24-line);
+/* Home promo cards. The grid used to hold two; it holds one since the upgrade
+   card was removed. The max on the track keeps that single card from stretching
+   the full content width — with a plain 1fr it would span edge to edge and read
+   as a banner rather than a card. */
+.ds-home-promo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 520px));
+  gap: 16px;
+  margin-bottom: 28px;
 }
-.ds-train-head {
+.ds-promo-card {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  flex-wrap: wrap;
-  margin-bottom: 18px;
+  align-items: center;
+  gap: 16px;
+  background: #f0f0f4;
+  border-radius: 8px;
+  padding: 18px 20px;
 }
-.ds-train-head h2 { margin: 4px 0 6px; font-size: 22px; font-weight: 700; color: var(--ds24-ink); }
-.ds-train-head p { margin: 0; max-width: 72ch; font-size: 13.5px; line-height: 1.6; color: var(--ds24-muted); }
+.ds-promo-ico {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.ds-promo-info b {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ds26-ink-90);
+  margin-bottom: 4px;
+}
+.ds-promo-info span {
+  font-size: 12.5px;
+  color: var(--ds24-muted);
+}
+.ds-promo-info a {
+  color: var(--ds26-chrome);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* =====================================================================
+   EMPTY HERO 2-COLUMN LAYOUT (Inbox / Sent / Templates)
+   ===================================================================== */
+.ds-empty-hero-layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+  background: transparent;
+  padding: 60px 20px;
+  margin: 20px 0;
+}
+@media (max-width: 768px) {
+  .ds-empty-hero-layout { flex-direction: column; text-align: center; }
+}
+.ds-empty-hero-art { flex: none; }
+.ds-empty-hero-content { max-width: 440px; }
+.ds-empty-hero-content h2 {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ds26-ink-90);
+  margin: 0 0 10px;
+}
+.ds-empty-hero-content p {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ds24-muted);
+  margin: 0 0 18px;
+}
+.ds-empty-hero-content .ds-btn-primary {
+  background: var(--ds26-chrome);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 9px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .12s;
+}
+.ds-empty-hero-content .ds-btn-primary:hover { background: var(--ds26-chrome-h); }
+.ds-empty-hero-content .ds-link-secondary {
+  margin-left: 14px;
+  font-size: 14px;
+  color: var(--ds26-chrome);
+  text-decoration: underline;
+  cursor: pointer;
+}
 .ds-train-eyebrow {
   font-size: 11px;
   font-weight: 700;
@@ -2759,13 +3251,88 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
 @media (max-width: 900px) { .ds-train-sub { grid-template-columns: minmax(0, 1fr); } }
 
 /* =====================================================================
-   TEMPLATES
+   TEMPLATES (F8: Layout with Rail, Create Template, Categories, Pager)
    ===================================================================== */
-.ds-tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+.ds-tmpl-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .ds-tmpl-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+.ds-tmpl-rail {
+  background: #fff;
+  border: 1px solid var(--ds26-hairline);
+  border-radius: var(--ds24-radius);
+  padding: 14px 0;
+}
+.ds-tmpl-new-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  background: var(--ds26-chrome);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid var(--ds26-chrome);
+  border-radius: var(--ds24-radius);
+  padding: 0 16px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.ds-tmpl-new-btn:hover { background: var(--ds26-chrome-h); }
+
+.ds-tmpl-rail-sec {
+  padding: 8px 16px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: var(--ds24-muted);
+}
+.ds-tmpl-rail-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: var(--ds26-ink-90);
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  transition: background .12s;
+}
+.ds-tmpl-rail-item:hover { background: var(--ds26-ink-05); }
+.ds-tmpl-rail-item.active { background: var(--ds24-sel); font-weight: 600; }
+.ds-tmpl-rail-divider {
+  height: 1px;
+  background: var(--ds26-hairline);
+  margin: 10px 0;
+}
+.ds-tmpl-badge-new {
+  display: inline-block;
+  background: var(--ds26-chrome);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  margin-left: auto;
+  letter-spacing: .5px;
+}
+
+.ds-tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
 .ds-tpl-card {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--ds24-line);
+  border: 1px solid var(--ds26-hairline);
   border-radius: var(--ds24-radius);
   background: #fff;
   padding: 18px 20px;
@@ -2779,10 +3346,10 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
   place-items: center;
   border-radius: var(--ds24-radius);
   background: #eef2fb;
-  color: var(--ds24-blue);
+  color: var(--ds26-chrome);
 }
 .ds-tpl-title { flex: 1; min-width: 0; }
-.ds-tpl-title b { display: block; font-size: 15px; color: var(--ds24-ink); line-height: 1.3; }
+.ds-tpl-title b { display: block; font-size: 15px; color: var(--ds26-ink-90); line-height: 1.3; }
 .ds-tpl-cat { display: block; margin-top: 3px; font-size: 12px; color: var(--ds24-muted); }
 .ds-tpl-kebab {
   background: none;
@@ -2796,22 +3363,22 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
   color: var(--ds24-muted);
   cursor: pointer;
 }
-.ds-tpl-kebab:hover { background: #ececec; color: var(--ds24-ink); }
+.ds-tpl-kebab:hover { background: var(--ds26-ink-05); color: var(--ds26-ink-90); }
 .ds-tpl-desc { margin: 0 0 14px; font-size: 13px; line-height: 1.55; color: var(--ds24-muted); }
 .ds-tpl-meta { display: flex; gap: 26px; margin: 0 0 14px; }
 .ds-tpl-meta dt { font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--ds24-muted); }
-.ds-tpl-meta dd { margin: 3px 0 0; font-size: 18px; font-weight: 700; color: var(--ds24-ink); font-variant-numeric: tabular-nums; }
+.ds-tpl-meta dd { margin: 3px 0 0; font-size: 18px; font-weight: 700; color: var(--ds26-ink-90); font-variant-numeric: tabular-nums; }
 .ds-tpl-recips { list-style: none; margin: 0 0 16px; padding: 0; flex: 1; }
 .ds-tpl-recips li {
   display: flex;
   align-items: center;
   gap: 7px;
   font-size: 12.5px;
-  color: var(--ds24-text);
+  color: var(--ds26-ink-90);
   padding: 4px 0;
 }
 .ds-tpl-recips li svg { color: var(--ds24-muted); }
-.ds-tpl-foot { display: flex; gap: 8px; border-top: 1px solid var(--ds24-line); padding-top: 14px; }
+.ds-tpl-foot { display: flex; gap: 8px; border-top: 1px solid var(--ds26-hairline); padding-top: 14px; }
 /* =====================================================================
    LESSON BANNER
    Visible while dsTrainingActive() is true. Sits at the top of .ds-main,
@@ -2881,15 +3448,38 @@ body.ds-demo .ds-lesson-banner { display: none; }
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-top: 32px;
-  padding: 14px 20px;
-  background: var(--ds24-card, #1c1f26);
-  border: 1px solid var(--ds24-border, #2a2d35);
-  border-radius: 10px;
+  max-width: 1080px;
+  margin: 28px auto 20px;
+  padding: 12px 20px;
+  background: #f8fafc;
+  border: 1px solid var(--ds26-hairline, #e2e8f0);
+  border-left: 4px solid var(--ds26-cta, #4c00fb);
+  border-radius: 8px;
   font-size: 13.5px;
-  color: var(--ds24-muted, #9ca3af);
+  color: var(--ds26-ink-90, #131518);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
-.ds-training-entry .ds-btn { flex-shrink: 0; }
+.ds-training-entry span {
+  color: var(--ds26-ink-90, #131518);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ds-training-entry .ds-btn {
+  flex-shrink: 0;
+  background: var(--ds26-chrome, #260559);
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 6px 14px;
+  border: 1px solid var(--ds26-chrome, #260559);
+  cursor: pointer;
+  transition: background .15s;
+}
+.ds-training-entry .ds-btn:hover {
+  background: #3c098c;
+}
 
 /* =====================================================================
    DEMO MODE (?demo=1)
@@ -2900,7 +3490,9 @@ body.ds-demo .ds-training-item,
 body.ds-demo #sb-exam,
 body.ds-demo .ds-sb-training,
 body.ds-demo .ds-train-block,
-body.ds-demo .ds-training-entry { display: none; }
+body.ds-demo .ds-training-entry,
+body.ds-demo #sb-mailbox,
+body.ds-demo [data-view="mailbox"] { display: none !important; }
 
 /* =====================================================================
    PHASE 8 — wizard and signer, colour only
@@ -3020,8 +3612,8 @@ body.ds-demo .ds-training-entry { display: none; }
 .ds-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 200;
-  background: rgba(20, 22, 26, .45);
+  z-index: 20000;
+  background: rgba(20, 22, 26, .55);
   display: grid;
   place-items: center;
   padding: 24px;
@@ -3298,6 +3890,146 @@ body.ds-demo .ds-training-entry { display: none; }
 /* A warning is not a blocker. gmial.com has to stay typeable, because Lesson 5
    is about noticing the bounce it causes. */
 .ds-wr-msg.warn { color: #8a6100; }
+.ds-wr-adv-btn {
+  align-self: center;
+  margin-top: 14px;
+  font-size: 11.5px;
+  padding: 5px 9px;
+  color: var(--ds24-muted);
+}
+.ds-wr-adv-btn:hover { color: var(--ds24-blue); }
+.ds-adv-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ds24-blue);
+  margin-left: 3px;
+  vertical-align: middle;
+}
+.ds-wr-adv {
+  flex-basis: 100%;
+  background: #f0f4f8;
+  border: 1px solid #d0dce8;
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-top: 6px;
+}
+.ds-wr-adv-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: var(--ds24-ink);
+}
+.ds-wr-adv-head b { display: flex; align-items: center; gap: 5px; color: var(--ds24-blue); }
+.ds-wr-adv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.ds-wr-adv-col label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ds24-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.ds-wr-adv-row {
+  margin-bottom: 8px;
+}
+.ds-wr-adv-row label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ds24-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.ds-wr-adv-row textarea {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--ds24-line);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12.5px;
+  resize: vertical;
+  background: #fff;
+}
+.ds-switch-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-top: 5px;
+}
+.ds-switch-label input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+.ds-badge-xs {
+  font-size: 10px;
+  padding: 2px 6px;
+  gap: 3px;
+  display: inline-flex;
+  align-items: center;
+  font-weight: 700;
+  border-radius: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.ds-wiz-adv-block {
+  border: 1px solid var(--ds24-line);
+  border-radius: var(--ds24-radius);
+  background: #fff;
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+.ds-wiz-adv-head {
+  padding: 12px 16px;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.ds-wiz-adv-head b { display: flex; align-items: center; gap: 6px; font-size: 13.5px; color: var(--ds24-ink); }
+.ds-wiz-adv-head .ds-wiz-adv-chevron { margin-left: auto; color: var(--ds24-muted); font-size: 14px; }
+.ds-wiz-adv-body {
+  padding: 16px;
+  border-top: 1px solid var(--ds24-line);
+  background: #fff;
+}
+.ds-wiz-rem-grid { display: flex; flex-direction: column; gap: 14px; }
+.ds-wiz-rem-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+.ds-wiz-rem-field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ds24-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.ds-wiz-rem-field select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--ds24-line);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12.5px;
+  background: #fff;
+}
 
 /* ---- template detail ---- */
 .ds-backlink {
@@ -3307,18 +4039,6 @@ body.ds-demo .ds-training-entry { display: none; }
   background: none;
   border: none;
   font: inherit;
-  font-size: 13.5px;
-  color: var(--ds24-muted);
-  cursor: pointer;
-  padding: 0 0 14px;
-}
-.ds-backlink:hover { color: var(--ds24-blue); }
-.ds-kpi b.ds-kpi-text { font-size: 17px; line-height: 1.3; }
-.ds-fieldchip {
-  display: inline-block;
-  margin: 2px 5px 2px 0;
-  padding: 3px 9px;
-  border-radius: 999px;
   background: #eef2fb;
   color: var(--ds24-blue);
   font-size: 11.5px;
@@ -3401,3 +4121,755 @@ body.ds-demo .ds-training-entry { display: none; }
   color: #8a6100;
 }
 @media (max-width: 640px) { .ds-corr-row { grid-template-columns: minmax(0, 1fr); } }
+
+/* =====================================================================
+   INTERACTION LOOP ADDITIONS (Phases A, B, C)
+   Clean classes replacing inline styles in Envelope Detail, Step 3,
+   Signer Experience, and Document Viewer.
+   ===================================================================== */
+
+/* Clickable Documents in Detail & Templates */
+.ds-doc-item-clickable {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all .15s ease;
+}
+.ds-doc-item-clickable:hover {
+  background: var(--ds24-hover, #f0f4f8);
+  color: var(--ds24-blue, #0066cc);
+}
+.ds-doc-hint {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ds24-blue, #0066cc);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ds-doc-chips {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ds-doc-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ds24-card-bg, #f5f5f5);
+  border: 1px solid var(--ds24-line, #e0e0e0);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: var(--ds24-ink, #24262b);
+  cursor: pointer;
+  transition: all .15s ease;
+  font-family: inherit;
+}
+.ds-doc-chip:hover {
+  background: #eef4fc;
+  border-color: var(--ds24-blue, #0066cc);
+  color: var(--ds24-blue, #0066cc);
+  transform: translateY(-1px);
+}
+.ds-doc-chip-name { font-weight: 600; }
+.ds-doc-chip-pages { color: var(--ds24-muted, #777); font-size: 12px; }
+.ds-doc-chip-action { margin-left: 6px; font-size: 11.5px; font-weight: 700; color: var(--ds24-blue, #0066cc); display: inline-flex; align-items: center; gap: 3px; }
+
+/* Envelope Detail Clean Layout */
+.ds-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.ds-detail-sub {
+  font-size: 12.5px;
+  color: var(--ds24-muted, #888);
+  margin-top: 2px;
+}
+.ds-detail-badge {
+  font-size: 13px;
+  padding: 5px 12px;
+}
+.ds-detail-doc-panel {
+  margin-bottom: 14px;
+}
+.ds-recip-action-col {
+  text-align: right;
+}
+.ds-recip-subnote {
+  font-size: 11.5px;
+  color: var(--ds24-muted, #aaa);
+  margin-top: 3px;
+}
+.ds-recip-resend-btn {
+  margin-top: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+}
+.ds-fields-summary-box {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 12.5px;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Wizard Step 3 Canvas Layout */
+.ds-step3-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.ds-step3-title { margin: 0; }
+.ds-step3-sub { font-size: 13px; color: var(--ds24-muted); margin: 3px 0 0; }
+.ds-step3-signer-ctrl { display: flex; align-items: center; gap: 10px; }
+.ds-step3-label { font-size: 12px; font-weight: 700; color: var(--ds24-ink); }
+.ds-step3-select { font-size: 12.5px; padding: 5px 10px; font-weight: 700; background: #fff; border-color: var(--ds24-blue); }
+.ds-palette-head { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: #6b778c; margin-bottom: 10px; }
+.ds-palette-tip { margin-top: 14px; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; padding: 8px; font-size: 11px; color: #666; }
+.ds-doc-letterhead { text-align: center; border-bottom: 2px solid #333; padding-bottom: 12px; margin-bottom: 18px; }
+.ds-doc-title { font-size: 18px; margin: 0 0 4px; font-family: Georgia, serif; }
+.ds-doc-sub { font-size: 11px; color: #555; letter-spacing: 1px; text-transform: uppercase; }
+.ds-doc-text { font-size: 12.5px; line-height: 1.6; margin-bottom: 14px; }
+.ds-doc-text-bold { font-size: 13px; color: #000; }
+.ds-doc-clause { font-size: 12px; line-height: 1.5; color: #444; margin-bottom: 20px; }
+.ds-sig-block-wrap { border-top: 1px dashed #ccc; padding-top: 14px; margin-top: 18px; }
+.ds-sig-block-title { font-size: 11px; font-weight: 800; color: #555; text-transform: uppercase; margin-bottom: 8px; }
+.ds-sig-slot-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.ds-sig-select { font-size: 11.5px; padding: 2px 6px; border-radius: 4px; border: 1px solid #ccc; background: #fff; }
+.ds-sig-badge { font-size: 10px; }
+.ds-delete-field-btn { background: none; border: none; color: #c62828; cursor: pointer; font-size: 12px; }
+.ds-props-head { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: #6b778c; margin-bottom: 10px; }
+.ds-prop-row { margin-bottom: 12px; }
+.ds-prop-row-chk { margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+.ds-prop-label { display: block; font-size: 11.5px; font-weight: 700; color: #555; margin-bottom: 4px; }
+.ds-prop-input { font-size: 12px; }
+.ds-prop-select { font-size: 12px; }
+.ds-prop-chk-label { font-size: 12px; font-weight: 600; color: #333; cursor: pointer; }
+.ds-step3-foot { display: flex; justify-content: space-between; margin-top: 18px; }
+
+/* Signer Experience Clean Layout */
+.ds-signer-topbar-left { display: flex; align-items: center; gap: 12px; }
+.ds-signer-logo { height: 22px; }
+.ds-signer-user-tag { font-size: 13px; color: #ccc; border-left: 1px solid #444; padding-left: 10px; }
+.ds-signer-user-name { color: #fff; }
+.ds-signer-topbar-actions { display: flex; align-items: center; gap: 10px; }
+.ds-signer-finish-btn { font-weight: 800; padding: 6px 18px; font-size: 13px; }
+.ds-signer-sub-btn { background: #333; color: #ccc; border-color: #555; font-size: 12px; }
+.ds-signer-exit-btn { background: #333; color: #fff; border-color: #555; font-size: 12px; }
+.ds-signer-banner-inner { display: flex; align-items: center; gap: 10px; }
+.ds-signer-chk { width: 16px; height: 16px; cursor: pointer; }
+.ds-signer-chk-label { cursor: pointer; }
+.ds-signer-doc-head { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 20px; }
+.ds-signer-doc-title { font-size: 20px; margin: 0 0 4px; font-family: Georgia, serif; }
+.ds-signer-doc-sub { font-size: 11.5px; color: #555; letter-spacing: 1px; text-transform: uppercase; }
+.ds-signer-doc-body { font-size: 13px; line-height: 1.7; margin-bottom: 16px; }
+.ds-signer-doc-clause { font-size: 12.5px; line-height: 1.6; color: #333; margin-bottom: 24px; }
+.ds-signer-sig-grid { border-top: 2px solid #111; padding-top: 16px; margin-top: 32px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; }
+.ds-signer-sig-col { min-width: 200px; }
+.ds-signer-sig-title { font-size: 12px; font-weight: 700; margin-bottom: 10px; text-transform: uppercase; }
+.ds-signer-sig-holder { min-height: 50px; display: flex; align-items: center; }
+.ds-signer-sig-date { font-size: 12px; color: #555; border-top: 1px solid #aaa; padding-top: 4px; margin-top: 6px; }
+.ds-sign-pending-box { border: 1px dashed #bbb; padding: 10px 14px; font-size: 12px; color: #777; border-radius: 4px; font-family: var(--ds26-font); }
+.ds-adopt-head-wrap { margin: 0; font-size: 16px; }
+.ds-adopt-sub { font-size: 12px; color: #6b778c; }
+.ds-adopt-close-btn { padding: 4px 8px; }
+.ds-adopt-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 16px; }
+.ds-adopt-label { display: block; font-size: 11.5px; font-weight: 700; color: #555; margin-bottom: 4px; }
+.ds-adopt-sec-title { font-size: 12px; font-weight: 700; color: #555; margin-bottom: 10px; text-transform: uppercase; }
+.ds-adopt-finish-btn { font-weight: 800; }
+
+/* Wizard Steps 1, 2, 4 Layout Classes */
+.ds-wiz-sub { font-size: 13px; color: var(--ds24-muted); margin-bottom: 16px; }
+.ds-drop-title { font-size: 14px; color: #222; display: block; margin-bottom: 4px; }
+.ds-drop-sub { font-size: 12.5px; color: #888; }
+.ds-drop-btn-row { margin-top: 14px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.ds-attached-wrap { margin-bottom: 18px; }
+.ds-attached-title { font-size: 13px; }
+.ds-attached-list { margin: 8px 0 0; padding-left: 18px; font-size: 13px; color: #333; line-height: 1.8; }
+.ds-attached-del { padding: 1px 6px; margin-left: 8px; font-size: 11px; }
+.ds-wiz-section { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin-bottom: 18px; }
+.ds-wiz-field { margin-bottom: 12px; }
+.ds-wiz-label { display: block; font-size: 12px; font-weight: 700; color: var(--ds-muted); margin-bottom: 4px; text-transform: uppercase; }
+.ds-wiz-foot { display: flex; justify-content: space-between; align-items: center; }
+.ds-wiz-tip-text { font-size: 12px; color: #888; }
+.ds-wiz-seq-box { background: #f0f4ff; border: 1px solid #c5d8ff; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+.ds-wiz-recip-wrap { margin-bottom: 14px; }
+.ds-wiz-add-recip-wrap { margin-bottom: 18px; }
+.ds-wiz-summary-card { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 18px 20px; margin-bottom: 18px; font-size: 13.5px; }
+.ds-wiz-summary-row { margin-bottom: 10px; }
+.ds-wiz-summary-label { color: #888; font-size: 12px; font-weight: 600; }
+.ds-wiz-summary-list { margin: 8px 0 0; padding-left: 18px; line-height: 1.8; }
+.ds-wiz-ready-box { background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 6px; padding: 10px 14px; font-size: 12.5px; color: #2e7d32; margin-bottom: 18px; }
+.ds-wiz-send-btn { font-size: 14px; padding: 10px 24px; font-weight: 800; }
+.ds-upload-zone.dragover { border-color: var(--ds24-blue, #0066cc); background: #eef4fc; }
+
+/* Audit Modal, Certificate Modal & Popover Classes */
+.ds-audit-row { display: flex; gap: 16px; padding: 12px 0; border-bottom: 1px solid #f0f0f0; font-size: 12.5px; }
+.ds-audit-time { width: 160px; flex: none; color: #6b778c; font-family: monospace; font-size: 11.5px; }
+.ds-audit-main { flex: 1; }
+.ds-audit-action { font-weight: 700; color: #222; }
+.ds-audit-actor { color: #555; font-size: 12px; margin-top: 2px; }
+.ds-audit-details { color: #777; font-size: 11.5px; margin-top: 2px; }
+.ds-audit-banner { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 12px 16px; margin-bottom: 16px; font-size: 12px; color: #444; }
+.ds-cert-card { max-width: 720px; }
+.ds-cert-head { background: #001924; color: #fff; }
+.ds-cert-head-left { display: flex; align-items: center; gap: 10px; }
+.ds-cert-sub { font-size: 11.5px; color: #9fb4c9; }
+.ds-cert-close-btn { background: #fff; color: #111; padding: 4px 8px; }
+.ds-cert-body { font-family: 'Times New Roman', Times, serif; padding: 32px; }
+.ds-cert-header { text-align: center; border-bottom: 2px solid #001924; padding-bottom: 16px; margin-bottom: 24px; }
+.ds-cert-h2 { font-size: 22px; margin: 0 0 6px; letter-spacing: 1px; }
+.ds-cert-type { font-size: 13px; color: #444; text-transform: uppercase; }
+.ds-cert-tbl { width: 100%; font-size: 13px; border-collapse: collapse; margin-bottom: 24px; }
+.ds-cert-tbl td { padding: 6px 0; }
+.ds-cert-th { width: 160px; font-weight: 700; }
+.ds-cert-status-tag { color: #2e7d32; font-weight: 700; }
+.ds-cert-sec-title { font-weight: 700; font-size: 14px; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-bottom: 12px; text-transform: uppercase; }
+.ds-cert-recip-card { background: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px; margin-bottom: 12px; font-family: sans-serif; font-size: 12px; }
+.ds-cert-recip-row { display: flex; justify-content: space-between; align-items: center; }
+.ds-cert-recip-sub { color: #666; }
+.ds-cert-sig-col { text-align: right; }
+.ds-popover-avatar { width: 40px; height: 40px; font-size: 14px; }
+.ds-popover-user-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.ds-popover-user-name { font-weight: 700; font-size: 13.5px; color: #111; }
+.ds-popover-user-email { font-size: 12px; color: #6b778c; }
+.ds-popover-user-account { font-size: 11px; color: #1976d2; font-weight: 600; margin-top: 2px; }
+.ds-popover-acct-id { font-size: 11.5px; color: #666; border-top: 1px solid #f0f0f0; padding-top: 10px; margin-bottom: 12px; }
+.ds-popover-btn-center { text-align: center; }
+.ds-signer-doc-tabs { margin-bottom: 14px; max-width: 680px; width: 100%; }
+
+/* ---- upload zone: samples fenced off from the real picker ----
+   Hidden by default. The real product offers a file picker and nothing else, so
+   that is what a visitor sees; the .on class is added by dsShowSampleDocs() only
+   while the trainee is working through the course. The buttons stay in the DOM
+   either way, because Lesson 2 targets #dsAttachPurchaseAgreement. */
+.ds-samples {
+  display: none;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ds24-line);
+  width: 100%;
+}
+.ds-samples.on { display: block; }
+.ds-samples-label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--ds24-muted);
+}
+/* Page counts belong to the samples, whose contents the simulator actually
+   knows. They are secondary information, so they read as secondary. */
+.ds-samples-pages {
+  margin-left: 6px;
+  font-weight: 400;
+  color: var(--ds24-muted);
+  font-size: 12px;
+}
+
+/* ---- attached document rows ---- */
+.ds-attached-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.ds-attached-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border: 1px solid var(--ds24-line);
+  border-radius: var(--ds24-radius);
+  background: #fff;
+  margin-bottom: 8px;
+  font-size: 13.5px;
+}
+.ds-attached-list li > svg { color: var(--ds24-muted); flex: none; }
+.ds-attached-list li > b { color: var(--ds24-ink); word-break: break-word; }
+/* Marks a file that came from the visitor's machine, so it is obvious which
+   rows are theirs and which came with the simulator. */
+.ds-attached-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef2fb;
+  color: var(--ds24-blue);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ds-attached-meta {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--ds24-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ds-attached-del { flex: none; }
+
+/* An empty validation line must not reserve space, or every clean row grows a
+   blank gap under it. It only takes height once it has something to say. */
+.ds-wr-msg:empty { display: none; }
+
+/* =====================================================================
+   STEP 3 — placed fields
+   Fields are colour-coded by recipient position rather than by role, so the
+   scheme works for any number of recipients instead of assuming a buyer and a
+   seller. Six hues, then it wraps.
+   ===================================================================== */
+.ds-fld-area { margin-top: 26px; border-top: 1px dashed #d8d8d8; padding-top: 16px; }
+.ds-fld-area-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .7px;
+  text-transform: uppercase;
+  color: var(--ds24-muted);
+  margin-bottom: 10px;
+}
+.ds-fld-area-head span {
+  min-width: 20px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #ececec;
+  color: var(--ds24-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.ds-fld {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 9px 12px;
+  border: 1px solid;
+  border-left-width: 4px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: box-shadow .12s;
+}
+.ds-fld:hover { box-shadow: 0 1px 6px rgba(0,0,0,.10); }
+.ds-fld.on { box-shadow: 0 0 0 2px var(--ds24-blue); }
+.ds-fld-type { display: flex; align-items: center; gap: 7px; font-weight: 600; flex: 1; min-width: 150px; }
+.ds-fld-who {
+  border: 1px solid rgba(0,0,0,.18);
+  border-radius: 4px;
+  background: rgba(255,255,255,.75);
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 7px;
+  max-width: 240px;
+  cursor: pointer;
+}
+.ds-fld-req { font-size: 11px; font-weight: 700; opacity: .75; white-space: nowrap; }
+.ds-fld-del {
+  background: none;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  color: inherit;
+  opacity: .6;
+  cursor: pointer;
+  flex: none;
+}
+.ds-fld-del:hover { opacity: 1; background: rgba(0,0,0,.08); }
+
+.ds-fld.c0 { background: #eef2fb; border-color: #93a9e0; color: #1c3468; }
+.ds-fld.c1 { background: #eaf6ef; border-color: #85c3a1; color: #14532d; }
+.ds-fld.c2 { background: #fdf3e6; border-color: #e0b476; color: #6b4300; }
+.ds-fld.c3 { background: #f4eefb; border-color: #b494dd; color: #4a2673; }
+.ds-fld.c4 { background: #fdeef1; border-color: #e094a6; color: #7a1f38; }
+.ds-fld.c5 { background: #e9f5f7; border-color: #7fb8c4; color: #14434d; }
+/* A field nobody can complete is an error, and it must not look like just
+   another colour in the rotation. */
+.ds-fld.bad {
+  background: #fdf1ef;
+  border-color: var(--ds24-red);
+  color: #8a1c1c;
+}
+
+.ds-fld-empty {
+  text-align: center;
+  padding: 34px 20px;
+  border: 1px dashed #d0d0d0;
+  border-radius: var(--ds24-radius);
+  color: var(--ds24-muted);
+}
+.ds-fld-empty svg { color: #c8c8c8; }
+.ds-fld-empty b { display: block; margin: 10px 0 5px; font-size: 14px; color: var(--ds24-ink); }
+.ds-fld-empty span { display: block; max-width: 44ch; margin: 0 auto; font-size: 12.5px; line-height: 1.55; }
+
+.ds-prop-del { margin-top: 16px; width: 100%; justify-content: center; }
+.ds-palette-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Bullet list inside the confirm modal, used by the field audit to report every
+   problem at once rather than one per re-run. */
+.ds-confirm-list {
+  margin: 12px 0 0;
+  padding-left: 20px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ds24-text);
+}
+.ds-confirm-list li { margin-bottom: 6px; }
+
+/* ============================================================================
+   CAPABILITY EXPANSION: TEMPLATES, MAILBOX, BULK SEND, POWERFORMS, SIGNER
+   ============================================================================ */
+
+/* ---- Phase B: Template Builder & Role Matching ---- */
+.ds-role-match-card { max-width: 640px; width: 100%; }
+.ds-role-match-row {
+  background: #f8fafc;
+  border: 1px solid var(--ds24-line);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.ds-role-match-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.ds-role-match-head b { font-size: 13.5px; color: var(--ds24-ink); }
+.ds-role-match-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ds-role-match-inputs label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ds24-muted);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.ds-role-match-inputs input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--ds24-line);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12.5px;
+  background: #fff;
+}
+.ds-tpl-builder-card { max-width: 780px; width: 100%; max-height: 90vh; overflow-y: auto; }
+.ds-tpl-builder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.ds-tpl-builder-field label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ds24-muted);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.ds-tpl-builder-field input,
+.ds-tpl-builder-field select,
+.ds-tpl-builder-field textarea {
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--ds24-line);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 13px;
+  background: #fff;
+}
+.ds-tpl-role-item {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 60px 1fr 1fr 34px;
+  gap: 8px;
+  align-items: center;
+  background: #fafafa;
+  border: 1px solid var(--ds24-line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+.ds-tpl-role-item input,
+.ds-tpl-role-item select {
+  padding: 5px 7px;
+  border: 1px solid var(--ds24-line);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 12px;
+  background: #fff;
+}
+
+/* ---- Phase C: Mailbox (VA Inbox) ---- */
+.ds-mailbox-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  height: calc(100vh - 120px);
+  min-height: 480px;
+  border: 1px solid var(--ds24-line);
+  border-radius: var(--ds24-radius);
+  background: #fff;
+  overflow: hidden;
+}
+.ds-mail-list-col {
+  border-right: 1px solid var(--ds24-line);
+  display: flex;
+  flex-direction: column;
+  background: #fafafa;
+  overflow: hidden;
+}
+.ds-mail-list-head {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ds24-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+}
+.ds-mail-list-head b { font-size: 14px; color: var(--ds24-ink); }
+.ds-mail-items-wrap {
+  flex: 1;
+  overflow-y: auto;
+}
+.ds-mail-item {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ds24-line);
+  cursor: pointer;
+  background: #fff;
+  transition: background .15s;
+}
+.ds-mail-item:hover { background: #f0f5ff; }
+.ds-mail-item.active { background: #e8f0fe; border-left: 3px solid var(--ds24-blue); }
+.ds-mail-item.unread { font-weight: 700; background: #fdfdfd; }
+.ds-mail-item-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  color: var(--ds24-muted);
+  margin-bottom: 3px;
+}
+.ds-mail-item-sender { font-size: 13px; color: var(--ds24-ink); margin-bottom: 2px; }
+.ds-mail-item-subject { font-size: 12.5px; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds-mail-view-col {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: #fff;
+}
+.ds-mail-view-head {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--ds24-line);
+}
+.ds-mail-view-title { font-size: 17px; font-weight: 700; color: var(--ds24-ink); margin: 0 0 10px; }
+.ds-mail-view-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--ds24-muted);
+}
+.ds-mail-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.ds-tech-header-card {
+  margin: 14px 20px;
+  padding: 12px 14px;
+  background: #1e2430;
+  color: #c9d1d9;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+.ds-tech-header-card b { color: #58a6ff; }
+.ds-mail-body-content {
+  padding: 20px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--ds24-ink);
+  flex: 1;
+}
+.ds-phish-callout {
+  margin: 14px 20px;
+  padding: 12px 14px;
+  background: #fff8e6;
+  border-left: 4px solid #f59e0b;
+  border-radius: 4px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #92400e;
+}
+.ds-sidebar-badge {
+  display: inline-block;
+  background: var(--ds24-blue);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 999px;
+  margin-left: auto;
+}
+
+/* ---- Phase D: Bulk Send, PowerForms & Reports ---- */
+.ds-csv-box {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--ds24-line);
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 12px;
+  resize: vertical;
+}
+.ds-csv-tbl-wrap {
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid var(--ds24-line);
+  border-radius: 6px;
+  margin: 12px 0;
+}
+.ds-csv-row.bad { background: #fdf2f2; color: var(--ds24-red); }
+.ds-csv-row.warn { background: #fefce8; color: #854d0e; }
+.ds-rpt-result-card {
+  background: #fff;
+  border: 1px solid var(--ds24-line);
+  border-radius: var(--ds24-radius);
+  padding: 20px;
+  margin-top: 18px;
+}
+.ds-rpt-chart-wrap { margin: 16px 0; }
+
+/* ---- Phase E: Signer Experience ---- */
+.ds-signer-other-wrap { position: relative; display: inline-block; }
+.ds-signer-other-dd {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--ds24-line);
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  min-width: 180px;
+  z-index: 100;
+  padding: 4px 0;
+  margin-top: 4px;
+}
+.ds-signer-other-dd.open { display: block; }
+.ds-signer-other-dd button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ds24-ink);
+  cursor: pointer;
+}
+.ds-signer-other-dd button:hover { background: #f0f4f8; }
+.ds-adopt-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid var(--ds24-line);
+  margin-bottom: 16px;
+}
+.ds-adopt-tab {
+  background: none;
+  border: none;
+  padding: 8px 16px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ds24-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+.ds-adopt-tab.on { color: var(--ds24-blue); border-bottom-color: var(--ds24-blue); }
+.ds-draw-canvas {
+  width: 100%;
+  height: 140px;
+  background: #fff;
+  border: 1px dashed var(--ds24-line);
+  border-radius: 6px;
+  cursor: crosshair;
+  touch-action: none;
+}
+.ds-auth-gate-card {
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  background: #fff;
+  border-radius: 12px;
+  padding: 28px 24px;
+  box-shadow: 0 20px 45px rgba(0,0,0,0.2);
+}
+.ds-auth-gate-input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 16px;
+  text-align: center;
+  letter-spacing: 2px;
+  border: 2px solid var(--ds24-line);
+  border-radius: 6px;
+  margin: 16px 0;
+  font-family: inherit;
+}
+.ds-auth-gate-input:focus { outline: none; border-color: var(--ds24-blue); }
+
+
+/* =====================================================================
+   SAMPLE DOCUMENT PICKER
+   Reachable from step 1 at any time, unlike the inline sample buttons
+   which only appear while a walkthrough is running.
+   ===================================================================== */
+.ds-sampledoc-list { list-style: none; margin: 0; padding: 0; }
+.ds-sampledoc {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--ds26-hairline);
+}
+.ds-sampledoc:last-child { border-bottom: 0; }
+.ds-sampledoc-info b {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ds26-ink-90);
+  margin-bottom: 3px;
+}
+.ds-sampledoc-info span { font-size: 12.5px; color: var(--ds26-ink-70); }
+.ds-sampledoc-actions { display: flex; gap: 8px; flex: none; }

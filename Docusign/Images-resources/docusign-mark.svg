@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 196 196" width="196" height="196" fill="none">
+  <!-- The Nexus mark on its own, no plate. Use where the surface already
+       provides the background (topbar, signing page, favicon source). -->
+  <!-- Paint order matters and is not the reading order of the shapes: the Cobalt
+       square goes down FIRST, because in the real lockup the Poppy disc shows
+       through the notch left by the document's folded corner. Put the square on
+       top of the disc and that notch fills violet instead of red. -->
+  <rect x="0" y="55" width="140" height="140" fill="#4C00FF"/>
+  <path d="M55 0h69a71 71 0 0 1 0 142H55z" fill="#FF5252"/>
+  <path d="M55 55h55l30 30v55H55z" fill="#000000"/>
+</svg>

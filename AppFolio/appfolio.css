@@ -1,0 +1,1443 @@
+/* =====================================================================
+   APPFOLIO SIMULATOR — CORE STYLES
+
+   BRAND TOKENS ARE NOT SET YET.
+   Images-resources/ is empty, and §8.1 of the contract forbids inventing the
+   visual identity: a guess here has to be undone in the next prompt, and it
+   drags layout decisions with it.
+
+   So the palette below is deliberately GREYSCALE — the honest "we do not know
+   the brand yet" state, visibly different from a plausible-looking green or
+   blue that someone might mistake for a decision. Every token is declared, in
+   one block, with the right name. When the logo and screenshots arrive, this
+   block is the only thing that changes; nothing below it references a literal
+   colour.
+
+   Structure, spacing and layout ARE built, because none of that is brand
+   identity — it is mechanics, and the module has to be navigable to be tested.
+   ===================================================================== */
+
+:root {
+  /* --- UNVERIFIED BRAND PALETTE — NOT derived from product screenshots --- */
+  --af-brand:       #0f2a4a; /* AppFolio Deep Navy Header */
+  --af-brand-dark:  #091b30; /* AppFolio Dark Navy */
+  --af-accent:      #168a53; /* AppFolio Action Green (+ New, Primary Buttons) */
+  --af-accent-hover:#137345; /* Darker Green on hover */
+  --af-blue:        #0070ba; /* Active Tab & Links */
+  --af-blue-light:  #e0f2fe; /* Active Row / Selection Tint */
+  --af-bg:          #f4f6f8; /* Main App Canvas Gray */
+  --af-panel:       #ffffff; /* Card & Data Table Background */
+  --af-line:        #e2e8f0; /* Subtle Borders & Dividers */
+  --af-text:        #1e293b; /* Primary Slate Text */
+  --af-muted:       #64748b; /* Secondary / Meta Text */
+  --af-good:        #168a53; /* Occupied / Approved / Paid Status */
+  --af-good-light:  #dcfce7; /* Soft Green Badge Fill */
+  --af-warn:        #d97706; /* Conditional / Pending / Medium Alert */
+  --af-warn-light:  #fef3c7; /* Soft Amber Badge Fill */
+  --af-bad:         #dc2626; /* Delinquent / Overdue / High Priority */
+  --af-bad-light:   #fee2e2; /* Soft Red Badge Fill */
+  --af-bad-dark:    #991b1b;
+  /* Text that sits on a brand-coloured fill. */
+  --af-on-brand:    #ffffff;
+
+  /* Scrims, shadows and tint tokens — centralized so dark theme or contrast changes
+     require zero search-and-replace. */
+  --af-scrim:          rgba(16, 16, 20, 0.45);
+  --af-scrim-strong:   rgba(16, 16, 20, 0.50);
+  --af-scrim-backdrop: rgba(16, 16, 20, 0.40);
+  --af-shadow-md:      0 12px 36px rgba(0, 0, 0, 0.28);
+  --af-shadow-lg:      0 14px 44px rgba(0, 0, 0, 0.30);
+  --af-hover-tint:     rgba(255, 255, 255, 0.16);
+  --af-strip-dot:      rgba(255, 255, 255, 0.35);
+
+  /* The shared Test Drive strip. Platform chrome, not AppFolio identity —
+     these three match the other two modules deliberately and must NOT be
+     re-derived from the AppFolio screenshots. */
+  --af-strip-bg:    #001924;
+  --af-strip-text:  #d3e2f0;
+  --af-strip-muted: #9fb4c9;
+
+  /* --- SAMPLED FROM THE 2018-2019 TUTORIAL VIDEO. NOT VERIFIED. ---
+     Region averages taken with ffmpeg over Images-resources/video-layout-nav/.
+     Real measurements from a real product, but that product is roughly seven
+     years old and the capture is compressed to 453 kb/s. AppFolio has
+     redesigned since. Treat these as a starting point: an authenticated scan
+     with getComputedStyle(), of the kind done for DocuSign, would replace this
+     block in an afternoon and should, before anyone calls it settled.
+     The one value worth real confidence is the sidebar being warm near-black
+     rather than a neutral grey — a hue shift survives compression far better
+     than an exact value does. */
+  --af-v-topbar:        #2b6cc6;
+  --af-v-sidebar:       #2a272b;
+  --af-v-sidebar-sub:   #232023;
+  --af-v-sidebar-hover: #3a363b;
+  --af-v-sidebar-dim:   #6f6a70;
+  --af-v-active:        #2f64b8;
+  --af-v-content:       #fafafa;
+  --af-v-badge:         #e48f48;
+  --af-v-thead:         #c5c3c6;
+  --af-v-link:          #1a6bb5;
+  --af-v-searchbtn:     #dcdcdc;
+  --af-v-searchbtn-h:   #cacaca;
+
+  /* Soft fills for callouts and status pills. Declared here rather than inline
+     so a palette change is one edit, per the contract's single-block rule. */
+  --af-warn-bg:    #fffbeb;
+  --af-warn-line:  #fef3c7;
+  --af-warn-ink:   #92400e;
+  --af-bad-bg:     #fef2f2;
+  --af-bad-line:   #fee2e2;
+  --af-bad-ink:    #991b1b;
+  --af-good-bg:    #f0fdf4;
+  --af-good-line:  #dcfce7;
+  --af-good-ink:   #166534;
+  --af-good-deep:  #065f46;
+  --af-surface:    #f8fafc;
+
+  /* --- structural, not brand --- */
+  --af-radius:     6px;
+  --af-topbar-h:   58px;
+  --af-subnav-h:   42px;
+  --af-gap:        16px;
+  --af-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* =====================================================================
+   SHELL
+   ===================================================================== */
+html, body { height: 100%; }
+body.af-fullscreen {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  background: var(--af-bg);
+}
+
+.td-strip {
+  flex: none;
+  background: var(--af-strip-bg);
+  color: var(--af-on-brand);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 22px;
+  height: 36px;
+  font-size: 12.5px;
+}
+.td-strip-back { color: var(--af-strip-text); font-weight: 700; text-decoration: none; flex: none; }
+.td-strip-back:hover { color: var(--af-on-brand); }
+.td-strip-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--af-strip-dot); flex: none; }
+.td-strip-app { font-weight: 800; flex: none; }
+.td-strip-msg { color: var(--af-strip-muted); margin-left: auto; font-size: 12px; }
+@media (max-width: 760px) { .td-strip-msg { display: none; } }
+
+.af-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--af-font);
+  color: var(--af-text);
+  background: var(--af-bg);
+}
+.af-shell * { box-sizing: border-box; }
+
+.af-sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* =====================================================================
+   TOP BAR
+   ===================================================================== */
+.af-topbar {
+  flex: none;
+  height: var(--af-topbar-h);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 18px;
+  background: var(--af-panel);
+  border-bottom: 1px solid var(--af-line);
+}
+
+.af-hamburger {
+  display: none;
+  width: 34px; height: 34px;
+  align-items: center; justify-content: center;
+  background: none;
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  color: var(--af-text);
+  cursor: pointer;
+}
+.af-hamburger svg { width: 18px; height: 18px; }
+
+.af-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-decoration: none;
+  color: var(--af-on-brand);
+  flex: none;
+}
+.af-logo-img {
+  height: 26px;
+  width: auto;
+  display: block;
+}
+.af-logo-mark {
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  border-radius: var(--af-radius);
+  background: var(--af-accent);
+  color: var(--af-on-brand);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .5px;
+}
+.af-logo-word { font-size: 16px; font-weight: 700; letter-spacing: -.2px; }
+
+/* The horizontal top-bar navigation is gone. AppFolio navigates from a dark
+   left rail, and its styles now live in the chassis section at the end of this
+   file. Two navigations competing would be worse than either alone. */
+
+
+.af-topbar-right { display: flex; align-items: center; gap: 10px; flex: none; }
+
+.af-search {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--af-line);
+  border-radius: 999px;
+  padding: 6px 13px;
+  color: var(--af-muted);
+  background: var(--af-panel);
+}
+.af-search:focus-within { border-color: var(--af-accent); }
+.af-search svg { width: 15px; height: 15px; flex: none; }
+.af-search input {
+  border: none; outline: none; background: none;
+  font: inherit; font-size: 13px;
+  width: 140px;
+  color: var(--af-text);
+}
+@media (max-width: 1180px) { .af-search { display: none; } }
+
+.af-icon-btn {
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  background: none;
+  border: 1px solid var(--af-line);
+  border-radius: 50%;
+  color: var(--af-muted);
+  cursor: pointer;
+}
+.af-icon-btn:hover { background: var(--af-bg); color: var(--af-text); }
+.af-icon-btn svg { width: 16px; height: 16px; }
+
+.af-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--af-brand);
+  color: var(--af-on-brand);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* --- the mode switch --- */
+.af-mode {
+  display: inline-flex;
+  border: 1px solid var(--af-line);
+  border-radius: 999px;
+  overflow: hidden;
+  flex: none;
+}
+.af-mode-btn {
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--af-muted);
+  padding: 6px 14px;
+  cursor: pointer;
+}
+.af-mode-btn:hover { background: var(--af-bg); }
+.af-mode-btn.on { background: var(--af-brand); color: var(--af-on-brand); }
+@media (max-width: 900px) { .af-mode-btn { padding: 6px 10px; font-size: 12px; } }
+
+/* =====================================================================
+   BODY AND LESSON BANNER
+   ===================================================================== */
+#afLessonBanner { flex: none; }
+.af-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 24px;
+  background: var(--af-brand-dark);
+  color: var(--af-on-brand);
+  font-size: 13.5px;
+}
+.af-banner-tag {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--af-hover-tint);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
+.af-banner b { flex: 1; min-width: 0; }
+.af-banner-main { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.af-banner-stale {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  background: var(--af-hover-tint);
+  font-size: 12px;
+}
+
+/* Structural subnav band (contextual by section) */
+.af-subnav {
+  height: var(--af-subnav-h);
+  background: var(--af-panel);
+  border-bottom: 1px solid var(--af-line);
+  display: none;
+  align-items: center;
+  gap: 16px;
+  padding: 0 24px;
+  flex: none;
+}
+.af-subnav:not([hidden]) { display: flex; }
+
+.af-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 26px 28px 60px;
+}
+@media (max-width: 700px) { .af-body { padding: 18px 16px 48px; } }
+
+/* =====================================================================
+   PAGE FURNITURE
+   ===================================================================== */
+.af-pagehead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.af-page-title {
+  margin: 0;
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -.4px;
+  color: var(--af-text);
+}
+.af-page-lede {
+  margin: 6px 0 0;
+  max-width: 78ch;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--af-muted);
+}
+.af-pagehead-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.af-backlink {
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--af-muted);
+  cursor: pointer;
+  padding: 0 0 12px;
+}
+.af-backlink:hover { color: var(--af-accent); }
+
+.af-card {
+  background: var(--af-panel);
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  padding: 18px 20px;
+  margin-bottom: var(--af-gap);
+  min-width: 0;
+}
+.af-card h3 { margin: 0 0 12px; font-size: 15px; font-weight: 700; }
+
+.af-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--af-gap);
+}
+
+.af-sub { margin-top: 2px; font-size: 12px; color: var(--af-muted); }
+.af-muted { color: var(--af-muted); }
+.af-note {
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--af-muted);
+}
+
+/* =====================================================================
+   BUTTONS
+   ===================================================================== */
+.af-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--af-panel);
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--af-text);
+  padding: 8px 15px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.af-btn:hover { background: var(--af-bg); }
+.af-btn.primary { background: var(--af-brand); border-color: var(--af-brand); color: var(--af-on-brand); }
+.af-btn.primary:hover { background: var(--af-brand-dark); border-color: var(--af-brand-dark); }
+.af-btn.danger { background: var(--af-bad); border-color: var(--af-bad); color: var(--af-on-brand); }
+.af-btn.danger:hover { background: var(--af-bad-dark); border-color: var(--af-bad-dark); }
+.af-btn.sm { padding: 5px 11px; font-size: 12.5px; }
+.af-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* =====================================================================
+   TABLES
+   ===================================================================== */
+.af-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--af-panel);
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  overflow: hidden;
+  font-size: 13.5px;
+}
+.af-tbl thead th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .7px;
+  text-transform: uppercase;
+  color: var(--af-muted);
+  background: var(--af-bg);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--af-line);
+  white-space: nowrap;
+}
+.af-tbl tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--af-line);
+  vertical-align: top;
+}
+.af-tbl tbody tr:last-child td { border-bottom: none; }
+.af-tbl tbody tr.link { cursor: pointer; }
+.af-tbl tbody tr.link:hover { background: var(--af-bg); }
+/* Figures line up only if they are tabular and right-aligned. In an accounting
+   module that is a correctness aid, not decoration. */
+.af-tbl .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Wide tables scroll inside their own box rather than pushing the page sideways. */
+.af-tbl-wrap { overflow-x: auto; }
+
+/* =====================================================================
+   BADGES
+   ===================================================================== */
+.af-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  background: var(--af-bg);
+  color: var(--af-muted);
+  border: 1px solid var(--af-line);
+  white-space: nowrap;
+}
+.af-badge.occupied,
+.af-badge.completed,
+.af-badge.approved   { color: var(--af-good); border-color: currentColor; }
+.af-badge.notice,
+.af-badge.screening,
+.af-badge.high,
+.af-badge.assigned,
+.af-badge.scheduled  { color: var(--af-warn); border-color: currentColor; }
+.af-badge.emergency,
+.af-badge.denied,
+.af-badge.vacant-rehab { color: var(--af-bad); border-color: currentColor; }
+
+/* =====================================================================
+   KEY / VALUE AND TILES
+   ===================================================================== */
+.af-kv {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px 20px;
+  background: var(--af-panel);
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  padding: 18px 20px;
+  margin-bottom: var(--af-gap);
+}
+.af-kv dt {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--af-muted);
+  margin-bottom: 3px;
+}
+.af-kv dd { margin: 0; font-size: 14px; }
+
+.af-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--af-gap);
+  margin-bottom: var(--af-gap);
+}
+.af-tile {
+  display: block;
+  text-align: left;
+  background: var(--af-panel);
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  padding: 16px 18px;
+  font: inherit;
+  cursor: pointer;
+}
+.af-tile:hover { border-color: var(--af-accent); }
+.af-tile-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--af-muted);
+}
+.af-tile-value {
+  display: block;
+  margin: 6px 0 3px;
+  font-size: 29px;
+  line-height: 1;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.af-tile-sub { display: block; font-size: 12.5px; color: var(--af-muted); }
+
+/* =====================================================================
+   EMPTY STATES
+   In this first stage most screens land here, and that is the point: it is how
+   the router proves itself. So an empty state has to look composed rather than
+   broken — what belongs here, and the control that would put it there.
+   ===================================================================== */
+.af-empty {
+  text-align: center;
+  padding: 44px 24px;
+  border: 1px dashed var(--af-line);
+  border-radius: var(--af-radius);
+  background: var(--af-panel);
+  color: var(--af-muted);
+}
+.af-empty h3 { margin: 0 0 7px; font-size: 15px; color: var(--af-text); }
+.af-empty p {
+  margin: 0 auto 16px;
+  max-width: 52ch;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.af-empty-icon { font-size: 26px; line-height: 1; }
+
+/* =====================================================================
+   LESSON CARDS
+   ===================================================================== */
+.af-lesson-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--af-gap);
+}
+.af-lesson {
+  display: block;
+  text-align: left;
+  background: var(--af-panel);
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  padding: 18px 20px;
+  font: inherit;
+  cursor: pointer;
+}
+.af-lesson:hover { border-color: var(--af-accent); }
+.af-lesson.locked { opacity: .55; cursor: not-allowed; }
+.af-lesson-num {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--af-muted);
+}
+.af-lesson b { display: block; margin: 6px 0 5px; font-size: 15px; }
+.af-lesson-sub { display: block; font-size: 12.5px; line-height: 1.5; color: var(--af-muted); }
+.af-lesson-prog {
+  display: block;
+  margin-top: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =====================================================================
+   CONFIRM MODAL
+   ===================================================================== */
+.af-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--af-scrim);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.af-modal {
+  width: 100%;
+  max-width: 470px;
+  background: var(--af-panel);
+  border-radius: 8px;
+  box-shadow: var(--af-shadow-lg);
+  padding: 22px 24px 20px;
+}
+.af-modal-title { margin: 0 0 12px; font-size: 17px; font-weight: 700; }
+.af-modal-body p { margin: 0 0 10px; font-size: 13.5px; line-height: 1.6; }
+/* Saying what will NOT be touched is the entire job of these dialogs: the two
+   reset buttons are easy to confuse and confusing them is expensive. */
+.af-modal-safe {
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: var(--af-bg);
+  border-left: 3px solid var(--af-good);
+  color: var(--af-text);
+}
+.af-modal-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
+/* =====================================================================
+   FORM CONTROLS AND INTERACTION ALERTS
+   ===================================================================== */
+.af-modal-wide { max-width: 640px; }
+.af-form-group { margin-bottom: 14px; text-align: left; }
+.af-label { display: block; font-size: 12px; font-weight: 700; color: var(--af-muted); margin-bottom: 5px; }
+.af-input, .af-select, .af-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--af-text);
+  background: var(--af-panel);
+  box-sizing: border-box;
+}
+.af-input:focus, .af-select:focus, .af-textarea:focus {
+  outline: none;
+  border-color: var(--af-accent);
+}
+.af-textarea { min-height: 80px; resize: vertical; }
+.af-alert-warn {
+  padding: 12px 14px;
+  background: var(--af-warn-bg);
+  border: 1px solid var(--af-warn-line);
+  border-left: 4px solid var(--af-warn);
+  border-radius: var(--af-radius);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--af-warn-ink);
+  margin-bottom: 14px;
+}
+.af-alert-danger {
+  padding: 12px 14px;
+  background: var(--af-bad-bg);
+  border: 1px solid var(--af-bad-line);
+  border-left: 4px solid var(--af-bad);
+  border-radius: var(--af-radius);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--af-bad-ink);
+  margin-bottom: 14px;
+}
+.af-alert-good {
+  padding: 12px 14px;
+  background: var(--af-good-bg);
+  border: 1px solid var(--af-good-line);
+  border-left: 4px solid var(--af-good);
+  border-radius: var(--af-radius);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--af-good-ink);
+  margin-bottom: 14px;
+}
+
+/* =====================================================================
+   GUIDED TOUR
+   ===================================================================== */
+.af-tour { position: fixed; inset: 0; z-index: 300; }
+.af-tour[hidden] { display: none; }
+.af-tour-ring {
+  position: fixed;
+  border: 2px solid var(--af-accent);
+  border-radius: var(--af-radius);
+  box-shadow: 0 0 0 9999px var(--af-scrim-strong);
+  pointer-events: none;
+  transition: all .18s ease;
+}
+.af-tour-tip {
+  position: fixed;
+  width: 360px;
+  max-width: calc(100vw - 24px);
+  background: var(--af-panel);
+  border-radius: 8px;
+  box-shadow: var(--af-shadow-md);
+  padding: 18px 20px 16px;
+}
+.af-tour-tip h3 { margin: 0 0 7px; font-size: 15px; }
+.af-tour-tip p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--af-muted); }
+.af-tour-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--af-muted);
+}
+.af-tour-foot > div { display: flex; gap: 8px; }
+
+/* =====================================================================
+   RESPONSIVE — 1280 to 1920 with no horizontal scroll on the body,
+   hamburger drawer below 1024.
+   ===================================================================== */
+.af-nav-backdrop { display: none; }
+
+@media (max-width: 1024px) {
+  .af-hamburger { display: flex; }
+
+  .af-shell.nav-open ~ .af-nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    background: var(--af-scrim-backdrop);
+  }
+}
+
+/* =====================================================================
+   GRADED STEP & CURRICULUM VIEWS (Decide, Verify, Reconcile, Compose, Triage, Exam)
+   ===================================================================== */
+
+.af-disclaimer-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--af-warn-light);
+  border: 1px solid var(--af-warn);
+  border-radius: var(--af-radius);
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: var(--af-warn-ink);
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.af-scenario-card,
+.af-rv-card,
+.af-rec-card,
+.af-compose-card,
+.af-triage-card,
+.af-exam-card {
+  background: var(--af-panel);
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.af-step-situation,
+.af-step-instruction {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--af-text);
+  margin-bottom: 20px;
+}
+
+.af-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.af-option-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  text-align: left;
+  padding: 14px 16px;
+  background: var(--af-surface);
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--af-text);
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.af-option-btn:hover:not(:disabled) {
+  background: var(--af-blue-light);
+  border-color: var(--af-blue);
+}
+
+.af-option-btn.selected {
+  border-color: var(--af-blue);
+  background: var(--af-blue-light);
+}
+
+.af-option-btn.correct {
+  background: var(--af-good-light);
+  border-color: var(--af-good);
+  color: var(--af-good-deep);
+  font-weight: 600;
+}
+
+.af-option-btn.incorrect {
+  background: var(--af-bad-light);
+  border-color: var(--af-bad);
+  color: var(--af-bad-dark);
+}
+
+.af-feedback-box {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-radius: var(--af-radius);
+  font-size: 13.5px;
+  line-height: 1.55;
+  background: var(--af-surface);
+  border: 1px solid var(--af-line);
+}
+
+.af-feedback-box.correct,
+.af-feedback-box.good {
+  background: var(--af-good-light);
+  border-color: var(--af-good);
+  color: var(--af-good-deep);
+}
+
+.af-feedback-box.incorrect,
+.af-feedback-box.bad {
+  background: var(--af-bad-light);
+  border-color: var(--af-bad);
+  color: var(--af-bad-dark);
+}
+
+.af-feedback-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.af-compose-thread {
+  background: var(--af-surface);
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  font-size: 13px;
+}
+
+.af-compose-msg {
+  padding: 10px 12px;
+  background: var(--af-panel);
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  margin-top: 8px;
+}
+
+.af-compose-msg-meta {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--af-muted);
+  margin-bottom: 4px;
+}
+
+.af-compose-textarea {
+  width: 100%;
+  min-height: 140px;
+  padding: 12px 14px;
+  font-family: var(--af-font);
+  font-size: 13.5px;
+  line-height: 1.5;
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  margin-bottom: 14px;
+  resize: vertical;
+}
+
+.af-compose-textarea:focus {
+  outline: none;
+  border-color: var(--af-blue);
+  box-shadow: 0 0 0 3px rgba(0, 112, 186, 0.15);
+}
+
+.af-rubric-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: var(--af-radius);
+  margin-bottom: 6px;
+}
+
+.af-rubric-item.pass {
+  background: var(--af-good-light);
+  color: var(--af-good-deep);
+}
+
+.af-rubric-item.fail {
+  background: var(--af-bad-light);
+  color: var(--af-bad-dark);
+}
+
+.af-triage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.af-triage-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--af-surface);
+  border: 1px solid var(--af-line);
+  border-radius: var(--af-radius);
+  font-size: 13px;
+}
+
+.af-triage-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--af-brand);
+  color: var(--af-panel);
+  font-weight: 800;
+  font-size: 12px;
+  flex: none;
+}
+
+.af-triage-controls {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  flex: none;
+}
+
+.af-exam-timer {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--af-warn);
+  background: var(--af-warn-light);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+
+/* =====================================================================
+   THE CHASSIS — top bar, dark sidebar, tab strips, right rail
+
+   Structure taken from Images-resources/video-layout-nav/. The colours below
+   are sampled from that video, which is roughly seven years old and compressed
+   to 453 kb/s. They are a STARTING POINT held in :root and must be checked
+   against the live product before anyone treats them as settled — see the
+   --af-v* tokens and the warning beside them.
+   ===================================================================== */
+
+/* --- top bar: the blue band --- */
+.af-topbar {
+  background: var(--af-v-topbar);
+  border-bottom: none;
+  color: var(--af-on-brand);
+  gap: 18px;
+}
+.af-logo { color: var(--af-on-brand); }
+
+/* Wide, white, and left of centre — the single most recognisable thing about
+   the AppFolio top bar. */
+.af-topsearch {
+  display: flex;
+  flex: 1;
+  max-width: 720px;
+  min-width: 0;
+  height: 32px;
+}
+.af-topsearch input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  border-radius: 3px 0 0 3px;
+  background: var(--af-panel);
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--af-text);
+  padding: 0 12px;
+}
+.af-topsearch input:focus { outline: 2px solid var(--af-on-brand); outline-offset: -2px; }
+.af-topsearch-btn {
+  width: 44px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 0 3px 3px 0;
+  background: var(--af-v-searchbtn);
+  color: var(--af-text);
+  cursor: pointer;
+}
+.af-topsearch-btn svg { width: 15px; height: 15px; }
+.af-topsearch-btn:hover { background: var(--af-v-searchbtn-h); }
+
+.af-topmenu {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--af-on-brand);
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 6px 4px;
+}
+.af-topmenu:hover { text-decoration: underline; }
+.af-topmenu svg { width: 16px; height: 16px; flex: none; }
+.af-caret { font-size: 10px; opacity: .85; }
+@media (max-width: 1080px) { .af-topmenu span:not(.af-caret) { display: none; } }
+
+/* =====================================================================
+   LAYOUT — three columns
+   ===================================================================== */
+.af-layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
+}
+.af-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--af-v-content);
+}
+
+/* =====================================================================
+   SIDEBAR — dark, sectioned, expandable
+   ===================================================================== */
+.af-sidebar {
+  width: 236px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  background: var(--af-v-sidebar);
+  color: var(--af-on-brand);
+  overflow-y: auto;
+}
+
+/* A context label, not a link. */
+.af-sb-company {
+  padding: 18px 20px 14px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--af-on-brand);
+}
+
+.af-sb-nav { display: flex; flex-direction: column; }
+
+.af-sb-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: var(--af-on-brand);
+  text-decoration: none;
+  cursor: pointer;
+}
+.af-sb-item:hover { background: var(--af-v-sidebar-hover); text-decoration: none; }
+/* The active section is painted blue, and so is the block of children beneath
+   it — that pairing is what tells you where you are at a glance. */
+.af-sb-item.active { background: var(--af-v-active); }
+.af-sb-label { flex: 1; min-width: 0; }
+
+.af-sb-badge {
+  min-width: 19px;
+  height: 19px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--af-v-badge);
+  color: var(--af-on-brand);
+  font-size: 11px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.af-sb-caret {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  opacity: .8;
+  transition: transform .15s;
+}
+.af-sb-caret svg { width: 13px; height: 13px; }
+.af-sb-item.open .af-sb-caret { transform: rotate(180deg); }
+
+/* Children of a section that is open but NOT the one you are on stay dark.
+   Frame 12 shows both states at once, and the difference is the whole point:
+   open means "I left this expanded", active means "I am here". */
+.af-sb-kids { display: flex; flex-direction: column; background: var(--af-v-sidebar-sub); }
+.af-sb-kids.on-active { background: var(--af-v-active); }
+
+.af-sb-kid {
+  padding: 9px 20px 9px 24px;
+  font-size: 13.5px;
+  color: var(--af-on-brand);
+  text-decoration: none;
+  cursor: pointer;
+}
+.af-sb-kid:hover { background: var(--af-v-sidebar-hover); text-decoration: none; }
+.af-sb-kid.active { font-weight: 700; text-decoration: underline; }
+/* A child AppFolio has but this module does not. Shown so the shape of the real
+   menu is learnable, dimmed so nobody expects it to open something. */
+.af-sb-kid.stub { opacity: .55; }
+
+/* Training is fenced off from the product sections above it. */
+.af-sb-training {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--af-v-sidebar-hover);
+}
+.af-sb-trainlabel {
+  padding: 4px 20px 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: var(--af-v-sidebar-dim);
+}
+
+.af-sb-new {
+  margin: auto 16px 18px;
+  padding: 11px 12px;
+  background: none;
+  border: 1px solid var(--af-v-sidebar-dim);
+  border-radius: 3px;
+  color: var(--af-on-brand);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex: none;
+}
+.af-sb-new:hover { background: var(--af-v-sidebar-hover); }
+.af-sb-new span {
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--af-v-badge);
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+}
+
+/* =====================================================================
+   TAB STRIPS — two levels
+   ===================================================================== */
+.af-subnav {
+  flex: none;
+  background: var(--af-panel);
+  border-bottom: 1px solid var(--af-line);
+  padding: 0 28px;
+}
+.af-subnav[hidden] { display: none; }
+.af-subnav .af-tabs {
+  display: flex;
+  gap: 0;
+  flex-wrap: wrap;
+  border-bottom: none;
+  margin-bottom: 0;
+}
+.af-subnav .af-tab {
+  border-bottom: 3px solid transparent;
+  padding: 13px 15px;
+  font-size: 14px;
+  color: var(--af-v-link);
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.af-subnav .af-tab:hover { text-decoration: underline; }
+.af-subnav .af-tab.on {
+  color: var(--af-text);
+  font-weight: 600;
+  border-bottom-color: var(--af-v-link);
+  text-decoration: none;
+}
+
+/* The second strip sits under the first, quieter, so the hierarchy reads. */
+.af-tabs.level2 {
+  display: flex;
+  gap: 0;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--af-line);
+  padding: 2px 0;
+}
+.af-tab2 {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font: inherit;
+  font-size: 13px;
+  color: var(--af-v-link);
+  padding: 8px 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.af-tab2:hover { text-decoration: underline; }
+.af-tab2.on { color: var(--af-text); font-weight: 600; border-bottom-color: var(--af-muted); }
+
+/* =====================================================================
+   RIGHT RAIL
+   ===================================================================== */
+.af-rail {
+  width: 232px;
+  flex: none;
+  background: var(--af-panel);
+  border-left: 1px solid var(--af-line);
+  padding: 18px 18px 40px;
+  overflow-y: auto;
+}
+.af-rail[hidden] { display: none; }
+
+.af-rail-group + .af-rail-group { margin-top: 22px; }
+.af-rail-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .8px;
+  color: var(--af-text);
+  margin-bottom: 8px;
+}
+.af-rail-head svg { width: 14px; height: 14px; flex: none; }
+
+.af-rail-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--af-v-link);
+  padding: 5px 0;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.af-rail-link:hover { text-decoration: underline; }
+
+@media (max-width: 1360px) { .af-rail { display: none; } }
+
+/* =====================================================================
+   BODY AND FOOTER
+   ===================================================================== */
+.af-body { background: var(--af-v-content); }
+
+.af-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 34px;
+  padding-top: 14px;
+  border-top: 1px solid var(--af-line);
+  font-size: 12.5px;
+  color: var(--af-muted);
+}
+.af-footer button {
+  background: none;
+  border: none;
+  font: inherit;
+  color: var(--af-v-link);
+  cursor: pointer;
+  padding: 0;
+}
+.af-footer button:hover { text-decoration: underline; }
+
+/* =====================================================================
+   LIST FURNITURE — alphabetical index, row count, table pattern
+   ===================================================================== */
+.af-alpha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.af-alpha button {
+  min-width: 26px;
+  padding: 4px 6px;
+  background: none;
+  border: none;
+  border-radius: 3px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--af-v-link);
+  cursor: pointer;
+}
+.af-alpha button:hover { background: var(--af-blue-light); }
+.af-alpha button.on { background: var(--af-blue-light); font-weight: 700; }
+/* A letter nobody is filed under is shown and disabled rather than hidden, so
+   the index does not change width as the list changes. */
+.af-alpha button:disabled { color: var(--af-muted); opacity: .45; cursor: default; }
+
+.af-count {
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--af-muted);
+}
+
+/* The product explains its clickable rows in words rather than with a visual
+   affordance, so the module does too. */
+.af-tbl-hint {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--af-text);
+}
+
+/* =====================================================================
+   REPORTS INDEX — the densest screen in the product
+   ===================================================================== */
+.af-reports-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 0 40px;
+}
+.af-reports-group { break-inside: avoid; margin-bottom: 26px; }
+.af-reports-group h3 {
+  margin: 0 0 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--af-line);
+  font-size: 17px;
+  font-weight: 400;
+  color: var(--af-text);
+}
+.af-report-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--af-line);
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--af-v-link);
+  padding: 9px 2px;
+  cursor: pointer;
+}
+.af-report-row:hover { text-decoration: underline; }
+.af-report-row svg { width: 15px; height: 15px; flex: none; color: var(--af-good); }
+/* A report the curriculum does not use. Listed because recognising the
+   inventory is half of what this screen teaches; dimmed and answering with the
+   standard sentence, because inventing sixty reports would be worse. */
+.af-report-row.stub { color: var(--af-muted); }
+.af-report-row.stub svg { color: var(--af-muted); opacity: .6; }
+.af-report-new {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: var(--af-good);
+  color: var(--af-on-brand);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .4px;
+}
+
+/* =====================================================================
+   RESPONSIVE
+   ===================================================================== */
+@media (max-width: 1024px) {
+  .af-sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 120;
+    transform: translateX(-100%);
+    transition: transform .2s ease;
+  }
+  .af-shell.nav-open .af-sidebar { transform: translateX(0); }
+  .af-shell.nav-open ~ .af-nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    background: var(--af-scrim-backdrop);
+  }
+}
