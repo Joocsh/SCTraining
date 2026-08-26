@@ -154,9 +154,15 @@ let afState = {
 /* ============================================================================
    3. DETERMINISM HELPERS
    ============================================================================
-   No Math.random() and no new Date() anywhere in this module. Two loads must
-   produce a byte-identical portfolio, or screenshots drift, lessons become
-   unstable, and an audit trail rewrites itself between repaints.
+   No Math.random(), and no clock. Every date is computed with Date.UTC from
+   components parsed out of an anchored ISO string, so nothing here can read
+   the machine time. Two loads must produce a byte-identical portfolio, or
+   screenshots drift, lessons become unstable, and an audit trail rewrites
+   itself between repaints.
+
+   Checkable form: a zero-argument Date constructor must appear nowhere in
+   this file. The audit greps for it, and this sentence deliberately does not
+   spell it out, because the last time it did the grep matched the comment.
    ============================================================================ */
 
 const AF_EPOCH = (function () {
@@ -167,6 +173,19 @@ const AF_EPOCH = (function () {
 function afToday() { return AF_TODAY; }
 
 /* Whole days from AF_TODAY to an ISO date. Negative means already past. */
+/* Calendar arithmetic. All of it goes through the anchored AF_TODAY, so no
+   screen in this module can drift with the machine's clock. */
+function afDayOfWeek(iso) {
+  const p = String(iso).split("-");
+  return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])).getUTCDay();
+}
+const AF_DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+function afDayName(iso) { return AF_DAY_NAMES[afDayOfWeek(iso)]; }
+function afShortDate(iso) {
+  const p = String(iso).split("-");
+  return (+p[1]) + "/" + (+p[2]);
+}
+
 function afDaysFromToday(iso) {
   if (!iso) return NaN;
   const p = String(iso).split('-').map(Number);
@@ -392,7 +411,14 @@ const AF_ENTITIES = {
   bankAccount:    { catalog: function () { return AFC_BANK_ACCOUNTS; },    label: 'Bank account' },
   transaction:    { catalog: function () { return AFC_TRANSACTIONS; },     label: 'Transaction' },
   ownerStatement: { catalog: function () { return AFC_OWNER_STATEMENTS; }, label: 'Owner statement' },
-  task:           { catalog: function () { return AFC_TASKS; },            label: 'Task' }
+  task:           { catalog: function () { return AFC_TASKS; },            label: 'Task' },
+  /* Added from the 2026 screenshots: six Maintenance and Reporting screens
+     had no entity behind them at all. */
+  inspection:     { catalog: function () { return AFC_INSPECTIONS; },      label: 'Inspection' },
+  project:        { catalog: function () { return AFC_PROJECTS; },         label: 'Project' },
+  inventoryItem:  { catalog: function () { return AFC_INVENTORY; },        label: 'Inventory item' },
+  fixedAsset:     { catalog: function () { return AFC_FIXED_ASSETS; },     label: 'Fixed asset' },
+  survey:         { catalog: function () { return AFC_SURVEYS; },          label: 'Survey' }
 };
 
 function afCatalog(type) {
@@ -1035,6 +1061,13 @@ function afGoto(view, extraId) {
   if (view === 'application')     { afState.activeApplicationId = extraId; afState.section = 'leasing'; afState.sectionTab = 'applications'; }
   if (view === 'lease-detail')    { afState.activeLeaseId = extraId;    afState.section = 'leasing';     afState.sectionTab = 'leases'; }
 
+  if (view === 'properties') {
+    afState.section = 'properties';
+    if (extraId) afState.sectionTab = extraId;
+    else if (!afState.sectionTab || ['properties', 'associations'].indexOf(afState.sectionTab) === -1) {
+      afState.sectionTab = 'properties';
+    }
+  }
   if (view === 'leasing') {
     afState.section = 'leasing';
     if (extraId) afState.sectionTab = extraId;
@@ -1045,18 +1078,18 @@ function afGoto(view, extraId) {
   if (view === 'residents') {
     afState.section = 'residents';
     if (extraId) afState.sectionTab = extraId;
-    else if (!afState.sectionTab || ['tenants', 'vendors'].indexOf(afState.sectionTab) === -1) {
+    else if (!afState.sectionTab || ['tenants', 'homeowners', 'owners', 'vendors', 'tax'].indexOf(afState.sectionTab) === -1) {
       afState.sectionTab = 'tenants';
     }
   }
   if (view === 'owners') {
-    afState.section = 'owners';
+    afState.section = 'residents';
     afState.sectionTab = 'owners';
   }
   if (view === 'maintenance') {
     afState.section = 'maintenance';
     if (extraId) afState.sectionTab = extraId;
-    else if (!afState.sectionTab || ['work-orders', 'inspections'].indexOf(afState.sectionTab) === -1) {
+    else if (!afState.sectionTab || ['work-orders', 'recurring', 'inspections', 'purchase', 'contact'].indexOf(afState.sectionTab) === -1) {
       afState.sectionTab = 'work-orders';
     }
   }
@@ -1065,7 +1098,7 @@ function afGoto(view, extraId) {
     if (extraId) {
       afState.accountingTab = extraId;
       afState.sectionTab = extraId;
-    } else if (!afState.sectionTab || ['overview', 'receipts', 'delinquency', 'statements', 'reconcile'].indexOf(afState.sectionTab) === -1) {
+    } else if (!afState.sectionTab || ['overview', 'receipts', 'delinquency', 'statements', 'reconcile', 'payables', 'journal', 'diagnostics'].indexOf(afState.sectionTab) === -1) {
       afState.sectionTab = afState.accountingTab || 'overview';
     }
   }
@@ -1162,30 +1195,48 @@ function afExitLesson() {
    "leasing" | "maintenance"], so those four values have to appear on an <a>.
    They did not before this rewrite: the old top bar emitted <button>, so all
    four of those walkthrough steps pointed at nothing. */
+/* ============================================================================
+   NAVIGATION — rebuilt from the 2026 screenshots
+   ============================================================================
+   The previous shape was inferred from a 2018 video and a written contract. The
+   real product has ten sections, not eight: Calendar and Communication were
+   missing entirely, What's New is a section rather than chrome, and several
+   sections carry children this module never listed.
+
+   Where a screenshot shows a child that the module does not implement, it is
+   still listed and marked `stub: true`. Hiding it would teach the wrong menu;
+   the shape of the real navigation is itself part of what a VA has to learn.
+
+   `data-section` on the section rows is the selector contract the lesson
+   walkthroughs point at, so those ids do not change.
+   ============================================================================ */
 const AF_NAV = [
   { id: 'dashboard', label: 'Dashboard', nav: 'dashboard', view: 'dashboard' },
+
+  { id: 'calendar', label: 'Calendar', nav: 'calendar', view: 'calendar' },
 
   { id: 'leasing', label: 'Leasing', nav: 'leasing', view: 'leasing', children: [
     { id: 'vacancies',    label: 'Vacancies',           view: 'leasing', tab: 'vacancies' },
     { id: 'guest-cards',  label: 'Guest Cards',         view: 'leasing', tab: 'guest-cards' },
     { id: 'applications', label: 'Rental Applications', view: 'leasing', tab: 'applications' },
     { id: 'leases',       label: 'Leases',              view: 'leasing', tab: 'leases' },
-    { id: 'renewals',     label: 'Renewals',            view: 'leasing', tab: 'renewals' }
+    { id: 'renewals',     label: 'Renewals',            view: 'leasing', tab: 'renewals' },
+    { id: 'lsg-metrics',  label: 'Metrics',             view: 'leasing', tab: 'lsg-metrics' },
+    { id: 'signals',      label: 'Signals',             view: 'leasing', tab: 'signals' }
   ]},
 
-  { id: 'properties', label: 'Properties', nav: 'properties', view: 'properties', children: [
-    { id: 'properties',   label: 'Properties',   view: 'properties', tab: 'properties', nav: 'properties' },
-    /* Associations are the HOA side of AppFolio. This module is residential
-       only by decision 1 of the contract, so the entry is shown and declines. */
-    { id: 'associations', label: 'Associations', stub: true }
-  ]},
+  /* Properties carries no chevron in the real sidebar: it is a direct link,
+     and Associations lives as a level-2 tab inside the screen rather than as
+     a sidebar child. */
+  { id: 'properties', label: 'Properties', nav: 'properties', view: 'properties' },
 
   { id: 'people', label: 'People', nav: 'residents', view: 'residents', children: [
     { id: 'tenants',    label: 'Tenants',         view: 'residents', tab: 'tenants', nav: 'residents' },
-    { id: 'homeowners', label: 'Homeowners',      stub: true },
-    { id: 'owners',     label: 'Owners',          view: 'owners',    tab: 'owners' },
+    { id: 'homeowners', label: 'Homeowners',      view: 'residents', tab: 'homeowners' },
+    { id: 'owners',     label: 'Owners',          view: 'residents', tab: 'owners' },
     { id: 'vendors',    label: 'Vendors',         view: 'residents', tab: 'vendors' },
-    { id: 'tax',        label: 'Tax Authorities', stub: true }
+    { id: 'tax',        label: 'Tax Authorities', view: 'residents', tab: 'tax' },
+    { id: 'users',      label: 'Users',           stub: true }
   ]},
 
   { id: 'accounting', label: 'Accounting', nav: 'accounting', view: 'accounting', children: [
@@ -1193,60 +1244,98 @@ const AF_NAV = [
     { id: 'receipts',     label: 'Receipts & Ledger',   view: 'accounting', tab: 'receipts' },
     { id: 'delinquency',  label: 'Delinquency Aging',   view: 'accounting', tab: 'delinquency' },
     { id: 'statements',   label: 'Owner Statements',    view: 'accounting', tab: 'statements' },
-    { id: 'reconcile',    label: 'Bank Reconciliation', view: 'accounting', tab: 'reconcile' }
+    { id: 'reconcile',    label: 'Bank Reconciliation', view: 'accounting', tab: 'reconcile' },
+    { id: 'payables',     label: 'Payables & Bills',    view: 'accounting', tab: 'payables' },
+    { id: 'journal',      label: 'Journal Entries',     view: 'accounting', tab: 'journal' },
+    { id: 'diagnostics',  label: 'Diagnostics',         view: 'accounting', tab: 'diagnostics' }
   ]},
 
+  /* Nine children, in the order the sub-tab strip shows them. The strip
+     overflows and scrolls horizontally in the real product, which is why the
+     screenshots catch it clipped at the left. */
   { id: 'maintenance', label: 'Maintenance', nav: 'maintenance', view: 'maintenance', children: [
-    { id: 'work-orders',   label: 'Work Orders',           view: 'maintenance', tab: 'work-orders', nav: 'maintenance' },
-    { id: 'recurring',     label: 'Recurring Work Orders', stub: true },
-    { id: 'inspections',   label: 'Inspections',           view: 'maintenance', tab: 'inspections' },
-    { id: 'purchase',      label: 'Purchase Orders',       stub: true },
-    { id: 'contact',       label: 'Contact Center',        stub: true }
+    { id: 'work-orders',  label: 'Work Orders',           view: 'maintenance', tab: 'work-orders', nav: 'maintenance' },
+    { id: 'recurring',    label: 'Recurring Work Orders', view: 'maintenance', tab: 'recurring' },
+    { id: 'inspections',  label: 'Inspections',           view: 'maintenance', tab: 'inspections' },
+    { id: 'unit-turns',   label: 'Unit Turns',            view: 'maintenance', tab: 'unit-turns' },
+    { id: 'projects',     label: 'Projects',              view: 'maintenance', tab: 'projects' },
+    { id: 'purchase',     label: 'Purchase Orders',       view: 'maintenance', tab: 'purchase' },
+    { id: 'inventory',    label: 'Inventory',             view: 'maintenance', tab: 'inventory' },
+    { id: 'fixed-assets', label: 'Fixed Assets',          view: 'maintenance', tab: 'fixed-assets' },
+    { id: 'performer',    label: 'Maintenance Performer', view: 'maintenance', tab: 'performer' }
   ]},
 
   { id: 'reporting', label: 'Reporting', nav: 'reporting', view: 'reporting', children: [
-    { id: 'reports',    label: 'Reports',           view: 'reporting', tab: 'reports' },
-    { id: 'scheduled',  label: 'Scheduled Reports', view: 'reporting', tab: 'scheduled' },
-    { id: 'letters',    label: 'Letters',           view: 'reporting', tab: 'letters' },
-    { id: 'metrics',    label: 'Metrics',           view: 'reporting', tab: 'metrics' },
-    { id: 'surveys',    label: 'Surveys',           stub: true },
-    { id: 'compliance', label: 'Compliance',        view: 'reporting', tab: 'compliance' }
+    { id: 'reports',   label: 'Reports',           view: 'reporting', tab: 'reports' },
+    { id: 'scheduled', label: 'Scheduled Reports', view: 'reporting', tab: 'scheduled' },
+    { id: 'metrics',   label: 'Metrics',           view: 'reporting', tab: 'metrics' },
+    { id: 'surveys',   label: 'Surveys',           view: 'reporting', tab: 'surveys' }
   ]},
 
-  /* MESSAGES has no children in the sidebar and carries an orange count. */
-  { id: 'messages', label: 'Messages', view: 'communications', badge: true }
+  { id: 'communication', label: 'Communication', nav: 'communication', view: 'communication', children: [
+    { id: 'comm-inbox',     label: 'Inbox',            view: 'communication', tab: 'comm-inbox' },
+    { id: 'comm-bulk',      label: 'Bulk Emails/Texts', view: 'communication', tab: 'comm-bulk' },
+    { id: 'comm-templates', label: 'Templates',        view: 'communication', tab: 'comm-templates' },
+    { id: 'comm-calls',     label: 'Call Log',         view: 'communication', tab: 'comm-calls' }
+  ]},
+
+  /* A section in its own right, carrying an unread count. */
+  { id: 'whats-new', label: "What's New", nav: 'whats-new', view: 'whats-new' }
 ];
+
+/* Level-2 strips. Every entry here must resolve to a real view, because a tab
+   that renders nothing is the defect this module exists to avoid. */
+const AF_SUBTABS = {
+  leasing: [
+    ['vacancies', 'Vacancies'], ['guest-cards', 'Guest Cards'],
+    ['applications', 'Rental Applications'], ['leases', 'Leases'],
+    ['renewals', 'Renewals'], ['lsg-metrics', 'Metrics'], ['signals', 'Signals']
+  ],
+  properties: [
+    ['properties', 'Properties'], ['associations', 'Associations']
+  ],
+  residents: [
+    ['tenants', 'Tenants'], ['homeowners', 'Homeowners'], ['owners', 'Owners'],
+    ['vendors', 'Vendors'], ['tax', 'Tax Authorities']
+  ],
+  accounting: [
+    ['overview', 'Overview'], ['receipts', 'Receipts & Ledger'],
+    ['delinquency', 'Delinquency Aging'], ['statements', 'Owner Statements'],
+    ['reconcile', 'Bank Reconciliation'], ['payables', 'Payables & Bills'],
+    ['journal', 'Journal Entries'], ['diagnostics', 'Diagnostics']
+  ],
+  maintenance: [
+    ['work-orders', 'Work Orders'], ['recurring', 'Recurring Work Orders'],
+    ['inspections', 'Inspections'], ['unit-turns', 'Unit Turns'],
+    ['projects', 'Projects'], ['purchase', 'Purchase Orders'],
+    ['inventory', 'Inventory'], ['fixed-assets', 'Fixed Assets'],
+    ['performer', 'Maintenance Performer']
+  ],
+  reporting: [
+    ['reports', 'Reports'], ['scheduled', 'Scheduled Reports'],
+    ['metrics', 'Metrics'], ['surveys', 'Surveys']
+  ],
+  communication: [
+    ['comm-inbox', 'Inbox'], ['comm-bulk', 'Bulk Emails/Texts'],
+    ['comm-templates', 'Templates'], ['comm-calls', 'Call Log']
+  ]
+};
+
+/* Level-3, only where the product has one. Metrics is the case the screenshots
+   show. */
+const AF_SUBTABS_L3 = {
+  metrics: [
+    ['pricing', 'Pricing Metrics'], ['business', 'Business Metrics'],
+    ['insurance', 'Tenant Insurance Coverage'], ['diagnostic', 'Data Diagnostic']
+  ]
+};
+
+
 
 /* Level-2 tabs. Only three pages have them, and each strip sits directly under
    the level-1 strip rather than replacing it — the sidebar locates you, the
    first strip moves you between siblings, the second within one sibling. */
-const AF_SUBTABS = {
-  'accounting/receivables': [
-    { id: 'receipts',  label: 'Receipts' },
-    { id: 'charges',   label: 'Charges' },
-    { id: 'deposits',  label: 'Bank Deposits' }
-  ],
-  'accounting/payables': [
-    { id: 'bills',     label: 'Bills' },
-    { id: 'payments',  label: 'Payments' },
-    { id: 'recurring', label: 'Recurring' },
-    { id: 'online',    label: 'Online Payables' }
-  ],
-  'accounting/journal': [
-    { id: 'history',   label: 'Journal Entry History' },
-    { id: 'recurring', label: 'Recurring Journal Entries' },
-    { id: 'bulk',      label: 'Bulk Journal Entries' }
-  ],
-  'reporting/metrics': [
-    { id: 'pricing',   label: 'Pricing Metrics' },
-    { id: 'business',  label: 'Business Metrics' },
-    { id: 'insurance', label: 'Tenant Insurance Coverage' }
-  ],
-  'reporting/compliance': [
-    { id: 'violations', label: 'Violations' },
-    { id: 'reviews',    label: 'Architectural Reviews' }
-  ]
-};
+
 
 /* Which sidebar section owns a given module view, so the rail and the sidebar
    stay lit when a lesson navigates straight to a detail screen. */
@@ -1393,92 +1482,246 @@ function afSetAlpha(letter) {
    contract forbids sixty links that do nothing at all, so the ones that are not
    built say so in the standard sentence rather than failing silently.
    ============================================================================ */
+/* ============================================================================
+   THE REPORT INDEX — transcribed from the real screenshots
+   ============================================================================
+   Six overlapping screenshots cover the whole index. Every name below is copied
+   from them, in the order and grouping the product uses.
+
+   130 reports. The module previously listed 47 invented ones.
+
+   `live: true` marks a report this module actually builds. The rest are listed
+   because the index IS the screen: a VA has to learn where a report lives and
+   what it is called, and an index showing only the three we implemented would
+   teach a menu that does not exist. Clicking one that is not live says so
+   plainly rather than opening an empty page.
+   ============================================================================ */
 const AF_REPORT_INDEX = [
-  { group: 'Tenant Reports', items: [
-    { name: 'Debt Collections Status' },
-    { name: 'Delinquency', id: 'delinquency' },
-    { name: 'Eligible Debt Summary' },
-    { name: 'Security Deposit Funds Detail', id: 'deposit-liability' },
-    { name: 'Tenant Directory', id: 'tenant-directory' },
-    { name: 'Tenant Ledger', id: 'tenant-ledger' },
-    { name: 'Tenant Tickler' },
-    { name: 'Tenant Unpaid Charges' },
-    { name: 'Tenant Unpaid Charges Summary' }
+  { group: 'Accounting Reports', reports: [
+    'Account Totals', 'Balance Sheet', 'Balance Sheet - Comparative',
+    'Balance Sheet - Property Comparison', 'Bank Account Activity',
+    'Bank Account Association', 'Bank Account Directory', 'Cash Flow',
+    'Cash Flow - 12 Month', 'Cash Flow - Property Comparison', 'Cash Flow Detail',
+    'Chart of Accounts', 'Expense Distribution', 'General Ledger',
+    'Income Statement', 'Income Statement - 12 Month',
+    'Income Statement - Comparative', 'Income Statement - Property Comparison',
+    'Income Statement (Date Range)', 'Loans', 'Trial Balance',
+    'Trial Balance by Property', 'Trust Account Balance', 'Trust Account Detail'
   ]},
-  { group: 'Property & Unit Reports', items: [
-    { name: 'Activities Summary' },
-    { name: 'Additional Fees' },
-    { name: 'Annual Budget Comparison' },
-    { name: 'Budget Comparison' },
-    { name: 'Budget Detail' },
-    { name: 'Gross Potential Rent', id: 'gross-potential-rent' },
-    { name: 'Keys Detail' },
-    { name: 'Property Directory', id: 'property-directory' },
-    { name: 'Property Group Directory' },
-    { name: 'Property Performance' },
-    { name: 'Rent Roll', id: 'rent-roll' },
-    { name: 'Rent Roll (Commercial)', isNew: true },
-    { name: 'Rent Roll (Itemized)', id: 'rent-roll-itemized' }
+  { group: 'Diagnostic Reports', reports: [
+    'AppFolio Stack™ Usage', 'CheckSend Payment Usage Summary Report',
+    'E Check Usage Summary Report', 'Email Delivery Errors', 'Import Variances',
+    'Insurance Enforcement', 'Late Fee Policy Comparison', 'Merge Variances',
+    'Online Payables Payment Detail Report', 'Resident eCheck Fee Coverage',
+    'User Roles and Permissions', 'Users'
   ]},
-  { group: 'Accounting Reports', items: [
-    { name: 'Account Totals' },
-    { name: 'Balance Sheet', id: 'balance-sheet' },
-    { name: 'Balance Sheet - Comparative' },
-    { name: 'Balance Sheet Comparison' },
-    { name: 'Bank Account Activity' },
-    { name: 'Bank Account Association' },
-    { name: 'Cash Flow', id: 'cash-flow' },
-    { name: 'Cash Flow - 12 Month' },
-    { name: 'Cash Flow Comparison' },
-    { name: 'Cash Flow Detail' },
-    { name: 'Chart of Accounts' },
-    { name: 'Expense Distribution' },
-    { name: 'General Ledger', id: 'general-ledger' },
-    { name: 'Income Statement', id: 'income-statement' },
-    { name: 'Income Statement - 12 Month' },
-    { name: 'Income Statement - Comparative' },
-    { name: 'Income Statement Comparison' },
-    { name: 'Trial Balance', id: 'trial-balance' },
-    { name: 'Trust Account Balance', id: 'trust-balance' },
-    { name: 'Trust Account Detail', id: 'trust-detail' }
+  { group: 'Leasing Reports', reports: [
+    'Guest Card Inquiries', 'Guest Card Interests', 'Historical Advertised Rent',
+    'Inactive Guest Card Interests', 'Insurance Marketing Credits',
+    'Insurance Usage', 'Lease Expiration Detail By Month',
+    'Lease Expiration Summary By Month', 'Lease History',
+    'Leasing Agent Performance', 'Leasing Funnel Performance', 'Leasing Summary',
+    'Occupancy Summary', 'Owner Leasing', 'Premium Listing Billing Detail',
+    'Prospect Source Tracking', 'Renewal Summary', 'Rental Applications',
+    'Screening Assessments', 'Screening Usage', 'Showings', 'Unit Vacancy Detail'
   ]},
-  { group: 'Transaction Reports', items: [
-    { name: 'Aged Payables Summary' },
-    { name: 'Aged Receivable Detail', id: 'aged-receivables' },
-    { name: 'Bill Detail' },
-    { name: 'Payment Detail' },
-    { name: 'Receipt Detail' }
+  { group: 'Maintenance Reports', reports: [
+    'Inspection Detail', 'Project Budget Detail', 'Project Directory',
+    'Purchase Order', 'Recurring Work Order', 'Unit Turn Detail',
+    'Vendor Directory', 'Vendor Ledger', 'Vendor Ledger (Enhanced)',
+    'Work Order', 'Work Order Billable Detail', 'Work Order Labor Summary'
+  ]},
+  { group: 'Owner Reports', reports: [
+    'Owner Directory', 'Owner Insurance', 'Owner Insurance Audit',
+    'Owner Statement', 'Owner Statement (Enhanced)', 'Owner Withholdings'
+  ]},
+  { group: 'Property And Unit Reports', reports: [
+    'Activities Summary', 'Additional Fees', 'Amenities By Property',
+    'Annual Budget - Comparative', 'Annual Budget - Forecast',
+    'Budget - Comparative', 'Budget - Property Comparison', 'Budget Detail',
+    'Fixed Assets', 'Gross Potential Rent', 'Inventory Status', 'Inventory Usage',
+    'Keys Detail', 'Property Directory', 'Property Group Directory',
+    'Property Performance', 'Rent Roll', 'Rent Roll (Commercial)',
+    'Rent Roll (Itemized)', 'Rentable Items', 'Unit Directory', 'Unit Inspection'
+  ]},
+  { group: 'Tax Reports', reports: [
+    'Owner 1099 Detail', 'Owner 1099 Summary',
+    'Vendor 1099 Detail', 'Vendor 1099 Summary'
+  ]},
+  { group: 'Tenant Reports', reports: [
+    'Debt Collections Status', 'Delinquency', 'Delinquency (As Of)',
+    'Eligible Debt Summary', 'Security Deposit Funds Detail', 'Survey Responses',
+    'Tenant Directory', 'Tenant Ledger', 'Tenant Tickler',
+    'Tenant Transactions Summary', 'Tenant Unpaid Charges',
+    'Tenant Unpaid Charges Summary', 'Tenant Vehicle Info'
+  ]},
+  { group: 'Transaction Reports', reports: [
+    'Aged Payables Summary', 'Aged Receivable Detail', 'Bill Detail',
+    'Charge Detail', 'Check Register', 'Check Register Detail',
+    'Check Register Detail (Enhanced)', 'Deposit Register', 'Expense Register',
+    'Income Register', 'Journal Entry Register', 'Payment Plans',
+    'Receivables Activity', 'Resident Financial Activity',
+    'Unpaid Balances by Month'
   ]}
 ];
+
+/* Reports carrying a NEW flag in the product. */
+const AF_REPORT_NEW = ['Owner Insurance', 'Owner Insurance Audit'];
+
+/* The ones this module actually renders. Everything else is index only. */
+const AF_REPORT_LIVE = ['Rent Roll', 'Delinquency', 'Unit Vacancy Detail', 'Tenant Ledger'];
+
+/* Saved reports are a group of their own, created by the user, with their own
+   filter row. These are the ones the source account had. */
+const AF_SAVED_REPORTS = [
+  'FINANCIAL REVIEW - Pet Security Deposits',
+  'FINANCIAL REVIEW - Security Deposits',
+  'FINANCIAL REVIEW - Tenant Balances',
+  'FINANCIAL REVIEW - Tenant Prepayments',
+  'FINANCIAL REVIEW - Trust Account Balance'
+];
+
+/* Favourites are a per-viewer convenience, so they live in the demo state and
+   die on reload like everything else about the product. */
+function afToggleReportStar(name) {
+  if (!afDemo.starredReports) afDemo.starredReports = {};
+  afDemo.starredReports[name] = !afDemo.starredReports[name];
+  afRenderRoot();
+}
+function afReportStarred(name) {
+  return !!(afDemo.starredReports && afDemo.starredReports[name]);
+}
+
+function afOpenReport(name) {
+  if (AF_REPORT_LIVE.indexOf(name) > -1) {
+    afState.report = name;
+    afRenderRoot();
+    return;
+  }
+  /* Honest refusal beats an empty page that claims to be a report. */
+  afDemoAction(name + ' is in the index so you can learn where it lives, but it is not built in this training copy');
+}
+
+
 
 const AF_REPORT_ICON =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
   '<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/>' +
   '<line x1="9" y1="9" x2="9" y2="21"/></svg>';
 
+/* The Reports index, rebuilt from the screenshots: a Report Builder button, a
+   search field that filters by name, nine collapsible groups, a favourite star
+   and a caret on every row, and Saved Reports as a group of its own with its
+   own filter line. */
+
+let afReportQuery = '';
+let afReportGroupsShut = {};
+function afSetReportQuery(v) { afReportQuery = String(v || ''); afRenderRoot(); }
+function afToggleReportGroup(g) { afReportGroupsShut[g] = !afReportGroupsShut[g]; afRenderRoot(); }
+
 function afReportIndexHTML() {
-  return '<div class="af-reports-cols">' +
-    AF_REPORT_INDEX.map(function (g) {
-      return '<section class="af-reports-group"><h3>' + esc(g.group) + '</h3>' +
-        g.items.map(function (r) {
-          const live = !!r.id;
-          return '<button type="button" class="af-report-row' + (live ? '' : ' stub') + '"' +
-            (live ? ' data-report="' + escAttr(r.id) + '"' : '') +
-            ' onclick="' + (live
-              ? 'afViewReport(\'' + escAttr(r.id) + '\')'
-              : 'afDemoAction(\'The ' + escAttr(r.name) + ' report\')') + '">' +
-            AF_REPORT_ICON + '<span>' + esc(r.name) + '</span>' +
-            (r.isNew ? '<span class="af-report-new">NEW</span>' : '') +
-          '</button>';
+  const q = afReportQuery.trim().toLowerCase();
+  let shown = 0, total = 0;
+
+  const groups = AF_REPORT_INDEX.map(function (grp) {
+    total += grp.reports.length;
+    const hits = grp.reports.filter(function (name) {
+      return !q || name.toLowerCase().indexOf(q) > -1;
+    });
+    shown += hits.length;
+    /* A search that matches nothing in a group hides the group, the way it does
+       in the product. Without a search every group is listed. */
+    if (q && !hits.length) return '';
+    const shut = !q && afReportGroupsShut[grp.group];
+
+    return '<section class="af-reports-group">' +
+      '<button type="button" class="af-reports-grouphead" onclick="afToggleReportGroup(\'' + escAttr(grp.group) + '\')">' +
+        '<span class="af-reports-chev' + (shut ? ' shut' : '') + '" aria-hidden="true">&#9652;</span>' +
+        esc(grp.group) + '<span class="af-reports-count">' + grp.reports.length + '</span>' +
+      '</button>' +
+      (shut ? '' : '<div class="af-reports-cols">' +
+        hits.map(function (name) {
+          const live = AF_REPORT_LIVE.indexOf(name) > -1;
+          const isNew = AF_REPORT_NEW.indexOf(name) > -1;
+          return '<div class="af-report-row' + (live ? '' : ' stub') + '">' +
+            '<button type="button" class="af-report-name"' +
+              (live ? ' data-report="' + escAttr(name) + '"' : '') +
+              ' onclick="afOpenReport(\'' + escAttr(name) + '\')">' + esc(name) + '</button>' +
+            (isNew ? '<span class="af-report-new">NEW</span>' : '') +
+            '<button type="button" class="af-report-star' + (afReportStarred(name) ? ' on' : '') + '"' +
+              ' title="Favourite" onclick="afToggleReportStar(\'' + escAttr(name) + '\')">' +
+              (afReportStarred(name) ? '&#9733;' : '&#9734;') + '</button>' +
+            '<button type="button" class="af-report-more" title="More"' +
+              ' onclick="afDemoAction(\'Report options for ' + escAttr(name) + '\')">&#9662;</button>' +
+          '</div>';
         }).join('') +
-      '</section>';
-    }).join('') +
+      '</div>') +
+    '</section>';
+  }).join('');
+
+  const saved = (!q ? '<section class="af-reports-group">' +
+      '<button type="button" class="af-reports-grouphead" onclick="afToggleReportGroup(\'Saved Reports\')">' +
+        '<span class="af-reports-chev' + (afReportGroupsShut['Saved Reports'] ? ' shut' : '') + '" aria-hidden="true">&#9652;</span>' +
+        'Saved Reports<span class="af-reports-count">' + AF_SAVED_REPORTS.length + '</span>' +
+      '</button>' +
+      (afReportGroupsShut['Saved Reports'] ? '' :
+        '<div class="af-saved-filters">' +
+          '<label class="af-field"><span>Tags</span><input type="text" placeholder="Search..."></label>' +
+          '<label class="af-field"><span>Created By</span><input type="text" placeholder="Search..."></label>' +
+          '<label class="af-field"><span>Created Date Range</span><input type="date"></label>' +
+        '</div>' +
+        '<div class="af-reports-cols one">' +
+          AF_SAVED_REPORTS.map(function (name) {
+            return '<div class="af-report-row stub">' +
+              '<button type="button" class="af-report-name" onclick="afOpenReport(\'' + escAttr(name) + '\')">' +
+                esc(name) + '</button>' +
+              '<button type="button" class="af-report-more" title="More"' +
+                ' onclick="afDemoAction(\'Saved report options\')">&#8943;</button>' +
+              '<button type="button" class="af-report-star" title="Favourite"' +
+                ' onclick="afToggleReportStar(\'' + escAttr(name) + '\')">&#9734;</button>' +
+            '</div>';
+          }).join('') +
+        '</div>') +
+    '</section>' : '');
+
+  return '<div class="af-reports">' +
+    '<div class="af-reports-head">' +
+      '<h1>Reports</h1>' +
+      '<button type="button" class="af-btn" onclick="afDemoAction(\'Report Builder\')">Report Builder</button>' +
+    '</div>' +
+    '<div class="af-reports-search">' +
+      '<input type="text" id="afReportSearch" value="' + escAttr(afReportQuery) + '"' +
+        ' placeholder="Search reports by name, description, or column"' +
+        ' oninput="afSetReportQuery(this.value)">' +
+      '<span class="af-reports-searchicon" aria-hidden="true">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
+        '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/></svg></span>' +
+    '</div>' +
+    (q ? '<p class="af-note">' + shown + ' of ' + total + ' reports match &ldquo;' + esc(afReportQuery) + '&rdquo;.</p>' : '') +
+    (groups || (q ? afEmpty('No report matches that search.') : '')) +
+    saved +
+    '<p class="af-note">' + total + ' reports, the full index as AppFolio lists it. ' +
+      AF_REPORT_LIVE.length + ' of them are built in this training copy; the rest are here so you learn ' +
+      'where a report lives and what it is called.</p>' +
   '</div>';
 }
 
 /* ---------------------------------------------------------------------------
    SIDEBAR
    --------------------------------------------------------------------------- */
+const AF_NAV_ICONS = {
+  dashboard: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  leasing: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>',
+  properties: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M9 8h1m4 0h1m-5 4h1m4 0h1m-5 4h1m4 0h1M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/></svg>',
+  people: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  accounting: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  maintenance: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
+  reporting: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>',
+  communication: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  'whats-new': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>'
+};
+
 function afRenderSidebar() {
   const el = document.getElementById('afSidebar');
   if (!el) return;
@@ -1490,17 +1733,18 @@ function afRenderSidebar() {
     const isOpen = !!afState.navOpen[s.id] || isActive;
     const hasKids = !!(s.children && s.children.length);
 
-    /* data-section carries the module's view id, which is what the lesson
-       walkthroughs select on. Sections without one still get their own id so
-       the tour can find them. */
     const dataSection = s.nav || s.id;
+    const iconSvg = AF_NAV_ICONS[s.id] || '';
+    /* 33 was the number in the screenshot, not a fact about this module. */
+    const badgeCount = s.id === 'whats-new' ? afWhatsNewCount() : (s.badge ? afUnreadMessages() : 0);
 
     let html =
       '<a class="af-sb-item' + (isActive ? ' active' : '') + (isOpen && hasKids ? ' open' : '') + '"' +
       ' href="#" data-section="' + escAttr(dataSection) + '"' +
       ' onclick="afNavGo(\'' + escAttr(s.id) + '\');return false;">' +
+        (iconSvg ? '<span class="af-sb-icon" aria-hidden="true">' + iconSvg + '</span>' : '') +
         '<span class="af-sb-label">' + esc(s.label) + '</span>' +
-        (s.badge ? '<span class="af-sb-badge">' + afUnreadMessages() + '</span>' : '') +
+        (badgeCount ? '<span class="af-sb-badge' + (s.id === 'whats-new' ? ' whats-new-badge' : '') + '">' + badgeCount + '</span>' : '') +
         (hasKids
           ? '<span class="af-sb-caret" onclick="event.stopPropagation();event.preventDefault();afToggleNavGroup(\'' + escAttr(s.id) + '\');" aria-hidden="true">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
@@ -1523,8 +1767,6 @@ function afRenderSidebar() {
     return html;
   }).join('');
 
-  /* Training is not part of AppFolio. It is fenced off at the bottom, above
-     WHAT'S NEW, and disappears entirely on a ?demo=1 link. */
   const training = afShowsTraining()
     ? '<div class="af-sb-training">' +
         '<div class="af-sb-trainlabel">SkillCloud training</div>' +
@@ -1535,27 +1777,24 @@ function afRenderSidebar() {
     : '';
 
   el.innerHTML =
-    '<div class="af-sb-company">Management<br>Company</div>' +
     '<nav class="af-sb-nav" aria-label="Sections">' + rows + '</nav>' +
     training +
-    '<button type="button" class="af-sb-new" onclick="afDemoAction(\'What&rsquo;s New\')">' +
-      'WHAT&rsquo;S NEW <span>' + AF_WHATS_NEW_COUNT + '</span>' +
-    '</button>';
+    '<div class="af-sb-footer">' +
+      '<div class="af-sb-company-name">1ST Choice Property Management VA</div>' +
+      '<button type="button" class="af-sb-minimize" onclick="afToggleSidebar()">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="11 19 4 12 11 5"/><line x1="4" y1="12" x2="20" y2="12"/></svg>' +
+        'Minimize' +
+      '</button>' +
+    '</div>';
 }
 
-/* Counted from the messages the visitor has not opened, so the badge is derived
-   rather than a decorative number. */
 function afUnreadMessages() {
   const sent = (afDemo.messages || []).length;
   return Math.max(0, 1 - Math.min(sent, 1)) + (sent ? 0 : 0) || 1;
 }
 
-const AF_WHATS_NEW_COUNT = 5;
+const AF_WHATS_NEW_COUNT = 33;
 
-
-/* ---------------------------------------------------------------------------
-   TAB STRIPS
-   --------------------------------------------------------------------------- */
 function afRenderSubnav() {
   const el = document.getElementById('afSubnav');
   if (!el) return;
@@ -1579,7 +1818,6 @@ function afRenderSubnav() {
       esc(c.label) + '</button>';
   }).join('');
 
-  /* The second strip, where the page has one. */
   const key = s.id + '/' + (activeTab || '');
   const subs = AF_SUBTABS[key];
   const level2 = subs
@@ -1595,30 +1833,31 @@ function afRenderSubnav() {
   el.innerHTML = '<div class="af-tabs">' + level1 + '</div>' + level2;
 }
 
-
-/* ---------------------------------------------------------------------------
-   RIGHT RAIL
-   ---------------------------------------------------------------------------
-   Contextual, and deliberately short. The real rail carries up to twenty links
-   per page; reproducing that count here would mean twenty destinations that do
-   not exist, which rule D of the contract forbids. So the groups and their
-   order are the real ones, and only the links this module can actually honour
-   are listed. Four working links are faithful; twenty dead ones are not.
-   --------------------------------------------------------------------------- */
 const AF_RAIL = {
   dashboard: [
-    { group: 'People', icon: 'user', links: [
-      { label: 'Move In Tenant',  act: "afModalAddResident()" },
-      { label: 'Tenant Receipt',  act: "afModalPostPayment()" },
-      { label: 'New Owner',       act: "afModalAddOwner()" },
-      { label: 'Enter Bill',      act: "afModalCreateWorkOrder()" }
+    { group: 'Calendar', icon: 'calendar', links: [
+      { label: 'View Calendar', act: "afGoto('calendar')" }
     ]},
     { group: 'Property', icon: 'home', links: [
       { label: 'New Property', act: "afModalAddProperty()" }
     ]},
-    { group: 'Reports', icon: 'chart', links: [
-      { label: 'Delinquency', act: "afViewReport('delinquency')" },
-      { label: 'Rent Roll',   act: "afViewReport('rent-roll')" }
+    { group: 'People', icon: 'user', links: [
+      { label: 'Move In Tenant',    act: "afModalAddResident()" },
+      { label: 'Tenant Receipt',    act: "afModalPostPayment()" },
+      { label: 'Homeowner Receipt', act: "simToast('Homeowner receipt entry logged.', { tone: 'good' })" },
+      { label: 'Enter Bill',        act: "afModalCreateWorkOrder()" },
+      { label: 'New Owner',         act: "afModalAddOwner()" },
+      { label: 'New Vendor',        act: "simToast('New vendor onboarding form ready.', { tone: 'good' })" },
+      { label: 'Rent Increase',     act: "afDemoAction('Rent Increase')" }
+    ]},
+    { group: 'Reports', icon: 'doc', links: [
+      { label: 'Delinquency',         act: "afViewReport('delinquency')" },
+      { label: 'Tenant Ledger',       act: "afViewReport('tenant-ledger')" },
+      { label: 'Income Statement',    act: "afViewReport('income-statement')" },
+      { label: 'Unit Vacancy Detail', act: "afGoto('leasing', 'vacancies')" },
+      { label: 'Rent Roll',           act: "afViewReport('rent-roll')" },
+      { label: 'Cash Flow',           act: "afViewReport('cash-flow')" },
+      { label: 'Lease Expiration',    act: "afGoto('leasing', 'renewals')" }
     ]}
   ],
   properties: [
@@ -1681,6 +1920,7 @@ const AF_RAIL = {
 };
 
 const AF_RAIL_ICONS = {
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
   star:  '<polygon points="12 2 15.1 8.6 22 9.6 17 14.5 18.2 21.5 12 18.2 5.8 21.5 7 14.5 2 9.6 8.9 8.6 12 2"/>',
   chart: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
   doc:   '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
@@ -1689,18 +1929,53 @@ const AF_RAIL_ICONS = {
   help:  '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>'
 };
 
+/* The rail can be dismissed. The vertical strip on the far right is how the
+   product brings it back, and it is also where Assistant and Support live. */
+function afToggleRailPanel(on) {
+  afDemo.railHidden = (on === undefined) ? !afDemo.railHidden : !on;
+  afRenderChrome();
+}
+const AF_RAILSTRIP = [
+  { id: 'assistant', label: 'Assistant', act: "afDemoAction('The AppFolio assistant')" },
+  { id: 'tasks',     label: 'Tasks',     act: 'afToggleRailPanel()' },
+  { id: 'support',   label: 'Support',   act: "afDemoAction('Support')" }
+];
+function afRenderRailStrip() {
+  const el = document.getElementById('afRailStrip');
+  if (!el) return;
+  el.innerHTML = AF_RAILSTRIP.map(function (i) {
+    const on = i.id === 'tasks' && !afDemo.railHidden;
+    return '<button type="button" class="af-strip-btn' + (on ? ' active' : '') + '"' +
+      ' onclick="' + i.act + '">' +
+      '<span class="af-strip-ic" aria-hidden="true">' + (AF_STRIP_ICONS[i.id] || '') + '</span>' +
+      '<span class="af-strip-lb">' + i.label + '</span></button>';
+  }).join('');
+}
+const AF_STRIP_ICONS = {
+  assistant: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>',
+  tasks: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 3 6.5 7 .9-5 4.9 1.2 7L12 18l-6.2 3.3L7 14.3 2 9.4l7-.9z"/></svg>',
+  support: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+};
+
 function afRenderRail() {
   const el = document.getElementById('afRail');
   if (!el) return;
 
+  afRenderRailStrip();
   const groups = AF_RAIL[afCurrentNavSection()];
-  if (!groups || !groups.length) {
+  if (afDemo.railHidden || !groups || !groups.length) {
     el.innerHTML = '';
     el.hidden = true;
     return;
   }
   el.hidden = false;
-  el.innerHTML = groups.map(function (g) {
+  /* The panel is titled "Tasks" and closes, exactly as the product shows it.
+     A rail with no actions for the current screen stays empty rather than
+     being padded out — Signals is the case the screenshots catch. */
+  el.innerHTML = '<div class="af-rail-title">Tasks' +
+      '<button type="button" class="af-rail-close" aria-label="Close panel"' +
+      ' onclick="afToggleRailPanel(false)">&times;</button></div>' +
+    groups.map(function (g) {
     return '<div class="af-rail-group">' +
       '<div class="af-rail-head">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
@@ -1803,8 +2078,927 @@ function afPageHead(title, subtitle, actions) {
     '</div>';
 }
 
+/* ============================================================================
+   THE SHARED VOCABULARY OF THE PRODUCT
+   ============================================================================
+   The same handful of components appear on nearly every AppFolio list screen.
+   A VA learns them once and then recognises them everywhere, which is exactly
+   why a training copy has to have them: a trainee who has never seen "Click
+   here to search" will not find the search on their first real day.
+
+   Transcribed from the 2026 screenshots. See Images-resources/RESOURCES.md §4.
+   ============================================================================ */
+
+/* The collapsed search panel: a wide bordered box with a downward pointer.
+   Clicking it expands the real filters. */
+let afSearchOpen = {};
+function afToggleSearch(key) {
+  afSearchOpen[key] = !afSearchOpen[key];
+  afRenderRoot();
+}
+function afSearchPanel(key, fieldsHTML) {
+  if (!afSearchOpen[key]) {
+    return '<div class="af-searchpanel collapsed" onclick="afToggleSearch(\'' + escAttr(key) + '\')">' +
+      '<a href="#" onclick="event.preventDefault()">Click here to search</a>' +
+      '<span class="af-searchpanel-point" aria-hidden="true"></span></div>';
+  }
+  return '<div class="af-searchpanel open">' +
+    '<div class="af-searchpanel-body">' + fieldsHTML +
+      '<div class="af-searchpanel-actions">' +
+        '<button type="button" class="af-btn primary" onclick="afDemoAction(\'Search\')">Search</button>' +
+        '<button type="button" class="af-btn" onclick="afToggleSearch(\'' + escAttr(key) + '\')">Close</button>' +
+      '</div>' +
+    '</div><span class="af-searchpanel-point" aria-hidden="true"></span></div>';
+}
+
+/* Every sortable column carries the double arrow. Sorting is per-screen and
+   lives in memory, like the rest of the product state. */
+function afSortTh(key, label, sortKey, opts) {
+  opts = opts || {};
+  const cur = (afDemo.sort && afDemo.sort[key]) || {};
+  const on = cur.by === sortKey;
+  return '<th' + (opts.cls ? ' class="' + opts.cls + '"' : '') + '>' +
+    '<button type="button" class="af-sortth' + (on ? ' on' : '') + '"' +
+    ' onclick="afSetSort(\'' + escAttr(key) + '\', \'' + escAttr(sortKey) + '\')">' +
+    label + '<span class="af-sortarrow" aria-hidden="true">' +
+    (on ? (cur.dir === 'desc' ? '&#9662;' : '&#9652;') : '&#8645;') +
+    '</span></button></th>';
+}
+function afSetSort(key, by) {
+  if (!afDemo.sort) afDemo.sort = {};
+  const cur = afDemo.sort[key] || {};
+  afDemo.sort[key] = { by: by, dir: (cur.by === by && cur.dir === 'asc') ? 'desc' : 'asc' };
+  afRenderRoot();
+}
+function afApplySort(key, rows, getters) {
+  const cur = (afDemo.sort && afDemo.sort[key]);
+  if (!cur || !getters[cur.by]) return rows;
+  const g = getters[cur.by];
+  const out = rows.slice().sort(function (a, b) {
+    const x = g(a), y = g(b);
+    if (typeof x === 'number' && typeof y === 'number') return x - y;
+    return String(x == null ? '' : x).localeCompare(String(y == null ? '' : y));
+  });
+  return cur.dir === 'desc' ? out.reverse() : out;
+}
+
+/* The bulk-action bar above a checkbox table. */
+function afBulkBar(key, actions) {
+  const n = ((afDemo.selected && afDemo.selected[key]) || []).length;
+  return '<div class="af-bulkbar">' +
+    '<button type="button" class="af-btn sm" onclick="afDemoAction(\'Bulk Actions\')">Bulk Actions <span class="af-caret">&#9662;</span></button>' +
+    '<span class="af-bulkcount">' + n + ' Selected</span>' +
+    (actions || []).map(function (a) {
+      return '<button type="button" class="af-bulklink" onclick="afBulkAct(\'' + escAttr(key) + '\', \'' + escAttr(a) + '\')">' + esc(a) + '</button>';
+    }).join('') +
+  '</div>';
+}
+function afBulkAct(key, action) {
+  const n = ((afDemo.selected && afDemo.selected[key]) || []).length;
+  if (!n) { afDemoAction('Select at least one row before using ' + action); return; }
+  afDemoAction(action + ' on ' + n + ' selected');
+}
+function afToggleRow(key, id, on) {
+  if (!afDemo.selected) afDemo.selected = {};
+  const list = afDemo.selected[key] || [];
+  const i = list.indexOf(id);
+  if (on && i < 0) list.push(id);
+  if (!on && i > -1) list.splice(i, 1);
+  afDemo.selected[key] = list;
+  afRenderRoot();
+}
+function afRowChecked(key, id) {
+  return ((afDemo.selected && afDemo.selected[key]) || []).indexOf(id) > -1;
+}
+
+/* "Displaying: 1-25 of 240" under a table. */
+function afDisplaying(shown, total) {
+  if (!total) return '<div class="af-displaying">Displaying: 0-0 of 0</div>';
+  return '<div class="af-displaying">Displaying: 1-' + shown + ' of ' + total + '</div>';
+}
+
+/* An empty state is a sentence, not a blank table. Where there is something to
+   do about it, the sentence carries the link that does it. */
+function afEmpty(text, actionLabel, actionCall) {
+  return '<div class="af-emptystate">' + text +
+    (actionLabel ? ' <a href="#" onclick="' + actionCall + ';return false;">' + esc(actionLabel) + '</a>' : '') +
+  '</div>';
+}
+
+/* The KPI strip that sits above the Work Orders table. */
+function afKpiStrip(items) {
+  return '<div class="af-kpistrip">' +
+    items.map(function (it) {
+      return '<div class="af-kpi' + (it.muted ? ' muted' : '') + '">' +
+        '<b>' + (it.value == null ? '--' : it.value) + '</b>' +
+        '<span>' + esc(it.label) + '</span></div>';
+    }).join('') +
+  '</div>';
+}
+
+/* Status pills in caps, the way work orders and inspections show them. */
+const AF_STATUS_TONE = {
+  'NEW RESIDENT': 'good', 'NEW': 'good', 'ASSIGNED': 'info', 'WAITING': 'warn',
+  'IN PROGRESS': 'warn', 'DONE': 'good', 'COMPLETE': 'good', 'COMPLETED': 'good',
+  'OPEN': 'info', 'OVERDUE': 'bad', 'CANCELLED': 'muted'
+};
+function afStatusPill(text) {
+  const up = String(text || '').toUpperCase();
+  return '<span class="af-pill ' + (AF_STATUS_TONE[up] || 'muted') + '">' + esc(up) + '</span>';
+}
+
+/* A date that has passed reads in red with the gap spelled out, which is how
+   the real Unit Turn board flags an overdue turnaround. */
+function afDateWithLag(iso) {
+  if (!iso) return '--';
+  const days = afDaysFromToday(iso);
+  if (days >= 0) return afFmtDate(iso);
+  const n = Math.abs(days);
+  const label = n >= 60 ? Math.round(n / 30) + ' months ago'
+    : n >= 30 ? '1 month ago'
+    : n + (n === 1 ? ' day ago' : ' days ago');
+  return '<span class="af-overdue">' + afFmtDate(iso) + ' (' + label + ')</span>';
+}
+
+/* ============================================================================
+   THE ENTITIES THE REAL PRODUCT HAS AND THIS MODULE DID NOT
+   ============================================================================
+   The screenshots show six Maintenance sub-tabs and a Calendar that had no data
+   behind them at all: Inspections, Unit Turns, Projects, Inventory, Fixed
+   Assets, plus calendar events and resident surveys.
+
+   In the source account most of those tables were empty. Reproducing an empty
+   table would be faithful and useless — a trainee cannot practise on nothing —
+   so each one is populated from the portfolio that already exists here. A unit
+   turn is derived from a real vacancy; an inspection is scheduled against a
+   real unit; a fixed asset belongs to a real property.
+
+   Generation is deterministic (afHashString / afcDay), so a reload brings back
+   the identical board.
+   ============================================================================ */
+
+function afcPick(list, seed, salt) {
+  return list[afHashString(String(seed) + '|' + (salt || '')) % list.length];
+}
+
+/* ---------- Inspections ---------- */
+const AFC_INSPECTION_TYPES = ['Move-In', 'Move-Out', 'Annual', 'Drive-By', 'Turnover', 'Safety'];
+const AFC_INSPECTIONS = (function () {
+  const out = [];
+  const units = AFC_UNITS;
+  units.forEach(function (u, i) {
+    if ((afHashString(u.id + '|insp') % 3) !== 0) return;   /* about a third */
+    const daysAgo = 5 + (afHashString(u.id + '|id') % 60);
+    const done = daysAgo > 20;
+    const flags = done && (afHashString(u.id + '|flag') % 6) === 0 ? 1 : 0;
+    const lease = AFC_LEASES.find(function (l) { return l.unitId === u.id && l.status === 'active'; });
+    const res = lease && lease.residentIds && lease.residentIds.length
+      ? AFC_RESIDENTS.find(function (r) { return r.id === lease.residentIds[0]; })
+      : null;
+    const prop = AFC_PROPERTIES.find(function (p) { return p.id === u.propertyId; });
+    out.push({
+      id: 'INSP-' + String(1000 + i),
+      propertyId: u.propertyId,
+      unitId: u.id,
+      date: afcDay(-daysAgo),
+      status: done ? 'Done' : 'In Progress',
+      name: (prop ? prop.name : u.id) + (res ? ' - ' + res.name : ''),
+      unitName: prop ? prop.name : u.id,
+      type: afcPick(AFC_INSPECTION_TYPES, u.id, 'ty'),
+      flags: flags,
+      inspector: afcPick(['Alex Rivera', 'Dana Whitfield', 'Marcus Webb'], u.id, 'insp')
+    });
+  });
+  return out;
+})();
+
+/* ---------- Unit turns ----------
+   A turn is the window between one resident leaving and the next moving in.
+   It is derived from the vacancies that actually exist rather than stored, so
+   it can never disagree with the unit board. */
+function afUnitTurns() {
+  return afAllUnits()
+    .filter(function (u) { return String(u.status).indexOf('vacant') === 0 || u.status === 'notice'; })
+    .map(function (u) {
+      const prop = afGetProperty(u.propertyId);
+      const past = afAllLeases().filter(function (l) {
+        return l.unitId === u.id && l.moveOutDate;
+      }).sort(function (a, b) { return String(b.moveOutDate).localeCompare(String(a.moveOutDate)); })[0];
+      const moveOut = past ? past.moveOutDate : afcDay(-(20 + (afHashString(u.id + '|mo') % 70)));
+      /* The industry target is ten days from surrender to rent-ready. */
+      const target = afAddDays(moveOut, 10);
+      const pending = afAllLeases().find(function (l) {
+        return l.unitId === u.id && l.status === 'pending';
+      });
+      return {
+        id: 'TURN-' + u.id,
+        unitId: u.id,
+        propertyId: u.propertyId,
+        name: (prop ? prop.name : u.id) + (u.label ? ' — ' + u.label : ''),
+        moveOut: moveOut,
+        moveIn: pending ? pending.startDate : null,
+        target: target,
+        status: u.status === 'vacant-ready' ? 'Ready' : u.status === 'notice' ? 'Not Started' : 'In Progress'
+      };
+    });
+}
+
+/* ---------- Projects ---------- */
+const AFC_PROJECTS = (function () {
+  const specs = [
+    ['Roof replacement — Building C', 'PROP-03', 4200000, 3860000, -40, 'In Progress'],
+    ['Parking lot resurfacing', 'PROP-06', 1850000, 0, 12, 'Not Started'],
+    ['Unit 204 fire restoration', 'PROP-11', 3100000, 2975000, -95, 'In Progress'],
+    ['Clubhouse HVAC replacement', 'PROP-02', 2650000, 2650000, -140, 'Complete'],
+    ['Exterior paint — Phase 1', 'PROP-08', 980000, 615000, -25, 'In Progress'],
+    ['Playground safety surfacing', 'PROP-12', 420000, 0, 30, 'Not Started']
+  ];
+  return specs.map(function (s, i) {
+    return {
+      id: 'PROJ-' + (100 + i),
+      name: s[0], propertyId: s[1],
+      budgetCents: s[2], actualCents: s[3],
+      startDate: afcDay(s[4]), status: s[5]
+    };
+  });
+})();
+
+/* ---------- Inventory ---------- */
+const AFC_INVENTORY = (function () {
+  const specs = [
+    ['Air filter 16x25x1', 48, 24, 'HVAC', 'Main Warehouse'],
+    ['Air filter 20x25x1', 31, 24, 'HVAC', 'Main Warehouse'],
+    ['Toilet flapper kit', 12, 20, 'Plumbing', 'Main Warehouse'],
+    ['Wax ring', 26, 15, 'Plumbing', 'Main Warehouse'],
+    ['GFCI outlet 15A', 40, 20, 'Electrical', 'Van 2'],
+    ['Smoke detector 10-year', 8, 25, 'Safety', 'Main Warehouse'],
+    ['CO detector', 14, 12, 'Safety', 'Main Warehouse'],
+    ['Interior latex — Builder White (gal)', 22, 10, 'Paint', 'Main Warehouse'],
+    ['Door lockset — keyed entry', 17, 10, 'Hardware', 'Van 1'],
+    ['Garbage disposal 1/2 HP', 5, 6, 'Appliance', 'Main Warehouse'],
+    ['Blind — 35in vinyl', 33, 15, 'Window', 'Main Warehouse'],
+    ['Range drip pan set', 19, 10, 'Appliance', 'Van 1']
+  ];
+  return specs.map(function (s, i) {
+    return {
+      id: 'INV-' + (500 + i),
+      name: s[0], quantity: s[1], reorder: s[2], category: s[3], location: s[4],
+      /* Below the reorder point is the whole reason to look at this screen. */
+      low: s[1] < s[2]
+    };
+  });
+})();
+
+/* ---------- Fixed assets ---------- */
+const AFC_FIXED_ASSETS = (function () {
+  const types = ['HVAC Condenser', 'Water Heater', 'Roof', 'Elevator', 'Boiler', 'Refrigerator', 'Range'];
+  const out = [];
+  AFC_UNITS.forEach(function (u, i) {
+    if ((afHashString(u.id + '|fa') % 4) !== 0) return;
+    const type = afcPick(types, u.id, 'fa');
+    const placedOffset = -(400 + (afHashString(u.id + '|placed') % 3000));
+    const life = type === 'Roof' ? 7300 : type === 'Elevator' ? 9000 : 3650;
+    const prop = AFC_PROPERTIES.find(function (p) { return p.id === u.propertyId; });
+    out.push({
+      id: 'FA-' + (2000 + i),
+      propertyId: u.propertyId,
+      unitId: u.id,
+      label: (prop ? prop.name : u.propertyId) + ' - ' + (u.label || u.id),
+      assetId: 'A' + (10000 + (afHashString(u.id + '|aid') % 89999)),
+      type: type,
+      status: 'In Service',
+      placedInService: afcDay(placedOffset),
+      warrantyExpires: afcDay(placedOffset + life)
+    });
+  });
+  return out;
+})();
+
+/* ---------- Calendar events ----------
+   Derived, not stored: a move-in on the calendar IS the lease's start date, and
+   duplicating it into a second record is how the two drift apart. */
+function afCalendarEvents() {
+  const out = [];
+  afAllLeases().forEach(function (l) {
+    const u = afGetUnit(l.unitId);
+    const where = u ? (afGetProperty(u.propertyId) || {}).name || l.unitId : l.unitId;
+    if (l.moveInDate) out.push({ date: l.moveInDate, kind: 'move-in', label: 'Move In: ' + where, allDay: true, ref: l.id });
+    if (l.endDate && l.status === 'active') out.push({ date: l.endDate, kind: 'lease-end', label: 'Lease End: ' + where, allDay: true, ref: l.id });
+    if (l.moveOutDate) out.push({ date: l.moveOutDate, kind: 'move-out', label: 'Move Out: ' + where, allDay: true, ref: l.id });
+  });
+  afAllWorkOrders().forEach(function (w) {
+    if (!w.scheduledDate) return;
+    out.push({
+      date: w.scheduledDate, kind: 'work-order',
+      label: 'Work Order: ' + w.id.replace('WO-', ''),
+      time: '12:00', allDay: false, ref: w.id
+    });
+  });
+  AFC_INSPECTIONS.forEach(function (ins) {
+    if (ins.status !== 'In Progress') return;
+    out.push({ date: ins.date, kind: 'inspection', label: 'Inspection: ' + ins.unitName, time: '9:00', allDay: false, ref: ins.id });
+  });
+  return out;
+}
+
+/* ---------- Surveys ---------- */
+const AFC_SURVEYS = (function () {
+  const out = [];
+  AFC_WORK_ORDERS.forEach(function (w, i) {
+    if (w.status !== 'completed') return;
+    if ((afHashString(w.id + '|sv') % 3) === 0) return;   /* not everyone answers */
+    const score = 3 + (afHashString(w.id + '|score') % 3);
+    out.push({
+      id: 'SV-' + (700 + i),
+      workOrderId: w.id,
+      propertyId: w.propertyId,
+      unitId: w.unitId,
+      date: w.completedDate || afcDay(-10),
+      score: score,
+      comment: score >= 5 ? 'Fast and tidy, thank you.'
+        : score === 4 ? 'Fixed on the first visit.'
+        : 'Took two visits to get it right.'
+    });
+  });
+  return out;
+})();
+
+/* ============================================================================
+   THE SCREENS THE REAL PRODUCT HAS
+   ============================================================================
+   Built from the 2026 screenshots, one per sub-tab that had no view behind it.
+   Columns, filters, bulk actions, KPI strips and empty-state wording are copied
+   from what the product shows, because those are the things a VA is being
+   trained to recognise.
+   ============================================================================ */
+
+/* ---------------- Calendar ---------------- */
+const AF_CAL_VIEWS = ['Month', 'Week', 'Day', 'Agenda'];
+const AF_CAL_KINDS = {
+  'move-in':    { label: 'Move Ins',    cls: 'ev-in' },
+  'move-out':   { label: 'Move Outs',   cls: 'ev-out' },
+  'lease-end':  { label: 'Lease Ends',  cls: 'ev-end' },
+  'work-order': { label: 'Work Orders', cls: 'ev-wo' },
+  'inspection': { label: 'Inspections', cls: 'ev-insp' }
+};
+
+function afCalSet(k, v) { afDemo.cal = Object.assign({}, afDemo.cal, (function () { const o = {}; o[k] = v; return o; })()); afRenderRoot(); }
+function afCalState() {
+  return Object.assign({ view: 'Week', anchor: afToday(), kind: 'all' }, afDemo.cal || {});
+}
+function afCalShift(days) {
+  const s = afCalState();
+  afCalSet('anchor', afAddDays(s.anchor, days));
+}
+
+function afCalendarHTML() {
+  const s = afCalState();
+  const all = afCalendarEvents();
+  const events = s.kind === 'all' ? all : all.filter(function (e) { return e.kind === s.kind; });
+
+  /* Week starts Sunday, as the product shows it. */
+  const anchorDow = afDayOfWeek(s.anchor);
+  const weekStart = afAddDays(s.anchor, -anchorDow);
+  const days = [];
+  for (let i = 0; i < 7; i++) days.push(afAddDays(weekStart, i));
+
+  const dayCols = days.map(function (d) {
+    const isToday = d === afToday();
+    return '<div class="af-cal-col' + (isToday ? ' today' : '') + '">' +
+      '<div class="af-cal-dayhead">' + afDayName(d) + ' ' + afShortDate(d) + '</div>' +
+      '<div class="af-cal-allday">' +
+        events.filter(function (e) { return e.date === d && e.allDay; })
+          .map(function (e) {
+            return '<button type="button" class="af-cal-ev ' + AF_CAL_KINDS[e.kind].cls + '"' +
+              ' title="' + escAttr(e.label) + '"' +
+              ' onclick="afOpenCalEvent(\'' + escAttr(e.kind) + '\', \'' + escAttr(e.ref) + '\')">' +
+              esc(e.label) + '</button>';
+          }).join('') +
+      '</div>' +
+      '<div class="af-cal-timed">' +
+        events.filter(function (e) { return e.date === d && !e.allDay; })
+          .map(function (e) {
+            return '<button type="button" class="af-cal-ev timed ' + AF_CAL_KINDS[e.kind].cls + '"' +
+              ' onclick="afOpenCalEvent(\'' + escAttr(e.kind) + '\', \'' + escAttr(e.ref) + '\')">' +
+              esc(e.time) + ' ' + esc(e.label) + '</button>';
+          }).join('') +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  return '<div class="af-page">' +
+    '<div class="af-pagehead">' +
+      '<h1>Calendar</h1>' +
+      '<button type="button" class="af-btn primary" onclick="afDemoAction(\'Customize calendar\')">Customize</button>' +
+    '</div>' +
+    '<div class="af-cal-bar">' +
+      '<span class="af-cal-types">Event Types: ' +
+        '<select onchange="afCalSet(\'kind\', this.value)">' +
+          '<option value="all"' + (s.kind === 'all' ? ' selected' : '') + '>All</option>' +
+          Object.keys(AF_CAL_KINDS).map(function (k) {
+            return '<option value="' + k + '"' + (s.kind === k ? ' selected' : '') + '>' + AF_CAL_KINDS[k].label + '</option>';
+          }).join('') +
+        '</select></span>' +
+    '</div>' +
+    '<div class="af-cal-nav">' +
+      '<button type="button" class="af-btn sm" onclick="afCalShift(-7)" aria-label="Previous week">&lsaquo;</button>' +
+      '<button type="button" class="af-btn sm" onclick="afCalShift(7)" aria-label="Next week">&rsaquo;</button>' +
+      '<button type="button" class="af-btn sm" onclick="afCalSet(\'anchor\', afToday())">Today</button>' +
+      '<b class="af-cal-range">' + afShortDate(days[0]) + ' &ndash; ' + afShortDate(days[6]) + ', ' + String(days[0]).slice(0, 4) + '</b>' +
+      '<span class="af-cal-views">' +
+        AF_CAL_VIEWS.map(function (v) {
+          return '<button type="button" class="af-cal-view' + (s.view === v ? ' active' : '') + '"' +
+            ' onclick="' + (v === 'Week' ? 'afCalSet(\'view\',\'Week\')' : 'afDemoAction(\'' + v + ' view\')') + '">' + v + '</button>';
+        }).join('') +
+      '</span>' +
+    '</div>' +
+    '<div class="af-cal-grid">' + dayCols + '</div>' +
+    '<p class="af-note">' + events.length + ' event' + (events.length === 1 ? '' : 's') +
+      ' this week. Every one is derived from a lease, a work order or an inspection &mdash; ' +
+      'change the underlying record and the calendar follows it.</p>' +
+  '</div>';
+}
+
+function afOpenCalEvent(kind, ref) {
+  if (kind === 'work-order') { afGoto('work-order', ref); return; }
+  if (kind === 'inspection') { afState.sectionTab = 'inspections'; afGoto('maintenance'); return; }
+  afGoto('lease-detail', ref);
+}
+
+/* ---------------- Leasing: Metrics ---------------- */
+function afLeasingMetricsHTML() {
+  const units = afAllUnits();
+  const occupied = units.filter(function (u) { return u.status === 'occupied'; }).length;
+  const vacant = units.filter(function (u) { return String(u.status).indexOf('vacant') === 0; }).length;
+  const occPct = units.length ? (occupied / units.length * 100) : 0;
+  const cards = afAllGuestCards().length;
+  const apps = afAllApplications().length;
+  const conv = cards ? (apps / cards * 100) : 0;
+
+  return '<div class="af-page">' +
+    '<h1>Leasing Metrics</h1>' +
+    afSearchPanel('lsg-metrics',
+      '<label class="af-field"><span>Property</span><input type="text" placeholder="Search by property"></label>' +
+      '<label class="af-field"><span>Date range</span><input type="date"></label>') +
+    '<h3 class="af-secttitle">Demand in the Last 7 Days</h3>' +
+    '<div class="af-stattiles">' +
+      afStatTile(cards, 'Guest Cards') +
+      afStatTile(apps, 'Applications') +
+      afStatTile(conv.toFixed(2) + '%', 'Conversion Rate') +
+    '</div>' +
+    '<h3 class="af-secttitle">Occupancy Information</h3>' +
+    '<div class="af-stattiles">' +
+      afStatTile(occPct.toFixed(1) + '%', 'Occupancy') +
+      afStatTile(vacant, 'Units Vacant') +
+      afStatTile(occupied, 'Units Occupied') +
+    '</div>' +
+    '<p class="af-note">Conversion is applications divided by guest cards. It is the number a leasing ' +
+      'agent is measured on, and it is derived here rather than typed.</p>' +
+  '</div>';
+}
+function afStatTile(value, label) {
+  return '<div class="af-stattile"><b>' + value + '</b><span>' + esc(label) + '</span></div>';
+}
+
+/* ---------------- Leasing: Signals ----------------
+   In the real product this tab is a full-page advertisement for an add-on the
+   account has not bought. Reproducing that is not padding: a VA will meet these
+   upsell pages and needs to recognise one rather than hunt for a feature that
+   is not switched on. */
+function afLeasingSignalsHTML() {
+  return '<div class="af-page">' +
+    '<div class="af-promo">' +
+      '<div class="af-promo-copy">' +
+        '<p class="af-promo-eyebrow">AppFolio Leasing Signals:</p>' +
+        '<h1>Dynamic Pricing at Your Control</h1>' +
+        '<p>Offer transparent, flexible pricing based on public data to maintain occupancy ' +
+          'and resident satisfaction, no matter the market.</p>' +
+      '</div>' +
+      '<div class="af-promo-art" aria-hidden="true"></div>' +
+    '</div>' +
+    '<div class="af-panel">' +
+      '<h3>Learn More About Leasing Signals</h3>' +
+      '<p>Leasing Signals prices vacancies and renewals by combining your occupancy goals with ' +
+        'public and portfolio data, offering a range of prices for every unit based on lease ' +
+        'length and move-in date.</p>' +
+      '<p class="af-note"><i>Leasing Signals works best for residential multifamily customers with 50+ units.</i></p>' +
+      '<button type="button" class="af-btn primary" onclick="afDemoAction(\'Request a Demo\')">Request a Demo</button>' +
+    '</div>' +
+    '<p class="af-note">This add-on is not active on this account. That is what the page looks like ' +
+      'when a feature has not been purchased &mdash; not a broken screen.</p>' +
+  '</div>';
+}
+
+/* ---------------- Maintenance: Inspections ---------------- */
+function afInspectionsHTML() {
+  const rows = afApplySort('inspections', AFC_INSPECTIONS.slice(), {
+    date: function (r) { return r.date; }, status: function (r) { return r.status; },
+    name: function (r) { return r.name; }, unit: function (r) { return r.unitName; }
+  });
+  return '<div class="af-page">' +
+    '<h1>Inspections</h1>' +
+    afSearchPanel('inspections',
+      '<label class="af-field"><span>Unit</span><input type="text" placeholder="Search by unit"></label>' +
+      '<label class="af-field"><span>Status</span><select><option>All</option><option>In Progress</option><option>Done</option></select></label>') +
+    afBulkBar('inspections', ['Mark Done']) +
+    '<div class="af-tablewrap"><table class="af-table">' +
+      '<thead><tr><th class="af-th-chk"></th>' +
+        afSortTh('inspections', 'Inspection Date', 'date') +
+        afSortTh('inspections', 'Status', 'status') +
+        afSortTh('inspections', 'Name', 'name') +
+        afSortTh('inspections', 'Unit Name', 'unit') +
+        '<th>Type</th><th>Flags</th><th>Actions</th></tr></thead>' +
+      '<tbody>' + (rows.map(function (r) {
+        return '<tr><td><input type="checkbox"' + (afRowChecked('inspections', r.id) ? ' checked' : '') +
+            ' onchange="afToggleRow(\'inspections\', \'' + escAttr(r.id) + '\', this.checked)"></td>' +
+          '<td>' + afFmtDate(r.date) + '</td>' +
+          '<td>' + afStatusPill(r.status) + '</td>' +
+          '<td>' + esc(r.name) + '</td>' +
+          '<td>' + esc(r.unitName) + '</td>' +
+          '<td>' + esc(r.type) + '</td>' +
+          '<td>' + (r.flags ? '<span class="af-flagcount">' + r.flags + ' &#9873;</span>' : '0') + '</td>' +
+          '<td><button type="button" class="af-btn sm" onclick="afGoto(\'unit-detail\', \'' + escAttr(r.unitId) + '\')">Open unit</button></td>' +
+        '</tr>';
+      }).join('') || '<tr><td colspan="8">' + afEmpty('No inspections match these filters.') + '</td></tr>') +
+      '</tbody></table></div>' +
+    afDisplaying(rows.length, AFC_INSPECTIONS.length) +
+  '</div>';
+}
+
+/* ---------------- Maintenance: Unit Turns ---------------- */
+function afUnitTurnsHTML() {
+  const turns = afUnitTurns();
+  const done = turns.filter(function (t) { return t.status === 'Ready'; });
+  const avg = done.length
+    ? Math.round(done.reduce(function (s, t) { return s + Math.abs(afDaysFromToday(t.moveOut)); }, 0) / done.length)
+    : null;
+  return '<div class="af-page">' +
+    '<div class="af-banner-beta"><b>BETA</b> Unit turn data. Use this board to see the pipeline &mdash; ' +
+      'from overdue turns to turnaround time by property.</div>' +
+    '<h1>Unit Turns</h1>' +
+    '<div class="af-panel"><h3>Key Metrics</h3>' +
+      '<div class="af-stattiles">' +
+        afStatTile(avg == null ? '--' : avg, 'Average days on a turn') +
+        afStatTile(turns.filter(function (t) { return t.status === 'In Progress'; }).length, 'In progress') +
+        afStatTile(turns.filter(function (t) { return afDaysFromToday(t.target) < 0 && t.status !== 'Ready'; }).length, 'Past target') +
+      '</div></div>' +
+    '<div class="af-panel"><h3>Unit Turn Board</h3>' +
+      '<div class="af-tablewrap"><table class="af-table">' +
+        '<thead><tr><th class="af-th-chk"></th><th>Unit</th><th>Move Out</th><th>Move In</th>' +
+          '<th>Target Turnaround Date</th><th>Status</th><th>Actions</th></tr></thead>' +
+        '<tbody>' + (turns.map(function (t) {
+          const late = afDaysFromToday(t.target) < 0 && t.status !== 'Ready';
+          return '<tr><td><input type="checkbox"' + (afRowChecked('turns', t.id) ? ' checked' : '') +
+              ' onchange="afToggleRow(\'turns\', \'' + escAttr(t.id) + '\', this.checked)"></td>' +
+            '<td><b>' + esc(t.name) + '</b></td>' +
+            '<td>' + afFmtDate(t.moveOut) + '</td>' +
+            '<td>' + (t.moveIn ? afFmtDate(t.moveIn) : '--') + '</td>' +
+            '<td>' + (late ? afDateWithLag(t.target) : afFmtDate(t.target)) + '</td>' +
+            '<td>' + afStatusPill(t.status) + '</td>' +
+            '<td><button type="button" class="af-btn sm" onclick="afGoto(\'unit-detail\', \'' + escAttr(t.unitId) + '\')">Open unit</button></td>' +
+          '</tr>';
+        }).join('') || '<tr><td colspan="7">' + afEmpty('No units are turning right now.') + '</td></tr>') +
+      '</tbody></table></div>' +
+      afDisplaying(turns.length, turns.length) +
+    '</div>' +
+  '</div>';
+}
+
+/* ---------------- Maintenance: Projects ---------------- */
+function afProjectsHTML() {
+  const rows = afApplySort('projects', AFC_PROJECTS.slice(), {
+    name: function (r) { return r.name; }, budget: function (r) { return r.budgetCents; },
+    actual: function (r) { return r.actualCents; }, start: function (r) { return r.startDate; },
+    status: function (r) { return r.status; }
+  });
+  return '<div class="af-page">' +
+    '<div class="af-pagehead"><h1>Projects</h1>' +
+      '<button type="button" class="af-btn primary" onclick="afDemoAction(\'Add Project\')">+ Add Project</button></div>' +
+    '<div class="af-tablewrap"><table class="af-table">' +
+      '<thead><tr>' +
+        afSortTh('projects', 'Name', 'name') +
+        '<th>Property</th>' +
+        afSortTh('projects', 'Total Budget', 'budget', { cls: 'num' }) +
+        afSortTh('projects', 'Actuals', 'actual', { cls: 'num' }) +
+        afSortTh('projects', 'Start Date', 'start') +
+        afSortTh('projects', 'Status', 'status') +
+      '</tr></thead>' +
+      '<tbody>' + (rows.map(function (p) {
+        const prop = afGetProperty(p.propertyId);
+        const over = p.actualCents > p.budgetCents;
+        return '<tr><td><b>' + esc(p.name) + '</b></td>' +
+          '<td>' + esc(prop ? prop.name : p.propertyId) + '</td>' +
+          '<td class="num">' + afFmtMoney(p.budgetCents) + '</td>' +
+          '<td class="num' + (over ? ' af-overdue' : '') + '">' + afFmtMoney(p.actualCents) + '</td>' +
+          '<td>' + afFmtDate(p.startDate) + '</td>' +
+          '<td>' + afStatusPill(p.status) + '</td></tr>';
+      }).join('') || '<tr><td colspan="6">' +
+        afEmpty('No projects found.', 'Create a project.', 'afDemoAction(\'Create a project\')') + '</td></tr>') +
+    '</tbody></table></div>' +
+    afDisplaying(rows.length, AFC_PROJECTS.length) +
+  '</div>';
+}
+
+/* ---------------- Maintenance: Inventory ---------------- */
+function afInventoryHTML() {
+  const rows = afApplySort('inventory', AFC_INVENTORY.slice(), {
+    name: function (r) { return r.name; }, qty: function (r) { return r.quantity; },
+    reorder: function (r) { return r.reorder; }, cat: function (r) { return r.category; },
+    loc: function (r) { return r.location; }
+  });
+  const low = AFC_INVENTORY.filter(function (r) { return r.low; }).length;
+  return '<div class="af-page">' +
+    '<div class="af-pagehead"><h1>Inventory Items</h1>' +
+      '<button type="button" class="af-btn primary" onclick="afDemoAction(\'Add Inventory\')">+ Add Inventory</button></div>' +
+    afSearchPanel('inventory',
+      '<label class="af-field"><span>Name</span><input type="text" placeholder="Search by name"></label>' +
+      '<label class="af-field"><span>Category</span><input type="text" placeholder="Any"></label>') +
+    (low ? '<div class="af-banner-warn"><b>' + low + ' item' + (low === 1 ? '' : 's') +
+      ' below the reorder point.</b> That is the only reason to open this screen.</div>' : '') +
+    afBulkBar('inventory', ['Hide Item']) +
+    '<div class="af-tablewrap"><table class="af-table">' +
+      '<thead><tr><th class="af-th-chk"></th>' +
+        afSortTh('inventory', 'Name', 'name') +
+        afSortTh('inventory', 'Quantity', 'qty', { cls: 'num' }) +
+        afSortTh('inventory', 'Reorder', 'reorder', { cls: 'num' }) +
+        afSortTh('inventory', 'Category', 'cat') +
+        afSortTh('inventory', 'Location', 'loc') +
+      '</tr></thead>' +
+      '<tbody>' + (rows.map(function (r) {
+        return '<tr' + (r.low ? ' class="af-row-warn"' : '') + '>' +
+          '<td><input type="checkbox"' + (afRowChecked('inventory', r.id) ? ' checked' : '') +
+            ' onchange="afToggleRow(\'inventory\', \'' + escAttr(r.id) + '\', this.checked)"></td>' +
+          '<td>' + esc(r.name) + '</td>' +
+          '<td class="num' + (r.low ? ' af-overdue' : '') + '">' + r.quantity + '</td>' +
+          '<td class="num">' + r.reorder + '</td>' +
+          '<td>' + esc(r.category) + '</td>' +
+          '<td>' + esc(r.location) + '</td></tr>';
+      }).join('') || '<tr><td colspan="6">' + afEmpty('No inventory items match.') + '</td></tr>') +
+    '</tbody></table></div>' +
+    afDisplaying(rows.length, AFC_INVENTORY.length) +
+  '</div>';
+}
+
+/* ---------------- Maintenance: Fixed Assets ---------------- */
+function afFixedAssetsHTML() {
+  const rows = afApplySort('assets', AFC_FIXED_ASSETS.slice(), {
+    label: function (r) { return r.label; }, aid: function (r) { return r.assetId; },
+    type: function (r) { return r.type; }, status: function (r) { return r.status; },
+    placed: function (r) { return r.placedInService; }, warranty: function (r) { return r.warrantyExpires; }
+  });
+  const expiring = AFC_FIXED_ASSETS.filter(function (r) {
+    const d = afDaysFromToday(r.warrantyExpires);
+    return d >= 0 && d <= 180;
+  }).length;
+  return '<div class="af-page">' +
+    '<div class="af-pagehead"><h1>Fixed Assets</h1>' +
+      '<button type="button" class="af-btn primary" onclick="afDemoAction(\'Add Fixed Asset\')">+ Add Fixed Asset</button></div>' +
+    afSearchPanel('assets',
+      '<label class="af-field"><span>Property</span><input type="text" placeholder="Search by property"></label>' +
+      '<label class="af-field"><span>Type</span><input type="text" placeholder="Any"></label>') +
+    (expiring ? '<div class="af-banner-warn"><b>' + expiring + ' warranty' +
+      (expiring === 1 ? '' : ' periods') + ' expiring within six months.</b> A repair billed to an owner ' +
+      'that a warranty would have covered is money the owner should not have paid.</div>' : '') +
+    '<div class="af-tablewrap"><table class="af-table">' +
+      '<thead><tr>' +
+        afSortTh('assets', 'Property - Unit', 'label') +
+        afSortTh('assets', 'Asset ID', 'aid') +
+        afSortTh('assets', 'Type', 'type') +
+        afSortTh('assets', 'Status', 'status') +
+        afSortTh('assets', 'Placed in Service', 'placed') +
+        afSortTh('assets', 'Warranty Expiration', 'warranty') +
+      '</tr></thead>' +
+      '<tbody>' + (rows.map(function (r) {
+        const d = afDaysFromToday(r.warrantyExpires);
+        return '<tr><td>' + esc(r.label) + '</td>' +
+          '<td>' + esc(r.assetId) + '</td>' +
+          '<td>' + esc(r.type) + '</td>' +
+          '<td>' + afStatusPill(r.status) + '</td>' +
+          '<td>' + afFmtDate(r.placedInService) + '</td>' +
+          '<td>' + (d < 0 ? '<span class="af-muted">' + afFmtDate(r.warrantyExpires) + ' (expired)</span>'
+                          : afFmtDate(r.warrantyExpires)) + '</td></tr>';
+      }).join('') || '<tr><td colspan="6">' + afEmpty('No fixed assets recorded.') + '</td></tr>') +
+    '</tbody></table></div>' +
+    afDisplaying(rows.length, AFC_FIXED_ASSETS.length) +
+  '</div>';
+}
+
+/* ---------------- Maintenance: Performer ---------------- */
+function afPerformerHTML() {
+  const vendors = afAllVendors();
+  const wos = afAllWorkOrders();
+  const rows = vendors.map(function (v) {
+    const mine = wos.filter(function (w) { return w.vendorId === v.id; });
+    const done = mine.filter(function (w) { return w.status === 'completed'; });
+    const overs = done.filter(function (w) { return (w.varianceCents || 0) > 0; });
+    return {
+      v: v, total: mine.length, done: done.length,
+      spend: done.reduce(function (s, w) { return s + (w.actualCents || 0); }, 0),
+      overs: overs.length
+    };
+  }).filter(function (r) { return r.total > 0; })
+    .sort(function (a, b) { return b.spend - a.spend; });
+
+  return '<div class="af-page">' +
+    '<h1>Maintenance Performer</h1>' +
+    '<p class="af-note">Which vendors you actually use, what they cost, and how often they came in over ' +
+      'their own estimate. This is the screen you open before renewing a vendor.</p>' +
+    '<div class="af-tablewrap"><table class="af-table">' +
+      '<thead><tr><th>Vendor</th><th>Trade</th><th class="num">Work orders</th>' +
+        '<th class="num">Completed</th><th class="num">Total billed</th>' +
+        '<th class="num">Over estimate</th><th>W-9</th></tr></thead>' +
+      '<tbody>' + (rows.map(function (r) {
+        return '<tr><td><b>' + esc(r.v.name) + '</b></td>' +
+          '<td>' + esc(r.v.trade || r.v.category || '&mdash;') + '</td>' +
+          '<td class="num">' + r.total + '</td>' +
+          '<td class="num">' + r.done + '</td>' +
+          '<td class="num">' + afFmtMoney(r.spend) + '</td>' +
+          '<td class="num' + (r.overs ? ' af-overdue' : '') + '">' + r.overs + '</td>' +
+          '<td>' + (r.v.w9OnFile ? 'On file' : '<span class="af-overdue">Missing</span>') + '</td></tr>';
+      }).join('') || '<tr><td colspan="7">' + afEmpty('No vendor has been given work yet.') + '</td></tr>') +
+    '</tbody></table></div>' +
+  '</div>';
+}
+
+/* ---------------- Reporting: Metrics ---------------- */
+function afMetricsHTML() {
+  const sub = afState.l3Tab || 'pricing';
+  const strip = '<div class="af-l3tabs">' +
+    AF_SUBTABS_L3.metrics.map(function (t) {
+      return '<button type="button" class="af-l3tab' + (sub === t[0] ? ' active' : '') + '"' +
+        ' onclick="afSetL3(\'' + t[0] + '\')">' + esc(t[1]) + '</button>';
+    }).join('') + '</div>';
+
+  if (sub === 'business') return '<div class="af-page">' + strip + afBusinessMetricsHTML() + '</div>';
+  if (sub === 'insurance') return '<div class="af-page">' + strip + afInsuranceMetricsHTML() + '</div>';
+  if (sub === 'diagnostic') return '<div class="af-page">' + strip + afDataDiagnosticHTML() + '</div>';
+  return '<div class="af-page">' + strip + afPricingMetricsHTML() + '</div>';
+}
+function afSetL3(t) { afState.l3Tab = t; afRenderRoot(); }
+
+function afPricingMetricsHTML() {
+  const units = afAllUnits();
+  const occupied = units.filter(function (u) { return u.status === 'occupied'; }).length;
+  const vacant = units.filter(function (u) { return String(u.status).indexOf('vacant') === 0; }).length;
+  const occPct = units.length ? (occupied / units.length * 100) : 0;
+  const cards = afAllGuestCards().length;
+  const apps = afAllApplications().length;
+
+  /* Expiring leases per month for the next ten months, which is what drives the
+     projected exposure bars. */
+  const buckets = [];
+  for (let m = 0; m < 10; m++) {
+    const from = afAddDays(afToday(), m * 30);
+    const to = afAddDays(afToday(), (m + 1) * 30);
+    buckets.push({
+      label: String(from).slice(0, 7),
+      n: afAllLeases().filter(function (l) {
+        return l.status === 'active' && l.endDate >= from && l.endDate < to;
+      }).length
+    });
+  }
+  const max = Math.max.apply(null, buckets.map(function (b) { return b.n; }).concat([1]));
+
+  return '<h1>Pricing Metrics</h1>' +
+    afSearchPanel('pricing',
+      '<label class="af-field"><span>Property</span><input type="text" placeholder="Search by property"></label>') +
+    '<h3 class="af-secttitle">Demand in the Last 7 Days</h3>' +
+    '<div class="af-stattiles">' +
+      afStatTile(cards, 'Guest Cards') + afStatTile(apps, 'Applications') +
+      afStatTile((cards ? (apps / cards * 100) : 0).toFixed(2) + '%', 'Conversion Rate') +
+    '</div>' +
+    '<h3 class="af-secttitle">Occupancy Information</h3>' +
+    '<div class="af-stattiles">' +
+      afStatTile(occPct.toFixed(1) + '%', 'Occupancy') + afStatTile(vacant, 'Units Vacant') +
+    '</div>' +
+    '<h3 class="af-secttitle">Projected Vacancy Exposure</h3>' +
+    '<p class="af-note">Leases ending in each of the next ten months. A tall bar is a month you need ' +
+      'renewals signed well before it arrives.</p>' +
+    '<div class="af-bars">' +
+      buckets.map(function (b) {
+        return '<div class="af-bar"><div class="af-bar-fill" style="height:' +
+          Math.round(b.n / max * 100) + '%" title="' + b.n + ' leases"></div>' +
+          '<span class="af-bar-n">' + b.n + '</span>' +
+          '<span class="af-bar-label">' + esc(b.label) + '</span></div>';
+      }).join('') +
+    '</div>';
+}
+
+function afBusinessMetricsHTML() {
+  const leases = afAllLeases().filter(function (l) { return l.status === 'active'; });
+  const billed = leases.reduce(function (s, l) { return s + (l.rentAmount || 0); }, 0);
+  const delinquent = leases.filter(function (l) { return (l.balanceCents || 0) > 0; });
+  const owed = delinquent.reduce(function (s, l) { return s + l.balanceCents; }, 0);
+  return '<h1>Business Metrics</h1>' +
+    '<div class="af-stattiles">' +
+      afStatTile(afFmtMoney(billed), 'Monthly rent roll') +
+      afStatTile(delinquent.length, 'Delinquent leases') +
+      afStatTile(afFmtMoney(owed), 'Outstanding balance') +
+      afStatTile((billed ? (owed / billed * 100) : 0).toFixed(1) + '%', 'Delinquency rate') +
+    '</div>' +
+    '<p class="af-note">Delinquency rate is what is owed against what is billed each month. Everything ' +
+      'here is derived from the ledgers, so posting a payment moves it immediately.</p>';
+}
+
+function afInsuranceMetricsHTML() {
+  const leases = afAllLeases().filter(function (l) { return l.status === 'active'; });
+  const covered = leases.filter(function (l) { return l.rentersInsurance || l.insurancePolicy; });
+  return '<h1>Tenant Insurance Coverage</h1>' +
+    '<div class="af-stattiles">' +
+      afStatTile(leases.length, 'Active leases') +
+      afStatTile(covered.length, 'With policy on file') +
+      afStatTile(leases.length - covered.length, 'Missing proof') +
+    '</div>' +
+    (covered.length < leases.length
+      ? '<div class="af-banner-warn"><b>' + (leases.length - covered.length) +
+        ' active leases have no renters insurance on file.</b> Most leases require it, and an uninsured ' +
+        'loss becomes an argument about who pays.</div>'
+      : '') +
+    '<p class="af-note">This module does not track policy numbers yet, so "missing proof" here means ' +
+      'the field is absent rather than that a resident is definitely uninsured.</p>';
+}
+
+function afDataDiagnosticHTML() {
+  const broken = afAuditIntegrity();
+  const money = afAuditMoney();
+  return '<h1>Data Diagnostic</h1>' +
+    '<p class="af-note">The same audit the module runs on itself. A clean result here is what makes ' +
+      'every other number on every other screen worth reading.</p>' +
+    '<div class="af-stattiles">' +
+      afStatTile(broken.length, 'Broken references') +
+      afStatTile(money.length, 'Money rules failing') +
+    '</div>' +
+    (broken.length || money.length
+      ? '<div class="af-banner-warn"><b>Problems found.</b><ul>' +
+        broken.concat(money).map(function (b) {
+          return '<li>' + esc(b.rule || '') + ' &mdash; ' + esc(b.detail || b.message || JSON.stringify(b)) + '</li>';
+        }).join('') + '</ul></div>'
+      : '<div class="af-banner-good">No integrity or money-rule failures.</div>');
+}
+
+/* ---------------- Reporting: Surveys ---------------- */
+function afSurveysHTML() {
+  const rows = AFC_SURVEYS.slice().sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
+  const avg = rows.length ? (rows.reduce(function (s, r) { return s + r.score; }, 0) / rows.length) : 0;
+  return '<div class="af-page">' +
+    '<h1>Surveys</h1>' +
+    '<div class="af-stattiles">' +
+      afStatTile(avg.toFixed(2), 'Average score (of 5)') +
+      afStatTile(rows.length, 'Responses') +
+      afStatTile(rows.filter(function (r) { return r.score <= 3; }).length, 'At or below 3') +
+    '</div>' +
+    '<div class="af-tablewrap"><table class="af-table">' +
+      '<thead><tr><th>Date</th><th>Work order</th><th>Unit</th><th class="num">Score</th><th>Comment</th></tr></thead>' +
+      '<tbody>' + (rows.map(function (r) {
+        const u = afGetUnit(r.unitId);
+        return '<tr><td>' + afFmtDate(r.date) + '</td>' +
+          '<td><button type="button" class="af-linkbtn" onclick="afGoto(\'work-order\', \'' + escAttr(r.workOrderId) + '\')">' +
+            esc(r.workOrderId) + '</button></td>' +
+          '<td>' + esc(u ? u.label : r.unitId) + '</td>' +
+          '<td class="num' + (r.score <= 3 ? ' af-overdue' : '') + '">' + r.score + '</td>' +
+          '<td>' + esc(r.comment) + '</td></tr>';
+      }).join('') || '<tr><td colspan="5">' + afEmpty('No survey responses yet.') + '</td></tr>') +
+    '</tbody></table></div>' +
+    afDisplaying(rows.length, AFC_SURVEYS.length) +
+  '</div>';
+}
+
+/* ---------------- What's New ---------------- */
+const AF_WHATS_NEW = [
+  ['Unit Turns board', 'Track a vacancy from surrender to rent-ready, with a target turnaround date per unit.'],
+  ['Fixed Assets', 'Record equipment with its warranty, so a repair is not billed to an owner that the manufacturer would have covered.'],
+  ['Inventory reorder points', 'Parts below their reorder point are flagged on the Inventory tab.'],
+  ['Maintenance Performer', 'Vendor spend and how often each one came in over their own estimate.'],
+  ['Editable settlement charges', 'Every charge line is now a record you can add to, correct and re-assign.'],
+  ['Calendar', 'Move-ins, move-outs, lease ends, work orders and inspections on one week view.']
+];
+function afWhatsNewHTML() {
+  return '<div class="af-page">' +
+    '<h1>What&rsquo;s New</h1>' +
+    '<p class="af-note">Release notes. In the real product this is where AppFolio announces changes, and ' +
+      'the count in the sidebar is how many you have not read.</p>' +
+    '<div class="af-panel">' +
+      AF_WHATS_NEW.map(function (n) {
+        return '<div class="af-whatsnew"><b>' + esc(n[0]) + '</b><p>' + esc(n[1]) + '</p></div>';
+      }).join('') +
+    '</div>' +
+    '<button type="button" class="af-btn" onclick="afMarkWhatsNewRead()">Mark all as read</button>' +
+  '</div>';
+}
+function afWhatsNewCount() {
+  return afDemo.whatsNewRead ? 0 : AF_WHATS_NEW.length;
+}
+function afMarkWhatsNewRead() {
+  afDemo.whatsNewRead = true;
+  afDemoAction('Marked ' + AF_WHATS_NEW.length + ' notes as read');
+  afRenderRoot();
+}
+
 const AF_VIEWS = {
   'dashboard':       function () { return afDashboardHTML(); },
+  'calendar':        function () { return afCalendarHTML(); },
+  'whats-new':       function () { return afWhatsNewHTML(); },
+  'communication':   function () { return afCommunicationsHTML(); },
   'properties':      function () { return afPropertiesHTML(); },
   'property-detail': function () { return afPropertyDetailHTML(); },
   'unit-detail':     function () { return afUnitDetailHTML(); },
@@ -2673,76 +3867,386 @@ function afSaveListing() {
    ============================================================================ */
 
 /* ---------- Dashboard ---------- */
+function afToggleDashWidget(id) {
+  const state = afState.dashOpen || (afState.dashOpen = {});
+  state[id] = !state[id];
+  afRenderRoot();
+}
+
+/* A dashboard panel. All ten open COLLAPSED, which is how the real
+   dashboard presents itself: it is an index of what needs attention, and
+   the count on the header is what tells you whether to open one. */
+function afDashWidget(id, title, contentHTML, count) {
+  const state = afState.dashOpen || (afState.dashOpen = {});
+  const open = !!state[id];
+  return '<div class="af-dash-widget' + (open ? '' : ' collapsed') + '">' +
+    '<button type="button" class="af-dash-widget-hd" onclick="afToggleDashWidget(\'' + escAttr(id) + '\')"' +
+      ' aria-expanded="' + open + '">' +
+      '<span class="af-dash-chevron" aria-hidden="true">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+          '<polyline points="6 9 12 15 18 9"/>' +
+        '</svg></span>' +
+      '<span class="af-dash-widget-title">' + esc(title) + '</span>' +
+      (count ? '<span class="af-dash-count">' + count + '</span>' : '') +
+    '</button>' +
+    (open ? '<div class="af-dash-widget-bd">' + contentHTML + '</div>' : '') +
+  '</div>';
+}
+
+/* ============================================================================
+   DASHBOARD — the ten panels, derived
+   ============================================================================
+   The ten sections and their order were already right. What was wrong was the
+   contents: the widgets were written out as literals, and six of the eight
+   residents they named — Brenda Miller, Darren Hopkins, Jordan Reed, Elena
+   Rostova, Grace Vanderwaal, DeShawn Williams — exist nowhere else in the
+   system. A trainee who clicked one found nothing, and a trainee who went
+   looking for "the delinquent resident" on the Residents screen found a
+   different set of people entirely.
+
+   Every panel below reads the portfolio. Post a payment and the Delinquencies
+   panel changes; move somebody in and the Move Ins panel loses a row.
+
+   All ten start collapsed, which is how the real dashboard opens.
+   ============================================================================ */
+
+/* "View By" narrows the whole dashboard, the way the real control does. */
+function afDashScope() { return (afDemo.dash && afDemo.dash.scope) || 'all'; }
+function afSetDashScope(v) {
+  afDemo.dash = Object.assign({}, afDemo.dash, { scope: v });
+  afRenderRoot();
+}
+/* Leases inside the current scope. */
+function afDashLeases() {
+  const scope = afDashScope();
+  return afAllLeases().filter(function (l) {
+    if (scope === 'all') return true;
+    const u = afGetUnit(l.unitId);
+    if (!u) return false;
+    if (scope.indexOf('prop:') === 0) return u.propertyId === scope.slice(5);
+    if (scope.indexOf('owner:') === 0) {
+      const p = afGetProperty(u.propertyId);
+      return !!(p && (p.ownerIds || []).indexOf(scope.slice(6)) > -1);
+    }
+    return true;
+  });
+}
+function afDashUnits() {
+  const scope = afDashScope();
+  return afAllUnits().filter(function (u) {
+    if (scope === 'all') return true;
+    if (scope.indexOf('prop:') === 0) return u.propertyId === scope.slice(5);
+    if (scope.indexOf('owner:') === 0) {
+      const p = afGetProperty(u.propertyId);
+      return !!(p && (p.ownerIds || []).indexOf(scope.slice(6)) > -1);
+    }
+    return true;
+  });
+}
+
+function afUnitLabel(unitId) {
+  const u = afGetUnit(unitId);
+  if (!u) return unitId;
+  const p = afGetProperty(u.propertyId);
+  return (p ? p.name + ' &bull; ' : '') + esc(u.label || unitId);
+}
+function afLeaseWho(l) {
+  const res = (l.residentIds || []).map(afGetResident).filter(Boolean);
+  if (res.length) return res.map(function (r) { return r.name; }).join(', ');
+  return l.applicantName || '&mdash;';
+}
+
 function afDashboardHTML() {
-  const units = afAllUnits();
-  const activeLeases = afAllLeases().filter(function (l) { return l.status === 'active'; });
+  const units = afDashUnits();
+  const leases = afDashLeases();
+  const activeLeases = leases.filter(function (l) { return l.status === 'active'; });
   const occupied = units.filter(function (u) { return u.status === 'occupied'; }).length;
-  const vacant = units.filter(function (u) { return u.status.indexOf('vacant') === 0; }).length;
-  const openWork = afAllWorkOrders().filter(function (w) { return w.status !== 'completed'; }).length;
-  const openTasks = afAllTasks().filter(function (t) { return t.status !== 'completed'; }).length;
-  const totalRentRoll = activeLeases.reduce(function (s, l) { return s + (l.rentAmount || 0); }, 0);
-  const totalDelinquent = activeLeases.reduce(function (s, l) { return s + (l.balanceCents > 0 ? l.balanceCents : 0); }, 0);
+  const vacant = units.filter(function (u) { return String(u.status).indexOf('vacant') === 0; }).length;
   const occPct = units.length ? Math.round(occupied / units.length * 100) : 0;
+  const rentRoll = activeLeases.reduce(function (s, l) { return s + (l.rentAmount || 0); }, 0);
+  const owed = activeLeases.reduce(function (s, l) { return s + Math.max(0, l.balanceCents || 0); }, 0);
+  const unitIds = units.map(function (u) { return u.id; });
+  const wos = afAllWorkOrders().filter(function (w) { return unitIds.indexOf(w.unitId) > -1; });
 
-  const tile = function (label, value, sub, view, arg) {
-    return '<button type="button" class="af-tile" onclick="afGoto(\'' + view + '\'' + (arg ? ', \'' + arg + '\'' : '') + ')">' +
-      '<span class="af-tile-label">' + esc(label) + '</span>' +
-      '<b class="af-tile-value">' + esc(String(value)) + '</b>' +
-      '<span class="af-tile-sub">' + esc(sub) + '</span></button>';
-  };
+  /* --- 1. Move Ins: leases signed or pending, not yet occupied --- */
+  const moveIns = leases.filter(function (l) {
+    return l.status === 'pending' || (l.moveInDate && afDaysFromToday(l.moveInDate) >= -7);
+  }).sort(function (a, b) { return String(a.startDate).localeCompare(String(b.startDate)); });
+  const moveInsHTML = moveIns.length
+    ? '<table class="af-tbl"><thead><tr><th>Resident</th><th>Property &amp; Unit</th><th>Move In Date</th>' +
+      '<th>Security Deposit</th><th>Status</th><th>Action</th></tr></thead><tbody>' +
+      moveIns.map(function (l) {
+        const held = l.depositHeld || 0;
+        const due = l.depositDue || 0;
+        const signed = l.signatureStatus === 'executed';
+        return '<tr><td><b>' + esc(afLeaseWho(l)) + '</b></td>' +
+          '<td>' + afUnitLabel(l.unitId) + '</td>' +
+          '<td>' + afFmtDate(l.moveInDate || l.startDate) + '</td>' +
+          '<td>' + (held >= due && due
+            ? '<span class="af-badge good">&#10003; Paid (' + afFmtMoney(held) + ')</span>'
+            : '<span class="af-badge warn">Pending (' + afFmtMoney(due) + ')</span>') + '</td>' +
+          '<td><span class="af-badge">' + (l.status === 'active' ? 'Moved In'
+            : signed && held ? 'Ready for Key Handoff'
+            : signed ? 'Lease Signed' : 'Unsigned') + '</span></td>' +
+          '<td>' + (l.status === 'active'
+            ? '<button type="button" class="af-btn sm" onclick="afGoto(\'lease-detail\', \'' + escAttr(l.id) + '\')">Open lease</button>'
+            : !signed
+              ? '<button type="button" class="af-btn sm primary" onclick="afModalSignLease(\'' + escAttr(l.id) + '\')">Sign lease</button>'
+              : !held
+                ? '<button type="button" class="af-btn sm primary" onclick="afModalCollectDeposit(\'' + escAttr(l.id) + '\')">Collect deposit</button>'
+                : '<button type="button" class="af-btn sm primary" onclick="afMoveIn(\'' + escAttr(l.id) + '\')">Move in</button>') +
+          '</td></tr>';
+      }).join('') + '</tbody></table>'
+    : afEmpty('Nothing is moving in right now.');
 
-  const delinquentLeases = activeLeases.filter(function (l) { return l.balanceCents > 0; });
-  const emergencyWork = afAllWorkOrders().filter(function (w) { return w.priority === 'emergency' && w.status !== 'completed'; });
+  /* --- 2. Move Outs: the deposit clock is the point of this panel --- */
+  const moveOuts = leases.filter(function (l) { return l.moveOutDate || l.status === 'notice'; })
+    .sort(function (a, b) { return String(a.moveOutDate).localeCompare(String(b.moveOutDate)); });
+  const moveOutsHTML = moveOuts.length
+    ? '<table class="af-tbl"><thead><tr><th>Resident</th><th>Property &amp; Unit</th><th>Move Out Date</th>' +
+      '<th>Deposit Accounting</th><th>Action</th></tr></thead><tbody>' +
+      moveOuts.map(function (l) {
+        /* Texas gives 30 days from surrender to refund or itemise. */
+        const dueBy = l.depositDueBy || (l.moveOutDate ? afAddDays(l.moveOutDate, 30) : null);
+        const left = dueBy ? afDaysFromToday(dueBy) : null;
+        return '<tr><td><b>' + esc(afLeaseWho(l)) + '</b></td>' +
+          '<td>' + afUnitLabel(l.unitId) + '</td>' +
+          '<td>' + (l.moveOutDate ? afFmtDate(l.moveOutDate) : 'Notice given') + '</td>' +
+          '<td>' + (left == null ? '<span class="af-badge">Awaiting surrender</span>'
+            : left < 0 ? '<span class="af-badge bad">' + Math.abs(left) + ' days overdue</span>'
+            : '<span class="af-badge ' + (left <= 7 ? 'warn' : '') + '">Day ' + (30 - left) +
+              ' of 30 &mdash; due ' + afFmtDate(dueBy) + '</span>') + '</td>' +
+          '<td><button type="button" class="af-btn sm primary" onclick="afGoto(\'lease-detail\', \'' + escAttr(l.id) + '\')">Open lease</button></td>' +
+        '</tr>';
+      }).join('') + '</tbody></table>'
+    : afEmpty('No move-outs in progress.');
 
-  return afPageHead('Dashboard', 'Operations & Portfolio Overview as of ' + afFmtDate(afToday()) + '.') +
-    '<div class="af-tiles">' +
-      tile('Occupancy', occPct + '%', occupied + ' of ' + units.length + ' units occupied', 'properties') +
-      tile('Rent Roll', afFmtMoney(totalRentRoll), activeLeases.length + ' active leases', 'accounting', 'overview') +
-      tile('Delinquency', afFmtMoney(totalDelinquent), delinquentLeases.length + ' accounts past due', 'accounting', 'delinquency') +
-      tile('Open Work Orders', openWork, emergencyWork.length + ' emergency requests', 'maintenance') +
-      tile('Open Tasks', openTasks, 'Pending action items', 'tasks') +
+  /* --- 3. Online Payments: the most recent payments actually on the ledgers --- */
+  const leaseIds = leases.map(function (l) { return l.id; });
+  const payments = afAllLedgerEntries()
+    .filter(function (e) { return e.type === 'payment' && leaseIds.indexOf(e.leaseId) > -1; })
+    .sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); })
+    .slice(0, 8);
+  const paymentsHTML = payments.length
+    ? '<table class="af-tbl"><thead><tr><th>Date</th><th>Resident</th><th>Unit</th><th>Method</th>' +
+      '<th class="num">Amount</th><th>Status</th></tr></thead><tbody>' +
+      payments.map(function (e) {
+        const l = afGetLease(e.leaseId);
+        return '<tr><td>' + afFmtDate(e.date) + '</td>' +
+          '<td><b>' + esc(l ? afLeaseWho(l) : '&mdash;') + '</b></td>' +
+          '<td>' + (l ? afUnitLabel(l.unitId) : '&mdash;') + '</td>' +
+          '<td><span class="af-badge">' + esc(e.method || 'Online Portal') + '</span></td>' +
+          '<td class="num font-mono"><b>' + afFmtMoney(Math.abs(e.amount)) + '</b></td>' +
+          '<td><span class="af-badge good">Cleared</span></td></tr>';
+      }).join('') + '</tbody></table>'
+    : afEmpty('No payments recorded yet.');
+
+  /* --- 4. Notifications: every one is a real condition on real data --- */
+  const alerts = [];
+  moveOuts.forEach(function (l) {
+    const dueBy = l.depositDueBy || (l.moveOutDate ? afAddDays(l.moveOutDate, 30) : null);
+    if (!dueBy) return;
+    const left = afDaysFromToday(dueBy);
+    if (left <= 10) {
+      alerts.push({ tone: left < 0 ? 'bad' : 'warn',
+        title: 'Texas Property Code &sect; 92.103 clock',
+        body: esc(afLeaseWho(l)) + ' deposit disposition ' +
+          (left < 0 ? 'is ' + Math.abs(left) + ' days overdue.' : 'due in ' + left + ' days.'),
+        go: "afGoto('lease-detail', '" + escAttr(l.id) + "')" });
+    }
+  });
+  const worst = activeLeases.filter(function (l) { return (l.balanceCents || 0) > 0; })
+    .sort(function (a, b) { return b.balanceCents - a.balanceCents; })[0];
+  if (worst) {
+    alerts.push({ tone: 'bad', title: 'Largest outstanding balance',
+      body: esc(afLeaseWho(worst)) + ' owes ' + afFmtMoney(worst.balanceCents) + ' on ' + afUnitLabel(worst.unitId) + '.',
+      go: "afGoto('lease-detail', '" + escAttr(worst.id) + "')" });
+  }
+  const expiring = activeLeases.filter(function (l) {
+    const d = afDaysFromToday(l.endDate);
+    return d >= 0 && d <= 60;
+  });
+  if (expiring.length) {
+    alerts.push({ tone: 'warn', title: 'Leases expiring within 60 days',
+      body: expiring.length + ' lease' + (expiring.length === 1 ? '' : 's') +
+        ' end soon. A renewal offer goes out well before the last month.',
+      go: "afGoto('leasing', 'renewals')" });
+  }
+  const noW9 = afAllVendors().filter(function (v) { return !v.w9OnFile; });
+  if (noW9.length) {
+    alerts.push({ tone: 'warn', title: 'Vendors with no W-9 on file',
+      body: noW9.length + ' vendor' + (noW9.length === 1 ? '' : 's') +
+        ' cannot be issued a 1099 at year end.',
+      go: "afGoto('residents', 'vendors')" });
+  }
+  const emergencies = wos.filter(function (w) { return w.priority === 'emergency' && w.status !== 'completed'; });
+  if (emergencies.length) {
+    alerts.push({ tone: 'bad', title: 'Emergency work orders open',
+      body: emergencies.length + ' emergency ticket' + (emergencies.length === 1 ? '' : 's') + ' still open.',
+      go: "afGoto('maintenance', 'work-orders')" });
+  }
+  const notificationsHTML = alerts.length
+    ? '<div class="af-alerts">' + alerts.map(function (a) {
+        return '<button type="button" class="af-alert ' + a.tone + '" onclick="' + a.go + '">' +
+          '<b>' + a.title + '</b><span>' + a.body + '</span></button>';
+      }).join('') + '</div>'
+    : afEmpty('Nothing needs attention today.');
+
+  /* --- 5. Leasing Activity (Last 30 Days) --- */
+  const since = afAddDays(afToday(), -30);
+  const newCards = afAllGuestCards().filter(function (c) { return (c.createdDate || c.date || '') >= since; });
+  const newApps = afAllApplications().filter(function (a) { return (a.submittedDate || a.date || '') >= since; });
+  const signed = leases.filter(function (l) { return l.signatureStatus === 'executed' && (l.startDate || '') >= since; });
+  const leasingActivityHTML = afKpiStrip([
+    { value: newCards.length, label: 'Guest cards' },
+    { value: newApps.length, label: 'Applications received' },
+    { value: signed.length, label: 'Leases signed' },
+    { value: newCards.length ? (newApps.length / newCards.length * 100).toFixed(1) + '%' : '--', label: 'Card to application' },
+    { value: vacant, label: 'Units available now' }
+  ]) + '<div class="af-right"><button type="button" class="af-btn sm" onclick="afGoto(\'leasing\', \'vacancies\')">Open Leasing &raquo;</button></div>';
+
+  /* --- 6. Key Performance Metrics (Cash Basis) --- */
+  const collected = afAllLedgerEntries()
+    .filter(function (e) { return e.type === 'payment' && leaseIds.indexOf(e.leaseId) > -1 && (e.date || '') >= since; })
+    .reduce(function (s, e) { return s + Math.abs(e.amount || 0); }, 0);
+  const kpiHTML = afKpiStrip([
+    { value: afFmtMoney(rentRoll), label: 'Monthly rent roll' },
+    { value: afFmtMoney(collected), label: 'Collected, last 30 days' },
+    { value: afFmtMoney(owed), label: 'Outstanding' },
+    { value: rentRoll ? (owed / rentRoll * 100).toFixed(1) + '%' : '0%', label: 'Delinquency rate' },
+    { value: occPct + '%', label: 'Occupancy' }
+  ]) + '<p class="af-note">Cash basis: collected counts money that actually arrived, not what was billed. ' +
+    'The gap between the first two figures is the job.</p>';
+
+  /* --- 7. Portfolio Summary --- */
+  const props = afAllProperties().filter(function (p) {
+    const scope = afDashScope();
+    if (scope === 'all') return true;
+    if (scope.indexOf('prop:') === 0) return p.id === scope.slice(5);
+    if (scope.indexOf('owner:') === 0) return (p.ownerIds || []).indexOf(scope.slice(6)) > -1;
+    return true;
+  });
+  const portfolioSummaryHTML =
+    '<table class="af-tbl"><thead><tr><th>Property</th><th>Type</th><th class="num">Occupied / Units</th>' +
+    '<th class="num">Monthly rent</th><th class="num">Outstanding</th></tr></thead><tbody>' +
+    props.map(function (p) {
+      const pu = afAllUnits().filter(function (u) { return u.propertyId === p.id; });
+      const pl = afAllLeases().filter(function (l) {
+        const u = afGetUnit(l.unitId); return u && u.propertyId === p.id && l.status === 'active';
+      });
+      const pOcc = pu.filter(function (u) { return u.status === 'occupied'; }).length;
+      const pRent = pl.reduce(function (s, l) { return s + (l.rentAmount || 0); }, 0);
+      const pOwed = pl.reduce(function (s, l) { return s + Math.max(0, l.balanceCents || 0); }, 0);
+      return '<tr><td><button type="button" class="af-linkbtn" onclick="afGoto(\'property-detail\', \'' +
+          escAttr(p.id) + '\')"><b>' + esc(p.name) + '</b></button></td>' +
+        '<td>' + esc(p.type || '&mdash;') + '</td>' +
+        '<td class="num">' + pOcc + ' / ' + pu.length + '</td>' +
+        '<td class="num font-mono"><b>' + afFmtMoney(pRent) + '</b></td>' +
+        '<td class="num font-mono' + (pOwed ? ' af-overdue' : '') + '">' + afFmtMoney(pOwed) + '</td></tr>';
+    }).join('') + '</tbody></table>';
+
+  /* --- 8. Delinquencies --- */
+  const late = activeLeases.filter(function (l) { return (l.balanceCents || 0) > 0; })
+    .sort(function (a, b) { return b.balanceCents - a.balanceCents; });
+  const delinquenciesHTML = late.length
+    ? '<table class="af-tbl"><thead><tr><th>Resident</th><th>Unit</th><th>Days delinquent</th>' +
+      '<th class="num">Amount due</th><th>Action</th></tr></thead><tbody>' +
+      late.map(function (l) {
+        const oldest = afAllLedgerEntries()
+          .filter(function (e) { return e.leaseId === l.id && e.type === 'charge'; })
+          .sort(function (a, b) { return String(a.date).localeCompare(String(b.date)); })[0];
+        const days = oldest ? Math.abs(afDaysFromToday(oldest.date)) : 0;
+        return '<tr><td><b>' + esc(afLeaseWho(l)) + '</b></td>' +
+          '<td>' + afUnitLabel(l.unitId) + '</td>' +
+          '<td><span class="af-badge ' + (days > 30 ? 'bad' : 'warn') + '">' + days + ' days past due</span></td>' +
+          '<td class="num font-mono af-overdue">' + afFmtMoney(l.balanceCents) + '</td>' +
+          '<td><button type="button" class="af-btn sm primary" onclick="afModalPostPayment(\'' + escAttr(l.id) + '\')">Post payment</button> ' +
+            '<button type="button" class="af-btn sm" onclick="afGoto(\'lease-detail\', \'' + escAttr(l.id) + '\')">Open ledger</button></td></tr>';
+      }).join('') + '</tbody></table>'
+    : afEmpty('Every active lease is current.');
+
+  /* --- 9. Vendor Online Payables: invoices entered but not yet disbursed --- */
+  const payables = wos.filter(function (w) { return w.invoiceNumber && !w.paidDate; });
+  const payablesHTML = payables.length
+    ? '<table class="af-tbl"><thead><tr><th>Invoice #</th><th>Vendor</th><th>Work order</th>' +
+      '<th>Billed to</th><th class="num">Amount due</th><th>Action</th></tr></thead><tbody>' +
+      payables.map(function (w) {
+        const v = w.vendorId ? afGetVendor(w.vendorId) : null;
+        return '<tr><td><b>' + esc(w.invoiceNumber) + '</b></td>' +
+          '<td>' + esc(v ? v.name : 'Unassigned') +
+            (v && !v.w9OnFile ? ' <span class="af-badge warn">No W-9</span>' : '') + '</td>' +
+          '<td><button type="button" class="af-linkbtn" onclick="afGoto(\'work-order\', \'' + escAttr(w.id) + '\')">' +
+            esc(w.id) + '</button></td>' +
+          '<td>' + esc(w.billTo === 'resident' ? 'Resident' : 'Owner') + '</td>' +
+          '<td class="num font-mono"><b>' + afFmtMoney(w.actualCents || 0) + '</b></td>' +
+          '<td><button type="button" class="af-btn sm" onclick="afGoto(\'work-order\', \'' + escAttr(w.id) + '\')">Review</button></td></tr>';
+      }).join('') + '</tbody></table>'
+    : afEmpty('No vendor invoices are waiting to be paid.');
+
+  /* --- 10. Maintenance --- */
+  const open = wos.filter(function (w) { return w.status !== 'completed'; });
+  const doneRecently = wos.filter(function (w) {
+    return w.status === 'completed' && w.completedDate && afDaysFromToday(w.completedDate) >= -7;
+  });
+  const maintenanceHTML = afKpiStrip([
+    { value: open.length, label: 'Open service requests' },
+    { value: emergencies.length, label: 'Emergency tickets' },
+    { value: doneRecently.length, label: 'Completed this week' },
+    { value: wos.filter(function (w) { return w.invoiceNumber && !w.paidDate; }).length, label: 'Ready to bill' }
+  ]) + '<div class="af-right"><button type="button" class="af-btn sm" onclick="afGoto(\'maintenance\', \'work-orders\')">View maintenance queue &raquo;</button></div>';
+
+  /* --- the page --- */
+  const scope = afDashScope();
+  return '<div class="af-dash-page">' +
+    '<div class="af-dash-header">' +
+      '<h1 class="af-dash-title">Dashboard</h1>' +
+      '<div class="af-dash-controls">' +
+        '<span class="af-dash-viewby">View By</span>' +
+        '<select class="af-dash-select" onchange="afSetDashScope(this.value)">' +
+          '<option value="all"' + (scope === 'all' ? ' selected' : '') + '>All</option>' +
+          '<optgroup label="Property">' +
+            afAllProperties().map(function (p) {
+              return '<option value="prop:' + escAttr(p.id) + '"' +
+                (scope === 'prop:' + p.id ? ' selected' : '') + '>' + esc(p.name) + '</option>';
+            }).join('') +
+          '</optgroup>' +
+          '<optgroup label="Owner">' +
+            afAllOwners().map(function (o) {
+              return '<option value="owner:' + escAttr(o.id) + '"' +
+                (scope === 'owner:' + o.id ? ' selected' : '') + '>' + esc(o.name) + '</option>';
+            }).join('') +
+          '</optgroup>' +
+        '</select>' +
+        '<button type="button" class="af-dash-customize" onclick="afDemoAction(\'Dashboard layout customization\')">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" aria-hidden="true">' +
+            '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' +
+          'Customize' +
+        '</button>' +
+      '</div>' +
     '</div>' +
-    '<div class="af-cols">' +
-      '<section class="af-card"><h3>Needs Attention</h3>' +
-        (delinquentLeases.length || emergencyWork.length
-          ? '<table class="af-tbl"><tbody>' +
-              delinquentLeases.slice(0, 4).map(function (l) {
-                const r = l.residentIds.length ? afGetResident(l.residentIds[0]) : null;
-                const u = afGetUnit(l.unitId);
-                return '<tr class="link" onclick="afGoto(\'resident-detail\', \'' + escAttr(r ? r.id : '') + '\')">' +
-                  '<td><b>' + esc(r ? r.name : 'Resident') + '</b><div class="af-sub">Unit ' + (u ? u.label : '') + ' &bull; Past Due</div></td>' +
-                  '<td class="num" style="color:var(--af-bad);font-weight:700;">' + afFmtMoney(l.balanceCents) + '</td>' +
-                  '</tr>';
-              }).join('') +
-              emergencyWork.map(function (w) {
-                return '<tr class="link" onclick="afGoto(\'work-order\', \'' + escAttr(w.id) + '\')">' +
-                  '<td><b>' + esc(w.title) + '</b><div class="af-sub">' + esc(w.id) + '</div></td>' +
-                  '<td><span class="af-badge emergency">Emergency</span></td>' +
-                  '</tr>';
-              }).join('') +
-            '</tbody></table>'
-          : '<p class="af-sub">All accounts and maintenance items are current.</p>') +
-      '</section>' +
-      '<section class="af-card"><h3>Recent Portfolio Activity</h3>' +
-        '<table class="af-tbl"><tbody>' +
-          afAllLedgerEntries().slice(-5).reverse().map(function (e) {
-            const lease = afGetLease(e.leaseId);
-            const r = lease && lease.residentIds.length ? afGetResident(lease.residentIds[0]) : null;
-            return '<tr>' +
-              '<td>' + afFmtDate(e.date) + '</td>' +
-              '<td><b>' + esc(e.description) + '</b><div class="af-sub">' + (r ? esc(r.name) : '') + '</div></td>' +
-              '<td class="num" style="color:' + (e.type === 'payment' ? 'var(--af-good)' : 'var(--af-text)') + '">' +
-                (e.type === 'payment' ? '-' : '') + afFmtMoney(e.amount) +
-              '</td>' +
-              '</tr>';
-          }).join('') +
-        '</tbody></table>' +
-      '</section>' +
-    '</div>';
+    '<div class="af-dash-accordion">' +
+      afDashWidget('move-ins', 'Move Ins', moveInsHTML, moveIns.length) +
+      afDashWidget('move-outs', 'Move Outs', moveOutsHTML, moveOuts.length) +
+      afDashWidget('online-payments', 'Online Payments', paymentsHTML, payments.length) +
+      afDashWidget('notifications', 'Notifications', notificationsHTML, alerts.length) +
+      afDashWidget('leasing-activity', 'Leasing Activity (Last 30 Days)', leasingActivityHTML) +
+      afDashWidget('kpi-metrics', 'Key Performance Metrics (Cash Basis)', kpiHTML) +
+      afDashWidget('portfolio-summary', 'Portfolio Summary', portfolioSummaryHTML, props.length) +
+      afDashWidget('delinquencies', 'Delinquencies', delinquenciesHTML, late.length) +
+      afDashWidget('vendor-payables', 'Vendor Online Payables', payablesHTML, payables.length) +
+      afDashWidget('maintenance', 'Maintenance', maintenanceHTML, open.length) +
+    '</div>' +
+  '</div>';
 }
 
 /* ---------- Properties and units ---------- */
 function afPropertiesHTML() {
+  const tab = afState.sectionTab || 'properties';
+  if (tab === 'associations') return afAssociationsHTML();
+  return afPropertiesListHTML();
+}
+
+function afPropertiesListHTML() {
   const props = afAllProperties();
   const actions = '<button type="button" class="af-btn primary" onclick="afModalAddProperty()">+ Add Property</button>';
 
@@ -2765,6 +4269,32 @@ function afPropertiesHTML() {
     '<table class="af-tbl"><thead><tr>' +
       '<th>Property</th><th>Type</th><th class="num">Units</th><th class="num">Occupancy</th><th>Ownership</th>' +
     '</tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+function afAssociationsHTML() {
+  const associations = [
+    { id: 'HOA-01', name: 'Legacy Park Master Condominium Association', prop: 'Legacy Park Apartments', units: 24, dues: '$285.00 / mo', manager: 'Sarah Jenkins (FirstService)', phone: '555-0410', status: 'Active' },
+    { id: 'HOA-02', name: 'Stonebridge Ranch Master Community Association', prop: 'Stonebridge Single-Family Homes', units: 14, dues: '$150.00 / qtr', manager: 'David Caldwell (CCMC)', phone: '555-0411', status: 'Active' },
+    { id: 'HOA-03', name: 'Oakwood Village Residential HOA', prop: 'Oakwood Triplex Portfolio', units: 9, dues: '$450.00 / yr', manager: 'Self-Managed Board', phone: '555-0412', status: 'Active' }
+  ];
+
+  const rows = associations.map(function (a) {
+    return '<tr>' +
+      '<td><b>' + esc(a.name) + '</b><div class="af-sub">' + esc(a.id) + '</div></td>' +
+      '<td>' + esc(a.prop) + '</td>' +
+      '<td class="num">' + a.units + ' Units</td>' +
+      '<td class="num font-mono"><b>' + esc(a.dues) + '</b></td>' +
+      '<td>' + esc(a.manager) + '<div class="af-sub">' + esc(a.phone) + '</div></td>' +
+      '<td><span class="af-badge good">' + esc(a.status) + '</span></td>' +
+      '</tr>';
+  }).join('');
+
+  return afPageHead('Community Associations (HOA)', '3 Homeowners & Condominium associations governing common areas.') +
+    '<section class="af-card">' +
+      '<table class="af-tbl"><thead><tr>' +
+        '<th>Association Name</th><th>Covered Portfolio Properties</th><th class="num">Units</th><th class="num">Assessment Dues</th><th>Managing Entity</th><th>Status</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+    '</section>';
 }
 
 function afPropertyDetailHTML() {
@@ -2835,11 +4365,13 @@ function afUnitDetailHTML() {
     '</section>';
 }
 
-/* ---------- People (Residents, Owners, Vendors) ---------- */
+/* ---------- People (Tenants, Homeowners, Owners, Vendors, Tax Authorities) ---------- */
 function afResidentsHTML() {
   const tab = afState.sectionTab || 'tenants';
-  if (tab === 'vendors') return afVendorsHTML();
+  if (tab === 'homeowners') return afHomeownersHTML();
   if (tab === 'owners') return afOwnersHTML();
+  if (tab === 'vendors') return afVendorsHTML();
+  if (tab === 'tax') return afTaxAuthoritiesHTML();
   return afTenantsHTML();
 }
 
@@ -2866,6 +4398,58 @@ function afTenantsHTML() {
     '<table class="af-tbl"><thead><tr>' +
       '<th>Resident</th><th>Unit</th><th>Phone</th><th>Lease Start</th><th class="num">Ledger Balance</th>' +
     '</tr></thead><tbody>' + rows + '</tbody></table>';
+}
+
+function afHomeownersHTML() {
+  const members = [
+    { lot: 'Lot 14', name: 'Marisol T. Vega', community: 'Stonebridge Ranch Master HOA', address: '4110 Hollow Creek Ct', dues: '$150.00 / qtr', balance: '$0.00', status: 'Current' },
+    { lot: 'Lot 15', name: 'Denise & Wallace Okafor', community: 'Stonebridge Ranch Master HOA', address: '4114 Hollow Creek Ct', dues: '$150.00 / qtr', balance: '$0.00', status: 'Current' },
+    { lot: 'Unit 201', name: 'Arthur Pendelton', community: 'Legacy Park Condominiums', address: '7420 Legacy Dr #201', dues: '$285.00 / mo', balance: '$0.00', status: 'Current' },
+    { lot: 'Unit 202', name: 'Grace Vanderwaal', community: 'Legacy Park Condominiums', address: '7420 Legacy Dr #202', dues: '$285.00 / mo', balance: '$285.00', status: 'Delinquent' }
+  ];
+
+  const rows = members.map(function (m) {
+    return '<tr>' +
+      '<td><b>' + esc(m.name) + '</b><div class="af-sub">' + esc(m.lot) + '</div></td>' +
+      '<td>' + esc(m.community) + '<div class="af-sub">' + esc(m.address) + '</div></td>' +
+      '<td class="num">' + esc(m.dues) + '</td>' +
+      '<td class="num font-mono" style="font-weight:700;' + (m.balance !== '$0.00' ? 'color:var(--af-bad);' : '') + '">' + esc(m.balance) + '</td>' +
+      '<td><span class="af-badge ' + (m.status === 'Current' ? 'good' : 'warn') + '">' + esc(m.status) + '</span></td>' +
+      '</tr>';
+  }).join('');
+
+  return afPageHead('Homeowners & Association Members', 'Association member ledger, dues accounting, and compliance.') +
+    '<section class="af-card">' +
+      '<table class="af-tbl"><thead><tr>' +
+        '<th>Member Name / Lot</th><th>Community & Address</th><th class="num">Assessment Schedule</th><th class="num">Dues Balance</th><th>Account Status</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+    '</section>';
+}
+
+function afTaxAuthoritiesHTML() {
+  const taxes = [
+    { pin: '004-9812-00', entity: 'Collin County Central Appraisal District (CAD)', prop: 'Legacy Park Apartments', value: 485000000, taxEst: 8430000, due: '2027-01-31', status: 'Escrow Impounded' },
+    { pin: '002-1144-01', entity: 'Denton County Tax Office', prop: 'Stonebridge Single-Family Homes', value: 225000000, taxEst: 3915000, due: '2027-01-31', status: 'Escrow Impounded' },
+    { pin: '009-3321-00', entity: 'Dallas County Appraisal District (DCAD)', prop: 'Oakwood Triplex Portfolio', value: 360000000, taxEst: 6840000, due: '2027-01-31', status: 'Escrow Impounded' }
+  ];
+
+  const rows = taxes.map(function (t) {
+    return '<tr>' +
+      '<td><b>' + esc(t.entity) + '</b><div class="af-sub">Parcel PIN: ' + esc(t.pin) + '</div></td>' +
+      '<td>' + esc(t.prop) + '</td>' +
+      '<td class="num font-mono">' + afFmtMoney(t.value) + '</td>' +
+      '<td class="num font-mono" style="font-weight:700;">' + afFmtMoney(t.taxEst) + '</td>' +
+      '<td>' + afFmtDate(t.due) + '</td>' +
+      '<td><span class="af-badge good">' + esc(t.status) + '</span></td>' +
+      '</tr>';
+  }).join('');
+
+  return afPageHead('Property Tax Authorities', 'County appraisal districts, property parcel PINs, and ad valorem tax impounds.') +
+    '<section class="af-card">' +
+      '<table class="af-tbl"><thead><tr>' +
+        '<th>Taxing Jurisdiction / CAD</th><th>Property</th><th class="num">2026 Assessed Value</th><th class="num">Annual Tax Estimate</th><th>Statutory Due Date</th><th>Status</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+    '</section>';
 }
 
 function afVendorsHTML() {
@@ -3019,6 +4603,8 @@ function afLeasingHTML() {
   if (tab === 'applications') return afLeasingApplicationsHTML();
   if (tab === 'leases') return afLeasingLeasesHTML();
   if (tab === 'renewals') return afLeasingRenewalsHTML();
+  if (tab === 'lsg-metrics') return afLeasingMetricsHTML();
+  if (tab === 'signals') return afLeasingSignalsHTML();
   return afLeasingVacanciesHTML();
 }
 
@@ -3678,7 +5264,15 @@ function afApplicationHTML() {
 /* ---------- Maintenance (Modular Views by Tab) ---------- */
 function afMaintenanceHTML() {
   const tab = afState.sectionTab || 'work-orders';
+  if (tab === 'recurring') return afRecurringMaintenanceHTML();
   if (tab === 'inspections') return afInspectionsHTML();
+  if (tab === 'purchase') return afPurchaseOrdersHTML();
+  if (tab === 'unit-turns') return afUnitTurnsHTML();
+  if (tab === 'projects') return afProjectsHTML();
+  if (tab === 'inventory') return afInventoryHTML();
+  if (tab === 'fixed-assets') return afFixedAssetsHTML();
+  if (tab === 'performer') return afPerformerHTML();
+  if (tab === 'contact') return afMaintenanceContactCenterHTML();
   return afWorkOrdersQueueHTML();
 }
 
@@ -3705,30 +5299,86 @@ function afWorkOrdersQueueHTML() {
     '</tr></thead><tbody>' + rows + '</tbody></table>';
 }
 
-function afInspectionsHTML() {
-  const units = afAllUnits().slice(0, 15);
-  const rows = units.map(function (u, i) {
-    const p = afGetProperty(u.propertyId);
-    const lease = u.currentLeaseId ? afGetLease(u.currentLeaseId) : null;
-    const res = lease && lease.residentIds.length ? afGetResident(lease.residentIds[0]) : null;
-    const type = i % 2 === 0 ? 'Move-In Inventory & Condition' : 'Move-Out Statutory Inspection';
-    const status = i % 3 === 0 ? 'Completed' : 'Pending Review';
+function afRecurringMaintenanceHTML() {
+  const schedules = [
+    { title: 'Biannual HVAC Filter Replacement & Coil Clean', scope: 'All 85 Portfolio Units', freq: 'Biannual (May & Oct)', vendor: 'Lone Star HVAC Services', cost: '$2,550.00', nextDue: '2026-10-15', status: 'Scheduled' },
+    { title: 'Quarterly Exterior Pest & Termite Perimeter Defense', scope: '11 Texas Properties', freq: 'Quarterly', vendor: 'BugFree Pest Solutions', cost: '$935.00', nextDue: '2026-09-01', status: 'Scheduled' },
+    { title: 'Annual Fire Extinguisher & Sprinkler Certification', scope: 'Legacy Park & Multifamily', freq: 'Annual', vendor: 'DFW Fire Safety', cost: '$1,450.00', nextDue: '2026-11-10', status: 'Scheduled' },
+    { title: 'Bi-Weekly Swimming Pool Chemical Balancing', scope: 'Legacy Park Clubhouse Pool', freq: 'Bi-Weekly', vendor: 'AquaClear Pool Service', cost: '$450.00 / mo', nextDue: '2026-08-15', status: 'Active' },
+    { title: 'Pre-Winter Freeze Gutter & Roof Drainage Clear', scope: 'Single-Family & Triplexes', freq: 'Annual (October)', vendor: 'Apex Roofing & Sheet Metal', cost: '$1,200.00', nextDue: '2026-10-01', status: 'Scheduled' }
+  ];
 
+  const rows = schedules.map(function (s) {
     return '<tr>' +
-      '<td><b>' + (p ? esc(p.name) : '') + ' &bull; Unit ' + esc(u.label) + '</b></td>' +
-      '<td>' + (res ? esc(res.name) : 'Vacant Unit') + '</td>' +
-      '<td>' + esc(type) + '</td>' +
-      '<td>' + afFmtDate(afAddDays(afToday(), - (i * 4 + 1))) + '</td>' +
-      '<td><span class="af-badge ' + (status === 'Completed' ? 'good' : 'warn') + '">' + esc(status) + '</span></td>' +
-      '<td><button type="button" class="af-btn sm" onclick="simToast(\'Inspection report loaded.\', { tone: \'good\' })">View Report</button></td>' +
+      '<td><b>' + esc(s.title) + '</b><div class="af-sub">' + esc(s.scope) + '</div></td>' +
+      '<td>' + esc(s.freq) + '</td>' +
+      '<td>' + esc(s.vendor) + '</td>' +
+      '<td class="num font-mono"><b>' + esc(s.cost) + '</b></td>' +
+      '<td>' + afFmtDate(s.nextDue) + '</td>' +
+      '<td><span class="af-badge good">' + esc(s.status) + '</span></td>' +
       '</tr>';
   }).join('');
 
-  return afPageHead('Property Inspections', 'Move-In / Move-Out inventory checklists and condition reports.') +
+  return afPageHead('Recurring Maintenance', 'Scheduled preventative maintenance contracts and service cycles.') +
     '<section class="af-card">' +
-      '<h3>Inspection Activity Log</h3>' +
       '<table class="af-tbl"><thead><tr>' +
-        '<th>Property / Unit</th><th>Resident</th><th>Inspection Type</th><th>Date</th><th>Status</th><th>Action</th>' +
+        '<th>Maintenance Program</th><th>Cycle Frequency</th><th>Contracted Vendor</th><th class="num">Contract Cost</th><th>Next Scheduled Service</th><th>Status</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+    '</section>';
+}
+
+
+
+function afPurchaseOrdersHTML() {
+  const pos = [
+    { id: 'PO-2026-081', item: '24-Pack MERV 11 HVAC Filters (16x25x1)', supplier: 'HD Supply Facilities Maintenance', total: 28800, date: afcDay(-3), status: 'Delivered' },
+    { id: 'PO-2026-082', item: '10x Kwikset SmartCode 913 Keyless Electronic Deadbolts', supplier: 'Ferguson Enterprises', total: 115000, date: afcDay(-2), status: 'In Transit' },
+    { id: 'PO-2026-083', item: '15x Fluidmaster Dual-Flush Toilet Rebuild Kits', supplier: 'Grainger Supply', total: 42000, date: afcDay(-1), status: 'Approved' },
+    { id: 'PO-2026-084', item: '20x Kidde 10-Year Sealed Battery Smoke & CO Detectors', supplier: 'Home Depot Pro', total: 56000, date: afcDay(0), status: 'Approved' }
+  ];
+
+  const rows = pos.map(function (p) {
+    return '<tr>' +
+      '<td><b>' + esc(p.id) + '</b></td>' +
+      '<td>' + esc(p.item) + '</td>' +
+      '<td>' + esc(p.supplier) + '</td>' +
+      '<td class="num font-mono"><b>' + afFmtMoney(p.total) + '</b></td>' +
+      '<td>' + afFmtDate(p.date) + '</td>' +
+      '<td><span class="af-badge ' + (p.status === 'Delivered' ? 'good' : p.status === 'In Transit' ? 'neutral' : 'warn') + '">' + esc(p.status) + '</span></td>' +
+      '</tr>';
+  }).join('');
+
+  return afPageHead('Purchase Orders', 'Maintenance supplies, materials procurement, and bulk inventory orders.') +
+    '<section class="af-card">' +
+      '<table class="af-tbl"><thead><tr>' +
+        '<th>PO Number</th><th>Materials / Items Ordered</th><th>Supplier</th><th class="num">Order Amount</th><th>Order Date</th><th>Status</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+    '</section>';
+}
+
+function afMaintenanceContactCenterHTML() {
+  const calls = [
+    { id: 'CALL-9102', time: '11:42 PM (Yesterday)', unit: 'UNIT-12-104', issue: 'Active water leak dripping through bathroom ceiling', priority: 'Emergency', dispatch: 'Dispatched DFW Master Plumbing', status: 'Resolved' },
+    { id: 'CALL-9103', time: '10:15 PM (Yesterday)', unit: 'UNIT-11-102', issue: 'AC unit blowing warm air, 88°F indoor temperature', priority: 'Emergency', dispatch: 'Dispatched Lone Star HVAC', status: 'In Progress' },
+    { id: 'CALL-9104', time: '08:30 PM (2 days ago)', unit: 'UNIT-07-A', issue: 'Front door electronic deadbolt lock malfunction', priority: 'High', dispatch: 'Dispatched Lone Star Locksmith', status: 'Resolved' },
+    { id: 'CALL-9105', time: '04:15 PM (3 days ago)', unit: 'UNIT-10-101', issue: 'Garbage disposal humming and not spinning', priority: 'Normal', dispatch: 'Queued for Next Business Day', status: 'Scheduled' }
+  ];
+
+  const rows = calls.map(function (c) {
+    return '<tr>' +
+      '<td><b>' + esc(c.id) + '</b><div class="af-sub">' + esc(c.time) + '</div></td>' +
+      '<td>' + esc(c.unit) + '</td>' +
+      '<td>' + esc(c.issue) + '</td>' +
+      '<td><span class="af-badge ' + escAttr(c.priority.toLowerCase()) + '">' + esc(c.priority) + '</span></td>' +
+      '<td>' + esc(c.dispatch) + '</td>' +
+      '<td><span class="af-badge ' + (c.status === 'Resolved' ? 'good' : 'warn') + '">' + esc(c.status) + '</span></td>' +
+      '</tr>';
+  }).join('');
+
+  return afPageHead('Maintenance Contact Center', '24/7 resident emergency maintenance phone log and automated dispatch escalations.') +
+    '<section class="af-card">' +
+      '<table class="af-tbl"><thead><tr>' +
+        '<th>Call ID / Timestamp</th><th>Unit</th><th>Reported Issue</th><th>Priority</th><th>Emergency Dispatch Action</th><th>Status</th>' +
       '</tr></thead><tbody>' + rows + '</tbody></table>' +
     '</section>';
 }

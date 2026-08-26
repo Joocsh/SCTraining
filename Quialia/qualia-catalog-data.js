@@ -280,8 +280,8 @@ const QZC_ORDERS = [
     titleNumber: 'TX-2026-04422',
     propertyAddress: '8801 Independence Pkwy, Plano, TX 75025',
     type: 'Purchase',
-    status: 'Closed',
-    stageIndex: 5,
+    status: 'Open',
+    stageIndex: 1,
     opened: '2026-06-09',
     closingDate: '2026-07-24',
     purchasePrice: 430000,
@@ -304,8 +304,8 @@ const QZC_ORDERS = [
     titleNumber: 'TX-2026-04418',
     propertyAddress: '1290 Stonebridge Dr, McKinney, TX 75070',
     type: 'Purchase',
-    status: 'Closed',
-    stageIndex: 5,
+    status: 'Open',
+    stageIndex: 2,
     opened: '2026-06-02',
     closingDate: '2026-07-23',
     purchasePrice: 525000,
@@ -328,8 +328,8 @@ const QZC_ORDERS = [
     titleNumber: 'TX-2026-04415',
     propertyAddress: '660 Exchange Pkwy, Allen, TX 75013',
     type: 'Refinance',
-    status: 'Closed',
-    stageIndex: 5,
+    status: 'Open',
+    stageIndex: 3,
     opened: '2026-06-22',
     closingDate: '2026-07-22',
     purchasePrice: 380000,
@@ -350,8 +350,8 @@ const QZC_ORDERS = [
     titleNumber: 'TX-2026-04411',
     propertyAddress: '3050 Alma Dr, Plano, TX 75075',
     type: 'Purchase',
-    status: 'Closed',
-    stageIndex: 5,
+    status: 'Open',
+    stageIndex: 2,
     opened: '2026-05-28',
     closingDate: '2026-07-21',
     purchasePrice: 465000,
@@ -374,8 +374,8 @@ const QZC_ORDERS = [
     titleNumber: 'TX-2026-04407',
     propertyAddress: '5445 Ohio Dr, Frisco, TX 75035',
     type: 'Purchase',
-    status: 'Closed',
-    stageIndex: 5,
+    status: 'Open',
+    stageIndex: 4,
     opened: '2026-06-01',
     closingDate: '2026-07-20',
     purchasePrice: 495000,
@@ -398,8 +398,8 @@ const QZC_ORDERS = [
     titleNumber: 'TX-2026-04403',
     propertyAddress: '1701 Custer Pkwy, Richardson, TX 75080',
     type: 'Cash',
-    status: 'Closed',
-    stageIndex: 5,
+    status: 'Open',
+    stageIndex: 1,
     opened: '2026-06-26',
     closingDate: '2026-07-17',
     purchasePrice: 310000,
@@ -420,8 +420,8 @@ const QZC_ORDERS = [
     titleNumber: 'TX-2026-04399',
     propertyAddress: '2280 Rockbrook Dr, Lewisville, TX 75067',
     type: 'Purchase',
-    status: 'Closed',
-    stageIndex: 5,
+    status: 'Open',
+    stageIndex: 2,
     opened: '2026-05-30',
     closingDate: '2026-07-16',
     purchasePrice: 420000,
@@ -444,8 +444,8 @@ const QZC_ORDERS = [
     titleNumber: 'TX-2026-04395',
     propertyAddress: '9010 Preston Rd, Frisco, TX 75034',
     type: 'Commercial',
-    status: 'Closed',
-    stageIndex: 5,
+    status: 'Open',
+    stageIndex: 3,
     opened: '2026-04-28',
     closingDate: '2026-07-15',
     purchasePrice: 1850000,
@@ -467,8 +467,8 @@ const QZC_ORDERS = [
     titleNumber: 'TX-2026-04391',
     propertyAddress: '740 Bethany Dr, Allen, TX 75013',
     type: 'Purchase',
-    status: 'Closed',
-    stageIndex: 5,
+    status: 'Open',
+    stageIndex: 1,
     opened: '2026-05-25',
     closingDate: '2026-07-14',
     purchasePrice: 445000,
@@ -490,8 +490,8 @@ const QZC_ORDERS = [
     titleNumber: 'TX-2026-04389',
     propertyAddress: '1155 Parker Rd, Plano, TX 75074',
     type: 'Refinance',
-    status: 'Closed',
-    stageIndex: 5,
+    status: 'Open',
+    stageIndex: 2,
     opened: '2026-06-14',
     closingDate: '2026-07-13',
     purchasePrice: 360000,
@@ -512,8 +512,8 @@ const QZC_ORDERS = [
     titleNumber: 'TX-2026-04385',
     propertyAddress: '325 Wilmeth Rd, McKinney, TX 75069',
     type: 'Purchase',
-    status: 'Closed',
-    stageIndex: 5,
+    status: 'Open',
+    stageIndex: 4,
     opened: '2026-05-18',
     closingDate: '2026-07-10',
     purchasePrice: 505000,
@@ -535,8 +535,8 @@ const QZC_ORDERS = [
     titleNumber: 'TX-2026-04381',
     propertyAddress: '6620 Virginia Pkwy, McKinney, TX 75071',
     type: 'Purchase',
-    status: 'Closed',
-    stageIndex: 5,
+    status: 'Open',
+    stageIndex: 3,
     opened: '2026-05-22',
     closingDate: '2026-07-09',
     purchasePrice: 480000,
@@ -558,8 +558,8 @@ const QZC_ORDERS = [
     titleNumber: 'TX-2026-04377',
     propertyAddress: '4120 Spring Creek Pkwy, Plano, TX 75024',
     type: 'Purchase',
-    status: 'Closed',
-    stageIndex: 5,
+    status: 'Open',
+    stageIndex: 1,
     opened: '2026-05-14',
     closingDate: '2026-07-08',
     purchasePrice: 535000,
@@ -843,7 +843,11 @@ const QZC_ORDERS = [
 
     const types = ['Purchase', 'Purchase', 'Purchase', 'Refinance', 'Cash'];
     const type = types[hash % types.length];
-    const isClosed = num < 1475;
+    /* A practice desk is a pipeline, not an archive: most files a VA touches are live.
+       This threshold used to be 1475, which left two thirds of the catalogue closed and
+       gave the trainee almost nothing to work on. Closed files still exist — they are
+       where post-closing and policy work lives — but they are the minority now. */
+    const isClosed = num < 1400;
     const status = isClosed ? 'Closed' : 'Open';
     const stageIndex = isClosed ? 5 : (hash % 5);
     const basePrice = 320000 + ((hash % 38) * 10000);
@@ -895,7 +899,8 @@ const QZC_DOCUMENTS = [];
       status: 'Reviewed',
       uploadedBy: o.parties.find(p => p.role.includes('Agent')) ? o.parties.find(p => p.role.includes('Agent')).name : 'Samantha Bee',
       date: o.opened,
-      file: null
+      file: null,
+      template: 'Purchase Agreement'
     });
     QZC_DOCUMENTS.push({
       id: docIdCounter++,
@@ -905,7 +910,8 @@ const QZC_DOCUMENTS = [];
       status: o.stageIndex >= 2 ? 'Reviewed' : 'Received',
       uploadedBy: 'Lucas Adminton',
       date: o.opened,
-      file: null
+      file: null,
+      template: 'Title Commitment'
     });
     if (o.type !== 'Cash') {
       QZC_DOCUMENTS.push({
@@ -916,7 +922,8 @@ const QZC_DOCUMENTS = [];
         status: o.stageIndex >= 3 ? 'Reviewed' : 'Pending',
         uploadedBy: o.parties.find(p => p.role === 'Lender') ? o.parties.find(p => p.role === 'Lender').name : '—',
         date: o.stageIndex >= 3 ? o.closingDate : '—',
-        file: null
+        file: null,
+        template: 'Closing Disclosure (Lender)'
       });
     }
   });

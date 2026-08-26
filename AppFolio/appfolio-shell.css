@@ -343,3 +343,451 @@
   font-size: 11.5px;
   color: var(--af-muted);
 }
+
+/* =====================================================================
+   SCREENSHOT-DRIVEN CHASSIS PIECES
+   Added after the 2026 screenshots. Images-resources/RESOURCES.md records
+   what each one is copied from.
+   ===================================================================== */
+
+/* --- the vertical Assistant / Tasks / Support strip on the far right --- */
+.af-railstrip {
+  flex: none;
+  width: 54px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 0;
+  background: var(--af-panel);
+  border-left: 1px solid var(--af-line);
+}
+.af-strip-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 2px;
+  border: none;
+  background: none;
+  color: var(--af-muted);
+  font: inherit;
+  font-size: 9.5px;
+  cursor: pointer;
+}
+.af-strip-btn:hover,
+.af-strip-btn.active { color: var(--af-blue); }
+.af-strip-ic svg { width: 17px; height: 17px; display: block; }
+.af-strip-lb { line-height: 1.1; }
+
+/* --- the rail's own title bar --- */
+.af-rail-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--af-text);
+}
+.af-rail-close {
+  border: none;
+  background: none;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--af-muted);
+  cursor: pointer;
+  padding: 0 2px;
+}
+.af-rail-close:hover { color: var(--af-text); }
+
+/* --- "Click here to search" --- */
+.af-searchpanel { position: relative; margin: 0 0 22px; }
+.af-searchpanel.collapsed {
+  border: 1px solid var(--af-blue);
+  border-radius: 3px;
+  padding: 14px;
+  text-align: center;
+  background: var(--af-panel);
+  cursor: pointer;
+}
+.af-searchpanel.collapsed a { color: var(--af-blue); font-weight: 600; text-decoration: underline; }
+.af-searchpanel.open {
+  border: 1px solid var(--af-blue);
+  border-radius: 3px;
+  background: var(--af-panel);
+}
+.af-searchpanel-body { padding: 14px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.af-searchpanel-actions { display: flex; gap: 8px; }
+/* The small downward pointer under the box. */
+.af-searchpanel-point {
+  position: absolute;
+  left: 50%;
+  bottom: -9px;
+  width: 16px; height: 9px;
+  margin-left: -8px;
+  overflow: hidden;
+}
+.af-searchpanel-point::after {
+  content: "";
+  position: absolute;
+  top: -8px; left: 0;
+  width: 16px; height: 16px;
+  background: var(--af-panel);
+  border: 1px solid var(--af-blue);
+  transform: rotate(45deg);
+}
+
+/* --- sortable headers --- */
+.af-sortth {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+.af-sortth.on { color: var(--af-blue); }
+.af-sortarrow { font-size: 10px; opacity: .6; }
+.af-sortth.on .af-sortarrow { opacity: 1; }
+
+/* --- bulk action bar --- */
+.af-bulkbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--af-line);
+  margin-bottom: 8px;
+}
+.af-bulkcount { font-size: 12px; color: var(--af-muted); }
+.af-bulklink {
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--af-blue);
+  cursor: pointer;
+  padding: 0;
+}
+.af-bulklink:hover { text-decoration: underline; }
+
+.af-displaying { padding: 8px 0; font-size: 12px; color: var(--af-muted); }
+.af-emptystate { padding: 22px; text-align: center; color: var(--af-muted); font-size: 13px; }
+.af-emptystate a { color: var(--af-blue); }
+
+/* --- KPI strip and stat tiles --- */
+.af-kpistrip { display: flex; flex-wrap: wrap; gap: 26px; padding: 12px 0 16px; }
+.af-kpi { display: flex; flex-direction: column; }
+.af-kpi b { font-size: 20px; color: var(--af-blue); }
+.af-kpi span { font-size: 11.5px; color: var(--af-muted); }
+.af-kpi.muted b { color: var(--af-muted); }
+
+.af-stattiles { display: flex; flex-wrap: wrap; gap: 14px; margin: 10px 0 20px; }
+.af-stattile {
+  flex: 1 1 170px;
+  padding: 14px 16px;
+  border: 1px solid var(--af-line);
+  border-left: 3px solid var(--af-good);
+  border-radius: 3px;
+  background: var(--af-panel);
+}
+.af-stattile b { display: block; font-size: 26px; font-weight: 700; color: var(--af-good); }
+.af-stattile span { font-size: 12px; color: var(--af-muted); }
+
+/* --- status pills --- */
+.af-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .4px;
+}
+.af-pill.good  { background: var(--af-good-light); color: var(--af-good); }
+.af-pill.info  { background: var(--af-blue-light); color: var(--af-blue); }
+.af-pill.warn  { background: var(--af-warn-light); color: var(--af-warn); }
+.af-pill.bad   { background: var(--af-bad-light);  color: var(--af-bad); }
+.af-pill.muted { background: var(--af-bg);         color: var(--af-muted); }
+
+.af-overdue { color: var(--af-bad); font-weight: 600; }
+.af-flagcount { color: var(--af-bad); font-weight: 700; }
+.af-row-warn td { background: var(--af-warn-light); }
+
+/* --- banners --- */
+.af-banner-beta, .af-banner-warn, .af-banner-good {
+  padding: 11px 14px;
+  margin-bottom: 16px;
+  border-radius: 3px;
+  font-size: 12.5px;
+}
+.af-banner-beta { background: var(--af-blue-light); color: var(--af-text); }
+.af-banner-beta b {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: var(--af-blue);
+  color: var(--af-on-brand);
+  font-size: 10px;
+  letter-spacing: .5px;
+}
+.af-banner-warn { background: var(--af-warn-light); border-left: 3px solid var(--af-warn); }
+.af-banner-good { background: var(--af-good-light); border-left: 3px solid var(--af-good); }
+.af-banner-warn ul { margin: 6px 0 0 18px; }
+
+/* --- calendar --- */
+.af-cal-bar, .af-cal-nav { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.af-cal-range { font-size: 14px; }
+.af-cal-views { margin-left: auto; display: flex; }
+.af-cal-view {
+  border: 1px solid var(--af-line);
+  background: var(--af-panel);
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 12px;
+  cursor: pointer;
+  margin-left: -1px;
+}
+.af-cal-view.active { background: var(--af-blue); color: var(--af-on-brand); border-color: var(--af-blue); }
+.af-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border: 1px solid var(--af-line);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.af-cal-col { border-right: 1px solid var(--af-line); min-height: 200px; }
+.af-cal-col:last-child { border-right: none; }
+/* The current day's column is tinted, which is how the product marks it. */
+.af-cal-col.today { background: var(--af-warn-light); }
+.af-cal-dayhead {
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--af-line);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--af-muted);
+  text-align: center;
+}
+.af-cal-allday { padding: 4px; border-bottom: 1px dashed var(--af-line); min-height: 26px; }
+.af-cal-timed { padding: 4px; }
+.af-cal-ev {
+  display: block;
+  width: 100%;
+  margin-bottom: 3px;
+  padding: 3px 5px;
+  border: none;
+  border-radius: 2px;
+  font: inherit;
+  font-size: 10.5px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.af-cal-ev.ev-in   { background: var(--af-good-light); color: var(--af-good); }
+.af-cal-ev.ev-out  { background: var(--af-warn-light); color: var(--af-warn); }
+.af-cal-ev.ev-end  { background: var(--af-good-light); color: var(--af-good); }
+.af-cal-ev.ev-wo   { background: var(--af-bad-light);  color: var(--af-bad-dark); }
+.af-cal-ev.ev-insp { background: var(--af-blue-light); color: var(--af-blue); }
+
+/* --- reports index --- */
+.af-reports-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.af-reports-search { position: relative; margin: 12px 0 20px; }
+.af-reports-search input {
+  width: 100%;
+  padding: 9px 38px 9px 12px;
+  border: 1px solid var(--af-line);
+  border-radius: 3px;
+  font: inherit;
+  font-size: 13px;
+}
+.af-reports-searchicon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--af-muted);
+}
+.af-reports-searchicon svg { width: 15px; height: 15px; display: block; }
+.af-reports-group { margin-bottom: 18px; }
+.af-reports-grouphead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 0;
+  border: none;
+  border-bottom: 1px solid var(--af-line);
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--af-text);
+  cursor: pointer;
+}
+.af-reports-chev { font-size: 11px; transition: transform .15s; }
+.af-reports-chev.shut { transform: rotate(180deg); }
+.af-reports-count {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--af-muted);
+}
+.af-reports-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 2px 20px;
+  padding: 10px 0;
+}
+.af-reports-cols.one { grid-template-columns: minmax(0, 1fr); }
+.af-report-row { display: flex; align-items: center; gap: 6px; padding: 3px 0; }
+.af-report-name {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--af-blue);
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.af-report-name:hover { text-decoration: underline; }
+/* An index entry this training copy does not build. Visible, because the index
+   IS the lesson, but not dressed up as a working link. */
+.af-report-row.stub .af-report-name { color: var(--af-muted); }
+.af-report-star, .af-report-more {
+  border: none;
+  background: none;
+  color: var(--af-muted);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0 2px;
+  flex: none;
+}
+.af-report-star.on { color: var(--af-warn); }
+.af-report-star:hover, .af-report-more:hover { color: var(--af-blue); }
+.af-report-new {
+  padding: 0 5px;
+  border-radius: 2px;
+  background: var(--af-good);
+  color: var(--af-on-brand);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .4px;
+}
+.af-saved-filters { display: flex; flex-wrap: wrap; gap: 14px; padding: 12px 0; }
+
+/* --- promo / upsell page --- */
+.af-promo { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+.af-promo-copy { flex: 1 1 320px; }
+.af-promo-eyebrow { font-size: 13px; color: var(--af-muted); margin: 0 0 6px; }
+.af-promo-copy h1 { font-size: 34px; line-height: 1.15; margin: 0 0 12px; }
+.af-promo-art {
+  flex: 1 1 260px;
+  min-height: 180px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--af-blue-light), var(--af-good-light));
+}
+
+/* --- misc --- */
+.af-secttitle { font-size: 14px; margin: 18px 0 6px; }
+.af-l3tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--af-line); margin-bottom: 16px; flex-wrap: wrap; }
+.af-l3tab {
+  border: none;
+  background: none;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--af-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.af-l3tab.active { color: var(--af-blue); border-bottom-color: var(--af-blue); font-weight: 600; }
+.af-whatsnew { padding: 10px 0; border-bottom: 1px solid var(--af-line); }
+.af-whatsnew:last-child { border-bottom: none; }
+.af-whatsnew b { display: block; font-size: 13.5px; }
+.af-whatsnew p { margin: 3px 0 0; font-size: 12.5px; color: var(--af-muted); }
+.af-linkbtn { border: none; background: none; font: inherit; color: var(--af-blue); cursor: pointer; padding: 0; }
+.af-linkbtn:hover { text-decoration: underline; }
+
+/* Bars for the projected-exposure chart. */
+.af-bars { display: flex; align-items: flex-end; gap: 8px; height: 170px; padding: 10px 0 0; }
+.af-bar { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
+.af-bar-fill { width: 100%; min-height: 2px; background: var(--af-blue); border-radius: 2px 2px 0 0; }
+.af-bar-n { font-size: 10.5px; color: var(--af-muted); }
+.af-bar-label { font-size: 9.5px; color: var(--af-muted); }
+
+/* =====================================================================
+   DASHBOARD PANELS
+   Ten collapsed cards, as the real dashboard opens. The count on a
+   header is the reason to open one, so it only appears when there is
+   something inside.
+   ===================================================================== */
+.af-dash-widget-hd {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 20px 22px;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.af-dash-count {
+  margin-left: auto;
+  min-width: 22px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--af-blue-light);
+  color: var(--af-blue);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-align: center;
+}
+.af-dash-chevron { transition: transform .15s; color: var(--af-muted); }
+.af-dash-chevron svg { width: 18px; height: 18px; display: block; }
+.af-dash-widget.collapsed .af-dash-chevron { transform: rotate(-90deg); }
+
+/* A notification is a real condition on real data, so every one is a
+   button that takes you to the record it is about. */
+.af-alerts { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
+.af-alert {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 11px 13px;
+  border: 1px solid var(--af-line);
+  border-left-width: 4px;
+  border-radius: 3px;
+  background: var(--af-panel);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.af-alert:hover { background: var(--af-bg); }
+.af-alert b { font-size: 12.5px; }
+.af-alert span { font-size: 12px; color: var(--af-muted); }
+.af-alert.bad  { border-left-color: var(--af-bad); }
+.af-alert.bad b { color: var(--af-bad); }
+.af-alert.warn { border-left-color: var(--af-warn); }
+.af-alert.warn b { color: var(--af-warn); }
+
+.af-right { text-align: right; margin-top: 10px; }
+
+/* appfolio.css already sizes .af-sb-icon; only the active tint is new. */
+.af-sb-icon { color: var(--af-muted); }
+.af-sb-item.active .af-sb-icon { color: var(--af-v-active-ink); }

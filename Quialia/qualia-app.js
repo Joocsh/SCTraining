@@ -841,6 +841,29 @@ function qzBuildMoney(seed) {
     inv.orderId = o.id; inv.order = o.id;
   });
 
+  let invSeq = 1000;
+  funded.forEach(function (o) {
+    if (CURRICULUM.indexOf(o.id) > -1) return;
+    const hasInv = (seed.invoices || []).some(function (inv) { return inv.orderId === o.id; });
+    if (!hasInv) {
+      const invNum = 'INV-2026-' + (++invSeq);
+      const isPaid = (qzHashString(o.id + '|invp') % 3) !== 0;
+      const amt = 250 + (qzHashString(o.id + '|inva') % 15) * 50;
+      seed.invoices.push({
+        id: 'inv-' + invSeq,
+        orderId: o.id,
+        order: o.id,
+        num: invNum,
+        billTo: (o.parties && o.parties[0]) ? o.parties[0].name : 'First American Title Co.',
+        issued: qzAddDaysISO(o.opened, 5),
+        due: qzAddDaysISO(o.closingDate, -2),
+        amount: amt,
+        balance: isPaid ? 0 : amt,
+        status: isPaid ? 'Paid' : (o.closingDate < QZ_TODAY ? 'Past Due' : 'Issued')
+      });
+    }
+  });
+
   /* A calendar entry that belongs to nobody's file cannot be navigated from
      the order it concerns. Signings, funding dates and recording deadlines all
      belong to one. */
@@ -1236,6 +1259,156 @@ const QZ_DOC_TEMPLATES = {
           'platted utility easement. No other encroachments observed.'
         : 'No visible encroachments, protrusions or overlapping of improvements were observed, ' +
           'and the improvements lie wholly within the boundaries of the subject tract.') + '</p>';
+  },
+
+  'ALTA Settlement Statement': function (o) {
+    const sale = o.purchasePrice || 0;
+    const loan = o.loanAmount || 0;
+    const earnest = o.earnestAmount || 0;
+    const debits = sale + Math.round(sale * 0.025);
+    const credits = loan + earnest;
+    const cashToClose = Math.max(0, debits - credits);
+    return '<h2 class="sec">Financial Summary</h2>' +
+      qzDocRow('Sales Price', fmtMoney(sale)) +
+      qzDocRow('Loan Amount', loan ? fmtMoney(loan) : 'None (Cash)') +
+      qzDocRow('Deposit / Earnest Money', earnest ? fmtMoney(earnest) : 'None') +
+      qzDocRow('Total Debits (Buyer)', fmtMoney(debits)) +
+      qzDocRow('Total Credits (Buyer)', fmtMoney(credits)) +
+      qzDocRow('Cash to Close', fmtMoney(cashToClose)) +
+      '<h2 class="sec">Escrow Statement Certification</h2>' +
+      '<p class="clause">The undersigned hereby acknowledge receipt of this ALTA Settlement Statement and agree to the charges and disbursements stated herein.</p>';
+  },
+
+  'Closing Disclosure (Lender)': function (o) {
+    return QZ_DOC_TEMPLATES['Closing Disclosure'](o);
+  },
+
+  'Loan Estimate': function (o) {
+    const loan = o.loanAmount || (o.purchasePrice ? Math.round(o.purchasePrice * 0.8) : 0);
+    return '<h2 class="sec">Loan Terms</h2>' +
+      qzDocRow('Loan Amount', fmtMoney(loan)) +
+      qzDocRow('Interest Rate', '6.625% Fixed') +
+      qzDocRow('Monthly Principal & Interest', fmtMoney(Math.round(loan * 0.0064))) +
+      qzDocRow('Prepayment Penalty', 'No') +
+      qzDocRow('Balloon Payment', 'No') +
+      '<h2 class="sec">Projected Payments</h2>' +
+      qzDocRow('Estimated Total Monthly Payment', fmtMoney(Math.round(loan * 0.0085))) +
+      qzDocRow('Estimated Cash to Close', fmtMoney(Math.round((o.purchasePrice || 0) * 0.22)));
+  },
+
+  'Earnest Money Receipt': function (o) {
+    return '<h2 class="sec">Receipt of Escrow Funds</h2>' +
+      qzDocRow('Amount Received', fmtMoney(o.earnestAmount || 5000)) +
+      qzDocRow('Payer', esc(qzDocPartyName(o, 'Buyer'))) +
+      qzDocRow('Escrow Agent', esc(o.settlementAgency)) +
+      qzDocRow('Deposit Date', fmtDate(qzAddDaysISO(o.opened, 2))) +
+      qzDocRow('Escrow Account', 'Frost Bank Escrow Operating #9842') +
+      '<p class="clause">Funds received and deposited subject to collection. To be held pursuant to the terms of the purchase contract.</p>';
+  },
+
+  'Tax Certificate': function (o) {
+    const val = o.purchasePrice || 350000;
+    const taxes = Math.round(val * 0.022);
+    return '<h2 class="sec">Tax Assessor Information</h2>' +
+      qzDocRow('Taxing Jurisdiction', esc(o.county) + ' County & Local ISD') +
+      qzDocRow('Assessed Value', fmtMoney(val)) +
+      qzDocRow('Annual Tax Amount', fmtMoney(taxes)) +
+      qzDocRow('Tax Status', 'Paid through current calendar year') +
+      qzDocRow('Delinquent Taxes', 'None of record') +
+      '<p class="clause">Tax certificates issued under Texas Tax Code § 31.08. No tax liens currently encumber the property.</p>';
+  },
+
+  'Proposed Deed (Draft)': function (o) {
+    return QZ_DOC_TEMPLATES['Source Deed'](o);
+  },
+
+  'Signed Deed': function (o) {
+    return QZ_DOC_TEMPLATES['Source Deed'](o);
+  },
+
+  'Recorded Deed': function (o) {
+    return QZ_DOC_TEMPLATES['Source Deed'](o);
+  },
+
+  'Prior Title Policy': function (o) {
+    return '<h2 class="sec">Owner Title Policy</h2>' +
+      qzDocRow('Policy Number', 'OTP-' + (qzHashString(o.id + '|otp') % 900000 + 100000)) +
+      qzDocRow('Underwriter', esc(o.underwriter)) +
+      qzDocRow('Insured Party', esc(qzDocPartyName(o, 'Seller'))) +
+      qzDocRow('Amount of Insurance', fmtMoney(Math.round((o.purchasePrice || 0) * 0.85))) +
+      qzDocRow('Effective Date', fmtDate(qzAddDaysISO(o.opened, -1200))) +
+      '<p class="clause">Subject to the terms, conditions, and stipulations contained in the standard ALTA Owner Policy jacket.</p>';
+  },
+
+  'Final Title Policy': function (o) {
+    return '<h2 class="sec">Final Owner Title Policy</h2>' +
+      qzDocRow('Policy Number', 'OTP-FINAL-' + (qzHashString(o.id + '|otpf') % 900000 + 100000)) +
+      qzDocRow('Underwriter', esc(o.underwriter)) +
+      qzDocRow('Insured Party', esc(qzDocPartyName(o, 'Buyer'))) +
+      qzDocRow('Amount of Insurance', fmtMoney(o.purchasePrice)) +
+      qzDocRow('Policy Date', fmtDate(o.closingDate)) +
+      '<p class="clause">Guaranteed policy of title insurance issued pursuant to Title Commitment Schedule A.</p>';
+  },
+
+  'Wiring Instructions': function (o) {
+    return '<h2 class="sec">Wire Transfer Instructions</h2>' +
+      qzDocRow('Receiving Bank', 'Frost Bank, N.A.') +
+      qzDocRow('ABA Routing Number', '114000093') +
+      qzDocRow('Beneficiary Account Name', esc(o.settlementAgency) + ' Escrow Trust') +
+      qzDocRow('Account Number', '3849102847') +
+      qzDocRow('Reference / File No.', esc(o.id) + ' / ' + esc(o.titleNumber)) +
+      '<p class="clause" style="color:#b91c1c;font-weight:600">WARNING: Wire fraud is real. Always call our office at a verified number before initiating a wire transfer.</p>';
+  },
+
+  'Title Search Report': function (o) {
+    return '<h2 class="sec">Title Abstract Search</h2>' +
+      qzDocRow('Search Period', '50 Years (Standard Texas Search)') +
+      qzDocRow('County Records', esc(o.county) + ' County Clerk') +
+      qzDocRow('Current Owner of Record', esc(qzDocPartyName(o, 'Seller'))) +
+      qzDocRow('Vesting Deed', 'Volume 1420, Page 88, Official Public Records') +
+      qzDocRow('Open Liens Found', o.type === 'Refinance' ? '1 Open Deed of Trust' : 'None') +
+      '<p class="clause">Search completed by Licensed Title Examiner. No adverse mineral rights or lis pendens found.</p>';
+  },
+
+  'Home Inspection Invoice': function (o) {
+    return '<h2 class="sec">Invoice Details</h2>' +
+      qzDocRow('Vendor', 'Pinnacle Property Inspections, LLC') +
+      qzDocRow('Invoice Number', 'INV-INSP-' + (qzHashString(o.id + '|insp') % 90000 + 10000)) +
+      qzDocRow('Bill To', esc(qzDocPartyName(o, 'Buyer'))) +
+      qzDocRow('Service Performed', 'Complete Residential Inspection & Foundation Analysis') +
+      qzDocRow('Total Fee', '$475.00') +
+      qzDocRow('Payment Status', 'Paid via Escrow at Closing') +
+      '<p class="clause">TREC Licensed Professional Real Estate Inspector #21049.</p>';
+  },
+
+  'Deed of Trust': function (o) {
+    const loan = o.loanAmount || 300000;
+    return '<h2 class="sec">Security Instrument</h2>' +
+      qzDocRow('Grantor (Borrower)', esc(qzDocPartyName(o, 'Buyer', qzDocPartyName(o, 'Borrower')))) +
+      qzDocRow('Lender', esc(qzLenderFor(o))) +
+      qzDocRow('Trustee', 'First American Title Insurance Company') +
+      qzDocRow('Principal Sum', fmtMoney(loan)) +
+      qzDocRow('Maturity Date', fmtDate(qzAddDaysISO(o.closingDate, 360 * 30))) +
+      '<p class="clause">Borrower irrevocably grants and conveys to Trustee, in trust, with power of sale, the described property to secure repayment of the Note.</p>';
+  },
+
+  'Disbursement Summary': function (o) {
+    return '<h2 class="sec">Escrow Trust Ledger Reconciliation</h2>' +
+      qzDocRow('File Number', esc(o.id)) +
+      qzDocRow('Disbursement Date', fmtDate(o.disbursementDate)) +
+      qzDocRow('Total Receipts Cleared', fmtMoney((o.purchasePrice || 0) + 12000)) +
+      qzDocRow('Total Disbursements Paid', fmtMoney((o.purchasePrice || 0) + 12000)) +
+      qzDocRow('Ending Escrow Balance', '$0.00 (Balanced)') +
+      '<p class="clause">Certified by Escrow Officer. All checks and wire transfers verified against bank clearing log.</p>';
+  },
+
+  'Post-Closing Audit Checklist': function (o) {
+    return '<h2 class="sec">Post-Closing Quality Assurance</h2>' +
+      qzDocRow('Recorded Deed Verified', 'Complete & Confirmed in Public Records') +
+      qzDocRow('Policy Issued & Delivered', 'Underwriter Policy Logged') +
+      qzDocRow('Zero Escrow Balance Verified', 'Verified ($0.00)') +
+      qzDocRow('1099-S Filing Exported', o.eligible1099 ? 'Filed with IRS' : 'Not Required') +
+      '<p class="clause">Quality audit completed according to ALTA Best Practices Pillar 2 and Pillar 3 guidelines.</p>';
   }
 };
 
@@ -1600,11 +1773,70 @@ function qzBuildThreads(orders, existing) {
   return out;
 }
 
+const QZ_NOTE_TEMPLATES = [
+  'File intake complete. Confirmed contract terms and earnest deposit with listing agent.',
+  'Title search completed by underwriter. No unreleased prior liens found; restrictive covenants noted in Schedule B.',
+  'Payoff statement requested from prior mortgage servicer. Good-through date verified.',
+  'Survey review complete. Property boundaries and utility easements verified against recorded plat.',
+  'HOA estoppel certificate received. Regular assessments current through month-end; transfer fee noted.',
+  'Tax certificate issued by County Assessor. Prorations calculated based on current fiscal year millage.',
+  'Hazard insurance binder and paid receipt received from carrier. Mortgagee clause matches lender instructions.',
+  'Preliminary Closing Disclosure reviewed with lender. Cash-to-close figure matches buyer breakdown.',
+  'Closing scheduled with mobile notary. Signing appointment confirmed with buyer and seller.',
+  'Final funding authorization received. Wire released to seller and broker commissions disbursed.'
+];
+
+function qzBuildNotes(orders) {
+  const notes = [];
+  let n = 100;
+  orders.forEach(function (o) {
+    // Seed notes for at least 55 orders
+    const seedThis = (qzHashString(o.id + '|nt') % 5) !== 0;
+    if (seedThis) {
+      const count = 1 + (qzHashString(o.id + '|ntc') % 3);
+      for (let i = 0; i < count; i++) {
+        const noteIdx = (qzHashString(o.id + '|nti' + i)) % QZ_NOTE_TEMPLATES.length;
+        notes.push({
+          id: 'note-' + (++n),
+          orderId: o.id,
+          author: (i === 0 && o.orderOpener) ? o.orderOpener : 'Training User',
+          date: qzAddDaysISO(o.opened, 2 + i * 5),
+          body: QZ_NOTE_TEMPLATES[noteIdx]
+        });
+      }
+    }
+  });
+  return notes;
+}
+
+function qzBuildMessages(threads) {
+  const messages = [];
+  let mId = 1000;
+  threads.forEach(function (th) {
+    if (Array.isArray(th.thread)) {
+      th.thread.forEach(function (m) {
+        messages.push({
+          id: 'msg-' + (++mId),
+          threadId: th.id,
+          orderId: th.orderId,
+          sender: m.sender,
+          recipient: m.recipient,
+          date: m.date,
+          body: m.body
+        });
+      });
+    }
+  });
+  return messages;
+}
+
 function qzBuildCatalog(seed) {
   seed.documents = qzBuildDocuments(seed.orders, seed.documents || []);
   seed.tasks     = qzBuildTasks(seed.orders, seed.tasks || []);
   seed.vendors   = qzBuildVendors(seed.orders, seed.vendors || []);
   seed.threads   = qzBuildThreads(seed.orders, seed.threads || []);
+  seed.messages  = qzBuildMessages(seed.threads);
+  seed.notes     = qzBuildNotes(seed.orders);
   return seed;
 }
 
@@ -2343,8 +2575,15 @@ function qzEnter() {
   if (!qzStore.tourSeen && window.qzTourStart) setTimeout(qzTourStart, 350);
 }
 
-/* ---------- notification bell ---------- */
-function qzOpenTasks() { return qzList('tasks', t => t.status !== 'Complete'); }
+/* ---------- notification bell & personal tasks (D1) ----------
+   Navigation rationale for 'My Tasks': In the authentic Qualia Core product, the top bar
+   contains Orders, Contacts, Calendar, Accounting, Reports, Compliance, Admin (no Tasks top tab).
+   To preserve topbar fidelity while keeping the trainee's personal task queue readily accessible,
+   My Tasks is reached via the notification bell ('View All'), the right-rail empty state link
+   ('assigned any tasks'), and programmatically via qzGotoMyTasks(). */
+function qzOpenTasks() {
+  return qzList('tasks', t => qzTaskStatus(t) !== 'Complete' && /you/i.test(t.assignedTo || ''));
+}
 function qzUpdateBellBadge() {
   const badge = document.querySelector('#qzBell .n');
   if (badge) badge.textContent = qzOpenTasks().length;
@@ -2368,14 +2607,18 @@ function qzCloseBellDropdown() {
   if (dd) dd.classList.remove('open');
 }
 document.addEventListener('click', () => qzCloseBellDropdown());
+
 function qzRenderBellDropdown() {
   const dd = document.getElementById('qzBellDropdown');
   if (!dd) return;
-  const open = qzOpenTasks();
-  if (!open.length) { dd.innerHTML = '<div class="qz-bell-empty">No open tasks</div>'; return; }
+  const open = qzList('tasks', t => qzTaskStatus(t) !== 'Complete' && /you/i.test(t.assignedTo || ''));
+  if (!open.length) {
+    dd.innerHTML = '<div class="qz-bell-empty">No open tasks assigned to you</div>';
+    return;
+  }
   const groups = {};
   open.forEach(t => { (groups[t.relatedOrderId] = groups[t.relatedOrderId] || []).push(t); });
-  dd.innerHTML = Object.keys(groups).map(orderId => {
+  const itemsHTML = Object.keys(groups).map(orderId => {
     const o = qzGetOrder(orderId);
     const label = o ? o.propertyAddress : orderId;
     const items = groups[orderId].map(t =>
@@ -2383,7 +2626,92 @@ function qzRenderBellDropdown() {
     ).join('');
     return `<div class="qz-bell-group"><div class="qz-bell-group-h">${esc(label)}</div>${items}</div>`;
   }).join('');
+
+  dd.innerHTML = `
+    <div class="qz-bell-header" style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+      <b style="font-size:12px;color:#1e293b;">My Assigned Tasks (${open.length})</b>
+      <button type="button" class="qz-btn sm" style="padding:2px 8px;font-size:11px;" onclick="qzGotoMyTasks()">View All &raquo;</button>
+    </div>
+    ${itemsHTML}`;
 }
+
+function qzGotoMyTasks() {
+  qzState.view = 'my-tasks';
+  qzCloseBellDropdown();
+  qzRenderRoot();
+}
+
+function qzSetTasksFilter(filter) {
+  qzState.tasksFilter = filter;
+  qzRenderRoot();
+}
+
+function qzMyTasksHTML() {
+  const filter = qzState.tasksFilter || 'mine';
+  const allOpen = qzList('tasks', t => qzTaskStatus(t) !== 'Complete');
+  const myOpen = allOpen.filter(t => /you/i.test(t.assignedTo || ''));
+  const currentList = filter === 'all' ? allOpen : myOpen;
+
+  const overdue = currentList.filter(t => t.dueDate && t.dueDate < QZ_TODAY);
+  const dueToday = currentList.filter(t => t.dueDate && t.dueDate === QZ_TODAY);
+  const upcoming = currentList.filter(t => !t.dueDate || t.dueDate > QZ_TODAY);
+
+  const renderSection = (title, items, badgeClass, stripClass) => {
+    if (!items.length) return '';
+    const rows = items.map(t => {
+      const o = qzGetOrder(t.relatedOrderId);
+      const addr = o ? o.propertyAddress : '—';
+      const wf = t.taskGroup || t.group || '—';
+      return `<tr class="qz-task-row link ${stripClass}" onclick="qzGotoOrderTasks('${escAttr(t.relatedOrderId)}')">
+        <td><div class="qz-task-title"><b>${esc(t.title)}</b></div><div class="qz-sub" style="font-size:11.5px;color:#64748b;">${esc(wf)}</div></td>
+        <td><b>${esc(t.relatedOrderId)}</b><div class="qz-sub" style="font-size:11.5px;color:#64748b;">${esc(addr)}</div></td>
+        <td><span class="qz-badge ${/you/i.test(t.assignedTo || '') ? 'teal' : 'neutral'}">${esc(t.assignedTo || 'Unassigned')}</span></td>
+        <td><span class="qz-due-date ${badgeClass}">${fmtDate(t.dueDate)}</span></td>
+        <td><span class="qz-badge ${t.status === 'In Progress' ? 'progress' : 'open'}">${esc(t.status || 'Open')}</span></td>
+        <td><button type="button" class="qz-btn sm" onclick="event.stopPropagation(); qzGotoOrderTasks('${escAttr(t.relatedOrderId)}')">Open Tasks &raquo;</button></td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="qz-tasks-sec">
+      <div class="qz-tasks-sec-head">
+        <h3>${esc(title)} <span class="qz-panel-count ${badgeClass}">${items.length}</span></h3>
+      </div>
+      <div class="qz-tbl-scroll">
+        <table class="qz-tbl">
+          <thead>
+            <tr>
+              <th>Task & Milestone</th>
+              <th>Order & Property</th>
+              <th>Assigned To</th>
+              <th>Due Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  };
+
+  return `<div class="qz-my-tasks-page">
+    <div class="qz-listhead" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div>
+        <h2>Tasks Pipeline</h2>
+        <div class="sub">Cross-order task queue across all 75 active files as of ${fmtDate(QZ_TODAY)}.</div>
+      </div>
+      <div class="qz-tasks-switch">
+        <button type="button" class="qz-btn sm ${filter === 'mine' ? 'primary' : ''}" onclick="qzSetTasksFilter('mine')">My Tasks (${myOpen.length})</button>
+        <button type="button" class="qz-btn sm ${filter === 'all' ? 'primary' : ''}" onclick="qzSetTasksFilter('all')">All Team Tasks (${allOpen.length})</button>
+      </div>
+    </div>
+    ${renderSection('Overdue Tasks', overdue, 'bad', 'qz-task-strip-bad')}
+    ${renderSection('Due Today', dueToday, 'warn', 'qz-task-strip-warn')}
+    ${renderSection('Upcoming Tasks', upcoming, 'good', 'qz-task-strip-good')}
+    ${!currentList.length ? '<div class="qz-empty">No open tasks matching the selected filter.</div>' : ''}
+  </div>`;
+}
+
 function qzGotoOrderTasks(orderId) {
   qzState.view = 'order';
   qzState.orderId = orderId;
@@ -2402,9 +2730,13 @@ const QZ_CORE_SECTIONS = [
   { id: 'accounting', label: 'Accounting', view: 'accounting' },
   { id: 'reports', label: 'Reports', view: 'reports' },
   { id: 'compliance', label: 'Compliance', view: 'compliance' },
-  { id: 'admin', label: 'Admin', view: 'admin' },
-  { id: 'dashboard', label: 'Training', view: 'dashboard', training: true }
+  { id: 'admin', label: 'Admin', view: 'admin' }
 ];
+/* Qualia Core's top bar carries exactly these seven sections — verified against
+   Images-resourses/real-screenshots/core-charges-section-b.png. There used to be an eighth,
+   'Training', sitting next to Admin, which made the course read as part of the product. The
+   course now has its own control beside the search box (#qzLessonsBtn), styled to look like
+   what it is: something outside Qualia. */
 function qzCoreStub(label) {
   if (label === 'Documents') {
     qzGoto('documents');
@@ -2416,6 +2748,24 @@ function qzCoreStub(label) {
   }
   simToast(`${label} is part of Qualia Core.`);
 }
+/* ---------- the course's own entry point ----------
+   Deliberately NOT a Core section. It opens the academic dashboard and it is the only
+   control in the top bar that is not part of the simulated product. */
+function qzGotoLessons() {
+  qzGoto('dashboard');
+}
+
+/* Badge shows steps still outstanding, so a trainee can see at a glance that the course is
+   waiting without opening it. Blank when everything is done — a zero badge is noise. */
+function qzSyncLessonsBadge() {
+  const badge = document.getElementById('qzLessonsBadge');
+  if (!badge) return;
+  const all = (typeof QZ_LESSONS !== 'undefined') ? QZ_LESSONS.flatMap(l => l.steps) : [];
+  const left = all.filter(s => !qzLessonStepDone(s)).length;
+  badge.textContent = left ? String(left) : '';
+  badge.style.display = left ? '' : 'none';
+}
+
 function qzRenderCoreSections() {
   const host = document.getElementById('qzCoreSections');
   if (!host) return;
@@ -2461,6 +2811,13 @@ function qzSyncTopTabs() {
       || (v === 'dashboard' && (qzState.view === 'scenario' || qzState.view === 'lesson' || qzState.view === 'exam'));
     el.classList.toggle('active', active);
   });
+  /* The Lessons control lights up on every course view, the way a section tab would, so the
+     trainee always knows which layer they are standing in. */
+  const lb = document.getElementById('qzLessonsBtn');
+  if (lb) {
+    lb.classList.toggle('active', ['dashboard', 'lesson', 'lessons', 'scenario', 'review', 'exam'].indexOf(qzState.view) > -1);
+  }
+  qzSyncLessonsBadge();
   qzRenderOrderTabs();
 }
 
@@ -2519,18 +2876,36 @@ function qzPersistOrderView() {
 }
 /* The strip is shared by the order tabs and the lesson breadcrumb, so neither one can hide
    it alone — whichever renders last would clobber the other's decision. Both call this. */
+/* The strip of open files belongs to the Orders section, not to the application.
+   Measured on Images-resourses/real-screenshots/core-charges-section-b.png: at the height of
+   the tab row the dark order rail runs to x≈410 and the strip's grey background starts at
+   x≈425 — the same boundary as the rail lower down. In the product the strip therefore lives
+   inside the order workspace, to the RIGHT of the rail; it is not full-width chrome.
+
+   This module renders it above .qz-body instead, so it used to follow the trainee into
+   Calendar, Accounting and every other section, showing tabs with none of them active. That
+   is the tell: a tab strip where nothing is active does not belong to the screen under it.
+   Until the strip is moved inside the workspace properly, scoping which views draw tabs gets
+   the behaviour right without touching layout. */
+function qzOrderTabsVisible() {
+  return qzState.view === 'order' || qzState.view === 'orders';
+}
+
 function qzSyncTopStrip() {
   const strip = document.getElementById('qzTopStrip');
   const banner = document.getElementById('qzLessonBanner');
   if (!strip) return;
-  const hasTabs = qzState.openOrders.length > 0;
+  const hasTabs = qzState.openOrders.length > 0 && qzOrderTabsVisible();
+  /* The lesson breadcrumb rides in this same strip, and a lesson step can legitimately send
+     the trainee into Accounting. So the strip still appears for the banner alone — it just
+     carries no order tabs there. */
   const hasBanner = !!(banner && banner.innerHTML.trim());
   strip.style.display = (hasTabs || hasBanner) ? 'flex' : 'none';
 }
 function qzRenderOrderTabs() {
   const host = document.getElementById('qzOrderTabs');
   if (!host) return;
-  if (!qzState.openOrders.length) { host.innerHTML = ''; qzSyncTopStrip(); return; }
+  if (!qzState.openOrders.length || !qzOrderTabsVisible()) { host.innerHTML = ''; qzSyncTopStrip(); return; }
   host.innerHTML = qzState.openOrders.map(id => {
     const o = qzGetOrder(id);
     if (!o) return '';
@@ -2570,6 +2945,7 @@ function qzRenderRoot() {
   if (qzState.view === 'dashboard') html = qzDashboardHTML();
   else if (qzState.view === 'orders') html = qzOrdersHTML();
   else if (qzState.view === 'order') html = qzOrderHTML();
+  else if (qzState.view === 'my-tasks' || qzState.view === 'tasks') html = qzMyTasksHTML();
   else if (qzState.view === 'scenario') html = qzScenarioDetailHTML();
   else if (qzState.view === 'lesson') html = qzLessonDetailHTML();
   else if (qzState.view === 'exam') html = qzExamHTML();
@@ -3238,12 +3614,12 @@ const QZ_CORE_NAV = [
       { label: 'Order Tasks', tab: 'tasks', icon: 'task' }
     ] }
   ] },
-  { section: 'Training', training: true, groups: [
-    { label: '', items: [
-      { label: 'Document Review', tab: 'review', icon: 'review' }
-    ] }
-  ] }
 ];
+/* The rail used to end with a 'Training' section holding Document Review. An open order is
+   product, not coursework, and that entry put an exercise two clicks from Basic Info in the
+   same rail — which is why trainees reported finding lesson questions "inside" a file. The
+   `review` tab still exists and still renders; the lessons reach it directly with
+   qzOrderTab('review') (qualia-data.js), so nothing in the course depends on this item. */
 const QZ_NAV_ICONS = {
   doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>',
   acct: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h4"/></svg>',
@@ -3360,11 +3736,12 @@ function qzOrderPanelHTML(o) {
     `<div class="qz-presence ${p.online ? 'on' : ''}"><span class="d"></span><span class="n">${esc(p.name)}</span><span class="r">${esc(p.role)}</span></div>`
   ).join('');
 
-  const openTasks = qzTasksForOrder(o.id).filter(t => qzTaskStatus(t) !== 'Complete');
   const allTasks = qzTasksForOrder(o.id);
-  const tasksBody = openTasks.length
-    ? openTasks.map(t => `<div class="qz-panel-task" onclick="qzNavGo('tasks')"><span class="tt">${esc(t.title)}</span>${qzDueChipHTML(t.dueDate)}</div>`).join('')
-    : '<div class="qz-panel-empty">Nothing outstanding on this order.</div>';
+  const myOpenTasks = allTasks.filter(t => qzTaskStatus(t) !== 'Complete' && /you/i.test(t.assignedTo || ''));
+  const openTasks = allTasks.filter(t => qzTaskStatus(t) !== 'Complete');
+  const tasksBody = myOpenTasks.length
+    ? myOpenTasks.map(t => `<div class="qz-panel-task" onclick="qzNavGo('tasks')"><span class="tt">${esc(t.title)}</span>${qzDueChipHTML(t.dueDate)}</div>`).join('')
+    : `<div class="qz-panel-empty-card"><span class="qz-panel-empty-bar"></span><div>You have not been <a href="#" onclick="qzGotoMyTasks();return false;" class="qz-teal-link">assigned any tasks</a> on this order</div></div>`;
 
   const helpText = QZ_PANEL_HELP[qzState.orderTab] || 'Open a section from the rail on the left to see guidance for it.';
   const helpBody = `<p class="qz-panel-help">${esc(helpText)}</p>
@@ -3378,7 +3755,7 @@ function qzOrderPanelHTML(o) {
 
   return `<div class="qz-order-panel">
     ${qzPanelSectionHTML('chat', 'Chat', presence)}
-    ${qzPanelSectionHTML('tasks', 'Tasks', tasksBody, `<span class="qz-panel-count">${openTasks.length} / ${allTasks.length}</span>`)}
+    ${qzPanelSectionHTML('tasks', 'Tasks', tasksBody, `<span class="qz-panel-count">[ ${myOpenTasks.length} / ${allTasks.length} ]</span>`)}
     ${qzPanelSectionHTML('help', 'Help', helpBody)}
     ${qzPanelSectionHTML('notes', 'Notes', notesBody)}
   </div>`;
@@ -5141,17 +5518,27 @@ function qzExceptionsTabHTML(o) {
     '</div></div></div>';
 }
 
+function qzToggleTaskGroupHidden(gId) {
+  if (!qzState.hiddenTaskGroups) qzState.hiddenTaskGroups = {};
+  qzState.hiddenTaskGroups[gId] = !qzState.hiddenTaskGroups[gId];
+  qzRenderRoot();
+}
+
+function qzModifyWorkflowModal(orderId) {
+  simToast('Workflow rule modifier active for ' + orderId + '.', { tone: 'good' });
+}
+
 function qzTasksHTML(o) {
   const allTasks = qzTasksForOrder(o.id);
-  const groups = [
-    { id: 'tg-open', name: 'Order Opening' },
-    { id: 'tg-title', name: 'Title' },
-    { id: 'tg-pre', name: 'Pre-Closing' },
-    { id: 'tg-payoff', name: 'Payoff Tasks' },
-    { id: 'tg-post', name: 'Post-Closing' }
-  ];
+  const groups = qzList('taskGroups').sort((a, b) => (a.order || 0) - (b.order || 0));
+  const hiddenMap = qzState.hiddenTaskGroups || {};
+
+  const workflowTitle = o.workflow || (o.type === 'Refinance' ? 'Refinance' : o.type === 'Cash' ? 'Cash Purchase' : o.type === 'Commercial' ? 'Commercial Acquisition' : 'Purchase &middot; Standard Milestones');
+  const teamLabel = o.settlementAgency || o.paralegal || '';
 
   const groupBlocks = groups.map(g => {
+    const gKey = g.id || g.name;
+    const isHidden = !!hiddenMap[gKey];
     const gTasks = allTasks.filter(function (t) {
       if (t.taskGroup) return t.taskGroup === g.id;
       if (t.group) return t.group === g.name;
@@ -5160,13 +5547,17 @@ function qzTasksHTML(o) {
     const doneCount = gTasks.filter(t => qzTaskStatus(t) === 'Complete').length;
     const totalCount = gTasks.length;
     const pct = totalCount ? Math.round((doneCount / totalCount) * 100) : 0;
+    const isActive = totalCount > 0 && doneCount < totalCount;
 
     const taskRows = gTasks.map(t => {
       const isDone = qzTaskStatus(t) === 'Complete';
+      const isOverdue = !isDone && t.dueDate && t.dueDate < QZ_TODAY;
+      const isDueToday = !isDone && t.dueDate && t.dueDate === QZ_TODAY;
+      const stripClass = isDone ? 'qz-task-strip-good' : isOverdue ? 'qz-task-strip-bad' : isDueToday ? 'qz-task-strip-warn' : 'qz-task-strip-open';
       const badgeClass = isDone ? 'complete' : t.status === 'In Progress' ? 'progress' : 'open';
       const due = isDone ? fmtDate(t.dueDate) : `${fmtDate(t.dueDate)} ${qzDueChipHTML(t.dueDate)}`;
       return `
-        <tr data-task-id="${t.id}" class="${isDone ? 'qz-task-done' : ''}">
+        <tr data-task-id="${t.id}" class="${isDone ? 'qz-task-done' : ''} ${stripClass}">
           <td style="width:36px"><input type="checkbox" ${isDone ? 'checked' : ''} onchange="qzToggleTaskStatus(${t.id}, this.checked)"></td>
           <td><b>${esc(t.title)}</b></td>
           <td>${esc(t.assignedTo)}</td>
@@ -5182,23 +5573,24 @@ function qzTasksHTML(o) {
     }).join('');
 
     return `
-      <div class="qz-task-group-card">
+      <div class="qz-task-group-card ${isActive ? 'active-group' : ''} ${isHidden ? 'collapsed' : ''}">
         <div class="qz-tg-head">
           <div style="display:flex;align-items:center;gap:10px">
-            <span class="qz-tg-star">&#9733;</span>
+            <span class="qz-tg-star" style="color:${isActive ? '#10b981' : '#94a3b8'}">${isActive ? '&#9733;' : '&#9734;'}</span>
             <b class="qz-tg-title">${esc(g.name)}</b>
             <span class="qz-tg-count">${doneCount}/${totalCount} (${pct}%)</span>
           </div>
-          <div style="display:flex;align-items:center;gap:12px">
+          <div style="display:flex;align-items:center;gap:10px">
             <div class="qz-tg-bar"><i style="width:${pct}%"></i></div>
+            <button type="button" class="qz-tg-eye" title="${isHidden ? 'Show task group' : 'Hide task group'}" onclick="qzToggleTaskGroupHidden('${escAttr(gKey)}')">${isHidden ? '&#128064;' : '&#128065;'}</button>
             <button class="qz-btn sm" onclick="qzAddTaskModal('${o.id}', '${escAttr(g.name)}')">+ Add Task</button>
           </div>
         </div>
-        ${gTasks.length ? `
+        ${!isHidden ? (gTasks.length ? `
         <table class="qz-tbl" style="margin-top:8px">
           <thead><tr><th></th><th>Task Title</th><th>Assigned To</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody>${taskRows}</tbody>
-        </table>` : '<div class="qz-tg-empty">No tasks in this milestone group.</div>'}
+        </table>` : '<div class="qz-tg-empty">No tasks in this milestone group.</div>') : ''}
       </div>`;
   }).join('');
 
@@ -5206,12 +5598,13 @@ function qzTasksHTML(o) {
     <div class="qz-panel">
       <div class="ph">
         <div>
-          <h4>Order Tasks &mdash; Purchase &middot; Standard Milestones</h4>
-          <span class="sub">Workflow automated rules active &middot; Assigned to Plano Escrow Team</span>
+          <h4>Order Tasks &mdash; ${workflowTitle}</h4>
+          <span class="sub">Workflow automated rules active &middot; Assigned to ${esc(teamLabel)}</span>
         </div>
         <div style="display:flex;gap:8px">
-          <button class="qz-btn sm" onclick="qzAddTaskGroupModal('${o.id}')">+ Add Task Group</button>
-          <button class="qz-btn sm primary" onclick="qzAddTaskModal('${o.id}')">+ Add Task</button>
+          <button class="qz-btn sm ghost" onclick="qzModifyWorkflowModal('${o.id}')">Modify</button>
+          <button class="qz-btn sm" onclick="qzAddTaskModal('${o.id}')">Add Task</button>
+          <button class="qz-btn sm primary" onclick="qzAddTaskGroupModal('${o.id}')">+ Add Task Group</button>
         </div>
       </div>
       <div class="qz-task-groups">${groupBlocks}</div>

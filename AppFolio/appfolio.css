@@ -67,14 +67,21 @@
      The one value worth real confidence is the sidebar being warm near-black
      rather than a neutral grey — a hue shift survives compression far better
      than an exact value does. */
-  --af-v-topbar:        #2b6cc6;
-  --af-v-sidebar:       #2a272b;
-  --af-v-sidebar-sub:   #232023;
-  --af-v-sidebar-hover: #3a363b;
-  --af-v-sidebar-dim:   #6f6a70;
-  --af-v-active:        #2f64b8;
+  /* Sampled from the 2026 screenshots. The topbar is a near-black navy;
+     the old #2b6cc6 came from a compressed 2018 video and was wrong. */
+  --af-v-topbar:        #16202b;
+  /* The sidebar is LIGHT in the real product, not dark. This was the most
+     visible error in the chassis. */
+  --af-v-sidebar:       #ffffff;
+  --af-v-sidebar-sub:   #f6f8fa;
+  --af-v-sidebar-hover: #eef2f6;
+  --af-v-sidebar-dim:   #6b7785;
+  /* Active is a pale blue fill with blue text, not a solid blue block. */
+  --af-v-active:        #e6f0fa;
+  --af-v-active-ink:    #0b6ab5;
+  --af-v-sidebar-ink:   #2c3742;
   --af-v-content:       #fafafa;
-  --af-v-badge:         #e48f48;
+  --af-v-badge:         #e07b2f;
   --af-v-thead:         #c5c3c6;
   --af-v-link:          #1a6bb5;
   --af-v-searchbtn:     #dcdcdc;
@@ -996,42 +1003,70 @@ body.af-fullscreen {
   color: var(--af-on-brand);
   gap: 18px;
 }
-.af-logo { color: var(--af-on-brand); }
+.af-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--af-on-brand);
+}
+.af-logo-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #0284c7;
+  color: var(--af-on-brand);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 16px;
+}
+.af-logo-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--af-on-brand);
+  letter-spacing: -0.2px;
+}
 
-/* Wide, white, and left of centre — the single most recognisable thing about
-   the AppFolio top bar. */
 .af-topsearch {
   display: flex;
+  align-items: center;
   flex: 1;
-  max-width: 720px;
+  max-width: 580px;
   min-width: 0;
-  height: 32px;
+  height: 34px;
+  background: var(--af-panel);
+  border-radius: 4px;
+  padding: 0 10px;
+  gap: 8px;
+}
+.af-search-lens {
+  width: 16px;
+  height: 16px;
+  color: var(--af-muted);
+  flex: none;
 }
 .af-topsearch input {
   flex: 1;
   min-width: 0;
   border: none;
-  border-radius: 3px 0 0 3px;
-  background: var(--af-panel);
+  outline: none;
+  background: transparent;
   font: inherit;
   font-size: 13.5px;
   color: var(--af-text);
-  padding: 0 12px;
+  padding: 0;
 }
-.af-topsearch input:focus { outline: 2px solid var(--af-on-brand); outline-offset: -2px; }
 .af-topsearch-btn {
-  width: 44px;
-  flex: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--af-muted);
   display: grid;
   place-items: center;
-  border: none;
-  border-radius: 0 3px 3px 0;
-  background: var(--af-v-searchbtn);
-  color: var(--af-text);
-  cursor: pointer;
+  padding: 2px;
 }
-.af-topsearch-btn svg { width: 15px; height: 15px; }
-.af-topsearch-btn:hover { background: var(--af-v-searchbtn-h); }
+.af-topsearch-btn svg { width: 16px; height: 16px; }
 
 .af-topmenu {
   display: inline-flex;
@@ -1069,27 +1104,18 @@ body.af-fullscreen {
 }
 
 /* =====================================================================
-   SIDEBAR — dark, sectioned, expandable
+   SIDEBAR — modern light theme with icons
    ===================================================================== */
 .af-sidebar {
-  width: 236px;
+  width: 240px;
   flex: none;
   display: flex;
   flex-direction: column;
   background: var(--af-v-sidebar);
-  color: var(--af-on-brand);
+  color: var(--af-v-sidebar-ink);
+  border-right: 1px solid var(--af-line);
   overflow-y: auto;
-}
-
-/* A context label, not a link. */
-.af-sb-company {
-  padding: 18px 20px 14px;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: .4px;
-  text-transform: uppercase;
-  color: var(--af-on-brand);
+  justify-content: space-between;
 }
 
 .af-sb-nav { display: flex; flex-direction: column; }
@@ -1097,20 +1123,25 @@ body.af-fullscreen {
 .af-sb-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 13px 20px;
-  font-size: 13.5px;
-  font-weight: 600;
-  letter-spacing: .8px;
-  text-transform: uppercase;
-  color: var(--af-on-brand);
+  gap: 12px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--af-v-sidebar-ink);
   text-decoration: none;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 .af-sb-item:hover { background: var(--af-v-sidebar-hover); text-decoration: none; }
-/* The active section is painted blue, and so is the block of children beneath
-   it — that pairing is what tells you where you are at a glance. */
-.af-sb-item.active { background: var(--af-v-active); }
+.af-sb-item.active { background: var(--af-v-active); color: var(--af-v-active-ink); font-weight: 600; }
+.af-sb-icon {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.af-sb-icon svg { width: 18px; height: 18px; }
 .af-sb-label { flex: 1; min-width: 0; }
 
 .af-sb-badge {
@@ -1126,6 +1157,10 @@ body.af-fullscreen {
   place-items: center;
   flex: none;
 }
+.af-sb-badge.whats-new-badge {
+  background: var(--af-v-badge);
+  color: var(--af-on-brand);
+}
 
 .af-sb-caret {
   display: grid;
@@ -1139,33 +1174,28 @@ body.af-fullscreen {
 .af-sb-caret svg { width: 13px; height: 13px; }
 .af-sb-item.open .af-sb-caret { transform: rotate(180deg); }
 
-/* Children of a section that is open but NOT the one you are on stay dark.
-   Frame 12 shows both states at once, and the difference is the whole point:
-   open means "I left this expanded", active means "I am here". */
 .af-sb-kids { display: flex; flex-direction: column; background: var(--af-v-sidebar-sub); }
-.af-sb-kids.on-active { background: var(--af-v-active); }
+.af-sb-kids.on-active { background: var(--af-v-sidebar-sub); }
+.af-sb-kids.on-active .af-sb-kid { color: var(--af-v-active-ink); }
 
 .af-sb-kid {
-  padding: 9px 20px 9px 24px;
-  font-size: 13.5px;
-  color: var(--af-on-brand);
+  padding: 8px 18px 8px 46px;
+  font-size: 13px;
+  color: var(--af-v-sidebar-ink);
   text-decoration: none;
   cursor: pointer;
 }
 .af-sb-kid:hover { background: var(--af-v-sidebar-hover); text-decoration: none; }
 .af-sb-kid.active { font-weight: 700; text-decoration: underline; }
-/* A child AppFolio has but this module does not. Shown so the shape of the real
-   menu is learnable, dimmed so nobody expects it to open something. */
 .af-sb-kid.stub { opacity: .55; }
 
-/* Training is fenced off from the product sections above it. */
 .af-sb-training {
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid var(--af-v-sidebar-hover);
+  border-top: 1px solid var(--af-line);
 }
 .af-sb-trainlabel {
-  padding: 4px 20px 6px;
+  padding: 4px 18px 6px;
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: .8px;
@@ -1173,33 +1203,129 @@ body.af-fullscreen {
   color: var(--af-v-sidebar-dim);
 }
 
-.af-sb-new {
-  margin: auto 16px 18px;
-  padding: 11px 12px;
+.af-sb-footer {
+  margin-top: auto;
+  padding: 14px 18px;
+  border-top: 1px solid var(--af-line);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.af-sb-company-name {
+  font-size: 12px;
+  color: var(--af-muted);
+  line-height: 1.3;
+}
+.af-sb-minimize {
   background: none;
-  border: 1px solid var(--af-v-sidebar-dim);
-  border-radius: 3px;
-  color: var(--af-on-brand);
+  border: none;
+  color: var(--af-muted);
   font: inherit;
   font-size: 12px;
-  font-weight: 800;
-  letter-spacing: .8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   cursor: pointer;
+  padding: 0;
+}
+.af-sb-minimize:hover { color: var(--af-text); }
+
+/* =====================================================================
+   DASHBOARD ACCORDION WIDGETS
+   ===================================================================== */
+.af-dash-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.af-dash-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  flex: none;
+  justify-content: space-between;
+  padding: 6px 0 12px;
 }
-.af-sb-new:hover { background: var(--af-v-sidebar-hover); }
-.af-sb-new span {
-  min-width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  background: var(--af-v-badge);
+.af-dash-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--af-text);
+  margin: 0;
+}
+.af-dash-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.af-dash-viewby {
+  font-size: 13px;
+  color: var(--af-muted);
+}
+.af-dash-select {
+  padding: 5px 10px;
+  border: 1px solid var(--af-line);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 13px;
+  background: var(--af-panel);
+  color: var(--af-text);
+  cursor: pointer;
+}
+.af-dash-customize {
+  background: none;
+  border: none;
+  color: var(--af-blue);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+.af-dash-customize:hover { text-decoration: underline; }
+.af-dash-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.af-dash-widget {
+  background: var(--af-panel);
+  border: 1px solid var(--af-line);
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
+}
+.af-dash-widget-hd {
+  padding: 13px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--af-panel);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+.af-dash-widget-hd:hover { background: var(--af-bg); }
+.af-dash-chevron {
+  width: 14px;
+  height: 14px;
+  color: var(--af-muted);
   display: grid;
   place-items: center;
-  font-size: 11px;
+  transition: transform 0.15s ease;
+}
+.af-dash-chevron svg { width: 14px; height: 14px; }
+.af-dash-widget.collapsed .af-dash-chevron { transform: rotate(-90deg); }
+.af-dash-widget-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--af-text);
+}
+.af-dash-widget-bd {
+  padding: 14px 18px 18px;
+  border-top: 1px solid var(--af-line);
+  background: var(--af-panel);
 }
 
 /* =====================================================================

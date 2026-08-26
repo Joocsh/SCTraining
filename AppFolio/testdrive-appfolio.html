@@ -30,7 +30,9 @@
   <div class="af-shell">
 
     <!-- Top bar. In AppFolio this band carries four things and nothing else:
-         the logo, a wide search field, Help & Training, and Customer Service.
+         the logo, a wide search field, and three menus: Add Functionality,
+         Help & Training, and the account. There is no Customer Service entry:
+         that was this module inventing one.
          There is no + New button — creation actions live in the right rail,
          contextual to the page, which is where a trainee has to learn to look.
 
@@ -46,20 +48,32 @@
       </button>
 
       <a class="af-logo" href="#" onclick="afGoto('dashboard');return false;">
-        <img class="af-logo-img" src="Images-resources/brand/appfolio-logo.svg" alt="AppFolio Property Manager" height="28">
+        <div class="af-logo-circle">a</div>
+        <span class="af-logo-title">Property Manager</span>
       </a>
 
       <div class="af-topsearch">
+        <svg class="af-search-lens" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/>
+        </svg>
         <label class="af-sr-only" for="afGlobalSearch">Search</label>
-        <input type="text" id="afGlobalSearch" placeholder="Search" oninput="afDemoAction('Global search')">
-        <button type="button" class="af-topsearch-btn" onclick="afDemoAction('Global search')" aria-label="Search">
+        <input type="text" id="afGlobalSearch" placeholder="Search AppFolio" oninput="afDemoAction('Global search')">
+        <button type="button" class="af-topsearch-btn" onclick="afDemoAction('Global search')" aria-label="Filter Search">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-            <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.7" y2="16.7"/>
+            <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
           </svg>
         </button>
       </div>
 
       <div class="af-topbar-right">
+        <button type="button" class="af-topmenu" onclick="afDemoAction('Add Functionality')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          Add Functionality
+          <span class="af-caret" aria-hidden="true">&#9662;</span>
+        </button>
+
         <button type="button" class="af-topmenu" onclick="afDemoAction('Help &amp; Training')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
             <circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
@@ -68,11 +82,12 @@
           <span class="af-caret" aria-hidden="true">&#9662;</span>
         </button>
 
-        <button type="button" class="af-topmenu" onclick="afDemoAction('Customer Service')">
+        <!-- The account menu, named for the management company. -->
+        <button type="button" class="af-topmenu" onclick="afDemoAction('Account menu')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            <circle cx="12" cy="8" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
           </svg>
-          Customer Service
+          First Choice
           <span class="af-caret" aria-hidden="true">&#9662;</span>
         </button>
 
@@ -100,6 +115,8 @@
         <main class="af-body">
           <div id="afRoot"></div>
           <footer class="af-footer">
+            <button type="button" onclick="afDemoAction('Privacy policy')">Privacy</button>
+            <span aria-hidden="true">|</span>
             <button type="button" onclick="afDemoAction('Help &amp; Training')">Help &amp; Training</button>
             <span aria-hidden="true">|</span>
             <button type="button" onclick="afDemoAction('Make a Suggestion')">Make a Suggestion &raquo;</button>
@@ -109,6 +126,10 @@
 
       <!-- Contextual right rail, painted by afRenderRail(). -->
       <aside class="af-rail" id="afRail" hidden></aside>
+
+      <!-- Assistant / Tasks / Support. Always visible; this is how the
+           Tasks panel is reopened once it has been dismissed. -->
+      <nav class="af-railstrip" id="afRailStrip" aria-label="Panels"></nav>
 
     </div>
   </div>

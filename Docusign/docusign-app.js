@@ -765,10 +765,23 @@ function dsToggleSidebarMore() {
 /* Sidebar quick views all land on the same list with a different filter, which is
    how the real product works — they are saved searches, not separate screens. */
 function dsQuickView(filter) {
+  if (filter === 'action' || filter === 'deleted') {
+    dsMark('ds_action_open');
+  }
   dsState.envelopeFilter = filter;
   dsState.activeFolder = 'all';
   dsResetPage();
   dsGoto('envelopes');
+}
+
+function dsOpenMailbox() {
+  dsMark('ds_mail_open');
+  dsGoto('mailbox');
+}
+
+function dsOpenDeleted() {
+  dsMark('ds_action_open');
+  dsQuickView('deleted');
 }
 
 /* Folders are demo state, so the list is painted rather than written into the
@@ -842,11 +855,13 @@ function dsWizardDirty() {
   return JSON.stringify(d) !== before;
 }
 
-/* Leaving a half-built envelope should cost a confirmation, not a shrug. The
-   Cancel button routes through here too, so there is one answer to "am I about
-   to lose this?" wherever you leave from. */
 function dsGoto(view, extraId) {
   if (dsWizardDirty() && view !== 'new-envelope' && !dsSkipWizardGuard) {
+    if (typeof SimEngine !== 'undefined' && (SimEngine.walkActive() || dsSuppressMarks)) {
+      dsResetWizard();
+      dsGotoNow(view, extraId);
+      return;
+    }
     dsConfirm({
       title: 'Discard this envelope?',
       body: 'You have changes in the sending wizard that have not been sent. Leaving now discards the documents, recipients and fields you set up.',
@@ -1230,6 +1245,23 @@ function dsSyncNav() {
   }
 
   dsRenderSidebarFolders();
+  dsUpdateTrainingButton();
+}
+
+/* Updates the topbar right Training button state and completion fraction */
+function dsUpdateTrainingButton() {
+  const btn = document.getElementById('dsTrainingBtn');
+  const badge = document.getElementById('dsTrainingBadge');
+  if (!btn || !badge) return;
+  const LESSON_VIEWS = ['lessons', 'scenarios', 'lesson', 'scenario-detail', 'triage', 'verify', 'compose', 'exam', 'complete-transaction'];
+  const inTraining = LESSON_VIEWS.indexOf(dsState.view) > -1 || !!dsState.lessonId;
+  btn.classList.toggle('active', inTraining);
+  btn.classList.toggle('in-lesson', !!dsState.lessonId);
+  const total = (typeof DS_LESSONS !== 'undefined' && DS_LESSONS.length) ? DS_LESSONS.length : 10;
+  const done = (typeof SimEngine !== 'undefined' && typeof SimEngine.lessonState === 'function')
+    ? DS_LESSONS.filter((l, i) => SimEngine.lessonState(i) === 'done').length
+    : 0;
+  badge.textContent = `${done}/${total}`;
 }
 
 function dsToggleSidebarMore() {
@@ -1250,6 +1282,7 @@ function dsToggleSidebarGroup(id) {
    lesson they are in, how far they are, and gives them a one-click exit.
    Progress is persisted as you go, so clicking Exit never loses work. */
 function dsRenderLessonBanner() {
+  dsUpdateTrainingButton();
   const el = document.getElementById('dsLessonBanner');
   if (!el) return;
   const lid = dsState.lessonId;
@@ -2702,19 +2735,7 @@ function dsWizardStep1HTML() {
         <span class="ds-drop-sub">PDF, Word or plain text. Your file is never uploaded anywhere &mdash; the name is held in this tab only, and a page refresh clears it.</span>
         <div class="ds-drop-btn-row">
           <button type="button" class="ds-btn primary" onclick="document.getElementById('dsFileInput').click()">${dsIcon('download', 15)} Browse device files</button>
-          <button type="button" class="ds-btn" onclick="dsOpenSampleDocsModal()">${dsIcon('file', 15)} Sample documents</button>
-        </div>
-
-        <!-- The three sample documents are NOT uploads, so they are fenced off
-             below their own label. Presenting them inside the drop zone was
-             actively misleading: people clicked them expecting a file picker. -->
-        <div class="ds-samples${dsShowSampleDocs() ? ' on' : ''}">
-          <span class="ds-samples-label">Sample documents &mdash; for the lesson, no file of your own needed</span>
-          <div class="ds-drop-btn-row">
-            <button type="button" class="ds-btn" id="dsAttachPurchaseAgreement" onclick="dsAttachDoc('Purchase_Agreement_123_Main.pdf',6)">Purchase Agreement <span class="ds-samples-pages">6 pages</span></button>
-            <button type="button" class="ds-btn" onclick="dsAttachDoc('Seller_Property_Disclosure.pdf',3)">Property Disclosure <span class="ds-samples-pages">3 pages</span></button>
-            <button type="button" class="ds-btn" onclick="dsAttachDoc('Independent_Contractor_Agreement.pdf',4)">Contractor Agreement <span class="ds-samples-pages">4 pages</span></button>
-          </div>
+          <button type="button" class="ds-btn" id="dsBtnSampleDocs" onclick="dsOpenSampleDocsModal()">${dsIcon('file', 15)} Sample documents</button>
         </div>
       </div>
 
@@ -2962,7 +2983,7 @@ function dsOpenSampleDocsModal() {
       </div>
       <div class="ds-modal-body">
         <ul class="ds-sampledoc-list">
-          ${DS_DOC_LIBRARY.map(d => `
+          ${DS_DOC_LIBRARY.map((d, idx) => `
             <li class="ds-sampledoc">
               <div class="ds-sampledoc-info">
                 <b>${esc(d.title)}</b>
@@ -2970,7 +2991,7 @@ function dsOpenSampleDocsModal() {
               </div>
               <div class="ds-sampledoc-actions">
                 <button type="button" class="ds-btn" onclick="dsPreviewSampleDoc('${escAttr(d.id)}')">${dsIcon('eye', 14)} Preview</button>
-                <button type="button" class="ds-btn primary" onclick="dsAttachSampleDoc('${escAttr(d.id)}')">${dsIcon('plus', 14)} Attach</button>
+                <button type="button" class="ds-btn primary" ${idx === 0 ? 'id="dsAttachSampleDocBtn"' : ''} onclick="dsAttachSampleDoc('${escAttr(d.id)}')">${dsIcon('plus', 14)} Attach</button>
               </div>
             </li>`).join('')}
         </ul>
@@ -3993,6 +4014,7 @@ function dsAddField() {
   dsAddCustomCanvasField('Signature');
 }
 function dsAuditFields() {
+  dsMark('ds_c3_2');
   /* Checks four things that would each stop a real envelope from working. The
      previous version only compared two hard-coded field ids against a hard-coded
      buyer and seller — and once those ids stopped existing it found nothing to
@@ -4358,7 +4380,7 @@ function dsEnvelopeDetailHTML() {
       <button class="ds-btn primary" onclick="dsViewEnvelopeDoc('${escAttr(env.id)}', 0)">
         ${dsIcon('eye')} View Document
       </button>
-      <button class="ds-btn" onclick="dsOpenCertificateModal('${escAttr(env.id)}')">
+      <button class="ds-btn" id="dsBtnViewCertificate" onclick="dsOpenCertificateModal('${escAttr(env.id)}')">
         ${dsIcon('award')} Certificate of Completion
       </button>
       <button class="ds-btn" onclick="dsSaveEnvelopeAsTemplate('${escAttr(env.id)}')">
@@ -4621,6 +4643,7 @@ function dsActionResend(envId) {
 function dsActionCorrect(envId) {
   const env = dsGetEnvelope(envId);
   if (!env) return;
+  dsMark('ds_c5_3');
   const formId = 'dsCorrectForm-' + envId;
   if (document.getElementById(formId)) return;   /* already open */
   const bar = document.querySelector('.ds-action-bar');
@@ -4707,6 +4730,7 @@ function dsActionVoid(envId) {
   /* B-5/B-8: was prompt() with pre-filled reason + 'Superceded' typo. */
   const env = dsGetEnvelope(envId);
   if (!env) return;
+  dsMark('ds_c5_4');
   const formId = 'dsVoidForm-' + envId;
   if (document.getElementById(formId)) return;
   const bar = document.querySelector('.ds-action-bar');
@@ -6888,6 +6912,7 @@ function dsCloseAuditModal() {
 function dsOpenCertificateModal(envId) {
   const env = dsGetEnvelope(envId);
   if (!env) return;
+  dsMark('ds_cert_open');
 
   const modal = document.createElement('div');
   modal.id = 'dsCertModalWrap';

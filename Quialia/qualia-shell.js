@@ -790,17 +790,23 @@ function qzShellAcctOverviewHTML() {
 
 function qzShellAcctReceiptsHTML() {
   const list = qzShellGetReceipts();
-  const rows = list.map(r => `
-    <tr>
+  const rows = list.map(r => {
+    const isVoid = r.status === 'Void';
+    return `
+    <tr class="${isVoid ? 'qzs-dim' : ''}">
       <td>${esc(fmtDate(r.date))}</td>
       <td><b>${esc(r.num)}</b></td>
-      <td>${qzShellOrderCell(r.order)}</td>
+      <td>${qzShellOrderCell(r.order || r.orderId)}</td>
       <td>${esc(r.payer)}</td>
       <td><span class="qz-badge dark">${esc(r.method)}</span></td>
       <td class="num">${fmtMoney(r.amount)}</td>
       <td>${qzShellBadge(r.status)}</td>
       <td class="qzs-dim">${esc(r.by)}</td>
-    </tr>`).join('');
+      <td style="text-align:right">
+        ${!isVoid ? `<button type="button" class="qz-btn sm danger" onclick="qzVoidMoneyModal('receipts', '${escAttr(r.id)}')">Void</button>` : '<span class="qzs-dim" style="font-size:11.5px">Voided</span>'}
+      </td>
+    </tr>`;
+  }).join('');
   return `
     <div class="qzs-tbl-actions">
       <button type="button" class="qz-btn sm" onclick="qzShellAction('Export')">Export</button>
@@ -808,26 +814,32 @@ function qzShellAcctReceiptsHTML() {
     </div>
     <div class="qz-tbl-scroll">
       <table class="qz-tbl">
-        <thead><tr><th>Date</th><th>Receipt #</th><th>Order</th><th>Payer</th><th>Method</th><th class="num">Amount</th><th>Status</th><th>Received By</th></tr></thead>
+        <thead><tr><th>Date</th><th>Receipt #</th><th>Order</th><th>Payer</th><th>Method</th><th class="num">Amount</th><th>Status</th><th>Received By</th><th style="text-align:right">Actions</th></tr></thead>
         <tbody>${rows}</tbody>
-        <tfoot><tr><td colspan="5">${list.length} receipts</td><td class="num">${fmtMoney(qzShellSum(list, 'amount'))}</td><td colspan="2"></td></tr></tfoot>
+        <tfoot><tr><td colspan="5">${list.length} receipts</td><td class="num">${fmtMoney(qzShellSum(list, 'amount'))}</td><td colspan="3"></td></tr></tfoot>
       </table>
     </div>`;
 }
 
 function qzShellAcctDisbursementsHTML() {
   const list = qzShellGetDisbursements();
-  const rows = list.map(d => `
-    <tr class="${d.status === 'Pending Approval' ? 'qzs-row-warn' : ''}">
+  const rows = list.map(d => {
+    const isVoid = d.status === 'Void';
+    return `
+    <tr class="${d.status === 'Pending Approval' ? 'qzs-row-warn' : ''} ${isVoid ? 'qzs-dim' : ''}">
       <td>${esc(fmtDate(d.date))}</td>
       <td><b>${esc(d.num)}</b></td>
-      <td>${qzShellOrderCell(d.order)}</td>
+      <td>${qzShellOrderCell(d.order || d.orderId)}</td>
       <td>${esc(d.payee)}</td>
       <td><span class="qz-badge dark">${esc(d.method)}</span></td>
       <td class="num">${fmtMoney(d.amount)}</td>
       <td>${qzShellBadge(d.status)}</td>
       <td class="qzs-dim">${esc(d.by)}</td>
-    </tr>`).join('');
+      <td style="text-align:right">
+        ${!isVoid ? `<button type="button" class="qz-btn sm danger" onclick="qzVoidMoneyModal('disbursements', '${escAttr(d.id)}')">Void</button>` : '<span class="qzs-dim" style="font-size:11.5px">Voided</span>'}
+      </td>
+    </tr>`;
+  }).join('');
   return `
     <div class="qzs-tbl-actions">
       <button type="button" class="qz-btn sm" onclick="qzShellAction('Export')">Export</button>
@@ -836,9 +848,9 @@ function qzShellAcctDisbursementsHTML() {
     </div>
     <div class="qz-tbl-scroll">
       <table class="qz-tbl">
-        <thead><tr><th>Date</th><th>Check/Wire #</th><th>Order</th><th>Payee</th><th>Method</th><th class="num">Amount</th><th>Status</th><th>Approved By</th></tr></thead>
+        <thead><tr><th>Date</th><th>Check/Wire #</th><th>Order</th><th>Payee</th><th>Method</th><th class="num">Amount</th><th>Status</th><th>Approved By</th><th style="text-align:right">Actions</th></tr></thead>
         <tbody>${rows}</tbody>
-        <tfoot><tr><td colspan="5">${list.length} disbursements</td><td class="num">${fmtMoney(qzShellSum(list, 'amount'))}</td><td colspan="2"></td></tr></tfoot>
+        <tfoot><tr><td colspan="5">${list.length} disbursements</td><td class="num">${fmtMoney(qzShellSum(list, 'amount'))}</td><td colspan="3"></td></tr></tfoot>
       </table>
     </div>`;
 }
@@ -890,17 +902,23 @@ function qzShellAcctReconciliationHTML() {
 
 function qzShellAcctInvoicesHTML() {
   const list = qzShellGetInvoices();
-  const rows = list.map(i => `
-    <tr>
+  const rows = list.map(i => {
+    const isVoid = i.status === 'Void';
+    return `
+    <tr class="${isVoid ? 'qzs-dim' : ''}">
       <td><b>${esc(i.num)}</b></td>
-      <td>${qzShellOrderCell(i.order)}</td>
+      <td>${qzShellOrderCell(i.order || i.orderId)}</td>
       <td>${esc(i.billTo)}</td>
       <td>${esc(fmtDate(i.issued))}</td>
       <td class="${i.status === 'Past Due' ? 'qzs-neg' : ''}">${esc(fmtDate(i.due))}</td>
       <td class="num">${fmtMoney(i.amount)}</td>
       <td class="num ${i.balance > 0 ? 'qzs-owed' : ''}">${fmtMoney(i.balance)}</td>
       <td>${qzShellBadge(i.status)}</td>
-    </tr>`).join('');
+      <td style="text-align:right">
+        ${!isVoid ? `<button type="button" class="qz-btn sm danger" onclick="qzVoidMoneyModal('invoices', '${escAttr(i.id)}')">Void</button>` : '<span class="qzs-dim" style="font-size:11.5px">Voided</span>'}
+      </td>
+    </tr>`;
+  }).join('');
   return `
     <div class="qzs-tbl-actions">
       <button type="button" class="qz-btn sm" onclick="qzShellAction('Export')">Export</button>
@@ -908,9 +926,9 @@ function qzShellAcctInvoicesHTML() {
     </div>
     <div class="qz-tbl-scroll">
       <table class="qz-tbl">
-        <thead><tr><th>Invoice #</th><th>Order</th><th>Bill To</th><th>Issued</th><th>Due</th><th class="num">Amount</th><th class="num">Balance</th><th>Status</th></tr></thead>
+        <thead><tr><th>Invoice #</th><th>Order</th><th>Bill To</th><th>Issued</th><th>Due</th><th class="num">Amount</th><th class="num">Balance</th><th>Status</th><th style="text-align:right">Actions</th></tr></thead>
         <tbody>${rows}</tbody>
-        <tfoot><tr><td colspan="5">${list.length} invoices</td><td class="num">${fmtMoney(qzShellSum(list, 'amount'))}</td><td class="num">${fmtMoney(qzShellSum(list, 'balance'))}</td><td></td></tr></tfoot>
+        <tfoot><tr><td colspan="5">${list.length} invoices</td><td class="num">${fmtMoney(qzShellSum(list, 'amount'))}</td><td class="num">${fmtMoney(qzShellSum(list, 'balance'))}</td><td colspan="2"></td></tr></tfoot>
       </table>
     </div>`;
 }
