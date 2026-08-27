@@ -167,8 +167,8 @@
       content:''; position:absolute; right:-50px; top:-50px; width:240px; height:240px;
       border-radius:50%; pointer-events:none;
     }
-    .mod-header.claude { background:linear-gradient(165deg,var(--v-navy) 0%,#0f3b6a 100%); }
-    .mod-header.claude::before { background:radial-gradient(circle,rgba(249,115,22,.24),transparent 70%); }
+    .mod-header.claude { background:linear-gradient(165deg,#7c2d12 0%,#a83a10 100%); }
+    .mod-header.claude::before { background:radial-gradient(circle,rgba(253,186,116,.28),transparent 70%); }
     .mod-header.chatgpt { background:linear-gradient(165deg,#0a2e22 0%,#0f4535 100%); }
     .mod-header.chatgpt::before { background:radial-gradient(circle,rgba(16,163,127,.32),transparent 70%); }
     .mod-header.manus { background:linear-gradient(165deg,#0f0c2e 0%,#1c1a5e 100%); }
@@ -180,7 +180,9 @@
       padding:6px 14px; border-radius:999px; font-size:11.5px; font-weight:800;
       letter-spacing:.8px; text-transform:uppercase; margin-bottom:16px;
     }
-    .mod-badge.claude { background:rgba(249,115,22,.16); color:#FDBA74; border:1px solid rgba(249,115,22,.35); }
+    .mod-badge.claude { background:rgba(255,255,255,.16); color:#FFEDD5; border:1px solid rgba(255,255,255,.34); }
+    /* El naranja es mas claro que el navy de los otros modulos: la firma necesita mas opacidad */
+    .mod-header.claude .mod-by { color:rgba(255,255,255,.68); }
     .mod-badge.chatgpt { background:rgba(16,163,127,.14); color:#4ade80; border:1px solid rgba(16,163,127,.3); }
     .mod-badge.manus { background:rgba(74,108,247,.14); color:#a5b4fc; border:1px solid rgba(74,108,247,.3); }
     .mod-title { font-size:clamp(24px,3.6vw,32px); color:#fff; margin:0 0 8px; font-weight:900; letter-spacing:-0.5px; font-family:"Helvetica Neue",Arial,sans-serif; }
@@ -248,7 +250,7 @@
 
     /* ===== REACH FRAMEWORK ===== */
     .reach-wrap {
-      background:linear-gradient(165deg,var(--v-navy) 0%,#123a63 100%);
+      background:linear-gradient(165deg,#7c2d12 0%,#a83a10 100%);
       border-radius:22px; padding:36px; margin:32px 0 40px; position:relative; overflow:hidden;
     }
     .reach-wrap::before {
@@ -257,16 +259,16 @@
       background-size:26px 26px; pointer-events:none;
     }
     .reach-head { position:relative; z-index:1; margin-bottom:28px; }
-    .reach-eyebrow { display:block; font-size:11.5px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:var(--claude); margin-bottom:8px; }
+    .reach-eyebrow { display:block; font-size:11.5px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#FDBA74; margin-bottom:8px; }
     .reach-head h3 { font-family:"Helvetica Neue",Arial,sans-serif; color:#fff; font-size:22px; font-weight:900; margin:0 0 8px; letter-spacing:-.3px; }
-    .reach-head p { color:#a9c1d8; font-size:15px; line-height:1.6; margin:0; max-width:520px; }
+    .reach-head p { color:#f7dcc9; font-size:15px; line-height:1.6; margin:0; max-width:520px; }
     .reach-row { position:relative; z-index:1; display:grid; grid-template-columns:repeat(5,1fr); gap:16px; }
     .reach-item { text-align:left; }
     .reach-badge { width:44px; height:44px; border-radius:50%; display:grid; place-items:center; font-family:"Helvetica Neue",Arial,sans-serif; font-size:18px; font-weight:900; margin-bottom:12px; }
-    .reach-badge.a { background:var(--claude); color:#fff; }
-    .reach-badge.b { background:rgba(249,115,22,.22); color:#FDBA74; border:1.5px solid rgba(249,115,22,.55); }
+    .reach-badge.a { background:#FFEDD5; color:#7c2d12; }
+    .reach-badge.b { background:rgba(255,255,255,.18); color:#FFEDD5; border:1.5px solid rgba(255,255,255,.42); }
     .reach-item h4 { color:#fff; font-size:14.5px; font-weight:800; margin:0 0 5px; letter-spacing:-.1px; }
-    .reach-item p { color:#96b2cb; font-size:12.5px; line-height:1.5; margin:0; }
+    .reach-item p { color:#f7dcc9; font-size:12.5px; line-height:1.5; margin:0; }
 
     /* ===== TOKEN WINDOW ===== */
     .ai-token-window {
@@ -551,18 +553,18 @@
       <p>In practice, this means Claude is excellent at following complex, multi-part instructions without drifting from your request. It handles very long documents without losing track of earlier details. Its writing tends to feel more natural and less templated than other models. And it is careful: if it is uncertain about something, it says so rather than inventing a confident-sounding answer.</p>
 
       <!-- SVG: Claude visual -->
-      <div class="llm-diagram-wrap" style="background:linear-gradient(135deg,var(--v-navy),#123a63);border-color:#1a3a5c;">
+      <div class="llm-diagram-wrap" style="background:linear-gradient(135deg,#7c2d12,#a83a10);border-color:#c2410c;">
         <svg viewBox="0 0 620 100" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;">
           <!-- Three pillars: Helpful / Honest / Harmless -->
-          <rect x="20" y="15" width="176" height="70" rx="12" fill="rgba(249,115,22,.1)" stroke="rgba(249,115,22,.3)" stroke-width="1.2"/>
-          <text x="108" y="46" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="18" font-weight="900" fill="#F97316">H</text>
-          <text x="108" y="66" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="12" font-weight="700" fill="rgba(255,255,255,.6)">Helpful</text>
-          <rect x="222" y="15" width="176" height="70" rx="12" fill="rgba(249,115,22,.15)" stroke="rgba(249,115,22,.35)" stroke-width="1.2"/>
-          <text x="310" y="46" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="18" font-weight="900" fill="#F97316">H</text>
-          <text x="310" y="66" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="12" font-weight="700" fill="rgba(255,255,255,.6)">Honest</text>
-          <rect x="424" y="15" width="176" height="70" rx="12" fill="rgba(249,115,22,.1)" stroke="rgba(249,115,22,.3)" stroke-width="1.2"/>
-          <text x="512" y="46" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="18" font-weight="900" fill="#F97316">H</text>
-          <text x="512" y="66" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="12" font-weight="700" fill="rgba(255,255,255,.6)">Harmless</text>
+          <rect x="20" y="15" width="176" height="70" rx="12" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.26)" stroke-width="1.2"/>
+          <text x="108" y="46" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="18" font-weight="900" fill="#FFEDD5">H</text>
+          <text x="108" y="66" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="12" font-weight="700" fill="rgba(255,255,255,.75)">Helpful</text>
+          <rect x="222" y="15" width="176" height="70" rx="12" fill="rgba(255,255,255,.13)" stroke="rgba(255,255,255,.32)" stroke-width="1.2"/>
+          <text x="310" y="46" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="18" font-weight="900" fill="#FFEDD5">H</text>
+          <text x="310" y="66" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="12" font-weight="700" fill="rgba(255,255,255,.75)">Honest</text>
+          <rect x="424" y="15" width="176" height="70" rx="12" fill="rgba(255,255,255,.08)" stroke="rgba(255,255,255,.26)" stroke-width="1.2"/>
+          <text x="512" y="46" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="18" font-weight="900" fill="#FFEDD5">H</text>
+          <text x="512" y="66" text-anchor="middle" font-family="Helvetica Neue, Arial" font-size="12" font-weight="700" fill="rgba(255,255,255,.75)">Harmless</text>
         </svg>
       </div>
 
@@ -1312,7 +1314,7 @@
       <div>
         <h4>Roles</h4>
         <a class="fl" href="roles/transaction-coordinator.html">Transaction Coordinator</a>
-        <a class="fl" href="roles/leasing-coordinator.html">Leasing Coordinator</a>
+        <a class="fl" href="roles/leasing-coordinator.html">Property Manager</a>
         <a class="fl" href="roles/operations-manager.html">Operations</a>
         <a class="fl" href="roles/cfo-bookkeeper.html">CFO / Bookkeeper</a>
       </div>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 96" role="img" aria-label="TurboTenant">
+  <!-- roof over the "tenant" half -->
+  <g fill="none" stroke="#111111" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M176 36 L244 8 L322 34"/>
+    <path d="M282 14 v-9 h15 v14"/>
+  </g>
+  <!-- speed lines -->
+  <g stroke="#0E6FB0" stroke-width="7" stroke-linecap="round">
+    <line x1="6" y1="52" x2="34" y2="52"/>
+    <line x1="12" y1="66" x2="34" y2="66"/>
+    <line x1="18" y1="80" x2="34" y2="80"/>
+  </g>
+  <!-- wordmark -->
+  <text x="42" y="84" font-family="Poppins, Arial, Helvetica, sans-serif" font-size="46" font-weight="800" letter-spacing="-1">
+    <tspan fill="#0E6FB0" font-style="italic">turbo</tspan><tspan fill="#111111">tenant</tspan>
+  </text>
+</svg>

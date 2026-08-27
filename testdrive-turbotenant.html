@@ -1,0 +1,1969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TurboTenant Test Drive · SkillCloud Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#12395E; --navy-d:#0C2B49; --navy-btn:#14406B;
+  --blue:#1F6FB2; --blue-l:#4A90C9;
+  --ink:#243B53; --body:#33475B; --muted:#6B7C8F; --faint:#9AA9B7;
+  --bg:#F5F6F8; --card:#fff; --line:#E2E7EC; --line-d:#CBD5DE;
+  --green:#00A86B; --green-bg:#C9F0DE; --green-tx:#1B7A4B;
+  --red:#D64545; --red-bg:#F8D9DD; --red-tx:#B02A37;
+  --purple-bg:#EAE4F9; --purple:#7C5CDB;
+  --ai-bg1:#EAF6FD; --ai-bg2:#CBE9F9;
+  --chipbg:#EDF0F3;
+  --referral:#1C2F5E;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px}
+body{font-family:'Open Sans',Arial,sans-serif;background:var(--bg);color:var(--body);font-size:14px;line-height:1.5;}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,select,textarea{font-family:inherit;font-size:14px;color:var(--body)}
+a{color:var(--blue);text-decoration:none}
+h1,h2,h3,.pop{font-family:'Poppins','Open Sans',sans-serif;color:var(--ink)}
+
+/* ======= SkillCloud back strip ======= */
+.sc-strip{background:#0a2647;color:#fff;display:flex;align-items:center;gap:12px;padding:0 22px;height:36px;font-size:12.5px;position:relative;z-index:90}
+.sc-strip a{color:#d3e2f0;font-weight:700}
+.sc-strip .dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.35)}
+.sc-strip b i{color:#2AA7DE;font-style:normal}
+.sc-strip .note{color:#9fb4c9;margin-left:auto;font-size:12px}
+
+/* ======= layout ======= */
+.app{display:flex;min-height:calc(100vh - 36px)}
+.sidebar{width:202px;flex:none;background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:calc(100vh - 36px);overflow-y:auto}
+.side-logo{display:flex;justify-content:center;padding:16px 0 10px}
+.side-logo .ig{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#7ED957,#2E9E49);display:grid;place-items:center;color:#fff;font-weight:800;font-size:7px;letter-spacing:.4px;text-align:center;line-height:1;font-family:'Poppins',sans-serif}
+.referral{margin:4px 12px 14px;background:var(--referral);color:#fff;border-radius:6px;padding:9px 10px;display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;justify-content:center;width:calc(100% - 24px)}
+.referral:hover{background:#24396e}
+.nav{padding:0 8px}
+.nav-item{display:flex;align-items:center;gap:11px;padding:8px 12px;border-radius:6px;color:#42566B;font-size:13.5px;cursor:pointer;margin-bottom:1px;white-space:nowrap;width:100%;text-align:left}
+.nav-item svg{width:17px;height:17px;flex:none;stroke:#5B6E82;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.nav-item:hover{background:#F0F3F6}
+.nav-item.on{background:#E7EDF3;color:var(--navy);font-weight:700}
+.nav-item.on svg{stroke:var(--navy)}
+.nav-sec{font-size:11px;color:var(--faint);padding:14px 14px 5px;font-weight:600}
+.side-foot{margin-top:auto;border-top:1px solid var(--line);padding:12px 14px;display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer}
+.side-foot .sq{width:26px;height:26px;border-radius:6px;background:#17C3D4;display:grid;place-items:center;color:#083a44;font-size:6.5px;font-weight:800;flex:none;font-family:'Poppins',sans-serif}
+.side-foot .chev{margin-left:auto;color:var(--muted)}
+.main{flex:1;min-width:0;padding:26px 34px 70px;position:relative}
+.main-inner{max-width:1080px;margin:0 auto}
+
+/* ======= shared ======= */
+.btn{border-radius:22px;padding:9px 22px;font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn.primary{background:var(--navy-btn);color:#fff}
+.btn.primary:hover{background:#1B4E80}
+.btn.outline{background:#fff;color:var(--navy);border:1.5px solid var(--navy)}
+.btn.outline:hover{background:#F0F5FA}
+.btn.sm{padding:7px 16px;font-size:11.5px}
+.pill-toggle{display:inline-flex;border:1px solid var(--line-d);border-radius:5px;overflow:hidden;background:#fff}
+.pill-toggle button{padding:5px 13px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.pill-toggle button.on{background:var(--navy);color:#fff;border-radius:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px}
+.tabs{display:flex;gap:26px;border-bottom:1px solid var(--line)}
+.tabs button{padding:9px 2px 10px;font-size:13px;font-weight:700;letter-spacing:.5px;color:var(--muted);text-transform:uppercase;border-bottom:3px solid transparent}
+.tabs button.on{color:var(--navy);border-bottom-color:var(--navy)}
+.badge{display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:600}
+.badge.unpaid{background:var(--chipbg);color:var(--muted)}
+.badge.paid{background:var(--green-bg);color:var(--green-tx)}
+.badge.autopay{background:var(--navy);color:#fff}
+.badge.pastdue{background:var(--red-bg);color:var(--red-tx);font-size:10.5px;letter-spacing:.5px;font-weight:700}
+.badge.resolved{background:var(--navy);color:#fff}
+.badge.openreq{background:var(--red-bg);color:var(--red-tx)}
+.badge.progress{background:#FFF3CD;color:#8a6d1a}
+.badge.new{background:var(--navy);color:#fff;font-size:10px;letter-spacing:.6px}
+.badge.owned{background:#5B6E82;color:#fff;font-size:11px}
+.badge.draft{background:var(--chipbg);color:var(--muted);font-size:10.5px;letter-spacing:.5px}
+.filter-pill{display:inline-flex;align-items:center;gap:7px;background:var(--chipbg);border:1px solid transparent;border-radius:6px;padding:7px 14px;font-size:12.5px;font-weight:600;color:var(--body)}
+.filter-pill:hover{border-color:var(--line-d)}
+.link-btn{color:var(--blue);font-weight:700;font-size:12px;letter-spacing:.5px;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;background:none}
+.avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;flex:none}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:#16325C;color:#fff;padding:11px 22px;border-radius:8px;font-size:13.5px;box-shadow:0 8px 26px rgba(10,38,71,.35);opacity:0;transition:.25s;z-index:400;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.chat-fab{position:fixed;right:26px;bottom:80px;width:48px;height:48px;border-radius:50%;background:#E8F4FB;border:1px solid #BFDFF2;display:grid;place-items:center;color:var(--blue);box-shadow:0 4px 14px rgba(10,38,71,.13);z-index:60;font-size:19px}
+.screen{display:none}
+.screen.on{display:block}
+.mono-eyebrow{font-size:11px;font-weight:700;letter-spacing:.8px;color:var(--muted);text-transform:uppercase}
+.hd-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}
+.hd-row h1{font-size:24px;font-weight:600}
+.empty-wrap{text-align:center;padding:56px 20px}
+.empty-wrap .big{font-size:17px;font-weight:700;color:var(--ink);font-family:'Poppins',sans-serif;margin-bottom:6px}
+.empty-wrap p{color:var(--muted);font-size:13.5px;max-width:440px;margin:0 auto 18px}
+
+/* ======= modal ======= */
+.overlay{position:fixed;inset:0;background:rgba(20,35,52,.45);display:none;align-items:flex-start;justify-content:center;padding:60px 20px;z-index:300;overflow-y:auto}
+.overlay.on{display:flex}
+.modal{background:#fff;border-radius:10px;width:100%;max-width:480px;padding:26px 28px;box-shadow:0 18px 60px rgba(10,30,50,.3);position:relative}
+.modal h3{font-size:17px;margin-bottom:16px}
+.modal .x{position:absolute;top:14px;right:16px;font-size:20px;color:var(--muted)}
+.fld{margin-bottom:15px}
+.fld label{display:block;font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.fld label .opt{color:var(--muted);font-weight:400}
+.fld input[type=text],.fld input[type=date],.fld input[type=email],.fld input[type=number],.fld select,.fld textarea{width:100%;border:1px solid var(--line-d);border-radius:6px;padding:9px 12px;background:#fff}
+.fld textarea{min-height:90px;resize:vertical}
+.fld .hint{font-size:12px;color:var(--muted);margin-top:5px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips .chip{border:1px solid var(--line-d);border-radius:6px;padding:7px 14px;font-size:12.5px;font-weight:600;color:var(--body);background:#fff}
+.chips .chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.modal-foot{display:flex;justify-content:flex-end;gap:12px;margin-top:20px}
+.ai-note{background:#EAF6FD;border-radius:6px;padding:10px 13px;font-size:12.5px;color:#2B5E82;display:flex;gap:8px}
+
+/* ======= dashboard ======= */
+.dash-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px;align-items:start}
+.greet{font-size:26px;font-weight:600;margin-bottom:14px}
+.resi-label{font-size:14px;font-weight:700;color:#5B6E82;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.pay-card .pc-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px 6px}
+.pay-card .pc-head h3{font-size:17px}
+.pay-boxes{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:10px 22px 18px}
+.pay-box{border:1px solid var(--line);border-radius:7px;padding:13px 16px;position:relative;overflow:hidden}
+.pay-box .lb{font-size:12px;color:var(--muted);font-weight:600}
+.pay-box .amt{font-size:22px;font-weight:700;font-family:'Poppins',sans-serif}
+.pay-box .amt.g{color:var(--green)}
+.pay-box .amt.r{color:#D32F2F}
+.pay-box::after{content:'';position:absolute;right:-24px;top:-10px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,transparent 55%,currentColor 56%,transparent 57%,transparent 62%,currentColor 63%,transparent 64%,transparent 69%,currentColor 70%,transparent 71%);opacity:.18}
+.pay-box.g::after{color:var(--green)}
+.pay-box.r::after{color:#D32F2F}
+.pc-foot{border-top:1px solid var(--line);text-align:center;padding:11px}
+.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);margin-top:18px}
+.stat-strip .st{background:#fff;border:1px solid var(--line);margin-left:-1px;padding:20px 10px;text-align:center}
+.stat-strip .st:first-child{border-radius:8px 0 0 8px;margin-left:0}
+.stat-strip .st:last-child{border-radius:0 8px 8px 0}
+.stat-strip svg{width:34px;height:34px;stroke:var(--navy);fill:none;stroke-width:1.4;margin-bottom:6px}
+.stat-strip .lb{font-size:10.5px;letter-spacing:.6px;color:var(--muted);font-weight:700}
+.stat-strip .num{font-size:22px;font-weight:700;color:var(--ink);font-family:'Poppins',sans-serif}
+.todo-card{margin-top:18px;padding:20px 22px}
+.todo-card h3{font-size:16.5px;display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.todo-input{display:flex;border:1px solid var(--line-d);border-radius:6px;overflow:hidden}
+.todo-input input{flex:1;border:none;padding:10px 13px;outline:none}
+.todo-input button{padding:0 16px;color:var(--navy);font-size:16px}
+.todo-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.todo-chips .tc{background:var(--chipbg);border-radius:4px;padding:6px 11px;font-size:12px;font-weight:600;color:var(--body)}
+.todo-chips .tc:hover{background:#E2E8EE}
+.todo-list{margin-top:12px}
+.todo-list li{list-style:none;display:flex;align-items:center;gap:9px;padding:7px 2px;font-size:13px;border-bottom:1px dashed var(--line)}
+.todo-foot{text-align:right;margin-top:14px}
+.vac-card{margin-top:18px;padding:18px 22px}
+.vac-card h3{font-size:15px;margin-bottom:14px}
+.vac-grid{display:grid;grid-template-columns:repeat(4,1fr);text-align:center}
+.vac-grid .vg .lb{font-size:10.5px;letter-spacing:.6px;color:var(--muted);font-weight:700}
+.vac-grid .vg .num{font-size:20px;font-weight:700;color:var(--ink)}
+.pros-card{background:var(--purple-bg);border-radius:10px;padding:24px 22px;text-align:left}
+.pros-card .bolt{width:56px;height:56px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:24px;margin-bottom:14px}
+.pros-card h3{font-size:16.5px;line-height:1.3;margin-bottom:10px}
+.pros-card p{font-size:13px;color:#4A4066;margin-bottom:16px}
+.pros-card .lm{display:inline-block;border:1.5px solid var(--navy);color:var(--navy);border-radius:20px;padding:8px 26px;font-size:11.5px;font-weight:700;letter-spacing:.6px}
+.qa-list{margin-top:16px;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.qa-list button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:13px 16px;font-size:13.5px;font-weight:600;color:var(--ink);border-bottom:1px solid var(--line)}
+.qa-list button:last-child{border-bottom:none}
+.qa-list button:hover{background:#F6F9FC}
+.qa-list .ic{width:20px;text-align:center;color:var(--navy)}
+.qa-list .ar{margin-left:auto;color:var(--faint)}
+
+/* ======= messages ======= */
+.msg-wrap{display:grid;grid-template-columns:295px minmax(0,1fr);gap:0;border:1px solid var(--line);border-radius:8px;background:#fff;overflow:hidden;min-height:560px}
+.msg-left{border-right:1px solid var(--line);display:flex;flex-direction:column}
+.msg-left-hd{padding:16px 16px 0}
+.msg-left-hd .row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.msg-left-hd h2{font-size:20px}
+.msg-tabs{display:flex;gap:20px;border-bottom:1px solid var(--line);padding:0 16px}
+.msg-tabs button{padding:8px 2px 9px;font-size:12.5px;font-weight:700;letter-spacing:.5px;color:var(--muted);border-bottom:3px solid transparent}
+.msg-tabs button.on{color:var(--navy);border-bottom-color:var(--navy)}
+.chat-list{overflow-y:auto;flex:1;max-height:520px}
+.chat-item{display:flex;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+.chat-item:hover,.chat-item.on{background:#EFF4F8}
+.chat-item .nm{font-size:13.5px;font-weight:700;color:var(--ink)}
+.chat-item .sub{font-size:12px;color:var(--body)}
+.chat-item .pv{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.chat-item .tm{margin-left:auto;font-size:11.5px;color:var(--muted);flex:none}
+.conv{display:flex;flex-direction:column;min-width:0}
+.conv-hd{display:flex;align-items:center;gap:11px;padding:12px 18px;border-bottom:1px solid var(--line)}
+.conv-hd .nm{font-weight:700;color:var(--ink);font-size:14.5px}
+.conv-hd .sub{font-size:12px;color:var(--muted)}
+.conv-body{flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:4px;max-height:430px}
+.bubble{max-width:68%;padding:9px 14px;border-radius:9px;font-size:13.5px;line-height:1.55;white-space:pre-line}
+.bubble.in{background:#EDF0F3;color:var(--body);align-self:flex-start;border-bottom-left-radius:3px}
+.bubble.out{background:#2E6EA6;color:#fff;align-self:flex-end;border-bottom-right-radius:3px}
+.bub-meta{font-size:10.5px;color:var(--faint);margin:2px 4px 8px;align-self:flex-end}
+.bub-meta.l{align-self:flex-start}
+.composer{display:flex;align-items:center;gap:10px;padding:14px 18px;border-top:1px solid var(--line)}
+.composer .plus{width:30px;height:30px;border:1.5px solid var(--line-d);border-radius:50%;display:grid;place-items:center;color:var(--muted);font-size:16px;flex:none}
+.composer input{flex:1;border:1px solid var(--line-d);border-radius:6px;padding:10px 14px;outline:none}
+.composer .send{background:var(--navy-btn);color:#fff;border-radius:20px;padding:9px 22px;font-size:12px;font-weight:700;letter-spacing:.6px}
+.qr-pop{position:absolute;bottom:70px;left:40px;width:340px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 14px 40px rgba(10,30,50,.22);padding:16px;z-index:80;display:none;max-height:430px;overflow-y:auto}
+.qr-pop.on{display:block}
+.qr-pop h4{font-size:14.5px;margin-bottom:4px}
+.qr-pop .note{font-size:11.5px;color:var(--muted);margin-bottom:10px}
+.qr-tpl{border:1px solid var(--line);border-radius:8px;margin-bottom:10px;overflow:hidden}
+.qr-tpl .bd{padding:11px 13px}
+.qr-tpl .nm{font-weight:700;color:var(--ink);font-size:13px;display:flex;justify-content:space-between}
+.qr-tpl p{font-size:12px;color:var(--muted);margin-top:5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.qr-tpl .use{display:block;width:100%;text-align:center;background:#F2F6FA;color:var(--navy);font-size:11.5px;font-weight:700;letter-spacing:.5px;padding:8px}
+
+/* ======= properties ======= */
+.prop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.prop-card{background:#fff;border:1px solid var(--line);border-radius:9px;overflow:hidden;cursor:pointer;transition:box-shadow .15s}
+.prop-card:hover{box-shadow:0 8px 22px rgba(10,38,71,.1)}
+.prop-thumb{height:120px;background:linear-gradient(135deg,#D8E4EE,#B9CCDD);display:grid;place-items:center;font-size:34px}
+.prop-card .bd{padding:13px 16px}
+.prop-card .ttl{font-weight:700;color:var(--ink);font-size:14px}
+.prop-card .sub{font-size:12.5px;color:var(--muted)}
+.prop-card .meta{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:12.5px}
+.prop-card .rent{font-weight:700;color:var(--ink)}
+.pd-head{display:flex;gap:18px;align-items:flex-start;margin-bottom:2px}
+.pd-thumb{width:96px;height:82px;border-radius:7px;background:linear-gradient(135deg,#D8E4EE,#B9CCDD);display:grid;place-items:center;font-size:30px;flex:none}
+.pd-title{font-size:19px;font-weight:600;line-height:1.3}
+.pd-sub{font-size:13px;color:var(--body);margin-top:4px}
+.pd-meta{margin-left:auto;text-align:right;flex:none}
+.pd-meta .row1{display:flex;gap:10px;justify-content:flex-end;margin-bottom:14px}
+.pd-meta .kv{font-size:13px;color:var(--body)}
+.pd-meta .kv b{color:var(--ink)}
+.pd-meta .kv .k{font-size:11px;letter-spacing:.5px;color:var(--muted);font-weight:700}
+.gray-btn{background:#EDF0F3;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;color:var(--ink);display:inline-flex;align-items:center;gap:7px}
+.pd-tabs{margin-top:16px}
+.purple-banner{background:var(--purple-bg);border-radius:9px;padding:16px 20px;display:flex;align-items:center;gap:16px;margin:18px 0}
+.purple-banner .bolt{width:46px;height:46px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:20px;flex:none}
+.purple-banner h4{font-size:15px;margin-bottom:3px}
+.purple-banner p{font-size:12.5px;color:#4A4066}
+.purple-banner .lm{margin-left:auto;flex:none;border:1.5px solid var(--navy);color:var(--navy);border-radius:20px;padding:8px 22px;font-size:11px;font-weight:700;letter-spacing:.6px;background:#fff}
+.purple-banner .x{color:var(--muted);font-size:17px;flex:none;align-self:flex-start}
+.ov-grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start}
+.mini-stats{display:grid;grid-template-columns:repeat(3,1fr);background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.mini-stats .st{padding:18px 10px;text-align:center;border-left:1px solid var(--line)}
+.mini-stats .st:first-child{border-left:none}
+.mini-stats svg{width:30px;height:30px;stroke:var(--navy);fill:none;stroke-width:1.4;margin-bottom:4px}
+.mini-stats .lb{font-size:10.5px;letter-spacing:.6px;color:var(--muted);font-weight:700}
+.mini-stats .num{font-size:20px;font-weight:700;color:var(--ink)}
+.sec-card{margin-top:18px}
+.sec-card .hd{display:flex;justify-content:space-between;align-items:center;padding:16px 20px 8px}
+.sec-card .hd h3{font-size:16px}
+.lease-row{display:grid;grid-template-columns:minmax(0,1.4fr) 1fr 1fr;gap:12px;padding:14px 20px;border-top:1px solid var(--line);align-items:center}
+.lease-row .k{font-size:10.5px;letter-spacing:.5px;color:var(--muted);font-weight:700;text-transform:uppercase}
+.lease-row .v{font-weight:700;color:var(--ink);font-size:13.5px}
+.lease-row .v.i{font-style:italic;font-weight:400;color:var(--body)}
+.card-foot{border-top:1px solid var(--line);text-align:center;padding:11px}
+.checklist .ck{display:flex;align-items:flex-start;gap:13px;padding:16px 20px;border:1px solid var(--line);border-radius:8px;background:#fff;margin-bottom:12px}
+.checklist .ck.done{background:#F4F6F8}
+.checklist input[type=checkbox]{width:17px;height:17px;margin-top:3px;accent-color:var(--navy)}
+.checklist .tx{flex:1}
+.checklist .tt{font-weight:700;color:var(--ink);font-size:14px}
+.checklist .ck.done .tt{text-decoration:line-through;color:var(--muted)}
+.checklist .ds{font-size:12.5px;color:var(--muted);margin-top:3px}
+.checklist .act{flex:none}
+.recos{background:var(--navy);color:#fff;font-size:10.5px;font-weight:700;border-radius:3px;padding:2px 7px;margin-left:8px;vertical-align:2px}
+.upload-zone{border:1.5px dashed var(--line-d);border-radius:8px;padding:34px 20px;text-align:center;margin:14px 0}
+.upload-zone .ic{width:52px;height:52px;border-radius:50%;background:#EDF0F3;display:grid;place-items:center;font-size:20px;margin:0 auto 10px}
+.upload-zone .t1{font-weight:700;color:var(--ink);font-size:14.5px}
+.upload-zone .t2{font-size:12.5px;color:var(--muted)}
+.steadily{background:#CDE9F6;border-radius:8px;padding:16px 22px;display:flex;align-items:center;gap:20px;margin:16px 0}
+.steadily .lg{font-family:'Poppins',sans-serif;font-weight:700;color:#6D5BD0;font-size:17px;letter-spacing:.5px;flex:none}
+.steadily h4{font-size:15px;margin-bottom:2px}
+.steadily p{font-size:12.5px;color:var(--body)}
+.steadily .btn{margin-left:auto;flex:none}
+.doc-sec{margin-top:22px}
+.doc-sec h3{font-size:16.5px;margin-bottom:4px}
+.doc-sec .ex{font-size:12.5px;color:var(--muted)}
+
+/* ======= payments ======= */
+.pay-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+.ptile{background:var(--navy);border-radius:7px;color:#fff;padding:15px 18px;display:flex;flex-direction:column;gap:2px;position:relative;cursor:pointer;transition:background .15s}
+.ptile:hover{background:#17466F}
+.ptile .lb{font-size:10.5px;letter-spacing:.7px;font-weight:700;color:#B9CBDC}
+.ptile .amt{font-size:25px;font-weight:700;font-family:'Poppins',sans-serif}
+.ptile .ar{position:absolute;right:14px;top:50%;transform:translateY(-50%);opacity:.75;font-size:15px}
+.month-hd{font-size:17px;font-weight:600;font-family:'Poppins',sans-serif;color:var(--ink);padding:18px 0 10px}
+.chg-table{width:100%;border-collapse:collapse}
+.chg-table th{font-size:10.5px;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;text-align:left;font-weight:700;padding:8px 10px;border-bottom:1px solid var(--line)}
+.chg-table td{padding:13px 10px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:top}
+.chg-table .lease a{font-weight:600}
+.chg-table .amt{text-align:right;font-weight:700;color:var(--ink);white-space:nowrap}
+.chg-table .due{font-size:12px;color:var(--muted);font-weight:400}
+.chg-table .exp{color:var(--muted);cursor:pointer;font-size:13px;text-align:right}
+.chg-detail{background:#fff}
+.chg-detail td{padding:4px 10px 16px 10px}
+.chg-note{font-size:12.5px;color:var(--body);margin:0 0 12px 96px}
+.chg-actions{display:flex;gap:10px;margin-left:96px;flex-wrap:wrap}
+.chg-actions button{display:inline-flex;align-items:center;gap:7px;background:#EDF0F3;border-radius:5px;padding:8px 14px;font-size:12.5px;font-weight:600;color:var(--ink)}
+.chg-actions button:hover{background:var(--navy);color:#fff}
+.dep-bank{font-style:italic;color:var(--body);font-size:12px}
+.rentroll{display:flex;justify-content:space-between;align-items:center;padding:18px 22px}
+.rentroll h3{font-size:16.5px;margin-bottom:3px}
+.rentroll p{font-size:12.5px;color:var(--muted)}
+.paymethod-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:10px 0 4px}
+.pm{border:1px solid var(--line-d);border-radius:7px;padding:14px 8px 12px;text-align:center;cursor:pointer;position:relative}
+.pm.on{border-color:var(--navy);border-width:2px}
+.pm .rad{position:absolute;top:8px;left:8px;width:14px;height:14px;border:1.5px solid var(--line-d);border-radius:50%}
+.pm.on .rad{border-color:var(--blue);background:radial-gradient(circle,var(--blue) 40%,#fff 46%)}
+.pm .ic{font-size:22px;margin-bottom:4px}
+.pm .lb{font-size:13px;font-weight:600;color:var(--ink)}
+.rp-charge-tbl{border:1px solid var(--line);border-radius:8px;padding:6px 16px 14px;margin-bottom:18px}
+.rp-charge-tbl table{width:100%;border-collapse:collapse}
+.rp-charge-tbl th{font-size:10.5px;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;text-align:left;padding:9px 6px 7px}
+.rp-charge-tbl td{padding:8px 6px;font-size:13.5px}
+.rp-charge-tbl input[type=text]{border:1px solid var(--line-d);border-radius:6px;padding:8px 10px;width:110px;text-align:right}
+.addchg{color:var(--navy);font-weight:700;font-size:12px;letter-spacing:.5px;display:inline-flex;align-items:center;gap:7px;margin-top:8px}
+.summary-line{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:14px;margin-top:8px;font-size:13.5px}
+
+/* ======= maintenance ======= */
+.mx-table{width:100%;border-collapse:collapse;background:#fff}
+.mx-table th{font-size:10.5px;letter-spacing:.6px;color:var(--navy);text-transform:uppercase;text-align:left;font-weight:700;padding:12px 12px;border-bottom:1px solid var(--line)}
+.mx-table td{padding:17px 12px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle}
+.mx-table tr.rowlink{cursor:pointer}
+.mx-table tr.rowlink:hover{background:#F6F9FC}
+.mx-table .ttl{font-weight:600;color:var(--ink)}
+.star{color:#C3CDD6;font-size:16px}
+.star.on{color:#F2B01E}
+.mxd-grid{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:22px;align-items:start;margin-top:16px}
+.mxd-head h1{font-size:23px;font-weight:600}
+.mxd-head .addr{margin-top:2px;display:inline-block}
+.status-dd{position:relative;display:inline-block}
+.status-btn{background:var(--navy);color:#fff;border-radius:5px;padding:7px 13px;font-size:11px;font-weight:700;letter-spacing:.6px;display:inline-flex;align-items:center;gap:8px}
+.status-menu{position:absolute;right:0;top:110%;background:#fff;border:1px solid var(--line);border-radius:7px;box-shadow:0 10px 30px rgba(10,30,50,.18);min-width:150px;z-index:50;display:none}
+.status-menu.on{display:block}
+.status-menu button{display:block;width:100%;text-align:left;padding:9px 14px;font-size:12.5px;font-weight:600;color:var(--ink)}
+.status-menu button:hover{background:#F0F5FA}
+.kv-line{font-size:13.5px;margin-bottom:9px}
+.kv-line b{color:var(--ink)}
+.desc-block{font-size:13.5px;color:var(--body);white-space:pre-line}
+.thumbtack h4{font-size:12.5px;font-weight:700;color:var(--ink)}
+.thumbtack .big{font-size:16.5px;font-family:'Poppins',sans-serif;font-weight:600;color:var(--ink);line-height:1.35;margin:4px 0 8px}
+.thumbtack .meta{font-size:12.5px;color:var(--body);margin-bottom:4px}
+.thumbtack .stars{color:#1F6FB2;font-size:13px}
+.ai-panel{background:linear-gradient(180deg,var(--ai-bg1),var(--ai-bg2));border-radius:10px;padding:20px 22px;font-size:13px;color:#243B53}
+.ai-panel .intro{font-size:13px;margin-bottom:14px}
+.ai-panel h4{font-size:14.5px;margin:12px 0 6px}
+.ai-panel h5{font-size:13px;color:var(--ink);margin:12px 0 3px}
+.ai-panel p{margin-bottom:8px;line-height:1.6}
+.ai-panel mark{background:#BFE3F7;padding:0 2px}
+.ai-thumbs{display:flex;gap:14px;margin:10px 0 16px;color:#5B6E82;font-size:15px}
+.ai-thumbs button:hover{color:var(--navy)}
+.ai-chips{display:flex;flex-direction:column;gap:9px;align-items:flex-start}
+.ai-chips button{background:#fff;border-radius:18px;padding:8px 16px;font-size:12.5px;font-weight:600;color:var(--ink);display:inline-flex;align-items:center;gap:8px;box-shadow:0 1px 4px rgba(10,30,50,.08)}
+.ai-chips button:hover{background:#F0F8FE}
+.ai-chips .dm{color:#2E6EA6}
+.activity-item{border-top:1px solid var(--line);padding:13px 0}
+.activity-item .t{font-weight:700;color:var(--ink);font-size:13.5px}
+.activity-item .d{font-size:11.5px;color:var(--muted);margin:1px 0 5px}
+.activity-item p{font-size:13px;color:var(--body)}
+.wo-box{background:#F4F6F8;border-radius:7px;padding:12px 16px;margin-bottom:16px}
+.wo-box .d{font-size:11.5px;color:var(--muted)}
+.wo-box .t{font-weight:700;color:var(--ink);font-size:14.5px}
+.pro-list{position:absolute;left:0;right:0;top:105%;background:#fff;border:1px solid var(--line);border-radius:7px;box-shadow:0 10px 30px rgba(10,30,50,.16);z-index:40;max-height:230px;overflow-y:auto;display:none}
+.pro-list.on{display:block}
+.pro-list button{display:flex;width:100%;align-items:center;gap:10px;padding:9px 13px;font-size:13px;color:var(--ink);text-align:left}
+.pro-list button:hover{background:#F0F5FA}
+.pro-list .add{color:var(--blue);font-weight:700;border-bottom:1px solid var(--line)}
+
+/* ======= lease profiles ======= */
+.lp-row{display:grid;grid-template-columns:minmax(0,1.5fr) 1fr 1fr;gap:14px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:16px 20px;margin-bottom:14px;align-items:center}
+.lp-row .k{font-size:10.5px;letter-spacing:.5px;color:var(--muted);font-weight:700;text-transform:uppercase}
+.lp-row .k.soon{color:var(--red)}
+.lp-row .v{font-weight:700;color:var(--ink);font-size:14px}
+.lp-row .sub{font-size:12.5px;color:var(--muted);font-weight:400}
+.lp-row .vp{text-align:right}
+
+/* ======= docs ======= */
+.doc-actions{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0}
+.doc-act{background:#CDE9F6;border-radius:8px;padding:18px 20px;display:flex;align-items:center;gap:14px;cursor:pointer}
+.doc-act:hover{background:#BFE2F2}
+.doc-act .ic{font-size:24px}
+.doc-act h4{font-size:14.5px;margin-bottom:2px}
+.doc-act p{font-size:12.5px;color:var(--body)}
+.doc-act .ar{margin-left:auto;color:var(--navy)}
+.doc-table{width:100%;border-collapse:collapse;background:#fff}
+.doc-table th{font-size:10.5px;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;text-align:left;font-weight:700;padding:11px 12px;border-bottom:1px solid var(--line)}
+.doc-table td{padding:14px 12px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.doc-table .tt{font-weight:600;color:var(--blue)}
+.doc-table .cat{font-size:12px;color:var(--muted)}
+
+/* ======= renters ======= */
+.renter-strip{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line);padding-bottom:0;margin-bottom:18px;justify-content:space-between}
+.renter-strip .lft{display:flex;align-items:center;gap:8px}
+.renter-strip a.seg{font-size:13px;font-weight:700;letter-spacing:.4px;color:var(--muted);padding:10px 2px 12px;border-bottom:3px solid transparent;text-transform:uppercase;cursor:pointer}
+.renter-strip a.seg.on{color:var(--navy);border-bottom-color:var(--navy)}
+.renter-strip .sep{color:var(--faint)}
+.renter-strip .rgt{display:flex;gap:12px}
+.seg-toggle{display:inline-flex;border:1px solid var(--line-d);border-radius:6px;overflow:hidden}
+.seg-toggle button{padding:6px 15px;font-size:12.5px;font-weight:600;color:var(--muted);background:#fff}
+.seg-toggle button.on{background:#5B6E82;color:#fff}
+.lead-table{width:100%;border-collapse:collapse;background:#fff}
+.lead-table td{padding:13px 12px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.lead-table .nm{font-weight:700;color:var(--ink)}
+.lead-table .sub{font-size:12px;color:var(--muted)}
+.applicant-card{background:#fff;border:1px solid var(--line);border-radius:9px;padding:18px 22px;margin-bottom:14px;display:flex;align-items:center;gap:20px;max-width:520px}
+.applicant-card .pb{font-size:10.5px;letter-spacing:.6px;font-weight:700;color:var(--green-tx)}
+.applicant-card .nm{font-size:15px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px}
+.applicant-card .sub{font-size:12.5px;color:var(--body)}
+.applicant-card .dt{font-size:11px;letter-spacing:.4px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-top:3px}
+.applicant-card .btn{margin-left:auto;flex:none}
+.verified{color:#0E9F6E;font-size:11px;font-weight:700;letter-spacing:.4px;display:inline-flex;align-items:center;gap:4px}
+.help-card h4{font-size:14.5px;margin-bottom:5px}
+.help-card p{font-size:12.5px;color:var(--muted);margin-bottom:14px}
+.lead-head{display:flex;align-items:flex-start;gap:16px;margin-bottom:4px}
+.lead-head .avatar{width:62px;height:62px;font-size:20px}
+.lead-head .ap-on{font-size:11px;letter-spacing:.5px;font-weight:700;color:var(--muted);text-transform:uppercase}
+.lead-head h1{font-size:23px;font-weight:600;display:flex;align-items:center;gap:10px}
+.lead-head .contact{display:flex;gap:18px;font-size:13px;margin-top:5px}
+.lead-head .rgt{margin-left:auto;display:flex;gap:12px;flex:none}
+.lead-sub-actions{display:flex;gap:18px;margin:4px 0 0}
+.lead-sub-actions button{font-size:12px;font-weight:700;letter-spacing:.4px;color:var(--navy);display:inline-flex;gap:6px;align-items:center}
+.info-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.info-tile{border:1px solid var(--line);border-radius:7px;background:#F8FAFC;padding:13px 15px;display:flex;gap:11px;align-items:center}
+.info-tile .ic{font-size:19px;color:var(--navy)}
+.info-tile .lb{font-size:10.5px;letter-spacing:.6px;color:var(--muted);font-weight:700;text-transform:uppercase}
+.info-tile .vl{font-size:13.5px;font-weight:700;color:var(--ink)}
+.info-tile .ph{width:80px;height:9px;background:#DDE5EC;border-radius:4px;margin-top:4px}
+.act-log{background:#fff;border:1px solid var(--line);border-radius:9px;padding:18px 20px}
+.act-log h3{font-size:16px;margin-bottom:2px}
+.act-log .yh{font-size:10.5px;letter-spacing:.6px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:12px}
+.act-entry{border-top:1px solid var(--line);padding:11px 0;font-size:12.5px}
+.act-entry .d{color:var(--muted);font-size:11.5px}
+.act-entry .t{font-weight:700;color:var(--ink)}
+.act-entry .s{color:var(--body)}
+.journey{display:flex;flex-direction:column;gap:0;margin-top:8px}
+.j-step{display:flex;gap:13px;position:relative;padding-bottom:20px}
+.j-step::before{content:'';position:absolute;left:10px;top:24px;bottom:0;width:2px;background:var(--line-d)}
+.j-step:last-child::before{display:none}
+.j-dot{width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid var(--line-d);display:grid;place-items:center;font-size:11px;flex:none;z-index:1}
+.j-step.done .j-dot{background:var(--green);border-color:var(--green);color:#fff}
+.j-step .tt{font-weight:700;color:var(--ink);font-size:13.5px}
+.j-step .ds{font-size:12px;color:var(--muted)}
+.score-wrap{text-align:left;margin:8px 0 18px}
+.score-num{font-size:38px;font-weight:700;font-family:'Poppins',sans-serif;color:var(--ink)}
+.score-bar{height:9px;border-radius:5px;background:linear-gradient(90deg,#D64545 0%,#E8A33D 35%,#E5D24B 55%,#7CB95C 75%,#1B7A4B 100%);position:relative;margin:10px 0 4px;max-width:520px}
+.score-pin{position:absolute;top:-4px;width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--navy);transform:translateX(-50%)}
+.score-scale{display:flex;justify-content:space-between;max-width:520px;font-size:11px;color:var(--muted)}
+.rec-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+.rec-card{border:1px solid var(--line);border-radius:7px;background:#fff;padding:16px 10px;text-align:center}
+.rec-card .ic{font-size:20px;margin-bottom:6px;color:var(--navy)}
+.rec-card .lb{font-size:12px;font-weight:700;color:var(--ink)}
+.rec-card .n{font-size:19px;font-weight:700;color:var(--ink);font-family:'Poppins',sans-serif}
+.rec-card .s{font-size:11px;color:var(--muted)}
+.plain-table{width:100%;border-collapse:collapse}
+.plain-table th{font-size:10.5px;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;text-align:left;font-weight:700;padding:9px 10px;border-bottom:1px solid var(--line)}
+.plain-table td{padding:10px;border-bottom:1px solid var(--line);font-size:13px}
+.qa-band{border-radius:6px;padding:12px 16px;font-size:13.5px;font-weight:600;color:var(--ink);background:#E4F2FB;margin-top:14px}
+.qa-ans{padding:12px 16px;font-size:13.5px;color:var(--body)}
+.addr-card{border-left:4px solid var(--navy);background:#fff;border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line);border-radius:0 8px 8px 0;padding:16px 20px;margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.gd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}
+.gd-card{border:1px solid var(--line);border-radius:7px;background:#fff;padding:13px 16px}
+.gd-card .lb{font-size:10.5px;letter-spacing:.6px;color:var(--muted);font-weight:700;text-transform:uppercase}
+.gd-card .vl{font-weight:700;color:var(--ink);font-size:14px}
+.gd-card .s{font-size:12.5px;color:var(--muted)}
+.emp-row{border:1px solid var(--line);border-radius:7px;background:#fff;padding:14px 18px;margin-top:10px;display:grid;grid-template-columns:1.4fr 1fr .7fr;gap:12px;align-items:center}
+.emp-row .k{font-size:10.5px;letter-spacing:.5px;color:var(--muted);font-weight:700;text-transform:uppercase}
+.emp-row .amt{font-weight:700;color:var(--ink);text-align:right;font-size:14.5px}
+.tl-card{border:1px solid var(--line);border-radius:8px;background:#fff;padding:16px 20px;margin-top:14px}
+.tl-card .hd{display:flex;justify-content:space-between;margin-bottom:10px}
+.tl-card .nm{font-weight:700;color:var(--ink);font-size:14.5px}
+.tl-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:12.5px}
+.tl-grid .k{font-size:10px;letter-spacing:.5px;color:var(--muted);font-weight:700;text-transform:uppercase}
+.dots{display:grid;grid-template-columns:repeat(12,14px);gap:4px;margin-top:10px}
+.dots i{width:11px;height:11px;border-radius:50%;background:#2E6EA6;display:block}
+.dots i.na{background:#DDE5EC}
+.tenant-table{width:100%;border-collapse:collapse;background:#fff}
+.tenant-table th{font-size:10.5px;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;text-align:left;font-weight:700;padding:11px 12px;border-bottom:1px solid var(--line)}
+.tenant-table td{padding:13px 12px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.tenant-table .nm{font-weight:700;color:var(--ink)}
+.tenant-table .ci{font-size:12px;color:var(--body)}
+.msg-ic{color:var(--navy);font-size:15px;cursor:pointer}
+
+/* ======= insights ======= */
+.ins-blur{filter:blur(4px);pointer-events:none;user-select:none}
+.ins-modal{position:absolute;inset:0;display:grid;place-items:center;z-index:20}
+.ins-card{background:#fff;border-radius:10px;box-shadow:0 20px 70px rgba(10,30,50,.3);max-width:450px;padding:30px 34px;text-align:left}
+.ins-card .calc{width:64px;height:64px;border-radius:50%;background:#EDF0F3;display:grid;place-items:center;font-size:26px;margin:0 auto 16px}
+.ins-card h3{font-size:19px;text-align:center;line-height:1.35;margin-bottom:18px}
+.ins-feat{display:flex;gap:11px;margin-bottom:14px}
+.ins-feat .ck{width:20px;height:20px;border-radius:50%;background:#2E6EA6;color:#fff;display:grid;place-items:center;font-size:11px;flex:none;margin-top:2px}
+.ins-feat b{color:var(--ink);font-size:13.5px}
+.ins-feat p{font-size:12.5px;color:var(--muted)}
+.bars{display:flex;align-items:flex-end;gap:14px;height:190px;padding:20px 10px 0}
+.bars .b{flex:1;background:#0F766E;border-radius:3px 3px 0 0}
+@media(max-width:1080px){.dash-grid,.ov-grid,.mxd-grid{grid-template-columns:1fr}.pay-tiles{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<!-- SkillCloud Test Drive back strip -->
+<div class="sc-strip">
+  <a href="index.html#test-drive">&larr; Test Drive</a>
+  <span class="dot"></span>
+  <b>TurboTenant <i>Test Drive</i></b>
+  <span class="note">Practice copy only. Nothing here is saved or connected to a real account.</span>
+</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="side-logo"><div class="ig">INTEGRITY<br>RENTAL</div></div>
+    <button class="referral" onclick="toast('Referral program is not part of the practice copy.')">&#127873; Give $25. Get $25.</button>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot" onclick="toast('Account switcher is not part of the practice copy.')">
+      <span class="sq">IR</span> Integrity Rental P... <span class="chev">&#8250;</span>
+    </div>
+  </aside>
+  <main class="main"><div class="main-inner" id="view"></div></main>
+</div>
+
+<button class="chat-fab" title="Support" onclick="toast('Support chat is not part of the practice copy.')">&#128488;</button>
+<div id="toast" class="toast"></div>
+<div class="overlay" id="overlay" onclick="if(event.target===this) closeModal()"><div class="modal" id="modalBox"></div></div>
+
+<script>
+/* ================= DATA ================= */
+const state = { route:'dashboard', payTab:'overview', propTab:'overview', msgChat:0, appTab:'summary', leadArch:true, appArch:true, expanded:null, insightsModal:true };
+
+const props = [
+  {id:'lyford', title:'Modern 2BR Condo in Hampton, VA | Available 07/07 | $1275/mo', addr:'8 Lyford Key , A, Hampton, VA 23666', short:'8 Lyford Key , A', rid:'2730048', rent:1275, status:'Marketing Off', tenants:1, leads:0, applicants:0, emoji:'\u{1F3E2}'},
+  {id:'coley', title:'Renovated 1BR Apartment | 510 Coley Street', addr:'510 Coley Street, Hampton, VA 23661', short:'510 Coley Street', rid:'2714302', rent:866, status:'Rented', tenants:1, leads:0, applicants:0, emoji:'\u{1F3E0}'},
+  {id:'britt', title:'Spacious 4BR Home | 23020 Britt Way', addr:'23020 Britt Way, Carrollton, VA 23314', short:'23020 Britt Way', rid:'2708821', rent:2625, status:'Rented', tenants:1, leads:2, applicants:0, emoji:'\u{1F3E1}'},
+  {id:'state2', title:'324 State St, Unit 2', addr:'324 State St, 2, Portsmouth, VA 23704', short:'324 State St. 2', rid:'2701177', rent:1240, status:'Rented', tenants:1, leads:0, applicants:0, emoji:'\u{1F3D8}'},
+  {id:'state4', title:'324 State St, Unit 4', addr:'324 State St, 4, Portsmouth, VA 23704', short:'324 State St 4', rid:'2701181', rent:1200, status:'Rented', tenants:2, leads:0, applicants:0, emoji:'\u{1F3D8}'},
+  {id:'johnstown', title:'5234 Johnstown Ln', addr:'5234 Johnstown Ln, Suffolk, VA 23435', short:'5234 Johnstown Ln', rid:'2698554', rent:1805, status:'Rented', tenants:1, leads:0, applicants:0, emoji:'\u{1F3E0}'},
+  {id:'foley', title:'916 Foley Drive', addr:'916 Foley Drive, Hampton, VA 23666', short:'916 Foley Drive', rid:'2697310', rent:1825, status:'Rented', tenants:1, leads:0, applicants:0, emoji:'\u{1F3E0}'},
+  {id:'scotts', title:'6334 Scottsfield Dr', addr:'6334 Scottsfield Dr, Suffolk, VA 23435', short:'6334 Scottsfield Dr', rid:'2695822', rent:1925, status:'Rented', tenants:1, leads:0, applicants:0, emoji:'\u{1F3E1}'},
+  {id:'valor', title:'506 Valor Ct', addr:'506 Valor Ct, Hampton, VA 23666', short:'506 Valor Ct', rid:'2691140', rent:1900, status:'Rented', tenants:1, leads:0, applicants:0, emoji:'\u{1F3E0}'},
+  {id:'millswamp', title:'11100 Mill Swamp Road', addr:'11100 Mill Swamp Road, Smithfield, VA 23430', short:'11100 Mill Swamp', rid:'2688973', rent:1795, status:'Rented', tenants:1, leads:0, applicants:0, emoji:'\u{1F3E1}'},
+  {id:'brighton', title:'3517 Brighton St', addr:'3517 Brighton St, Portsmouth, VA 23707', short:'3517 Brighton St', rid:'2686001', rent:1900, status:'Rented', tenants:1, leads:0, applicants:0, emoji:'\u{1F3E0}'},
+  {id:'woodgate', title:'1938 Woodgate Arch', addr:'1938 Woodgate Arch, Chesapeake, VA 23320', short:'1938 Woodgate Arch', rid:'2684118', rent:1625, status:'Rented', tenants:1, leads:0, applicants:0, emoji:'\u{1F3D8}'}
+];
+
+let charges = [
+  {id:1, month:'September 2026', due:'09/05/2026', lease:'510 Coley Street - Anayzia', amt:866, dueAmt:866, status:'unpaid', note:'Sent to your tenant(s) on August 20, 2026. The payment will be deposited into <b>TOWNEBANK - Integrity Rental Properties llC</b> bank account.'},
+  {id:2, month:'September 2026', due:'09/01/2026', lease:'23020 Britt Way - Ryan McDaniel', amt:2625, dueAmt:0, status:'paid', depDate:'08/21/2026', depBank:'TOWNEBANK - Integrity Rental Properties llC', note:'Paid ahead of schedule through the tenant portal.'},
+  {id:3, month:'September 2026', due:'09/01/2026', lease:'8 Lyford Key, A - LaShanda', amt:1275, dueAmt:1275, status:'autopay', note:'Autopay is scheduled for the due date from the tenant’s saved payment method.'},
+  {id:4, month:'September 2026', due:'09/01/2026', lease:'324 State St, 2 - Courtney', amt:1240, dueAmt:1240, status:'unpaid', note:'Sent to your tenant(s) on August 20, 2026. The payment will be deposited into <b>TOWNEBANK - Integrity Rental Properties llC</b> bank account.'},
+  {id:5, month:'September 2026', due:'09/01/2026', lease:'324 State St 4 - Calvin & Carl', amt:1200, dueAmt:1200, status:'unpaid', note:'Sent to your tenant(s) on August 20, 2026. The payment will be deposited into <b>TOWNEBANK - Integrity Rental Properties llC</b> bank account.'},
+  {id:6, month:'September 2026', due:'09/01/2026', lease:'3517 Brighton St - Iesha', amt:1900, dueAmt:1900, status:'unpaid', note:'Sent to your tenant(s) on August 20, 2026.'},
+  {id:7, month:'September 2026', due:'09/01/2026', lease:'916 Foley Drive - Darly', amt:1825, dueAmt:1825, status:'autopay', note:'Autopay is scheduled for the due date.'},
+  {id:8, month:'September 2026', due:'09/01/2026', lease:'5234 Johnstown Ln - Marshawna', amt:1805, dueAmt:1805, status:'unpaid', note:'Sent to your tenant(s) on August 20, 2026.'},
+  {id:9, month:'September 2026', due:'09/01/2026', lease:'6334 Scottsfield Dr - Talisa', amt:1925, dueAmt:1925, status:'autopay', note:'Autopay is scheduled for the due date.'},
+  {id:10, month:'September 2026', due:'09/01/2026', lease:'1938 Woodgate Arch - Jaylin', amt:1625, dueAmt:1625, status:'unpaid', note:'Sent to your tenant(s) on August 20, 2026.'},
+  {id:11, month:'September 2026', due:'09/01/2026', lease:'306 Vater Ct - Kimbayla', amt:1080, dueAmt:1080, status:'unpaid', note:'Sent to your tenant(s) on August 20, 2026.'},
+  {id:12, month:'September 2026', due:'09/01/2026', lease:'11100 Mill Swamp - Anthony', amt:1795, dueAmt:1795, status:'autopay', note:'Autopay is scheduled for the due date.'}
+];
+let nextChargeId = 100;
+
+let deposits = [
+  {month:'August 2026', depDate:'08/21/2026', payDate:'08/19/2026', tenant:'Ryan McDaniel', lease:'23020 Britt Way - Ryan McDaniel', bank:'TOWNEBANK - Integrity ...', amt:2625},
+  {month:'August 2026', depDate:'08/20/2026', payDate:'08/19/2026', tenant:'Ryan McDaniel', lease:'23020 Britt Way - Ryan McDaniel', bank:'TOWNEBANK - Integrity ...', amt:3133},
+  {month:'August 2026', depDate:'08/11/2026', payDate:'08/05/2026', tenant:'DARLY MOORE', lease:'916 Foley Drive - Darly', bank:'TOWNEBANK - Integrity ...', amt:1825},
+  {month:'August 2026', depDate:'08/11/2026', payDate:'08/05/2026', tenant:'Marshawna Cuffee', lease:'5234 Johnstown Ln - Marshawna', bank:'TOWNEBANK - Integrity ...', amt:1805},
+  {month:'August 2026', depDate:'08/06/2026', payDate:'08/04/2026', tenant:'Talisa McRae', lease:'6334 Scottsfield Dr - Talisa', bank:'TOWNEBANK - Integrity ...', amt:1925},
+  {month:'August 2026', depDate:'08/04/2026', payDate:'08/02/2026', tenant:'Keshayla Johnson', lease:'506 Valor Ct - Keshayla', bank:'TOWNEBANK - Integrity ...', amt:1900},
+  {month:'July 2026', depDate:'07/31/2026', payDate:'07/31/2026', tenant:'Calvin Fonvilla', lease:'324 State St 4 - Calvin & Carl', bank:'TOWNEBANK State Stre...', amt:1200},
+  {month:'July 2026', depDate:'07/16/2026', payDate:'07/14/2026', tenant:'Courtney Johnson', lease:'324 State St, 2 - Courtney', bank:'TOWNEBANK - Integrity ...', amt:1278},
+  {month:'July 2026', depDate:'07/15/2026', payDate:'07/13/2026', tenant:'Anayzia Jenkins', lease:'510 Coley Street - Anayzia', bank:'TOWNEBANK - Integrity ...', amt:552.6},
+  {month:'July 2026', depDate:'07/14/2026', payDate:'07/12/2026', tenant:'Marshawna Cuffee', lease:'5234 Johnstown Ln - Marshawna', bank:'TOWNEBANK - Integrity ...', amt:1805},
+  {month:'July 2026', depDate:'07/10/2026', payDate:'07/08/2026', tenant:'Iesha Wyche', lease:'3517 Brighton St - Iesha', bank:'TOWNEBANK - Integrity ...', amt:1900},
+  {month:'July 2026', depDate:'07/06/2026', payDate:'07/02/2026', tenant:'Keshayla Johnson', lease:'506 Valor Ct - Keshayla', bank:'TOWNEBANK - Integrity ...', amt:1900}
+];
+
+let maint = [
+  {id:1, added:'Aug 14, 2026', title:'AC Not Cooling – High Indoor Temperature', rental:'510 Coley Street', last:'Aug 21, 2026 03:13pm', status:'Resolved', starred:false,
+   requested:'Aug 14, 2026 | 10:55 am', preferred:'Anytime', category:'Heating and Cooling',
+   desc:'Tenant reports that the AC is not cooling the home properly. The thermostat is set to 72°F, but the indoor temperature has continued to rise, reaching approximately 80°F, and the home feels warm and humid. The issue is affecting both the downstairs and upstairs areas, with the upstairs being significantly warmer.\n\nTenant reports that the AC has previously worked properly without any issues. Please inspect the HVAC system, identify the cause of the cooling issue, and make the necessary repairs. Tenant’s adult daughter is available at the property to provide access.',
+   pro:'Central Air Conditioning Repair or Maintenance specialist',
+   activity:[
+     {t:'Status Update: Resolved', d:'Aug 21, 2026 | 03:13 PM', p:''},
+     {t:'Note Added by Bill', d:'Aug 14, 2026 | 11:28 AM', p:'I contacted Ricky and scheduled the appointment to get that resolved on the next available slot.'},
+     {t:'Work Order Sent', d:'Aug 14, 2026 | 10:58 AM', p:'Tenant reports that the AC is not cooling the home properly. The thermostat is set to 72°F, but the indoor temperature has continued to rise...'},
+     {t:'Status Update: In Progress', d:'Aug 14, 2026 | 10:58 AM', p:''},
+     {t:'Requested by You', d:'Aug 14, 2026 | 10:55 AM', p:''}
+   ]},
+  {id:2, added:'Jul 11, 2026', title:'Bathtub Faucet Back Dripping', rental:'6334 Scottsfield Drive', last:'Jul 16, 2026 11:35am', status:'Resolved', starred:false, requested:'Jul 11, 2026 | 09:12 am', preferred:'Anytime', category:'Plumbing', desc:'Tenant reports the bathtub faucet keeps dripping after it is shut off. Please inspect the cartridge and washers and repair as needed.', pro:'Plumbing Repair specialist', activity:[{t:'Status Update: Resolved', d:'Jul 16, 2026 | 11:35 AM', p:''},{t:'Requested by You', d:'Jul 11, 2026 | 09:12 AM', p:''}]},
+  {id:3, added:'Jul 10, 2026', title:'Bees are entering the properties.', rental:'324 State St', last:'Jul 15, 2026 08:23am', status:'Resolved', starred:false, requested:'Jul 10, 2026 | 02:40 pm', preferred:'Anytime', category:'Pest Control', desc:'Tenant reports bees entering through a gap near the roof line. Please schedule pest control and seal the entry point.', pro:'Pest Control specialist', activity:[{t:'Status Update: Resolved', d:'Jul 15, 2026 | 08:23 AM', p:''},{t:'Requested by You', d:'Jul 10, 2026 | 02:40 PM', p:''}]},
+  {id:4, added:'Jul 08, 2026', title:'Dangerous Rotting Tree', rental:'11100 Mill Swamp Road', last:'Jul 17, 2026 07:11am', status:'Resolved', starred:false, requested:'Jul 08, 2026 | 11:05 am', preferred:'Anytime', category:'Landscaping', desc:'Large tree near the driveway is rotting and dropping limbs. Needs assessment and likely removal before it becomes a hazard.', pro:'Tree Removal specialist', activity:[{t:'Status Update: Resolved', d:'Jul 17, 2026 | 07:11 AM', p:''},{t:'Requested by You', d:'Jul 08, 2026 | 11:05 AM', p:''}]},
+  {id:5, added:'Jul 02, 2026', title:'Install A/C Units in Each Bedroom', rental:'324 State St, 2', last:'Jul 06, 2026 07:23am', status:'Resolved', starred:false, requested:'Jul 02, 2026 | 04:30 pm', preferred:'Coordinate a time first', category:'Heating and Cooling', desc:'Install window A/C units in both bedrooms ahead of the summer heat.', pro:'HVAC specialist', activity:[{t:'Status Update: Resolved', d:'Jul 06, 2026 | 07:23 AM', p:''},{t:'Requested by You', d:'Jul 02, 2026 | 04:30 PM', p:''}]},
+  {id:6, added:'Jul 01, 2026', title:'The HVAC is not working', rental:'23020 Britt Way', last:'Jul 03, 2026 10:17am', status:'Resolved', starred:false, requested:'Jul 01, 2026 | 08:44 am', preferred:'Anytime', category:'Heating and Cooling', desc:'HVAC is unresponsive on both heat and cool settings. Breaker was checked and reset with no change.', pro:'HVAC specialist', activity:[{t:'Status Update: Resolved', d:'Jul 03, 2026 | 10:17 AM', p:''},{t:'Requested by You', d:'Jul 01, 2026 | 08:44 AM', p:''}]}
+];
+let nextMaintId = 100;
+const maintPros = ['Charles','Luis','Ricky','Thomas','Wakelin'];
+const maintCats = ['Appliances','Cabinets/Countertops','Doors/Windows','Electrical','Fencing','Fireplace','Flooring','Heating and Cooling','Keys/Locks','Landscaping','Pest Control','Plumbing','Pool','Roof','Other'];
+
+let leases = [
+  {cur:'CURRENT LEASE', name:'1938 Woodgate Arch - Jaylin', prop:'1938 Woodgate Arch', term:'08/26/2024 - 08/26/2025', unpaid:'$1,625'},
+  {cur:'CURRENT LEASE', name:'324 State St. 1 - Tammy', prop:'324 State St, 1', term:'12/05/2024 - 12/04/2025', unpaid:'$1,080'},
+  {cur:'CURRENT LEASE', name:'324 State St. 3 - Anthony', prop:'324 State St, 3', term:'01/01/2025 - 12/31/2025', unpaid:'$1,080'},
+  {cur:'CURRENT LEASE', name:'510 Coley Street - Anayzia', prop:'510 Coley Street', term:'04/01/2025 - 03/31/2026', unpaid:'$866'},
+  {cur:'CURRENT LEASE', name:'5234 Johnstown Ln - Marshawna', prop:'5234 Johnstown Lane', term:'08/15/2023 - 08/15/2026', unpaid:'$1,805'},
+  {cur:'CURRENT LEASE', name:'916 Foley Drive - Darly', prop:'916 Foley Drive, door code 7448', term:'08/23/2025 - 08/22/2026', unpaid:'$1,825'},
+  {cur:'ENDING SOON', name:'506 Valor Ct - Keshayla', prop:'506 Valor Ct', term:'09/01/2025 - 09/01/2026', unpaid:'$1,900', soon:true},
+  {cur:'CURRENT LEASE', name:'11100 Mill Swamp - Anthony', prop:'11100 Mill Swamp Road', term:'02/06/2026 - 02/05/2027', unpaid:'$1,795'}
+];
+
+const docs = [
+  {date:'06/04/2026', title:'8 Lyford Key A - Lease - LaShanda Barnes signed', cat:'Lease Agreement', rental:'8 Lyford Key , A', esign:'✓'},
+  {date:'06/04/2026', title:'Signed - Virginia Statement of Tenant Rights and R...', cat:'Vrlta Statement', rental:'8 Lyford Key , A', esign:'✓'},
+  {date:'05/21/2026', title:'324 State St #4 Tenant’s Insurance', cat:'Proof Of Insurance', rental:'324 State St, 4', esign:''},
+  {date:'04/22/2026', title:'Lease - 324 State St #4 - Calvin & Carl signed', cat:'Lease Agreement', rental:'324 State St, 4', esign:'✓'},
+  {date:'04/03/2026', title:'VRLTA statement 2025 - Calvin & Carl signed', cat:'Vrlta Statement', rental:'324 State St, 4', esign:'✓'},
+  {date:'04/02/2026', title:'Iesha Welcome Letter', cat:'Other', rental:'3517 Brighton St', esign:''}
+];
+
+let archivedLeads = [
+  {id:1, nm:'Christine Williams', ini:'CW', col:'#E4572E', prop:'23020 Britt Way', date:'Aug 24, 2026', src:'Rent Path', isNew:true, email:'cswilliam5@example.com', phone:'(804) 555-6384', became:'08/24/2026',
+   log:[{d:'08/24/2026 - 03:43 PM', t:'Status Change - Viewed', s:''},{d:'08/24/2026 - 02:39 AM', t:'Lead created from RentPath', s:''}]},
+  {id:2, nm:'Shequina Dickens', ini:'SD', col:'#2E86AB', prop:'23020 Britt Way', date:'Aug 22, 2026', src:'Apartments', isNew:true, email:'sdickens@example.com', phone:'(757) 555-0142', became:'08/22/2026', log:[{d:'08/22/2026 - 10:02 AM', t:'Lead created from Apartments.com', s:''}]},
+  {id:3, nm:'Jennifer may', ini:'JM', col:'#7C5CDB', prop:'23020 Britt Way', date:'Aug 22, 2026', src:'Rent Path', isNew:true, email:'jmay@example.com', phone:'(757) 555-0179', became:'08/22/2026', log:[{d:'08/22/2026 - 08:15 AM', t:'Lead created from RentPath', s:''}]},
+  {id:4, nm:'Matt Wofford', ini:'MW', col:'#0E9F6E', prop:'23020 Britt Way', date:'Aug 22, 2026', src:'Apartments', isNew:true, email:'mwofford@example.com', phone:'(757) 555-0186', became:'08/22/2026', log:[{d:'08/22/2026 - 07:44 AM', t:'Lead created from Apartments.com', s:''}]},
+  {id:5, nm:'Shequina Dickens', ini:'SD', col:'#2E86AB', prop:'23020 Britt Way', date:'Aug 21, 2026', src:'Apartments', isNew:false, email:'sdickens@example.com', phone:'(757) 555-0142', became:'08/21/2026', log:[{d:'08/21/2026 - 06:20 PM', t:'Lead created from Apartments.com', s:''}]},
+  {id:6, nm:'Sheeria Yancey', ini:'SY', col:'#E8A33D', prop:'23020 Britt Way', date:'Aug 20, 2026', src:'Apartments', isNew:false, email:'syancey@example.com', phone:'(757) 555-0117', became:'08/20/2026', log:[{d:'08/20/2026 - 01:12 PM', t:'Lead created from Apartments.com', s:''}]}
+];
+let activeLeads = [];
+let currentLead = null;
+let currentMaint = null;
+let currentProp = null;
+
+const archApplicants = [
+  {nm:'Jessica Brock', prop:'23020 Britt Way', date:'08/13/2026', verified:true, full:true},
+  {nm:'LaTasha Joyner', prop:'8 Lyford Key , A', date:'07/18/2026', verified:false},
+  {nm:'Khalil Green', prop:'8 Lyford Key , A', date:'07/18/2026', verified:false},
+  {nm:'Jeremiah Hampton', prop:'8 Lyford Key , A', date:'07/15/2026', verified:false}
+];
+
+const tenants = [
+  {nm:'Calvin Fonvilla', email:'calvinf06@example.com', ph:'(757) 555-5309', lease:'324 State St, 4 - Calvin & Carl', access:'Last active 08/19/26 - 11:39am'},
+  {nm:'Carl Fort', email:'carlfort12@example.com', ph:'(757) 555-6947', lease:'324 State St, 4 - Calvin & Carl', access:'Last active 08/12/26 - 03:17pm'},
+  {nm:'Courtney Johnson', email:'courtneyj94@example.com', ph:'(757) 555-0286', lease:'324 State St, 2 - Courtney', access:'Last active 08/12/26 - 06:14pm'},
+  {nm:'Iesha Wyche', email:'ieshaw23@example.com', ph:'(757) 555-0771', lease:'3517 Brighton St - Iesha', access:'Last active 08/09/26 - 09:26am'},
+  {nm:'Ryan McDaniel', email:'ryanmcd@example.com', ph:'(757) 555-0455', lease:'23020 Britt Way - Ryan McDaniel', access:'Last active 08/26/26 - 02:41pm'},
+  {nm:'Anayzia Jenkins', email:'anayziaj@example.com', ph:'(757) 555-0233', lease:'510 Coley Street - Anayzia', access:'Last active 08/26/26 - 02:34pm'},
+  {nm:'Keshayla Johnson', email:'keshaylaj@example.com', ph:'(757) 555-0301', lease:'506 Valor Ct - Keshayla', access:'Last active 08/26/26 - 11:28am'},
+  {nm:'Marshawna Cuffee', email:'marshawnac@example.com', ph:'(757) 555-0374', lease:'5234 Johnstown Ln - Marshawna', access:'Last active 08/25/26 - 04:02pm'},
+  {nm:'LaShanda Barnes-Turner', email:'lashandabt@example.com', ph:'(757) 555-0428', lease:'8 Lyford Key, A - LaShanda', access:'Invited - not signed up yet'},
+  {nm:'Jaylin Paul', email:'jaylinp@example.com', ph:'(757) 555-0499', lease:'1938 Woodgate Arch - Jaylin', access:'Last active 08/25/26 - 01:11pm'},
+  {nm:'DARLY MOORE', email:'darlym@example.com', ph:'(757) 555-0512', lease:'916 Foley Drive - Darly', access:'Last active 08/25/26 - 12:40pm'},
+  {nm:'Talisa McRae', email:'talisam@example.com', ph:'(757) 555-0633', lease:'6334 Scottsfield Dr - Talisa', access:'Last active 08/25/26 - 10:05am'},
+  {nm:'Anthony Wikel', email:'anthonyw@example.com', ph:'(757) 555-0644', lease:'11100 Mill Swamp - Anthony', access:'Last active 08/24/26 - 08:47pm'},
+  {nm:'Tammy Reid', email:'tammyr@example.com', ph:'(757) 555-0655', lease:'324 State St, 1 - Tammy', access:'Last active 08/23/26 - 05:19pm'},
+  {nm:'Anthony Carter', email:'anthonyc@example.com', ph:'(757) 555-0688', lease:'324 State St, 3 - Anthony', access:'Last active 08/22/26 - 07:31am'},
+  {nm:'Kimbayla Morris', email:'kimbaylam@example.com', ph:'(757) 555-0713', lease:'306 Vater Ct - Kimbayla', access:'Last active 08/21/26 - 06:58pm'},
+  {nm:'Keith C. Keller', email:'keithk@example.com', ph:'(757) 555-0729', lease:'8 Lyford Key, B - Keith', access:'Last active 08/20/26 - 03:24pm'}
+];
+
+let chats = [
+  {ini:'RM', col:'#3AB09E', nm:'Ryan McDaniel', sub:'Lead: 23020 Britt Way', time:'2:41 PM', pv:'You: Hi Ryan! Welcome to yo...',
+   msgs:[
+     {dir:'out', tx:'Sounds Good.', meta:'11:28 AM - Read'},
+     {dir:'in', tx:'We are here', meta:'1:16 PM'},
+     {dir:'out', tx:'Oh okay. Let me check with the homeowners.', meta:'1:20 PM - Read'},
+     {dir:'out', tx:'He will be arriving in 5 minutes.', meta:'1:28 PM - Read'},
+     {dir:'out', tx:'Hi Ryan! Welcome to your new home! I’m here to help with any questions you may have during your time here.\n\nDuring the welcome walkthrough, we noticed a few minor issues with some of the window blinds and the ice maker tray. When you have a chance, could you please send me the measurements of the blinds and the ice maker tray? This will help me look for the correct replacement parts.\n\nThank you, and welcome again to your new home!', meta:'2:41 PM - Read'}
+   ]},
+  {ini:'AJ', col:'#E8A33D', nm:'Anayzia Jenkins', sub:'Tenant: 510 Coley Street', time:'2:34 PM', pv:'Anayzia Jenkins: Hello, I will ...', msgs:[{dir:'in', tx:'Hello, I will send the September payment on Friday.', meta:'2:34 PM'}]},
+  {ini:'K', col:'#3AB09E', nm:'Keshayla Johnson', sub:'Tenant: 506 Valor Ct', time:'11:28 AM', pv:'You: Thank you so much for ...', msgs:[{dir:'out', tx:'Thank you so much for the update!', meta:'11:28 AM - Read'}]},
+  {ini:'MC', col:'#2E86AB', nm:'Marshawna Cuffee', sub:'Tenant: 5234 Johnstown La...', time:'Yesterday', pv:'You: Let me confirm and get ...', msgs:[{dir:'out', tx:'Let me confirm and get back to you.', meta:'Yesterday - Read'}]},
+  {ini:'LB', col:'#4A90C9', nm:'LaShanda Barnes-Turn...', sub:'Applicant: 8 Lyford Key Un...', time:'Yesterday', pv:'LaShanda Barnes-Turner: Go...', msgs:[{dir:'in', tx:'Good afternoon! Just checking on the lease paperwork.', meta:'Yesterday'}]},
+  {ini:'JP', col:'#E4572E', nm:'Jaylin Paul', sub:'Tenant: 1938 Woodgate Arch', time:'Yesterday', pv:'You: Thank you!', msgs:[{dir:'out', tx:'Thank you!', meta:'Yesterday - Read'}]},
+  {ini:'DM', col:'#3AB09E', nm:'DARLY MOORE', sub:'Tenant: 916 Foley Drive Un...', time:'Yesterday', pv:'You: Hi Darly, Just a friendly ...', msgs:[{dir:'out', tx:'Hi Darly, Just a friendly reminder that rent is due on the 1st.', meta:'Yesterday - Read'}]},
+  {ini:'TM', col:'#E8843D', nm:'Talisa McRae', sub:'Tenant: 6334 Scottsfield Dr...', time:'Yesterday', pv:'You: Hi Talisa, Just a friendly ...', msgs:[{dir:'out', tx:'Hi Talisa, Just a friendly reminder that rent is due on the 1st.', meta:'Yesterday - Read'}]},
+  {ini:'AW', col:'#7CB95C', nm:'Anthony Wikel', sub:'Tenant: 11100 Mill Swamp', time:'Yesterday', pv:'You: Got it, thank you!', msgs:[{dir:'out', tx:'Got it, thank you!', meta:'Yesterday - Read'}]}
+];
+
+let todos = [];
+
+/* ================= HELPERS ================= */
+const $ = id => document.getElementById(id);
+const money = n => '$' + Number(n).toLocaleString('en-US', {maximumFractionDigits:0});
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('show'),2500); }
+function openModal(html){ $('modalBox').innerHTML=html; $('overlay').classList.add('on'); }
+function closeModal(){ $('overlay').classList.remove('on'); }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+const icons = {
+  dashboard:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>',
+  messages:'<svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  properties:'<svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>',
+  payments:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M15 9.5c0-1.4-1.3-2.5-3-2.5s-3 .9-3 2.2c0 2.9 6 1.6 6 4.4 0 1.3-1.3 2.4-3 2.4s-3-1.1-3-2.5"/></svg>',
+  maintenance:'<svg viewBox="0 0 24 24"><path d="M14.7 6.3a4.5 4.5 0 0 0-6 5.6L3 17.6V21h3.4l5.7-5.7a4.5 4.5 0 0 0 5.6-6L14.5 12l-2.5-2.5z"/></svg>',
+  leases:'<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>',
+  docs:'<svg viewBox="0 0 24 24"><path d="M12 19c2-4 7-3 8-8l-3.5-3.5C11 8 9 13 5 15z"/><path d="M5 15l-1 5 5-1"/></svg>',
+  leads:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M4 20c0-3 2-5 5-5s5 2 5 5"/><circle cx="17" cy="7" r="2"/><path d="M15.5 12.5c2.5 0 4.5 1.5 4.5 4"/></svg>',
+  applicants:'<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="9" r="2.5"/><path d="M7.5 17c.7-2.2 2.4-3.5 4.5-3.5s3.8 1.3 4.5 3.5"/></svg>',
+  tenants:'<svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg>',
+  insights:'<svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M21 20H3"/></svg>',
+  transactions:'<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>',
+  help:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.7.4-1.1 1-1.1 1.8v.5"/><circle cx="12" cy="17" r=".5"/></svg>'
+};
+
+const NAV = [
+  {id:'dashboard', lb:'Dashboard'}, {id:'messages', lb:'Messages'}, {id:'properties', lb:'Properties'},
+  {id:'payments', lb:'Payments'}, {id:'maintenance', lb:'Maintenance'}, {id:'leases', lb:'Lease Profiles'},
+  {id:'docs', lb:'Docs & E-Sign'},
+  {sec:'Renters'}, {id:'leads', lb:'Leads'}, {id:'applicants', lb:'Applicants'}, {id:'tenants', lb:'Tenants'},
+  {sec:'Accounting'}, {id:'insights', lb:'Insights'}, {id:'transactions', lb:'Transactions'},
+  {sec:'Resources'}, {id:'help', lb:'Need Help?'}
+];
+const NAV_ICON = {dashboard:'dashboard',messages:'messages',properties:'properties',payments:'payments',maintenance:'maintenance',leases:'leases',docs:'docs',leads:'leads',applicants:'applicants',tenants:'tenants',insights:'insights',transactions:'transactions',help:'help'};
+
+function renderNav(){
+  $('nav').innerHTML = NAV.map(n => n.sec
+    ? `<div class="nav-sec">${n.sec}</div>`
+    : `<button class="nav-item ${state.route===n.id?'on':''}" onclick="go('${n.id}')">${icons[NAV_ICON[n.id]]}<span>${n.lb}</span></button>`
+  ).join('');
+}
+
+function go(route){
+  if(route==='help'){ toast('The Help Center opens TurboTenant support articles in the real product.'); return; }
+  state.route = route; state.expanded = null;
+  if(route==='leads'){ currentLead=null; }
+  if(route==='maintenance'){ currentMaint=null; }
+  if(route==='properties'){ currentProp=null; }
+  render();
+  window.scrollTo({top:0});
+}
+
+function render(){ renderNav(); const v=views[state.route]; $('view').innerHTML = v ? v() : ''; afterRender(); }
+function afterRender(){ const cb=$('conv-body'); if(cb) cb.scrollTop=cb.scrollHeight; }
+
+/* ================= VIEWS ================= */
+const views = {};
+
+/* ---------- DASHBOARD ---------- */
+views.dashboard = () => `
+  <div class="greet pop">Hello, Josue</div>
+  <div class="dash-grid">
+    <div>
+      <div class="resi-label">Residency <span style="color:#9AA9B7">&#8645;</span></div>
+      <div class="card pay-card">
+        <div class="pc-head"><h3>August payments</h3>
+          <div class="pill-toggle"><button class="on">Month</button><button onclick="toast('Year view shows the trailing 12 months in the real product.')">Year</button></div>
+        </div>
+        <div class="pay-boxes">
+          <div class="pay-box g"><div class="lb">Received</div><div class="amt g">$20,537</div></div>
+          <div class="pay-box r"><div class="lb">Past due</div><div class="amt r">$2,090</div></div>
+        </div>
+        <div class="pc-foot"><button class="link-btn" onclick="go('payments')">View Payments Dashboard</button></div>
+      </div>
+      <div class="stat-strip">
+        <div class="st"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><circle cx="9" cy="13" r="1.6"/><circle cx="15" cy="13" r="1.6"/><path d="M6 20c.4-2 1.6-3.2 3-3.2s2.6 1.2 3 3.2M12 20c.4-2 1.6-3.2 3-3.2s2.6 1.2 3 3.2"/></svg><div class="lb">TENANTS</div><div class="num">17</div></div>
+        <div class="st"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><div class="lb">LEASES</div><div class="num">14</div></div>
+        <div class="st"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M8 12h8M8 16h5"/></svg><div class="lb">CONDITION REPORTS</div><div class="num">0</div></div>
+        <div class="st"><svg viewBox="0 0 24 24"><path d="M12 19c2-4 7-3 8-8l-3.5-3.5C11 8 9 13 5 15z"/><path d="M5 15l-1 5 5-1"/></svg><div class="lb">E-SIGN</div><div class="num">0</div></div>
+      </div>
+      <div class="card todo-card">
+        <h3>&#128295; What&rsquo;s on your Maintenance to-do list?</h3>
+        <div class="todo-input"><input id="todoIn" placeholder="Add a task" onkeydown="if(event.key==='Enter')addTodo()"><button onclick="addTodo()">&#8594;</button></div>
+        <div class="todo-chips">
+          ${['New','Air Filters','Landscaping','Check Exterior','HVAC Checkup','Caulking','Flush Water Heater','Inspect Roof'].map(c=>`<button class="tc" onclick="addTodoChip('${c}')">+ ${c}</button>`).join('')}
+        </div>
+        <ul class="todo-list">${todos.map(t=>`<li><input type="checkbox"> ${esc(t)}</li>`).join('')}</ul>
+        <div class="todo-foot"><button class="link-btn" onclick="go('maintenance'); setTimeout(openCreateRequest, 60)">Create Request</button></div>
+      </div>
+      <div class="card vac-card">
+        <h3>Vacancy</h3>
+        <div class="vac-grid">
+          <div class="vg"><div class="num">&#128227;</div><div class="lb">MARKETING ON</div><div class="num">0</div></div>
+          <div class="vg"><div class="num">&#128101;</div><div class="lb">LEADS</div><div class="num">0</div></div>
+          <div class="vg"><div class="num">&#128203;</div><div class="lb">APPLICANTS</div><div class="num">0</div></div>
+          <div class="vg"><div class="num">&#128197;</div><div class="lb">SHOWINGS</div><div class="num">0</div></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="pros-card">
+        <div class="bolt">&#9889;</div>
+        <h3>Your rental, managed by pros</h3>
+        <p>Whether you need to fill a vacancy or manage tenants after move-in, let our rental experts do the work for you.</p>
+        <button class="lm" onclick="toast('TurboTenant property management upsell — informational only in the practice copy.')">LEARN MORE</button>
+      </div>
+      <div class="qa-list">
+        <button onclick="go('applicants')"><span class="ic">&#128269;</span> Screen a tenant <span class="ar">&#8250;</span></button>
+        <button onclick="openInvite()"><span class="ic">&#128203;</span> Invite to apply <span class="ar">&#8250;</span></button>
+        <button onclick="go('payments'); state.payTab='charges'; render(); setTimeout(openCreateCharge, 60)"><span class="ic">&#128178;</span> Create a charge <span class="ar">&#8250;</span></button>
+        <button onclick="toast('Lease agreement builder is not part of the practice copy.')"><span class="ic">&#128196;</span> Get a lease agreement <span class="ar">&#8250;</span></button>
+        <button onclick="toast('Lease addendum builder is not part of the practice copy.')"><span class="ic">&#128221;</span> Build a lease addendum <span class="ar">&#8250;</span></button>
+        <button onclick="go('docs')"><span class="ic">&#9997;</span> E-Sign a document <span class="ar">&#8250;</span></button>
+        <button onclick="toast('Landlord forms library is not part of the practice copy.')"><span class="ic">&#128194;</span> Get landlord forms <span class="ar">&#8250;</span></button>
+        <button onclick="toast('Expenses live under Accounting in the real product.')"><span class="ic">&#128176;</span> Add an expense <span class="ar">&#8250;</span></button>
+        <button onclick="toast('Mileage deductions live under Accounting in the real product.')"><span class="ic">&#128663;</span> Log mileage deduction <span class="ar">&#8250;</span></button>
+      </div>
+    </div>
+  </div>`;
+
+function addTodo(){ const v=$('todoIn').value.trim(); if(!v) return; todos.push(v); render(); toast('Task added to your to-do list.'); }
+function addTodoChip(c){ todos.push(c); render(); toast('Task added to your to-do list.'); }
+
+/* ---------- MESSAGES ---------- */
+views.messages = () => {
+  const c = chats[state.msgChat];
+  return `
+  <div class="msg-wrap" style="position:relative">
+    <div class="msg-left">
+      <div class="msg-left-hd"><div class="row"><h2 class="pop">Messages</h2><button class="btn outline sm" onclick="toast('New message picker is not part of the practice copy — open a chat instead.')">New Message</button></div></div>
+      <div class="msg-tabs"><button class="on">CHATS</button><button onclick="go('tenants')">RENTERS</button></div>
+      <div class="chat-list">
+        ${chats.map((ch,i)=>`
+        <div class="chat-item ${i===state.msgChat?'on':''}" onclick="state.msgChat=${i}; render()">
+          <span class="avatar" style="background:${ch.col}">${ch.ini}</span>
+          <div style="min-width:0"><div class="nm">${ch.nm}</div><div class="sub">${ch.sub}</div><div class="pv">${ch.pv}</div></div>
+          <span class="tm">${ch.time}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="conv">
+      <div class="conv-hd">
+        <span class="avatar" style="background:${c.col}">${c.ini}</span>
+        <div><div class="nm">${c.nm}</div><div class="sub">${c.sub}</div></div>
+        <span style="margin-left:auto;color:#9AA9B7">&#9707;</span>
+      </div>
+      <div class="conv-body" id="conv-body">
+        ${c.msgs.map(m=>`<div class="bubble ${m.dir}">${esc(m.tx)}</div><div class="bub-meta ${m.dir==='in'?'l':''}">${m.meta}</div>`).join('')}
+      </div>
+      <div class="composer">
+        <button class="plus" onclick="toggleQR()">+</button>
+        <input id="msgIn" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMsg()">
+        <button class="send" onclick="sendMsg()">SEND</button>
+      </div>
+      <div class="qr-pop" id="qrPop">
+        <h4 class="pop">Quick Reply Templates</h4>
+        <div class="note">Your message may reappear to communicate efficiently. You&rsquo;ll be able to edit before sending.</div>
+        <button class="btn outline sm" style="margin-bottom:12px" onclick="toast('Template editor is not part of the practice copy.')">Create New Template</button>
+        ${[['Send Application','I’d like to invite you to complete a full application for [propertyAddress]. This will help to finalize the review process. You can access the application here:'],
+           ['Send Pre-Screener','Thank you for your interest in [propertyAddress]! To help us move forward, please complete a short pre-screener with a few questions about your current rental situation.'],
+           ['Send Form','Hi! Thanks for your interest! We’d love to get to know a bit more about you to make sure everything’s a good fit. Could you please let us know your monthly income, credit range, and desired move-in date?']]
+          .map(t=>`<div class="qr-tpl"><div class="bd"><div class="nm">${t[0]} <span style="color:#9AA9B7">&#9998;</span></div><p>${t[1]}</p></div><button class="use" onclick="useReply(this)" data-tx="${esc(t[1])}">USE THIS REPLY &#8250;</button></div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+};
+
+function toggleQR(){ $('qrPop').classList.toggle('on'); }
+function useReply(btn){ $('msgIn').value = btn.dataset.tx.replace('[propertyAddress]', chats[state.msgChat].sub.replace(/^[^:]+: /,'')); $('qrPop').classList.remove('on'); }
+function sendMsg(){
+  const v=$('msgIn').value.trim(); if(!v) return;
+  const c=chats[state.msgChat];
+  const now=new Date(); const hm=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  c.msgs.push({dir:'out', tx:v, meta:hm+' - Sent'});
+  c.pv='You: '+v.slice(0,26)+'...'; c.time=hm;
+  render();
+}
+
+/* ---------- PROPERTIES ---------- */
+views.properties = () => {
+  if(currentProp) return propDetail();
+  return `
+  <div class="hd-row"><h1 class="pop">Properties</h1><button class="btn primary" onclick="toast('Add-property wizard is not part of the practice copy.')">Add New Property</button></div>
+  <div class="prop-grid">
+    ${props.map(p=>`
+    <div class="prop-card" onclick="openProp('${p.id}')">
+      <div class="prop-thumb">${p.emoji}</div>
+      <div class="bd">
+        <div class="ttl">${p.short}</div>
+        <div class="sub">${p.addr}</div>
+        <div class="meta"><span class="badge ${p.status==='Rented'?'paid':'unpaid'}">${p.status}</span><span class="rent">${money(p.rent)}/mo</span></div>
+      </div>
+    </div>`).join('')}
+  </div>`;
+};
+
+function openProp(id){ currentProp = props.find(p=>p.id===id); state.propTab='overview'; state.route='properties'; render(); window.scrollTo({top:0}); }
+
+function propDetail(){
+  const p = currentProp;
+  const t = state.propTab;
+  const tabs = ['overview','marketing','maintenance','documents','leases','expenses'];
+  let body='';
+  if(t==='overview') body = `
+    <div class="purple-banner"><div class="bolt">&#9889;</div>
+      <div><h4 class="pop">We can manage this rental for you</h4><p>Whether you need to fill a vacancy or manage tenants after move-in, let our rental experts do the work for you.</p></div>
+      <button class="lm" onclick="toast('Informational upsell only in the practice copy.')">LEARN MORE</button><span class="x">&times;</span>
+    </div>
+    <div class="ov-grid">
+      <div>
+        <div class="mini-stats">
+          <div class="st"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M4 20c0-3 2-5 5-5s5 2 5 5"/><circle cx="17" cy="7" r="2"/><path d="M15.5 12.5c2.5 0 4.5 1.5 4.5 4"/></svg><div class="lb">LEADS</div><div class="num">${p.leads}</div></div>
+          <div class="st"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="9" r="2.5"/><path d="M7.5 17c.7-2.2 2.4-3.5 4.5-3.5s3.8 1.3 4.5 3.5"/></svg><div class="lb">APPLICANTS</div><div class="num">${p.applicants}</div></div>
+          <div class="st"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg><div class="lb">TENANTS</div><div class="num">${p.tenants}</div></div>
+        </div>
+        <div class="card sec-card">
+          <div class="hd"><h3>August payments</h3><div class="pill-toggle"><button class="on">Month</button><button>Year</button></div></div>
+          <div class="pay-boxes">
+            <div class="pay-box g"><div class="lb">Received</div><div class="amt g">${p.id==='lyford'?'$1,275':'$0'}</div></div>
+            <div class="pay-box r"><div class="lb">Past due</div><div class="amt r">$0</div></div>
+          </div>
+          <div class="pc-foot"><button class="link-btn" onclick="go('payments')">View Payments Dashboard</button></div>
+        </div>
+        <div class="card sec-card">
+          <div class="hd"><h3>Leases</h3><button class="btn outline sm" onclick="toast('Lease wizard is not part of the practice copy.')">New Lease</button></div>
+          <div class="lease-row">
+            <div><div class="k badge draft" style="margin-bottom:4px">DRAFT LEASE</div><div class="v">8 Lyford Key, A - LaShanda</div><div style="font-size:12.5px;color:var(--muted)">8 Lyford Key , A</div></div>
+            <div><div class="k">Lease term</div><div class="v i">No lease term added yet</div></div>
+            <div><div class="k">Unpaid charges</div><div class="v">$1,275</div></div>
+          </div>
+          <div class="card-foot"><button class="link-btn" onclick="toast('Lease setup wizard is not part of the practice copy.')">Finish Lease Setup</button></div>
+        </div>
+        <div class="card sec-card">
+          <div class="hd"><h3>Open Maintenance: (${maint.filter(m=>m.rental.startsWith('8 Lyford')&&m.status!=='Resolved').length})</h3></div>
+          <div style="padding:6px 20px 18px;font-size:13px;color:var(--muted)">Instead of being spread across texts/emails/voicemails you now have a centralized place to view, respond to, and track maintenance logged by you or your tenant.</div>
+          <div style="padding:0 20px 20px"><button class="btn outline sm" onclick="openCreateRequest('lyford')">Create Request</button></div>
+        </div>
+      </div>
+      <div>
+        <div class="qa-list" style="margin-top:0">
+          <button onclick="state.propTab='marketing'; render()"><span class="ic">&#128444;</span> Edit Listing <span class="ar">&#8250;</span></button>
+          <button onclick="openInvite()"><span class="ic">&#128203;</span> Invite to Apply <span class="ar">&#8250;</span></button>
+          <button onclick="go('applicants')"><span class="ic">&#128269;</span> Screen a Tenant <span class="ar">&#8250;</span></button>
+          <button onclick="toast('Lease agreement builder is not part of the practice copy.')"><span class="ic">&#128196;</span> Build a Lease Agreement <span class="ar">&#8250;</span></button>
+          <button onclick="go('docs')"><span class="ic">&#9997;</span> E-Sign a Document <span class="ar">&#8250;</span></button>
+          <button onclick="toast('Lease addendum builder is not part of the practice copy.')"><span class="ic">&#128221;</span> Build a Lease Addendum <span class="ar">&#8250;</span></button>
+        </div>
+        <div class="pros-card" style="margin-top:16px">
+          <div class="bolt">&#9889;</div>
+          <h3>Your rental, managed by pros</h3>
+          <p>Whether you need to fill a vacancy or manage tenants after move-in, let our rental experts do the work for you.</p>
+          <button class="lm" onclick="toast('Informational upsell only in the practice copy.')">LEARN MORE</button>
+        </div>
+      </div>
+    </div>`;
+  if(t==='marketing') body = `
+    <div class="card" style="padding:18px 22px;margin-top:18px">
+      <div style="display:flex;align-items:center;gap:14px;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:14px">
+          <h3 class="pop" style="font-size:16px">Listing</h3>
+          <span class="badge ${p.marketing?'paid':'unpaid'}">${p.marketing?'ON':'OFF'}</span>
+          <button class="link-btn" onclick="toast('Listing editor is not part of the practice copy.')">Edit</button>
+          <button class="link-btn" onclick="toast('Share links are not part of the practice copy.')">Share &#9662;</button>
+        </div>
+        <button class="btn primary" onclick="currentProp.marketing=!currentProp.marketing; render(); toast(currentProp.marketing?'Listing published to dozens of listing sites.':'Listing unpublished.')">${p.marketing?'UNPUBLISH':'PUBLISH'}</button>
+      </div>
+      <div style="display:flex;gap:40px;margin-top:18px">
+        <div style="text-align:center"><div class="mono-eyebrow">Leads</div><div style="font-size:20px;font-weight:700">0</div></div>
+        <div style="text-align:center"><div class="mono-eyebrow">Applicants</div><div style="font-size:20px;font-weight:700">0</div></div>
+        <div style="text-align:center"><div class="mono-eyebrow">Showings</div><div style="font-size:20px;font-weight:700">0</div></div>
+        <div style="text-align:center;margin-left:auto"><div class="mono-eyebrow">Last listed</div><div style="font-size:16px;font-weight:700">Jul 2026</div></div>
+      </div>
+    </div>
+    <h3 class="pop" style="font-size:17px;margin:24px 0 4px">Vacancy checklist <span style="color:var(--muted);font-weight:400;font-size:13px">2/6</span></h3>
+    <div class="checklist" style="margin-top:12px">
+      ${[
+        {tt:'Set showing availability', ds:'Adding showing availability gives renters time slots to choose from.', act:'SET AVAILABILITY', done:false, primary:true},
+        {tt:'Invite to showing', ds:'Invite renters to schedule a showing based on your availability.', act:'INVITE TO SHOWING', done:false},
+        {tt:'Invite interested renters to apply', ds:'Streamline your management of leads from dozens of listing sites.', act:'INVITE TO APPLY', done:false},
+        {tt:'Improve your listing', ds:'Fixing your listing will help reduce back-and-forth and attract more qualified leads.', act:'FIX LISTING', done:false, recos:true},
+        {tt:'Publish listing', ds:'Market your property on dozens of top listing sites across the web, all from TurboTenant.', done:true},
+        {tt:'Start setting up your Lease', ds:'Choose tenants, finalize your lease agreement, set up rent payments, and more!', done:true}
+      ].map(c=>`
+      <div class="ck ${c.done?'done':''}">
+        <input type="checkbox" ${c.done?'checked':''} onclick="toast('Checklist items complete themselves as you work in the real product.'); return false">
+        <div class="tx"><div class="tt">${c.tt}${c.recos?'<span class="recos">2 recommendations</span>':''}</div><div class="ds">${c.ds}</div></div>
+        ${c.act?`<div class="act"><button class="btn ${c.primary?'primary':'outline'} sm" onclick="toast('${c.tt} flow is not part of the practice copy.')">${c.act}</button></div>`:''}
+      </div>`).join('')}
+    </div>
+    <div style="text-align:right;margin:4px 0 10px"><button class="link-btn" onclick="toast('Checklist dismissed (practice copy only).')">Dismiss</button></div>
+    <div class="card" style="padding:18px 22px;margin-top:8px">
+      <h3 class="pop" style="font-size:16px">&#11088; Call Forwarding</h3>
+      <p style="font-size:13px;color:var(--muted);margin-top:6px">Premium membership gives you the ability to get a marketing call forwarding number. First publish listing. <a href="#" onclick="toast('External help article — not part of the practice copy.'); return false">Learn More &amp; Read FAQs</a></p>
+    </div>`;
+  if(t==='maintenance'){
+    const rows = maint.filter(m=>m.rental.toLowerCase().includes('lyford'));
+    body = rows.length ? `<div class="card" style="margin-top:18px">${maintTable(rows)}</div>` : `
+    <div class="empty-wrap">
+      <div class="big">No Maintenance Requests Yet</div>
+      <p>Your tenants can submit a maintenance request from their TurboTenant account. Or you can create one yourself.</p>
+      <button class="btn outline" onclick="openCreateRequest('lyford')">Create Request</button>
+    </div>`;
+  }
+  if(t==='documents') body = `
+    <div class="hd-row" style="margin-top:18px"><div><h2 class="pop" style="font-size:19px">Upload Property Documents</h2>
+    <p style="font-size:13px;color:var(--body);max-width:560px">Keep track of all your documents related to this property in one place. <b>These documents are not shared with your tenants</b>.</p></div>
+    <button class="btn primary" onclick="toast('Uploads are disabled in the practice copy.')">Upload Document</button></div>
+    ${['Landlord Insurance Policy','Utility & Maintenance|Examples include: HOA, service contracts, appliance manuals, property assets, invoices, receipts','Loan & Financial Documents|Examples include: purchase agreement, mortgage documents, property deed'].map((s,i)=>{
+      const [ttl,ex] = s.split('|');
+      return `<div class="card doc-sec" style="padding:20px 24px">
+        <h3 class="pop">${ttl}</h3>${ex?`<div class="ex">${ex}</div>`:''}
+        <div class="upload-zone" onclick="toast('Uploads are disabled in the practice copy.')"><div class="ic">&#128229;</div><div class="t1">There&rsquo;s nothing here yet</div><div class="t2">Click or drag to upload</div></div>
+        ${i===0?`<div class="steadily"><span class="lg">STEADILY.</span><div><h4 class="pop">Do you have the right insurance?</h4><p>Protect your rental property from natural disasters, lawsuits, vandalism, theft, and more. <a href="#" onclick="toast('Partner offer — not part of the practice copy.'); return false">Learn more about landlord&rsquo;s insurance</a>.</p></div><button class="btn primary" onclick="toast('Partner offer — not part of the practice copy.')">Get Covered</button></div>`:''}
+      </div>`; }).join('')}
+    <div class="card" style="padding:16px 22px;margin-top:16px;background:#E7F2FA;border-color:#BFDFF2"><b>Register your LLC for free</b> <span style="color:var(--muted);font-size:13px">— partner offer shown in the real product.</span></div>`;
+  if(t==='leases') body = `
+    <div class="hd-row" style="margin-top:18px"><h2 class="pop" style="font-size:20px">Leases</h2><button class="btn outline" onclick="toast('Lease wizard is not part of the practice copy.')">Add New Lease</button></div>
+    <div style="text-align:right;font-size:12.5px;color:var(--muted);margin-bottom:10px">Sort by <b style="color:var(--ink)">End Date (Today &#8594; Future)</b></div>
+    <div class="card">
+      <div class="lease-row" style="border-top:none">
+        <div><div class="badge draft" style="margin-bottom:4px">DRAFT LEASE</div><div class="v" style="font-weight:700">8 Lyford Key, A - LaShanda</div><div style="font-size:12.5px;color:var(--muted)">8 Lyford Key , A</div></div>
+        <div><div class="k">Lease term</div><div class="v i">No lease term added yet</div></div>
+        <div><div class="k">Unpaid charges</div><div class="v">$1,275</div></div>
+      </div>
+      <div class="card-foot"><button class="link-btn" onclick="toast('Lease setup wizard is not part of the practice copy.')">Finish Lease Setup</button></div>
+    </div>`;
+  if(t==='expenses') body = `
+    <div class="empty-wrap" style="padding-top:70px">
+      <div style="font-size:44px;margin-bottom:14px">&#128202;</div>
+      <div class="big">Start tracking your rental finances! &#127881;</div>
+      <p>Expenses help you track property performance and stay on track for tax season.</p>
+      <div style="display:flex;gap:12px;justify-content:center">
+        <button class="btn primary" onclick="toast('Bank import is not part of the practice copy.')">Import Transactions</button>
+        <button class="btn outline" onclick="toast('Manual expenses are not part of the practice copy.')">Add Manual Expense</button>
+      </div>
+    </div>`;
+  return `
+  <button class="link-btn" style="margin-bottom:14px" onclick="currentProp=null; render()">&#8592; Back</button>
+  <div style="text-align:center;font-size:13px;font-weight:600;color:var(--body);margin:-30px 0 12px">${p.short}</div>
+  <div class="pd-head">
+    <div class="pd-thumb">${p.emoji}</div>
+    <div>
+      <div class="pd-title pop">${p.title}</div>
+      <div class="pd-sub">${p.addr}</div>
+    </div>
+    <div class="pd-meta">
+      <div class="row1">
+        <button class="gray-btn" onclick="toast('Property settings are not part of the practice copy.')">&#9881; Settings</button>
+        <button class="gray-btn" onclick="toast('The public listing view opens in a new tab in the real product.')">&#8599; View</button>
+      </div>
+      <span class="kv"><span class="k">RENTAL ID:</span> <b>${p.rid}</b></span> &nbsp;&nbsp;
+      <span class="kv"><span class="k">RENT:</span> <b>${money(p.rent)}</b></span>
+    </div>
+  </div>
+  <div class="tabs pd-tabs">${tabs.map(x=>`<button class="${t===x?'on':''}" onclick="state.propTab='${x}'; render()">${x}</button>`).join('')}</div>
+  ${body}`;
+}
+
+/* ---------- PAYMENTS ---------- */
+views.payments = () => {
+  const t = state.payTab;
+  let body='';
+  if(t==='overview'){
+    // August month-to-date is a fixed snapshot; the September charge list lives under the Charges tab
+    const unpaid = 2090;
+    body = `
+    <div class="card" style="padding:20px 24px;margin-top:20px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 class="pop" style="font-size:19px">August 2026</h2>
+        <div class="pill-toggle"><button class="on">Month-to-date</button><button onclick="toast('Year-to-date rolls up the calendar year in the real product.')">Year-to-date</button></div>
+      </div>
+      <div class="pay-tiles">
+        <div class="ptile" onclick="setPayTab('charges')"><span class="badge pastdue" style="align-self:flex-start;margin-bottom:3px">PAST DUE</span><span class="amt">$2,090</span><span class="ar">&#8250;</span></div>
+        <div class="ptile" onclick="setPayTab('charges')"><span class="lb">UNPAID</span><span class="amt">${money(unpaid)}</span><span class="ar">&#8250;</span></div>
+        <div class="ptile" onclick="setPayTab('charges')"><span class="lb">CHARGES</span><span class="amt">$22,627</span><span class="ar">&#8250;</span></div>
+        <div class="ptile" onclick="setPayTab('charges')"><span class="lb">PAID</span><span class="amt">$20,537</span><span class="ar">&#8250;</span></div>
+        <div class="ptile" onclick="setPayTab('deposits')"><span class="lb">IN TRANSIT</span><span class="amt">$0</span><span class="ar">&#8250;</span></div>
+        <div class="ptile" onclick="setPayTab('deposits')"><span class="lb">DEPOSITED</span><span class="amt">$16,633</span><span class="ar">&#8250;</span></div>
+      </div>
+    </div>
+    <div class="card rentroll" style="margin-top:20px">
+      <div><h3 class="pop">Rent roll report</h3><p>A rent roll provides an itemized report of each unit&rsquo;s occupancy status and income. <a href="#" onclick="toast('Help article — not part of the practice copy.'); return false">Learn more</a></p></div>
+      <button class="btn primary" onclick="toast('Rent roll CSV generated and downloaded in the real product.')">Generate &amp; Export CSV</button>
+    </div>`;
+  }
+  if(t==='charges'){
+    body = `
+    <h2 class="pop" style="font-size:19px;margin:20px 0 12px">Sent Charges</h2>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+      ${['&#128462; Rentals','&#128209; All Leases','&#128278; All Categories','&#9432; All Statuses','&#128197; All Time'].map(f=>`<button class="filter-pill" onclick="toast('Filters are display-only in the practice copy.')">${f}</button>`).join('')}
+      <button class="link-btn" style="margin-left:auto" onclick="toast('Charges exported to CSV in the real product.')">&#8599; Export</button>
+    </div>
+    <div class="card" style="padding:4px 20px 16px">
+      <div class="month-hd">September 2026</div>
+      <table class="chg-table">
+        <thead><tr><th style="width:96px">Due date</th><th style="width:90px">Category</th><th>Lease</th><th style="width:110px">Status</th><th style="width:150px">Deposit</th><th style="width:110px"></th><th style="width:30px"></th></tr></thead>
+        <tbody>
+        ${charges.map(c=>`
+          <tr>
+            <td>${c.due}</td>
+            <td>&#8635; Rent</td>
+            <td class="lease"><a href="#" onclick="toast('Lease profile opens from here in the real product.'); return false">${c.lease}</a></td>
+            <td>${c.status==='paid'?'<span class="badge paid">Paid</span>':c.status==='autopay'?'<span class="badge autopay">Autopay on</span>':'<span class="badge unpaid">Unpaid</span>'}</td>
+            <td>${c.depDate?`${c.depDate}<div class="dep-bank">${c.depBank}</div>`:''}</td>
+            <td class="amt">${money(c.amt)}<div class="due">Due: ${money(c.dueAmt)}</div></td>
+            <td class="exp" onclick="state.expanded = state.expanded===${c.id}?null:${c.id}; render()">${state.expanded===c.id?'&#9650;':'&#9660;'}</td>
+          </tr>
+          ${state.expanded===c.id?`
+          <tr class="chg-detail"><td colspan="7">
+            <p class="chg-note">${c.note}</p>
+            <div class="chg-actions">
+              <button onclick="openRecordPayment(${c.id})">&#9997; Record Payment</button>
+              <button onclick="toast('Reminder sent to the tenant on this lease.')">&#128232; Send Reminder</button>
+              <button onclick="openEditCharge(${c.id})">&#9998; Edit</button>
+              <button onclick="deleteCharge(${c.id})">&#128465; Delete</button>
+              <button onclick="toast('Late fees stopped for this charge.')">&#128683; Stop Late Fees</button>
+            </div>
+          </td></tr>`:''}
+        `).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  }
+  if(t==='deposits'){
+    const months=[...new Set(deposits.map(d=>d.month))];
+    body = `
+    <h2 class="pop" style="font-size:19px;margin:20px 0 12px">Deposits</h2>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+      ${['&#128462; Rentals','&#128209; All Leases','&#127968; All Tenants','&#127974; All Banks','&#128197; All Time'].map(f=>`<button class="filter-pill" onclick="toast('Filters are display-only in the practice copy.')">${f}</button>`).join('')}
+      <button class="link-btn" style="margin-left:auto" onclick="toast('Deposits exported to CSV in the real product.')">&#8599; Export</button>
+    </div>
+    <div class="card" style="padding:4px 20px 16px">
+      ${months.map(m=>`
+      <div class="month-hd">${m}</div>
+      <table class="chg-table">
+        <thead><tr><th>Deposit date</th><th>Date paid</th><th>Tenant</th><th>Lease</th><th>Bank</th><th style="text-align:right">Amount</th></tr></thead>
+        <tbody>
+          ${deposits.filter(d=>d.month===m).map(d=>`
+          <tr><td>${d.depDate}</td><td>${d.payDate}</td><td style="font-weight:600;color:var(--ink)">${d.tenant}</td>
+          <td class="lease"><a href="#" onclick="return false">${d.lease}</a></td><td style="font-size:12.5px">${d.bank}</td>
+          <td class="amt">${'$'+d.amt.toLocaleString('en-US')}</td></tr>`).join('')}
+        </tbody>
+      </table>`).join('')}
+    </div>`;
+  }
+  return `
+  <div class="hd-row">
+    <h1 class="pop">Payments <span style="color:#9AA9B7;font-size:15px">&#9881;</span></h1>
+    <div style="display:flex;gap:12px">
+      <button class="btn outline" onclick="toast('Actions menu: rent reporting, autopay settings, payment settings.')">Actions &#9662;</button>
+      <button class="btn primary" onclick="openCreateCharge()">Create Charge</button>
+    </div>
+  </div>
+  <div class="tabs">
+    ${['overview','charges','deposits'].map(x=>`<button class="${t===x?'on':''}" onclick="setPayTab('${x}')">${x}</button>`).join('')}
+  </div>
+  ${body}`;
+};
+function setPayTab(t){ state.payTab=t; state.expanded=null; render(); }
+
+function openCreateCharge(){
+  openModal(`
+    <button class="x" onclick="closeModal()">&times;</button>
+    <h3 class="pop">Create charge</h3>
+    <div class="fld"><label>Lease profile*</label>
+      <select id="ccLease"><option value="">Select an option</option>${charges.map(c=>`<option>${c.lease}</option>`).join('')}</select>
+      <div class="hint">Haven&rsquo;t created the lease profile yet? <a href="#" onclick="toast('Lease profile wizard is not part of the practice copy.'); return false">Add another lease profile</a></div>
+    </div>
+    <div class="fld"><label>Category*</label>
+      <div class="chips" id="ccCat">${['Rent','Security deposit','Utility','Late fee','NSF fee','Other'].map((c,i)=>`<button class="chip ${i===0?'on':''}" onclick="[...this.parentNode.children].forEach(x=>x.classList.remove('on')); this.classList.add('on')">${c}</button>`).join('')}</div>
+    </div>
+    <div class="fld"><label>Amount*</label><input type="text" id="ccAmt" placeholder="$"></div>
+    <div class="fld"><label>Due date*</label><input type="date" id="ccDue" value="2026-09-15"></div>
+    <div class="fld"><button class="link-btn" onclick="toast('Description field expands here in the real product.')">&#8853; Add Description</button></div>
+    <div class="modal-foot">
+      <button class="btn outline" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="createCharge()">Create</button>
+    </div>`);
+}
+function createCharge(){
+  const lease=$('ccLease').value, amt=parseFloat(($('ccAmt').value||'').replace(/[$,]/g,''));
+  const cat=[...document.querySelectorAll('#ccCat .chip')].find(c=>c.classList.contains('on'))?.textContent||'Rent';
+  if(!lease){ toast('Select a lease profile first.'); return; }
+  if(!amt){ toast('Enter an amount first.'); return; }
+  const d=$('ccDue').value.split('-');
+  charges.unshift({id:nextChargeId++, month:'September 2026', due:`${d[1]}/${d[2]}/${d[0]}`, lease, amt, dueAmt:amt, status:'unpaid', note:`${cat} charge created just now in the practice copy. The payment will be deposited into <b>TOWNEBANK - Integrity Rental Properties llC</b> bank account.`});
+  closeModal(); state.payTab='charges'; render(); toast('Charge created and sent to the tenant portal.');
+}
+function deleteCharge(id){
+  const c=charges.find(x=>x.id===id);
+  openModal(`
+    <button class="x" onclick="closeModal()">&times;</button>
+    <h3 class="pop">Delete this charge?</h3>
+    <p style="font-size:13.5px;margin-bottom:6px">${c.lease} &mdash; <b>${money(c.amt)}</b> due ${c.due}.</p>
+    <p style="font-size:13px;color:var(--muted)">The charge will be removed from your tenant&rsquo;s portal immediately.</p>
+    <div class="modal-foot">
+      <button class="btn outline" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" style="background:#B02A37" onclick="charges=charges.filter(x=>x.id!==${id}); state.expanded=null; closeModal(); render(); toast('Charge deleted.')">Delete Charge</button>
+    </div>`);
+}
+function openEditCharge(id){
+  const c=charges.find(x=>x.id===id);
+  openModal(`
+    <button class="x" onclick="closeModal()">&times;</button>
+    <h3 class="pop">Edit charge</h3>
+    <p style="font-size:12px;color:var(--muted);margin:-10px 0 14px">This ONLY affects this charge and no future charges.</p>
+    <div class="fld"><label>Category*</label>
+      <div class="chips">${['Rent','Security deposit','Utility','Late fee','NSF fee','Other'].map((x,i)=>`<button class="chip ${i===0?'on':''}" onclick="[...this.parentNode.children].forEach(y=>y.classList.remove('on')); this.classList.add('on')">${x}</button>`).join('')}</div>
+    </div>
+    <div class="fld"><label>Amount*</label><input type="text" id="ecAmt" value="${c.amt}"></div>
+    <div class="fld"><label>Due date*</label><input type="text" value="${c.due}"></div>
+    <div class="fld"><label>Bank Account*</label>
+      <select><option>TOWNEBANK - Integrity Rental Properties llC - 4137</option></select>
+      <div class="hint">To add a new bank account, go to <a href="#" onclick="toast('Rent Payment settings are not part of the practice copy.'); return false">Rent Payment settings</a>.</div>
+    </div>
+    <div class="fld"><button class="link-btn" onclick="toast('Attachments are disabled in the practice copy.')">&#128206; Add Attachment</button></div>
+    <div class="modal-foot">
+      <button class="btn outline" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="const a=parseFloat($('ecAmt').value.replace(/[$,]/g,''))||${c.amt}; Object.assign(charges.find(x=>x.id===${id}),{amt:a,dueAmt:a}); closeModal(); render(); toast('Charge updated.')">Save</button>
+    </div>
+    <div style="text-align:center;margin-top:14px"><button class="link-btn" style="color:#B02A37" onclick="closeModal(); deleteCharge(${id})">Delete Charge</button></div>`);
+}
+let rpMethod=null, rpCharge=null;
+function openRecordPayment(id){
+  rpCharge=charges.find(x=>x.id===id); rpMethod=null;
+  openModal(`
+    <button class="x" onclick="closeModal()">&times;</button>
+    <h3 class="pop">Record an offline payment</h3>
+    <p style="font-size:12.5px;color:var(--muted);margin:-8px 0 14px">Select the charge(s) to record as paid.</p>
+    <div class="rp-charge-tbl">
+      <table><thead><tr><th>Charge</th><th style="text-align:right">Balance</th><th style="text-align:right">Your payment</th></tr></thead>
+      <tbody><tr>
+        <td><input type="checkbox" checked> <span style="font-size:11px;color:var(--muted);font-weight:700">DUE ON ${rpCharge.due}</span><br><b>Rent</b></td>
+        <td style="text-align:right">${'$'+rpCharge.dueAmt.toLocaleString()}.00</td>
+        <td style="text-align:right"><input type="text" id="rpAmt" value="${rpCharge.dueAmt}.00"></td>
+      </tr></tbody></table>
+      <button class="addchg" onclick="toast('Multiple charges can be combined into one payment in the real product.')">&#8853; ADD NEW CHARGE</button>
+    </div>
+    <div class="fld"><label>How did they pay?</label>
+      <div class="paymethod-grid">
+        ${['Check|&#128221;','Cash|&#128181;','Venmo|<b style=&quot;color:#3D95CE&quot;>V</b>','Zelle|<b style=&quot;color:#6D1ED4&quot;>Z</b>','Cash App|<b style=&quot;color:#00C244&quot;>$</b>','PayPal|<b style=&quot;color:#003087&quot;>P</b>','Section 8|&#128196;','Other|$'].map((m,i)=>{const [lb,ic]=m.split('|');return `<div class="pm" data-i="${i}" onclick="[...this.parentNode.children].forEach(x=>x.classList.remove('on')); this.classList.add('on'); rpMethod='${lb}'"><span class="rad"></span><div class="ic">${ic}</div><div class="lb">${lb}</div></div>`;}).join('')}
+      </div>
+    </div>
+    <div class="fld"><label>Date Paid</label><input type="date" id="rpDate"></div>
+    <div class="fld"><label>Payment Note <span class="opt">(Optional)</span></label><textarea id="rpNote" style="min-height:60px"></textarea>
+      <div class="hint">This note will be shared with the tenant(s) on this lease.</div></div>
+    <div class="fld"><label>Send tenant a receipt? <a href="#" onclick="toast('Help article — not part of the practice copy.'); return false">Learn More</a></label>
+      <label style="font-weight:400;display:inline;margin-right:16px"><input type="radio" name="rpRcpt" value="y"> Yes</label>
+      <label style="font-weight:400;display:inline"><input type="radio" name="rpRcpt" value="n" checked> No</label>
+    </div>
+    <div class="summary-line"><div><b>Summary</b><div style="font-size:12px;color:var(--muted);max-width:250px">The charge(s) will display as PAID immediately in your tenant&rsquo;s TurboTenant account.</div></div>
+      <div style="text-align:right"><span style="font-size:12px;color:var(--muted)">Total</span><div style="font-weight:700;font-size:16px">${'$'+rpCharge.dueAmt.toLocaleString()}.00</div></div></div>
+    <div class="modal-foot"><button class="btn primary" onclick="recordPayment()">Record Payment</button></div>`);
+}
+function recordPayment(){
+  if(!rpMethod){ toast('Select how they paid first.'); return; }
+  if(!$('rpDate').value){ $('rpDate').style.borderColor='#B02A37'; toast('Date Paid — this value is required.'); return; }
+  const d=$('rpDate').value.split('-');
+  rpCharge.status='paid'; rpCharge.dueAmt=0;
+  rpCharge.depDate=`${d[1]}/${d[2]}/${d[0]}`; rpCharge.depBank='Offline payment — '+rpMethod;
+  rpCharge.note='Recorded as an offline '+rpMethod+' payment in the practice copy.';
+  deposits.unshift({month:'August 2026', depDate:`${d[1]}/${d[2]}/${d[0]}`, payDate:`${d[1]}/${d[2]}/${d[0]}`, tenant:rpCharge.lease.split(' - ')[1]||'Tenant', lease:rpCharge.lease, bank:'Offline — '+rpMethod, amt:rpCharge.amt});
+  closeModal(); state.expanded=null; render(); toast('Payment recorded. The charge now shows as PAID for your tenant.');
+}
+
+/* ---------- MAINTENANCE ---------- */
+function maintTable(rows){
+  return `<table class="mx-table">
+    <thead><tr><th>Date added &#9660;</th><th>Title</th><th>Rental</th><th>Last activity</th><th>Status</th><th></th></tr></thead>
+    <tbody>${rows.map(m=>`
+      <tr class="rowlink" onclick="openMaint(${m.id})">
+        <td>${m.added}</td><td class="ttl">${m.title}</td><td>${m.rental}</td><td>${m.last}</td>
+        <td><span class="badge ${m.status==='Resolved'?'resolved':m.status==='Open'?'openreq':'progress'}">${m.status}</span></td>
+        <td onclick="event.stopPropagation(); this.querySelector('.star').classList.toggle('on')"><span class="star ${m.starred?'on':''}">&#9733;</span></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+views.maintenance = () => {
+  if(currentMaint) return maintDetail();
+  return `
+  <div class="hd-row"><h1 class="pop">Maintenance</h1></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+    ${['&#128197; All Time','&#128462; Rentals','&#9432; All Status','&#9734; Starred'].map(f=>`<button class="filter-pill" onclick="toast('Filters are display-only in the practice copy.')">${f}</button>`).join('')}
+    <span class="filter-pill" style="background:#fff;border:1px solid var(--line-d)">&#128269; <input placeholder="Search" style="border:none;outline:none;width:110px;background:transparent"></span>
+    <button class="btn primary" style="margin-left:auto" onclick="openCreateRequest()">Create Request</button>
+  </div>
+  <div class="card">${maintTable(maint)}</div>`;
+};
+
+function openMaint(id){ currentMaint=maint.find(m=>m.id===id); state.route='maintenance'; render(); window.scrollTo({top:0}); }
+
+function maintDetail(){
+  const m=currentMaint;
+  return `
+  <button class="link-btn" style="margin-bottom:10px" onclick="currentMaint=null; render()">&#8592; Back</button>
+  <div class="hd-row" style="align-items:flex-start">
+    <div class="mxd-head"><h1 class="pop">${m.title}</h1><a class="addr" href="#" onclick="return false">${m.rental}</a></div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="status-dd">
+        <button class="status-btn" onclick="$('stMenu').classList.toggle('on')">${m.status.toUpperCase()} &#9662;</button>
+        <div class="status-menu" id="stMenu">
+          ${['Open','In Progress','Resolved'].map(s=>`<button onclick="currentMaint.status='${s}'; currentMaint.last='Aug 27, 2026 09:00am'; currentMaint.activity.unshift({t:'Status Update: ${s}', d:'Aug 27, 2026 | 09:00 AM', p:''}); render()">${s}</button>`).join('')}
+        </div>
+      </div>
+      <button title="Download" onclick="toast('PDF download is not part of the practice copy.')" style="font-size:16px;color:var(--navy)">&#8681;</button>
+      <span class="star" style="font-size:19px" onclick="this.classList.toggle('on')">&#9734;</span>
+    </div>
+  </div>
+  <div class="mxd-grid">
+    <div>
+      <div class="card" style="padding:18px 22px">
+        <div style="display:flex;justify-content:space-between"><h3 class="pop" style="font-size:15.5px;margin-bottom:10px">Details</h3><button class="link-btn" onclick="toast('Editing is not part of the practice copy.')">&#9998; Edit</button></div>
+        <div class="kv-line"><b>Requested On:</b> ${m.requested}</div>
+        <div class="kv-line"><b>Preferred Time to Enter:</b> ${m.preferred}</div>
+        <div class="kv-line"><b>Category:</b> ${m.category}</div>
+        <div class="kv-line" style="margin-top:12px"><b>Description:</b></div>
+        <div class="desc-block">${esc(m.desc)}</div>
+      </div>
+      <div class="card thumbtack" style="padding:18px 22px;margin-top:16px">
+        <div style="display:flex;justify-content:space-between;gap:14px">
+          <div>
+            <h4>Thumbtack</h4>
+            <div class="big">Find a ${m.pro}</div>
+            <div class="meta">Hire trusted, local pros with confidence.</div>
+            <div class="meta">&#128100; Serves Hampton</div>
+            <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733; 4.9 average rating | Trusted by over 4.5 million people</div>
+          </div>
+          <button class="btn primary sm" style="align-self:flex-start;flex:none" onclick="toast('Thumbtack partner search opens in the real product.')">Find a Pro</button>
+        </div>
+      </div>
+      <div class="card" style="padding:18px 22px;margin-top:16px;display:flex;justify-content:space-between;align-items:center">
+        <div><h3 class="pop" style="font-size:15.5px">Send Work Order</h3><div style="font-size:13px;color:var(--muted)">Share this maintenance request with your pro.</div></div>
+        <button class="btn outline" onclick="openWorkOrder()">Send Work Order</button>
+      </div>
+      <div class="card" style="padding:18px 22px;margin-top:16px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px"><h3 class="pop" style="font-size:15.5px">Activity &#9432;</h3><button class="link-btn" onclick="addMaintNote()">&#128221; Add Note</button></div>
+        ${m.activity.map(a=>`<div class="activity-item"><div class="t">${a.t}</div><div class="d">${a.d}</div>${a.p?`<p>${esc(a.p)}</p>`:''}</div>`).join('')}
+      </div>
+    </div>
+    <div class="ai-panel">
+      <p class="intro">&#129305; I&rsquo;m TurboTenant&rsquo;s Maintenance AI assistant. I&rsquo;m here to help troubleshoot this maintenance request.</p>
+      <h4>Here&rsquo;s an initial assessment:</h4>
+      <h5>Cause &amp; Scope:</h5>
+      <p>The central HVAC system is failing to provide adequate cooling throughout the home, most likely due to low refrigerant, compressor failure, restricted airflow, or a malfunctioning outdoor unit. Because both floors are affected, this appears systemic rather than limited to one room; the warmer upstairs may also reflect ductwork or airflow imbalance.</p>
+      <h5>Severity:</h5>
+      <p>Urgent priority. Sustained indoor temperatures around 80°F with high humidity can create habitability concerns, mold risk, and potential equipment damage, although no immediate emergency is reported.</p>
+      <h5>Recommendation:</h5>
+      <p>Schedule an HVAC technician promptly to verify thermostat operation, filter condition, refrigerant pressures, evaporator and condenser coils, blower performance, duct airflow, and condensate drainage. Repair the identified failure and confirm that both levels reach and maintain the set temperature; document any refrigerant leak or component replacement.</p>
+      <h5>Summary:</h5>
+      <p>Systemic HVAC cooling failure is likely; arrange prompt inspection and repair to restore comfortable, dry indoor conditions.</p>
+      <div class="ai-thumbs"><button onclick="toast('Thanks for the feedback!')">&#128077;</button><button onclick="toast('Thanks for the feedback!')">&#128078;</button></div>
+      <h4>What else can I help you with?</h4>
+      <div class="ai-chips" id="aiChips">
+        ${['Should I DIY or hire someone?','What type of contractor do I need?','What&rsquo;s the estimated cost?','Ask my tenant for details','Help me find a contractor','Help me draft a work order'].map(q=>`<button onclick="aiAnswer(this)"><span class="dm">&#9670;</span> ${q}</button>`).join('')}
+      </div>
+      <div id="aiOut"></div>
+    </div>
+  </div>`;
+}
+const AI_ANSWERS = {
+  'Should I DIY or hire someone?':'For a systemic cooling failure, hire a licensed HVAC technician. Refrigerant handling requires EPA certification, and compressor or coil diagnostics need specialized gauges. DIY here risks voiding equipment warranties.',
+  'What type of contractor do I need?':'You need a licensed HVAC technician (residential air conditioning). If ductwork imbalance is confirmed, some HVAC companies also perform duct sealing and balancing in the same visit.',
+  'What&rsquo;s the estimated cost?':'Typical ranges: diagnostic visit $75–$150; refrigerant recharge $200–$500; capacitor or contactor $150–$400; compressor replacement $1,200–$2,800. Hampton, VA rates trend near the national average.',
+  'Ask my tenant for details':'Draft sent to your Messages: “Hi! To help our HVAC tech prepare — is the outdoor unit running and the fan spinning? Any ice on the copper lines? When did the cooling issue start?”',
+  'Help me find a contractor':'I recommend starting with the Thumbtack card above — it pre-filters Central AC repair specialists serving Hampton with 4.9 average ratings.',
+  'Help me draft a work order':'Draft ready: “AC not cooling; thermostat 72°F but indoor temp ~80°F on both floors, upstairs worse. Inspect refrigerant, compressor, coils, airflow and condensate. Tenant’s adult daughter available for access. Please confirm appointment window.”'
+};
+function aiAnswer(btn){
+  const q = btn.textContent.trim();
+  const out = $('aiOut');
+  out.innerHTML = `<div style="background:#fff;border-radius:9px;padding:12px 15px;margin-top:14px;box-shadow:0 1px 5px rgba(10,30,50,.1)"><b style="font-size:12.5px">${q}</b><p style="margin-top:6px">${AI_ANSWERS[q]||'Let me look into that for you.'}</p></div>`;
+  out.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+function addMaintNote(){
+  openModal(`
+    <button class="x" onclick="closeModal()">&times;</button>
+    <h3 class="pop">Add Note</h3>
+    <div class="fld"><label>Note</label><textarea id="mnNote" placeholder="e.g. I contacted Ricky and scheduled the appointment..."></textarea></div>
+    <div class="modal-foot">
+      <button class="btn outline" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="const v=$('mnNote').value.trim(); if(!v){toast('Write the note first.');return;} currentMaint.activity.unshift({t:'Note Added by You', d:'Aug 27, 2026 | 09:00 AM', p:v}); closeModal(); render(); toast('Note added to the activity log.')">Save Note</button>
+    </div>`);
+}
+function openWorkOrder(){
+  const m=currentMaint;
+  openModal(`
+    <button class="x" onclick="closeModal()">&times;</button>
+    <h3 class="pop">Send Work Order</h3>
+    <p style="font-size:13px;color:var(--muted);margin:-8px 0 14px">Send your maintenance person an email with the information from the maintenance request as well as the tenant&rsquo;s contact information.</p>
+    <div class="wo-box"><div class="d">08/27/2026</div><div class="t">${m.title}</div></div>
+    <div class="fld" style="position:relative"><label>Select a Pro</label>
+      <select id="woPro"><option value="">Select...</option><option>+ Add new Maintenance Pro</option>${maintPros.map(p=>`<option>${p}</option>`).join('')}</select>
+    </div>
+    <div class="fld"><label>Additional Message <span class="opt">(Optional)</span></label><textarea id="woMsg"></textarea><div class="hint">0 / 1000 characters used</div></div>
+    <div class="modal-foot" style="justify-content:center;flex-direction:column;align-items:center;gap:10px">
+      <button class="btn primary" onclick="sendWorkOrder()">Send Work Order</button>
+      <button class="link-btn" onclick="toast('Email preview is not part of the practice copy.')">Preview Email We Send</button>
+    </div>`);
+}
+function sendWorkOrder(){
+  const pro=$('woPro').value;
+  if(!pro || pro.startsWith('+')){ toast('Select a Pro from the list first.'); return; }
+  currentMaint.activity.unshift({t:'Work Order Sent', d:'Aug 27, 2026 | 09:00 AM', p:'Sent to '+pro+' with the request details and tenant contact information.'});
+  closeModal(); render(); toast('Work order emailed to '+pro+'.');
+}
+function openCreateRequest(propId){
+  openModal(`
+    <button class="x" onclick="closeModal()">&times;</button>
+    <h3 class="pop">Create maintenance request</h3>
+    <div class="fld"><label>Property*</label>
+      <select id="crProp">${props.map(p=>`<option value="${p.id}" ${p.id===propId?'selected':''}>${p.short}</option>`).join('')}</select></div>
+    <div class="fld"><label>Lease <span class="opt">(Optional)</span></label>
+      <select><option>8 Lyford Key, A - LaShanda</option><option>None</option></select></div>
+    <h3 class="pop" style="font-size:15px;margin:4px 0 10px">Details</h3>
+    <div class="fld"><label>Category*</label>
+      <select id="crCat"><option value="">Select...</option>${maintCats.map(c=>`<option>${c}</option>`).join('')}</select></div>
+    <div class="fld"><label>Title*</label><input type="text" id="crTitle" maxlength="50" oninput="$('crCount').textContent=this.value.length+' / 50 characters used'"><div class="hint" id="crCount">0 / 50 characters used</div></div>
+    <div class="fld"><label>Description*</label>
+      <div class="ai-note" style="margin-bottom:8px">&#128161; <span>The more details you share, the more AI Maintenance Assistant can help you with troubleshooting, price estimation, and other considerations.</span></div>
+      <textarea id="crDesc"></textarea>
+      <div class="hint">Hint: Mention specific sounds, brand names, when the issue started, what troubleshooting you&rsquo;ve already tried.</div></div>
+    <div class="fld"><label>Photos <span class="opt">(Optional)</span></label>
+      <div class="upload-zone" style="padding:22px;margin:6px 0" onclick="toast('Uploads are disabled in the practice copy.')"><div class="t1" style="font-size:13.5px">Click or drag to upload</div><div class="t2">Upload clear photos of the issue.</div></div></div>
+    <div class="fld"><label>&#128197; Scheduling</label>
+      <div style="font-size:13px;margin-bottom:5px">Preferred time to enter?</div>
+      <label style="font-weight:400;display:inline;margin-right:16px"><input type="radio" name="crWhen" checked> Anytime</label>
+      <label style="font-weight:400;display:inline"><input type="radio" name="crWhen"> Coordinate a time first</label></div>
+    <div class="modal-foot"><button class="btn primary" onclick="submitRequest()">Submit Request</button></div>`);
+}
+function submitRequest(){
+  const cat=$('crCat').value, title=$('crTitle').value.trim(), desc=$('crDesc').value.trim();
+  if(!cat){ toast('Category — this value is required.'); return; }
+  if(!title){ $('crTitle').style.borderColor='#B02A37'; toast('Title — this value is required.'); return; }
+  if(!desc){ $('crDesc').style.borderColor='#B02A37'; toast('Description — this value is required.'); return; }
+  const p=props.find(x=>x.id===$('crProp').value);
+  const id=nextMaintId++;
+  maint.unshift({id, added:'Aug 27, 2026', title, rental:p.short, last:'Aug 27, 2026 09:00am', status:'Open', starred:false, requested:'Aug 27, 2026 | 09:00 am', preferred:'Anytime', category:cat, desc, pro:cat+' specialist', activity:[{t:'Requested by You', d:'Aug 27, 2026 | 09:00 AM', p:''}]});
+  closeModal(); state.route='maintenance'; openMaint(id); toast('Maintenance request created.');
+}
+
+/* ---------- LEASE PROFILES ---------- */
+views.leases = () => `
+  <div class="hd-row"><h1 class="pop">Lease Profiles</h1><button class="btn outline" onclick="toast('Lease wizard is not part of the practice copy.')">Add New Lease</button></div>
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+    <div class="seg-toggle"><button class="on">Active</button><button onclick="toast('Past leases are archived in the real product.')">Past</button></div>
+    <span class="filter-pill" style="background:#fff;border:1px solid var(--line-d)">&#128269; <input placeholder="Search  Leases..." style="border:none;outline:none;width:130px;background:transparent"></span>
+    <button class="filter-pill">&#128462; Rentals</button>
+    <span style="margin-left:auto;font-size:12.5px;color:var(--muted)">Sort by <b style="color:var(--ink)">End Date (Today &#8594; Future)</b></span>
+  </div>
+  <div class="purple-banner"><div class="bolt">&#9889;</div>
+    <div><h4 class="pop">The work behind the lease, done for you</h4><p>Whether you&rsquo;re filling a vacancy or managing an active lease, let our team of pros handle the work for you.</p></div>
+    <button class="lm" onclick="toast('Informational upsell only in the practice copy.')">LEARN MORE</button><span class="x">&times;</span>
+  </div>
+  ${leases.map(l=>`
+  <div class="lp-row">
+    <div><div class="k ${l.soon?'soon':''}">${l.cur}</div><div class="v">${l.name}</div><div class="sub">${l.prop}</div></div>
+    <div><div class="k">Lease term</div><div class="v" style="font-weight:600">${l.term}</div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between"><div><div class="k">Unpaid charges</div><div class="v">${l.unpaid}</div></div>
+    <button class="link-btn" onclick="${l.soon?"toast('Lease options: renew, month-to-month, or end lease.')":"go('payments'); state.payTab='charges'; render()"}">${l.soon?'View Lease Options':'View Payments'}</button></div>
+  </div>`).join('')}`;
+
+/* ---------- DOCS & E-SIGN ---------- */
+views.docs = () => `
+  <div class="hd-row"><h1 class="pop">Documents &amp; E-sign</h1></div>
+  <div class="tabs">${['DOCUMENTS','E-SIGN','CONDITION REPORTS','FORMS','TEMPLATES'].map((x,i)=>`<button class="${i===0?'on':''}" onclick="${i===0?'':'toast(\x27Only the Documents tab is part of the practice copy.\x27)'}">${x}</button>`).join('')}</div>
+  <div class="doc-actions">
+    <div class="doc-act" onclick="toast('E-sign flow is not part of the practice copy.')"><span class="ic">&#128395;</span><div><h4 class="pop">E-sign a document</h4><p>Send <b>any</b> document for easy and secure signing</p></div><span class="ar">&#8250;</span></div>
+    <div class="doc-act" onclick="toast('The forms library holds 33 landlord forms in the real product.')"><span class="ic">&#128218;</span><div><h4 class="pop">Start with a form</h4><p>Explore 33 forms to get you started</p></div><span class="ar">&#8250;</span></div>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+    ${['&#128278; Categories','&#128101; Renters','&#128209; Leases','&#9997; E-Sign Statuses','&#128274; Private'].map(f=>`<button class="filter-pill" onclick="toast('Filters are display-only in the practice copy.')">${f}</button>`).join('')}
+    <button class="btn primary" style="margin-left:auto" onclick="toast('Uploads are disabled in the practice copy.')">Upload Document</button>
+  </div>
+  <div class="card">
+    <table class="doc-table">
+      <thead><tr><th style="width:100px">Date</th><th>Title &amp; Category</th><th>Rental</th><th style="width:80px">E-Sign</th></tr></thead>
+      <tbody>${docs.map(d=>`
+        <tr><td>${d.date}</td><td><div class="tt">${d.title}</div><div class="cat">${d.cat}</div></td><td>${d.rental}</td><td style="text-align:center;color:var(--green-tx)">${d.esign}</td></tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+
+/* ---------- RENTERS STRIP ---------- */
+function renterStrip(active){
+  return `
+  <div class="renter-strip">
+    <div class="lft">
+      <a class="seg ${active==='leads'?'on':''}" onclick="go('leads')">LEADS (${activeLeads.length})</a><span class="sep">&#8250;</span>
+      <a class="seg ${active==='applicants'?'on':''}" onclick="go('applicants')">APPLICANTS (0)</a><span class="sep">&#8250;</span>
+      <a class="seg ${active==='tenants'?'on':''}" onclick="go('tenants')">TENANTS (17)</a>
+    </div>
+    <div class="rgt">
+      <button class="btn outline sm" onclick="toast('Tenant screening starts with an invite in the real product.')">Screen a Tenant</button>
+      <button class="btn primary sm" onclick="openInvite()">Invite to Apply</button>
+    </div>
+  </div>`;
+}
+
+/* ---------- LEADS ---------- */
+views.leads = () => {
+  if(currentLead) return leadDetail();
+  const arch = state.leadArch;
+  const rows = arch ? archivedLeads : activeLeads;
+  return `
+  ${renterStrip('leads')}
+  <div class="hd-row"><h2 class="pop" style="font-size:21px">${arch?'Archived Leads (331)':'Leads ('+activeLeads.length+')'}</h2>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div class="seg-toggle"><button class="${!arch?'on':''}" onclick="state.leadArch=false; render()">Active</button><button class="${arch?'on':''}" onclick="state.leadArch=true; render()">Archived</button></div>
+      <button class="filter-pill" onclick="toast('Filters are display-only in the practice copy.')">&#9881; Show Filters</button>
+    </div>
+  </div>
+  ${rows.length===0 ? `
+  <div class="card empty-wrap">
+    <div style="font-size:40px;margin-bottom:10px">&#127968;</div>
+    <div class="big">Not seeing any leads that fit that criteria</div>
+    <p>Try searching or filtering by something else, or check the archived list.</p>
+    <button class="btn outline" onclick="state.leadArch=true; render()">View Archived</button>
+  </div>` : `
+  <div class="card">
+    <table class="lead-table"><tbody>
+      ${rows.map(l=>`
+      <tr>
+        <td style="width:34px"><input type="checkbox"></td>
+        <td><div class="nm">${l.isNew?'<span class="badge new" style="margin-right:7px">NEW</span>':''}${l.nm}</div><div class="sub">${l.prop}</div></td>
+        <td style="width:110px">${l.date}</td>
+        <td style="width:110px">${l.src}</td>
+        <td style="width:60px;text-align:center"><span class="msg-ic" onclick="openLead(${l.id}); ">&#128488;</span></td>
+        <td style="width:130px;text-align:right">
+          <button class="btn outline sm" onclick="${arch?`unarchiveLead(${l.id})`:`archiveLead(${l.id})`}">${arch?'Unarchive':'Archive'}</button>
+        </td>
+        <td style="width:110px;text-align:right"><button class="link-btn" onclick="openLead(${l.id})">View</button></td>
+      </tr>`).join('')}
+    </tbody></table>
+  </div>`}`;
+};
+function archiveLead(id){ const i=activeLeads.findIndex(l=>l.id===id); if(i>-1){ archivedLeads.unshift(activeLeads[i]); activeLeads.splice(i,1);} render(); toast('Lead archived.'); }
+function unarchiveLead(id){ const i=archivedLeads.findIndex(l=>l.id===id); if(i>-1){ activeLeads.unshift(archivedLeads[i]); archivedLeads.splice(i,1);} state.leadArch=false; render(); toast('Lead moved to your active list.'); }
+function openLead(id){ currentLead=(archivedLeads.find(l=>l.id===id)||activeLeads.find(l=>l.id===id)); currentLead._tab='summary'; render(); window.scrollTo({top:0}); }
+
+function leadDetail(){
+  const l=currentLead;
+  const isArch = archivedLeads.includes(l);
+  const t=l._tab||'summary';
+  return `
+  <button class="link-btn" style="margin-bottom:12px" onclick="currentLead=null; render()">&#8592; Back</button>
+  <div class="lead-head">
+    <span class="avatar" style="background:${l.col};width:62px;height:62px;font-size:20px">${l.ini}</span>
+    <div>
+      <div class="ap-on">Became a lead on ${l.became}</div>
+      <h1>${l.nm}</h1>
+      <div class="contact"><span>&#9993; ${l.email.toUpperCase()}</span><span>&#128222; ${l.phone}</span></div>
+      <div class="lead-sub-actions">
+        <button onclick="toast('Lead marked as contacted.')">&#9993; MARK AS CONTACTED</button>
+        <button onclick="toast('Lead editor is not part of the practice copy.')">&#9998; EDIT LEAD</button>
+      </div>
+    </div>
+    <div class="rgt">
+      <button class="btn outline" onclick="${isArch?`unarchiveLead(${l.id}); currentLead=null;`:`archiveLead(${l.id}); currentLead=null;`}">${isArch?'Unarchive Lead':'Archive Lead'}</button>
+      <button class="btn primary" onclick="openInvite('${l.nm}')">Invite to Apply</button>
+    </div>
+  </div>
+  <div class="tabs" style="margin-top:14px">
+    <button class="${t==='summary'?'on':''}" onclick="currentLead._tab='summary'; render()">SUMMARY</button>
+    <button class="${t==='messages'?'on':''}" onclick="currentLead._tab='messages'; render()">MESSAGES</button>
+  </div>
+  ${t==='summary'?`
+  <div class="ov-grid" style="margin-top:18px">
+    <div>
+      <div class="card" style="padding:20px 24px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px">
+          <div><h3 class="pop" style="font-size:16px">&#128200; Pre-Screener</h3>
+          <div style="font-size:12px;color:var(--muted)">Automatically Re-Sent on 08/24/2026</div></div>
+          <div style="display:flex;gap:10px">
+            <button class="link-btn" onclick="toast('Manual entry is not part of the practice copy.')">&#8853; Add Info Manually</button>
+            <button class="btn outline sm" onclick="toast('Pre-screener re-sent to the lead.')">Resend Pre-Screener</button>
+          </div>
+        </div>
+        <p style="font-size:13px;color:var(--body);margin:10px 0 16px">We sent this lead a pre-screener, a set of questions to see if they meet your basic criteria. We&rsquo;ll email you after they fill it out. <a href="#" onclick="toast('Help article — not part of the practice copy.'); return false">Learn more about the pre-screener</a>.</p>
+        <div class="info-tiles">
+          ${['&#128197;|DESIRED MOVE-IN','&#128106;|LIVING WITH','&#128176;|INCOME','&#128684;|SMOKING','&#128062;|PETS','&#128202;|CREDIT SCORE'].map(x=>{const [ic,lb]=x.split('|');return `<div class="info-tile"><span class="ic">${ic}</span><div><div class="lb">${lb}</div><div class="ph"></div></div></div>`;}).join('')}
+        </div>
+      </div>
+      <div class="card" style="padding:20px 24px;margin-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><h3 class="pop" style="font-size:16px">&#127968; Showings <span style="font-weight:400;font-size:11px;color:var(--muted);letter-spacing:.5px">NOT SCHEDULED</span></h3>
+          <p style="font-size:13px;color:var(--body)">Renters can schedule showings based on <a href="#" onclick="toast('Availability settings are not part of the practice copy.'); return false">your availability</a>.</p></div>
+          <button class="btn outline" onclick="toast('Showing invite sent to the lead.')">Invite to Showing</button>
+        </div>
+      </div>
+      <div class="card" style="padding:20px 24px;margin-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><h3 class="pop" style="font-size:16px">Initial Contact</h3>
+          <p style="font-size:13px;color:var(--body)">Message from Lead: Hello, I&rsquo;d like more information about ${l.prop}.</p></div>
+          <span style="font-family:'Poppins',sans-serif;font-weight:700;color:#C82021;letter-spacing:1px">REDFIN</span>
+        </div>
+      </div>
+    </div>
+    <div class="act-log">
+      <h3 class="pop">Activity Log</h3>
+      <div class="yh">Your history with this renter</div>
+      <button class="btn outline sm" style="margin-bottom:8px" onclick="toast('Notes are recorded in the activity log in the real product.')">Add Note</button>
+      ${l.log.map(e=>`<div class="act-entry"><div class="d">${e.d}</div><div class="t">${e.t}</div>${e.s?`<div class="s">${e.s}</div>`:''}</div>`).join('')}
+    </div>
+  </div>`:`
+  <div class="msg-wrap" style="margin-top:18px;grid-template-columns:minmax(0,1fr);position:relative">
+    <div class="conv">
+      <div class="conv-body" id="conv-body" style="max-height:340px;min-height:220px">
+        <div class="bubble in">Hello, I&rsquo;d like more information about ${l.prop}.</div><div class="bub-meta l">${l.date}</div>
+        ${(l._msgs||[]).map(m=>`<div class="bubble out">${esc(m)}</div><div class="bub-meta">Just now - Sent</div>`).join('')}
+      </div>
+      <div class="composer">
+        <button class="plus" onclick="toggleQR()">+</button>
+        <input id="msgIn" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendLeadMsg()">
+        <button class="send" onclick="sendLeadMsg()">SEND</button>
+      </div>
+      <div class="qr-pop" id="qrPop" style="bottom:70px;left:20px">
+        <h4 class="pop">Quick Reply Templates</h4>
+        <div class="note">Your message may reappear to communicate efficiently. You&rsquo;ll be able to edit before sending.</div>
+        ${[['Send Application','I’d like to invite you to complete a full application for '+l.prop+'. This will help to finalize the review process.'],
+           ['Send Pre-Screener','Thank you for your interest in '+l.prop+'! To help us move forward, please complete a short pre-screener with a few questions about your current rental situation.'],
+           ['Send Form','Hi! Thanks for your interest! We’d love to get to know a bit more about you to make sure everything’s a good fit.']]
+          .map(x=>`<div class="qr-tpl"><div class="bd"><div class="nm">${x[0]} <span style="color:#9AA9B7">&#9998;</span></div><p>${x[1]}</p></div><button class="use" onclick="$('msgIn').value=this.previousElementSibling.querySelector('p').textContent; $('qrPop').classList.remove('on')">USE THIS REPLY &#8250;</button></div>`).join('')}
+      </div>
+    </div>
+  </div>`}`;
+}
+function sendLeadMsg(){ const v=$('msgIn').value.trim(); if(!v) return; (currentLead._msgs=currentLead._msgs||[]).push(v); currentLead.log.unshift({d:'08/27/2026 - 09:00 AM', t:'Message sent to lead', s:v.slice(0,60)}); render(); }
+
+function openInvite(nm){
+  const parts=(nm||'').split(' ');
+  openModal(`
+    <button class="x" onclick="closeModal()">&times;</button>
+    <h3 class="pop">Invite to Apply</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="fld"><label>First Name</label><input type="text" id="ivFn" value="${parts[0]||''}"></div>
+      <div class="fld"><label>Last Name</label><input type="text" id="ivLn" value="${parts.slice(1).join(' ')||''}"></div>
+    </div>
+    <div class="fld"><label>Send Invite By:</label>
+      <label style="font-weight:400;display:inline;margin-right:14px"><input type="radio" name="ivBy" checked> Email</label>
+      <label style="font-weight:400;display:inline;margin-right:14px"><input type="radio" name="ivBy"> Text</label>
+      <label style="font-weight:400;display:inline"><input type="radio" name="ivBy"> Email &amp; Text</label>
+    </div>
+    <div class="fld"><label>Renter&rsquo;s Email</label><input type="email" id="ivEm" placeholder="renter@email.com"></div>
+    <div class="fld"><label>&#127968; Rental Property</label>
+      <select id="ivProp"><option value="">Search or select a property</option>${props.map(p=>`<option>${p.short}</option>`).join('')}</select></div>
+    <div class="fld"><label>&#128203; Application Type</label>
+      <div class="ai-note" style="background:#E7F6EE;color:#1B7A4B">&#10003; <span><b>PREMIUM UNLOCKED</b> — Background, eviction, credit, income verification + fraud detection powered by Snappt. <b>$45 fee</b> paid by the renter.</span></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn outline" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="sendInvite()">Invite</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:12px">Want to see the application before you invite a renter to apply? <a href="#" onclick="toast('The demo application opens in a new tab in the real product.'); return false">Demo our test application</a></p>`);
+}
+function sendInvite(){
+  const fn=$('ivFn').value.trim(), em=$('ivEm').value.trim(), pr=$('ivProp').value;
+  if(!fn){ toast('Enter the renter&rsquo;s first name.'); return; }
+  if(!em){ toast('Enter the renter&rsquo;s email.'); return; }
+  if(!pr){ toast('Select a rental property.'); return; }
+  closeModal(); toast('Application invite sent to '+fn+' for '+pr+'.');
+}
+
+/* ---------- APPLICANTS ---------- */
+views.applicants = () => {
+  if(state.appDetail) return applicantDetail();
+  const arch = state.appArch;
+  return `
+  ${renterStrip('applicants')}
+  <div class="hd-row"><h2 class="pop" style="font-size:21px">${arch?'Archived Applicants (25)':'Applicants (0)'}</h2>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div class="seg-toggle"><button class="${!arch?'on':''}" onclick="state.appArch=false; render()">Active</button><button class="${arch?'on':''}" onclick="state.appArch=true; render()">Archived</button></div>
+      <button class="filter-pill" onclick="toast('Filters are display-only in the practice copy.')">&#9881; Show Filters</button>
+    </div>
+  </div>
+  ${!arch?`
+  <div class="card empty-wrap">
+    <div style="font-size:40px;margin-bottom:10px">&#128269;</div>
+    <div class="big">You don&rsquo;t have any active applicants</div>
+    <p>If you&rsquo;re not seeing a specific applicant here, try looking under archived applicants, or you can always invite a new renter to apply.</p>
+    <button class="btn primary" onclick="openInvite()">Invite to Apply</button>
+    <div style="margin-top:14px"><button class="link-btn" onclick="state.appArch=true; render()">Check Archived Applicants</button></div>
+  </div>`:`
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:24px;align-items:start">
+    <div>
+      ${archApplicants.map((a,i)=>`
+      <div class="applicant-card">
+        <div>
+          <div class="pb">PAID BY RENTER</div>
+          <div class="nm">${a.nm} ${a.verified?'<span class="verified">&#128737; VERIFIED</span>':''}</div>
+          <div class="sub">${a.prop}</div>
+          <div class="dt">Date submitted: ${a.date}</div>
+        </div>
+        <button class="btn primary" onclick="${a.full?'openApplicant()':`toast('Only the Jessica Brock application is filled out in the practice copy.')`}">View Applicant</button>
+      </div>`).join('')}
+    </div>
+    <div class="help-card">
+      <h4 class="pop">Need help?</h4>
+      <p>Our support team is more than happy to help you with any questions you might have.</p>
+      <button class="btn outline sm" onclick="toast('Support chat is not part of the practice copy.')">Contact Support</button>
+    </div>
+  </div>`}`;
+};
+function openApplicant(){ state.appDetail=true; state.appTab='summary'; render(); window.scrollTo({top:0}); }
+
+const dotgrid = (na=0)=>{ let s=''; for(let i=0;i<48;i++){ s+=`<i class="${i<na?'na':''}"></i>`; } return `<div class="dots">${s}</div>`; };
+
+function applicantDetail(){
+  const t=state.appTab;
+  let body='';
+  if(t==='summary') body=`
+  <div class="ov-grid" style="margin-top:20px">
+    <div>
+      <div class="card" style="padding:20px 24px">
+        <h3 class="pop" style="font-size:16px;margin-bottom:4px">Renter journey</h3>
+        <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px">Track where this applicant is in your leasing process.</p>
+        <div class="journey">
+          ${[['Lead','Initial details and pre-screening info',1],['Application','Responses to industry standard questions',1],['Screening Report','Credit and background results delivered',1],['Verification','Proof of income and renter docs verified',0],['Decision','You review and choose to accept or reject',0]]
+            .map(s=>`<div class="j-step ${s[2]?'done':''}"><span class="j-dot">${s[2]?'&#10003;':''}</span><div><div class="tt">${s[0]}</div><div class="ds">${s[1]}</div></div></div>`).join('')}
+        </div>
+      </div>
+      <div class="card" style="padding:20px 24px;margin-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3 class="pop" style="font-size:16px">Application overview</h3><button class="link-btn" onclick="state.appTab='application'; render()">View Details</button></div>
+        <div class="info-tiles" style="grid-template-columns:repeat(3,1fr)">
+          ${[['&#128203;','APPLICATION','Complete'],['&#128197;','DESIRED MOVE-IN','09/01/2026'],['&#128106;','TOTAL OCCUPANTS','1 adult | 2 minors'],['&#128176;','SELF-REPORTED INCOME','$5,710.90 / month'],['&#128062;','ANIMALS','Yes'],['&#128684;','SMOKING','No']]
+            .map(x=>`<div class="info-tile"><span class="ic">${x[0]}</span><div><div class="lb">${x[1]}</div><div class="vl">${x[2]}</div></div></div>`).join('')}
+        </div>
+      </div>
+      <div class="card" style="padding:20px 24px;margin-top:16px">
+        <h3 class="pop" style="font-size:16px;margin-bottom:8px">Verification</h3>
+        <div style="text-align:center;padding:16px 10px">
+          <div style="font-size:34px;margin-bottom:8px">&#128196;</div>
+          <b>Waiting on applicant...</b>
+          <p style="font-size:12.5px;color:var(--muted);max-width:430px;margin:6px auto 0">We sent the applicant a request to upload documents. Then, we&rsquo;ll analyze their payroll and employment documents to verify their self-reported income and employment. <a href="#" onclick="toast('Help article — not part of the practice copy.'); return false">Learn more</a></p>
+        </div>
+      </div>
+      <div class="card" style="padding:20px 24px;margin-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><h3 class="pop" style="font-size:16px">Screening report</h3>
+            <div style="font-size:12.5px;color:var(--muted)">Received on 08/13/2026 &nbsp; <span class="verified">&#128737; Identity Verified</span></div>
+            <div class="score-num" style="font-size:30px">751</div></div>
+          <button class="btn primary" onclick="state.appTab='screening'; render()">View Full Report</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="padding:18px 20px">
+        <h3 class="pop" style="font-size:15px;margin-bottom:10px">Attachments</h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:6px;padding:9px 12px;font-size:13px"><span>&#128444; image.jpg</span><button class="link-btn" onclick="toast('Downloads are disabled in the practice copy.')">&#8681;</button></div>
+      </div>
+      <div class="card" style="padding:18px 20px;margin-top:14px">
+        <h3 class="pop" style="font-size:15px">Showings <span style="font-weight:400;font-size:10.5px;color:var(--muted);letter-spacing:.5px">NOT SCHEDULED</span></h3>
+        <p style="font-size:12.5px;color:var(--muted);margin:6px 0 12px">Renters can schedule showings based on <a href="#" onclick="return false">your availability</a>.</p>
+        <button class="btn outline sm" onclick="toast('Showing invite sent.')">Invite to Showing</button>
+      </div>
+    </div>
+  </div>`;
+  if(t==='application') body=`
+  <div style="margin-top:20px;font-size:13px;color:var(--body)">Born on November 08, 1989</div>
+  <div class="info-tiles" style="grid-template-columns:repeat(3,1fr);margin-top:12px">
+    ${[['&#128203;','APPLICATION','Complete'],['&#128197;','DESIRED MOVE-IN','09/01/2026'],['&#128106;','TOTAL OCCUPANTS','1 adult | 2 minors'],['&#128176;','SELF-REPORTED INCOME','$5,710.90 / month'],['&#128062;','ANIMALS','Yes'],['&#128684;','SMOKING','No']]
+      .map(x=>`<div class="info-tile"><span class="ic">${x[0]}</span><div><div class="lb">${x[1]}</div><div class="vl">${x[2]}</div></div></div>`).join('')}
+  </div>
+  <h3 class="pop" style="font-size:18px;margin:26px 0 2px">Addresses <button class="link-btn" onclick="toast('Editing is not part of the practice copy.')">&#9998; Edit</button></h3>
+  <p style="font-size:13px;color:var(--body)">We asked this renter for at least 3 years of rental history.</p>
+  <div class="addr-card">
+    <div><b style="color:var(--ink)">Current Address</b><div style="margin-top:6px"><b>9030 Mill Swamp Rd</b> <span class="badge owned">Owned</span><div style="font-size:12.5px;color:var(--body)">Smithfield, VA 23430</div></div></div>
+    <div><b style="color:var(--ink)">Reason for Moving</b><div style="font-style:italic;color:var(--muted);margin-top:6px">No reason given.</div></div>
+  </div>
+  <div class="addr-card" style="border-left-color:var(--line-d)">
+    <div><b style="color:var(--ink)">Past Address</b><div style="font-style:italic;color:var(--muted);margin-top:6px">Applicant selected &ldquo;Not applicable.&rdquo;</div></div><div></div>
+  </div>
+  <h3 class="pop" style="font-size:18px;margin:26px 0 2px">Income <button class="link-btn" onclick="toast('Editing is not part of the practice copy.')">&#9998; Edit</button></h3>
+  <p style="font-size:13px;color:var(--body)">We asked for 5 years of employment history, if applicable. &nbsp; <b>TOTAL INCOME&nbsp; $5,710.90</b>/month</p>
+  <div class="emp-row">
+    <div><div class="k">Current employer</div><b style="color:var(--ink)">Isle of Wight Sheriffs Office</b><div style="font-size:12.5px;color:var(--muted)">Shelter Manager / Animal Control Officer<br>Jun 2022 - Present</div></div>
+    <div><div class="k">Reference</div><div style="font-size:13px">Christina K.<br>(757) 555-4794</div></div>
+    <div class="amt">$4,010.90<span style="font-size:11px;color:var(--muted)">/month</span></div>
+  </div>
+  <div class="emp-row">
+    <div><div class="k">Other income sources</div><b style="color:var(--ink)">Social Security</b></div><div></div>
+    <div class="amt">$1,700.00<span style="font-size:11px;color:var(--muted)">/month</span></div>
+  </div>
+  <div class="emp-row">
+    <div><div class="k">Past employer</div><b style="color:var(--ink)">James River Mechanical</b><div style="font-size:12.5px;color:var(--muted)">Accounts Payable<br>Jan 2019 - Jun 2022</div></div>
+    <div><div class="k">Reference</div><div style="font-size:13px">Jamie F.<br>(757) 555-9608</div></div>
+    <div class="amt">$3,120.00<span style="font-size:11px;color:var(--muted)">/month</span></div>
+  </div>
+  <h3 class="pop" style="font-size:18px;margin:26px 0 2px">General Details <button class="link-btn" onclick="toast('Editing is not part of the practice copy.')">&#9998; Edit</button></h3>
+  <div class="gd-grid">
+    <div class="gd-card"><div class="lb">Emergency contact</div><div class="vl">Donna B.</div><div class="s">Relationship: Mother &middot; (757) 555-0687</div></div>
+    <div class="gd-card"><div class="lb">Animal</div><div class="vl">Dog &middot; Chihuahua</div><div class="s">8 pounds | 11 years old</div></div>
+    <div class="gd-card"><div class="lb">Animal</div><div class="vl">Dog &middot; Jack Russell</div><div class="s">25 pounds | 10 years old</div></div>
+    <div class="gd-card"><div class="lb">Animal</div><div class="vl">Dog &middot; French Bulldog</div><div class="s">25 pounds | 1 years old</div></div>
+    <div class="gd-card"><div class="lb">Vehicle</div><div class="vl">Kia Telluride</div><div class="s">Black | 2025</div></div>
+    <div class="gd-card"><div class="lb">Vehicle</div><div class="vl">Chevrolet 2500</div><div class="s">White IOW Sheriffs Office Lettering | 2019</div></div>
+  </div>
+  <h3 class="pop" style="font-size:18px;margin:26px 0 2px">Self-Reported Background <button class="link-btn" onclick="toast('Editing is not part of the practice copy.')">&#9998; Edit</button></h3>
+  <p style="font-size:13px;color:var(--body)">Make sure you verify their responses to these questions with TurboTenant&rsquo;s extensive screening report. You may choose to <a href="#" onclick="return false">not ask these background questions</a> on the application if needed.</p>
+  ${[['Have you (or any person you have named on this application) ever been evicted from a tenancy or left owing money?','No'],
+     ['Have you or any member of your household ever been convicted of (or pled guilty or no contest to) any criminal offense(s) other than a minor infraction(s) that were disposed of by means other than acquittal or a finding of "not guilty"?','No'],
+     ['Have you (or any person you have named on this application) ever filed for or been involved in a bankruptcy, been foreclosed on, or been a defendant in a civil suit?','No']]
+    .map(q=>`<div class="qa-band">${q[0]}</div><div class="qa-ans">${q[1]}</div>`).join('')}
+  <h3 class="pop" style="font-size:18px;margin:26px 0 2px">Other Information and Comments <button class="link-btn" onclick="toast('Editing is not part of the practice copy.')">&#9998; Edit</button></h3>
+  <p style="font-size:13px;color:var(--body)">A few additional questions, including <a href="#" onclick="return false">any custom questions you may have added</a>.</p>
+  ${[['Do you have any special requests or requirements we should be aware of?','No'],
+     ['How did you hear about this property?','Zillow'],
+     ['Any other comments?','This rental will be home for myself and my two children (11yo daughter and 11yo son) as well as our three dogs.']]
+    .map(q=>`<div class="qa-band">${q[0]}</div><div class="qa-ans">${q[1]}</div>`).join('')}`;
+  if(t==='screening') body=`
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px">
+    <div><h3 class="pop" style="font-size:18px">Screening Report</h3>
+    <div style="font-size:12.5px;color:var(--muted)">Received on 08/13/2026 &nbsp; <span class="verified">&#128737; Identity Verified</span></div></div>
+    <div style="text-align:right;font-size:12px;color:var(--muted)">REPORT PROVIDED BY<br><b style="font-size:15px;color:#0A5DA6;font-family:'Poppins',sans-serif">TransUnion&reg;</b></div>
+  </div>
+  <div class="score-wrap">
+    <div class="score-num">751 <span class="badge paid" style="vertical-align:6px">Good</span></div>
+    <div class="score-bar"><span class="score-pin" style="left:${(751-300)/550*100}%"></span></div>
+    <div class="score-scale"><span>300</span><span>850</span></div>
+  </div>
+  <h4 class="pop" style="font-size:14.5px;margin-bottom:6px">Score Factors &#9432;</h4>
+  <ul style="font-size:13px;color:var(--body);padding-left:20px;margin-bottom:10px">
+    <li>Too many serious derogatory items</li>
+    <li>Not enough available credit on active or open bankcard accounts</li>
+    <li>Revolving account balances are too high in proportion to credit limits</li>
+    <li>Too many different phone numbers reported</li>
+  </ul>
+  <div class="rec-cards">
+    ${[['&#127963;','Evictions','0','Records Found'],['&#128176;','Collections','0','Accounts'],['&#128218;','Public Records','0','Records Found'],['&#9878;','Criminal History','0','Records Found']]
+      .map(c=>`<div class="rec-card"><div class="ic">${c[0]}</div><div class="lb">${c[1]}</div><div class="n">${c[2]}</div><div class="s">${c[3]}</div></div>`).join('')}
+  </div>
+  <div class="card" style="padding:18px 22px;margin-top:8px">
+    <h4 class="pop" style="font-size:15px;margin-bottom:8px">Address History</h4>
+    <table class="plain-table">
+      <thead><tr><th>Address</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>
+        <tr><td>9030 MILL SWAMP RD, SMITHFIELD, VA 23430</td><td>Current</td><td>10/01/2014</td></tr>
+        <tr><td>4574 HOMESTEAD RD, LANEXA, VA 23089</td><td>Past</td><td>11/01/2004</td></tr>
+        <tr><td>133 RIVERVIEW DR, SURRY, VA 23883</td><td>Past</td><td>N/A</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card" style="padding:18px 22px;margin-top:16px">
+    <h4 class="pop" style="font-size:15px;margin-bottom:8px">Tradeline summary</h4>
+    <table class="plain-table">
+      <thead><tr><th>Credit type</th><th>Count</th><th>High credit</th><th>Credit limit</th><th>Balance</th><th>Past due</th><th>Payment</th><th>%</th></tr></thead>
+      <tbody>
+        <tr><td>Revolving</td><td>22</td><td>$31,044</td><td>$28,303</td><td>$13,537</td><td>$0</td><td>$523</td><td>52%</td></tr>
+        <tr><td>Installment</td><td>6</td><td>$29,000</td><td>&mdash;</td><td>$26,206</td><td>$0</td><td>$548</td><td>&mdash;</td></tr>
+        <tr><td>Mortgage</td><td>0</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>$0</td><td>&mdash;</td><td>&mdash;</td></tr>
+        <tr><td><b>Total</b></td><td><b>28</b></td><td><b>$60,044</b></td><td><b>$28,300</b></td><td><b>$39,743</b></td><td><b>$0</b></td><td><b>$1,073</b></td><td></td></tr>
+      </tbody>
+    </table>
+    <div style="display:flex;gap:34px;margin-top:14px;font-size:13px">
+      <div><b style="font-size:17px">28</b><div style="color:var(--muted);font-size:11.5px">Tradelines</div></div>
+      <div><b style="font-size:17px">$39,743</b><div style="color:var(--muted);font-size:11.5px">Balance Total</div></div>
+      <div><b style="font-size:17px">$37,090</b><div style="color:var(--muted);font-size:11.5px">Total Credit Limit</div></div>
+      <div><b style="font-size:17px">$0</b><div style="color:var(--muted);font-size:11.5px">Total Past Due</div></div>
+    </div>
+  </div>
+  ${[['CAPITAL ONE','Banks','09/01/2017','Credit Card','$0','$500','$0','08/01/2026',0],
+     ['WFBNA CARD','Banks','09/01/2021','Credit Card','$26','$5,500','$26','08/15/2026',0],
+     ['DPT ED/ADV','Student Loan','07/01/2012','Installment 240 Monthly','$4,038','&mdash;','$0','07/01/2026',6]]
+    .map(tl=>`
+  <div class="tl-card">
+    <div class="hd"><span class="nm">${tl[0]}</span><span style="font-size:12px;color:var(--muted)">Payment history (48 months)</span></div>
+    <div class="tl-grid">
+      <div><div class="k">Industry</div>${tl[1]}</div>
+      <div><div class="k">Open</div>${tl[2]}</div>
+      <div><div class="k">Loan type</div>${tl[3]}</div>
+      <div><div class="k">Balance</div>${tl[4]}</div>
+      <div><div class="k">Credit limit</div>${tl[5]}</div>
+      <div><div class="k">Past due</div>${tl[6]}</div>
+      <div><div class="k">Verified</div>${tl[7]}</div>
+      <div><div class="k">Account type</div>Individual</div>
+    </div>
+    ${dotgrid(tl[8])}
+  </div>`).join('')}
+  ${[['Eviction Records','No eviction records are available. This could be because they have no records. Or the local area does not allow the use of their eviction history in evaluating them as tenants.'],
+     ['Collection records','Total (0) — $0'],
+     ['Inquiries','08/19/2026 — FACTUAL DATA — Credit Union and Finance Other Than Personal Companies &middot; 02/20/2025 — LC BANK — Banks'],
+     ['Criminal Records','No criminal records are available. This could be because they have no records. Or the local area does not allow the use of their criminal history in evaluating them as tenants.']]
+    .map(s=>`<div class="card" style="padding:16px 22px;margin-top:14px"><h4 class="pop" style="font-size:14.5px;margin-bottom:5px">${s[0]}</h4><p style="font-size:13px;color:var(--body)">${s[1]}</p></div>`).join('')}`;
+  if(t==='messages') body=`
+  <div class="msg-wrap" style="margin-top:20px;grid-template-columns:minmax(0,1fr)">
+    <div class="conv">
+      <div class="conv-body" id="conv-body" style="min-height:180px;max-height:300px">
+        ${(state.appMsgs||[]).map(m=>`<div class="bubble out">${esc(m)}</div><div class="bub-meta">Just now - Sent</div>`).join('')||'<div style="color:var(--muted);font-size:13px;text-align:center;padding:30px 0">No messages with this applicant yet.</div>'}
+      </div>
+      <div class="composer">
+        <button class="plus" onclick="toast('Quick replies are available from the Messages screen.')">+</button>
+        <input id="appMsgIn" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendAppMsg()">
+        <button class="send" onclick="sendAppMsg()">SEND</button>
+      </div>
+    </div>
+  </div>
+  <div class="act-log" style="margin-top:18px;max-width:420px">
+    <h3 class="pop">Activity Log</h3>
+    <div class="yh">Your history with this renter</div>
+    <div class="act-entry"><div class="d">08/24/2026 - 03:18 PM</div><div class="t">Status Change - Applicant DENIED and Archived</div></div>
+    <div class="act-entry"><div class="d">08/13/2026 - 09:02 AM</div><div class="t">Application submitted &middot; paid by renter</div></div>
+  </div>`;
+  return `
+  <button class="link-btn" style="margin-bottom:12px" onclick="state.appDetail=false; render()">&#8592; All Applicants</button>
+  <div class="lead-head">
+    <span class="avatar" style="background:#E8843D;width:62px;height:62px;font-size:20px">JB</span>
+    <div>
+      <div class="ap-on">Applied on 08/13/2026</div>
+      <h1>Jessica Brock <span class="verified" style="font-size:12px">&#128737; VERIFIED</span></h1>
+      <div style="font-size:13px;margin-top:2px">23020 Britt Way &nbsp;<button class="link-btn" onclick="toast('Editing is not part of the practice copy.')">&#9998; EDIT</button></div>
+      <div class="contact"><span>&#128222; (757) 555-0859</span><span>&#9993; JESSKA1429@EXAMPLE.COM</span></div>
+    </div>
+    <div class="rgt"><button class="btn outline" onclick="toast('Applicant restored to your active list in the real product.')">&#10005; Unarchive Applicant</button></div>
+  </div>
+  <div class="tabs" style="margin-top:14px">
+    ${[['summary','SUMMARY'],['application','APPLICATION'],['screening','SCREENING REPORT'],['messages','MESSAGES']].map(x=>`<button class="${t===x[0]?'on':''}" onclick="state.appTab='${x[0]}'; render()">${x[1]}</button>`).join('')}
+  </div>
+  ${body}`;
+}
+function sendAppMsg(){ const v=$('appMsgIn').value.trim(); if(!v) return; (state.appMsgs=state.appMsgs||[]).push(v); render(); }
+
+/* ---------- TENANTS ---------- */
+views.tenants = () => `
+  ${renterStrip('tenants')}
+  <div class="purple-banner"><div class="bolt">&#129309;</div>
+    <div><h4 class="pop">Your tenants, managed by our pros</h4><p>Hand off the day-to-day to our team and stay hands-off, from social lease management to placing your next tenant.</p></div>
+    <button class="lm" onclick="toast('Informational upsell only in the practice copy.')">LEARN MORE</button><span class="x">&times;</span>
+  </div>
+  <div class="hd-row"><h2 class="pop" style="font-size:21px">Active Tenants (17)</h2>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div class="seg-toggle"><button class="on">Active</button><button onclick="toast('Past and archived tenants are hidden in the practice copy.')">Past</button><button onclick="toast('Past and archived tenants are hidden in the practice copy.')">Archived</button></div>
+      <button class="filter-pill" onclick="toast('Filters are display-only in the practice copy.')">&#9881; Show Filters</button>
+      <button class="filter-pill" onclick="toast('Add-tenant flow is not part of the practice copy.')">&#8853; Add New</button>
+    </div>
+  </div>
+  <div class="card">
+    <table class="tenant-table">
+      <thead><tr><th style="width:34px"><input type="checkbox" title="Select all"></th><th>Select all (17)</th><th>Contact info</th><th>Lease</th><th>Tenant portal access</th><th style="width:44px"></th></tr></thead>
+      <tbody>
+        ${tenants.map(tn=>`
+        <tr>
+          <td><input type="checkbox"></td>
+          <td class="nm">${tn.nm}</td>
+          <td class="ci">${tn.email}<br>${tn.ph}</td>
+          <td><a href="#" onclick="go('leases'); return false">${tn.lease}</a></td>
+          <td class="ci">${tn.access}</td>
+          <td><span class="msg-ic" onclick="go('messages')">&#128488;</span></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+
+/* ---------- INSIGHTS / TRANSACTIONS ---------- */
+views.insights = () => `
+  <div class="hd-row"><h1 class="pop">Insights</h1>
+    <div style="display:flex;gap:12px">
+      <button class="btn outline" onclick="toast('Bank connections are not part of the practice copy.')">Manage Accounts</button>
+      <button class="btn primary" onclick="toast('Bank import is not part of the practice copy.')">Import Transactions</button>
+    </div>
+  </div>
+  <div class="tabs"><button class="on">OVERVIEW</button><button onclick="toast('Reports need the Accounting add-on in the real product.')">REPORTS</button></div>
+  <div style="position:relative;margin-top:18px;min-height:460px">
+    <div class="${state.insightsModal?'ins-blur':''}">
+      <div class="card" style="padding:14px 20px;background:#EDF0F3;display:flex;justify-content:space-between"><b>&#128337; 26 unbooked transactions</b><span>&times;</span></div>
+      <h2 class="pop" style="font-size:19px;margin:18px 0 10px">Accounting dashboard</h2>
+      <div class="card" style="padding:18px 22px">
+        <div class="tabs" style="border-bottom:none;gap:20px"><button class="on">REVENUE</button><button>NET OPERATING INCOME</button><button style="margin-left:auto" class="link-btn">VIEW REPORT</button></div>
+        <div style="display:flex;gap:20px;align-items:baseline;margin-top:8px"><b style="font-size:26px;font-family:'Poppins',sans-serif">$5,000</b><span style="color:var(--muted)">12 mo average</span><b style="font-size:19px;color:var(--muted)">$5,500</b><span style="color:var(--green)">August &#9650;10%</span></div>
+        <div class="bars">${[70,68,74,72,73,75,71,74,76,73,75,78].map(h=>`<div class="b" style="height:${h}%"></div>`).join('')}</div>
+      </div>
+    </div>
+    ${state.insightsModal?`
+    <div class="ins-modal">
+      <div class="ins-card">
+        <div class="calc">&#129518;</div>
+        <h3>Unlock your full financial picture with Accounting</h3>
+        ${[['Portfolio insights','Stay on top of income, expenses, and property value with an at-a-glance dashboard built for real estate investors.'],
+           ['Detailed financial reports','Get ready-made reports like Profit &amp; Loss, Balance Sheet, and Cash Flow — no spreadsheets required.'],
+           ['Tax-ready Schedule E','Instantly generate your Schedule E for stress-free tax prep.']]
+          .map(f=>`<div class="ins-feat"><span class="ck">&#10003;</span><div><b>${f[0]}</b><p>${f[1]}</p></div></div>`).join('')}
+        <div style="text-align:center;margin-top:18px"><button class="btn primary" onclick="state.insightsModal=false; render(); toast('Accounting add-on unlocked for the practice copy.')">Learn More</button></div>
+      </div>
+    </div>`:''}
+  </div>`;
+
+views.transactions = () => `
+  <div class="hd-row"><h1 class="pop">Transactions</h1><button class="btn primary" onclick="toast('Bank import is not part of the practice copy.')">Import Transactions</button></div>
+  <div class="card" style="padding:14px 20px;background:#EDF0F3;display:flex;justify-content:space-between;margin-bottom:16px"><b>&#128337; 26 unbooked transactions</b></div>
+  <div class="card empty-wrap">
+    <div style="font-size:40px;margin-bottom:10px">&#128179;</div>
+    <div class="big">Connect a bank to book transactions</div>
+    <p>Transactions from your connected accounts land here so you can book them to properties and categories. Part of the Accounting add-on in the real product.</p>
+    <button class="btn outline" onclick="go('insights')">See Accounting Overview</button>
+  </div>`;
+
+/* ================= BOOT ================= */
+render();
+</script>
+</body>
+</html>

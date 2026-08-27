@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Property Manager Simulator · SkillCloud Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* brand palette - matches index.html / assets/css/styles.css */
+  --bg:#f6f9fc; --panel:#FFFFFF; --line:#e3eaf1; --line2:#cfdbe6;
+  --ink:#0c1e33; --body:#22384f; --muted:#51637b; --faint:#7f93a8;
+  --accent:#0fa6b6; --accent-soft:#dcf4f8;
+  --navy:#0a2647; --cyan:#17c3d4; --cyan-d:#0fa6b6; --coach:#0a2647;
+  --blue:#1565c0; --blue-bg:#e5eefb;
+  --yellow:#a86e10; --yellow-bg:#faf0da;
+  --purple:#5a7de6; --purple-bg:#e9eefc;
+  --orange:#c97a1a; --orange-bg:#f9edda;
+  --red:#d2452f; --red-bg:#fae5e1;
+  --green:#1f9e5a; --green-bg:#e2f4ea;
+  --chipbg:#eef2f6;
+  --r:10px;
+  --shadow:0 2px 10px rgba(10,38,71,.06);
+  --shadow-lg:0 8px 30px rgba(10,38,71,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:17px}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--body);font-size:15.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit;font-size:14.5px;color:var(--body)}
+a{color:var(--accent);text-decoration:none}
+h1,h2,h3{font-family:"Helvetica Neue",Arial,sans-serif;font-weight:800;color:var(--navy);letter-spacing:-.4px}
+h4{color:var(--ink)}
+.mono{font-family:'IBM Plex Mono',monospace}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+
+/* ===== SkillCloud strip ===== */
+.sc-strip{background:#0a2647;color:#fff;display:flex;align-items:center;gap:12px;padding:0 22px;height:36px;font-size:13.5px;position:relative;z-index:120}
+.sc-strip a{color:#d3e2f0;font-weight:600}
+.sc-strip .dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.35)}
+.sc-strip b i{color:#17c3d4;font-style:normal}
+.sc-strip .note{color:#9fb4c9;margin-left:auto;font-size:13px}
+
+/* ===== workspace bar ===== */
+.wsbar{background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:20px;padding:0 26px;height:54px;position:sticky;top:0;z-index:100}
+.wsbar .ws-id{display:flex;align-items:center;gap:10px;font-weight:600;color:var(--ink);font-size:14.5px;letter-spacing:-.01em}
+.wsbar .ws-logo{width:24px;height:24px;border-radius:6px;background:var(--ink);display:grid;place-items:center;color:#fff;font-size:8.5px;font-weight:700;letter-spacing:.04em}
+.ws-tabs{display:flex;gap:2px;margin-left:6px;height:100%}
+.ws-tab{padding:0 14px;font-size:14.5px;font-weight:500;color:var(--muted);display:inline-flex;align-items:center;gap:7px;position:relative;border-bottom:2px solid transparent;border-radius:0}
+.ws-tab:hover{color:var(--ink)}
+.ws-tab.on{color:var(--navy);font-weight:700;border-bottom-color:var(--navy)}
+.ws-tab.locked{opacity:.35;cursor:not-allowed}
+.ws-tab .bub{position:absolute;top:9px;right:0;min-width:15px;height:15px;border-radius:8px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px}
+.ws-right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.score-chip{font-family:'IBM Plex Mono',monospace;font-size:12.5px;letter-spacing:.08em;color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:6px 14px;background:#fff;white-space:nowrap}
+.score-chip b{color:var(--accent);font-size:13.5px}
+.avatar-you{width:29px;height:29px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-size:12.5px;font-weight:600}
+
+/* ===== layout ===== */
+.stage-area{max-width:1300px;margin:0 auto;padding:30px 38px 90px;min-width:0}
+
+/* ===== guide bar (replaces the right rail) ===== */
+.guide{position:sticky;top:54px;z-index:90;background:rgba(255,255,255,.97);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.guide-inner{max-width:1300px;margin:0 auto;display:flex;gap:16px;align-items:center;padding:12px 38px}
+.g-ava{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:600;font-size:15px;font-family:"Helvetica Neue",Arial,sans-serif;flex:none}
+.g-main{flex:1;min-width:0}
+.g-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.g-title{font-family:"Helvetica Neue",Arial,sans-serif;font-weight:800;color:var(--navy);font-size:19px;letter-spacing:-.01em;margin:1px 0 1px;display:inline}
+.g-body{font-size:14.5px;color:var(--body);line-height:1.55;max-width:820px}
+.g-tip{font-size:13.5px;color:var(--muted);font-style:italic;margin-top:2px}
+.trail-wrap{flex:none;display:flex;align-items:center;border-left:1px solid var(--line);padding-left:18px;align-self:stretch}
+.trail{display:flex;gap:5px;flex-wrap:nowrap}
+.t-dot{width:23px;height:23px;border-radius:50%;display:grid;place-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;border:1px solid var(--line2);color:var(--faint);background:#fff;position:relative}
+.t-dot.done{background:var(--navy);border-color:var(--navy)}
+.t-dot.done::after{content:'\2713';color:#fff;font-size:10.5px;position:absolute}
+.t-dot.now{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.t-dot.pop{animation:dotpop .5s cubic-bezier(.3,1.5,.5,1)}
+@keyframes dotpop{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
+.pm-progress{height:2px;background:var(--line);overflow:hidden}
+.pm-progress i{display:block;height:100%;background:var(--accent);transition:width .5s ease}
+@media(max-width:900px){.trail-wrap{display:none}}
+
+/* ===== stage headers ===== */
+.board-hd{display:flex;align-items:flex-end;gap:14px;margin-bottom:22px}
+.board-hd h1{font-size:24px;font-weight:800}
+.board-hd .vw{display:inline-flex;gap:2px;border:1px solid var(--line);border-radius:8px;padding:2px;background:#fff;margin-bottom:2px}
+.board-hd .vw button{padding:4px 12px;border-radius:6px;font-size:13px;font-weight:500;color:var(--muted)}
+.board-hd .vw button.on{background:var(--chipbg);color:var(--ink);font-weight:600}
+
+/* ===== board ===== */
+.board{display:grid;grid-template-columns:repeat(6,minmax(178px,200px));gap:13px;align-items:stretch;justify-content:center;overflow-x:auto;padding-bottom:20px}
+.col{background:#eef3f8;border:1px solid var(--line);border-radius:11px;padding:7px 7px 9px;min-height:250px;transition:background .15s, border-color .15s;display:flex;flex-direction:column}
+.col.dragover{background:var(--accent-soft);border-color:var(--accent)}
+.col-hd{display:flex;align-items:center;gap:7px;margin-bottom:8px;padding:5px 7px 0}
+.empty-slot{flex:1;border:1.5px dashed var(--line);border-radius:8px;min-height:70px;max-height:110px;display:grid;place-items:center;color:var(--faint);font-size:11.5px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;margin:0 1px}
+.col-hd .tag{font-size:13px;font-weight:700;color:var(--ink);display:inline-flex;align-items:center;gap:7px;letter-spacing:.01em;background:none;padding:2px 0}
+.col-hd .tag::before{content:'';width:7px;height:7px;border-radius:50%;flex:none}
+.tag.new::before{background:var(--blue)}
+.tag.call::before{background:var(--yellow)}
+.tag.tour::before{background:var(--purple)}
+.tag.wait::before{background:var(--orange)}
+.tag.nogo::before{background:var(--red)}
+.tag.lease::before{background:var(--green)}
+.col-hd .cnt{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--faint);margin-left:auto}
+.kcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 13px;margin:0 0 8px;cursor:grab;box-shadow:var(--shadow);transition:box-shadow .18s, transform .18s, border-color .18s}
+.kcard:hover{border-color:var(--line2);box-shadow:0 6px 20px rgba(26,30,36,.08);transform:translateY(-1px)}
+.kcard.dragging{opacity:.4;transform:rotate(1.5deg)}
+.kcard .knm{font-weight:700;color:var(--ink);font-size:14.5px;display:flex;align-items:center;gap:7px;letter-spacing:-.01em}
+.kcard .kprop{font-size:13.5px;color:var(--muted);margin-top:3px}
+.kcard .krow{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
+.kchip{font-size:12.5px;font-weight:600;border-radius:4px;padding:2px 7px;background:var(--chipbg);color:var(--muted)}
+.kchip.warn{background:var(--yellow-bg);color:var(--yellow)}
+.kchip.ok{background:var(--green-bg);color:var(--green)}
+.kchip.bad{background:var(--red-bg);color:var(--red)}
+.kchip.doc{background:var(--blue-bg);color:var(--blue)}
+.kcard .kfoot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-size:12.5px;color:var(--faint);font-family:'IBM Plex Mono',monospace}
+.kcard .kava{width:24px;height:24px;border-radius:50%;color:#fff;display:grid;place-items:center;font-size:10.5px;font-weight:700}
+.pulse{animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(14,124,134,.35)}50%{box-shadow:0 0 0 8px rgba(14,124,134,0)}}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.board .col{animation:rise .4s ease backwards}
+.board .col:nth-child(1){animation-delay:.02s}.board .col:nth-child(2){animation-delay:.06s}
+.board .col:nth-child(3){animation-delay:.1s}.board .col:nth-child(4){animation-delay:.14s}
+.board .col:nth-child(5){animation-delay:.18s}.board .col:nth-child(6){animation-delay:.22s}
+
+/* ===== drawer ===== */
+.drawer-veil{position:fixed;inset:0;background:rgba(26,30,36,.28);z-index:200;display:none}
+.drawer-veil.on{display:block}
+.drawer{position:fixed;top:0;right:-720px;width:min(680px,94vw);height:100vh;background:var(--panel);z-index:210;box-shadow:var(--shadow-lg);transition:right .3s cubic-bezier(.3,.9,.3,1);display:flex;flex-direction:column;border-left:1px solid var(--line)}
+.drawer.on{right:0}
+.drawer-hd{padding:26px 34px 16px;border-bottom:1px solid var(--line)}
+.drawer-hd .stg{font-size:12.5px;font-weight:600;margin-bottom:10px;display:inline-flex;align-items:center;gap:7px;color:var(--muted);background:none;padding:0}
+.drawer-hd .stg::before{content:'';width:7px;height:7px;border-radius:50%}
+.drawer-hd h2{font-size:24px}
+.drawer-hd .sub{font-size:13.5px;color:var(--muted);margin-top:4px}
+.drawer-hd .x{position:absolute;top:18px;right:22px;font-size:19px;color:var(--faint)}
+.drawer-hd .x:hover{color:var(--ink)}
+.drawer-bd{flex:1;overflow-y:auto;padding:14px 34px 60px}
+.n-sec{margin-bottom:4px}
+.n-sec-hd{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;letter-spacing:.03em;color:var(--muted);padding:12px 0 6px;cursor:pointer;text-transform:uppercase;font-family:'IBM Plex Mono',monospace}
+.n-sec-hd .tri{color:var(--faint);font-size:10.5px;transition:transform .2s}
+.n-sec.closed .tri{transform:rotate(-90deg)}
+.n-sec.closed .n-sec-bd{display:none}
+.n-field{display:grid;grid-template-columns:225px 1fr;align-items:center;border-bottom:1px solid #eef3f8;min-height:40px;font-size:15px}
+.n-field .k{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:13.5px}
+.n-field .k .ic{width:15px;text-align:center;color:var(--faint);font-size:12.5px}
+.n-field .v{color:var(--ink)}
+.n-field .v .sel{border-radius:5px;padding:2px 10px;font-weight:500;font-size:13.5px;color:#fff;display:inline-flex;align-items:center;gap:5px}
+.n-flag{font-size:12px;font-weight:600;color:var(--yellow);background:var(--yellow-bg);border-radius:4px;padding:1px 7px;margin-left:8px}
+.n-attach{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px;padding:6px 0}
+.n-doc{border:1px solid var(--line);border-radius:8px;padding:11px 12px;font-size:13px;background:#FCFBF9}
+.n-doc .dic{font-size:18px;margin-bottom:6px;display:block}
+.n-doc b{color:var(--ink);font-size:13px;display:block;line-height:1.35;font-weight:600}
+.n-doc .ds{color:var(--faint);font-size:12.5px;margin-top:3px}
+.n-act{border-left:1px solid var(--line);margin-left:6px;padding-left:18px}
+.n-act .ae{position:relative;padding:0 0 14px}
+.n-act .ae::before{content:'';position:absolute;left:-22px;top:6px;width:7px;height:7px;border-radius:50%;background:var(--line2)}
+.n-act .ae.hot::before{background:var(--accent)}
+.n-act .at{font-size:13.5px;color:var(--ink);font-weight:600}
+.n-act .ad{font-size:12.5px;color:var(--faint);font-family:'IBM Plex Mono',monospace}
+.n-act .ab{font-size:13.5px;color:var(--body);margin-top:3px}
+.drawer-cta{border-top:1px solid var(--line);padding:14px 34px;display:flex;gap:10px;justify-content:flex-end;background:#FCFBF9}
+
+/* ===== buttons ===== */
+.b{border-radius:10px;padding:10px 20px;font-size:14.5px;font-weight:800;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;transition:.16s;letter-spacing:.01em}
+.b.pri{background:var(--cyan);color:#03282c}
+.b.pri:hover{background:var(--cyan-d);color:#fff}
+.b.cy{background:var(--navy);color:#fff}
+.b.cy:hover{background:#0f3460}
+.b.ghost{border:1.5px solid var(--line2);color:var(--navy);background:#fff}
+.b.ghost:hover{border-color:var(--ink)}
+.b.danger{background:var(--red);color:#fff}
+.b.sm{padding:7px 14px;font-size:13.5px}
+.b[disabled]{opacity:.4;cursor:not-allowed}
+
+/* ===== phone call ===== */
+.call-wrap{max-width:720px;margin:0 auto}
+.call-shell{background:linear-gradient(155deg,#0a2647,#0f3460);border-radius:14px;color:#E9EFF6;padding:24px 26px;box-shadow:var(--shadow-lg)}
+.call-top{display:flex;align-items:center;gap:13px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.call-top .cava{width:42px;height:42px;border-radius:50%;background:#E8843D;display:grid;place-items:center;font-weight:700;font-size:16px;color:#fff}
+.call-top .cnm{font-weight:600;font-size:15.5px;color:#fff}
+.call-top .cst{font-size:13px;color:#8BA3AE;display:flex;align-items:center;gap:6px}
+.call-top .dotlive{width:6px;height:6px;border-radius:50%;background:#4ADE80;animation:pulse 1.8s infinite}
+.call-timer{margin-left:auto;font-size:13px;color:#69727D;font-family:'IBM Plex Mono',monospace}
+.call-log{max-height:330px;overflow-y:auto;display:flex;flex-direction:column;gap:9px;margin-bottom:16px;padding-right:4px}
+.cl-line{max-width:82%;font-size:15px;line-height:1.55;padding:9px 13px;border-radius:10px}
+.cl-line.you{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:3px}
+.cl-line.them{align-self:flex-start;background:rgba(255,255,255,.07);border-bottom-left-radius:3px}
+.cl-line.note{align-self:center;background:transparent;color:#7C939E;font-size:13px;font-style:italic;padding:2px 13px}
+.call-opts{display:flex;flex-direction:column;gap:7px}
+.call-opts .co{background:transparent;border:1px solid rgba(255,255,255,.14);border-radius:9px;padding:10px 14px;font-size:14px;text-align:left;color:#D4DAE1;transition:.16s}
+.call-opts .co:hover{border-color:var(--cyan);background:rgba(23,195,212,.15)}
+.call-opts .co .tag-q{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.1em;color:#7ED9E6;display:block;margin-bottom:3px}
+.script-note{border-left:2px solid var(--line2);padding:4px 0 4px 14px;margin-top:16px;font-size:13.5px;color:var(--muted)}
+.script-note b{color:var(--ink)}
+
+/* ===== inbox ===== */
+.mailbox{display:grid;grid-template-columns:280px minmax(0,1fr);border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden;min-height:540px;box-shadow:var(--shadow)}
+.mail-list{border-right:1px solid var(--line);overflow-y:auto;max-height:640px}
+.mail-list-hd{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.mail-list-hd b{font-size:14px;color:var(--ink)}
+.mail-list-hd span{font-family:'IBM Plex Mono',monospace}
+.mrow{padding:12px 16px 12px 20px;border-bottom:1px solid #F4F2ED;cursor:pointer;position:relative}
+.mrow:hover{background:#FCFBF8}
+.mrow.on{background:#F6F4EF}
+.mrow.unread::before{content:'';position:absolute;left:8px;top:19px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.mrow .mfrom{font-size:13.5px;font-weight:600;color:var(--ink);display:flex;justify-content:space-between}
+.mrow .mfrom .mt{font-weight:400;color:var(--faint);font-size:12px;font-family:'IBM Plex Mono',monospace}
+.mrow .msub{font-size:13.5px;color:var(--body);margin-top:1px}
+.mrow.unread .msub{font-weight:600;color:var(--ink)}
+.mrow .mprev{font-size:13px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mview{padding:24px 30px;overflow-y:auto;max-height:640px}
+.mview .mv-sub{font-family:"Helvetica Neue",Arial,sans-serif;font-size:20px;font-weight:600;color:var(--ink);letter-spacing:-.01em}
+.mview .mv-meta{display:flex;gap:10px;align-items:center;font-size:13.5px;color:var(--muted);margin:10px 0 18px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.mview .mv-ava{width:32px;height:32px;border-radius:50%;color:#fff;display:grid;place-items:center;font-weight:600;font-size:13px}
+.mail-body{font-size:15px;line-height:1.7;color:var(--body);white-space:pre-line}
+.mail-body .qlink{display:inline-block;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 7px 7px 0;padding:8px 13px;margin:6px 0;font-size:13px;font-weight:500;color:var(--accent);word-break:break-all;background:#FCFBF9}
+.mail-attach{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.mail-attach .ma{border:1px solid var(--line);border-radius:7px;padding:7px 11px;font-size:13px;background:#FCFBF9;display:inline-flex;gap:7px;align-items:center}
+.mv-actions{margin-top:20px;display:flex;gap:10px;flex-wrap:wrap}
+
+/* ===== compose ===== */
+.compose-veil{position:fixed;inset:0;background:rgba(26,30,36,.32);z-index:300;display:none;align-items:flex-end;justify-content:flex-end;padding:0 30px 0 0}
+.compose-veil.on{display:flex}
+.compose{width:min(620px,92vw);background:var(--panel);border-radius:12px 12px 0 0;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;max-height:88vh;border:1px solid var(--line);border-bottom:none}
+.compose-hd{background:var(--navy);color:#fff;border-radius:11px 11px 0 0;padding:11px 18px;font-size:13.5px;font-weight:600;display:flex;justify-content:space-between}
+.compose-bd{padding:14px 20px;overflow-y:auto}
+.c-line{display:flex;gap:8px;align-items:center;border-bottom:1px solid #F4F2ED;padding:7px 0;font-size:14px}
+.c-line .lbl{color:var(--faint);width:58px;flex:none;font-size:13px}
+.c-line input{flex:1;border:none;outline:none;font-size:14px;background:transparent}
+.compose textarea{width:100%;border:none;outline:none;min-height:240px;font-size:14px;line-height:1.65;margin-top:10px;resize:vertical;background:transparent}
+.compose-ft{padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:9px;align-items:center}
+.tpl-chip{border:1px solid var(--line);border-radius:6px;padding:4px 10px;font-size:12.5px;font-weight:500;color:var(--muted);background:#fff}
+.tpl-chip:hover{border-color:var(--ink);color:var(--ink)}
+
+/* ===== screening ===== */
+.tt-hd{display:flex;align-items:baseline;gap:14px;margin-bottom:18px}
+.tt-hd .tt-logo{font-weight:700;font-size:17px;letter-spacing:-.02em;color:var(--ink);font-family:"Helvetica Neue",Arial,sans-serif}
+.tt-hd .tt-logo i{color:#0E6FB0;font-style:italic}
+.tt-note{font-size:13px;color:var(--muted)}
+.app-tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.app-tab{border:1px solid var(--line);border-radius:9px;background:#fff;padding:9px 15px;font-size:14px;font-weight:500;color:var(--muted);display:inline-flex;gap:9px;align-items:center;transition:.15s}
+.app-tab:hover{border-color:var(--line2)}
+.app-tab.on{border-color:var(--ink);color:var(--ink);font-weight:600}
+.app-tab .st{font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;border-radius:4px;padding:1px 7px}
+.report{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:26px 30px;box-shadow:var(--shadow)}
+.report .rp-top{display:flex;gap:16px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:18px}
+.report .rava{width:48px;height:48px;border-radius:50%;color:#fff;display:grid;place-items:center;font-weight:700;font-size:17px}
+.report .rnm{font-family:"Helvetica Neue",Arial,sans-serif;font-size:20px;font-weight:600;color:var(--ink)}
+.report .rsub{font-size:13px;color:var(--muted)}
+.report .paid-tag{margin-left:auto;text-align:right}
+.report .paid-tag .p1{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.1em;font-weight:600;color:var(--green)}
+.report .paid-tag .p2{font-size:13px;color:var(--muted)}
+.vs-table{width:100%;border-collapse:collapse;margin:10px 0 4px}
+.vs-table th{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-weight:600}
+.vs-table td{padding:11px 10px;border-bottom:1px solid #F4F2ED;font-size:14.5px}
+.vs-table .self{color:var(--muted)}
+.vs-table .real{font-weight:600;color:var(--ink)}
+.vs-flag{font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;border-radius:4px;padding:2px 7px;letter-spacing:.04em}
+.vs-flag.lie{background:var(--red-bg);color:var(--red)}
+.vs-flag.ok{background:var(--green-bg);color:var(--green)}
+.vs-flag.warn{background:var(--yellow-bg);color:var(--yellow)}
+.gaugebar{height:6px;border-radius:3px;background:linear-gradient(90deg,#C97B72,#D9B36A,#A8BD7E,#5E9C7F);position:relative;max-width:420px;margin:10px 0 5px}
+.gaugebar i{position:absolute;top:-5px;width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid var(--ink);transform:translateX(-50%)}
+.gauge-scale{display:flex;justify-content:space-between;max-width:420px;font-size:12px;color:var(--faint);font-family:'IBM Plex Mono',monospace}
+.rep-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+.rep-mini{border:1px solid var(--line);border-radius:8px;padding:12px 8px;text-align:center;background:#FCFBF9}
+.rep-mini .n{font-size:19px;font-weight:700;color:var(--ink)}
+.rep-mini .n.bad{color:var(--red)}
+.rep-mini .l{font-size:12px;color:var(--muted)}
+
+/* ===== compare sheet ===== */
+.sheet-wrap{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.sheet-bar{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);color:var(--muted);padding:10px 16px;font-size:13px;font-weight:500;font-family:'IBM Plex Mono',monospace;background:#FCFBF9}
+.sheet-bar .cell-ref{border:1px solid var(--line);border-radius:4px;padding:1px 8px;font-size:12px;background:#fff}
+.sheet{width:100%;border-collapse:collapse;font-size:14px}
+.sheet th{background:#FCFBF9;border:1px solid var(--line);padding:9px 11px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;font-weight:600}
+.sheet th.colh{text-align:center;width:32px;background:#F6F4EF;color:var(--faint)}
+.sheet td{border:1px solid #F0EEE8;padding:9px 11px;vertical-align:middle}
+.sheet td.rowh{background:#FCFBF9;font-weight:500;color:var(--body);font-size:13px;white-space:nowrap}
+.sheet td.good{background:var(--green-bg);color:#25543F;font-weight:500}
+.sheet td.bad{background:var(--red-bg);color:#8A3A33}
+.sheet td.warn{background:var(--yellow-bg);color:#6E5720}
+.sheet tr.score-row td{font-weight:700;font-size:14.5px;background:#F6F4EF;color:var(--ink)}
+.pickwin{margin-top:18px;display:flex;gap:12px;flex-wrap:wrap}
+.pickwin .pw{flex:1;min-width:200px;border:1px solid var(--line);border-radius:11px;background:#fff;padding:17px;text-align:center;font-weight:600;color:var(--ink);font-size:14.5px;cursor:pointer;transition:.16s;box-shadow:var(--shadow)}
+.pickwin .pw:hover{border-color:var(--ink);transform:translateY(-1px);box-shadow:0 8px 24px rgba(26,30,36,.09)}
+.pickwin .pw .s{display:block;font-size:13px;color:var(--muted);font-weight:400;margin-top:4px}
+
+/* ===== maintenance ===== */
+.wo-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px 28px;margin-bottom:16px;box-shadow:var(--shadow)}
+.wo-card h3{font-size:19px}
+.tier-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+.tier{border:1px solid var(--line);border-radius:10px;padding:14px 16px;cursor:pointer;transition:.16s;background:#fff;text-align:left}
+.tier:hover{border-color:var(--ink)}
+.tier b{display:block;font-size:14.5px;color:var(--ink);margin-bottom:2px}
+.tier span{font-size:13px;color:var(--muted)}
+.vendor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px;margin-top:14px}
+.vendor{border:1px solid var(--line);border-radius:10px;padding:14px 16px;cursor:pointer;background:#fff;transition:.16s;text-align:left}
+.vendor:hover{border-color:var(--ink)}
+.vendor .vic{font-size:20px}
+.vendor b{display:block;font-size:14px;color:var(--ink);margin-top:6px}
+.vendor span{font-size:13px;color:var(--muted)}
+
+/* ===== quiz modal ===== */
+.q-veil{position:fixed;inset:0;background:rgba(26,30,36,.45);z-index:400;display:none;align-items:center;justify-content:center;padding:20px}
+.q-veil.on{display:flex}
+.q-box{background:var(--panel);border-radius:14px;max-width:560px;width:100%;padding:30px 34px;box-shadow:var(--shadow-lg);max-height:90vh;overflow-y:auto}
+.q-box .q-ey{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.14em;color:var(--accent);text-transform:uppercase;margin-bottom:10px}
+.q-box h3{font-size:20px;margin-bottom:8px}
+.q-box p.lead{font-size:14.5px;color:var(--body);margin-bottom:18px}
+.q-opts{display:flex;flex-direction:column;gap:8px}
+.q-opt{border:1.5px solid var(--line);border-radius:10px;padding:12px 15px;font-size:15px;text-align:left;color:var(--ink);transition:.15s;background:#fff}
+.q-opt:hover{border-color:var(--ink)}
+.q-opt.correct{border-color:var(--green);background:var(--green-bg)}
+.q-opt.wrong{border-color:var(--red);background:var(--red-bg)}
+.q-fb{border-radius:10px;padding:12px 15px;font-size:14px;margin-top:14px;display:none;line-height:1.6}
+.q-fb.ok{display:block;background:var(--green-bg);color:#25543F}
+.q-fb.no{display:block;background:var(--red-bg);color:#7E362F}
+.q-foot{display:flex;justify-content:flex-end;margin-top:16px}
+
+/* ===== misc ===== */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(90px);background:var(--navy);color:#fff;padding:12px 22px;border-radius:10px;font-size:14.5px;box-shadow:var(--shadow-lg);opacity:0;transition:.25s;z-index:500;pointer-events:none;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.banner-tip{border-left:3px solid var(--cyan);padding:4px 0 4px 16px;font-size:14.5px;color:var(--body);margin-bottom:18px;display:flex;gap:10px;align-items:flex-start}
+.banner-tip b{color:var(--ink)}
+.done-hero{max-width:640px;margin:36px auto;background:linear-gradient(160deg,#0a2647,#0f3460);border-radius:16px;color:#cfe0ef;padding:46px 48px;text-align:center;box-shadow:var(--shadow-lg)}
+.done-hero .big{font-size:40px;margin-bottom:12px}
+.done-hero h2{font-size:26px;margin-bottom:10px;color:#fff}
+.done-hero p{color:#9fb4c9;font-size:15px;max-width:440px;margin:0 auto 20px}
+.done-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.18);border-radius:10px;overflow:hidden;margin:22px 0}
+.done-stats .ds{background:#0d2c52;padding:16px}
+.done-stats .ds b{font-family:"Helvetica Neue",Arial,sans-serif;font-size:23px;color:var(--cyan);display:block}
+.done-stats .ds span{font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:#9fb4c9}
+.pillar-recap{text-align:left;border-top:1px solid rgba(255,255,255,.16);padding:18px 4px 0;margin-top:8px}
+.pillar-recap .pr{display:flex;gap:10px;font-size:14px;color:#cfe0ef;padding:5px 0;line-height:1.6}
+.pillar-recap .pr b{color:#fff}
+/* ===== study guide (briefing before the case) ===== */
+.briefing{position:fixed;inset:0;background:var(--bg);z-index:250;overflow-y:auto;display:none}
+.briefing.on{display:block}
+.brief-inner{max-width:1020px;margin:0 auto;padding:44px 38px 130px}
+.brief-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan-d);margin-bottom:8px}
+.brief-inner h1{font-size:32px;margin-bottom:10px}
+.brief-lead{font-size:16px;color:var(--body);max-width:760px;margin-bottom:28px;line-height:1.6}
+.brief-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.bcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px 26px;box-shadow:var(--shadow)}
+.bcard.full{grid-column:1 / -1}
+.bcard h3{font-size:18px;display:flex;align-items:center;gap:11px;margin-bottom:12px}
+.bnum{width:28px;height:28px;border-radius:50%;background:var(--cyan);color:#03282c;display:grid;place-items:center;font-size:14px;font-weight:800;flex:none;font-family:"Helvetica Neue",Arial,sans-serif}
+.bcard p{font-size:14.5px;color:var(--body);line-height:1.6;margin-bottom:8px}
+.bcard ol,.bcard ul{margin:4px 0 4px 20px;font-size:14.5px;color:var(--body);line-height:1.75}
+.bcard li b{color:var(--ink)}
+.bcard .hl{background:var(--accent-soft);border-radius:6px;padding:2px 7px;font-weight:700;color:#075b63}
+.brule{background:linear-gradient(155deg,#0a2647,#0f3460);color:#cfe0ef;border:none}
+.brule h3{color:#fff}
+.brule .bnum{background:#17c3d4}
+.brule p,.brule li{color:#cfe0ef}
+.brule li b{color:#fff}
+.brule .hl{background:rgba(23,195,212,.2);color:#7ED9E6}
+.brief-foot{position:sticky;bottom:0;margin-top:34px;background:rgba(246,249,252,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:16px 0;display:flex;justify-content:center;gap:14px}
+@media(max-width:900px){.brief-grid{grid-template-columns:1fr}}
+.guide-btn{border:1.5px solid var(--line2);border-radius:20px;padding:7px 16px;font-size:13px;font-weight:700;color:var(--navy);background:#fff;white-space:nowrap}
+.guide-btn:hover{border-color:var(--navy)}
+.screen{display:none}
+.screen.on{display:block}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<div class="sc-strip">
+  <a href="index.html#roles">&larr; Roles</a>
+  <span class="dot"></span>
+  <b>Property Manager <i>Simulator</i></b>
+  <span class="note">Practice copy only. Leads, emails, and reports are simulated — nothing is sent to a real person.</span>
+</div>
+
+<div class="wsbar">
+  <span class="ws-id"><span class="ws-logo">IRP</span> Integrity Rental · PM Workspace</span>
+  <div class="ws-tabs" id="wsTabs"></div>
+  <div class="ws-right">
+    <button class="guide-btn" onclick="showGuide()">&#128214; Study Guide</button>
+    <span class="score-chip">PM SCORE <b id="scoreVal">0</b></span>
+    <span class="avatar-you" title="You — VA Property Manager">VA</span>
+  </div>
+</div>
+
+<div class="briefing" id="briefing">
+  <div class="brief-inner">
+    <div class="brief-eyebrow">IRP Field Guide &middot; read this before you start</div>
+    <h1>How Integrity Rental runs, in five cards</h1>
+    <p class="brief-lead">Everything the case will ask you comes from this page. It is a summary of the IRP job description for the Virtual Assistant Property Manager. You can reopen it anytime with the <b>Study Guide</b> button at the top.</p>
+    <div class="brief-grid">
+      <div class="bcard full">
+        <h3><span class="bnum">1</span> Your role and your team</h3>
+        <p>You are the <b>VA Property Manager</b> of Integrity Rental Properties (Suffolk and Hampton Roads, Virginia). You run the day to day on <b>TurboTenant</b>, the operations platform for communication, payments, maintenance and work orders.</p>
+        <ul>
+          <li><b>Jose</b>, internal trainer: he guides you through this case.</li>
+          <li><b>Esteban Herrera</b>, lead property manager: reviews your work and approves repairs under $500.</li>
+          <li><b>William McClung</b>, owner: the final word on every application, every eviction, and every repair of $500 or more.</li>
+        </ul>
+      </div>
+      <div class="bcard">
+        <h3><span class="bnum">2</span> The leasing pipeline, in order</h3>
+        <ol>
+          <li><b>Read the lead card</b> twice. Hunt for inconsistencies between fields.</li>
+          <li><b>Phone interview BEFORE any tour.</b> Verify income, occupants, pets and move in date, every single time.</li>
+          <li><b>Tour</b> for leads that clear the interview. Confirm in writing.</li>
+          <li><b>TurboTenant application</b>: $45 paid by the renter. It returns <span class="hl">verified</span> credit, income, evictions and background from TransUnion.</li>
+          <li><b>Questionnaires AFTER the application</b>: employer verification and prior landlord interview for your finalists.</li>
+          <li><b>Comparison sheet</b>: all applicants side by side, then your recommendation goes to Esteban.</li>
+        </ol>
+      </div>
+      <div class="bcard">
+        <h3><span class="bnum">3</span> The screening bar</h3>
+        <ul>
+          <li>Verified income of at least <span class="hl">3&times; the rent</span>.</li>
+          <li>Credit score of at least <span class="hl">620</span>.</li>
+          <li>Clean eviction history and solid references.</li>
+          <li>Apply the same written rules to every applicant. That consistency is what keeps IRP safe under fair housing law.</li>
+          <li>Self reported numbers are a story; the report is the truth. People round up, so you verify instead of trusting or punishing.</li>
+          <li>An <b>ESA is not a pet</b>: no pet fee and no pet rent, but the letter must be on file.</li>
+        </ul>
+      </div>
+      <div class="bcard">
+        <h3><span class="bnum">4</span> Maintenance, the IRP way</h3>
+        <ul>
+          <li>Triage every request with the <b>4 tier urgency system</b>: <b>Emergency</b> (danger to life or property, act now), <b>Urgent</b> (active damage, same day response, vendor within 24h), <b>Standard</b> (2 to 5 business days), <b>Low</b> (schedule when efficient).</li>
+          <li><span class="hl">Photos first.</span> Never dispatch a vendor blind, and never ask a tenant to repair anything.</li>
+          <li>Check TurboTenant twice a day, morning and evening.</li>
+          <li>After every repair: notify the tenant, close the work order, send the 1 to 5 satisfaction survey.</li>
+        </ul>
+      </div>
+      <div class="bcard brule full">
+        <h3><span class="bnum">5</span> Authority levels: who decides what</h3>
+        <ul>
+          <li><b>Level 1, you:</b> routine communication, triage, vendor dispatch under $500, notices, inspections, closing work orders.</li>
+          <li><b>Level 2, Esteban:</b> approves repair estimates <span class="hl">under $500</span>, borderline screening calls, lease enforcement beyond the standard timeline.</li>
+          <li><b>Level 3, the Owner:</b> <span class="hl">ALL tenant application approvals</span>, <span class="hl">every repair of $500 or more</span>, evictions, lease terminations. You recommend; you never approve.</li>
+          <li>Golden rule: when in doubt, document and escalate. Never commit money or make policy exceptions outside your level.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="brief-foot">
+      <button class="b pri" onclick="hideGuide()" style="font-size:15px;padding:13px 34px">Start the case simulator &#8594;</button>
+    </div>
+  </div>
+</div>
+
+<div class="guide">
+  <div class="guide-inner">
+    <span class="g-ava" title="Jose — Internal Trainer, IRP Onboarding Program">J</span>
+    <div class="g-main" id="missionList"></div>
+    <div class="trail-wrap"><div class="trail" id="trail"></div></div>
+  </div>
+  <div class="pm-progress"><i id="pmProg" style="width:0%"></i></div>
+</div>
+<div class="stage-area"><div id="stage"></div></div>
+
+<div class="drawer-veil" id="drawerVeil" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer"></div>
+<div class="compose-veil" id="composeVeil" onclick="if(event.target===this) closeCompose()"><div class="compose" id="composeBox"></div></div>
+<div class="q-veil" id="qVeil"><div class="q-box" id="qBox"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= CORE STATE ================= */
+const $=id=>document.getElementById(id);
+function toast(m,ms){const t=$('toast');t.innerHTML=m;t.classList.add('show');clearTimeout(window._t);window._t=setTimeout(()=>t.classList.remove('show'),ms||3000);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+
+const S = {
+  tab:'board', mission:1, score:0,
+  say:'Welcome to Integrity Rental Properties. Today you run the full Property Manager cycle on a real case: one lead, one property, start to finish.',
+  phase:1,               // 1 = leasing pipeline, 2 = maintenance
+  callStep:0, callDone:false,
+  tourSlot:null,
+  woTier:null, woVendor:null, woStep:0,
+  compareDone:false, winner:null,
+  mailSel:null, unread:0
+};
+
+const STAGES=[
+  {id:'new',  nm:'New lead',        cls:'new'},
+  {id:'call', nm:'Phone call',      cls:'call'},
+  {id:'tour', nm:'Schedule tour',   cls:'tour'},
+  {id:'wait', nm:'Waiting response',cls:'wait'},
+  {id:'nogo', nm:'No go',           cls:'nogo'},
+  {id:'lease',nm:'Make a Lease',    cls:'lease'}
+];
+
+/* ---- the property ---- */
+const PROP={short:'8 Lyford Key, A', rent:1275, addr:'8 Lyford Key , A, Hampton, VA 23666', min3x:3825};
+
+/* ---- leads / cards ---- */
+const CARDS=[
+  {id:'tanya', nm:'Tanya Boston', ini:'TB', col:'#E8843D', stage:'new', isNew:true,
+   fields:{location:'8 Lyford Ky', income:'$6,878', credit:'729', pets:'No', occupants:'1', phone:'+1 757 555 9339', email:'missboss.bxny@example.com', movein:'8/1/26', notes:'I work for BayPort Credit Union as a Branch Manager. 3 adult children'},
+   chips:[{t:'Zillow',c:'doc'}],
+   docs:[], log:[{t:'Lead created from Zillow inquiry',d:'Today 8:02 AM',b:'"Hi, I am very interested in the Hampton condo. When can I see it?"'}]},
+  {id:'latasha', nm:'LaTasha Joyner', ini:'LJ', col:'#4A90C9', stage:'wait', isNew:false, locked:true,
+   fields:{location:'8 Lyford Ky', income:'$4,650', credit:'—', pets:'No', occupants:'2', phone:'+1 757 555 0428', email:'lashj.rentals@example.com', movein:'8/15/26', notes:'Applied last week. Application already in TurboTenant.'},
+   chips:[{t:'Applied',c:'ok'}], docs:[{ic:'&#128203;',nm:'TurboTenant application',ds:'submitted 07/18'}],
+   log:[{t:'TurboTenant application received',d:'Jul 18',b:''}]},
+  {id:'khalil', nm:'Khalil Green', ini:'KG', col:'#0E9F6E', stage:'wait', isNew:false, locked:true,
+   fields:{location:'8 Lyford Ky', income:'$3,910', credit:'—', pets:'1 cat', occupants:'1', phone:'+1 757 555 0731', email:'kgreen.va@example.com', movein:'8/1/26', notes:'Referred by current tenant. Application already in TurboTenant.'},
+   chips:[{t:'Applied',c:'ok'}], docs:[{ic:'&#128203;',nm:'TurboTenant application',ds:'submitted 07/18'}],
+   log:[{t:'TurboTenant application received',d:'Jul 18',b:''}]}
+];
+const card=id=>CARDS.find(c=>c.id===id);
+
+/* ---- field metadata (Notion look) ---- */
+const FIELD_META=[
+  ['location','T','01. Location'],['income','$','02. Income'],['credit','#','03. Credit Score'],
+  ['pets','&#9634;','04. Do you have any pets?'],['occupants','#','05. Occupants'],['phone','&#9742;','06. Phone'],
+  ['email','&#9993;','07. email'],['movein','&#128197;','08. Ideal Move In Date'],['notes','&#128172;','09. Notes']
+];
+
+/* ---- questionnaire links (real forms) ---- */
+const FORM_EMPLOYER='https://docs.google.com/forms/d/e/1FAIpQLSf6VAwMd3KdtRWrVr7MLnYLrx26pUae3uBsW3NTAi5AA-6Fhg/viewform';
+const FORM_LANDLORD='https://docs.google.com/forms/d/e/1FAIpQLSeeWT6cO0Dr_kyA1k7Gpi64i_l6fsiag9usvoKVvFS9AHRdKQ/viewform';
+
+/* ---- vendors (from the IRP responsibilities doc) ---- */
+const VENDORS=[
+  {id:'handyman', nm:'Charles — General Handyman', ic:'&#128296;', em:'charles.handyman@example.com', desc:'First call for general repairs'},
+  {id:'electric', nm:'Luis — Licensed Electrician', ic:'&#9889;', em:'luis.electric@example.com', desc:'Anything electrical or panel-related'},
+  {id:'plumber',  nm:'Ricky — Plumber', ic:'&#128295;', em:'ricky.plumbing@example.com', desc:'Leaks, water heaters, drains'},
+  {id:'hvac',     nm:'Thomas — HVAC Contractor', ic:'&#10052;', em:'thomas.hvac@example.com', desc:'Heating and cooling systems'}
+];
+
+/* ---- missions ---- */
+const MISSIONS=[
+  {n:1, t:'Review the new lead', b:'A lead just landed from Zillow. Open <b>Tanya Boston</b>&rsquo;s card on the board and read every field. Something in her answers doesn&rsquo;t add up &mdash; find it.', tip:'Compare field 05 (Occupants) with field 09 (Notes). A PM reads everything twice.'},
+  {n:2, t:'Run the phone screening call', b:'Drag Tanya&rsquo;s card to <b>Phone call</b> and run the IRP phone interview. Ask the right questions and probe the discrepancy.', tip:'The IRP script says: verify income, occupants, pets, move-in date, and reason for moving — every single time.'},
+  {n:3, t:'Schedule the tour', b:'She cleared the phone screen: the interview happens BEFORE any tour. Drag her card to <b>Schedule tour</b> and lock in a time slot.', tip:'Confirm in writing immediately. A tour that is not confirmed in writing does not exist.'},
+  {n:4, t:'Send the TurboTenant application', b:'The tour went well. Move her to <b>Waiting response</b> and send the official TurboTenant application &mdash; $45, paid by the renter. This is where the REAL data comes in.', tip:'Self-reported numbers are a story. TransUnion is the truth. The $45 application is how you stop guessing.'},
+  {n:5, t:'Review the real screening reports', b:'Three applications are in. Open the <b>Screening</b> tab and compare what each applicant CLAIMED against what TransUnion VERIFIED.', tip:'Look at Tanya&rsquo;s claimed credit score and income vs. the verified numbers.'},
+  {n:6, t:'Verify employer & landlord', b:'The real applications are in, so NOW the questionnaires go out: from the <b>Inbox</b>, send the Employer Verification and the prior Landlord Interview questionnaires for your finalists.', tip:'A pay stub tells you they worked last month. A landlord tells you how they LIVE.'},
+  {n:7, t:'Compare applicants & recommend', b:'Open the <b>Compare</b> tab. Score all three applicants side by side and pick your recommendation for Esteban.', tip:'The rule: verified income &ge; 3&times; rent ($3,825), credit &ge; 620, clean eviction history, solid references.'},
+  {n:8, t:'Close the pipeline', b:'Owner approved your recommendation. Drag the winner to <b>Make a Lease</b> and the others to <b>No go</b> — each gets a professional denial email.', tip:'Every "no" gets a polite adverse-action style email the same day. Ghosting applicants is not the IRP way.'},
+  {n:9, t:'Triage the maintenance request', b:'Two weeks after move-in, a maintenance request lands. Open the <b>Maintenance</b> tab and triage it with the IRP 4-tier urgency system.', tip:'Emergency / Urgent / Standard / Low. Water + active leak = think hard about the tier.'},
+  {n:10,t:'Dispatch the right vendor', b:'Request photos, pick the right vendor from the IRP contractor list, and email them a work order.', tip:'Photos first. A vendor that shows up blind bills you twice.'},
+  {n:11,t:'Handle the estimate & close out', b:'The estimate is in. Apply the IRP spending authority rules, get the repair done, notify the tenant, and close the work order.', tip:'Under $500 &rarr; Esteban approves. $500 or more &rarr; ONLY the Owner approves. Never commit money outside your authority.'}
+];
+
+/* ---- emails ---- */
+let MAILS=[];  // {id, from, fromCol, ini, time, sub, body, unread, attach:[], actions:html, folder}
+let mailSeq=1;
+function pushMail(m){ m.id=mailSeq++; m.unread=true; MAILS.unshift(m); S.unread=MAILS.filter(x=>x.unread).length; renderTabs(); if(S.tab==='inbox') renderStage(); toast('&#9993; New email: '+m.sub, 3500); }
+
+/* ---- applicant screening data (self vs verified) ---- */
+const REPORTS={
+  tanya:{nm:'Tanya Boston', ini:'TB', col:'#E8843D', score:692, paid:'08/13/2026',
+    rows:[
+      ['Credit score','729 (claimed on call)','692 (TransUnion)','warn','37 points lower than claimed'],
+      ['Monthly income','$6,878 (claimed)','$5,910 verified','lie','Included overtime that isn&rsquo;t guaranteed'],
+      ['Occupants','1 (form) &rarr; 4 (call)','4 adults','warn','Corrected only when you probed'],
+      ['Pets','No','1 small dog (ESA letter provided)','warn','Disclosed at tour, ESA = not a "pet" legally'],
+      ['Evictions','&mdash;','0 records','ok','Clean'],
+      ['Criminal history','&mdash;','0 records','ok','Clean'],
+      ['Income vs 3&times; rent ($3,825)','&mdash;','$5,910 &#10003; (4.6&times;)','ok','Clears the bar even at verified income']
+    ]},
+  latasha:{nm:'LaTasha Joyner', ini:'LJ', col:'#4A90C9', score:718, paid:'08/12/2026',
+    rows:[
+      ['Credit score','710 (claimed)','718 (TransUnion)','ok','Claimed accurately'],
+      ['Monthly income','$4,650 (claimed)','$4,650 verified','ok','W-2 salaried, matches exactly'],
+      ['Occupants','2','2 (self + daughter)','ok','Consistent'],
+      ['Pets','No','No','ok','Consistent'],
+      ['Evictions','&mdash;','0 records','ok','Clean'],
+      ['Criminal history','&mdash;','0 records','ok','Clean'],
+      ['Income vs 3&times; rent ($3,825)','&mdash;','$4,650 &#10003; (3.6&times;)','ok','Clears the bar']
+    ]},
+  khalil:{nm:'Khalil Green', ini:'KG', col:'#0E9F6E', score:664, paid:'08/12/2026',
+    rows:[
+      ['Credit score','680 (claimed)','664 (TransUnion)','warn','Slightly lower than claimed'],
+      ['Monthly income','$3,910 (claimed)','$3,780 verified','warn','$45 UNDER the 3&times; bar of $3,825'],
+      ['Occupants','1','1','ok','Consistent'],
+      ['Pets','1 cat','1 cat','ok','Consistent'],
+      ['Evictions','&mdash;','1 record (2021, dismissed)','warn','Filed then dismissed — ask about it'],
+      ['Criminal history','&mdash;','0 records','ok','Clean'],
+      ['Income vs 3&times; rent ($3,825)','&mdash;','$3,780 &#10007; (2.96&times;)','lie','Does not clear the bar']
+    ]}
+};
+
+/* ================= ENGINE ================= */
+function addScore(n){ S.score+=n; $('scoreVal').textContent=S.score; }
+function setMission(n, say){
+  S.mission=n;
+  if(say) toast(say, 4600);   // Jose's transition note shows briefly instead of cluttering the guide
+  renderMissions(); renderTabs();
+  $('pmProg').style.width = Math.round(((n-1)/MISSIONS.length)*100)+'%';
+}
+function completeMissionAndAdvance(say, pts){
+  addScore(pts||10);
+  if(S.mission>=MISSIONS.length){ finish(); return; }
+  setMission(S.mission+1, say);
+}
+/* The guide bar shows ONLY the current mission; the dot trail grows one step
+   at a time as missions complete — future steps stay hidden until reached. */
+function renderMissions(){
+  const total=MISSIONS.length;
+  const complete=S.mission>total;
+  const cur=complete?null:MISSIONS[S.mission-1];
+  const phase = complete ? 'Case complete' : (S.mission>=9 ? 'Phase 2 &middot; Maintenance' : 'Phase 1 &middot; Leasing pipeline');
+  $('trail').innerHTML = MISSIONS.slice(0, Math.min(S.mission,total)).map(m=>{
+    const isNow = !complete && m.n===S.mission;
+    return `<span class="t-dot ${m.n<S.mission||complete?'done':'now'} ${isNow?'pop':''}" title="${m.n}. ${m.t.replace(/"/g,'&quot;')}">${isNow?m.n:''}</span>`;
+  }).join('');
+  $('missionList').innerHTML = complete
+    ? `<div class="g-eyebrow">${phase} &middot; 12 of 12 done</div>
+       <div class="g-title">Case complete — every stage, start to finish</div>
+       <div class="g-body">Review your PM Score below, or run the case again to try different decisions.</div>`
+    : `<div class="g-eyebrow">${phase} &middot; Mission ${cur.n} of ${total}</div>
+       <div class="g-title">${cur.t}</div>
+       <div class="g-body">${cur.b}</div>
+       <div class="g-tip">&#128161; ${cur.tip}</div>`;
+}
+
+const TABS=[
+  {id:'board', nm:'&#128203; Pipeline', min:1},
+  {id:'inbox', nm:'&#9993; Inbox', min:3},
+  {id:'screening', nm:'&#128202; Screening', min:5},
+  {id:'compare', nm:'&#128200; Compare', min:7},
+  {id:'maint', nm:'&#128295; Maintenance', min:9}
+];
+function renderTabs(){
+  $('wsTabs').innerHTML = TABS.map(t=>{
+    const locked = S.mission < t.min;
+    const bub = (t.id==='inbox' && S.unread>0) ? `<span class="bub">${S.unread}</span>` : '';
+    return `<button class="ws-tab ${S.tab===t.id?'on':''} ${locked?'locked':''}" onclick="${locked?`toast('That workspace unlocks at mission ${t.min}.')`:`switchTab('${t.id}')`}">${t.nm}${bub}</button>`;
+  }).join('');
+}
+function switchTab(t){ S.tab=t; renderTabs(); renderStage(); window.scrollTo({top:0}); }
+
+function renderStage(){
+  const v={board:vBoard, inbox:vInbox, screening:vScreening, compare:vCompare, maint:vMaint}[S.tab];
+  $('stage').innerHTML=v();
+  if(S.tab==='board') wireDnD();
+}
+
+/* ================= BOARD ================= */
+function vBoard(){
+  return `
+  <div class="board-hd">
+    <div><div class="eyebrow">Pillar 1 &middot; Onboarding &amp; Leasing</div>
+    <h1>Leasing Pipeline · ${PROP.short}</h1></div>
+    <div class="vw"><button class="on">&#128203; Board</button><button onclick="toast('Table and calendar views exist in Notion/Asana — the board is where the pipeline lives.')">&#9707; Table</button></div>
+    <span style="margin-left:auto;font-size:12px;color:var(--faint)">Drag cards between stages &middot; click a card to open it</span>
+  </div>
+  ${S.mission===1?`<div class="banner-tip">&#128071; <div><b>Start here:</b> click Tanya&rsquo;s card in <b>New lead</b> and read every field like a detective. Then drag her to the next stage the process calls for.</div></div>`:''}
+  <div class="board">
+    ${STAGES.map(st=>{
+      const cardsHtml = CARDS.filter(c=>c.stage===st.id).map(c=>`
+      <div class="kcard ${c.id==='tanya'&&S.mission===1?'pulse':''}" draggable="${c.locked?'false':'true'}" data-card="${c.id}" onclick="openDrawer('${c.id}')">
+        <div class="knm"><span class="kava" style="background:${c.col}">${c.ini}</span> ${c.nm} ${c.isNew?'<span class="kchip warn">NEW</span>':''}</div>
+        <div class="kprop">${PROP.short} &middot; $${PROP.rent}/mo</div>
+        <div class="krow">${c.chips.map(ch=>`<span class="kchip ${ch.c}">${ch.t}</span>`).join('')}</div>
+        <div class="kfoot"><span>&#128206; ${c.docs.length} docs</span><span>&#128488; ${c.log.length}</span></div>
+      </div>`).join('');
+      return `
+    <div class="col" data-stage="${st.id}">
+      <div class="col-hd"><span class="tag ${st.cls}">${st.nm}</span><span class="cnt">${CARDS.filter(c=>c.stage===st.id).length}</span></div>
+      ${cardsHtml || '<div class="empty-slot">empty</div>'}
+    </div>`;}).join('')}
+  </div>`;
+}
+
+/* drag & drop */
+let dragId=null;
+function wireDnD(){
+  document.querySelectorAll('.kcard[draggable=true]').forEach(k=>{
+    k.addEventListener('dragstart',e=>{dragId=k.dataset.card;k.classList.add('dragging');});
+    k.addEventListener('dragend',()=>{dragId=null;document.querySelectorAll('.kcard').forEach(x=>x.classList.remove('dragging'));});
+  });
+  document.querySelectorAll('.col').forEach(col=>{
+    col.addEventListener('dragover',e=>{e.preventDefault();col.classList.add('dragover');});
+    col.addEventListener('dragleave',()=>col.classList.remove('dragover'));
+    col.addEventListener('drop',e=>{e.preventDefault();col.classList.remove('dragover');if(dragId)tryMove(dragId,col.dataset.stage);});
+  });
+}
+function tryMove(id, to){
+  const c=card(id); if(!c||c.stage===to) return;
+  // mission-gated moves for Tanya; finalists move in mission 9
+  if(S.mission===8 && (id==='latasha'||id==='khalil'||id==='tanya')) return moveM9(c,to);
+  if(id!=='tanya'){ toast(c.nm+' already applied — she stays in Waiting response until you compare applicants.'); return; }
+  const want={2:'call',3:'tour',4:'wait'}[S.mission];
+  if(!want){ toast('Finish the current mission first — check Jose&rsquo;s panel on the right.'); return; }
+  if(to!==want){ toast('Not yet. The IRP process says: '+({call:'phone screen BEFORE anything else',tour:'schedule the tour now that she cleared pre-screening',wait:'move her to Waiting response while the application processes'})[want]+'.'); return; }
+  c.stage=to; renderStage();
+  if(to==='call'){ c.chips=[{t:'Zillow',c:'doc'},{t:'Screening call',c:'warn'}]; startCall(); }
+  if(to==='tour'){ pickTourSlot(); }
+  if(to==='wait'){ afterWaitMove(); }
+}
+
+/* ================= DRAWER (card detail) ================= */
+function openDrawer(id){
+  const c=card(id); if(!c) return;
+  const st=STAGES.find(s=>s.id===c.stage);
+  $('drawer').innerHTML=`
+    <div class="drawer-hd" style="position:relative">
+      <span class="stg tag ${st.cls}">${st.nm}</span>
+      <h2>${c.nm}</h2>
+      <div class="sub">${PROP.addr} &middot; $${PROP.rent}/mo</div>
+      <button class="x" onclick="closeDrawer()">&#10005;</button>
+    </div>
+    <div class="drawer-bd">
+      <div class="n-sec">
+        <div class="n-sec-hd" onclick="this.parentNode.classList.toggle('closed')"><span class="tri">&#9660;</span> Fields</div>
+        <div class="n-sec-bd">
+          ${FIELD_META.map(f=>{
+            const flag = (c.id==='tanya' && f[0]==='occupants' && S.mission<=2) ? '<span class="n-flag">&#9888; vs notes?</span>'
+                       : (c.id==='tanya' && f[0]==='notes' && S.mission<=2) ? '<span class="n-flag">&#9888; 3 adult children?</span>' : '';
+            return `<div class="n-field"><div class="k"><span class="ic">${f[1]}</span>${f[2]}</div><div class="v">${f[0]==='pets'?`<span class="sel" style="background:#7A5AE0">${c.fields.pets} &#9662;</span>`:esc(c.fields[f[0]])}${flag}</div></div>`;
+          }).join('')}
+        </div>
+      </div>
+      <div class="n-sec">
+        <div class="n-sec-hd" onclick="this.parentNode.classList.toggle('closed')"><span class="tri">&#9660;</span> Attachments <span style="color:var(--faint);font-weight:500">${c.docs.length}</span></div>
+        <div class="n-sec-bd"><div class="n-attach">
+          ${c.docs.length?c.docs.map(d=>`<div class="n-doc"><span class="dic">${d.ic}</span><b>${d.nm}</b><span class="ds">${d.ds}</span></div>`).join(''):'<div style="font-size:12.5px;color:var(--faint);padding:6px 0">Nothing here yet — every document you collect lands on this card, so the whole file lives in one place.</div>'}
+        </div></div>
+      </div>
+      <div class="n-sec">
+        <div class="n-sec-hd" onclick="this.parentNode.classList.toggle('closed')"><span class="tri">&#9660;</span> Activity</div>
+        <div class="n-sec-bd"><div class="n-act">
+          ${c.log.map((l,i)=>`<div class="ae ${i===0?'hot':''}"><div class="at">${l.t}</div><div class="ad">${l.d}</div>${l.b?`<div class="ab">${l.b}</div>`:''}</div>`).join('')}
+        </div></div>
+      </div>
+    </div>
+    <div class="drawer-cta">${drawerCta(c)}</div>`;
+  $('drawer').classList.add('on'); $('drawerVeil').classList.add('on');
+  if(c.id==='tanya' && S.mission===1){ setTimeout(()=>quizM1(), 700); }
+}
+function drawerCta(c){
+  if(c.id==='tanya'){
+    if(S.mission===2 && c.stage==='new') return `<button class="b ghost" onclick="closeDrawer()">Close</button><button class="b pri" onclick="closeDrawer(); toast('Drag her card into Phone call on the board — you run the pipeline by moving the card.')">How do I start the call?</button>`;
+  }
+  return `<button class="b ghost" onclick="closeDrawer()">Close</button>`;
+}
+function closeDrawer(){ $('drawer').classList.remove('on'); $('drawerVeil').classList.remove('on'); }
+
+/* ================= QUIZ HELPERS ================= */
+function quiz(ey, title, lead, opts, correctIdx, fbOk, fbNo, onDone, pts){
+  $('qBox').innerHTML=`
+    <div class="q-ey">${ey}</div><h3>${title}</h3><p class="lead">${lead}</p>
+    <div class="q-opts">${opts.map((o,i)=>`<button class="q-opt" data-i="${i}">${o}</button>`).join('')}</div>
+    <div class="q-fb" id="qFb"></div>
+    <div class="q-foot hidden" id="qFoot"><button class="b pri" id="qNext">Continue &#8594;</button></div>`;
+  $('qVeil').classList.add('on');
+  document.querySelectorAll('.q-opt').forEach(btn=>btn.onclick=()=>{
+    const i=+btn.dataset.i;
+    document.querySelectorAll('.q-opt').forEach((b,j)=>{ b.disabled=true; if(j===correctIdx) b.classList.add('correct'); });
+    const fb=$('qFb');
+    if(i===correctIdx){ fb.className='q-fb ok'; fb.innerHTML='&#10003; '+fbOk; addScore(pts||10); }
+    else { btn.classList.add('wrong'); fb.className='q-fb no'; fb.innerHTML='&#10007; '+fbNo; addScore(2); }
+    $('qFoot').classList.remove('hidden');
+    $('qNext').onclick=()=>{ $('qVeil').classList.remove('on'); onDone&&onDone(i===correctIdx); };
+  });
+}
+
+function quizM1(){
+  if(S._m1) return; S._m1=true;
+  quiz('Mission 1 &middot; Read the lead','What doesn&rsquo;t add up on this card?',
+    'Jose: "Before you ever pick up the phone, find the thing you need to ask about."',
+    ['The income — $6,878 is too high for a Branch Manager',
+     'Occupants says 1, but the notes mention 3 adult children',
+     'The move-in date is too soon to schedule a tour',
+     'Nothing — the card is clean'],
+    1,
+    'Exactly. 1 occupant + &ldquo;3 adult children&rdquo; in the notes is the classic under-count. If the adults live with her, every one of them must be screened on the application. You&rsquo;ll probe this on the call.',
+    'Look again at field 05 vs field 09. Occupants: 1 — but the notes say &ldquo;3 adult children.&rdquo; If they live with her, they all get screened. THAT is the thread to pull on the call.',
+    ()=>{ card('tanya').log.unshift({t:'Discrepancy flagged by you',d:'Today 8:15 AM',b:'Occupants (1) vs notes ("3 adult children") — probe on the phone screen.'});
+      completeMissionAndAdvance('Nice catch. Now drag her card into <b>Phone call</b> and run the IRP screening script.'); closeDrawer(); renderStage(); },
+    15);
+}
+
+/* ================= PHONE CALL SIM ================= */
+const CALL_FLOW=[
+  {q:'INCOME', ask:'Thanks for your interest in 8 Lyford Key! To start — can you walk me through your income and where you work?',
+   ans:'Sure! I&rsquo;m a Branch Manager at BayPort Credit Union. I make about $6,878 a month... well, that&rsquo;s with overtime. Base is closer to $5,900.',
+   note:'&#128221; Noted: $6,878 includes overtime. Base ≈ $5,900. The application will verify the real number.'},
+  {q:'OCCUPANTS', ask:'Your form says 1 occupant, but your note mentions 3 adult children. Who would actually be living in the home?',
+   ans:'Oh — yes, my three kids are grown, two of them would move in with me. So... three of us. Actually my oldest might too. Let&rsquo;s say four.',
+   note:'&#128221; Noted: 1 became 4. Every adult occupant must be on the application and screened. This is why you probe.'},
+  {q:'PETS', ask:'Any pets or animals I should know about? Our pet policy applies to all animals in the home.',
+   ans:'No pets... well, I do have a small dog, but he&rsquo;s an emotional support animal, so I didn&rsquo;t count him.',
+   note:'&#128221; Noted: ESA present. Legally an ESA is NOT a pet (no pet fee, no pet rent under fair housing rules) — but it must be documented with a valid ESA letter.'},
+  {q:'MOVE-IN & REASON', ask:'You listed August 1st as your ideal move-in. What&rsquo;s prompting the move?',
+   ans:'My landlord is selling the house I rent now, so I need somewhere by September at the latest. August 1st would be perfect.',
+   note:'&#128221; Noted: motivated, reasonable timeline, verifiable reason — all good signs. Prior landlord will confirm when you send the landlord questionnaire.'}
+];
+function startCall(){
+  S.callStep=0; S.tab='board';
+  $('stage').innerHTML=`
+  <div class="call-wrap">
+    <div class="board-hd"><div><div class="eyebrow">Pillar 1 &middot; Screening call</div><h1>Phone Screening · IRP Interview Script</h1></div></div>
+    <div class="call-shell">
+      <div class="call-top">
+        <span class="cava">TB</span>
+        <div><div class="cnm">Tanya Boston</div><div class="cst"><span class="dotlive"></span> On call &middot; +1 757 555 9339</div></div>
+        <span class="call-timer" id="callTimer">00:04</span>
+      </div>
+      <div class="call-log" id="callLog">
+        <div class="cl-line them">Hello? Yes, hi! I was hoping you&rsquo;d call about the Hampton condo!</div>
+      </div>
+      <div class="call-opts" id="callOpts"></div>
+    </div>
+    <div class="script-note">&#128214; <b>IRP Phone Interview Script:</b> verify income, occupants, pets, and move-in date on every screening call — in whatever order the conversation allows. Warm but thorough. You are qualifying, not selling.</div>
+  </div>`;
+  let sec=4; S._timer&&clearInterval(S._timer);
+  S._timer=setInterval(()=>{ sec++; const el=$('callTimer'); if(!el){clearInterval(S._timer);return;} el.textContent='00:'+String(sec).padStart(2,'0'); if(sec>59){el.textContent='01:'+String(sec-60).padStart(2,'0');} },1000);
+  renderCallOpts();
+}
+function renderCallOpts(){
+  const remaining=CALL_FLOW.filter((f,i)=>!f.done);
+  if(!remaining.length){ endCallDecision(); return; }
+  $('callOpts').innerHTML = remaining.map(f=>`
+    <button class="co" onclick="askCall(${CALL_FLOW.indexOf(f)})"><span class="tag-q">ASK ABOUT ${f.q}</span>${f.ask}</button>`).join('');
+}
+function askCall(i){
+  const f=CALL_FLOW[i]; f.done=true;
+  const log=$('callLog');
+  log.innerHTML+=`<div class="cl-line you">${f.ask}</div>`;
+  $('callOpts').innerHTML='<div style="color:#8FD9E2;font-size:12.5px;padding:6px 2px">Tanya is answering&hellip;</div>';
+  log.scrollTop=log.scrollHeight;
+  setTimeout(()=>{
+    log.innerHTML+=`<div class="cl-line them">${f.ans}</div><div class="cl-line note">${f.note}</div>`;
+    log.scrollTop=log.scrollHeight;
+    renderCallOpts();
+  }, 900);
+}
+function endCallDecision(){
+  $('callOpts').innerHTML='';
+  quiz('Mission 2 &middot; Decision point','How do you close this call?',
+    'You verified all four script areas. Her story moved: 1 occupant &rarr; 4, "no pets" &rarr; an ESA, income includes overtime. What&rsquo;s the right move?',
+    ['No go — she changed her answers three times, that&rsquo;s disqualifying',
+     'Proceed &middot; clear her for a tour, note every discrepancy, and let the VERIFIED application decide later',
+     'Approve her now — a Branch Manager with $6,878/mo is clearly the best lead we&rsquo;ll get',
+     'Skip the paperwork and invite her straight to a tour to keep her warm'],
+    1,
+    'Right. Changed answers are a yellow flag, not a red one — people round up and forget. Your job is to document everything and let the TurboTenant application verify the truth. You never approve OR reject on a phone story.',
+    'Careful. Changed answers alone aren&rsquo;t disqualifying (and "approving now" skips screening entirely, a fair housing and financial risk). The IRP way: document the discrepancies, clear her for a tour, and let the verified application decide.',
+    ()=>{ clearInterval(S._timer);
+      const c=card('tanya');
+      c.chips=[{t:'Call done',c:'ok'},{t:'4 occupants',c:'warn'},{t:'ESA dog',c:'warn'}];
+      c.fields.occupants='4 (corrected on call)'; c.fields.pets='ESA dog (letter pending)';
+      c.docs.push({ic:'&#128221;',nm:'Call notes — IRP script',ds:'income / occupants / ESA flags'});
+      c.log.unshift({t:'Phone screening completed',d:'Today 9:05 AM',b:'Income incl. overtime; occupants 1&rarr;4; ESA dog disclosed. Cleared for a tour.'});
+      S.callDone=true; S.tab='board';
+      completeMissionAndAdvance('Good call. Every flag is documented on her card. Interview done, so now drag her to <b>Schedule tour</b>. Her thank you note just hit your Inbox.');
+      seedInboxAfterCall(); renderStage();
+    }, 15);
+}
+
+/* ================= INBOX ================= */
+function seedInboxAfterCall(){
+  pushMail({from:'Tanya Boston', ini:'TB', fromCol:'#E8843D', time:'9:12 AM', folder:'in',
+    sub:'Re: 8 Lyford Key · great talking to you!',
+    body:'Hi! Thank you for the call just now. Like I said, we would love to see the condo as soon as possible. Let me know the next step!\n\nTanya',
+    actions:`<button class="b pri sm" onclick="switchTab('board'); toast('She cleared the interview. Drag her card to Schedule tour.')">Back to the board &#8594;</button>`});
+}
+const TEMPLATES={
+  employer:{to:'hr@bayport-example.com; ref-employers@example.com', sub:'Employment Verification Request — applicant for 8 Lyford Key',
+    body:`Hello,\n\nWe are processing a rental application for a candidate who lists your organization as their current employer. As part of our standard screening, could you please complete our short Employer Verification Questionnaire:\n\n${FORM_EMPLOYER}\n\nIt covers position, tenure, and income verification, and takes under 5 minutes. Please reply to this email once submitted.\n\nThank you,\nVA Property Manager\nIntegrity Rental Properties LLC`},
+  landlord:{to:'prior-landlords@example.com', sub:'Prior Landlord Reference — IRP Landlord Interview Questionnaire',
+    body:`Hello,\n\nYour former tenant has applied to rent one of our properties and listed you as a prior landlord. We would appreciate 5 minutes of your time to complete our Landlord Interview Questionnaire:\n\n${FORM_LANDLORD}\n\nIt covers payment history, property care, and whether you would rent to them again.\n\nThank you,\nVA Property Manager\nIntegrity Rental Properties LLC`},
+  vendor:{to:'ricky.plumbing@example.com', sub:'Work Order — Water heater leak @ 8 Lyford Key, A (URGENT)',
+    body:`Hi Ricky,\n\nWe have an URGENT-tier work order at 8 Lyford Key, A (Hampton).\n\nIssue: Tenant reports the water heater is leaking from the base. Water is pooling in the utility closet. Tenant shut the supply valve per our instructions; photos attached.\n\nTenant contact: LaTasha Joyner — (757) 555-0428 (available after 4 PM today)\n\nPlease confirm you can visit within 24 hours and reply with your diagnosis and estimate BEFORE any repair work begins.\n\nThank you,\nVA Property Manager\nIntegrity Rental Properties LLC`},
+  denial:{to:'applicant@example.com', sub:'Update on your application — 8 Lyford Key',
+    body:`Hello,\n\nThank you for applying for 8 Lyford Key, A and for the time you invested in the process.\n\nAfter careful review of all applications, we have selected another applicant whose overall qualifications most closely met the requirements for this property. This decision is not a reflection of you personally.\n\nIf your screening report influenced this outcome, you are entitled to request a copy from TransUnion.\n\nWe wish you the very best in your housing search.\n\nSincerely,\nVA Property Manager\nIntegrity Rental Properties LLC`}
+};
+function vInbox(){
+  const m = MAILS.find(x=>x.id===S.mailSel) || MAILS[0];
+  if(m && m.unread){ m.unread=false; S.unread=MAILS.filter(x=>x.unread).length; setTimeout(renderTabs,0); }
+  return `
+  <div class="board-hd"><div><div class="eyebrow">Communication hub &middot; questionnaires, confirmations &amp; vendors</div><h1>Inbox · pm@integrityrental.example</h1></div>
+    <button class="b pri sm" style="margin-left:auto" onclick="openCompose()">&#9998; Compose</button></div>
+  <div class="mailbox">
+    <div class="mail-list">
+      <div class="mail-list-hd"><b>Inbox</b><span style="font-size:11.5px;color:var(--faint)">${MAILS.length} messages</span></div>
+      ${MAILS.length?MAILS.map(x=>`
+      <div class="mrow ${x.unread?'unread':''} ${m&&x.id===m.id?'on':''}" onclick="S.mailSel=${x.id}; renderStage()">
+        <div class="mfrom">${x.from}<span class="mt">${x.time}</span></div>
+        <div class="msub">${x.sub}</div>
+        <div class="mprev">${x.body.slice(0,52)}&hellip;</div>
+      </div>`).join(''):'<div style="padding:30px 16px;color:var(--faint);font-size:12.5px;text-align:center">No mail yet.</div>'}
+    </div>
+    <div class="mview">
+      ${m?`
+      <div class="mv-sub">${m.sub}</div>
+      <div class="mv-meta"><span class="mv-ava" style="background:${m.fromCol}">${m.ini}</span><div><b style="color:var(--ink)">${m.from}</b><br>to you &middot; ${m.time}</div></div>
+      <div class="mail-body">${m.body.replace(/(https:\/\/docs\.google\.com\S+)/g,'<a class="qlink" href="$1" target="_blank" rel="noopener">$1</a>')}</div>
+      ${m.attach&&m.attach.length?`<div class="mail-attach">${m.attach.map(a=>`<span class="ma">${a}</span>`).join('')}</div>`:''}
+      ${m.actions?`<div class="mv-actions">${m.actions}</div>`:''}
+      `:'<div style="padding:60px;text-align:center;color:var(--faint)">Select a message.</div>'}
+    </div>
+  </div>`;
+}
+
+/* ================= COMPOSE ================= */
+let composeKind=null;
+function openCompose(kind){
+  composeKind=kind||null;
+  const tpl = kind ? TEMPLATES[kind] : {to:'',sub:'',body:''};
+  $('composeBox').innerHTML=`
+    <div class="compose-hd"><span>New Message</span><button onclick="closeCompose()" style="color:#9fb4c9">&#10005;</button></div>
+    <div class="compose-bd">
+      <div class="c-line"><span class="lbl">To</span><input id="cmTo" value="${esc(tpl.to)}"></div>
+      <div class="c-line"><span class="lbl">Subject</span><input id="cmSub" value="${esc(tpl.sub)}"></div>
+      <textarea id="cmBody">${esc(tpl.body)}</textarea>
+    </div>
+    <div class="compose-ft">
+      <button class="b pri sm" onclick="sendCompose()">Send &#9993;</button>
+      <span style="font-size:11.5px;color:var(--faint)">Templates:</span>
+      ${['employer','landlord','vendor','denial'].map(k=>`<button class="tpl-chip" onclick="openCompose('${k}')">${k}</button>`).join('')}
+    </div>`;
+  $('composeVeil').classList.add('on');
+}
+function closeCompose(){ $('composeVeil').classList.remove('on'); }
+function sendCompose(){
+  const body=$('cmBody').value;
+  closeCompose();
+  if(composeKind==='employer' && S.mission===6){ S._sentEmp=true; toast('Employer Verification Questionnaire sent. &#10003;'); addScore(8); return checkM7(); }
+  if(composeKind==='landlord' && S.mission===6){ S._sentLl=true; toast('Landlord Interview Questionnaire sent. &#10003;'); addScore(8); return checkM7(); }
+  if(composeKind==='vendor' && S.mission===11 && S.woStep===2) return sentVendorWO();
+  if(composeKind==='denial' && S.mission===8) return sentDenial();
+  toast('Email sent.');
+}
+
+/* ---- M4: tour slot ---- */
+function pickTourSlot(){
+  $('qBox').innerHTML=`
+    <div class="q-ey">Mission 3 &middot; Schedule the tour</div>
+    <h3>Pick a tour slot for Tanya</h3>
+    <p class="lead">She said afternoons work best after 4 PM (she manages a bank branch until 3:30).</p>
+    <div class="q-opts">
+      <button class="q-opt" onclick="tourSlot(this,false)">Tomorrow &middot; 10:00 AM</button>
+      <button class="q-opt" onclick="tourSlot(this,true)">Tomorrow &middot; 4:30 PM</button>
+      <button class="q-opt" onclick="tourSlot(this,false)">Friday &middot; 9:00 AM</button>
+    </div>
+    <div class="q-fb" id="qFb"></div>
+    <div class="q-foot hidden" id="qFoot"><button class="b pri" id="qNext">Confirm &amp; send &#9993;</button></div>`;
+  $('qVeil').classList.add('on');
+}
+function tourSlot(btn,ok){
+  document.querySelectorAll('.q-opt').forEach(b=>b.disabled=true);
+  const fb=$('qFb');
+  if(ok){ btn.classList.add('correct'); fb.className='q-fb ok'; fb.innerHTML='&#10003; 4:30 PM works with her schedule — you listened on the call. Confirmation email goes out in writing, instantly.'; addScore(10); }
+  else { btn.classList.add('wrong'); fb.className='q-fb no'; fb.innerHTML='She told you on the call she works at a bank until 3:30. Morning slots force a reschedule — pick around YOUR lead&rsquo;s life, not your calendar. (Auto-corrected to 4:30 PM.)'; addScore(4); }
+  $('qFoot').classList.remove('hidden');
+  $('qNext').onclick=()=>{
+    $('qVeil').classList.remove('on');
+    const c=card('tanya');
+    c.chips=[{t:'Tour: Tue 4:30 PM',c:'doc'}];
+    c.log.unshift({t:'Tour scheduled — tomorrow 4:30 PM',d:'Today 12:02 PM',b:'Written confirmation sent.'});
+    pushMail({from:'You &rarr; Tanya Boston', ini:'VA', fromCol:'#0a2647', time:'12:02 PM',
+      sub:'Confirmed: tour of 8 Lyford Key — tomorrow 4:30 PM',
+      body:'Hi Tanya,\n\nYou&rsquo;re confirmed for a tour of 8 Lyford Key, A tomorrow at 4:30 PM. I&rsquo;ll meet you at the front entrance.\n\nAddress: 8 Lyford Key, A — Hampton, VA 23666\nDuration: about 20 minutes\n\nSee you there!\nVA Property Manager — Integrity Rental Properties'});
+    completeMissionAndAdvance('Tour locked and confirmed in writing. Fast-forward: the tour happened and she loved it. Now move her card to <b>Waiting response</b> and send the real TurboTenant application.');
+    card('tanya').log.unshift({t:'Tour completed — very interested',d:'Next day 4:55 PM',b:'She liked the kitchen and the parking. Wants to apply.'});
+    renderStage();
+  };
+}
+
+/* ---- M5: TurboTenant application ---- */
+function afterWaitMove(){
+  quiz('Mission 4 &middot; The real application','Why does IRP require the paid TurboTenant application?',
+    'The $45 application (paid by the renter) pulls a full TransUnion screening. Why is this step non-negotiable?',
+    ['It filters out anyone who can&rsquo;t afford $45',
+     'Because self-reported data is a story — the application returns VERIFIED credit, income, evictions, and background',
+     'It&rsquo;s mostly a formality the owner likes to see',
+     'It replaces the phone screen so you can skip calls in the future'],
+    1,
+    'Exactly. Everything until now was self-reported. The report is where claims meet reality — and where lies surface. It also protects you legally: the same objective screen for every applicant.',
+    'The fee matters less than what it buys: VERIFIED data. Credit, income, evictions, background — the same objective screen for every applicant, which also protects IRP on fair-housing grounds.',
+    ()=>{
+      const c=card('tanya');
+      c.chips=[{t:'Application sent',c:'doc'},{t:'$45 renter-paid',c:'warn'}];
+      c.log.unshift({t:'TurboTenant application sent (all 4 adult occupants)',d:'Day 3',b:''});
+      pushMail({from:'TurboTenant', ini:'TT', fromCol:'#0E6FB0', time:'Day 3',
+        sub:'Application invite sent — 8 Lyford Key, A',
+        body:'Your applicant received an invitation to apply.\n\nProperty: 8 Lyford Key, A\nScreening: Full TransUnion report (credit, eviction, criminal, income insights)\nFee: $45 — paid by the renter\n\nYou will be notified when reports are ready.'});
+      toast('Application sent. Reports take a day or two&hellip;');
+      setTimeout(()=>{
+        pushMail({from:'TurboTenant', ini:'TT', fromCol:'#0E6FB0', time:'Day 5',
+          sub:'&#128202; 3 screening reports ready — 8 Lyford Key, A',
+          body:'Reports are ready for:\n\n• Tanya Boston (+ household)\n• LaTasha Joyner\n• Khalil Green\n\nOpen the Screening workspace to review verified results side by side with each applicant&rsquo;s claims.',
+          actions:`<button class="b pri sm" onclick="switchTab('screening')">Open Screening &#8594;</button>`});
+        completeMissionAndAdvance('Reports are in — and there are now THREE applicants for this unit. Open the <b>Screening</b> tab and compare claims vs verified data.');
+        card('tanya').chips=[{t:'Report ready',c:'ok'}];
+        card('tanya').docs.push({ic:'&#128202;',nm:'TransUnion report (household)',ds:'credit 692 · income $5,910'});
+        card('latasha').docs.push({ic:'&#128202;',nm:'TransUnion report',ds:'credit 718 · income $4,650'});
+        card('khalil').docs.push({ic:'&#128202;',nm:'TransUnion report',ds:'credit 664 · eviction (dismissed)'});
+        renderStage();
+      }, 2600);
+    }, 12);
+}
+
+/* ---- M7 helpers ---- */
+function checkM7(){
+  if(S._sentEmp && S._sentLl){
+    toast('Both questionnaires out. Responses land in your inbox&hellip;');
+    setTimeout(()=>{
+      pushMail({from:'BayPort Credit Union — HR', ini:'BC', fromCol:'#2F80D9', time:'Day 6',
+        sub:'RE: Employment Verification — completed',
+        body:'We completed your Employer Verification Questionnaire for the applicant.\n\n• Position: Branch Manager — confirmed\n• Tenure: 6 years 2 months\n• Base income: $5,910/month — confirmed\n• Overtime: variable, not guaranteed\n• Employment outlook: stable\n\nSubmitted via your Google Form.'});
+      pushMail({from:'Prior Landlord (Tanya)', ini:'PL', fromCol:'#7A5AE0', time:'Day 6',
+        sub:'RE: Landlord Interview Questionnaire — completed',
+        body:'I filled out your questionnaire.\n\n• Tenant for 4 years\n• Late payments: 1 (holiday season, paid within grace period)\n• Property condition: excellent, very clean\n• Complaints: none\n• Would I rent to her again: YES — I&rsquo;m only ending the lease because I&rsquo;m selling the house.\n\nGood tenant. You&rsquo;d be lucky to have her.'});
+      card('tanya').docs.push({ic:'&#128196;',nm:'Employer verification',ds:'confirmed $5,910 base'},{ic:'&#128196;',nm:'Landlord reference',ds:'"would rent again: YES"'});
+      card('tanya').log.unshift({t:'Employer + landlord verifications received',d:'Day 6',b:'Both strong. File is complete.'});
+      completeMissionAndAdvance('Verifications came back strong for Tanya. Everything now lives on her card — one file, one place. Time to decide: open the <b>Compare</b> tab.');
+      renderStage();
+    }, 2400);
+  } else {
+    toast('One down — now send the other questionnaire (use the templates).');
+  }
+}
+
+/* ---- M9: closing moves ---- */
+function moveM9(c,to){
+  if(!S.winner){ toast('First pick your recommendation in the Compare tab.'); return; }
+  const isWinner = c.id===S.winner;
+  if(isWinner && to!=='lease'){ toast('Owner approved '+c.nm+' — the winner goes to Make a Lease.'); return; }
+  if(!isWinner && to!=='nogo'){ toast(c.nm+' was not selected — they go to No go, with a professional denial email.'); return; }
+  c.stage=to;
+  if(isWinner){
+    c.chips=[{t:'Lease drafting',c:'ok'}];
+    c.log.unshift({t:'Moved to Make a Lease — Owner approved',d:'Day 7',b:'Deposit to Hold requested. Lease + VRLTA docs being prepared in TurboTenant.'});
+    toast('&#127881; '+c.nm+' is your new tenant-to-be. Lease package started.');
+    addScore(8);
+  } else {
+    c.chips=[{t:'Denied — emailed',c:'bad'}];
+    c.log.unshift({t:'Moved to No go — denial email sent',d:'Day 7',b:'Professional adverse-action style email, same day.'});
+    pushMail({from:'You &rarr; '+c.nm, ini:'VA', fromCol:'#0a2647', time:'Day 7',
+      sub:'Update on your application — 8 Lyford Key', body:TEMPLATES.denial.body});
+    addScore(6);
+  }
+  renderStage();
+  const placed = CARDS.filter(x=>['lease','nogo'].includes(x.stage)).length;
+  if(placed===3){
+    completeMissionAndAdvance('Pipeline closed like a pro: one lease, two respectful denials, full paper trail. Two weeks later&hellip; your phone buzzes. The <b>Maintenance</b> tab just unlocked.');
+    setTimeout(seedMaintenance, 1200);
+  }
+}
+function sentDenial(){ toast('Denial email sent — professional and same-day. &#10003;'); }
+
+/* ================= SCREENING VIEW ================= */
+let scrSel='tanya';
+function vScreening(){
+  const r=REPORTS[scrSel];
+  return `
+  <div class="tt-hd">
+    <span class="tt-logo"><i>turbo</i>tenant</span>
+    <span class="tt-note">Screening reports &middot; TransUnion &middot; $45 paid by each renter</span>
+  </div>
+  <div class="app-tabs">
+    ${Object.entries(REPORTS).map(([k,x])=>`
+    <button class="app-tab ${scrSel===k?'on':''}" onclick="scrSel='${k}'; renderStage()">
+      <span class="mv-ava" style="width:24px;height:24px;font-size:10px;background:${x.col}">${x.ini}</span>${x.nm}
+      <span class="st" style="background:${x.score>=700?'var(--green-bg)':'var(--yellow-bg)'};color:${x.score>=700?'var(--green)':'var(--yellow)'}">${x.score}</span>
+    </button>`).join('')}
+  </div>
+  <div class="report">
+    <div class="rp-top">
+      <span class="rava" style="background:${r.col}">${r.ini}</span>
+      <div><div class="rnm">${r.nm}</div><div class="rsub">8 Lyford Key, A &middot; Report received ${r.paid} &middot; &#128737; Identity Verified</div></div>
+      <div class="paid-tag"><div class="p1">PAID BY RENTER</div><div class="p2">Full TransUnion screen</div></div>
+    </div>
+    <div style="display:flex;gap:26px;align-items:center;flex-wrap:wrap">
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--muted)">VERIFIED CREDIT SCORE</div>
+        <div style="font-size:34px;font-weight:800;color:var(--ink)">${r.score}</div>
+      </div>
+      <div style="flex:1;min-width:240px">
+        <div class="gaugebar"><i style="left:${(r.score-300)/550*100}%"></i></div>
+        <div class="gauge-scale"><span>300</span><span>620 — IRP minimum</span><span>850</span></div>
+      </div>
+    </div>
+    <table class="vs-table">
+      <thead><tr><th style="width:190px">Item</th><th>What they told you</th><th>What TransUnion / documents verified</th><th style="width:120px"></th></tr></thead>
+      <tbody>
+        ${r.rows.map(row=>`
+        <tr><td style="font-weight:600;color:var(--ink)">${row[0]}</td><td class="self">${row[1]}</td><td class="real">${row[2]}</td>
+        <td><span class="vs-flag ${row[3]}">${row[3]==='ok'?'MATCHES':row[3]==='warn'?'DISCREPANCY':'FLAG'}</span><div style="font-size:11px;color:var(--muted);margin-top:2px">${row[4]}</div></td></tr>`).join('')}
+      </tbody>
+    </table>
+    ${scrSel==='tanya'&&S.mission===5?`<div style="margin-top:14px;text-align:right"><button class="b pri" onclick="doneScreening()">I&rsquo;ve reviewed all three &#8594;</button></div>`:''}
+  </div>`;
+}
+function doneScreening(){
+  quiz('Mission 5 &middot; Reading the report','What did the verified data just teach you?',
+    'Tanya claimed 729 credit and $6,878/month. TransUnion says 692 and $5,910 verified base.',
+    ['She lied badly — automatic No go',
+     'The claims were inflated but the VERIFIED numbers still clear IRP&rsquo;s bar (620+ credit, 3&times; rent) — she stays in the running',
+     'Ignore the report; the landlord reference matters more than numbers',
+     'Ask her to explain the 37-point difference before doing anything else'],
+    1,
+    'Right. People round up — that&rsquo;s exactly why you verify. What matters is that the TRUE numbers clear the bar: 692 &ge; 620, and $5,910 = 4.6&times; rent. The report turned her story into facts you can defend.',
+    'The point of screening isn&rsquo;t to punish optimism — it&rsquo;s to decide on FACTS. Her verified numbers (692, $5,910 = 4.6&times; rent) still clear IRP&rsquo;s bar. She stays in; the inflation goes in your notes.',
+    ()=>{ completeMissionAndAdvance('Now verify the humans behind the numbers: from the <b>Inbox</b>, send the <b>employer</b> and <b>landlord</b> questionnaires (both templates are loaded).'); switchTab('inbox'); },
+    12);
+}
+
+/* ================= COMPARE VIEW ================= */
+function vCompare(){
+  const locked=!S.compareDone && S.mission<8;
+  const rows=[
+    ['Verified monthly income','$5,910','$4,650','$3,780',['good','good','bad']],
+    ['Income &divide; rent ($1,275)','4.6&times;','3.6&times;','2.96&times; (below 3&times;)',['good','good','bad']],
+    ['Verified credit score','692','718','664',['good','good','warn']],
+    ['Evictions','0','0','1 filed (dismissed 2021)',['good','good','warn']],
+    ['Criminal history','Clean','Clean','Clean',['good','good','good']],
+    ['Employer verification','Confirmed — 6 yrs, stable','Confirmed — 3 yrs','Pending',['good','good','warn']],
+    ['Landlord reference','"Would rent again: YES"','"Paid on time, no issues"','Did not respond',['good','good','warn']],
+    ['Occupants','4 adults (all screened)','2 (self + daughter)','1',['warn','good','good']],
+    ['Animals','ESA dog (letter on file)','None','1 cat (pet fee applies)',['warn','good','good']],
+    ['Move-in fit','Aug 1 — perfect','Aug 15 — acceptable','Aug 1 — perfect',['good','warn','good']]
+  ];
+  return `
+  <div class="board-hd"><div><div class="eyebrow">Decision sheet &middot; recommendation for Esteban</div><h1>Applicant Comparison · 8 Lyford Key, A</h1></div></div>
+  <div class="banner-tip">&#128202; <div><b>The decision sheet.</b> This is the exact table you&rsquo;d build in Excel or Sheets for Esteban: every applicant, every verified fact, one screen. Green = clears the bar &middot; yellow = judgment call &middot; red = fails a hard rule.</div></div>
+  <div class="sheet-wrap">
+    <div class="sheet-bar"><span class="cell-ref">A1</span> applicant-comparison-8-lyford.xlsx <span style="margin-left:auto;opacity:.8">Autosaved &#10003;</span></div>
+    <div style="overflow-x:auto"><table class="sheet">
+      <thead><tr><th class="colh"></th><th style="width:220px">A — Criteria</th><th>B — Tanya Boston</th><th>C — LaTasha Joyner</th><th>D — Khalil Green</th></tr></thead>
+      <tbody>
+        ${rows.map((r,i)=>`<tr><th class="colh">${i+1}</th><td class="rowh">${r[0]}</td>
+          <td class="${r[4][0]}">${r[1]}</td><td class="${r[4][1]}">${r[2]}</td><td class="${r[4][2]}">${r[3]}</td></tr>`).join('')}
+        <tr class="score-row"><th class="colh">11</th><td class="rowh">SCORE (green=2 &middot; yellow=1 &middot; red=0)</td><td>17 / 20</td><td>19 / 20</td><td>11 / 20</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  ${locked?'':S.winner?`<div class="banner-tip" style="border-left-color:var(--green)">&#9989; <div><b>Recommendation sent to Esteban &rarr; approved by the Owner (Level 3 authority).</b> Back to the <b>Pipeline</b>: drag your winner to Make a Lease and the others to No go.</div></div>`:`
+  <div class="pickwin">
+    <button class="pw" onclick="pickWinner('tanya')">Recommend Tanya Boston<span class="s">17/20 — strong income, flagged inflation</span></button>
+    <button class="pw" onclick="pickWinner('latasha')">Recommend LaTasha Joyner<span class="s">19/20 — cleanest file across the board</span></button>
+    <button class="pw" onclick="pickWinner('khalil')">Recommend Khalil Green<span class="s">11/20 — fails the 3&times; income rule</span></button>
+  </div>`}`;
+}
+function pickWinner(id){
+  if(id==='khalil'){
+    quiz('Hold on','Khalil fails a hard rule',
+      'His verified income is $3,780 — below the 3&times; rent bar of $3,825. Hard rules exist precisely so decisions aren&rsquo;t personal. What do you do?',
+      ['Recommend him anyway — $45 short is basically nothing','Apply the rule consistently and pick between the two qualified applicants','Lower the rent so he qualifies'],
+      1,
+      'Correct. Applying written criteria the same way to every applicant is what keeps IRP consistent — and defensible under fair housing law. Exceptions belong to the Owner alone, and none was authorized.',
+      'Tempting — but written criteria applied unevenly is exactly how fair-housing complaints start. The rule is the rule for everyone; only the Owner can authorize an exception, and none was.',
+      ()=>{}, 8);
+    return;
+  }
+  quiz('Mission 7 &middot; Final check','Who gives FINAL approval on a tenant application?',
+    'You are Level 1 (VA Property Manager). You recommend '+card(id).nm+'. Per the IRP authority levels, who signs off?',
+    ['You — that&rsquo;s what the comparison sheet is for','Esteban (Lead PM) — he approves and it&rsquo;s done','William McClung (Owner) — Level 3: final approval on ALL tenant applications'],
+    2,
+    'Exactly. You prepare the package, Esteban reviews it, but final approval on every application is Level 3 — the Owner. You recommend; you never approve.',
+    'Close — Esteban reviews your package, but the IRP authority table is explicit: final approval on ALL tenant applications sits with the Owner (Level 3). You recommend; you never approve.',
+    ()=>{
+      S.winner=id; S.compareDone=true;
+      const w=card(id);
+      w.log.unshift({t:'Recommended to Esteban &rarr; Owner approved',d:'Day 7',b:'Approval package: comparison sheet + reports + references.'});
+      completeMissionAndAdvance('Owner approved <b>'+w.nm+'</b>. Close the pipeline on the board: winner &rarr; Make a Lease, the rest &rarr; No go.');
+      renderStage();
+    }, 12);
+}
+
+/* ================= MAINTENANCE ================= */
+function seedMaintenance(){
+  pushMail({from:'TurboTenant — Maintenance', ini:'TT', fromCol:'#0E6FB0', time:'Day 21 · 7:58 AM',
+    sub:'&#128680; New maintenance request — 8 Lyford Key, A',
+    body:'Tenant: LaTasha Joyner\nProperty: 8 Lyford Key, A\nSubmitted: 7:58 AM (during your morning check-in window)\n\n"Water is leaking from the bottom of the water heater in the utility closet. There is a puddle spreading on the floor. It was fine last night."\n\nOpen the Maintenance workspace to triage.',
+    actions:`<button class="b pri sm" onclick="switchTab('maint')">Triage now &#8594;</button>`});
+}
+function vMaint(){
+  const steps=['Triage urgency','Request photos','Dispatch vendor','Handle estimate','Close out'];
+  const done=S.woStep;
+  return `
+  <div class="board-hd"><div><div class="eyebrow">Pillar 2 &middot; Maintenance &amp; Repairs</div><h1>Work Order · Water heater leak</h1></div>
+    <span style="margin-left:auto;font-size:12px;color:var(--faint)">${steps.map((s,i)=>`<span style="${i<done?'color:var(--green);font-weight:700':i===done?'color:var(--ink);font-weight:700':''}">${i<done?'&#10003; ':''}${s}</span>`).join(' &middot; ')}</span></div>
+  <div class="wo-card">
+    <h3>&#128167; "Water is leaking from the bottom of the water heater"</h3>
+    <p style="font-size:13px;color:var(--muted);margin-top:4px">LaTasha Joyner &middot; 8 Lyford Key, A &middot; reported 7:58 AM &middot; puddle spreading, was fine last night</p>
+    ${done===0?`
+    <p style="margin-top:14px;font-size:13.5px"><b>Step 1 — Triage with the IRP 4-tier urgency system.</b> Which tier is this?</p>
+    <div class="tier-grid">
+      <button class="tier" onclick="triage(this,'Emergency',false)"><b>&#128308; Emergency</b><span>Immediate danger to life or property — fire, flood, gas, no heat in winter</span></button>
+      <button class="tier" onclick="triage(this,'Urgent',true)"><b>&#128992; Urgent</b><span>Major function loss or active damage risk — respond same day, dispatch within 24h</span></button>
+      <button class="tier" onclick="triage(this,'Standard',false)"><b>&#128993; Standard</b><span>Needs fixing, nothing actively worsening — 2&ndash;5 business days</span></button>
+      <button class="tier" onclick="triage(this,'Low',false)"><b>&#9898; Low</b><span>Cosmetic or convenience — schedule when efficient</span></button>
+    </div>
+    <div class="q-fb" id="tierFb"></div>`:''}
+    ${done===1?`
+    <p style="margin-top:14px;font-size:13.5px"><b>Step 2 — Before dispatching anyone:</b> what do you ask the tenant for?</p>
+    <div class="q-opts" style="margin-top:10px">
+      <button class="q-opt" onclick="photoStep(this,true)">Photos/video of the leak + ask her to close the supply valve — assess before dispatching</button>
+      <button class="q-opt" onclick="photoStep(this,false)">Nothing — send the plumber immediately, time is money</button>
+      <button class="q-opt" onclick="photoStep(this,false)">Ask her to try repairing the valve herself to save a visit</button>
+    </div>
+    <div class="q-fb" id="photoFb"></div>`:''}
+    ${done===2?`
+    <p style="margin-top:14px;font-size:13.5px"><b>Step 3 — Photos are in</b> (leak from the tank base — likely failed drain valve or tank corrosion). Pick the vendor and email the work order.</p>
+    <div class="vendor-grid">
+      ${VENDORS.map(v=>`<button class="vendor" onclick="pickVendor('${v.id}')"><span class="vic">${v.ic}</span><b>${v.nm}</b><span>${v.desc}</span></button>`).join('')}
+    </div>
+    <div class="q-fb" id="vendFb"></div>`:''}
+    ${done===3?`
+    <p style="margin-top:14px;font-size:13.5px"><b>Step 4 — Ricky&rsquo;s estimate is in your inbox: $685</b> (new water heater install). Apply the IRP spending authority rules.</p>
+    <div class="q-opts" style="margin-top:10px">
+      <button class="q-opt" onclick="estimate(this,false)">Approve it yourself — it&rsquo;s clearly necessary, the tenant is waiting</button>
+      <button class="q-opt" onclick="estimate(this,false)">Escalate to Esteban — he approves repairs</button>
+      <button class="q-opt" onclick="estimate(this,true)">Escalate to the OWNER — $685 &ge; $500, and $500+ is Level 3 authority only</button>
+    </div>
+    <div class="q-fb" id="estFb"></div>`:''}
+    ${done===4?`
+    <p style="margin-top:14px;font-size:13.5px"><b>Step 5 — Owner approved. Repair completed same day.</b> Close it out the IRP way:</p>
+    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+      <button class="b pri" onclick="closeWO()">Notify tenant + close work order + send 1&ndash;5 satisfaction survey</button>
+    </div>`:''}
+  </div>
+  ${done>=3?`<div class="banner-tip">&#128176; <b>Spending authority, always:</b>&nbsp; under $500 &rarr; Esteban (Level 2) &middot; $500 or more &rarr; Owner only (Level 3). Never commit IRP money outside your level.</div>`:''}`;
+}
+function triage(btn,tier,ok){
+  document.querySelectorAll('.tier').forEach(b=>b.disabled=true);
+  const fb=$('tierFb');
+  if(ok){ btn.style.borderColor='var(--green)'; fb.className='q-fb ok'; fb.innerHTML='&#10003; <b>Urgent</b> is right: active water + spreading damage, but no immediate danger to life. Same-day response, vendor within 24h. (A burst pipe flooding the home would be Emergency.)'; addScore(12); }
+  else { btn.style.borderColor='var(--red)'; fb.className='q-fb no'; fb.innerHTML='Not quite — this is <b>Urgent</b>: active leak + spreading damage means same-day action, but nobody is in danger, so it&rsquo;s not Emergency. Corrected.'; addScore(4); }
+  setTimeout(()=>{ S.woStep=1; setMission(10,'Tier set. Now get eyes on it BEFORE spending money — and never ask a tenant to do repairs.'); renderStage(); }, 2600);
+}
+function photoStep(btn,ok){
+  document.querySelectorAll('.q-opt').forEach(b=>b.disabled=true);
+  const fb=$('photoFb');
+  if(ok){ btn.classList.add('correct'); fb.className='q-fb ok'; fb.innerHTML='&#10003; Photos + shutting the supply valve: you stop the damage AND give the vendor what he needs to arrive prepared. That&rsquo;s how one visit stays one visit.'; addScore(10); }
+  else { btn.classList.add('wrong'); fb.className='q-fb no'; fb.innerHTML='Never dispatch blind, and never ask tenants to repair anything (liability). IRP way: photos/video first + have her close the supply valve. Corrected.'; addScore(4); }
+  setTimeout(()=>{
+    pushMail({from:'LaTasha Joyner', ini:'LJ', fromCol:'#4A90C9', time:'Day 21 · 8:20 AM',
+      sub:'RE: photos of the leak', body:'Valve is closed, leak slowed a lot. Photos attached — it&rsquo;s coming from the bottom of the tank.',
+      attach:['&#128247; leak-1.jpg','&#128247; leak-2.jpg','&#127909; leak-video.mp4']});
+    S.woStep=2; renderStage();
+  }, 2600);
+}
+function pickVendor(id){
+  const fb=$('vendFb');
+  if(id!=='plumber'){ fb.className='q-fb no'; fb.innerHTML='A water heater leak is plumbing. '+VENDORS.find(v=>v.id===id).nm.split(' — ')[0]+' would just refer you back to Ricky and bill for the visit. Pick again.'; addScore(2); return; }
+  addScore(10); S.woVendor='plumber';
+  toast('Right call. Now email Ricky the work order — the template is loaded.');
+  openCompose('vendor');
+}
+function sentVendorWO(){
+  addScore(8);
+  toast('Work order sent to Ricky. &#10003;');
+  setTimeout(()=>{
+    pushMail({from:'Ricky — Plumber', ini:'RP', fromCol:'#D97A2A', time:'Day 21 · 11:40 AM',
+      sub:'RE: Work Order — diagnosis & estimate',
+      body:'Went by this morning. Tank is 11 years old and corroded at the base — not worth repairing.\n\nESTIMATE:\n• New 40-gal water heater (supply + install + haul away): $685\n• Can install tomorrow morning if approved today.\n\nWaiting on your go-ahead.\n— Ricky',
+      actions:`<button class="b pri sm" onclick="switchTab('maint')">Handle the estimate &#8594;</button>`});
+    S.woStep=3; setMission(11,'The estimate is $685. Think hard about WHO can approve that number.');
+    renderStage();
+  }, 1800);
+}
+function estimate(btn,ok){
+  document.querySelectorAll('.q-opt').forEach(b=>b.disabled=true);
+  const fb=$('estFb');
+  if(ok){ btn.classList.add('correct'); fb.className='q-fb ok'; fb.innerHTML='&#10003; Exactly. $685 &ge; $500 &rarr; Owner-only (Level 3). You escalate with the diagnosis, photos, and estimate attached so he can decide in one read.'; addScore(14); }
+  else { btn.classList.add('wrong'); fb.className='q-fb no'; fb.innerHTML='The IRP rule is bright-line: under $500 &rarr; Esteban. <b>$500 or more &rarr; ONLY the Owner.</b> $685 goes to William McClung with diagnosis + photos + estimate. Corrected.'; addScore(4); }
+  setTimeout(()=>{
+    pushMail({from:'William McClung — Owner', ini:'WM', fromCol:'#1E9E63', time:'Day 21 · 1:05 PM',
+      sub:'RE: $685 water heater — APPROVED',
+      body:'Approved. Good documentation — the photos made this an easy call.\n\nTell Ricky to proceed tomorrow morning. Make sure LaTasha gets the appointment window today.\n\n— W.M.'});
+    S.woStep=4; renderStage();
+  }, 2800);
+}
+function closeWO(){
+  addScore(10);
+  pushMail({from:'You &rarr; LaTasha Joyner', ini:'VA', fromCol:'#0a2647', time:'Day 22 · 4:10 PM',
+    sub:'Your water heater is replaced &#10003; — quick 1-5 rating?',
+    body:'Hi LaTasha,\n\nRicky finished installing your new water heater this morning — you should have full hot water now.\n\nWhen you have 10 seconds, how did we do on this repair? Reply with a rating 1-5.\n\nThank you for reporting it early and closing the valve — that saved the floor!\n\nVA Property Manager — Integrity Rental Properties'});
+  setTimeout(()=>{
+    pushMail({from:'LaTasha Joyner', ini:'LJ', fromCol:'#4A90C9', time:'Day 22 · 5:02 PM',
+      sub:'RE: rating', body:'5/5!! Ricky was fast and super clean about it. Thank you for handling this so quickly!! &#11088;&#11088;&#11088;&#11088;&#11088;'});
+    finish();
+  }, 1600);
+}
+
+/* ================= FINISH ================= */
+function finish(){
+  S.mission=MISSIONS.length+1; renderMissions(); $('pmProg').style.width='100%';
+  $('stage').innerHTML=`
+  <div class="done-hero">
+    <div class="big">&#127942;</div>
+    <h2>You just ran the full Property Manager cycle</h2>
+    <p>One lead became a screened, verified, approved tenant — and when something broke, you triaged it, dispatched the right vendor, respected the spending authority, and closed the loop with the tenant.</p>
+    <div class="done-stats">
+      <div class="ds"><b>${S.score}</b><span>PM Score</span></div>
+      <div class="ds"><b>12/12</b><span>Missions completed</span></div>
+      <div class="ds"><b>5&#9733;</b><span>Tenant satisfaction</span></div>
+    </div>
+    <div class="pillar-recap">
+      <div class="pr"><b>Pillar 1 &middot; Onboarding &amp; Leasing:</b>&nbsp; lead &rarr; screen call &rarr; questionnaire &rarr; tour &rarr; paid application &rarr; verification &rarr; comparison &rarr; lease</div>
+      <div class="pr"><b>Pillar 2 &middot; Maintenance &amp; Repairs:</b>&nbsp; triage tiers &rarr; photos first &rarr; right vendor &rarr; $500 authority rule &rarr; close &amp; survey</div>
+      <div class="pr"><b>Pillar 3 &middot; The habits:</b>&nbsp; document everything on the card &middot; verify, never trust &middot; warm but firm &middot; escalate strategically</div>
+    </div>
+    <div style="margin-top:22px;display:flex;gap:12px;justify-content:center">
+      <button class="b cy" onclick="location.reload()">&#8635; Run the case again</button>
+      <a class="b ghost" style="background:#fff" href="index.html#roles">Back to Roles</a>
+    </div>
+  </div>`;
+  toast('&#127881; Simulation complete — PM Score '+S.score);
+}
+
+/* ================= BOOT ================= */
+function showGuide(){ $('briefing').classList.add('on'); }
+function hideGuide(){
+  $('briefing').classList.remove('on');
+  if(!S._welcomed){ S._welcomed=true; setTimeout(()=>toast('&#128075; New lead just landed from Zillow. Check the board.'), 600); }
+}
+renderTabs(); renderMissions(); renderStage();
+showGuide();
+</script>
+</body>
+</html>

@@ -1353,6 +1353,7 @@
     .td-tile.af .td-tile-logo { background: #0f2a4a; padding: 0; overflow: hidden; } .td-tile.af:hover { border-color: #168a53; }
     .td-tile.ku .td-tile-logo, .td-tile.ds .td-tile-logo { background: #ffffff; padding: 0; overflow: hidden; }
     .td-tile.ku .td-tile-logo img, .td-tile.ds .td-tile-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .td-tile.tt .td-tile-logo { background: #ffffff; } .td-tile.tt:hover { border-color: #0E6FB0; }
     .td-tile.af .td-tile-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
     .td-tile-copy b { display: block; font-size: 15.5px; color: var(--v-navy); margin-bottom: 2px; }
     .td-tile-copy span { display: block; font-size: 13px; color: var(--v-muted); line-height: 1.5; }
@@ -1616,6 +1617,7 @@
           <div class="td-mini-row"><span class="td-mini ku"><img src="Quialia/Images-resourses/brand/qualia-icon.svg" alt="Qualia"></span><span>Qualia</span></div>
           <div class="td-mini-row"><span class="td-mini ds"><img src="Docusign/Images-resources/docusign-icon.svg" alt="DocuSign"></span><span>DocuSign</span></div>
           <div class="td-mini-row"><span class="td-mini af"><img src="AppFolio/Images-resources/appfolio-icon.svg" alt="AppFolio"></span><span>AppFolio</span></div>
+          <div class="td-mini-row"><span class="td-mini tt" style="background:#fff;padding:3px;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="assets/img/logo-turbotenant.svg" alt="TurboTenant" style="width:100%;height:100%;object-fit:contain;"></span><span>TurboTenant</span></div>
         </div>
       </div>
     </div>
@@ -1669,7 +1671,7 @@
           <label for="roleSelect">Choose your role</label>
           <select id="roleSelect" class="role-select">
             <option value="0">Transaction Coordinator</option>
-            <option value="1">Leasing Coordinator</option>
+            <option value="1">Property Manager</option>
             <option value="3">Lead Manager</option>
             <option value="2">Listing Coordinator</option>
             <option value="4">Operations Manager</option>
@@ -1690,12 +1692,12 @@
           </div>
         </div>
         <div class="role-panel side-r" data-index="1">
-          <div class="rp-media"><img src="assets/img/role-leasing.png?v=2" alt="Leasing Coordinator"></div>
+          <div class="rp-media"><img src="assets/img/role-leasing.png?v=2" alt="Property Manager"></div>
           <div class="rp-text">
-            <span class="tag">Prompt Practice &middot; Quiz</span>
-            <h3>Leasing Coordinator</h3>
-            <p>Practice application to move in workflows, writing inquiry replies, processing conditional approvals,
-              denials, and lease renewals.</p>
+            <span class="tag">Case Simulator &middot; Prompt Practice &middot; Quiz</span>
+            <h3>Property Manager</h3>
+            <p>Run the full tenant lifecycle: screen leads on the pipeline board, verify applicants with TurboTenant,
+              compare and close the lease, then coordinate maintenance with vendors.</p>
             <a class="btn v-cyan" href="roles/leasing-coordinator.html">Start this role &rarr;</a>
           </div>
         </div>
@@ -1813,7 +1815,7 @@
         <div>
           <h4>Roles</h4>
           <a class="fl" href="roles/transaction-coordinator.html">Transaction Coordinator</a>
-          <a class="fl" href="roles/leasing-coordinator.html">Leasing Coordinator</a>
+          <a class="fl" href="roles/leasing-coordinator.html">Property Manager</a>
           <a class="fl" href="roles/operations-manager.html">Operations</a>
           <a class="fl" href="roles/cfo-bookkeeper.html">CFO / Bookkeeper</a>
         </div>
@@ -1862,6 +1864,11 @@
         <a class="td-tile af" href="AppFolio/testdrive-appfolio.html">
           <span class="td-tile-logo"><img src="AppFolio/Images-resources/appfolio-icon.svg" alt="AppFolio"></span>
           <span class="td-tile-copy"><b>AppFolio</b><span>Residential &amp; commercial operations: process applications, track unit occupancy, manage work orders, and reconcile ledgers.</span></span>
+          <span class="td-tile-go">Launch &rarr;</span>
+        </a>
+        <a class="td-tile tt" href="testdrive-turbotenant.html">
+          <span class="td-tile-logo" style="background:#fff;padding:4px;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="assets/img/logo-turbotenant.svg" alt="TurboTenant" style="width:100%;height:100%;object-fit:contain;"></span>
+          <span class="td-tile-copy"><b>TurboTenant</b><span>Landlord operations: rent charges and deposits, maintenance with an AI assistant, leads, applicant screening, and tenant messaging.</span></span>
           <span class="td-tile-go">Launch &rarr;</span>
         </a>
       </div>
