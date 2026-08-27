@@ -243,7 +243,7 @@ function qzShellCloseContact() {
 
 function qzShellContactRowsHTML(list) {
   if (!list.length) {
-    return `<tr><td colspan="7">
+    return `<tr><td colspan="8">
       <div class="qzs-empty">
         <b>No contacts match your search</b>
         <p>Try a different name, company or phone number.</p>
@@ -260,6 +260,9 @@ function qzShellContactRowsHTML(list) {
       <td class="qzs-dim">${esc(c.phone)}</td>
       <td>${c.orders.length ? `<span class="qzs-count">${c.orders.length}</span>` : '<span class="qzs-dim">—</span>'}</td>
       <td class="qzs-dim">${esc(qzShellRelDate(c.lastActivity))}</td>
+      <td onclick="event.stopPropagation()">${c.derived
+        ? `<span class="qzs-dim" title="This person is read from the order that names them${c.orders && c.orders.length ? ' (' + esc(c.orders[0]) + ')' : ''}. Remove them there, not here.">&mdash;</span>`
+        : `<button type="button" class="qz-btn sm danger" title="Delete contact" onclick="qzShellDeleteContact('${escAttr(c.id)}')">&times;</button>`}</td>
     </tr>`).join('');
 }
 
@@ -362,7 +365,7 @@ function qzShellContactsHTML() {
       <table class="qz-tbl">
         <thead><tr>
           <th>Name</th><th>Type</th><th>Company</th><th>Email</th><th>Phone</th><th>Orders</th><th>Last Activity</th>
-        </tr></thead>
+        <th>Actions</th></tr></thead>
         <tbody id="qzsContactRows">${qzShellContactRowsHTML(list)}</tbody>
       </table>
     </div>
@@ -1623,6 +1626,7 @@ function qzShellUserRowsHTML(list) {
         <div class="qz-row-actions">
           <button type="button" class="qz-btn sm" onclick="qzShellEditUserModal('${escAttr(u.email)}')">Edit</button>
           <button type="button" class="qz-btn sm" onclick="qzShellToggleUser('${escAttr(u.email)}')">${u.status === 'Disabled' ? 'Enable' : 'Disable'}</button>
+          <button type="button" class="qz-btn sm danger" title="Remove user" onclick="qzShellDeleteUser('${escAttr(u.email)}')">&times;</button>
         </div>
       </td>
     </tr>`).join('');
@@ -1682,12 +1686,13 @@ function qzShellAdminOfficesHTML() {
       <td class="qzs-dim">${esc(o.underwriters)}</td>
       <td class="num">${o.users}</td>
       <td><span class="qz-badge ${o.status === 'Active' ? 'complete' : 'pending'}">${esc(o.status)}</span></td>
+      <td><button type="button" class="qz-btn sm danger" title="Close office" onclick="qzShellDeleteOffice('${escAttr(o.name)}')">&times;</button></td>
     </tr>`).join('');
   return `
     <div class="qzs-tbl-actions"><button type="button" class="qz-btn sm primary" onclick="qzShellAddOfficeModal()">Add Office</button></div>
     <div class="qz-tbl-scroll">
       <table class="qz-tbl">
-        <thead><tr><th>Office</th><th>Address</th><th>Phone</th><th>States Licensed</th><th>Underwriters</th><th class="num">Users</th><th>Status</th></tr></thead>
+        <thead><tr><th>Office</th><th>Address</th><th>Phone</th><th>States Licensed</th><th>Underwriters</th><th class="num">Users</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>`;
@@ -1724,12 +1729,13 @@ function qzShellAdminFeesHTML() {
       <td class="num">${esc(f.amount)}</td>
       <td class="qzs-dim">${esc(f.applies)}</td>
       <td>${esc(fmtDate(f.from))}</td>
+      <td><button type="button" class="qz-btn sm danger" title="Retire fee" onclick="qzShellDeleteFee('${escAttr(f.name)}')">&times;</button></td>
     </tr>`).join('');
   return `
     <div class="qzs-tbl-actions"><button type="button" class="qz-btn sm primary" onclick="qzShellAddFeeModal()">Add Fee</button></div>
     <div class="qz-tbl-scroll">
       <table class="qz-tbl">
-        <thead><tr><th>Fee Name</th><th>Type</th><th>Basis</th><th class="num">Amount / Rate</th><th>Applies To</th><th>Effective Date</th></tr></thead>
+        <thead><tr><th>Fee Name</th><th>Type</th><th>Basis</th><th class="num">Amount / Rate</th><th>Applies To</th><th>Effective Date</th><th>Actions</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>`;
@@ -2414,3 +2420,96 @@ const QZ_SHELL_VIEWS = {
   compliance: qzShellComplianceHTML,
   admin: qzShellAdminHTML
 };
+
+
+/* ---------- deletion (D9) ----------
+   Five entities gained a delete here, taking the simulator from 13 of 24 with full CRUD to
+   18. Each one carries the guard the real product carries, because a delete that always
+   succeeds teaches the opposite of what an escrow desk needs to learn: an office with people
+   in it, a fee already priced into open files, and the account you are signed in with are all
+   things the system should refuse to remove, and say why. */
+
+function qzShellDeleteUser(email) {
+  const u = qzFind('users', email);
+  if (!u) return;
+  /* There is no Admin role in this tenant - the roles are Escrow Officer, Title Examiner,
+     Accounting, Closer, Processor, Virtual Assistant and Read Only - so a "last admin" guard
+     would protect a condition that cannot occur. The two that can: you cannot remove the
+     account you are signed in as, and removing someone still named on live files is allowed
+     but never silent. */
+  const su = window.SCApp && SCApp.currentUser && SCApp.currentUser();
+  if (su && su.email && String(su.email).toLowerCase() === String(email).toLowerCase()) {
+    simToast('That is the account you are signed in with. Sign in as someone else to remove it.');
+    return;
+  }
+  const enFiles = qzList('orders', o => o.orderOpener === u.name || o.paralegal === u.name || o.attorney === u.name);
+  const abiertos = enFiles.filter(o => (o.stageIndex || 0) < 5).length;
+  qzConfirm({
+    title: 'Remove ' + u.name + '?',
+    body: 'Their access ends immediately. Work already recorded under their name stays on the files, which is what an audit trail is for.'
+      + (abiertos ? ' They are still named on ' + abiertos + ' file(s) that have not closed - those files keep their name, but nobody is holding the work.' : ''),
+    danger: true,
+    confirmLabel: 'Remove user',
+    onConfirm: () => {
+      qzRemove('users', email);
+      simToast(u.name + ' removed.', { tone: 'good' });
+      qzRenderRoot();
+    }
+  });
+}
+
+function qzShellDeleteOffice(name) {
+  const o = qzFind('offices', name);
+  if (!o) return;
+  if (o.users > 0) {
+    simToast(o.users + ' user(s) are still assigned to ' + name + '. Move them first.');
+    return;
+  }
+  qzConfirm({
+    title: 'Close ' + name + '?',
+    body: 'Closed offices stop appearing when a new order is opened. Existing orders keep the office that opened them.',
+    danger: true,
+    confirmLabel: 'Close office',
+    onConfirm: () => {
+      qzRemove('offices', name);
+      simToast(name + ' closed.', { tone: 'good' });
+      qzRenderRoot();
+    }
+  });
+}
+
+function qzShellDeleteFee(name) {
+  const f = qzFind('fees', name);
+  if (!f) return;
+  qzConfirm({
+    title: 'Retire "' + name + '"?',
+    body: 'It stops being offered on new orders. Files that already carry this charge are not touched - repricing a closed file is not something a delete should do.',
+    danger: true,
+    confirmLabel: 'Retire fee',
+    onConfirm: () => {
+      qzRemove('fees', name);
+      simToast('"' + name + '" retired.', { tone: 'good' });
+      qzRenderRoot();
+    }
+  });
+}
+
+function qzShellDeleteContact(id) {
+  const c = qzFind('contacts', id);
+  if (!c) {
+    /* Derived people have no row of their own to delete: they are read out of the order. */
+    simToast('This person is read from the order that names them. Remove them on that file.');
+    return;
+  }
+  qzConfirm({
+    title: 'Delete ' + c.name + '?',
+    body: 'This removes the contact record. Any order that names them keeps its own copy.',
+    danger: true,
+    confirmLabel: 'Delete contact',
+    onConfirm: () => {
+      qzRemove('contacts', id);
+      simToast(c.name + ' deleted.', { tone: 'good' });
+      qzRenderRoot();
+    }
+  });
+}

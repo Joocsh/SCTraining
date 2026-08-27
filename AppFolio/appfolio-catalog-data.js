@@ -703,6 +703,17 @@ function afBuildCompletePortfolio() {
         sqft: sqft,
         marketRent: rent,
         status: status,
+        /* A unit on notice has a date somebody is leaving on, and Vacancies has
+           to print it — it was showing "--" in the AVAILABLE column because
+           nothing in the model carried that date.
+
+           It lives on the UNIT rather than on a lease. Giving notice units a
+           lease would be the truer model, but the world contract states the
+           invariant "every active lease sits on an OCCUPIED unit" and calibrates
+           the portfolio to 85% occupancy; adding two leases broke all three
+           checks. The date is what the screen needs, so the date is what gets
+           added. */
+        noticeVacateDate: status === 'notice' ? afcDay(28) : null,
         currentLeaseId: null, // Linked below if occupied
         amenities: ['Central HVAC', 'Refrigerator', 'Range/Oven', 'Dishwasher'],
         lastRenovated: afcDay(-300 - (i * 12))
@@ -738,8 +749,25 @@ function afBuildCompletePortfolio() {
     };
     residents.push(res);
 
-    const startOffset = -365 + (uIdx % 60);
-    const endOffset = startOffset + 365;
+    /* Lease terms spread across a whole year, not bunched into one window.
+       They used to be `-365 + (uIdx % 60)`, which meant every lease in the
+       portfolio started within a 60-day span a year ago and therefore expired
+       within a 60-day span from today. Renewals is a triage screen — its whole
+       job is working an expiry window — and it had nothing to triage because
+       every lease landed in the same one.
+
+       The multiplier is coprime with 365 so the offsets walk the year evenly
+       instead of clustering, and terms vary the way real ones do: mostly
+       twelve months, some six, the occasional twenty-four.
+
+       Delinquency anchors are held back to at least ten months old, because
+       their lesson needs three months of ledger history behind them. */
+    const isDq = ['UNIT-11-105', 'UNIT-12-104', 'UNIT-11-201', 'UNIT-12-206',
+                  'UNIT-11-304', 'UNIT-12-301', 'UNIT-10-101', 'UNIT-08-A',
+                  'UNIT-02-01'].indexOf(u.id) > -1;
+    const startOffset = isDq ? -365 + (uIdx % 45) : -((uIdx * 47) % 365) - 20;
+    const termDays = [365, 365, 365, 365, 180, 365, 730, 365][uIdx % 8];
+    const endOffset = startOffset + termDays;
     const depositCents = u.marketRent;
 
     // Check if this lease is one of the 9 Delinquency Anchors (DQ-01 to DQ-09)
@@ -783,7 +811,12 @@ function afBuildCompletePortfolio() {
     // Build 12-Month Ledger Entries Chain (M1 & M2 Invariants)
     let runningBalance = 0;
 
-    for (let m = 11; m >= 0; m--) {
+    /* Only bill the months the lease has actually existed. The loop used to run
+       a flat twelve regardless, which was invisible while every lease was over
+       a year old and would have posted rent before the tenancy began the moment
+       the terms were spread. */
+    const monthsHeld = Math.max(1, Math.min(12, Math.floor(-startOffset / 30)));
+    for (let m = monthsHeld - 1; m >= 0; m--) {
       const chargeDate = afcDay(-m * 30 - 11);
       const rentCharge = u.marketRent + (isPetAnchor ? 3500 : 0);
 
@@ -961,8 +994,22 @@ function afBuildCompletePortfolio() {
       id: 'WO-2026-' + String(100 + w).padStart(4, '0'),
       propertyId: targetUnit.propertyId,
       unitId: targetUnit.id,
-      vendorId: template.v,
-      reportedBy: targetUnit.status === 'occupied' ? 'Resident Portal' : 'Alex Rivera',
+      /* "New" means nobody has picked it up. Every generated order used to
+         arrive with a vendor already attached, which is a contradiction in
+         terms and left the Work Orders triage strip — "Unassigned Resident
+         Requested", "Unassigned Internal" — pinned at zero forever. Those two
+         numbers are the reason that screen exists. */
+      vendorId: template.s === 'new' ? null : template.v,
+      /* Who raised it follows the NATURE of the work, not whether somebody
+         happens to live there. Preventive rounds, make-ready and grounds work
+         are things the office schedules for itself; a broken appliance is a
+         resident calling. Keying it off occupancy alone meant nearly every
+         order came in as resident-reported and "Unassigned Internal" could
+         never be anything but zero. */
+      reportedBy: (['painting', 'landscaping', 'roofing', 'pest-control'].indexOf(template.cat) > -1
+        || /Make-Ready|Preventive|Quarterly/i.test(template.t))
+        ? 'Alex Rivera'
+        : (targetUnit.status === 'occupied' ? 'Resident Portal' : 'Alex Rivera'),
       category: template.cat,
       priority: template.p,
       status: template.s,
@@ -972,6 +1019,9 @@ function afBuildCompletePortfolio() {
       scheduledDate: afcDay(- (w % 10)),
       estimateCents: template.est,
       actualCents: template.s === 'completed' ? template.est : 0,
+      /* Billing lags the work. Without this field every completed order counted
+         as "Ready to Bill" forever, which made the number meaningless. */
+      billedDate: (template.s === 'completed' && (w % 20) > 6) ? afcDay(- (w % 20) + 4) : null,
       createdDate: afcDay(- (w % 20) - 2)
     });
   }
@@ -992,9 +1042,20 @@ function afBuildCompletePortfolio() {
     showingDate: null
   });
 
-  /* ANCHOR: GC-FH-02 — Vacancy Listing with Discriminatory Text — DO NOT CHANGE */
+  /* ANCHOR: GC-FH-02 — Vacancy Listing with Discriminatory Text — DO NOT CHANGE
+
+     This is a DRAFT LISTING, not a prospect, and it is filed here only because
+     guestCards was the collection that existed when the fair-housing lesson was
+     written. Nothing reads its fields — scenario af_s6_1 carries its own copy of
+     the offending text — but two curriculum tests assert the id is retrievable,
+     so the record and its id stay exactly where they are.
+
+     `kind` is the fix: the Guest Cards list shows prospects, and this is not
+     one. Without it the row rendered as a person called "Listing Draft,
+     Marketing" in a column of surnames. The id, name and notes are untouched. */
   guestCards.push({
     id: 'GC-FH-02',
+    kind: 'listing-draft',
     name: 'Marketing Listing Draft',
     email: 'marketing@lonestarpm.example.com',
     phone: '555-0302',

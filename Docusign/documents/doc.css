@@ -61,16 +61,22 @@ table.line-items tfoot td { font-weight: 800; border-top: 2px solid var(--ink); 
 .initials {
   display: flex;
   justify-content: flex-end;
-  gap: 30px;
+  gap: 38px;
   margin-top: 26px;
   padding-top: 12px;
   border-top: 1px dashed var(--line);
 }
 .initials .ibox { text-align: center; }
 .initials .ibox .slot {
-  width: 74px;
+  width: 90px;
   height: 30px;
-  border-bottom: 1px solid var(--ink);
+  border: 1px solid #9aa0a6;
+  border-radius: 3px;
+  background: #fafbfc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 .initials .ibox label {
   display: block;

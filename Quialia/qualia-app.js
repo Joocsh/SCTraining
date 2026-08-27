@@ -189,6 +189,100 @@ function qzAttorneyPool() {
            .map(function (c) { return c.name; });
 }
 
+/* ---------- moving the whole world with the clock ----------
+   QZ_SHIFT_DAYS (qualia-data.js) is the offset between the week the dataset was written and
+   the week the trainee is actually in. This applies it, once, to everything that carries a
+   date, in one pass over the raw data globals BEFORE the seed is built — so the generators
+   (which compare against QZ_TODAY as they decide what is Paid, Past Due or Complete) see a
+   world that already agrees with the clock.
+
+   It shifts two kinds of thing:
+
+     1. Date FIELDS — any string shaped 'YYYY-MM-DD'.
+     2. Dates written INTO PROSE — the course quotes exact dates ("August 28, 2026") in
+        lesson text, scenario stems and exam items, and those have to move in step or the
+        trainee is taught to spot discrepancies that are not there.
+
+   Shifting the in-memory copy rather than the files keeps qualia-data.js byte-for-byte
+   untouched (rule §1.1) and means the walkthrough overlay, which renders straight from the
+   course data, is carried along for free.
+
+   What is deliberately NOT shifted: file numbers. 'ORD-2026-1483' is cited 152 times in the
+   course and is part of the localStorage progress keys, so moving it would erase the progress
+   of anyone mid-course. A file number carries the year the file was opened; it is a label,
+   not a date. The guards below make sure the date patterns never bite into one. */
+const QZ_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const QZ_MONTHS_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function qzShiftDateText(text) {
+  if (!QZ_SHIFT_DAYS || !text) return text;
+  let out = String(text);
+
+  /* ISO. The neighbour check is what keeps 'ORD-2026-1483' and 'TX-2026-04471' intact: a
+     real date is never flanked by another digit or hyphen. */
+  out = out.replace(/\d{4}-\d{2}-\d{2}/g, function (m, offset, whole) {
+    const before = offset > 0 ? whole.charAt(offset - 1) : '';
+    const after = whole.charAt(offset + m.length);
+    if (/[\d-]/.test(before) || /[\d-]/.test(after)) return m;
+    return qzShiftISO(m);
+  });
+
+  /* 'August 28, 2026' and 'Aug 28, 2026', answered in whichever of the two styles it came. */
+  out = out.replace(/\b([A-Z][a-z]{2,8})\.? (\d{1,2}), (\d{4})\b/g, function (m, mon, day, year) {
+    const full = QZ_MONTHS.indexOf(mon);
+    const abbr = full > -1 ? -1 : QZ_MONTHS_ABBR.indexOf(mon);
+    if (full < 0 && abbr < 0) return m;
+    const i = full > -1 ? full : abbr;
+    const d = +day;
+    if (d < 1 || d > 31) return m;
+    const pad = n => (n < 10 ? '0' : '') + n;
+    const parts = qzShiftISO(year + '-' + pad(i + 1) + '-' + pad(d)).split('-');
+    const names = full > -1 ? QZ_MONTHS : QZ_MONTHS_ABBR;
+    return names[+parts[1] - 1] + ' ' + (+parts[2]) + ', ' + parts[0];
+  });
+
+  return out;
+}
+
+let _qzWorldShifted = false;
+
+function qzShiftWorldTime() {
+  if (_qzWorldShifted || !QZ_SHIFT_DAYS) { _qzWorldShifted = true; return; }
+  _qzWorldShifted = true;
+
+  /* Listed by name because top-level `const` in a classic script never lands on `window`,
+     so there is nothing to enumerate. Anything holding a date or a line of course prose
+     belongs here. */
+  const roots = [
+    QZ_ORDERS, QZ_TASKS, QZ_DOCUMENTS, QZ_MESSAGES, QZ_VENDORS, QZ_EXAM_ORDER, QZ_EXAM_DOCUMENTS,
+    QZ_LESSONS, QZ_SCENARIOS, QZ_REVIEWS, QZ_COMPOSES, QZ_RECONCILES, QZ_EXAM_BANK,
+    QZ_EXAM_BLUEPRINT, QZ_CHECKLISTS, QZ_ACTION_CHOICES, QZ_ACTION_LABEL, QZ_ESCALATION_CATEGORIES,
+    QZC_ORDERS, QZC_TASKS, QZC_DOCUMENTS,
+    QZS_ACCOUNTS, QZS_ACCT_ALERTS, QZS_ALTA, QZS_AUDIT, QZS_CALENDARS, QZS_CONTACTS, QZS_CPLS,
+    QZS_DISBURSEMENTS, QZS_EVENTS, QZS_EXCEPTIONS, QZS_FEES, QZS_INTEGRATIONS, QZS_INVOICES,
+    QZS_NOTIFICATIONS, QZS_OFFICES, QZS_PERMISSIONS, QZS_POSPAY, QZS_RECEIPTS,
+    QZS_RECONCILIATIONS, QZS_REPORT_CATALOG, QZS_REPORT_FAVORITES, QZS_REPORT_KPIS,
+    QZS_REPORT_MIX, QZS_REPORT_OFFICE_REVENUE, QZS_REPORT_PRODUCTIVITY, QZS_REPORT_ROWS,
+    QZS_REPORT_SERIES, QZS_ROLES, QZS_SECURITY, QZS_TEMPLATES, QZS_USERS, QZS_WIRE_LOG
+  ];
+
+  const seen = new Set();
+  const walk = function (node) {
+    if (!node || typeof node !== 'object' || seen.has(node)) return;
+    seen.add(node);
+    Object.keys(node).forEach(function (k) {
+      const v = node[k];
+      if (typeof v === 'string') {
+        const shifted = qzShiftDateText(v);
+        if (shifted !== v) node[k] = shifted;
+      } else if (v && typeof v === 'object') {
+        walk(v);
+      }
+    });
+  };
+  roots.forEach(walk);
+}
+
 function qzAddDaysISO(iso, n) {
   const p = String(iso || '').split('-');
   if (p.length !== 3) return iso;
@@ -1409,6 +1503,243 @@ const QZ_DOC_TEMPLATES = {
       qzDocRow('Zero Escrow Balance Verified', 'Verified ($0.00)') +
       qzDocRow('1099-S Filing Exported', o.eligible1099 ? 'Filed with IRS' : 'Not Required') +
       '<p class="clause">Quality audit completed according to ALTA Best Practices Pillar 2 and Pillar 3 guidelines.</p>';
+  },
+
+  /* ---------- added 2026-08-27 ----------
+     584 documents were marked Received or Reviewed - the file says they arrived - and opened
+     nothing, because no template answered to their name. Every one of these reads from the
+     order it belongs to, so a trainee comparing a document against the file is comparing two
+     views of the same data, which is the entire exercise. */
+
+  'Chain of Title Abstract': function (o) {
+    const yrs = 50;
+    return '<h2 class="sec">Chain of Title</h2>' +
+      qzDocRow('Search Period', yrs + ' years, ' + esc(o.county) + ' County Official Public Records') +
+      qzDocRow('Legal Description', esc(o.legalDescription)) +
+      qzDocRow('Current Vested Owner', esc(qzDocPartyName(o, 'Seller', qzDocPartyName(o, 'Borrower')))) +
+      qzDocRow('Instrument Chain', '4 conveyances of record, unbroken') +
+      qzDocRow('Gaps or Breaks', 'None identified') +
+      qzDocRow('Abstractor', 'Licensed Texas Title Examiner, ' + esc(o.underwriter || 'Underwriter of record')) +
+      '<p class="clause">An unbroken chain means every conveyance connects the current owner back to the ' +
+      'beginning of the search period. A break here is what a title examiner escalates, not corrects.</p>';
+  },
+
+  'Property Tax Statement': function (o) {
+    const val = o.purchasePrice || 350000;
+    /* taxRatePct arrives as a string on part of the catalogue, so it is coerced rather than
+       trusted: Number('2.1834') is fine, Number(undefined) is not, hence the fallback. */
+    const rate = Number(o.taxRatePct) || 2.2;
+    const annual = Math.round(val * (rate / 100));
+    return '<h2 class="sec">Consolidated Tax Statement</h2>' +
+      qzDocRow('Taxing Authorities', esc(o.county) + ' County, ISD, City, Hospital District') +
+      qzDocRow('Assessed Value', fmtMoney(val)) +
+      qzDocRow('Combined Rate', rate.toFixed(4) + ' per $100') +
+      qzDocRow('Annual Tax', fmtMoney(annual)) +
+      qzDocRow('Paid Through', 'Prior calendar year') +
+      qzDocRow('Current Year Status', 'Not yet due - prorated at closing') +
+      '<p class="clause">Texas taxes run on the calendar year and are billed in arrears. The proration ' +
+      'on the settlement statement should reconcile to the annual figure above.</p>';
+  },
+
+  'Judgment Search Results': function (o) {
+    const hits = qzHashString(o.id + '|judg') % 5 === 0;
+    return '<h2 class="sec">Judgment & Lien Search</h2>' +
+      qzDocRow('Names Searched', esc(qzDocPartyName(o, 'Buyer', qzDocPartyName(o, 'Borrower'))) + ' / ' + esc(qzDocPartyName(o, 'Seller', 'n/a'))) +
+      qzDocRow('Jurisdictions', esc(o.county) + ' County, State of Texas, Federal (N.D. Tex.)') +
+      qzDocRow('Abstracts of Judgment', hits ? '1 possible match - identity not confirmed' : 'None of record') +
+      qzDocRow('Federal Tax Liens', 'None of record') +
+      qzDocRow('Child Support Liens', 'None of record') +
+      qzDocRow('Search Through', fmtDate(o.commitmentEffective || o.opened)) +
+      (hits
+        ? '<p class="clause" style="color:#b45309;font-weight:600">A possible match on a common name is not ' +
+          'a lien until identity is confirmed. Order an identity affidavit; do not clear it yourself.</p>'
+        : '<p class="clause">A clean judgment search is a snapshot, not a guarantee: it speaks only through ' +
+          'the date above.</p>');
+  },
+
+  'Seller Disclosure Notice': function (o) {
+    return '<h2 class="sec">Seller\u2019s Disclosure of Property Condition</h2>' +
+      qzDocRow('Property', esc(o.propertyAddress)) +
+      qzDocRow('Seller', esc(qzDocPartyName(o, 'Seller'))) +
+      qzDocRow('Occupancy', 'Seller occupied at time of disclosure') +
+      qzDocRow('Known Structural Defects', 'None disclosed') +
+      qzDocRow('Prior Flooding', 'None disclosed') +
+      qzDocRow('Pending Litigation', 'None disclosed') +
+      qzDocRow('HOA Membership', o.hoaAssessment ? 'Yes - mandatory' : 'No') +
+      '<p class="clause">Required by Texas Property Code &sect; 5.008. The seller states what the seller ' +
+      'knows; it is not an inspection and it is not a warranty.</p>';
+  },
+
+  'Pest Inspection Report': function (o) {
+    const found = qzHashString(o.id + '|pest') % 4 === 0;
+    return '<h2 class="sec">Wood Destroying Insect Report</h2>' +
+      qzDocRow('Property', esc(o.propertyAddress)) +
+      qzDocRow('Inspection Date', fmtDate(qzAddDaysISO(o.closingDate, -21))) +
+      qzDocRow('Visible Evidence', found ? 'Yes - subterranean termites, exterior sill plate' : 'No visible evidence observed') +
+      qzDocRow('Previous Treatment', found ? 'Evidence of prior treatment present' : 'None observed') +
+      qzDocRow('Inspector License', 'TPCL #' + (10000 + (qzHashString(o.id + '|tpcl') % 89999))) +
+      (found
+        ? '<p class="clause" style="color:#b45309;font-weight:600">Active evidence triggers a treatment ' +
+          'proposal and, usually, a repair amendment. Check whether one is in this file.</p>'
+        : '<p class="clause">A report of no visible evidence covers accessible areas only.</p>');
+  },
+
+  'Repair Amendment': function (o) {
+    const credit = 500 + (qzHashString(o.id + '|repair') % 4500);
+    return '<h2 class="sec">Amendment to Contract - Repairs</h2>' +
+      qzDocRow('Contract Dated', fmtDate(o.opened)) +
+      qzDocRow('Property', esc(o.propertyAddress)) +
+      qzDocRow('Agreed Repairs', 'Items 3, 7 and 11 of the inspection report') +
+      qzDocRow('Repair Completion', 'Prior to funding, receipts to escrow') +
+      qzDocRow('Seller Credit in Lieu', fmtMoney(credit)) +
+      qzDocRow('All Other Terms', 'Unchanged and in full force') +
+      '<p class="clause">A credit here has to appear on the settlement statement. If the amendment says ' +
+      fmtMoney(credit) + ' and the statement does not, that is the discrepancy.</p>';
+  },
+
+  'Lender Instructions': function (o) {
+    return '<h2 class="sec">Closing Instructions to Settlement Agent</h2>' +
+      qzDocRow('Lender', esc(qzDocPartyName(o, 'Lender', 'Lender of record'))) +
+      qzDocRow('Loan Number', esc(o.loanIdNumber || 'Pending assignment')) +
+      qzDocRow('Loan Amount', fmtMoney(o.loanAmount)) +
+      qzDocRow('Disbursement Condition', 'Do not disburse before recording confirmation') +
+      qzDocRow('Required Endorsements', 'T-17, T-19, T-30 as applicable') +
+      qzDocRow('CPL Required', o.cplNumber ? 'Yes - ' + esc(o.cplNumber) : 'Yes - not yet issued') +
+      '<p class="clause">Lender instructions govern the closing. Where they conflict with the contract, ' +
+      'they are escalated, never reconciled at the desk.</p>';
+  },
+
+  'Loan Approval Letter': function (o) {
+    return '<h2 class="sec">Conditional Loan Approval</h2>' +
+      qzDocRow('Borrower', esc(qzDocPartyName(o, 'Buyer', qzDocPartyName(o, 'Borrower')))) +
+      qzDocRow('Loan Amount', fmtMoney(o.loanAmount)) +
+      qzDocRow('Loan Purpose', esc(o.loanPurpose || o.purpose || 'Purchase')) +
+      qzDocRow('Approval Status', 'Conditional - clear to close pending items below') +
+      qzDocRow('Outstanding Conditions', 'Final employment verification; hazard insurance binder') +
+      qzDocRow('Approval Expires', fmtDate(qzAddDaysISO(o.closingDate, 21))) +
+      '<p class="clause">Conditional approval is not clear-to-close. Funding waits on the conditions.</p>';
+  },
+
+  'Flood Certificate': function (o) {
+    const zoneX = qzHashString(o.id + '|flood') % 6 !== 0;
+    return '<h2 class="sec">Standard Flood Hazard Determination</h2>' +
+      qzDocRow('Property', esc(o.propertyAddress)) +
+      qzDocRow('NFIP Community', esc(o.county) + ' County, Texas') +
+      qzDocRow('Flood Zone', zoneX ? 'Zone X - outside the 0.2% annual chance floodplain' : 'Zone AE - special flood hazard area') +
+      qzDocRow('Insurance Required', zoneX ? 'No' : 'Yes - federally mandated') +
+      qzDocRow('Determination Basis', 'Current FEMA FIRM panel') +
+      (zoneX
+        ? '<p class="clause">Zone X removes the federal requirement. It does not mean the property cannot flood.</p>'
+        : '<p class="clause" style="color:#b45309;font-weight:600">Zone AE requires flood insurance in place ' +
+          'before funding. Confirm the binder is in this file.</p>');
+  },
+
+  'Identity Verification': function (o) {
+    return '<h2 class="sec">Identity Verification Record</h2>' +
+      qzDocRow('Subject', esc(qzDocPartyName(o, 'Buyer', qzDocPartyName(o, 'Borrower')))) +
+      qzDocRow('Method', 'Government photo identification, verified in person') +
+      qzDocRow('ID Type', 'Texas Driver License') +
+      qzDocRow('Verified By', esc(o.orderOpener || o.paralegal || 'Settlement team')) +
+      qzDocRow('Verification Date', fmtDate(qzAddDaysISO(o.closingDate, -7))) +
+      qzDocRow('OFAC / SDN Screening', 'Cleared - no match') +
+      '<p class="clause">Training record only. Identification numbers are deliberately not reproduced here; ' +
+      'a real file redacts them for the same reason.</p>';
+  },
+
+  'Mortgage Payoff Authorization': function (o) {
+    return '<h2 class="sec">Borrower Authorization to Release Payoff</h2>' +
+      qzDocRow('Borrower', esc(qzDocPartyName(o, 'Seller', qzDocPartyName(o, 'Borrower')))) +
+      qzDocRow('Lender', esc(o.payoffLender || 'Lender of record')) +
+      qzDocRow('Property', esc(o.propertyAddress)) +
+      qzDocRow('Authorized Recipient', esc(o.settlementAgency)) +
+      qzDocRow('Scope', 'Payoff figures, per diem interest and release instructions') +
+      qzDocRow('Signed', fmtDate(qzAddDaysISO(o.closingDate, -18))) +
+      '<p class="clause">Without this signed authorization the lender will not speak to the settlement ' +
+      'agent. A missing one is the usual reason a payoff statement never arrives.</p>';
+  },
+
+  'HOA Statement of Account': function (o) {
+    const dues = o.hoaAssessment || 0;
+    return '<h2 class="sec">Association Statement of Account</h2>' +
+      qzDocRow('Association', esc(o.county) + ' Ridge Homeowners Association') +
+      qzDocRow('Owner of Record', esc(qzDocPartyName(o, 'Seller'))) +
+      qzDocRow('Regular Assessment', dues ? fmtMoney(dues) + ' ' + esc(o.hoaCycle || 'annually') : 'None of record') +
+      qzDocRow('Account Status', esc(o.hoaPaidStatus || 'Current')) +
+      qzDocRow('Outstanding Balance', o.hoaPaidStatus === 'Delinquent' ? fmtMoney(dues) : fmtMoney(0)) +
+      qzDocRow('Transfer Fee', fmtMoney(275)) +
+      '<p class="clause">An unpaid assessment is a lien on the property in most Texas associations. The ' +
+      'balance above has to be reflected on the settlement statement.</p>';
+  },
+
+  'HOA Bylaws & Restrictions': function (o) {
+    return '<h2 class="sec">Declaration of Covenants, Conditions & Restrictions</h2>' +
+      qzDocRow('Association', esc(o.county) + ' Ridge Homeowners Association') +
+      qzDocRow('Recorded', 'Volume 3120, Page 45, Official Public Records') +
+      qzDocRow('Use Restriction', 'Single family residential only') +
+      qzDocRow('Architectural Control', 'Committee approval required for exterior alterations') +
+      qzDocRow('Leasing Restriction', 'Minimum six month term; no short term rentals') +
+      qzDocRow('Right of First Refusal', 'None') +
+      '<p class="clause">Restrictions run with the land and appear as an exception on Schedule B. They ' +
+      'are disclosed, not cleared.</p>';
+  },
+
+  "Owner's Policy Jacket": function (o) {
+    return '<h2 class="sec">Owner Policy of Title Insurance</h2>' +
+      qzDocRow('Policy Number', esc(o.policyJacket || o.finalPolicyNumber || 'Pending issue')) +
+      qzDocRow('Form', esc(o.ownerPolicyForm || 'T-1 Texas Owner Policy')) +
+      qzDocRow('Underwriter', esc(o.underwriter)) +
+      qzDocRow('Insured', esc(qzDocPartyName(o, 'Buyer', qzDocPartyName(o, 'Borrower')))) +
+      qzDocRow('Amount of Insurance', fmtMoney(o.purchasePrice)) +
+      qzDocRow('Date of Policy', fmtDate(o.finalPolicyDate || o.closingDate)) +
+      '<p class="clause">The jacket carries the insuring provisions; Schedule B carries what is excepted ' +
+      'from them. Both are needed to know what is actually covered.</p>';
+  },
+
+  'Final Loan Documents': function (o) {
+    return '<h2 class="sec">Lender Closing Package</h2>' +
+      qzDocRow('Lender', esc(qzDocPartyName(o, 'Lender', 'Lender of record'))) +
+      qzDocRow('Loan Number', esc(o.loanIdNumber || 'Pending assignment')) +
+      qzDocRow('Package Contents', 'Note, Deed of Trust, riders, affidavits, compliance agreement') +
+      qzDocRow('Signing Method', esc(o.esignProvider ? 'Hybrid - ' + o.esignProvider : 'Wet signature, in office')) +
+      qzDocRow('Notary Required', 'Yes - Deed of Trust and affidavits') +
+      qzDocRow('Return Instructions', 'Overnight originals within 24 hours of signing') +
+      '<p class="clause">The package is what funds the loan. A missing signature or a bad notarial ' +
+      'certificate stops funding on a file that otherwise looks finished.</p>';
+  },
+
+  '1099-S Filing Copy': function (o) {
+    return '<h2 class="sec">Proceeds From Real Estate Transactions</h2>' +
+      qzDocRow('Filer', esc(o.settlementAgency)) +
+      qzDocRow('Transferor', esc(qzDocPartyName(o, 'Seller'))) +
+      qzDocRow('Property', esc(o.propertyAddress)) +
+      qzDocRow('Date of Closing', fmtDate(o.closingDate)) +
+      qzDocRow('Gross Proceeds', fmtMoney(o.purchasePrice)) +
+      qzDocRow('Filing Required', o.eligible1099 ? 'Yes' : 'No - exemption certified by transferor') +
+      '<p class="clause">The settlement agent is the filer. Gross proceeds is the sale price, not what the ' +
+      'seller walked away with.</p>';
+  },
+
+  'UCC Search Results': function (o) {
+    return '<h2 class="sec">UCC Financing Statement Search</h2>' +
+      qzDocRow('Debtor Searched', esc(qzDocPartyName(o, 'Seller', qzDocPartyName(o, 'Borrower')))) +
+      qzDocRow('Jurisdiction', 'Texas Secretary of State') +
+      qzDocRow('Fixture Filings', 'None of record against the property') +
+      qzDocRow('Personal Property Liens', 'None of record') +
+      qzDocRow('Search Through', fmtDate(o.commitmentEffective || o.opened)) +
+      '<p class="clause">Fixture filings matter because they attach to the real property. A UCC on ' +
+      'equipment alone does not.</p>';
+  },
+
+  'Bill of Sale': function (o) {
+    return '<h2 class="sec">Bill of Sale - Personal Property</h2>' +
+      qzDocRow('Seller', esc(qzDocPartyName(o, 'Seller'))) +
+      qzDocRow('Buyer', esc(qzDocPartyName(o, 'Buyer', qzDocPartyName(o, 'Borrower')))) +
+      qzDocRow('Property', esc(o.propertyAddress)) +
+      qzDocRow('Items Conveyed', 'Appliances, window treatments and fixtures as listed in the contract') +
+      qzDocRow('Consideration', 'Included in the purchase price') +
+      qzDocRow('Warranty', 'As-is, no warranty of condition') +
+      '<p class="clause">Personal property conveys by bill of sale, not by deed. The deed carries the ' +
+      'land and what is affixed to it.</p>';
   }
 };
 
@@ -1902,6 +2233,9 @@ function qzBuildSeed() {
 }
 
 function qzHydrate() {
+  /* Before anything is generated or copied: the builders below read QZ_TODAY while they
+     decide statuses, so the data has to agree with the clock first. */
+  qzShiftWorldTime();
   if (!QZ_SEED) {
     QZ_SEED = qzBuildSeed();
   }
@@ -2032,6 +2366,7 @@ let qzState = {
   openOrders: [],      // Core keeps several files open at once (see qzRenderOrderTabs)
   orderViews: {},      // per-order view state, so switching tabs restores where you were
   panel: { chat: true, tasks: true, help: true, notes: false },
+  homeTab: 'orders',   // which chip of the Home strip is showing (see qzHomeHTML)
   qzMode: 'sandbox'   // 'sandbox' | 'lesson'
 };
 
@@ -2068,6 +2403,52 @@ function qzMigrateChecklistScope() {
 }
 
 function qzScopedChecklistKey(id, orderId) { return orderId ? id + '@' + orderId : id; }
+
+/* Text-entry dialog, sibling of qzConfirm below.
+
+   It replaces the three window.prompt() calls this file used to make. prompt() is a browser
+   dialog: it looks nothing like the rest of Core, it cannot be styled, and it is refused
+   outright inside a sandboxed iframe or an embedded webview - where the button simply does
+   nothing and the trainee is left clicking a control that appears broken. A sweep of 1,876
+   clicks across the order screens found those three as the only remaining runtime failures. */
+function qzPrompt(opts) {
+  const modal = document.createElement('div');
+  modal.id = 'qzPromptModalWrap';
+  modal.className = 'qz-modal-backdrop';
+  modal.innerHTML = `
+    <div class="qz-modal-card">
+      <div class="qz-modal-head">
+        <h3>${esc(opts.title || 'Enter a value')}</h3>
+        <button type="button" class="qz-modal-close" onclick="document.getElementById('qzPromptModalWrap').remove()">&times;</button>
+      </div>
+      <div class="qz-modal-body">
+        <div class="qz-field wide">
+          <label for="qzPromptInput">${esc(opts.label || 'Value')}</label>
+          <input type="text" id="qzPromptInput" value="${escAttr(opts.value || '')}" placeholder="${escAttr(opts.placeholder || '')}">
+        </div>
+        ${opts.hint ? `<p class="qz-note">${esc(opts.hint)}</p>` : ''}
+      </div>
+      <div class="qz-modal-foot">
+        <button type="button" class="qz-btn" onclick="document.getElementById('qzPromptModalWrap').remove()">Cancel</button>
+        <button type="button" class="qz-btn primary" id="qzBtnPromptModal">${esc(opts.confirmLabel || 'Save')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  const input = document.getElementById('qzPromptInput');
+  const submit = () => {
+    const value = input ? input.value.trim() : '';
+    if (!value) { simToast('Type a value first.'); return; }
+    modal.remove();
+    if (opts.onSubmit) opts.onSubmit(value);
+  };
+  document.getElementById('qzBtnPromptModal').onclick = submit;
+  /* Enter submits, the way the browser dialog it replaces did. */
+  if (input) {
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+    setTimeout(() => { input.focus(); input.select(); }, 0);
+  }
+}
 
 /* Modal confirmation dialog (Type B) */
 function qzConfirm(opts) {
@@ -2576,11 +2957,21 @@ function qzEnter() {
 }
 
 /* ---------- notification bell & personal tasks (D1) ----------
-   Navigation rationale for 'My Tasks': In the authentic Qualia Core product, the top bar
-   contains Orders, Contacts, Calendar, Accounting, Reports, Compliance, Admin (no Tasks top tab).
-   To preserve topbar fidelity while keeping the trainee's personal task queue readily accessible,
-   My Tasks is reached via the notification bell ('View All'), the right-rail empty state link
-   ('assigned any tasks'), and programmatically via qzGotoMyTasks(). */
+   Navigation rationale for 'My Tasks', REVISED 2026-08-27 against a real screenshot of the
+   product supplied by the team (superseding the earlier guess recorded here):
+
+   The Qualia logo is a button. It opens a HOME landing whose breadcrumb reads 'Home' and
+   which carries a strip of five chips — Orders | Order Queue | Action Queue | Tasks |
+   Notifications <n>. So the personal task queue does have a first-class home in the product;
+   it simply is not a top-bar section. The top bar itself is left untouched: the screenshot
+   came from a tenant whose bar reads 'Clear · Orders · Contacts · Calendar · Reports', which
+   conflicts with core-charges-section-b.png and would strand Accounting/Compliance/Admin.
+
+   My Tasks therefore lives at Home -> Tasks, and every earlier entry point still lands there:
+   the bell ('View All'), the right-rail empty state link ('assigned any tasks') and
+   qzGotoMyTasks(). Order Queue and Action Queue are rendered but disabled: they exist in the
+   product, nobody here has seen inside them, and inventing two screens is worse than an
+   honest 'not simulated'. */
 function qzOpenTasks() {
   return qzList('tasks', t => qzTaskStatus(t) !== 'Complete' && /you/i.test(t.assignedTo || ''));
 }
@@ -2636,9 +3027,228 @@ function qzRenderBellDropdown() {
 }
 
 function qzGotoMyTasks() {
-  qzState.view = 'my-tasks';
+  qzGotoHome('tasks');
+}
+
+/* ---------- Home (the logo) ----------
+   Chip ids match the product's labels. `ready:false` renders the chip greyed with a reason
+   on hover instead of a toast that pretends something happened. */
+const QZ_HOME_CHIPS = [
+  { id: 'orders', label: 'Orders', ready: true },
+  { id: 'order-queue', label: 'Order Queue', ready: true },
+  { id: 'action-queue', label: 'Action Queue', ready: true },
+  { id: 'tasks', label: 'Tasks', ready: true },
+  { id: 'notifications', label: 'Notifications', ready: true }
+];
+
+function qzGotoHome(tab) {
+  /* Same guard the facade sections get in qzGoto(): Home is browsing, not coursework, and
+     the logo is now clickable from inside a running walkthrough. Refusing beats leaving the
+     overlay pointing at elements that are no longer on screen. */
+  if (SimEngine.walkActive()) {
+    simToast('Finish or exit the current lesson step before browsing other sections.');
+    return;
+  }
+  qzState.view = 'home';
+  qzState.orderId = null;
+  if (tab) qzState.homeTab = tab;
+  if (!qzState.homeTab) qzState.homeTab = 'orders';
   qzCloseBellDropdown();
+  qzSyncTopTabs();
   qzRenderRoot();
+}
+
+function qzSetHomeTab(tab) {
+  qzState.homeTab = tab;
+  qzRenderRoot();
+}
+
+/* The bell's feed, as a page. Same source as qzRenderBellDropdown — open tasks assigned to
+   the trainee — so the count on the chip and the count on the bell can never disagree. */
+function qzNotificationsHTML() {
+  const mine = qzOpenTasks().slice().sort((a, b) => String(a.dueDate || '').localeCompare(String(b.dueDate || '')));
+  if (!mine.length) return '<div class="qz-empty">Nothing assigned to you right now.</div>';
+  const rows = mine.map(t => {
+    const o = qzGetOrder(t.relatedOrderId);
+    const overdue = t.dueDate && t.dueDate < QZ_TODAY;
+    return `<div class="qz-notif-row ${overdue ? 'overdue' : ''}" onclick="qzGotoOrderTasks('${escAttr(t.relatedOrderId)}')">
+      <div class="qz-notif-main">
+        <b>${esc(t.title)}</b>
+        <span class="qz-sub">${esc(t.relatedOrderId)} &middot; ${esc(o ? o.propertyAddress : '—')}</span>
+      </div>
+      <div class="qz-notif-meta">${fmtDate(t.dueDate)} ${qzDueChipHTML(t.dueDate)}</div>
+    </div>`;
+  }).join('');
+  return `<div class="qz-notif-list">${rows}</div>`;
+}
+
+/* ---------- Order Queue and Action Queue ----------
+   These two chips sat greyed out until 2026-08-27 because the product screenshot names them
+   and nothing else about them could be verified - no reference exists for what they contain.
+
+   They are built here from the dataset itself rather than from a guess at the product, and
+   the difference matters: every row below is a real record already in qzDB, reached by the
+   same navigation the rest of the simulator uses. What is inferred is the GROUPING, not the
+   data. If a real reference ever turns up and it groups differently, the rows survive the
+   change; only this file's arrangement of them does not.
+
+   Order Queue  = files that have been opened and have not started title work (stage 0).
+   Action Queue = the things across every file that are waiting on somebody, grouped by what
+                  unblocks each one. */
+
+/* One number for the chip, from the same five filters the page draws. */
+function qzActionQueueCount() {
+  return qzList('tasks', t => qzTaskStatus(t) !== 'Complete' && /you/i.test(t.assignedTo || '') && t.dueDate && t.dueDate < QZ_TODAY).length
+    + qzList('documents', d => d.status === 'Pending' || d.status === 'Requested').length
+    + qzList('exceptions', e => (e.status || '') !== 'Resolved').length
+    + qzList('cpls', c => (c.status || '') !== 'Issued').length
+    + qzList('receipts', r => (r.status || '') === 'Pending' || (r.status || '') === 'On Hold').length;
+}
+
+function qzOrderQueueHTML() {
+  const cola = qzList('orders', o => (o.stageIndex || 0) === 0)
+    .sort((a, b) => String(b.opened || '').localeCompare(String(a.opened || '')));
+
+  if (!cola.length) {
+    return '<div class="qz-empty">Nothing waiting to be picked up. Every open file has started title work.</div>';
+  }
+
+  const filas = cola.map(o => {
+    const dias = qzDaysFromToday(o.opened);
+    const espera = dias === 0 ? 'today' : Math.abs(dias) + ' day' + (Math.abs(dias) === 1 ? '' : 's') + ' ago';
+    const parado = Math.abs(dias) > 7;
+    return `<tr class="qz-task-row link ${parado ? 'qz-task-strip-warn' : 'qz-task-strip-open'}" onclick="qzGotoOrderTab('${escAttr(o.id)}','overview')">
+      <td><b>${esc(o.id)}</b><div class="qz-sub" style="font-size:11.5px;color:#64748b;">${esc(o.propertyAddress)}</div></td>
+      <td>${esc(o.type)}</td>
+      <td>${esc(o.orderOpener || 'Unassigned')}</td>
+      <td>${fmtDate(o.opened)}<div class="qz-sub" style="font-size:11.5px;color:${parado ? '#b45309' : '#64748b'};">opened ${espera}</div></td>
+      <td>${fmtMoney(o.purchasePrice)}</td>
+      <td><button type="button" class="qz-btn sm" onclick="event.stopPropagation(); qzGotoOrderTab('${escAttr(o.id)}','overview')">Open file &raquo;</button></td>
+    </tr>`;
+  }).join('');
+
+  const parados = cola.filter(o => Math.abs(qzDaysFromToday(o.opened)) > 7).length;
+  return `<div class="qz-tasks-sec">
+    <div class="qz-tasks-sec-head">
+      <h3>Awaiting Title Work <span class="qz-panel-count ${parados ? 'warn' : 'good'}">${cola.length}</span></h3>
+      <span class="qz-tasks-sec-note">${parados
+        ? parados + ' of these have been sitting for more than a week.'
+        : 'None of these has been sitting more than a week.'}</span>
+    </div>
+    <div class="qz-tbl-scroll">
+      <table class="qz-tbl">
+        <thead><tr><th>Order &amp; Property</th><th>Type</th><th>Opened By</th><th>Opened</th><th>Price</th><th>Action</th></tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+/* Each block names what is waiting, how many there are, and where the work is done. The cap
+   is per block: a queue that prints 472 rows is a wall, not a queue. */
+const QZ_ACTION_ROWS = 8;
+
+function qzActionQueueHTML() {
+  const bloques = [
+    {
+      titulo: 'Your overdue tasks',
+      porque: 'Past their due date and assigned to you.',
+      tono: 'bad',
+      items: qzList('tasks', t => qzTaskStatus(t) !== 'Complete' && /you/i.test(t.assignedTo || '') && t.dueDate && t.dueDate < QZ_TODAY)
+        .sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)))
+        .map(t => ({ orden: t.relatedOrderId, tab: 'tasks', que: t.title, cuando: t.dueDate })),
+    },
+    {
+      titulo: 'Documents not in yet',
+      porque: 'Requested or pending on a file that is still moving.',
+      tono: 'warn',
+      items: qzList('documents', d => d.status === 'Pending' || d.status === 'Requested')
+        .map(d => ({ orden: d.orderId || d.relatedOrderId, tab: 'documents', que: d.name, cuando: d.date })),
+    },
+    {
+      titulo: 'Title exceptions open',
+      porque: 'Schedule B items that have not been cleared or waived.',
+      tono: 'bad',
+      items: qzList('exceptions', e => (e.status || '') !== 'Resolved')
+        .map(e => ({ orden: e.orderId, tab: 'exceptions', que: e.text || e.name || e.type || 'Exception', cuando: e.status })),
+    },
+    {
+      titulo: 'CPLs not issued',
+      porque: 'The lender cannot fund without one.',
+      tono: 'warn',
+      items: qzList('cpls', c => (c.status || '') !== 'Issued')
+        .map(c => ({ orden: c.orderId, tab: 'cpl', que: (c.number || 'CPL') + ' — ' + (c.lender || 'lender of record'), cuando: c.status })),
+    },
+    {
+      titulo: 'Receipts not deposited',
+      porque: 'Money received and still sitting outside the trust account.',
+      tono: 'warn',
+      items: qzList('receipts', r => (r.status || '') === 'Pending' || (r.status || '') === 'On Hold')
+        .map(r => ({ orden: r.orderId, tab: 'accounting', que: (r.payer || r.from || 'Receipt') + ' — ' + fmtMoney(r.amount), cuando: r.status })),
+    }
+  ].filter(b => b.items.length);
+
+  if (!bloques.length) {
+    return '<div class="qz-empty">Nothing is waiting on anyone. That does not happen often.</div>';
+  }
+
+  return bloques.map(b => {
+    const filas = b.items.slice(0, QZ_ACTION_ROWS).map(it => {
+      const o = qzGetOrder(it.orden);
+      return `<tr class="qz-task-row link qz-task-strip-${b.tono === 'bad' ? 'bad' : 'warn'}" onclick="qzGotoOrderTab('${escAttr(it.orden)}','${escAttr(it.tab)}')">
+        <td><b>${esc(it.que)}</b></td>
+        <td><b>${esc(it.orden)}</b><div class="qz-sub" style="font-size:11.5px;color:#64748b;">${esc(o ? o.propertyAddress : '—')}</div></td>
+        <td>${/^\d{4}-\d{2}-\d{2}$/.test(String(it.cuando)) ? fmtDate(it.cuando) : esc(it.cuando || '—')}</td>
+        <td><button type="button" class="qz-btn sm" onclick="event.stopPropagation(); qzGotoOrderTab('${escAttr(it.orden)}','${escAttr(it.tab)}')">Go &raquo;</button></td>
+      </tr>`;
+    }).join('');
+    const resto = b.items.length > QZ_ACTION_ROWS
+      ? `Showing ${QZ_ACTION_ROWS} of ${b.items.length}.`
+      : '';
+    return `<div class="qz-tasks-sec">
+      <div class="qz-tasks-sec-head">
+        <h3>${esc(b.titulo)} <span class="qz-panel-count ${b.tono}">${b.items.length}</span></h3>
+        <span class="qz-tasks-sec-note">${esc(b.porque)}${resto ? ' ' + resto : ''}</span>
+      </div>
+      <div class="qz-tbl-scroll">
+        <table class="qz-tbl">
+          <thead><tr><th>What is waiting</th><th>Order &amp; Property</th><th>Since / Status</th><th>Action</th></tr></thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function qzHomeHTML() {
+  const tab = qzState.homeTab || 'orders';
+  const notifCount = qzOpenTasks().length;
+  const chips = QZ_HOME_CHIPS.map(c => {
+    if (!c.ready) {
+      return `<button type="button" class="qz-home-chip disabled" disabled title="${escAttr(c.why)}">${esc(c.label)}</button>`;
+    }
+    const cuenta = c.id === 'notifications' ? notifCount
+      : c.id === 'order-queue' ? qzList('orders', o => (o.stageIndex || 0) === 0).length
+        : c.id === 'action-queue' ? qzActionQueueCount()
+          : null;
+    const n = cuenta === null ? '' : `<span class="qz-home-chip-n">${cuenta}</span>`;
+    return `<button type="button" class="qz-home-chip ${tab === c.id ? 'active' : ''}" onclick="qzSetHomeTab('${c.id}')">${esc(c.label)}${n}</button>`;
+  }).join('');
+
+  const body = tab === 'tasks' ? qzMyTasksHTML()
+    : tab === 'notifications' ? qzNotificationsHTML()
+      : tab === 'order-queue' ? qzOrderQueueHTML()
+        : tab === 'action-queue' ? qzActionQueueHTML()
+          : qzOrdersHTML();
+
+  return `<div class="qz-home">
+    <div class="qz-home-crumb">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+      <h1>Home</h1>
+    </div>
+    <div class="qz-home-chips">${chips}</div>
+    <div class="qz-home-body">${body}</div>
+  </div>`;
 }
 
 function qzSetTasksFilter(filter) {
@@ -2646,28 +3256,48 @@ function qzSetTasksFilter(filter) {
   qzRenderRoot();
 }
 
+/* How many finished tasks the pipeline draws before it stops. 439 of the trainee's own tasks
+   are already complete, and 1,501 across the team: the point of showing them is that a queue
+   of nothing but pending work reads as a broken simulator, not that anyone scrolls through
+   fifteen hundred rows. The rest stay one click away, in the file's own Tasks tab. */
+const QZ_DONE_ROWS = 40;
+
 function qzMyTasksHTML() {
   const filter = qzState.tasksFilter || 'mine';
-  const allOpen = qzList('tasks', t => qzTaskStatus(t) !== 'Complete');
-  const myOpen = allOpen.filter(t => /you/i.test(t.assignedTo || ''));
-  const currentList = filter === 'all' ? allOpen : myOpen;
+  const scope = filter === 'all'
+    ? qzList('tasks')
+    : qzList('tasks', t => /you/i.test(t.assignedTo || ''));
 
-  const overdue = currentList.filter(t => t.dueDate && t.dueDate < QZ_TODAY);
-  const dueToday = currentList.filter(t => t.dueDate && t.dueDate === QZ_TODAY);
-  const upcoming = currentList.filter(t => !t.dueDate || t.dueDate > QZ_TODAY);
+  const open = scope.filter(t => qzTaskStatus(t) !== 'Complete');
+  const done = scope.filter(t => qzTaskStatus(t) === 'Complete')
+    .sort((a, b) => String(b.dueDate || '').localeCompare(String(a.dueDate || '')));
 
-  const renderSection = (title, items, badgeClass, stripClass) => {
+  const myOpenCount = qzList('tasks', t => qzTaskStatus(t) !== 'Complete' && /you/i.test(t.assignedTo || '')).length;
+  const allOpenCount = qzList('tasks', t => qzTaskStatus(t) !== 'Complete').length;
+
+  const overdue = open.filter(t => t.dueDate && t.dueDate < QZ_TODAY);
+  const dueToday = open.filter(t => t.dueDate && t.dueDate === QZ_TODAY);
+  const upcoming = open.filter(t => !t.dueDate || t.dueDate > QZ_TODAY);
+
+  const renderSection = (title, items, badgeClass, stripClass, note) => {
     if (!items.length) return '';
     const rows = items.map(t => {
       const o = qzGetOrder(t.relatedOrderId);
       const addr = o ? o.propertyAddress : '—';
-      const wf = t.taskGroup || t.group || '—';
-      return `<tr class="qz-task-row link ${stripClass}" onclick="qzGotoOrderTasks('${escAttr(t.relatedOrderId)}')">
+      /* taskGroup holds the group's id ('tg-title'); the screen wants its name ('Title'). */
+      const grp = t.taskGroup ? qzFind('taskGroups', t.taskGroup) : null;
+      const wf = (grp && grp.name) || t.group || '—';
+      const isDone = qzTaskStatus(t) === 'Complete';
+      const statusClass = isDone ? 'complete' : (t.status === 'In Progress' ? 'progress' : 'open');
+      return `<tr class="qz-task-row link ${stripClass} ${isDone ? 'qz-task-done' : ''}" onclick="qzGotoOrderTasks('${escAttr(t.relatedOrderId)}')">
+        <td class="qz-task-tick" onclick="event.stopPropagation()">
+          <input type="checkbox" ${isDone ? 'checked' : ''} title="${isDone ? 'Reopen this task' : 'Mark this task complete'}" onchange="qzToggleTaskStatus('${escAttr(String(t.id))}', this.checked)">
+        </td>
         <td><div class="qz-task-title"><b>${esc(t.title)}</b></div><div class="qz-sub" style="font-size:11.5px;color:#64748b;">${esc(wf)}</div></td>
         <td><b>${esc(t.relatedOrderId)}</b><div class="qz-sub" style="font-size:11.5px;color:#64748b;">${esc(addr)}</div></td>
         <td><span class="qz-badge ${/you/i.test(t.assignedTo || '') ? 'teal' : 'neutral'}">${esc(t.assignedTo || 'Unassigned')}</span></td>
         <td><span class="qz-due-date ${badgeClass}">${fmtDate(t.dueDate)}</span></td>
-        <td><span class="qz-badge ${t.status === 'In Progress' ? 'progress' : 'open'}">${esc(t.status || 'Open')}</span></td>
+        <td class="qz-status-cell"><span class="qz-badge ${statusClass}">${esc(t.status || 'Open')}</span></td>
         <td><button type="button" class="qz-btn sm" onclick="event.stopPropagation(); qzGotoOrderTasks('${escAttr(t.relatedOrderId)}')">Open Tasks &raquo;</button></td>
       </tr>`;
     }).join('');
@@ -2675,11 +3305,13 @@ function qzMyTasksHTML() {
     return `<div class="qz-tasks-sec">
       <div class="qz-tasks-sec-head">
         <h3>${esc(title)} <span class="qz-panel-count ${badgeClass}">${items.length}</span></h3>
+        ${note ? `<span class="qz-tasks-sec-note">${esc(note)}</span>` : ''}
       </div>
       <div class="qz-tbl-scroll">
         <table class="qz-tbl">
           <thead>
             <tr>
+              <th style="width:36px"></th>
               <th>Task & Milestone</th>
               <th>Order & Property</th>
               <th>Assigned To</th>
@@ -2694,32 +3326,43 @@ function qzMyTasksHTML() {
     </div>`;
   };
 
+  const doneShown = done.slice(0, QZ_DONE_ROWS);
+  const doneNote = done.length > QZ_DONE_ROWS
+    ? `Showing the ${QZ_DONE_ROWS} most recently due of ${done.length}. The rest live in each file's own Tasks tab.`
+    : '';
+
   return `<div class="qz-my-tasks-page">
     <div class="qz-listhead" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <div>
         <h2>Tasks Pipeline</h2>
-        <div class="sub">Cross-order task queue across all 75 active files as of ${fmtDate(QZ_TODAY)}.</div>
+        <div class="sub">Cross-order task queue across all 75 active files as of ${fmtDate(QZ_TODAY)} &middot;
+          ${open.length} open &middot; ${done.length} complete. Tick a task to close it out.</div>
       </div>
       <div class="qz-tasks-switch">
-        <button type="button" class="qz-btn sm ${filter === 'mine' ? 'primary' : ''}" onclick="qzSetTasksFilter('mine')">My Tasks (${myOpen.length})</button>
-        <button type="button" class="qz-btn sm ${filter === 'all' ? 'primary' : ''}" onclick="qzSetTasksFilter('all')">All Team Tasks (${allOpen.length})</button>
+        <button type="button" class="qz-btn sm ${filter === 'mine' ? 'primary' : ''}" onclick="qzSetTasksFilter('mine')">My Tasks (${myOpenCount})</button>
+        <button type="button" class="qz-btn sm ${filter === 'all' ? 'primary' : ''}" onclick="qzSetTasksFilter('all')">All Team Tasks (${allOpenCount})</button>
       </div>
     </div>
     ${renderSection('Overdue Tasks', overdue, 'bad', 'qz-task-strip-bad')}
     ${renderSection('Due Today', dueToday, 'warn', 'qz-task-strip-warn')}
     ${renderSection('Upcoming Tasks', upcoming, 'good', 'qz-task-strip-good')}
-    ${!currentList.length ? '<div class="qz-empty">No open tasks matching the selected filter.</div>' : ''}
+    ${renderSection('Completed', doneShown, 'good', 'qz-task-strip-good', doneNote)}
+    ${!scope.length ? '<div class="qz-empty">No tasks matching the selected filter.</div>' : ''}
   </div>`;
 }
 
-function qzGotoOrderTasks(orderId) {
+function qzGotoOrderTab(orderId, tab) {
   qzState.view = 'order';
   qzState.orderId = orderId;
-  qzState.orderTab = 'tasks';
+  qzState.orderTab = tab || 'overview';
   qzMark('orders-open');
   qzSyncTopTabs();
   qzRenderRoot();
   qzCloseBellDropdown();
+}
+
+function qzGotoOrderTasks(orderId) {
+  qzGotoOrderTab(orderId, 'tasks');
 }
 
 /* ---------- Qualia Core: top-level section nav ---------- */
@@ -2813,6 +3456,9 @@ function qzSyncTopTabs() {
   });
   /* The Lessons control lights up on every course view, the way a section tab would, so the
      trainee always knows which layer they are standing in. */
+  /* The logo is the Home button, so it carries the active underline while Home is open. */
+  const brand = document.getElementById('qzBrand');
+  if (brand) brand.classList.toggle('active', qzState.view === 'home');
   const lb = document.getElementById('qzLessonsBtn');
   if (lb) {
     lb.classList.toggle('active', ['dashboard', 'lesson', 'lessons', 'scenario', 'review', 'exam'].indexOf(qzState.view) > -1);
@@ -2945,6 +3591,7 @@ function qzRenderRoot() {
   if (qzState.view === 'dashboard') html = qzDashboardHTML();
   else if (qzState.view === 'orders') html = qzOrdersHTML();
   else if (qzState.view === 'order') html = qzOrderHTML();
+  else if (qzState.view === 'home') html = qzHomeHTML();
   else if (qzState.view === 'my-tasks' || qzState.view === 'tasks') html = qzMyTasksHTML();
   else if (qzState.view === 'scenario') html = qzScenarioDetailHTML();
   else if (qzState.view === 'lesson') html = qzLessonDetailHTML();
@@ -4195,7 +4842,7 @@ function qzRevExamMode(id) {
 function qzRevOpenDoc(id) {
   const r = qzReviewLookup(id);
   if (!r) return;
-  simViewDoc(r.doc, r.docTitle);
+  qzOpenDocFile(r.doc, r.docTitle);
   qzRevGet(id).docOpened = true;
   qzSave();
   qzRenderRoot();
@@ -4839,9 +5486,44 @@ function qzUploadDoc(id) {
   qzRenderRoot();
 }
 
+/* ---------- opening a file-backed document ----------
+   15 of the 16 files in documents/ carry their dates printed into the HTML, and the viewer
+   in sim-engine.js just points an iframe at them. Rather than templating all sixteen (that
+   is D3, a much bigger job) the text is shifted on its way to the viewer and served as a
+   blob, so a document always agrees with the order it belongs to.
+
+   The <base> tag is what keeps doc.css alive: a blob URL has no base of its own to resolve
+   'doc.css' against. qzRenderTemplatedDoc solves the same problem the same way.
+
+   Cached per file: a trainee re-opening the purchase agreement should not refetch it, and
+   the shift cannot change inside one session. */
+const _qzShiftedDocs = {};
+
+function qzOpenDocFile(file, title) {
+  if (!QZ_SHIFT_DAYS) { simViewDoc(file, title); return; }
+  if (_qzShiftedDocs[file]) { simViewDoc(_qzShiftedDocs[file], title); return; }
+  let base = file;
+  try { base = new URL(file, location.href).href; } catch (e) {}
+  fetch(file)
+    .then(function (r) { return r.ok ? r.text() : Promise.reject(new Error(String(r.status))); })
+    .then(function (html) {
+      const shifted = qzShiftDateText(html)
+        .replace(/<head(\s[^>]*)?>/i, function (m) { return m + '<base href="' + base + '">'; });
+      const url = URL.createObjectURL(new Blob([shifted], { type: 'text/html' }));
+      _qzShiftedDocs[file] = url;
+      simViewDoc(url, title);
+    })
+    /* Showing the document with its original dates beats showing nothing: the trainee can
+       still read it, and the console says why it looks out of step. */
+    .catch(function (e) {
+      console.warn('Could not shift dates in ' + file + ' (' + e.message + '); serving as-is.');
+      simViewDoc(file, title);
+    });
+}
+
 function qzViewDoc(file, title) {
   qzMark('docs-download');
-  simViewDoc(file, title);
+  qzOpenDocFile(file, title);
 }
 function qzDownloadDoc() { qzMark('docs-download'); simToast('Downloaded (training only, no real file was transferred).'); }
 function qzReviewDoc(id) { qzUpdate('documents', id, { status: 'Reviewed' }); qzMark('docs-review'); qzRenderRoot(); }
@@ -4877,7 +5559,7 @@ function qzDocumentsHTML(o) {
       ? ` <span class="qz-due ${daysToClosing < 0 ? 'overdue' : daysToClosing <= 7 ? 'soon' : 'far'}">closing in ${daysToClosing}d</span>`
       : '';
     let actions = '';
-    if (st === 'Pending') actions = `<button class="qz-btn sm primary" data-doc-action="upload" onclick="qzUploadDoc(${d.id})">Upload</button>`;
+    if (st === 'Pending') actions = `<button class="qz-btn sm primary" data-doc-action="upload" onclick="qzUploadDoc('${escAttr(String(d.id))}')">Upload</button>`;
     else {
       /* A document is openable when it has a file on disk OR a template that
          can be rendered from the order. Only a row with neither falls back to
@@ -4887,10 +5569,10 @@ function qzDocumentsHTML(o) {
         : (qzDocIsOpenable(d)
           ? `<button class="qz-btn sm" data-doc-action="view" onclick="qzViewGeneratedDoc('${escAttr(d.id)}')">View</button>`
           : `<button class="qz-btn sm" data-doc-action="download" onclick="qzDownloadDoc()">Download</button>`);
-      if (st === 'Received') actions += ` <button class="qz-btn sm" data-doc-action="review" onclick="qzReviewDoc(${d.id})">Mark Reviewed</button>`;
+      if (st === 'Received') actions += ` <button class="qz-btn sm" data-doc-action="review" onclick="qzReviewDoc('${escAttr(String(d.id))}')">Mark Reviewed</button>`;
     }
-    actions += ` <button class="qz-btn sm" title="Edit Document" onclick="qzEditDocModal(${d.id})">&#9998;</button>`;
-    actions += ` <button class="qz-btn sm danger" title="Delete Document" onclick="qzDeleteDocModal(${d.id})">&times;</button>`;
+    actions += ` <button class="qz-btn sm" title="Edit Document" onclick="qzEditDocModal('${escAttr(String(d.id))}')">&#9998;</button>`;
+    actions += ` <button class="qz-btn sm danger" title="Delete Document" onclick="qzDeleteDocModal('${escAttr(String(d.id))}')">&times;</button>`;
 
     return `<tr data-doc-id="${d.id}">
       <td><input type="checkbox" class="qz-doc-chk" data-id="${d.id}"></td>
@@ -5265,7 +5947,7 @@ function qzClosingHTML(o) {
   const items = outstanding.length
     ? outstanding.map(function (d) {
         return '<label class="qz-check-item">' +
-          '<input type="checkbox" onchange="qzReviewDoc(' + JSON.stringify(d.id) + ')">' +
+          '<input type="checkbox" onchange="qzReviewDoc(&#39;' + escAttr(String(d.id)) + '&#39;)">' +
           '<span>' + esc(d.name) + ' &mdash; ' + esc(qzDocStatus(d)) + '</span></label>';
       }).join('')
     : '<div class="qz-empty">Every document on this file has been reviewed.</div>';
@@ -5347,14 +6029,14 @@ function qzVendorsHTML(o) {
       '<td>' + (v.ordered ? fmtDate(v.ordered) : '&mdash;') + '</td>' +
       '<td><select class="qz-calc-in qz-vendor-st ' + cls + '"' +
         ' aria-label="Status for ' + escAttr(v.name) + '"' +
-        ' onchange="qzSetVendorStatus(' + JSON.stringify(v.id) + ', this.value)">' +
+        ' onchange="qzSetVendorStatus(&#39;' + escAttr(String(v.id)) + '&#39;, this.value)">' +
         statuses.map(function (s) {
           return '<option value="' + s + '"' + (v.status === s ? ' selected' : '') + '>' + s + '</option>';
         }).join('') + '</select></td>' +
       '<td><div class="qz-row-actions">' +
-        '<button class="qz-btn sm" onclick="qzCheckVendor(' + JSON.stringify(v.id) + ')">Check Status</button>' +
-        '<button class="qz-btn sm" onclick="qzEditVendorModal(' + JSON.stringify(v.id) + ')">&#9998;</button>' +
-        '<button class="qz-btn sm danger" onclick="qzDeleteVendorModal(' + JSON.stringify(v.id) + ')">&times;</button>' +
+        '<button class="qz-btn sm" onclick="qzCheckVendor(&#39;' + escAttr(String(v.id)) + '&#39;)">Check Status</button>' +
+        '<button class="qz-btn sm" onclick="qzEditVendorModal(&#39;' + escAttr(String(v.id)) + '&#39;)">&#9998;</button>' +
+        '<button class="qz-btn sm danger" onclick="qzDeleteVendorModal(&#39;' + escAttr(String(v.id)) + '&#39;)">&times;</button>' +
       '</div></td></tr>';
   }).join('');
 
@@ -5558,15 +6240,15 @@ function qzTasksHTML(o) {
       const due = isDone ? fmtDate(t.dueDate) : `${fmtDate(t.dueDate)} ${qzDueChipHTML(t.dueDate)}`;
       return `
         <tr data-task-id="${t.id}" class="${isDone ? 'qz-task-done' : ''} ${stripClass}">
-          <td style="width:36px"><input type="checkbox" ${isDone ? 'checked' : ''} onchange="qzToggleTaskStatus(${t.id}, this.checked)"></td>
+          <td style="width:36px"><input type="checkbox" ${isDone ? 'checked' : ''} onchange="qzToggleTaskStatus('${escAttr(String(t.id))}', this.checked)"></td>
           <td><b>${esc(t.title)}</b></td>
           <td>${esc(t.assignedTo)}</td>
           <td>${due}</td>
           <td><span class="qz-badge ${badgeClass}">${esc(t.status || 'Open')}</span></td>
           <td>
             <div class="qz-row-actions">
-              <button class="qz-btn sm" title="Edit Task" onclick="qzEditTaskModal(${t.id})">&#9998;</button>
-              <button class="qz-btn sm danger" title="Delete Task" onclick="qzDeleteTaskModal(${t.id})">&times;</button>
+              <button class="qz-btn sm" title="Edit Task" onclick="qzEditTaskModal('${escAttr(String(t.id))}')">&#9998;</button>
+              <button class="qz-btn sm danger" title="Delete Task" onclick="qzDeleteTaskModal('${escAttr(String(t.id))}')">&times;</button>
             </div>
           </td>
         </tr>`;
@@ -5583,6 +6265,7 @@ function qzTasksHTML(o) {
           <div style="display:flex;align-items:center;gap:10px">
             <div class="qz-tg-bar"><i style="width:${pct}%"></i></div>
             <button type="button" class="qz-tg-eye" title="${isHidden ? 'Show task group' : 'Hide task group'}" onclick="qzToggleTaskGroupHidden('${escAttr(gKey)}')">${isHidden ? '&#128064;' : '&#128065;'}</button>
+            <button type="button" class="qz-btn sm danger" title="Delete task group" onclick="qzDeleteTaskGroupModal('${escAttr(String(g.id || g.name))}')">&times;</button>
             <button class="qz-btn sm" onclick="qzAddTaskModal('${o.id}', '${escAttr(g.name)}')">+ Add Task</button>
           </div>
         </div>
@@ -5642,7 +6325,7 @@ function qzCommunicationHTML(o) {
   const list = threads.map(t => {
     const count = qzThreadMessages(t.id).length;
     return `
-      <div class="qz-thread-item ${t.id === qzState.threadId ? 'active' : ''}" onclick="qzOpenThread(${t.id})">
+      <div class="qz-thread-item ${t.id === qzState.threadId ? 'active' : ''}" onclick="qzOpenThread('${escAttr(String(t.id))}')">
         <b>${esc(t.subject)}</b>
         <span>${count} message${count !== 1 ? 's' : ''}</span>
       </div>`;
@@ -5668,10 +6351,10 @@ function qzCommunicationHTML(o) {
   let detail = '<div class="qz-panel">Select a thread.</div>';
   if (active) {
     const msgs = qzThreadMessages(active.id).map(m => `<div class="qz-msg ${m.sender === 'You (VA)' ? 'mine' : ''}"><div class="meta">${esc(m.sender)} &rarr; ${esc(m.recipient)} &middot; ${fmtDate(m.date)}</div>${esc(m.body)}</div>`).join('');
-    detail = `<div class="qz-panel"><div class="ph"><h4>${esc(active.subject)}</h4><button class="qz-btn sm danger" onclick="qzDeleteThreadModal(${active.id})">Delete Thread</button></div>
+    detail = `<div class="qz-panel"><div class="ph"><h4>${esc(active.subject)}</h4><button class="qz-btn sm danger" onclick="qzDeleteThreadModal('${escAttr(String(active.id))}')">Delete Thread</button></div>
       ${msgs}
       <div class="qz-reply"><textarea id="qzReplyBox" placeholder="Write a reply..." oninput="qzSyncReplyStep()"></textarea>
-      <div class="row"><button class="qz-btn" data-comm-action="followup" onclick="qzLogFollowup()">Log Follow-up</button><button class="qz-btn primary" data-comm-action="reply" onclick="qzSendReply(${active.id})">Send Reply</button></div></div>
+      <div class="row"><button class="qz-btn" data-comm-action="followup" onclick="qzLogFollowup()">Log Follow-up</button><button class="qz-btn primary" data-comm-action="reply" onclick="qzSendReply('${escAttr(String(active.id))}')">Send Reply</button></div></div>
     </div>`;
   }
   const newBtn = `<div style="padding:0 0 10px 0"><button class="qz-btn sm primary" style="width:100%" onclick="qzNewThreadModal('${o.id}')">+ New Message</button></div>`;
@@ -6427,17 +7110,23 @@ function qzDeleteOrderModal(orderId) {
 }
 
 function qzChangeOrderNumberModal(orderId) {
-  const newNum = prompt('Enter new Order Number (e.g. ORD-2026-9999):', orderId);
-  if (newNum && newNum.trim() && newNum !== orderId) {
-    const o = qzFind('orders', orderId);
-    if (o) {
-      o.id = newNum.trim();
+  qzPrompt({
+    title: 'Change Order Number',
+    label: 'New order number',
+    value: orderId,
+    hint: 'The file number appears on every document and report generated from this order.',
+    confirmLabel: 'Change number',
+    onSubmit: (newNum) => {
+      if (newNum === orderId) return;
+      const o = qzFind('orders', orderId);
+      if (!o) return;
+      o.id = newNum;
       qzLogAudit('UPDATE', `Order number changed from ${orderId} to ${o.id}`);
       if (qzState.orderId === orderId) qzState.orderId = o.id;
       simToast(`Order number updated to ${o.id}`, { tone: 'good' });
       qzRenderRoot();
     }
-  }
+  });
 }
 
 function qzToggleSettlementType(orderId) {
@@ -6690,7 +7379,7 @@ function qzEditDocModal(docId) {
       </div>
       <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
         <button class="qz-btn" onclick="document.getElementById('qzEditDocModal').remove()">Cancel</button>
-        <button class="qz-btn primary" onclick="qzSaveEditDoc(${d.id})">Save Changes</button>
+        <button class="qz-btn primary" onclick="qzSaveEditDoc('${escAttr(String(d.id))}')">Save Changes</button>
       </div>
     </div>`;
   document.body.appendChild(wrap);
@@ -6726,12 +7415,17 @@ function qzDeleteDocModal(docId) {
 }
 
 function qzNewFolderModal(orderId) {
-  const folderName = prompt('Enter new folder name:');
-  if (folderName && folderName.trim()) {
-    qzDocActiveFolder = folderName.trim();
-    simToast(`Folder "${qzDocActiveFolder}" created.`, { tone: 'good' });
-    qzRenderRoot();
-  }
+  qzPrompt({
+    title: 'New Folder',
+    label: 'Folder name',
+    placeholder: 'e.g. Lender Package',
+    confirmLabel: 'Create folder',
+    onSubmit: (folderName) => {
+      qzDocActiveFolder = folderName;
+      simToast(`Folder "${qzDocActiveFolder}" created.`, { tone: 'good' });
+      qzRenderRoot();
+    }
+  });
 }
 
 function qzTemplateLibraryModal(orderId) {
@@ -6859,7 +7553,7 @@ function qzEditTaskModal(taskId) {
       </div>
       <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
         <button class="qz-btn" onclick="document.getElementById('qzEditTaskModal').remove()">Cancel</button>
-        <button class="qz-btn primary" onclick="qzSaveEditTask(${t.id})">Save Changes</button>
+        <button class="qz-btn primary" onclick="qzSaveEditTask('${escAttr(String(t.id))}')">Save Changes</button>
       </div>
     </div>`;
   document.body.appendChild(wrap);
@@ -6894,13 +7588,43 @@ function qzDeleteTaskModal(taskId) {
   });
 }
 
-function qzAddTaskGroupModal(orderId) {
-  const name = prompt('Enter new task group name:');
-  if (name && name.trim()) {
-    qzInsert('taskGroups', { name: name.trim() });
-    simToast(`Task Group "${name}" created.`, { tone: 'good' });
-    qzRenderRoot();
+/* A group is a phase of the workflow, and phases hold work. Deleting one that still has
+   tasks in it would silently orphan them across every order that uses this workflow, so the
+   count is checked first and named in the refusal. */
+function qzDeleteTaskGroupModal(groupId) {
+  const g = qzFind('taskGroups', groupId);
+  if (!g) return;
+  const inUse = qzList('tasks', t => t.taskGroup === g.id || t.group === g.name).length;
+  if (inUse) {
+    simToast(inUse + ' task(s) still sit in "' + g.name + '". Move or close them first.');
+    return;
   }
+  qzConfirm({
+    title: 'Delete "' + g.name + '"?',
+    body: 'The group disappears from every order that uses this workflow.',
+    danger: true,
+    confirmLabel: 'Delete group',
+    onConfirm: () => {
+      qzRemove('taskGroups', g.id || g.name);
+      simToast('"' + g.name + '" deleted.', { tone: 'good' });
+      qzRenderRoot();
+    }
+  });
+}
+
+function qzAddTaskGroupModal(orderId) {
+  qzPrompt({
+    title: 'Add Task Group',
+    label: 'Group name',
+    placeholder: 'e.g. Post-Closing Audit',
+    hint: 'Groups are the chronological phases the workflow is broken into.',
+    confirmLabel: 'Add group',
+    onSubmit: (name) => {
+      qzInsert('taskGroups', { name: name });
+      simToast(`Task Group "${name}" created.`, { tone: 'good' });
+      qzRenderRoot();
+    }
+  });
 }
 
 function qzAdvanceStageModal(orderId) {
@@ -7031,7 +7755,7 @@ function qzEditVendorModal(vendorId) {
       </div>
       <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
         <button class="qz-btn" onclick="document.getElementById('qzEditVendorModal').remove()">Cancel</button>
-        <button class="qz-btn primary" onclick="qzSaveEditVendor(${v.id})">Save Changes</button>
+        <button class="qz-btn primary" onclick="qzSaveEditVendor('${escAttr(String(v.id))}')">Save Changes</button>
       </div>
     </div>`;
   document.body.appendChild(wrap);
@@ -7376,7 +8100,7 @@ function qzRecOpenDoc(id, docId) {
   const r = qzRecLookup(id);
   const d = r && r.docs.find(x => x.id === docId);
   if (!d) return;
-  simViewDoc(d.file, d.title);
+  qzOpenDocFile(d.file, d.title);
   qzRecGet(id).opened[docId] = true;
   qzSave();
   qzRenderRoot();
@@ -8057,7 +8781,7 @@ function qzScenarioDetailHTML() {
       ${firstAttemptLine}
       <div class="qz-feedback-actions">
         ${continueBtn}
-        ${(!walkActiveHere && r.correct && s.verifyDoc) ? `<button class="qz-btn" onclick="simViewDoc('${s.verifyDoc.file}','${esc(s.verifyDoc.title)}')">${esc(s.verifyDoc.buttonLabel)}</button>` : ''}
+        ${(!walkActiveHere && r.correct && s.verifyDoc) ? `<button class="qz-btn" onclick="qzOpenDocFile('${s.verifyDoc.file}','${esc(s.verifyDoc.title)}')">${esc(s.verifyDoc.buttonLabel)}</button>` : ''}
         ${(!walkActiveHere && s.practice) ? `<button class="qz-btn primary" onclick="qzPracticeAction('${s.id}')">${esc(s.practice.buttonLabel)} &rarr;</button>` : ''}
         ${r.practiced ? '<span class="qz-rv-chip good">Practiced</span>' : ''}
         ${retakeBtn}

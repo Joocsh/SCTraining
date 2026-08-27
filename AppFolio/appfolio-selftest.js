@@ -104,7 +104,12 @@
        'it carries three panels',
        document.querySelectorAll('.af-railstrip .af-strip-btn').length + ' buttons');
     ok(document.body.innerHTML.indexOf('Add Functionality') > -1, 'the topbar has Add Functionality');
-    ok(document.body.innerHTML.indexOf('Customer Service') < 0,
+    /* Read the MENUS, not document.body.innerHTML. innerHTML carries comments,
+       and the top bar's own comment explains that there is no Customer Service
+       entry — so the substring scan failed on the sentence documenting its
+       absence. The menu itself has never existed. */
+    ok(Array.prototype.slice.call(document.querySelectorAll('.af-topmenu'))
+         .every(function (b) { return (b.textContent || '').indexOf('Customer Service') < 0; }),
        'and no Customer Service menu, which the real product does not have');
     ok((document.getElementById('afGlobalSearch') || {}).placeholder === 'Search AppFolio',
        'the search field says Search AppFolio',
@@ -209,7 +214,17 @@
         ok(afGetLease(newLease.id).signatureStatus === 'unsigned', 'a wrong name does not sign');
         fill('afSignName', newLease.applicantName);
         afSignLease(newLease.id);
-        ok(afGetLease(newLease.id).signatureStatus === 'executed', 'the right name signs it');
+        /* The resident signing no longer executes the lease on its own — it
+           hands it to the manager. A lease is executed when both parties have
+           signed, so the flow is sign -> countersign -> move in. */
+        ok(afGetLease(newLease.id).signatureStatus === 'resident-signed',
+           'the right name signs it, and it moves to Ready to Countersign');
+        afMoveIn(newLease.id);
+        ok(afGetLease(newLease.id).status !== 'active',
+           'move-in is refused while the lease is only half signed');
+        afCountersignLease(newLease.id);
+        ok(afGetLease(newLease.id).signatureStatus === 'executed',
+           'countersigning executes it');
 
         afModalCollectDeposit(newLease.id);
         ok(!!document.getElementById('afDepAmt'), 'the deposit form renders');

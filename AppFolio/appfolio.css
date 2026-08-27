@@ -25,6 +25,7 @@
   --af-accent-hover:#137345; /* Darker Green on hover */
   --af-blue:        #0070ba; /* Active Tab & Links */
   --af-blue-light:  #e0f2fe; /* Active Row / Selection Tint */
+  --af-blue-dark:   #005a94; /* Primary button hover */
   --af-bg:          #f4f6f8; /* Main App Canvas Gray */
   --af-panel:       #ffffff; /* Card & Data Table Background */
   --af-line:        #e2e8f0; /* Subtle Borders & Dividers */
@@ -39,6 +40,12 @@
   --af-bad-dark:    #991b1b;
   /* Text that sits on a brand-coloured fill. */
   --af-on-brand:    #ffffff;
+
+  /* Calendar chrome, sampled from the 2026 Week screenshot. The today tint is
+     paler than --af-warn-light, which is a badge fill and far too saturated to
+     wash a whole column with. */
+  --af-cal-today:   #fdf8e3; /* Today's column / cell wash */
+  --af-cal-seg:     #d9dcdf; /* Active segment of the Month/Week/Day/Agenda group */
 
   /* Scrims, shadows and tint tokens — centralized so dark theme or contrast changes
      require zero search-and-replace. */
@@ -322,11 +329,14 @@ body.af-fullscreen {
 
 /* Structural subnav band (contextual by section) */
 .af-subnav {
-  height: var(--af-subnav-h);
+  /* min-height, not height: when the strip overflows, its scrollbar needs a row
+     of its own UNDER the tabs. A hard height put the scrollbar on top of them. */
+  min-height: var(--af-subnav-h);
+  min-width: 0;
   background: var(--af-panel);
   border-bottom: 1px solid var(--af-line);
   display: none;
-  align-items: center;
+  align-items: stretch;
   gap: 16px;
   padding: 0 24px;
   flex: none;
@@ -423,8 +433,12 @@ body.af-fullscreen {
   white-space: nowrap;
 }
 .af-btn:hover { background: var(--af-bg); }
-.af-btn.primary { background: var(--af-brand); border-color: var(--af-brand); color: var(--af-on-brand); }
-.af-btn.primary:hover { background: var(--af-brand-dark); border-color: var(--af-brand-dark); }
+/* Blue, not navy. Both 2026 screenshots that show a primary button — Customize
+   on the Calendar and Post on Vacancies — print it in the link blue; the navy
+   came from the unverified 2018 palette that RESOURCES.md §3 already retires.
+   Navy stays where the screenshots do show it: the top bar. */
+.af-btn.primary { background: var(--af-blue); border-color: var(--af-blue); color: var(--af-on-brand); }
+.af-btn.primary:hover { background: var(--af-blue-dark); border-color: var(--af-blue-dark); }
 .af-btn.danger { background: var(--af-bad); border-color: var(--af-bad); color: var(--af-on-brand); }
 .af-btn.danger:hover { background: var(--af-bad-dark); border-color: var(--af-bad-dark); }
 .af-btn.sm { padding: 5px 11px; font-size: 12.5px; }
@@ -494,6 +508,14 @@ body.af-fullscreen {
 .af-badge.emergency,
 .af-badge.denied,
 .af-badge.vacant-rehab { color: var(--af-bad); border-color: currentColor; }
+/* Tone classes. Several screens already asked for `af-badge good` / `warn` /
+   `info` / `neutral` and got the plain grey default, because only the
+   domain-word classes above existed. */
+.af-badge.good    { color: var(--af-good); border-color: currentColor; }
+.af-badge.warn    { color: var(--af-warn); border-color: currentColor; }
+.af-badge.bad     { color: var(--af-bad);  border-color: currentColor; }
+.af-badge.info    { color: var(--af-blue); border-color: currentColor; }
+.af-badge.neutral { color: var(--af-muted); border-color: var(--af-line); }
 
 /* =====================================================================
    KEY / VALUE AND TILES
@@ -1010,16 +1032,15 @@ body.af-fullscreen {
   text-decoration: none;
   color: var(--af-on-brand);
 }
-.af-logo-circle {
+/* The real circular mark, not a letter in a coloured disc. The source asset is
+   a hair elliptical (480x469), so it is cropped square on the way in and the
+   radius here only guards the antialiased edge against the navy bar. */
+.af-logo-mark-img {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #0284c7;
-  color: var(--af-on-brand);
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  font-size: 16px;
+  display: block;
+  flex: none;
 }
 .af-logo-title {
   font-size: 15px;
@@ -1338,16 +1359,37 @@ body.af-fullscreen {
   padding: 0 28px;
 }
 .af-subnav[hidden] { display: none; }
+/* The strip SCROLLS, it does not wrap. RESOURCES.md §5 records this from the
+   screenshots, and Maintenance is the section that proves it: nine tabs in a
+   fixed-height bar. Wrapping pushed "Maintenance Performer" onto a second line
+   that the bar's own height then clipped off — a tab you could see half of and
+   never click. */
 .af-subnav .af-tabs {
   display: flex;
   gap: 0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-width: 0;
+  width: 100%;
   border-bottom: none;
   margin-bottom: 0;
 }
+/* The platform scrollbar, left alone. The reference screenshot shows the
+   product using the browser's own — arrow buttons and all — sitting on its own
+   row beneath the tabs, so styling a slimmer one here would be less faithful,
+   not more polished. */
+/* The tab stretches to the full height of the bar rather than being centred in
+   it. That matters for one reason: the active tab's blue rule has to land ON the
+   bar's own hairline, the way the product draws it. Centring a 51px tab inside a
+   42px bar pushed the rule 4px below the bar, where nothing could see it. */
 .af-subnav .af-tab {
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
   border-bottom: 3px solid transparent;
-  padding: 13px 15px;
+  margin-bottom: -1px;
+  padding: 0 15px;
   font-size: 14px;
   color: var(--af-v-link);
   background: none;
@@ -1359,10 +1401,14 @@ body.af-fullscreen {
   white-space: nowrap;
 }
 .af-subnav .af-tab:hover { text-decoration: underline; }
+/* This is the rule that actually wins for the sub-tab strip. The active tab is
+   blue with a blue rule under it, as the Vacancies screenshot shows; setting it
+   to --af-text made the SELECTED tab the only grey word in a row of blue links,
+   which reads as the disabled one. */
 .af-subnav .af-tab.on {
-  color: var(--af-text);
+  color: var(--af-blue);
   font-weight: 600;
-  border-bottom-color: var(--af-v-link);
+  border-bottom-color: var(--af-blue);
   text-decoration: none;
 }
 
@@ -1386,7 +1432,10 @@ body.af-fullscreen {
   white-space: nowrap;
 }
 .af-tab2:hover { text-decoration: underline; }
-.af-tab2.on { color: var(--af-text); font-weight: 600; border-bottom-color: var(--af-muted); }
+/* The active sub-tab stays blue and gains a blue rule under it. It used to go
+   dark-on-grey, which inverted the screenshot: there the selected tab is the
+   one that reads as a live link, not the one that reads as disabled text. */
+.af-tab2.on { color: var(--af-blue); font-weight: 600; border-bottom-color: var(--af-blue); }
 
 /* =====================================================================
    RIGHT RAIL
@@ -1428,6 +1477,22 @@ body.af-fullscreen {
   line-height: 1.4;
 }
 .af-rail-link:hover { text-decoration: underline; }
+/* The product tags genuinely new rail entries with a small pale chip on its own
+   line under the link — "Add Personal Calendar" carries one in the Calendar
+   screenshot. It is never underlined with the link on hover. */
+.af-rail-badge {
+  display: table;
+  margin-top: 3px;
+  padding: 2px 7px;
+  border-radius: 2px;
+  background: var(--af-good-light);
+  color: var(--af-good);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .4px;
+  text-decoration: none;
+}
+.af-rail-link:hover .af-rail-badge { text-decoration: none; }
 
 @media (max-width: 1360px) { .af-rail { display: none; } }
 

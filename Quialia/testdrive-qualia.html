@@ -42,9 +42,11 @@
          team works in Core; the previous shell reproduced the Connect buyer/agent portal,
          which is a different product with a different layout. -->
     <div class="qz-topbar" id="qzTopbar" style="display:none">
-      <div class="qz-brand">
+      <!-- The logo is a button in the real product: it opens the Home landing with its
+           Orders / Order Queue / Action Queue / Tasks / Notifications strip. -->
+      <button type="button" class="qz-brand" id="qzBrand" onclick="qzGotoHome()" title="Home">
         <span class="mark"><img src="Images-resourses/brand/qualia-mark-light.svg" alt=""></span><span class="wordmark">Qualia</span>
-      </div>
+      </button>
       <div class="qz-tabs" id="qzCoreSections"></div>
       <div class="qz-search"><input type="text" id="qzTopSearchInput" placeholder="Find order&hellip;" oninput="qzTopSearch(this.value)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
 
@@ -115,6 +117,9 @@
   <script src="qualia-app.js"></script>
   <script src="qualia-shell.js"></script>
   <script src="qualia-tour.js"></script>
+  <!-- Inert unless ?selftest=1 is in the URL. Measures that the clock shift reached the data,
+       the course prose and the documents — see the header of the file. -->
+  <script src="qualia-selftest.js"></script>
   <script>
     const tdMe = SCApp.requireAuth();
   </script>

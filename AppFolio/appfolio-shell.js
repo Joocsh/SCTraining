@@ -357,48 +357,202 @@ function afToggleReconcile(txnId) {
    COMMUNICATIONS
    ============================================================================ */
 
-function afCommunicationsHTML() {
-  const sent = afDemo.messages || [];
-  const actions = '<button type="button" class="af-btn primary" onclick="afModalComposeMessage()">+ New Message</button>';
+/* ---------------- Communication ----------------
+   Four sub-tabs — Inbox, Bulk Emails/Texts, Templates, Call Log — used to
+   render byte-for-byte identical HTML, because this function never read
+   afState.sectionTab. The strip promised four screens and delivered one, which
+   is the same defect class as the eight sidebar entries that bounced to their
+   section's first tab: a navigation control that lies about where it goes.
 
-  const templateRows = [
-    { title: '24-Hour Notice of Intent to Enter', cat: 'Maintenance / Inspection', ref: 'Texas Prop. Code § 92.0081', doc: 'documents/sample-notice.html' },
-    { title: '3-Day Notice to Vacate for Non-Payment', cat: 'Delinquency / Collections', ref: 'Texas Prop. Code § 24.005', doc: 'documents/notice-to-vacate.html' },
-    { title: 'FCRA Statement of Adverse Action Notice', cat: 'Leasing / Screening', ref: '15 U.S.C. § 1681m', doc: 'documents/adverse-action-notice.html' },
-    { title: 'Texas Residential Lease Agreement', cat: 'Leasing / Move-In', ref: 'Texas Association of Realtors (TAR)', doc: 'documents/lease-agreement.html' },
-    { title: 'Monthly Owner Operating Statement', cat: 'Trust Accounting', ref: 'Texas Property Code Chapter 92', doc: 'documents/owner-statement.html' },
-    { title: 'Security Deposit Itemization Statement', cat: 'Move-Out / Accounting', ref: 'Texas Prop. Code § 92.104 (30-Day Rule)', doc: 'documents/deposit-itemization.html' }
-  ].map(function (tpl) {
+   Nothing here is invented. The inbox derives inbound messages from the guest
+   card inquiries and resident-reported work orders that already exist; the
+   call log derives from the same records plus the emergency line; bulk sends
+   count real audiences and write through the same afDemo.messages the compose
+   modal uses, so anything sent in bulk shows up in the Inbox afterwards. */
+
+const AF_COMM_TEMPLATES = [
+  { title: '24-Hour Notice of Intent to Enter', cat: 'Maintenance / Inspection', ref: 'Texas Prop. Code § 92.0081', doc: 'documents/sample-notice.html' },
+  { title: '3-Day Notice to Vacate for Non-Payment', cat: 'Delinquency / Collections', ref: 'Texas Prop. Code § 24.005', doc: 'documents/notice-to-vacate.html' },
+  { title: 'FCRA Statement of Adverse Action Notice', cat: 'Leasing / Screening', ref: '15 U.S.C. § 1681m', doc: 'documents/adverse-action-notice.html' },
+  { title: 'Texas Residential Lease Agreement', cat: 'Leasing / Move-In', ref: 'Texas Association of Realtors (TAR)', doc: 'documents/lease-agreement.html' },
+  { title: 'Monthly Owner Operating Statement', cat: 'Trust Accounting', ref: 'Texas Property Code Chapter 92', doc: 'documents/owner-statement.html' },
+  { title: 'Security Deposit Itemization Statement', cat: 'Move-Out / Accounting', ref: 'Texas Prop. Code § 92.104 (30-Day Rule)', doc: 'documents/deposit-itemization.html' }
+];
+
+/* Everything that has arrived, derived from the records that carry it. A guest
+   card's notes ARE the message the prospect sent; a resident-reported work
+   order IS a maintenance request that came in. */
+function afCommInbound() {
+  const out = [];
+  afAllGuestCards().forEach(function (g) {
+    if (!g.notes || (g.kind && g.kind !== 'prospect')) return;
+    out.push({
+      date: g.createdDate, from: g.name, channel: 'Email',
+      subject: 'Inquiry — ' + afGcInterestedIn(g), body: g.notes,
+      open: "afGoto('leasing', 'guest-cards')", openLabel: 'Guest card'
+    });
+  });
+  afAllWorkOrders().forEach(function (w) {
+    if (!afWoResidentReported(w)) return;
+    const u = afGetUnit(w.unitId);
+    const p = afGetProperty(w.propertyId) || (u ? afGetProperty(u.propertyId) : null) || {};
+    out.push({
+      date: w.createdDate, from: (p.name || '') + (u ? ' Unit ' + u.label : ''),
+      channel: 'Resident Portal',
+      subject: 'Maintenance request — ' + w.title, body: w.description || '',
+      open: "afGoto('work-order', '" + w.id + "')", openLabel: w.id.replace('WO-', '')
+    });
+  });
+  return out.sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
+}
+
+function afCommInboxHTML() {
+  const inbound = afCommInbound();
+  const sent = (afDemo.messages || []).slice().reverse();
+
+  const inRows = inbound.map(function (m) {
+    return '<tr>' +
+      '<td>' + afFmtDateNum(m.date) + '</td>' +
+      '<td><b>' + esc(m.subject) + '</b><div class="af-sub">' + esc(String(m.body).slice(0, 110)) + '</div></td>' +
+      '<td>' + esc(m.from) + '</td>' +
+      '<td><span class="af-badge neutral">' + esc(m.channel) + '</span></td>' +
+      '<td><button type="button" class="af-linkbtn" onclick="' + m.open + '">' + esc(m.openLabel) + '</button></td>' +
+    '</tr>';
+  }).join('');
+
+  const sentRows = sent.map(function (m) {
+    return '<tr>' +
+      '<td>' + afFmtDateNum(m.date) + '</td>' +
+      '<td><b>' + esc(m.subject) + '</b><div class="af-sub">' + esc(String(m.body || '').slice(0, 110)) + '</div></td>' +
+      '<td>' + esc(m.to) + '</td>' +
+      '<td><span class="af-badge info">' + esc(m.channel) + '</span></td>' +
+      '<td></td>' +
+    '</tr>';
+  }).join('');
+
+  return '<div class="af-page">' +
+    '<div class="af-pagehead"><h1>Inbox</h1>' +
+      '<button type="button" class="af-btn primary" onclick="afModalComposeMessage()">+ New Message</button></div>' +
+    '<div class="af-tablewrap"><table class="af-table">' +
+      '<thead><tr><th>Date</th><th>Subject</th><th>From / To</th><th>Channel</th><th></th></tr></thead>' +
+      '<tbody>' + (sentRows + inRows ||
+        '<tr><td colspan="5">' + afEmpty('There are currently no messages.') + '</td></tr>') +
+      '</tbody></table></div>' +
+    afDisplaying(inbound.length + sent.length, inbound.length + sent.length) +
+  '</div>';
+}
+
+/* Audiences are counted off the live portfolio, so the number next to a segment
+   is the number of people who would actually receive the send. */
+function afCommAudiences() {
+  const active = afAllLeases().filter(function (l) { return l.status === 'active'; });
+  const residents = active.reduce(function (n, l) { return n + (l.residentIds || []).length; }, 0);
+  const soon = active.filter(function (l) {
+    const d = afDaysFromToday(l.endDate);
+    return d >= 0 && d <= 60;
+  }).length;
+  return [
+    { id: 'all-residents', label: 'All current residents', n: residents },
+    { id: 'delinquent',    label: 'Residents with a balance', n: active.filter(function (l) { return l.balanceCents > 0; }).length },
+    { id: 'expiring',      label: 'Leases expiring within 60 days', n: soon },
+    { id: 'owners',        label: 'All owners', n: afAllOwners().length },
+    { id: 'prospects',     label: 'Active guest cards', n: afGuestCardProspects().length }
+  ];
+}
+
+function afCommBulkSend(audienceId, channel) {
+  const a = afCommAudiences().filter(function (x) { return x.id === audienceId; })[0];
+  if (!a) return;
+  if (!a.n) { simToast('That audience is empty — nothing to send.'); return; }
+  if (!afDemo.messages) afDemo.messages = [];
+  afDemo.messages.push({
+    id: 'MSG-' + (100 + afDemo.messages.length + 1),
+    date: afToday(),
+    to: a.label + ' (' + a.n + ' recipients)',
+    channel: channel,
+    subject: 'Bulk ' + channel.toLowerCase() + ' to ' + a.label.toLowerCase(),
+    body: 'Sent from Bulk Emails/Texts.'
+  });
+  simToast(channel + ' queued for ' + a.n + ' recipient' + (a.n === 1 ? '' : 's') + '.', { tone: 'good' });
+  afRenderRoot();
+}
+
+function afCommBulkHTML() {
+  const rows = afCommAudiences().map(function (a) {
+    return '<tr>' +
+      '<td><b>' + esc(a.label) + '</b></td>' +
+      '<td class="num">' + a.n + '</td>' +
+      '<td>' +
+        '<button type="button" class="af-btn sm primary" onclick="afCommBulkSend(\'' + escAttr(a.id) + '\', \'Email\')">Send Email</button> ' +
+        '<button type="button" class="af-btn sm" onclick="afCommBulkSend(\'' + escAttr(a.id) + '\', \'Text\')">Send Text</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+
+  return '<div class="af-page">' +
+    '<h1>Bulk Emails/Texts</h1>' +
+    '<p class="af-note">Every count below is the live portfolio, not a saved list. ' +
+      'A send is recorded against the audience and appears in the Inbox.</p>' +
+    '<div class="af-tablewrap"><table class="af-table">' +
+      '<thead><tr><th>Audience</th><th class="num">Recipients</th><th>Send</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>' +
+  '</div>';
+}
+
+function afCommTemplatesHTML() {
+  const rows = AF_COMM_TEMPLATES.map(function (tpl) {
     return '<tr>' +
       '<td><b>' + esc(tpl.title) + '</b></td>' +
-      '<td><span class="af-badge">' + esc(tpl.cat) + '</span></td>' +
+      '<td><span class="af-badge neutral">' + esc(tpl.cat) + '</span></td>' +
       '<td>' + esc(tpl.ref) + '</td>' +
       '<td><button type="button" class="af-btn sm" onclick="SimEngine.viewDoc(\'' + escAttr(tpl.doc) + '\', \'' + escAttr(tpl.title) + '\')">Preview Document</button></td>' +
-      '</tr>';
+    '</tr>';
   }).join('');
 
-  const messageRows = sent.map(function (m) {
+  return '<div class="af-page">' +
+    '<h1>Templates</h1>' +
+    '<div class="af-tablewrap"><table class="af-table">' +
+      '<thead><tr><th>Template Title</th><th>Category</th><th>Statutory Reference</th><th></th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>' +
+    afDisplaying(AF_COMM_TEMPLATES.length, AF_COMM_TEMPLATES.length) +
+  '</div>';
+}
+
+function afCommCallsHTML() {
+  /* The emergency line is modelled in Maintenance, and duplicating its records
+     here would give the module two answers to "what happened on that call".
+     This screen is the communication record and links across to the dispatch. */
+  const calls = AF_EMERGENCY_CALLS.map(function (c) {
+    const u = afGetUnit(c.unit);
+    const p = u ? afGetProperty(u.propertyId) : null;
     return '<tr>' +
-      '<td>' + afFmtDate(m.date) + '</td>' +
-      '<td><b>' + esc(m.subject) + '</b><div class="af-sub">' + esc(m.body || '').slice(0, 90) + '</div></td>' +
-      '<td>' + esc(m.to) + '</td>' +
-      '<td><span class="af-badge">' + esc(m.channel) + '</span></td>' +
-      '</tr>';
+      '<td><b>' + esc(c.id) + '</b><div class="af-sub">' + esc(c.time) + '</div></td>' +
+      '<td>' + (p ? esc(p.name) + ' ' : '') + (u ? esc('Unit ' + u.label) : esc(c.unit)) + '</td>' +
+      '<td>' + esc(c.issue) + '</td>' +
+      '<td><span class="af-badge ' + escAttr(c.priority.toLowerCase()) + '">' + esc(c.priority) + '</span></td>' +
+      '<td>' + esc(c.dispatch) + '</td>' +
+      '<td><button type="button" class="af-linkbtn" onclick="afGoto(\'maintenance\', \'contact\')">Dispatch record</button></td>' +
+    '</tr>';
   }).join('');
 
-  return afPageHead('Communications & Document Templates', 'Resident notices, owner correspondence and pre-approved legal templates.', actions) +
-    '<section class="af-card" style="margin-bottom:20px;">' +
-      '<h3>Legal Notice &amp; Document Templates</h3>' +
-      '<table class="af-tbl"><thead><tr>' +
-        '<th>Template Title</th><th>Category</th><th>Statutory Reference</th><th>Actions</th>' +
-      '</tr></thead><tbody>' + templateRows + '</tbody></table>' +
-    '</section>' +
-    '<section class="af-card">' +
-      '<h3>Sent Messages Log</h3>' +
-      (messageRows.length
-        ? '<table class="af-tbl"><thead><tr><th>Date</th><th>Subject & Message Body</th><th>Recipient</th><th>Channel</th></tr></thead><tbody>' + messageRows + '</tbody></table>'
-        : '<p class="af-sub">No sent messages recorded yet.</p>') +
-    '</section>';
+  return '<div class="af-page">' +
+    '<h1>Call Log</h1>' +
+    '<p class="af-note">Inbound calls to the 24/7 line. Dispatch and vendor assignment ' +
+      'happen in Maintenance &rsaquo; Contact Center, which is where each of these leads.</p>' +
+    '<div class="af-tablewrap"><table class="af-table">' +
+      '<thead><tr><th>Call</th><th>Property / Unit</th><th>Reported issue</th>' +
+        '<th>Priority</th><th>Dispatch</th><th></th></tr></thead>' +
+      '<tbody>' + (calls || '<tr><td colspan="6">' + afEmpty('No calls logged.') + '</td></tr>') +
+      '</tbody></table></div>' +
+    afDisplaying(AF_EMERGENCY_CALLS.length, AF_EMERGENCY_CALLS.length) +
+  '</div>';
+}
+function afCommunicationsHTML() {
+  const tab = afState.sectionTab || 'comm-inbox';
+  if (tab === 'comm-bulk') return afCommBulkHTML();
+  if (tab === 'comm-templates') return afCommTemplatesHTML();
+  if (tab === 'comm-calls') return afCommCallsHTML();
+  return afCommInboxHTML();
 }
 
 function afModalComposeMessage() {
@@ -458,12 +612,16 @@ function afReportingHTML() {
   const sub = afState.subTab;
 
   let body;
-  if (tab === 'reports') {
+  if (tab === 'reports' || tab === 'index') {
     body = afReportIndexHTML();
   } else if (tab === 'scheduled') {
     body = afScheduledReportsHTML();
-  } else if (tab === 'metrics') {
-    body = afMetricsHTML();
+  } else if (tab === 'metrics' || tab === 'pricing-metrics' || tab === 'pricing') {
+    body = afPricingMetricsHTML();
+  } else if (tab === 'business') {
+    body = (typeof afBusinessMetricsHTML === 'function') ? afBusinessMetricsHTML() : afReportIndexHTML();
+  } else if (tab === 'insurance') {
+    body = (typeof afInsuranceMetricsHTML === 'function') ? afInsuranceMetricsHTML() : afReportIndexHTML();
   } else if (tab === 'surveys') {
     body = afSurveysHTML();
   } else if (tab === 'letters') {
@@ -474,8 +632,6 @@ function afReportingHTML() {
     body = afReportIndexHTML();
   }
 
-  /* Each Reporting screen writes its own heading, the way the product does;
-     a second banner above it was this module's invention. */
   return body;
 }
 

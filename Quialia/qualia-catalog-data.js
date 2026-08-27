@@ -834,8 +834,12 @@ const QZC_ORDERS = [
     const city = cities[hash % cities.length];
     const zip = zipCodes[city];
     const street = (100 + (hash % 8900)) + ' ' + streetNames[hash % streetNames.length];
-    const bName = buyerFirst[hash % buyerFirst.length] + ' ' + buyerLast[(hash >> 4) % buyerLast.length];
-    const sName = buyerFirst[(hash >> 8) % buyerFirst.length] + ' ' + buyerLast[(hash >> 12) % buyerLast.length];
+    /* Unsigned shifts. hash is (num * 2654435761) >>> 0, which routinely exceeds 2^31, and
+       the signed >> coerces it to int32 first: the result went negative, negative % length
+       is negative, and the lookup handed back undefined. That is where the 37 parties named
+       "Linda undefined" and "undefined undefined" came from. */
+    const bName = buyerFirst[hash % buyerFirst.length] + ' ' + buyerLast[(hash >>> 4) % buyerLast.length];
+    const sName = buyerFirst[(hash >>> 8) % buyerFirst.length] + ' ' + buyerLast[(hash >>> 12) % buyerLast.length];
     const agt1 = agents[hash % agents.length];
     const agt2 = agents[(Math.floor(hash / 7)) % agents.length];
     const lnd = lenders[hash % lenders.length];
