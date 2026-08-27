@@ -1310,7 +1310,9 @@
     .td-mini.fub { background: #1e88e5; }
     .td-mini.zi { background: #F5A522; color: #1C2540; }
     .td-mini.ku { background: #6c4fd1; }
-    .td-mini.af { background: #0f2a4a; padding: 0; overflow: hidden; }
+    /* White behind the mark, like the Qualia and DocuSign tiles: the AppFolio
+       icon IS a blue disc, so a navy plate behind it just muddies the edge. */
+    .td-mini.af { background: #ffffff; padding: 3px; overflow: hidden; }
     .td-mini.ku, .td-mini.ds { background: #ffffff; padding: 0; overflow: hidden; }
     .td-mini.ku img, .td-mini.ds img { width: 100%; height: 100%; object-fit: contain; display: block; }
     .td-mini.af img { width: 100%; height: 100%; object-fit: contain; display: block; }
@@ -1350,7 +1352,7 @@
     .td-tile.fub .td-tile-logo { background: #1e88e5; } .td-tile.fub:hover { border-color: #1e88e5; }
     .td-tile.zi .td-tile-logo { background: #F5A522; color: #1C2540; } .td-tile.zi:hover { border-color: #F5A522; }
     .td-tile.ku .td-tile-logo { background: #6c4fd1; } .td-tile.ku:hover { border-color: #6c4fd1; }
-    .td-tile.af .td-tile-logo { background: #0f2a4a; padding: 0; overflow: hidden; } .td-tile.af:hover { border-color: #168a53; }
+    .td-tile.af .td-tile-logo { background: #ffffff; padding: 4px; overflow: hidden; } .td-tile.af:hover { border-color: #007ac6; }
     .td-tile.ku .td-tile-logo, .td-tile.ds .td-tile-logo { background: #ffffff; padding: 0; overflow: hidden; }
     .td-tile.ku .td-tile-logo img, .td-tile.ds .td-tile-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
     .td-tile.tt .td-tile-logo { background: #ffffff; } .td-tile.tt:hover { border-color: #0E6FB0; }
@@ -1616,7 +1618,7 @@
           <div class="td-mini-row"><span class="td-mini zi" style="background:#fff;padding:2px;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="assets/img/logo-sierra.svg" alt="Sierra" style="width:100%;height:100%;object-fit:contain;"></span><span>Sierra</span></div>
           <div class="td-mini-row"><span class="td-mini ku"><img src="Quialia/Images-resourses/brand/qualia-icon.svg" alt="Qualia"></span><span>Qualia</span></div>
           <div class="td-mini-row"><span class="td-mini ds"><img src="Docusign/Images-resources/docusign-icon.svg" alt="DocuSign"></span><span>DocuSign</span></div>
-          <div class="td-mini-row"><span class="td-mini af"><img src="AppFolio/Images-resources/appfolio-icon.svg" alt="AppFolio"></span><span>AppFolio</span></div>
+          <div class="td-mini-row"><span class="td-mini af"><img src="AppFolio/Images-resources/brand/appfolio-mark.png" alt="AppFolio"></span><span>AppFolio</span></div>
           <div class="td-mini-row"><span class="td-mini tt" style="background:#fff;padding:3px;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="assets/img/logo-turbotenant.svg" alt="TurboTenant" style="width:100%;height:100%;object-fit:contain;"></span><span>TurboTenant</span></div>
         </div>
       </div>
@@ -1862,7 +1864,7 @@
           <span class="td-tile-go">Launch &rarr;</span>
         </a>
         <a class="td-tile af" href="AppFolio/testdrive-appfolio.html">
-          <span class="td-tile-logo"><img src="AppFolio/Images-resources/appfolio-icon.svg" alt="AppFolio"></span>
+          <span class="td-tile-logo"><img src="AppFolio/Images-resources/brand/appfolio-mark.png" alt="AppFolio"></span>
           <span class="td-tile-copy"><b>AppFolio</b><span>Residential &amp; commercial operations: process applications, track unit occupancy, manage work orders, and reconcile ledgers.</span></span>
           <span class="td-tile-go">Launch &rarr;</span>
         </a>

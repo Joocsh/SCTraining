@@ -273,7 +273,6 @@ function dsSBuildEnvelopes() {
         : t.subject + ' — ' + pick(DS_S_CONTACTS).company;
 
       const recipCount = Math.min(t.roles.length, between(1, 3));
-      const statuses = DS_S_RECIP_STATUS[plan.status];
       const used = [];
       const recipients = [];
       for (let r = 0; r < recipCount; r++) {
@@ -281,12 +280,37 @@ function dsSBuildEnvelopes() {
         let guard = 0;
         while (used.indexOf(c.email) > -1 && guard++ < 12) c = pick(DS_S_CONTACTS);
         used.push(c.email);
+
+        let rStatus = 'waiting';
+        if (plan.status === 'completed' || plan.status === 'deleted') {
+          rStatus = (r === recipCount - 1 && recipCount > 2) ? 'received' : 'completed';
+        } else if (plan.status === 'draft') {
+          rStatus = 'created';
+        } else if (plan.status === 'waiting') {
+          if (recipCount === 1) {
+            rStatus = 'waiting';
+          } else {
+            if (r === 0) rStatus = 'completed';
+            else if (r === 1) rStatus = 'waiting';
+            else rStatus = 'received';
+          }
+        } else {
+          // voided, expired, declined, authfail
+          if (recipCount === 1) {
+            rStatus = plan.status;
+          } else {
+            if (r === 0) rStatus = 'completed';
+            else if (r === 1) rStatus = plan.status;
+            else rStatus = 'received';
+          }
+        }
+
         recipients.push({
           id: 'r' + (r + 1),
           role: t.roles[r],
           name: c.name,
           email: c.email,
-          status: statuses[Math.min(r, statuses.length - 1)],
+          status: rStatus,
           action: r === recipCount - 1 && recipCount > 2 ? 'Receives a Copy' : 'Needs to Sign',
           order: r + 1
         });

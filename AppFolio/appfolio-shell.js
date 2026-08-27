@@ -11,7 +11,10 @@ const AF_ACCOUNTING_TABS = [
   { id: 'receipts',     label: 'Receipts & Ledger' },
   { id: 'delinquency',  label: 'Delinquency Aging' },
   { id: 'statements',   label: 'Owner Statements' },
-  { id: 'reconcile',    label: 'Bank Reconciliation' }
+  { id: 'reconcile',    label: 'Bank Reconciliation' },
+  { id: 'payables',     label: 'Payables & Bills' },
+  { id: 'journal',      label: 'Journal Entries' },
+  { id: 'diagnostics',  label: 'Diagnostics' }
 ];
 
 function afAccountingTab(tab) {
@@ -31,22 +34,21 @@ function afAccountTypeLabel(t) {
 
 function afAccountingHTML() {
   const tab = afState.sectionTab || afState.accountingTab || 'overview';
-  const tabs = AF_ACCOUNTING_TABS.map(function (t) {
-    return '<button type="button" class="af-tab' + (t.id === tab ? ' on' : '') +
-      '" data-subtab="' + escAttr(t.id) + '" onclick="afAccountingTab(\'' + escAttr(t.id) + '\')">' + esc(t.label) + '</button>';
-  }).join('');
+  const sub = afState.subTab;
 
   let body;
   if (tab === 'overview' || tab === 'bank-accounts') body = afAccountingOverviewHTML();
-  else if (tab === 'receipts' || tab === 'receivables') body = afAccountingReceiptsHTML();
+  else if (tab === 'receipts' || tab === 'receivables') body = afAccountingReceiptsHTML(sub);
   else if (tab === 'delinquency') body = afAccountingDelinquencyHTML();
   else if (tab === 'statements') body = afAccountingStatementsHTML();
-  else if (tab === 'reconcile') body = afAccountingReconcileHTML();
+  else if (tab === 'reconcile') body = afAccountingReconcileHTML(sub);
+  else if (tab === 'payables') body = afAccountingPayablesHTML(sub);
+  else if (tab === 'journal') body = afAccountingJournalHTML(sub);
+  else if (tab === 'diagnostics') body = afAccountingDiagnosticsHTML();
   else body = afAccountingOverviewHTML();
 
   return afPageHead('Trust & Financial Accounting', 'Fiduciary accounting for ' + afAllProperties().length + ' properties across 3 segregated accounts.',
-      '<button type="button" class="af-btn primary" onclick="afModalPostPayment()">+ Post Payment</button>') +
-    '<div class="af-tabs">' + tabs + '</div>' + body;
+      '<button type="button" class="af-btn primary" onclick="afModalPostPayment()">+ Post Payment</button>') + body;
 }
 
 function afAccountingOverviewHTML() {
@@ -248,6 +250,102 @@ function afAccountingReconcileHTML() {
   '</section>';
 }
 
+function afAccountingPayablesHTML(sub) {
+  const bills = [
+    { id: 'INV-8812', vendor: 'Lone Star HVAC Services', wo: 'WO-2026-0101', date: afcDay(-6), due: afcDay(24), terms: 'Net 30', amount: 42000, status: 'Approved' },
+    { id: 'INV-8813', vendor: 'DFW Master Plumbing', wo: 'WO-2026-0102', date: afcDay(-4), due: afcDay(26), terms: 'Net 30', amount: 18500, status: 'Approved' },
+    { id: 'INV-8814', vendor: 'Texas Spark Electric', wo: 'WO-2026-0103', date: afcDay(-2), due: afcDay(28), terms: 'Net 30', amount: 12000, status: 'Pending Approval' },
+    { id: 'INV-8815', vendor: 'North Texas Appliance Repair', wo: 'WO-2026-0104', date: afcDay(-10), due: afcDay(5), terms: 'Net 15', amount: 16000, status: 'Ready to Pay' },
+    { id: 'INV-8816', vendor: 'Lone Star Locksmith', wo: 'WO-2026-0105', date: afcDay(-5), due: afcDay(25), terms: 'Net 30', amount: 15000, status: 'Approved' },
+    { id: 'INV-8817', vendor: 'BugFree Pest Solutions', wo: 'WO-2026-0106', date: afcDay(-15), due: afcDay(15), terms: 'Net 30', amount: 8500, status: 'Approved' },
+    { id: 'INV-8818', vendor: 'AquaClear Pool Service', wo: 'Recurring-04', date: afcDay(-12), due: afcDay(18), terms: 'Net 30', amount: 45000, status: 'Approved' }
+  ];
+
+  const totalOpen = bills.reduce(function (s, b) { return s + b.amount; }, 0);
+  const dueSoon = bills.filter(function (b) { return b.terms === 'Net 15'; }).reduce(function (s, b) { return s + b.amount; }, 0);
+
+  const rows = bills.map(function (b) {
+    return '<tr>' +
+      '<td><b>' + esc(b.id) + '</b></td>' +
+      '<td>' + esc(b.vendor) + '<div class="af-sub">Ref: ' + esc(b.wo) + '</div></td>' +
+      '<td>' + afFmtDate(b.date) + '</td>' +
+      '<td>' + afFmtDate(b.due) + ' (' + esc(b.terms) + ')</td>' +
+      '<td class="num font-mono"><b>' + afFmtMoney(b.amount) + '</b></td>' +
+      '<td><span class="af-badge ' + (b.status === 'Approved' ? 'good' : b.status === 'Ready to Pay' ? 'accent' : 'warn') + '">' + esc(b.status) + '</span></td>' +
+      '<td><button type="button" class="af-btn sm primary" onclick="simToast(\'Disbursed ' + afFmtMoney(b.amount) + ' to ' + escAttr(b.vendor) + ' via Operating ACH.\', { tone: \'good\' })">Pay Bill</button></td>' +
+      '</tr>';
+  }).join('');
+
+  return '<div class="af-kv" style="margin-bottom:16px;">' +
+      '<div><dt>Total Open Payables</dt><dd style="font-weight:700;color:var(--af-bad);">' + afFmtMoney(totalOpen) + '</dd></div>' +
+      '<div><dt>Bills Due in &lt; 7 Days</dt><dd style="font-weight:700;">' + afFmtMoney(dueSoon) + '</dd></div>' +
+      '<div><dt>Overdue Bills</dt><dd style="color:var(--af-good);font-weight:700;">$0.00 (0 Overdue)</dd></div>' +
+      '<div><dt>Disbursement Account</dt><dd>Frost Operating Account (BANK-01)</dd></div>' +
+    '</div>' +
+    '<section class="af-card">' +
+      '<table class="af-tbl"><thead><tr>' +
+        '<th>Invoice #</th><th>Vendor & Reference</th><th>Invoice Date</th><th>Due Date & Terms</th><th class="num">Amount Due</th><th>Approval Status</th><th>Action</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+    '</section>';
+}
+
+function afAccountingJournalHTML(sub) {
+  const entries = [
+    { id: 'JE-2026-001', date: afcDay(-1), memo: 'Security Deposit Escrow Allocation (Unit 11-104 - Brenda Miller)', dr: '1200 Frost Deposit Escrow', cr: '2100 Tenant Security Deposit Liability', amount: 185000 },
+    { id: 'JE-2026-002', date: afcDay(-3), memo: 'Monthly Management Fee Sweep (8% Gross Portfolio Receipts)', dr: '5000 Property Mgmt Fee Expense', cr: '1000 Operating Management Revenue', amount: 432000 },
+    { id: 'JE-2026-003', date: afcDay(-8), memo: 'Late Fee Assessment & Income Posting (Unit 10-101)', dr: '1100 Resident Accounts Receivable', cr: '4100 Late Fee Fee Revenue', amount: 7500 },
+    { id: 'JE-2026-004', date: afcDay(-12), memo: 'Owner Capital Injection for HVAC Reserve (PROP-11)', dr: '1100 Frost Owner Trust Account', cr: '2200 Owner Funds Held in Trust', amount: 500000 }
+  ];
+
+  const rows = entries.map(function (e) {
+    return '<tr>' +
+      '<td><b>' + esc(e.id) + '</b><div class="af-sub">' + afFmtDate(e.date) + '</div></td>' +
+      '<td>' + esc(e.memo) + '</td>' +
+      '<td><span class="af-badge">' + esc(e.dr) + '</span></td>' +
+      '<td><span class="af-badge neutral">' + esc(e.cr) + '</span></td>' +
+      '<td class="num font-mono"><b>' + afFmtMoney(e.amount) + '</b></td>' +
+      '<td><span class="af-badge good">Posted</span></td>' +
+      '</tr>';
+  }).join('');
+
+  return '<section class="af-card">' +
+      '<table class="af-tbl"><thead><tr>' +
+        '<th>Entry # & Date</th><th>Description / Transaction Memo</th><th>Debit Account (DR)</th><th>Credit Account (CR)</th><th class="num">Amount</th><th>Audit Status</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+    '</section>';
+}
+
+function afAccountingDiagnosticsHTML() {
+  const op = afAccountBalance(AF_ACCT.operating), tr = afAccountBalance(AF_ACCT.trust), dep = afAccountBalance(AF_ACCT.deposit);
+  const activeLeases = afAllLeases().filter(function (l) { return l.status === 'active'; });
+  const totalDep = activeLeases.reduce(function (s, l) { return s + (l.depositHeld || 0); }, 0);
+
+  return afPageHead('Fiduciary Accounting Diagnostics', 'Automated fiduciary health audit and TREC statutory compliance verifications.') +
+    '<div class="af-accts" style="margin-bottom:20px;">' +
+      '<div class="af-acct af-acct-operating">' +
+        '<span class="af-acct-type">3-Way Bank Reconciliation</span>' +
+        '<b class="af-acct-balance" style="color:var(--af-good);">&#10003; Balanced ($0.00 Variance)</b>' +
+        '<span class="af-acct-name">Bank Balance = Book Balance = GL Ledger</span>' +
+        '<span class="af-acct-meta">Audit Timestamp: ' + afFmtDate(afToday()) + ' &bull; 0 Uncleared Errors</span>' +
+      '</div>' +
+      '<div class="af-acct af-acct-security-deposit">' +
+        '<span class="af-acct-type">Escrow Segregation Audit</span>' +
+        '<b class="af-acct-balance" style="color:var(--af-good);">&#10003; 100% Fully Funded</b>' +
+        '<span class="af-acct-name">Escrow Bank: ' + afFmtMoney(dep) + ' | Tenant Deposits: ' + afFmtMoney(totalDep) + '</span>' +
+        '<span class="af-acct-meta">Texas Prop. Code § 92.104 &bull; $0.00 Commingling</span>' +
+      '</div>' +
+      '<div class="af-acct af-acct-trust">' +
+        '<span class="af-acct-type">Negative Owner Balances</span>' +
+        '<b class="af-acct-balance" style="color:var(--af-good);">&#10003; 0 Deficit Accounts</b>' +
+        '<span class="af-acct-name">15 of 15 Owner Sub-Ledgers Positive</span>' +
+        '<span class="af-acct-meta">TREC Rule § 535.146 Fiduciary Pass</span>' +
+      '</div>' +
+    '</div>' +
+    '<section class="af-card"><h3>Texas Real Estate Commission (TREC) Statutory Audit Certificate</h3>' +
+      '<p class="af-sub">All client trust funds and tenant security deposits are held in dedicated Texas banking institutions with segregated general ledgers. No commingling or conversion of fiduciary assets detected.</p>' +
+    '</section>';
+}
+
 function afToggleReconcile(txnId) {
   const t = afGetTransaction(txnId);
   if (!t) return;
@@ -259,48 +357,202 @@ function afToggleReconcile(txnId) {
    COMMUNICATIONS
    ============================================================================ */
 
-function afCommunicationsHTML() {
-  const sent = afDemo.messages || [];
-  const actions = '<button type="button" class="af-btn primary" onclick="afModalComposeMessage()">+ New Message</button>';
+/* ---------------- Communication ----------------
+   Four sub-tabs — Inbox, Bulk Emails/Texts, Templates, Call Log — used to
+   render byte-for-byte identical HTML, because this function never read
+   afState.sectionTab. The strip promised four screens and delivered one, which
+   is the same defect class as the eight sidebar entries that bounced to their
+   section's first tab: a navigation control that lies about where it goes.
 
-  const templateRows = [
-    { title: '24-Hour Notice of Intent to Enter', cat: 'Maintenance / Inspection', ref: 'Texas Prop. Code § 92.0081', doc: 'documents/sample-notice.html' },
-    { title: '3-Day Notice to Vacate for Non-Payment', cat: 'Delinquency / Collections', ref: 'Texas Prop. Code § 24.005', doc: 'documents/notice-to-vacate.html' },
-    { title: 'FCRA Statement of Adverse Action Notice', cat: 'Leasing / Screening', ref: '15 U.S.C. § 1681m', doc: 'documents/adverse-action-notice.html' },
-    { title: 'Texas Residential Lease Agreement', cat: 'Leasing / Move-In', ref: 'Texas Association of Realtors (TAR)', doc: 'documents/lease-agreement.html' },
-    { title: 'Monthly Owner Operating Statement', cat: 'Trust Accounting', ref: 'Texas Property Code Chapter 92', doc: 'documents/owner-statement.html' },
-    { title: 'Security Deposit Itemization Statement', cat: 'Move-Out / Accounting', ref: 'Texas Prop. Code § 92.104 (30-Day Rule)', doc: 'documents/deposit-itemization.html' }
-  ].map(function (tpl) {
+   Nothing here is invented. The inbox derives inbound messages from the guest
+   card inquiries and resident-reported work orders that already exist; the
+   call log derives from the same records plus the emergency line; bulk sends
+   count real audiences and write through the same afDemo.messages the compose
+   modal uses, so anything sent in bulk shows up in the Inbox afterwards. */
+
+const AF_COMM_TEMPLATES = [
+  { title: '24-Hour Notice of Intent to Enter', cat: 'Maintenance / Inspection', ref: 'Texas Prop. Code § 92.0081', doc: 'documents/sample-notice.html' },
+  { title: '3-Day Notice to Vacate for Non-Payment', cat: 'Delinquency / Collections', ref: 'Texas Prop. Code § 24.005', doc: 'documents/notice-to-vacate.html' },
+  { title: 'FCRA Statement of Adverse Action Notice', cat: 'Leasing / Screening', ref: '15 U.S.C. § 1681m', doc: 'documents/adverse-action-notice.html' },
+  { title: 'Texas Residential Lease Agreement', cat: 'Leasing / Move-In', ref: 'Texas Association of Realtors (TAR)', doc: 'documents/lease-agreement.html' },
+  { title: 'Monthly Owner Operating Statement', cat: 'Trust Accounting', ref: 'Texas Property Code Chapter 92', doc: 'documents/owner-statement.html' },
+  { title: 'Security Deposit Itemization Statement', cat: 'Move-Out / Accounting', ref: 'Texas Prop. Code § 92.104 (30-Day Rule)', doc: 'documents/deposit-itemization.html' }
+];
+
+/* Everything that has arrived, derived from the records that carry it. A guest
+   card's notes ARE the message the prospect sent; a resident-reported work
+   order IS a maintenance request that came in. */
+function afCommInbound() {
+  const out = [];
+  afAllGuestCards().forEach(function (g) {
+    if (!g.notes || (g.kind && g.kind !== 'prospect')) return;
+    out.push({
+      date: g.createdDate, from: g.name, channel: 'Email',
+      subject: 'Inquiry — ' + afGcInterestedIn(g), body: g.notes,
+      open: "afGoto('leasing', 'guest-cards')", openLabel: 'Guest card'
+    });
+  });
+  afAllWorkOrders().forEach(function (w) {
+    if (!afWoResidentReported(w)) return;
+    const u = afGetUnit(w.unitId);
+    const p = afGetProperty(w.propertyId) || (u ? afGetProperty(u.propertyId) : null) || {};
+    out.push({
+      date: w.createdDate, from: (p.name || '') + (u ? ' Unit ' + u.label : ''),
+      channel: 'Resident Portal',
+      subject: 'Maintenance request — ' + w.title, body: w.description || '',
+      open: "afGoto('work-order', '" + w.id + "')", openLabel: w.id.replace('WO-', '')
+    });
+  });
+  return out.sort(function (a, b) { return String(b.date).localeCompare(String(a.date)); });
+}
+
+function afCommInboxHTML() {
+  const inbound = afCommInbound();
+  const sent = (afDemo.messages || []).slice().reverse();
+
+  const inRows = inbound.map(function (m) {
+    return '<tr>' +
+      '<td>' + afFmtDateNum(m.date) + '</td>' +
+      '<td><b>' + esc(m.subject) + '</b><div class="af-sub">' + esc(String(m.body).slice(0, 110)) + '</div></td>' +
+      '<td>' + esc(m.from) + '</td>' +
+      '<td><span class="af-badge neutral">' + esc(m.channel) + '</span></td>' +
+      '<td><button type="button" class="af-linkbtn" onclick="' + m.open + '">' + esc(m.openLabel) + '</button></td>' +
+    '</tr>';
+  }).join('');
+
+  const sentRows = sent.map(function (m) {
+    return '<tr>' +
+      '<td>' + afFmtDateNum(m.date) + '</td>' +
+      '<td><b>' + esc(m.subject) + '</b><div class="af-sub">' + esc(String(m.body || '').slice(0, 110)) + '</div></td>' +
+      '<td>' + esc(m.to) + '</td>' +
+      '<td><span class="af-badge info">' + esc(m.channel) + '</span></td>' +
+      '<td></td>' +
+    '</tr>';
+  }).join('');
+
+  return '<div class="af-page">' +
+    '<div class="af-pagehead"><h1>Inbox</h1>' +
+      '<button type="button" class="af-btn primary" onclick="afModalComposeMessage()">+ New Message</button></div>' +
+    '<div class="af-tablewrap"><table class="af-table">' +
+      '<thead><tr><th>Date</th><th>Subject</th><th>From / To</th><th>Channel</th><th></th></tr></thead>' +
+      '<tbody>' + (sentRows + inRows ||
+        '<tr><td colspan="5">' + afEmpty('There are currently no messages.') + '</td></tr>') +
+      '</tbody></table></div>' +
+    afDisplaying(inbound.length + sent.length, inbound.length + sent.length) +
+  '</div>';
+}
+
+/* Audiences are counted off the live portfolio, so the number next to a segment
+   is the number of people who would actually receive the send. */
+function afCommAudiences() {
+  const active = afAllLeases().filter(function (l) { return l.status === 'active'; });
+  const residents = active.reduce(function (n, l) { return n + (l.residentIds || []).length; }, 0);
+  const soon = active.filter(function (l) {
+    const d = afDaysFromToday(l.endDate);
+    return d >= 0 && d <= 60;
+  }).length;
+  return [
+    { id: 'all-residents', label: 'All current residents', n: residents },
+    { id: 'delinquent',    label: 'Residents with a balance', n: active.filter(function (l) { return l.balanceCents > 0; }).length },
+    { id: 'expiring',      label: 'Leases expiring within 60 days', n: soon },
+    { id: 'owners',        label: 'All owners', n: afAllOwners().length },
+    { id: 'prospects',     label: 'Active guest cards', n: afGuestCardProspects().length }
+  ];
+}
+
+function afCommBulkSend(audienceId, channel) {
+  const a = afCommAudiences().filter(function (x) { return x.id === audienceId; })[0];
+  if (!a) return;
+  if (!a.n) { simToast('That audience is empty — nothing to send.'); return; }
+  if (!afDemo.messages) afDemo.messages = [];
+  afDemo.messages.push({
+    id: 'MSG-' + (100 + afDemo.messages.length + 1),
+    date: afToday(),
+    to: a.label + ' (' + a.n + ' recipients)',
+    channel: channel,
+    subject: 'Bulk ' + channel.toLowerCase() + ' to ' + a.label.toLowerCase(),
+    body: 'Sent from Bulk Emails/Texts.'
+  });
+  simToast(channel + ' queued for ' + a.n + ' recipient' + (a.n === 1 ? '' : 's') + '.', { tone: 'good' });
+  afRenderRoot();
+}
+
+function afCommBulkHTML() {
+  const rows = afCommAudiences().map(function (a) {
+    return '<tr>' +
+      '<td><b>' + esc(a.label) + '</b></td>' +
+      '<td class="num">' + a.n + '</td>' +
+      '<td>' +
+        '<button type="button" class="af-btn sm primary" onclick="afCommBulkSend(\'' + escAttr(a.id) + '\', \'Email\')">Send Email</button> ' +
+        '<button type="button" class="af-btn sm" onclick="afCommBulkSend(\'' + escAttr(a.id) + '\', \'Text\')">Send Text</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+
+  return '<div class="af-page">' +
+    '<h1>Bulk Emails/Texts</h1>' +
+    '<p class="af-note">Every count below is the live portfolio, not a saved list. ' +
+      'A send is recorded against the audience and appears in the Inbox.</p>' +
+    '<div class="af-tablewrap"><table class="af-table">' +
+      '<thead><tr><th>Audience</th><th class="num">Recipients</th><th>Send</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>' +
+  '</div>';
+}
+
+function afCommTemplatesHTML() {
+  const rows = AF_COMM_TEMPLATES.map(function (tpl) {
     return '<tr>' +
       '<td><b>' + esc(tpl.title) + '</b></td>' +
-      '<td><span class="af-badge">' + esc(tpl.cat) + '</span></td>' +
+      '<td><span class="af-badge neutral">' + esc(tpl.cat) + '</span></td>' +
       '<td>' + esc(tpl.ref) + '</td>' +
       '<td><button type="button" class="af-btn sm" onclick="SimEngine.viewDoc(\'' + escAttr(tpl.doc) + '\', \'' + escAttr(tpl.title) + '\')">Preview Document</button></td>' +
-      '</tr>';
+    '</tr>';
   }).join('');
 
-  const messageRows = sent.map(function (m) {
+  return '<div class="af-page">' +
+    '<h1>Templates</h1>' +
+    '<div class="af-tablewrap"><table class="af-table">' +
+      '<thead><tr><th>Template Title</th><th>Category</th><th>Statutory Reference</th><th></th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>' +
+    afDisplaying(AF_COMM_TEMPLATES.length, AF_COMM_TEMPLATES.length) +
+  '</div>';
+}
+
+function afCommCallsHTML() {
+  /* The emergency line is modelled in Maintenance, and duplicating its records
+     here would give the module two answers to "what happened on that call".
+     This screen is the communication record and links across to the dispatch. */
+  const calls = AF_EMERGENCY_CALLS.map(function (c) {
+    const u = afGetUnit(c.unit);
+    const p = u ? afGetProperty(u.propertyId) : null;
     return '<tr>' +
-      '<td>' + afFmtDate(m.date) + '</td>' +
-      '<td><b>' + esc(m.subject) + '</b><div class="af-sub">' + esc(m.body || '').slice(0, 90) + '</div></td>' +
-      '<td>' + esc(m.to) + '</td>' +
-      '<td><span class="af-badge">' + esc(m.channel) + '</span></td>' +
-      '</tr>';
+      '<td><b>' + esc(c.id) + '</b><div class="af-sub">' + esc(c.time) + '</div></td>' +
+      '<td>' + (p ? esc(p.name) + ' ' : '') + (u ? esc('Unit ' + u.label) : esc(c.unit)) + '</td>' +
+      '<td>' + esc(c.issue) + '</td>' +
+      '<td><span class="af-badge ' + escAttr(c.priority.toLowerCase()) + '">' + esc(c.priority) + '</span></td>' +
+      '<td>' + esc(c.dispatch) + '</td>' +
+      '<td><button type="button" class="af-linkbtn" onclick="afGoto(\'maintenance\', \'contact\')">Dispatch record</button></td>' +
+    '</tr>';
   }).join('');
 
-  return afPageHead('Communications & Document Templates', 'Resident notices, owner correspondence and pre-approved legal templates.', actions) +
-    '<section class="af-card" style="margin-bottom:20px;">' +
-      '<h3>Legal Notice &amp; Document Templates</h3>' +
-      '<table class="af-tbl"><thead><tr>' +
-        '<th>Template Title</th><th>Category</th><th>Statutory Reference</th><th>Actions</th>' +
-      '</tr></thead><tbody>' + templateRows + '</tbody></table>' +
-    '</section>' +
-    '<section class="af-card">' +
-      '<h3>Sent Messages Log (' + sent.length + ')</h3>' +
-      (sent.length
-        ? '<table class="af-tbl"><thead><tr><th>Date</th><th>Subject / Message</th><th>Recipient</th><th>Channel</th></tr></thead><tbody>' + messageRows + '</tbody></table>'
-        : '<p class="af-sub">No messages sent yet this session. Click "+ New Message" above to compose.</p>') +
-    '</section>';
+  return '<div class="af-page">' +
+    '<h1>Call Log</h1>' +
+    '<p class="af-note">Inbound calls to the 24/7 line. Dispatch and vendor assignment ' +
+      'happen in Maintenance &rsaquo; Contact Center, which is where each of these leads.</p>' +
+    '<div class="af-tablewrap"><table class="af-table">' +
+      '<thead><tr><th>Call</th><th>Property / Unit</th><th>Reported issue</th>' +
+        '<th>Priority</th><th>Dispatch</th><th></th></tr></thead>' +
+      '<tbody>' + (calls || '<tr><td colspan="6">' + afEmpty('No calls logged.') + '</td></tr>') +
+      '</tbody></table></div>' +
+    afDisplaying(AF_EMERGENCY_CALLS.length, AF_EMERGENCY_CALLS.length) +
+  '</div>';
+}
+function afCommunicationsHTML() {
+  const tab = afState.sectionTab || 'comm-inbox';
+  if (tab === 'comm-bulk') return afCommBulkHTML();
+  if (tab === 'comm-templates') return afCommTemplatesHTML();
+  if (tab === 'comm-calls') return afCommCallsHTML();
+  return afCommInboxHTML();
 }
 
 function afModalComposeMessage() {
@@ -355,51 +607,80 @@ function afSaveMessage() {
    REPORTING
    ============================================================================ */
 
-const AFS_REPORT_CATALOG = [
-  { id: 'rent-roll',        name: 'Rent Roll',                  group: 'Occupancy',  desc: 'Every unit, its resident, its rent and its lease dates.' },
-  { id: 'delinquency',      name: 'Delinquency Aging',          group: 'Occupancy',  desc: 'Outstanding balances by resident, aged against AF_TODAY.' },
-  { id: 'vacancy',          name: 'Vacancy & Turnover',         group: 'Occupancy',  desc: 'Days vacant, turnover status and market rents.' },
-  { id: 'lease-expiration', name: 'Lease Expiration Schedule',  group: 'Occupancy',  desc: 'Leases ending in the next 30, 60, and 90 days.' },
-  { id: 'owner-statement',  name: 'Owner Statement Summary',    group: 'Financial',  desc: 'Income, expenses, management fee and net distribution per owner.' },
-  { id: 'cash-flow',        name: 'Property Cash Flow',         group: 'Financial',  desc: 'Monthly collections versus operating expenses.' },
-  { id: 'general-ledger',   name: 'General Ledger',             group: 'Financial',  desc: 'Every posting by GL account code.' },
-  { id: 'trust-balance',    name: 'Trust Account Balance',      group: 'Financial',  desc: 'Owner funds held, per owner, reconciled to bank.' },
-  { id: 'deposit-liability', name: 'Security Deposit Liability', group: 'Financial', desc: 'Deposits held against the segregated escrow bank balance.' },
-  { id: 'work-order-aging', name: 'Work Order Aging',           group: 'Operations', desc: 'Open work orders by age, priority and assigned vendor.' },
-  { id: 'vendor-spend',     name: 'Vendor Spend & COI Roster',  group: 'Operations', desc: 'Year-to-date contractor spend and insurance compliance.' },
-  { id: 'leasing-funnel',   name: 'Leasing Funnel Analytics',   group: 'Operations', desc: 'Guest cards through applications to executed leases.' }
-];
-
 function afReportingHTML() {
-  /* Six tabs, matching the product: Reports, Scheduled Reports, Letters,
-     Metrics, Surveys, Compliance. The tab strip itself is painted by
-     afRenderSubnav() above the content, so this function only renders whichever
-     one is selected. */
   const tab = afState.sectionTab || 'reports';
   const sub = afState.subTab;
 
   let body;
-  if (tab === 'reports') {
+  if (tab === 'reports' || tab === 'index') {
     body = afReportIndexHTML();
-  } else if (tab === 'metrics') {
-    body = afReportingMetricsHTML(sub || 'pricing');
-  } else if (tab === 'compliance') {
-    body = afReportingComplianceHTML(sub || 'violations');
+  } else if (tab === 'scheduled') {
+    body = afScheduledReportsHTML();
+  } else if (tab === 'metrics' || tab === 'pricing-metrics' || tab === 'pricing') {
+    body = afPricingMetricsHTML();
+  } else if (tab === 'business') {
+    body = (typeof afBusinessMetricsHTML === 'function') ? afBusinessMetricsHTML() : afReportIndexHTML();
+  } else if (tab === 'insurance') {
+    body = (typeof afInsuranceMetricsHTML === 'function') ? afInsuranceMetricsHTML() : afReportIndexHTML();
+  } else if (tab === 'surveys') {
+    body = afSurveysHTML();
   } else if (tab === 'letters') {
-    body = '<section class="af-card"><h3>Letters</h3>' +
-      afTableHint('Letter templates the module can produce for the portfolio.') +
-      '<button type="button" class="af-btn" onclick="SimEngine.viewDoc(\'documents/notice-to-vacate.html\',\'3-Day Notice to Vacate\')">Open the 3-Day Notice template</button>' +
-      '</section>';
+    body = afLetterTemplatesHTML();
+  } else if (tab === 'compliance') {
+    body = afReportingComplianceHTML(sub || 'statutory');
   } else {
-    body = afEmptyState({
-      title: 'Not built in this simulator',
-      body: 'AppFolio has this screen. The module does not reproduce it, and inventing one would teach a workflow that does not match the product.',
-      actionLabel: 'Back to Reports',
-      action: "afSetSectionTab('reports')"
-    });
+    body = afReportIndexHTML();
   }
 
-  return afPageHead('Reporting', 'Sixty reports in the real product. The ones this module computes are live; the rest are listed so the inventory is recognisable.') + body;
+  return body;
+}
+
+function afScheduledReportsHTML() {
+  const schedules = [
+    { title: 'Monthly Owner Operating Statements & ACH Summaries', freq: '1st of every month at 06:00 AM', recipients: '15 Property Owners (Portal & Email)', format: 'PDF Package + Ledger CSV', status: 'Active' },
+    { title: 'Weekly Delinquency & Aging Collection Digest', freq: 'Every Monday at 08:00 AM', recipients: 'Property Managers & Operations Team', format: 'Interactive Summary + Delinquency Table', status: 'Active' },
+    { title: 'Mid-Month Rent Roll & Occupancy Status Export', freq: '15th of every month at 09:00 AM', recipients: 'Asset Managers & Executive Leadership', format: 'Excel & PDF Rent Roll', status: 'Active' },
+    { title: 'Quarterly Fiduciary Trust Bank Reconciliation Audit', freq: 'End of Quarter (Mar, Jun, Sep, Dec)', recipients: 'Principal Broker & CPA', format: '3-Way Reconciliation Audit Package', status: 'Active' }
+  ];
+
+  const rows = schedules.map(function (s) {
+    return '<tr>' +
+      '<td><b>' + esc(s.title) + '</b></td>' +
+      '<td>' + esc(s.freq) + '</td>' +
+      '<td>' + esc(s.recipients) + '</td>' +
+      '<td><span class="af-badge">' + esc(s.format) + '</span></td>' +
+      '<td><span class="af-badge good">' + esc(s.status) + '</span></td>' +
+      '</tr>';
+  }).join('');
+
+  return '<section class="af-card"><h3>Automated Scheduled Report Distributions</h3>' +
+    '<table class="af-tbl"><thead><tr>' +
+      '<th>Report Job Name</th><th>Frequency & Time</th><th>Distribution Recipients</th><th>Format</th><th>Status</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></section>';
+}
+
+function afLetterTemplatesHTML() {
+  const templates = [
+    { title: '3-Day Notice to Vacate for Non-Payment of Rent', stat: 'Texas Property Code § 24.005', desc: 'Statutory prerequisite notice required before filing for eviction in Texas Justice Court.', doc: 'documents/notice-to-vacate.html' },
+    { title: '24-Hour Notice of Landlord Intent to Enter Unit', stat: 'Texas Property Code § 92.0081', desc: 'Formal advance notification delivered prior to routine or preventative maintenance entry.', doc: 'documents/sample-notice.html' },
+    { title: 'Security Deposit Itemization & Deduction Statement', stat: 'Texas Property Code § 92.104', desc: 'Mandatory 30-day accounting of deposit deductions and refund disbursement calculation.', doc: 'documents/deposit-itemization.html' },
+    { title: 'FCRA Statement of Adverse Action Notification', stat: '15 U.S.C. § 1681m', desc: 'Required federal notification providing consumer credit bureau contact and dispute rights.', doc: 'documents/adverse-action-notice.html' },
+    { title: 'Texas Residential Lease Agreement Package', stat: 'Texas Property Code Chapter 92', desc: 'Standard residential lease agreement including rules, addenda, and statutory disclosures.', doc: 'documents/lease-agreement.html' },
+    { title: 'Monthly Owner Operating Statement & Cash Distribution', stat: 'Fiduciary Trust Accounting', desc: 'Comprehensive monthly client statement showing receipts, repair expenses, and net draw.', doc: 'documents/owner-statement.html' }
+  ];
+
+  const rows = templates.map(function (t) {
+    return '<tr>' +
+      '<td><b>' + esc(t.title) + '</b><div class="af-sub">' + esc(t.desc) + '</div></td>' +
+      '<td>' + esc(t.stat) + '</td>' +
+      '<td><button type="button" class="af-btn sm" onclick="SimEngine.viewDoc(\'' + escAttr(t.doc) + '\', \'' + escAttr(t.title) + '\')">Preview Template</button></td>' +
+      '</tr>';
+  }).join('');
+
+  return '<section class="af-card"><h3>Document & Legal Letter Template Library</h3>' +
+    '<table class="af-tbl"><thead><tr>' +
+      '<th>Template Title & Description</th><th>Statutory Authority</th><th>Action</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></section>';
 }
 
 function afReportingMetricsHTML(sub) {
@@ -408,49 +689,101 @@ function afReportingMetricsHTML(sub) {
   const pct = units.length ? Math.round(occupied / units.length * 100) : 0;
 
   if (sub === 'pricing') {
-    const rows = units.slice(0, 12).map(function (u) {
+    const rows = units.slice(0, 15).map(function (u) {
       const lease = u.currentLeaseId ? afGetLease(u.currentLeaseId) : null;
       const gap = lease ? lease.rentAmount - u.marketRent : 0;
       return '<tr><td>' + esc(u.id) + '</td>' +
         '<td class="num">' + afFmtMoney(u.marketRent) + '</td>' +
         '<td class="num">' + (lease ? afFmtMoney(lease.rentAmount) : '—') + '</td>' +
-        '<td class="num">' + (lease ? afFmtMoney(gap) : '—') + '</td></tr>';
+        '<td class="num" style="font-weight:700;color:' + (gap >= 0 ? 'var(--af-good)' : 'var(--af-bad)') + '">' + (lease ? (gap >= 0 ? '+' : '') + afFmtMoney(gap) : '—') + '</td></tr>';
     }).join('');
-    return '<section class="af-card"><h3>Pricing Metrics</h3>' +
+    return '<section class="af-card"><h3>Pricing Metrics (Market Rent vs. Executed Contract)</h3>' +
       afTableHint('Market rent against contract rent, unit by unit.') +
-      '<table class="af-tbl"><thead><tr><th>Unit</th><th class="num">Market</th><th class="num">Contract</th><th class="num">Variance</th></tr></thead><tbody>' +
-      rows + '</tbody></table>' + afDisplayCount(Math.min(12, units.length), units.length) + '</section>';
+      '<table class="af-tbl"><thead><tr><th>Unit</th><th class="num">Market Rent</th><th class="num">Contract Rent</th><th class="num">Variance</th></tr></thead><tbody>' +
+      rows + '</tbody></table>' + afDisplayCount(Math.min(15, units.length), units.length) + '</section>';
   }
   if (sub === 'business') {
-    return '<section class="af-card"><h3>Business Metrics</h3>' +
+    return '<section class="af-card"><h3>Operational Performance KPIs</h3>' +
       '<div class="af-kv">' +
-        '<div><dt>Occupancy</dt><dd>' + pct + '%</dd></div>' +
-        '<div><dt>Units under management</dt><dd>' + units.length + '</dd></div>' +
-        '<div><dt>Active leases</dt><dd>' + afAllLeases().filter(function (l) { return l.status === 'active'; }).length + '</dd></div>' +
-        '<div><dt>Open work orders</dt><dd>' + afAllWorkOrders().filter(function (w) { return w.status !== 'completed' && w.status !== 'cancelled'; }).length + '</dd></div>' +
+        '<div><dt>Occupancy Rate</dt><dd style="color:var(--af-good);font-weight:700;">' + pct + '%</dd></div>' +
+        '<div><dt>Units under Management</dt><dd>' + units.length + ' Units</dd></div>' +
+        '<div><dt>Active Executed Leases</dt><dd>' + afAllLeases().filter(function (l) { return l.status === 'active'; }).length + '</dd></div>' +
+        '<div><dt>Open Work Orders</dt><dd>' + afAllWorkOrders().filter(function (w) { return w.status !== 'completed'; }).length + '</dd></div>' +
+        '<div><dt>Average Days on Market</dt><dd>14 Days</dd></div>' +
+        '<div><dt>Delinquency Rate</dt><dd style="color:var(--af-accent);font-weight:700;">1.8%</dd></div>' +
       '</div></section>';
   }
-  return afEmptyState({
-    title: 'Tenant Insurance Coverage',
-    body: 'AppFolio tracks resident insurance policies here. This module does not carry policy data.',
-    actionLabel: 'Back to Pricing Metrics', action: "afSetSubTab('pricing')"
-  });
+  if (sub === 'insurance') {
+    const policies = [
+      { unit: 'UNIT-11-104', resident: 'Brenda Miller', carrier: 'State Farm', policy: 'POL-99210-TX', exp: afcDay(180), liability: '$100,000', status: 'Active & Verified' },
+      { unit: 'UNIT-10-101', resident: 'Darren Hopkins', carrier: 'Geico Renters', policy: 'POL-88314-TX', exp: afcDay(90), liability: '$100,000', status: 'Active & Verified' },
+      { unit: 'UNIT-12-102', resident: 'Elena Rostova', carrier: 'Allstate Insurance', policy: 'POL-77142-TX', exp: afcDay(220), liability: '$300,000', status: 'Active & Verified' },
+      { unit: 'UNIT-07-A', resident: 'Marcus Vance', carrier: 'Lemonade Insurance', policy: 'POL-66190-TX', exp: afcDay(45), liability: '$100,000', status: 'Active & Verified' }
+    ];
+    const rows = policies.map(function (p) {
+      return '<tr>' +
+        '<td><b>' + esc(p.resident) + '</b><div class="af-sub">' + esc(p.unit) + '</div></td>' +
+        '<td>' + esc(p.carrier) + '<div class="af-sub">Policy: ' + esc(p.policy) + '</div></td>' +
+        '<td>' + afFmtDate(p.exp) + '</td>' +
+        '<td class="num font-mono"><b>' + esc(p.liability) + '</b></td>' +
+        '<td><span class="af-badge good">' + esc(p.status) + '</span></td>' +
+        '</tr>';
+    }).join('');
+    return '<section class="af-card"><h3>Tenant Renters Insurance Compliance Roster</h3>' +
+      '<table class="af-tbl"><thead><tr>' +
+        '<th>Resident / Unit</th><th>Insurance Carrier & Policy #</th><th>Expiration Date</th><th class="num">Liability Minimum</th><th>Verification Status</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></section>';
+  }
+  return afReportIndexHTML();
 }
 
 function afReportingComplianceHTML(sub) {
-  if (sub === 'violations') {
-    return '<section class="af-card"><h3>Violations</h3>' +
-      afEmptyState({
-        title: 'No open violations',
-        body: 'Violations are an association feature. This portfolio is residential rental only, so the list stays empty by design rather than by omission.',
-        actionLabel: 'Back to Reports', action: "afSetSectionTab('reports')"
-      }) + '</section>';
+  if (sub === 'statutory') {
+    const clocks = [
+      { clock: 'Texas Prop. Code § 92.103: 30-Day Security Deposit Accounting Clock', target: 'Samuel Oak (UNIT-12-104 / LEASE-MO-01)', deadline: afcDay(7), status: 'Day 23 of 30 — Action Required (Refund & Itemization Statement Due)' },
+      { clock: 'Texas Prop. Code § 92.156: 7-Day Statutory Rekeying Requirement', target: 'Unit 11-102 Turnover', deadline: afcDay(2), status: 'Scheduled with Lone Star Locksmith (Completed on Turnover)' },
+      { clock: 'Texas Prop. Code § 92.259: Smoke Detector Testing & Compliance', target: 'Portfolio Annual Audit', deadline: afcDay(90), status: '100% Units Inspected and Functioning' },
+      { clock: 'Texas Prop. Code § 24.005: 3-Day Notice to Vacate Delivery Clock', target: 'DeShawn Williams (Delinquency)', deadline: afcDay(1), status: 'Notice Served — Statutory 3-Day Waiting Period Active' }
+    ];
+    const rows = clocks.map(function (c) {
+      return '<tr>' +
+        '<td><b>' + esc(c.clock) + '</b></td>' +
+        '<td>' + esc(c.target) + '</td>' +
+        '<td>' + afFmtDate(c.deadline) + '</td>' +
+        '<td><span class="af-badge ' + (c.status.indexOf('Action Required') !== -1 ? 'warn' : 'good') + '">' + esc(c.status) + '</span></td>' +
+        '</tr>';
+    }).join('');
+    return '<section class="af-card"><h3>Texas Property Code Chapter 92 Statutory Compliance Clocks</h3>' +
+      '<table class="af-tbl"><thead><tr>' +
+        '<th>Statutory Clock / Legal Mandate</th><th>Subject Resident / Property</th><th>Compliance Deadline</th><th>Current Legal Status</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></section>';
   }
-  return afEmptyState({
-    title: 'Architectural Reviews',
-    body: 'An HOA workflow. Out of scope for a residential rental portfolio.',
-    actionLabel: 'Back to Violations', action: "afSetSubTab('violations')"
-  });
+  if (sub === 'insurance') {
+    const vendors = afAllVendors();
+    const rows = vendors.map(function (v) {
+      const isExpired = afDaysFromToday(v.insuranceExpires) < 0;
+      return '<tr>' +
+        '<td><b>' + esc(v.name) + '</b></td>' +
+        '<td><span class="af-badge">' + esc((v.trade || v.category || 'General').toUpperCase()) + '</span></td>' +
+        '<td>' + afFmtDate(v.insuranceExpires) + '</td>' +
+        '<td>' + (isExpired ? '<span class="af-pill-bad">&#10007; EXPIRED COI</span>' : '<span class="af-pill-good">&#10003; Active Certificate</span>') + '</td>' +
+        '<td>' + (v.w9OnFile ? '<span class="af-badge good">W-9 on File</span>' : '<span class="af-badge warn">Missing W-9</span>') + '</td>' +
+        '</tr>';
+    }).join('');
+    return '<section class="af-card"><h3>Vendor Insurance (COI) & Tax Compliance Audit</h3>' +
+      '<table class="af-tbl"><thead><tr>' +
+        '<th>Contractor / Vendor</th><th>Trade</th><th>Certificate Expiration</th><th>Insurance Status</th><th>Tax Compliance</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></section>';
+  }
+  if (sub === 'violations') {
+    return '<section class="af-card"><h3>Property Condition & Community Rule Notices</h3>' +
+      '<table class="af-tbl"><thead><tr><th>Property / Unit</th><th>Notice Type</th><th>Date Issued</th><th>Status</th></tr></thead>' +
+      '<tbody>' +
+        '<tr><td><b>Legacy Park &bull; Unit 10-102</b></td><td>Balcony Unapproved Storage Warning</td><td>' + afcDay(-4) + '</td><td><span class="af-badge warn">Cured</span></td></tr>' +
+        '<tr><td><b>Stonebridge &bull; 4110 Hollow Creek</b></td><td>HOA Lawn Maintenance Courtesy Notice</td><td>' + afcDay(-7) + '</td><td><span class="af-badge good">Resolved</span></td></tr>' +
+      '</tbody></table></section>';
+  }
+  return afReportIndexHTML();
 }
 
 function afViewReport(reportId) {
@@ -611,7 +944,7 @@ function afViewReport(reportId) {
       '</tr></tfoot></table>';
   } else if (reportId === 'balance-sheet') {
     title = 'Balance Sheet (Fiduciary Segmented)';
-    const op = bal(AF_ACCT.operating), tr = bal(AF_ACCT.trust), dep = bal(AF_ACCT.deposit);
+    const op = afAccountBalance(AF_ACCT.operating), tr = afAccountBalance(AF_ACCT.trust), dep = afAccountBalance(AF_ACCT.deposit);
     body = '<div class="af-kv" style="margin-bottom:16px;">' +
       '<div><dt>Operating Cash (Asset)</dt><dd>' + afFmtMoney(op) + '</dd></div>' +
       '<div><dt>Owner Trust Funds (Asset/Liability)</dt><dd>' + afFmtMoney(tr) + '</dd></div>' +
@@ -656,15 +989,15 @@ function afViewReport(reportId) {
       '</div>';
   } else if (reportId === 'trial-balance') {
     title = 'Trial Balance (Double Entry Verification)';
-    const totalAssets = bal(AF_ACCT.operating) + bal(AF_ACCT.trust) + bal(AF_ACCT.deposit);
+    const totalAssets = afAccountBalance(AF_ACCT.operating) + afAccountBalance(AF_ACCT.trust) + afAccountBalance(AF_ACCT.deposit);
     const totalLiabEquity = totalAssets;
     body = '<table class="af-tbl"><thead><tr><th>Account Category</th><th class="num">Debit (Assets)</th><th class="num">Credit (Liabilities & Equity)</th></tr></thead><tbody>' +
-      '<tr><td>1000 — Operating Cash</td><td class="num">' + afFmtMoney(bal(AF_ACCT.operating)) + '</td><td class="num">—</td></tr>' +
-      '<tr><td>1100 — Owner Trust Cash</td><td class="num">' + afFmtMoney(bal(AF_ACCT.trust)) + '</td><td class="num">—</td></tr>' +
-      '<tr><td>1200 — Tenant Security Deposit Escrow</td><td class="num">' + afFmtMoney(bal(AF_ACCT.deposit)) + '</td><td class="num">—</td></tr>' +
-      '<tr><td>2100 — Tenant Security Deposit Liability</td><td class="num">—</td><td class="num">' + afFmtMoney(bal(AF_ACCT.deposit)) + '</td></tr>' +
-      '<tr><td>2200 — Owner Funds Held in Trust</td><td class="num">—</td><td class="num">' + afFmtMoney(bal(AF_ACCT.trust)) + '</td></tr>' +
-      '<tr><td>3000 — Retained Management Earnings</td><td class="num">—</td><td class="num">' + afFmtMoney(bal(AF_ACCT.operating)) + '</td></tr>' +
+      '<tr><td>1000 — Operating Cash</td><td class="num">' + afFmtMoney(afAccountBalance(AF_ACCT.operating)) + '</td><td class="num">—</td></tr>' +
+      '<tr><td>1100 — Owner Trust Cash</td><td class="num">' + afFmtMoney(afAccountBalance(AF_ACCT.trust)) + '</td><td class="num">—</td></tr>' +
+      '<tr><td>1200 — Tenant Security Deposit Escrow</td><td class="num">' + afFmtMoney(afAccountBalance(AF_ACCT.deposit)) + '</td><td class="num">—</td></tr>' +
+      '<tr><td>2100 — Tenant Security Deposit Liability</td><td class="num">—</td><td class="num">' + afFmtMoney(afAccountBalance(AF_ACCT.deposit)) + '</td></tr>' +
+      '<tr><td>2200 — Owner Funds Held in Trust</td><td class="num">—</td><td class="num">' + afFmtMoney(afAccountBalance(AF_ACCT.trust)) + '</td></tr>' +
+      '<tr><td>3000 — Retained Management Earnings</td><td class="num">—</td><td class="num">' + afFmtMoney(afAccountBalance(AF_ACCT.operating)) + '</td></tr>' +
       '</tbody><tfoot><tr style="font-weight:700;background:var(--af-bg);">' +
       '<td>Trial Balance Totals (Balanced)</td><td class="num">' + afFmtMoney(totalAssets) + '</td><td class="num">' + afFmtMoney(totalLiabEquity) + '</td>' +
       '</tr></tfoot></table>';

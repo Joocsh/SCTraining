@@ -50,15 +50,17 @@
         <a class="ds-topnav-item" data-view="templates" onclick="dsOpenTemplates()">Templates</a>
         <a class="ds-topnav-item" data-view="reports" onclick="dsGoto('reports')">Reports</a>
         <a class="ds-topnav-item" data-view="settings" onclick="dsGoto('settings')">Admin</a>
-        <!-- Training, not product. Kept visually distinct so it does not read as a DocuSign
-             section, and it now points at the 10-lesson curriculum instead of the old flat
-             list of 5 loose scenarios (all of which were already steps inside lessons). -->
-        <a class="ds-topnav-item ds-training-item" data-view="lessons" onclick="dsGoto('lessons')">Lessons</a>
       </nav>
       <div class="ds-topbar-right">
-        <!-- No trial counter and no Buy Now here. Those belong to a Docusign trial
-             account, not to the product this module teaches. A learner practising
-             the VA workflow should never see an upsell in the chrome. -->
+        <!-- Training control in the right-hand chrome, keeping product tabs authentic -->
+        <button type="button" class="ds-training-btn" id="dsTrainingBtn" onclick="dsGoto('lessons')" title="View Lessons & Training Curriculum">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ds-t-icon">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+          <span class="ds-t-label">Training</span>
+          <span class="ds-t-badge" id="dsTrainingBadge">0/10</span>
+        </button>
         <button class="ds-help-btn" title="View layout density" onclick="simToast('View layout density')">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><circle cx="8" cy="9" r="2"/><circle cx="16" cy="15" r="2"/></svg>
         </button>
@@ -122,7 +124,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
               Drafts
             </a></li>
-            <li><a onclick="dsGoto('deleted')" id="sb-deleted">
+            <li><a onclick="dsOpenDeleted()" id="sb-deleted">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               Deleted
             </a></li>
@@ -168,7 +170,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
             Templates
           </a></li>
-          <li><a onclick="dsGoto('mailbox')" id="sb-mailbox">
+          <li><a onclick="dsOpenMailbox()" id="sb-mailbox">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>
             VA Mailbox
             <span class="ds-sidebar-badge" id="dsSbMailBadge" style="display:none;"></span>
@@ -224,7 +226,7 @@
   <!-- ===================== Tour Overlay ===================== -->
   <div class="ds-tour" id="dsTour">
     <div class="ds-tour-highlight" id="dsTourHighlight"></div>
-    <div class="ds-tour-tip" id="dsTourTip">
+    <div class="ds-tour-tip" id="dsTourTip" role="dialog" aria-modal="true" aria-labelledby="dsTourTipBody">
       <div class="ds-tour-tip-body" id="dsTourTipBody"></div>
       <div class="ds-tour-tip-foot">
         <span id="dsTourProgress"></span>

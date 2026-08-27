@@ -1,495 +1,647 @@
-# PROMPT MAESTRO — Qualia Core: de fachada pintada a expediente modelado
+# PROMPT MAESTRO — Qualia Core: cerrar la brecha de tareas y los últimos huecos
 
-> Pásale este documento completo a un agente de código, o dile:
-> **"sigue `Quialia/PROMPT-qualia.md`"**.
+> Eres un agente de código trabajando sobre un simulador de entrenamiento. Lee este documento
+> entero antes de tocar nada.
 >
-> Este documento **reemplaza y anula** a `PROMPT-qualia-shell.md`, `PROMPT-qualia-system.md` y
-> `PROMPT-qualia-3-motor.md`, que fueron borrados el 2026-08-26. No los busques: lo que valía
-> de ellos está aquí, y lo que decían de más ya se cumplió o quedó obsoleto.
+> **Versión de referencia:** commit `0bc9907`, medido el **2026-08-26**.
+> Este documento reemplaza a cualquier `PROMPT-qualia-*.md` anterior. Si encuentras otro, ignóralo.
 >
-> Todo número de este documento fue **medido ejecutando el simulador el 2026-08-26**, no leído
-> del código ni heredado del prompt anterior. El §9 trae el script para volver a medirlo.
+> Todos los números de aquí se obtuvieron **ejecutando el simulador y midiendo en la consola del
+> navegador**, no leyendo el código. El §8 trae los scripts para reproducir cada cifra. Si una
+> medición tuya no coincide con la de aquí, **la tuya manda**: vuelve a medir y dilo.
 
 ---
 
-## 0. Alcance
+## 0. Qué es esto y cómo se ejecuta
 
-Trabajas **exclusivamente** en `Quialia/`. No toques `Docusign/`. No toques `AppFolio/`. No toques `assets/`.
+Simulador de **Qualia Core** (software de title & escrow) para entrenar asistentes virtuales.
+Sitio 100 % estático: JavaScript sin frameworks, sin build, sin red.
 
-Sitio 100% estático: vanilla JS, sin build, sin frameworks, sin red. Se sirve con
-`py -m http.server 5799` desde la raíz del repo y se abre en
-`http://localhost:5799/Quialia/testdrive-qualia.html`.
+```
+py -m http.server 5799          # desde la raíz del repo
+http://localhost:5799/Quialia/testdrive-qualia.html
+```
+
+Si te redirige al login, ejecuta esto en la consola y recarga:
+
+```js
+localStorage.setItem('scc_session', JSON.stringify({ userId: 'maria' }));
+```
+
+**Trabajas sólo dentro de `Quialia/`.** No toques `AppFolio/`, `Docusign/` ni `assets/`.
+
+Archivos:
+
+| Archivo | Líneas | Qué es |
+|---|---|---|
+| `qualia-app.js` | 8036 | Núcleo: datos, enrutador, todas las pantallas del expediente |
+| `qualia-shell.js` | 2398 | Secciones Contacts / Calendar / Accounting / Reports / Compliance / Admin |
+| `qualia-data.js` | 2001 | **El curso.** Lecciones, escenarios, examen |
+| `qualia-catalog-data.js` | 956 | Catálogo de órdenes |
+| `qualia-shell-data.js` | 668 | Datos de las secciones del shell |
+| `qualia.css` / `qualia-shell.css` | 3903 / 1584 | Estilos |
+| `qualia-tour.js` | 131 | Tour inicial |
 
 ---
 
-## 1. Reglas duras — no negociables
+## 1. Reglas duras
 
-### 1.1 El curso no se toca
+### 1.1 No toques el curso
 
-`qualia-data.js` completo, `QZ_LESSONS`, `QZ_SCENARIOS`, `QZ_REVIEWS`, `QZ_RECONCILES`,
-`QZ_COMPOSES`, `QZ_EXAM_*`, `qzMark()`, `qzStore`, `qzSave()`, `qzLoad()`, `QZ_LS_KEY`,
-`qualia-tour.js`, `assets/js/sim-engine.js`.
+`qualia-data.js` **completo**, más `qzMark()`, `qzStore`, `qzSave()`, `qzLoad()`, `QZ_LS_KEY`,
+`qualia-tour.js` y `assets/js/sim-engine.js`.
+
+> **Excepción única, autorizada el 2026-08-27:** el bloque del ancla al principio de
+> `qualia-data.js` (`QZ_ANCHOR`, `QZ_SHIFT_DAYS`, `qzShiftISO`, `QZ_TODAY`). Es el reloj, no
+> el curso — ver §1.3. **Ni una lección, ni un escenario, ni un ítem del examen se tocaron:
+> la prosa se desplaza en memoria al arrancar, y el archivo sigue diciendo lo que decía.**
 
 Tres invariantes que deben seguir siendo ciertos al terminar:
 
-1. `QZ_LS_KEY` sigue siendo `'qz_va_training_v2'` y guarda **sólo** las 10 claves académicas
-   (`checklist, scenarios, reviews, reconciles, composes, exam, lessonsDone, checklistScoped,
-   shuffleSalt, tourSeen`). Ningún dato de producto entra ahí.
-2. Los datos del producto viven **sólo en memoria** (`qzDB`). Al refrescar, el mundo vuelve a
-   estado de fábrica. Esto ya funciona: no lo rompas metiendo persistencia.
-3. Un alumno puede completar las 14 lecciones y el examen exactamente igual que hoy.
+1. `localStorage` contiene **una sola clave**, `qz_va_training_v2`, con **exactamente 10 campos**:
+   `checklist, scenarios, reviews, reconciles, composes, exam, lessonsDone, checklistScoped,
+   shuffleSalt, tourSeen`. **Ningún dato de producto entra ahí.**
+2. Los datos del producto viven **sólo en memoria** (`qzDB`). Al recargar, el mundo vuelve a
+   estado de fábrica. Ya funciona: no metas persistencia.
+3. Las 14 lecciones y el examen se completan igual que hoy.
 
-### 1.2 Lo que ya está bien — no lo reescribas
+### 1.2 Convenciones
 
-El audit del 2026-08-26 encontró que **la arquitectura ya es correcta**. Los tres prompts
-anteriores hicieron su trabajo. En concreto:
+- **Toda escritura pasa por la capa de datos**: `qzInsert / qzUpdate / qzRemove`, nunca mutando
+  arrays a mano. Registra en `qzLogAudit` lo que el producto real auditaría.
+- **Ningún dato dentro del renderizador.** Si un valor aparece en un template string y no viene
+  de `qzList / qzFind`, está mal.
+- **Ningún fallback literal.** El patrón `o.campo || 'Nombre Inventado'` está prohibido. Hoy hay
+  **0** en el repo — no reintroduzcas ninguno. Un campo vacío se muestra vacío.
+- **Ningún toast que mienta.** Un toast describe algo que ocurrió. Si no ocurrió nada, el control
+  va deshabilitado con un `title` que explique por qué.
+- **Cero estilos inline nuevos.** Todo a `qualia.css` / `qualia-shell.css`.
+- El repo usa **CRLF**. Si editas con herramientas POSIX (`sed -i`, scripts), restaura los finales
+  de línea o el diff saldrá con el archivo entero cambiado.
 
-| Cosa | Estado medido |
-|---|---|
-| Errores de consola | **0** en 152 renders de pestaña (38 pestañas × 4 órdenes) + 28 vistas de shell |
-| Imágenes rotas | **0** |
-| Capa de datos genérica | **Existe y funciona**: `qzDB` con `qzList / qzFind / qzInsert / qzUpdate / qzRemove / qzNextId / qzLogAudit` sobre 31 colecciones. Probado en vivo: insert → update → remove sobre `orders` es correcto. |
-| Separación curso/producto | **Lograda.** `localStorage` sólo tiene progreso. |
-| Reset de fábrica al refrescar | **Funciona.** |
-| Cobertura de pantallas | 38 páginas de expediente + 6 vistas raíz + 6 sub-pestañas de Accounting + 6 de Compliance + 10 de Admin = **66 pantallas**, todas renderizan |
-| Fidelidad del rail | **Alta.** `QZ_CORE_NAV` reproduce el rail de `core-charges-section-b.png` sección por sección, badges A/B/C/E/F/G/H/J/K-M/L-N incluidos |
-| Páginas `qzCoreStub` sin vista | **5**, y las 5 son de ayuda (Help Center, Contact Us, knowledge base). Antes eran 17. |
+### 1.3 El reloj: el mundo se mueve con el alumno
 
-**No refactorices la capa de datos. No reconstruyas el rail. No reescribas el chrome.**
-Todo eso ya está. El trabajo pendiente es otro.
+Hasta el 2026-08-27 el simulador vivía en una semana fija y, tres meses después, el alumno
+veía agosto de 2026 en su pantalla de noviembre. Ya no.
 
----
+**Cómo funciona.** El dataset siempre estuvo escrito en relativo sin saberlo: cada fecha está
+a una distancia fija del ancla, así que una orden que cerraba el `2026-10-11` era, literal,
+*"cierra en 60 días"*. Basta un desplazamiento único para convertirlas todas:
 
-## 2. La tesis: está **pintado**, no **modelado**
-
-El simulador se ve como Qualia Core. No se **comporta** como Qualia Core.
-
-Un VA puede recorrer 66 pantallas y no poder **escribir** en 31 de las 38 páginas del
-expediente. Puede abrir la orden 1471 y ver exactamente el mismo equipo de settlement, el mismo
-condado, el mismo underwriter y los mismos $5,000.00 de earnest money que en la 1483 — porque
-esos valores no son datos, son literales en el renderer.
-
-El patrón dominante es este:
-
-```html
-<div class="qz-kv"><b>Paralegal / Closer</b>${esc(o.paralegal || 'Travis Jones')}</div>
+```
+QZ_ANCHOR     = '2026-08-12'   (un miércoles: la semana en que se escribió el dataset)
+QZ_SHIFT_DAYS = semanas completas entre el ancla y hoy, x 7
+QZ_TODAY      = QZ_ANCHOR + QZ_SHIFT_DAYS
 ```
 
-Hay **103** filas `qz-calc-row` y decenas de `qz-kv` como esa. `o.paralegal` **no existe en
-ninguna de las 75 órdenes**. Siempre cae al literal. El campo se ve, se lee, y no es real.
+**Semanas completas, no días.** El trabajo de title es de días hábiles: un desplazamiento
+arbitrario pondría cierres en domingo y grabaciones en sábado. Así cada fecha conserva su día
+de la semana y el "hoy" del simulador queda a **≤3 días** del real. Es un intercambio
+deliberado.
 
-**El objetivo de esta ronda: convertir cada valor pintado en un campo del modelo, y cada campo
-del modelo en un control editable.** Nada más. No hay pantallas nuevas que construir.
+**Dónde se aplica — cuatro superficies, todas cubiertas:**
+
+| Superficie | Quién lo hace | Cuándo |
+|---|---|---|
+| Los datos (6.373 valores) | `qzShiftWorldTime()` | al hidratar, **antes** de construir el seed |
+| La prosa del curso | el mismo barrido, sobre los objetos en memoria | al hidratar |
+| Los 16 documentos (31 fechas) | `qzOpenDocFile()` — fetch, desplaza, sirve como blob | al abrirlos |
+| Lo derivado (CSV, audit log, chips) | sale del dato ya desplazado | solo |
+
+**Lo que NO se desplaza, y por qué:** los números de expediente. `ORD-2026-1483` se cita
+**152 veces** en el curso y forma parte de las claves con que se guarda el progreso
+(`de-property@ORD-2026-1483`). Moverlos borraría el avance de cualquiera que esté a media
+formación. Un número de expediente lleva el año en que se abrió: es una etiqueta, no una
+fecha. Las guardas de vecindad en `qzShiftDateText()` existen precisamente para que los
+patrones de fecha nunca muerdan uno.
+
+**Cómo se comprueba.** Abre el simulador con **`?selftest=1`**:
+
+```
+http://localhost:5799/Quialia/testdrive-qualia.html?selftest=1
+```
+
+17 comprobaciones, ninguna de ellas preguntando "¿sigue siendo 2026?" — que es la respuesta
+correcta dos semanas después del ancla. Preguntan si cada fecha se movió **exactamente**
+`QZ_SHIFT_DAYS` y si sigue trazando hasta lo que está escrito en el archivo. Funciona con
+cualquier desfase distinto de cero.
+
+Medido el 2026-08-27 (desfase de 14 días): **17/17 PASS** — 6.373 fechas de datos, 31 de 31
+impresas en los 16 documentos, 28 menciones en prosa del curso, `localStorage` con 1 clave y
+10 campos, consola limpia.
+
+Verificado además en Node con el reloj falseado: a **2027-03-17** y a **2029-11-07** el
+expediente `ORD-2026-1483` sigue viviendo 81 días entre apertura y cierre, sin una sola fecha
+descolgada, y el miércoles sigue siendo miércoles.
 
 ---
 
-## 3. Los nueve defectos, medidos
+## 2. Estado actual — esto YA ESTÁ HECHO, no lo rehagas
 
-### D1 — 31 de 38 páginas del expediente no tienen un solo control editable
+Tres rondas de trabajo previas dejaron el módulo en buen estado. Medido el 2026-08-26:
 
-Conteo de `input/select/textarea` habilitados por página, **descontando** el buscador del panel
-de Help que aparece en todas:
+| | Estado |
+|---|---|
+| Errores de consola | **0** en 180 pantallas recorridas |
+| Fallbacks literales en renderizadores | **0** (antes 19) |
+| Filas de sólo lectura `qz-calc-row` | 25 (antes 103) |
+| Páginas del expediente con controles editables | **34 de 38** |
+| Basic Info | **27 controles editables** |
+| Capa de datos | `qzDB` con `qzList/qzFind/qzInsert/qzUpdate/qzRemove/qzNextId/qzLogAudit` sobre 31 colecciones |
+| Separación curso / producto | **Lograda.** `localStorage` sólo tiene progreso |
+| Reset de fábrica al recargar | **Funciona** |
 
-| Página | Editables | Página | Editables |
-|---|---|---|---|
-| `loan` | **18** | `earnest` | **0** |
-| `documents` | 9 | `prorations` | **0** |
-| `dataentry` | 5 | `payoffs` | **0** |
-| `requirements` | 5 | `cpl` | **0** |
-| `tasks` | 3 | `policy-info` | **0** |
-| `communication` | 1 | `commitment` | **0** |
-| `overview` (Basic Info) | **1** (sólo el checkbox 1099) | `exceptions` | **0** |
-| | | `final-policy` | **0** |
-| | | `cd-a … cd-ln` (10 págs) | **0** |
-| | | `accounting` | **0** |
-| | | `closing` | **0** (5 inputs, todos disabled) |
-| | | `preview-cd`, `preview-settlement` | **0** |
-| | | `mailing`, `recording`, `proceeds`, `workflow` | **0** |
-| | | `marketplace`, `erecording`, `underwriter`, `esign` | **0** |
-| | | `vendors` | **0** |
+### 2.1 Las 4 páginas sin campos editables son correctas así
 
-`loan` es la prueba de que se puede hacer bien: 18 campos editables, y nadie tuvo que inventar
-arquitectura nueva para lograrlo. **`loan` es el patrón a replicar.**
+`cd-j` (totales derivados de la sección J), `preview-cd` y `preview-settlement` (previsualizaciones
+de documento) y `review` (instrumento de entrenamiento, no una pantalla de Qualia).
+**No las conviertas en formularios.**
 
-### D2 — Las 10 páginas de Charges son literales, no datos
+### 2.2 Charges está completo
 
-`qualia-app.js:3494`, `qzClosingDisclosureSectionHTML()`:
+`chargeLines` es una colección real: **2.113 líneas repartidas en las 75 órdenes**, con esquema
+`{ id, orderId, section, lineNo, description, payee, borrowerAt, borrowerBefore, sellerAt,
+sellerBefore, byOthers }`. Tiene `qzChargeAdd / qzChargeSet / qzChargeDelete / qzChargeSort`, el
+panel de **Payments**, y una regla de negocio correcta: una línea ya desembolsada no se puede
+borrar, hay que anular el desembolso primero.
+
+### 2.3 El volumen de datos es realista
+
+| Colección | Filas | Órdenes cubiertas (de 75) |
+|---|---|---|
+| `tasks` | **2.633** (35,1 por orden) | 75 |
+| `documents` | **2.479** (33,1 por orden) | 75 |
+| `chargeLines` | 2.113 | 75 |
+| `vendors` | 537 | 75 |
+| `ledgerLines` | 520 | 73 |
+| `titleExceptions` | 438 | — |
+| `disbursements` | 338 | 58 |
+| `receipts` | 181 | 73 |
+| `threads` | 109 | 57 |
+| `invoices` | 15 | **14** |
+| `notes` | **0** | — |
+| `messages` | **0** | — |
+
+44 títulos de tarea distintos, 42 nombres de documento distintos, 17 responsables.
+
+### 2.4 Anular dinero funciona
+
+`qzVoidMoneyRecord(coll, id, reason)` exige una razón escrita de ≥ 5 caracteres, marca el registro
+como `Void` y **publica un asiento inverso en el libro mayor** en vez de borrar el original. Está
+bien hecho. Ver §4 D4 para el único problema que tiene.
+
+---
+
+## 3. Cómo funcionan las tareas en el Qualia real
+
+Esto sale de las capturas en `Images-resourses/` y de la documentación pública de Qualia. Es la
+referencia para el trabajo del §4.
+
+### 3.1 Panel derecho de cada expediente
+
+De `real-screenshots/core-charges-section-b.png` (captura auténtica del producto):
+
+```
+▾ TASKS   [0 / 0]
+▌ You have not been assigned any tasks
+  on this order
+```
+
+- Contador **`abiertas / total`** dentro de una caja con borde.
+- El estado vacío es una tarjeta con **barra de acento a la izquierda**.
+- **`assigned any tasks` es un enlace** (color teal). Es la puerta a la lista personal de tareas
+  del usuario, a través de todos los expedientes.
+- Orden del panel: **CHAT · TASKS · HELP · NOTES**.
+
+### 3.2 Tasks es una página de primer nivel del expediente
+
+Los wireframes muestran una **tira horizontal de 5 sub-pestañas** bajo la fila de expedientes
+abiertos: en `wireframes/core-order-dashboard.webp` la primera es *Overview*; en
+`wireframes/core-order-tasks.webp` la tercera es **Tasks**, resaltada con una píldora verde pálido.
+No cuelga del rail izquierdo.
+
+### 3.3 La página Tasks
+
+De `wireframes/core-order-tasks.webp`:
+
+- **Se titula con el nombre del workflow** — en el wireframe, *"Refinance"*. No dice "Tasks".
+- Debajo del título, tres barras cortas de progreso segmentado.
+- Tres botones arriba a la derecha: **Modify** (fantasma) · **Add Task** (gris carbón) ·
+  **Add Task Group** (verde, primario).
+- **Grupos = fases cronológicas**: Order Opening · Title · Pre-Closing · Payoff Tasks · Post-Closing.
+- Cabecera de cada grupo: nombre · píldora de progreso · barra de progreso · botón de acción.
+  El grupo **activo va tintado en verde con ★ rellena**; los inactivos en gris con **☆ hueca**;
+  *Payoff Tasks* aparece tintado en azul y su botón es un **ojo tachado** — grupo oculto.
+- **Cada fila lleva una franja de color a la izquierda según su estado**: verde las completadas,
+  ámbar la atrasada. Columnas: nombre · una columna media · barra de estado · icono de acción
+  (**ⓘ en las completadas, × en las abiertas**).
+
+### 3.4 El modelo, según la documentación pública
+
+- Tareas **contingentes**: se disparan por condición (se detecta HOA en la transacción → se añaden
+  solas las tareas de HOA).
+- Asignación **a individuos, a roles o a grupos**.
+- *Assignment groups* con reparto **round robin** o por **carga equilibrada**.
+- **Plantillas de workflow** por tipo de transacción y estado.
+- Las tareas se agrupan **en orden cronológico por tipo de rol**.
+
+### 3.5 Lo que NO se pudo verificar
+
+A dónde lleva exactamente el enlace *"assigned any tasks"*, y cuáles son las sub-pestañas 2, 4 y 5
+de la tira. Qualia difumina el texto de sus wireframes a propósito y `knowledge.qualia.com`
+redirige a login. **Si una decisión depende de eso, para y pregunta** en vez de inventarlo.
+
+> **Actualización 2026-08-27 — captura real aportada por el equipo.** El **logo es un botón**:
+> abre una pantalla **Home** (migaja con icono de casita) con una tira de cinco chips —
+> **Orders · Order Queue · Action Queue · Tasks · Notifications `46`**. Es decir, la cola
+> personal de tareas **sí tiene casa en el producto**, y no es una pestaña del topbar.
+> Implementado: `qzHomeHTML()` en `qualia-app.js`.
+>
+> Dos cosas que esa captura **no** resuelve:
+>
+> 1. **No es la tira del D8.** Aquella vive *dentro* de un expediente abierto
+>    (`wireframes/core-order-dashboard.webp`: pestañas tipo navegador y luego *Overview* + 4
+>    elementos difuminados). La de Home es de otro nivel. **D8 sigue bloqueado.**
+> 2. **Qué llevan dentro `Order Queue` y `Action Queue`.** Se dejaron deshabilitados hasta que
+>    se decidió construirlos el mismo 2026-08-27, y se hizo **derivando del dataset, no
+>    imaginando el producto**: cada fila es un registro real de `qzDB`, alcanzable por la misma
+>    navegación que el resto del simulador. Lo inferido es la **agrupación**, no los datos, y
+>    así queda escrito en el comentario junto al código.
+>
+>    - **Order Queue** = expedientes abiertos que aún no han empezado el trabajo de título
+>      (stage 0). Hoy: 9, de los que 7 llevan más de una semana parados — y la pantalla lo dice.
+>    - **Action Queue** = lo que espera a alguien, agrupado por qué lo desbloquea: tus tareas
+>      vencidas, documentos pedidos y no llegados, excepciones de Schedule B abiertas, CPLs sin
+>      emitir y recibos sin depositar. Hoy suma 753 ítems en cinco bloques.
+>
+>    Si aparece una referencia real y agrupa distinto, **las filas sobreviven al cambio**; lo
+>    único que no es cómo están ordenadas aquí.
+>
+> El topbar de esa captura (`Clear · Orders · Contacts · Calendar · Reports`) **contradice** a
+> `real-screenshots/core-charges-section-b.png` — otro tenant, otra licencia o permisos
+> distintos. Decisión tomada el 2026-08-27: **no se toca el topbar** con una sola captura de
+> procedencia desconocida; Accounting, Compliance y Admin ya tienen pantallas y lecciones que
+> dependen de ellas.
+
+---
+
+## 4. Los nueve huecos que quedan, medidos
+
+### D1 — No existe una vista "Mis tareas" · **el más importante**
+
+Hay **397 tareas abiertas** en el sistema. **142 están asignadas a `'You (VA)'`, repartidas en 25
+expedientes.** No hay ninguna pantalla donde verlas juntas.
+
+Peor: la **campana de notificaciones** es hoy la única superficie que agrega tareas entre
+expedientes, y **no filtra por responsable** (`qzRenderBellDropdown` no menciona `assignedTo`).
+Muestra las **397** abiertas de los 17 miembros del equipo como si todas fueran del alumno. Para un
+simulador de entrenamiento eso es peor que no tener nada: enseña a un VA a tratar la cola del
+equipo entero como propia.
+
+**Qué construir:**
+
+1. Una vista de tareas personales que liste, por defecto, las tareas abiertas asignadas al usuario
+   actual, agrupadas en **Vencidas / Vencen hoy / Próximas**, con el expediente y su dirección en
+   cada fila, y clic que abre el expediente en su pestaña Tasks (`qzGotoOrderTasks` ya existe).
+2. Un conmutador **"Mis tareas" / "Todas"** para no perder la vista de equipo.
+3. **Filtra la campana por responsable.** Debe mostrar 142, no 397.
+4. Haz real el enlace del estado vacío del panel: donde hoy dice *"Nothing outstanding on this
+   order."*, pon el texto del producto — *"You have not been **assigned any tasks** on this order"* —
+   con **"assigned any tasks"** enlazando a la vista personal.
+
+**Dónde colgarla — RESUELTO el 2026-08-27 (ver §3.5).** No es pestaña del topbar: vive en
+**Home → Tasks**, la pantalla que abre el logo. Las tres puertas anteriores (campana → *View
+All*, enlace *"assigned any tasks"* del panel, `qzGotoMyTasks()`) aterrizan ahí, así que no hay
+dos caminos que mantener. La justificación está en el comentario de `qualia-app.js` junto a
+`qzGotoHome()`.
+
+### D2 — La página Tasks se desvía del producto en cinco puntos
+
+Compara `qzTasksHTML` (en `qualia-app.js`) con §3.3:
+
+| | Estado |
+|---|---|
+| Agrupada en las 5 fases reales | ✅ ya está |
+| Barra de progreso y ★ por grupo | ✅ ya está |
+| Botones *Add Task* / *Add Task Group* | ✅ ya están |
+| **Título** | ❌ literal **"Order Tasks — Purchase · Standard Milestones"** en las 75 órdenes, incluidas las Refinance, Cash y Commercial. Debe llevar el nombre del workflow de la orden |
+| Subtítulo | ❌ literal *"Assigned to Plano Escrow Team"* idéntico en todas |
+| Botón **Modify** | ❌ no existe |
+| Franja de color por estado en cada fila | ❌ no existe |
+| Control de ocultar grupo (ojo tachado) | ❌ no existe |
+| Origen de los grupos | ❌ **los 5 grupos están escritos a mano dentro del renderizador**, no se leen de `qzDB.taskGroups` (que ya contiene esos mismos 5). Por eso *Add Task Group* no puede producir un sexto grupo visible |
+
+Empieza por el último: lee los grupos de la colección. Lo demás cae solo.
+
+### D3 — Documentos abribles — **RESUELTO, la medición original estaba mal**
+
+> **Corregido el 2026-08-27.** La cifra de “9 de 2.479 — 0,4 %” contaba únicamente `d.file` e
+> **ignoraba por completo la capa de plantillas**. Medido en el navegador con el simulador
+> cargado: **1.383 de 2.150 documentos (64 %) abren contenido** — 9 archivos estáticos más
+> **1.374 renderizados por las 24 plantillas de `QZ_DOC_TEMPLATES`**, que inyectan los datos
+> del expediente al que pertenecen. **Ninguna de las 75 órdenes baja del 25 %**; la media por
+> orden es del 66 %. El criterio 7 del §8 ya estaba cumplido.
+>
+> Comprobado abriendo uno: `Purchase Agreement` de `ORD-2026-1471` sale con sus partes
+> (David Vance / Rachel Green), su dirección, su descripción legal y su fecha ya desplazada.
+
+**Cerrado del todo el mismo día.** Quedaban 584 documentos marcados Received/Reviewed que no
+abrían nada — 18 tipos sin plantilla, encabezados por *Seller Disclosure Notice*, *Chain of
+Title Abstract*, *Property Tax Statement* y *Judgment Search Results*. Se escribieron **las 18
+plantillas que faltaban** (`QZ_DOC_TEMPLATES` pasa de 24 a 42 entradas), todas leyendo del
+expediente al que pertenecen.
+
+**Estado final medido: 2.150 de 2.150 documentos abren contenido. 100 %, en las 75 órdenes,
+y cero recibidos sin nada detrás.**
+
+Las nuevas no son relleno: la de *Judgment Search Results* cambia de texto cuando hay una
+coincidencia posible de nombre y dice que eso no es un gravamen hasta confirmar identidad; la
+de *Flood Certificate* distingue Zona X de Zona AE y avisa de que AE exige seguro antes de
+fondear; la de *Repair Amendment* pone la cifra del crédito para que el alumno la contraste con
+el settlement statement. Es material de examen, no decorado.
+
+No escribas 2.470 archivos. Escribe **plantillas HTML parametrizadas** en `Quialia/documents/`
+(ya hay 17 de ejemplo) y que el expediente inyecte sus propios datos al abrirlas. Objetivo: que al
+menos **el 25 % de los documentos** de cada orden abran algo legible y coherente con esa orden.
+
+### D4 — Anular dinero no se alcanza desde Accounting
+
+`qzVoidMoneyModal` está bien implementado (§2.4) pero se invoca **desde un solo sitio**:
+`qualia-app.js:5419`, el libro mayor del expediente. Las tablas de **Receipts, Disbursements e
+Invoices** de la sección Accounting no tienen botón *Void*.
+
+Es donde un contable de escrow anularía un recibo mal capturado. Cablea la acción que ya existe.
+
+### D5 — `notes` y `messages` están vacías
+
+`notes: 0` y `messages: 0`. El panel de Notas guarda lo que el alumno escribe, pero ningún
+expediente llega con notas previas, y los **109 hilos de Connect no tienen ni un mensaje**: hay
+conversación sin contenido.
+
+Siembra notas en al menos 40 órdenes (lo que el equipo anotó antes de que llegara el alumno) y
+mensajes reales en los hilos.
+
+### D6 — Las facturas sólo tocan 14 de 75 órdenes
+
+`receipts` cubre 73 órdenes, `disbursements` 58, `ledgerLines` 73. `invoices` se queda en **14**
+con 15 filas. Súbelo al nivel de las demás.
+
+### D7 — Controles que siguen siendo sólo un toast
+
+| Control | Qué hace hoy |
+|---|---|
+| `Export` / `Export CSV` | Dice *"CSV export generated and downloaded"* y **no descarga nada** |
+| `Export PDF` / `Print` | Llama a `window.print()` — aceptable |
+| `Run Report` | Toast |
+| `Schedule` | Toast |
+| `Email` / `Call` | Toast — aceptable, son integraciones externas |
+| `New <plantilla>` / `Configure <integración>` | Toast |
+
+El de Export es el que miente. Genera un CSV real con `Blob` + `URL.createObjectURL`, o deshabilita
+el botón. Las dos cosas valen; mentir no.
+
+### D8 — Falta la tira de sub-pestañas del expediente
+
+El producto real tiene una tira horizontal de 5 elementos dentro del expediente abierto (§3.2).
+Aquí toda la navegación cuelga del rail izquierdo, y *"Order Tasks"* vive en el grupo **TASKS** del
+rail — que en el producto real contiene Documents, Accounting, Marketplace y Connect, no una entrada
+de tareas.
+
+**Cambio de chasis, no lo hagas sin decidirlo explícitamente.** Sólo conoces 2 de los 5 elementos
+(*Overview* y *Tasks*). Si lo abordas, pregunta antes por los otros tres.
+
+### D9 — CRUD — **de 13 a 18 de 24 el 2026-08-27**
+
+> Se añadió borrado a **Contact, User, Office, Fee y TaskGroup**, cada uno con la guarda que
+> el producto real tendría — porque un borrado que siempre funciona enseña lo contrario de lo
+> que un puesto de escrow necesita aprender:
+>
+> | Entidad | Se niega cuando… |
+> |---|---|
+> | User | es la cuenta con la que estás dentro. Si sigue nombrado en expedientes abiertos, avisa con el número y deja decidir |
+> | Office | quedan usuarios asignados; los nombra en el rechazo |
+> | TaskGroup | quedan tareas dentro; las cuenta |
+> | Fee | nunca — pero no reprecia los expedientes que ya la llevan, y lo dice |
+> | Contact | los derivados de una orden no se borran aquí, y la fila explica dónde sí |
+>
+> Nota para quien siga: la primera versión de la guarda de User protegía al “último Admin”.
+> **En este tenant no existe el rol Admin** — son Escrow Officer, Title Examiner, Accounting,
+> Closer, Processor, Virtual Assistant y Read Only — así que era una guarda contra una
+> condición imposible. Peor que no tenerla: parece que protege algo.
+>
+> Faltan por cerrar: CPL, Folder, TitleException y Reconciliation.
+
+### Estado original — CRUD incompleto en 14 de 24 entidades
+
+Completas (C+U+D): Order, Party, Document, Task, Vendor, LedgerLine, ChargeLine, Thread, Event,
+Exception.
+
+Sin borrado ni anulación: **Contact, Receipt, Disbursement, Invoice, Office, Fee, User, CPL,
+TaskGroup, Folder**. Sin nada: `TitleException`, `Reconciliation`.
+
+Prioriza las tres del dinero — se resuelven cableando D4 — y luego Contact y User.
+
+---
+
+## 4b. La clase de bug que se encontró el 2026-08-27
+
+Tres bugs distintos, **una sola causa raíz**: el simulador se probó siempre sobre los datos
+escritos a mano del curso, que llevan **id numérico**, y nunca sobre las 71 órdenes generadas,
+cuyos ids son **texto** (`t-6001`, `doc-7930`, `v-1029`, `th-606`).
+
+| Bug | Síntoma | Alcance |
+|---|---|---|
+| Id sin comillas en handler inline | `qzToggleTaskStatus(t-6404, ...)` → `ReferenceError` | 13 sitios: 2.196/2.417 tareas, 1.930/2.150 documentos, 529/537 vendors, 106/109 hilos |
+| `JSON.stringify(id)` dentro de atributo con comillas dobles | el atributo se cierra solo → handler sintácticamente inválido, el botón no hace nada | 5 sitios, toda la pestaña Vendors y el check de revisión en Closing |
+| `hash >> 4` con hash sin signo | índice negativo → `undefined` | 37 personas llamadas *“Linda undefined”* |
+
+Los tres, corregidos. Lo importante no son los bugs sino **cómo se encuentran**, porque volverán
+a aparecer en cuanto alguien añada una pantalla:
 
 ```js
-const lineGenerators = {
-  'cd-a': () => [
-    { desc: '0.50 % of Loan Amount (Points)', payee: 'Lender', amount: Math.round((o.loanAmount||300000)*0.005), col:'borrowerAt' },
-    { desc: 'Application Fee', payee: 'Lender', amount: 350.00, col:'borrowerBefore' },
-    { desc: 'Underwriting Fee', payee: 'Lender', amount: 795.00, col:'borrowerAt' }
-  ], ...
+// Barrido estático: identificadores no definidos en cada handler inline de cada pantalla.
+document.querySelectorAll('#qzRoot [onclick],#qzRoot [onchange]').forEach(el => { ... });
+
+// Barrido dinámico: pulsar TODO sobre órdenes GENERADAS, no sobre las 4 del curso.
+new Function(el.getAttribute('onclick'));   // ¿siquiera parsea?
+el.click();                                 // ¿lanza?
 ```
 
-Las mismas 2–5 líneas para las 75 órdenes, escaladas por `purchasePrice`/`loanAmount`. Se
-pintan como `<td>` de sólo lectura. **Cero inputs.**
+Medición del 2026-08-27 tras las correcciones: **81 pantallas, 942 clics, 0 errores,
+0 handlers inválidos**; y en el barrido estático ampliado, **227 pantallas y 17.810 handlers
+sin una sola referencia rota**.
 
-Comparado con `real-screenshots/core-charges-section-b.png`, faltan:
-
-- Celdas editables en Description / Payee / las 5 columnas de importe.
-- Botones **Sort Lines**, **+**, **−** en la cabecera.
-- El **panel Payments** completo: pestañas *Check / Wire / Net Funded / Aggregate / Transfer /
-  Holdback*, campos *Name / Payment Amount / Label / Reference #*, el toggle *Disburse
-  Separately*, el bloque *Mailing Address*, el enlace *Itemize*, los botones *Add Contact* y
-  *Clear*.
-
-Esto no es un detalle cosmético: **las páginas de Charges son donde un VA de escrow pasa el
-día.** Son la razón de existir de Core.
-
-### D3 — El modelo tiene 16 campos; Basic Info pinta 28 valores
-
-El objeto orden tiene 16 campos (17 en la única orden que además trae `originalClosingDate`):
-
-```
-id, titleNumber, propertyAddress, type, status, stageIndex, opened, closingDate,
-purchasePrice, loanAmount, inspectionCharge, legalDescription, settlementAgency,
-flag, statusNote, parties  (+ originalClosingDate en 1 orden)
-```
-
-Basic Info lee **14 campos que no existen en ninguna de las 75 órdenes** (cobertura 0/75):
-
-`fundingDate`, `disbursementDate`, `purpose`, `representing`, `statementType`,
-`sourceOfBusiness`, `eligible1099`, `orderOpener`, `paralegal`, `attorney`, `assistants`,
-`marketers`, `aptSuite`, `county`.
-
-Además pinta como literal puro, sin campo siquiera: el underwriter
-(`'Old Republic National Title Insurance Co.'`), el policy jacket (`'OR-TX-448120'`) y el
-earnest money (`'$5,000.00'`).
-
-Y de los que sí existen: **`settlementAgency` está poblado 75/75 pero tiene 1 solo valor
-distinto.** Igual `attorney`, `orderOpener`, `paralegal`, `county`: 1 valor cada uno.
-
-Resultado: **las 75 órdenes tienen el mismo equipo de settlement.**
-
-El modal `qzEditOrderModal` expone **5 campos**.
-
-Los nombres de campo correctos están en `real-screenshots/core-basic-info-LEGACY-2016.png` —
-chrome viejo, pero la nomenclatura y el agrupamiento siguen vigentes.
-
-### D4 — Contabilidad y Compliance son un universo paralelo
-
-**Ninguna colección de dinero tiene un campo `orderId`.** La relación con la orden es texto
-libre dentro de otros campos. Medido:
-
-| Colección | Filas | Órdenes distintas citadas | Resuelven |
-|---|---|---|---|
-| `receipts` | 30 | 3 | 3 |
-| `disbursements` | 30 | 3 | 3 |
-| `invoices` | 15 | 3 | 3 |
-| `events` | 31 | **0** | 0 |
-| `pospay` | 8 | **0** | 0 |
-| `reconciliations` | 12 | **0** | 0 |
-| `notifications` | 10 | **0** | 0 |
-| `ledgerLines` | **0** | — | — |
-| `notes` | **0** | — | — |
-| `cpls` | 20 | 19 | 19 ✅ |
-| `wireLog` | 25 | 20 | 20 ✅ |
-
-Consecuencias concretas:
-
-- **El ledger del expediente está vacío para las 75 órdenes** (`ledgerLines: 0`), mientras 30
-  recibos y 30 disbursements flotan en una lista aparte.
-- Abres una orden y no puedes preguntar "¿qué dinero tiene esta orden?".
-- Abres un recibo y no puedes saltar a su orden.
-- Los 31 eventos del calendario no pertenecen a ninguna orden.
-
-### D5 — Las 72 órdenes de catálogo son cascarones
-
-| Cosa | Total | Dónde está |
-|---|---|---|
-| Vendors | **8** | Las 8 en las 3 órdenes del currículum → **72 órdenes con Marketplace vacío** |
-| Threads (Connect) | **3** | Los 3 en el currículum → **72 órdenes con Connect vacío** |
-| Reviews | 6 | Sólo currículum |
-| Recibos / disbursements / invoices | 75 filas | Sólo 3 órdenes |
-
-Medido en bytes de HTML renderizado (la base del chrome son ~13.300 bytes):
-
-| Pestaña | Orden 1483 (currículum) | Orden 1471 (catálogo) |
-|---|---|---|
-| `accounting` | 29.392 | 14.857 → **~1.500 de contenido** |
-| `vendors` | 15.017 | 13.256 → **~0** |
-| `communication` | 14.426 | 13.042 → **~0** |
-| `review` | 19.397 | 13.072 → **~0** |
-
-### D6 — Sólo 9 de 220 documentos abren un archivo
-
-211 documentos son filas con nombre y estado. Sólo 9 tienen `file` apuntando a un HTML real en
-`Quialia/documents/`.
-
-**La habilidad central de un VA es abrir el documento y leer lo que dice.** Hoy funciona en el
-**4%** de los documentos.
-
-### D7 — Monotonía
-
-| Métrica | Valor | Referencia real |
-|---|---|---|
-| Nombres de documento distintos, 75 órdenes | **12** | 30–60 |
-| Títulos de tarea distintos, 75 órdenes | **11** | decenas |
-| Documentos por orden | media 2.9 (mín 2, máx 7) | **20–40** |
-| Estados de orden | **2** (Open 26 / Closed 49) | el `stageIndex` ya soporta más |
-| Tipos de orden | Purchase 51, Cash 11, Refinance 10, Commercial 3 | razonable ✅ |
-| Partes por orden | media 5.1, 133 nombres distintos | razonable ✅ |
-
-### D8 — Inconsistencias del modelo
-
-1. **Llave foránea con dos nombres.** `documents` usa `orderId`; `tasks` usa `relatedOrderId`.
-   Misma capa de datos, dos convenciones.
-2. **`taskGroups` existe y nadie lo usa.** La colección trae exactamente los 5 grupos reales de
-   Qualia — *Order Opening, Title, Pre-Closing, Payoff Tasks, Post-Closing*, los mismos que se
-   ven en `wireframes/core-order-tasks.webp` — pero **ninguna de las 221 tareas referencia un
-   grupo**. La pantalla Tasks del producto real, que se organiza por grupos con barra de
-   progreso, no se puede construir con estos datos.
-
-### D9 — CRUD incompleto: 7 de 21 entidades
-
-| Cobertura | Entidades |
-|---|---|
-| **C+U+D completo** | Order, Party, Document, Task, Vendor, LedgerLine, Event |
-| C+U, sin borrar | Contact, User (sólo *disable*), Fee, Office, CPL |
-| C+D, sin editar | Thread |
-| **Sólo crear** | Receipt, Disbursement, Invoice, TaskGroup, Folder |
-| Sólo actualizar | Exception (*Resolve / Reassign / Waive*), Disbursement (*Approve*) |
-| Nada | Note, Reconciliation, Template, Integration, Account |
-
-**Lo más grave:** recibos, disbursements e invoices se crean pero **nunca se editan ni se
-anulan**. Anular un recibo mal capturado es trabajo diario en escrow.
-
-Controles que siguen siendo sólo un toast: `Export` / `Export CSV` (no genera archivo),
-`Run Report`, `Schedule`, `New <template>`, `Configure <integration>`, `Email`, `Call`.
+**Regla para quien siga:** cualquier prueba que solo toque `ORD-2026-1483`, `1512`, `1398` o
+`EXAM` no está probando el simulador, está probando el 5 % de él.
 
 ---
 
-## 4. El trabajo, en orden
+## 5. Orden de trabajo
 
-Cada fase es independiente y deja el simulador funcionando. **No pases a la siguiente sin que
-la anterior cumpla su criterio de aceptación (§8).**
+Cada fase deja el simulador funcionando. **No pases a la siguiente sin cumplir su criterio.**
 
-### Fase 1 — Ensanchar el modelo de la orden *(la base de todo)*
-
-Añade al objeto orden los 14 campos que Basic Info ya lee, más los 3 que hoy son literales sin
-campo:
-
-```
-fundingDate, disbursementDate, purpose, representing, statementType, sourceOfBusiness,
-eligible1099, orderOpener, paralegal, attorney, assistants, marketers, aptSuite, county,
-underwriter, policyJacket, earnestAmount
-```
-
-Poblalos en **las 75 órdenes** con variedad real:
-
-- Mínimo **6 agencias de settlement**, **8 order openers**, **8 paralegales**, **5 abogados**.
-  Reutiliza los 18 nombres que ya viven en `qzDB.users` — no inventes un elenco paralelo.
-- `county` coherente con la dirección de cada propiedad (hoy las 75 dicen "Collin County").
-- `earnestAmount` proporcional al precio, no $5,000 fijo.
-- `fundingDate` / `disbursementDate` derivados de `closingDate` con desfases realistas y
-  variables.
-
-Luego **borra todos los fallbacks literales** de `qzOverviewHTML()`. Si un campo no está
-poblado, que se vea vacío. Un campo vacío es información; un campo con el nombre de Travis
-Jones inventado es mentira.
-
-### Fase 2 — Basic Info editable
-
-Convierte `qzOverviewHTML()` de `qz-kv` de sólo lectura a formulario, replicando el layout de
-`real-screenshots/core-basic-info-LEGACY-2016.png`:
-
-- **Important Dates**: 3 date pickers.
-- **Amounts**: 2 campos de moneda + earnest.
-- **Type**: `Purpose` y `Representing` como `<select>`, `Order #` con su botón *Change Order #*,
-  `Settlement Statement` con *Toggle HUD/CD*.
-- **Reporting**: `Source of Business` (select), toggle 1099 (ya existe).
-- **Settlement Team**: 6 campos de tipo *people picker* — input con lupa que abre un selector
-  poblado desde `qzDB.users`.
-- **Place of Closing**: address, apt/suite, city, county, state (select), zipcode.
-
-Cada `onchange` escribe con `qzUpdate('orders', ...)` y registra en `qzLogAudit`. Usa el patrón
-que ya funciona en la página `loan`: **no inventes uno nuevo.**
-
-### Fase 3 — Charges de verdad
-
-1. **Modela las líneas.** Colección nueva `chargeLines`, con
-   `{ id, orderId, section, lineNo, description, payee, borrowerAt, borrowerBefore, sellerAt,
-   sellerBefore, byOthers }`. Migra ahí los `lineGenerators` hardcodeados y **genera variedad
-   por orden** — no las mismas 3 líneas 75 veces.
-2. **Haz la grid editable.** Cada celda un input. Los totales por columna se recalculan en vivo.
-   Botones **+** (añadir línea), **−** (borrar la seleccionada) y **Sort Lines**.
-3. **Construye el panel Payments** tal como aparece en `core-charges-section-b.png`: pestañas
-   *Check / Wire / Net Funded / Aggregate / Transfer / Holdback*, campos *Name / Payment Amount
-   / Label / Reference #*, *Disburse Separately*, *Mailing Address*, *Itemize*.
-
-Esta fase sola cubre 10 de las 31 páginas muertas de D1.
-
-### Fase 4 — Conectar el dinero con la orden
-
-1. Añade `orderId` a `receipts`, `disbursements`, `invoices`, `events`, `pospay`,
-   `reconciliations`, `notifications`. Rellénalo en todas las filas existentes.
-2. **Puebla `ledgerLines`** — hoy está en 0. Cada orden abierta debe tener su ledger de escrow
-   con depósitos y desembolsos que **cuadren** con sus recibos y disbursements.
-3. Distribuye los 75 documentos de dinero sobre **al menos 25 órdenes**, no 3.
-4. Vuelve bidireccional la navegación: desde el recibo se salta a la orden y desde la orden se
-   ven sus recibos. `qzShellOrderCell()` ya sabe hacer el enlace; dale datos que enlazar.
-5. Completa el CRUD de dinero: **editar y anular** recibos, disbursements e invoices.
-
-### Fase 5 — Llenar el catálogo
-
-- **Vendors**: de 8 a **≥ 150**, cubriendo ≥ 60 de las 75 órdenes.
-- **Threads de Connect**: de 3 a **≥ 60**, cubriendo ≥ 40 órdenes.
-- **Documentos**: de 220 a **≥ 900** (media 12/orden), con **≥ 35 nombres distintos**.
-- **Tareas**: **≥ 35 títulos distintos**, y **cada tarea con su `taskGroup`** de los 5 que ya
-  existen en `qzDB.taskGroups`.
-- **Documentos abribles**: de 9 a **≥ 60**. Escribe plantillas HTML parametrizadas en
-  `Quialia/documents/` en vez de un archivo por documento — la orden inyecta sus datos.
-
-### Fase 6 — Rematar
-
-1. Unifica la llave foránea: `relatedOrderId` → `orderId` en `tasks`.
-2. Reconstruye la pantalla Tasks agrupada como `wireframes/core-order-tasks.webp`: los 5 grupos,
-   barra de progreso por grupo, botones *Modify / Add Task / Add Task Group*.
-3. Añade el botón verde **Order Dashboard** en la cabecera del rail
-   (`wireframes/core-order-dashboard.webp`). Hoy el rail arranca con el pin de dirección, que es
-   el chrome de 2021.
-4. Convierte `Export` / `Export CSV` en una descarga real vía `Blob` + `URL.createObjectURL`.
-   Hoy sólo lanza un toast que **miente**: dice "CSV export generated and downloaded" y no
-   descarga nada.
-5. Completa el CRUD faltante de D9, priorizando Note y Reconciliation.
-
----
-
-## 5. Reglas de estilo
-
-- **Ningún dato en el renderer.** Si un valor aparece dentro de un template string y no viene de
-  `qzList/qzFind`, está mal. Los 103 `qz-calc-row` son el inventario de lo que hay que migrar.
-- **Ningún fallback literal.** `o.campo || 'Nombre Inventado'` está prohibido. Vacío es vacío.
-- **Ningún toast que mienta.** Un toast describe algo que pasó. Si no pasó nada, no hay toast:
-  hay un control deshabilitado con un `title` que explica por qué.
-- **Toda escritura pasa por `qzUpdate` / `qzInsert` / `qzRemove`** y registra `qzLogAudit`.
-- **Cero estilos inline nuevos.** Todo a `qualia.css` / `qualia-shell.css`.
-- **Cero `localStorage` nuevo.** El producto vive en memoria.
-- El repo usa **CRLF**. Si editas con `sed -i` u otra herramienta POSIX, restaura los finales de
-  línea o el diff saldrá con el archivo entero cambiado.
+1. **D1 — Mis tareas.** Es lo que se pidió y lo de mayor impacto para el alumno.
+2. **D2 — Fidelidad de la página Tasks.** Empieza leyendo los grupos de `qzDB.taskGroups`.
+3. **D4 + D9 (dinero).** Cablear *Void* en las tres tablas de Accounting.
+4. **D7 — Export real o deshabilitado.**
+5. **D5 + D6 — Sembrar notas, mensajes y facturas.**
+6. **D3 — Documentos abribles.** Es la más larga; hazla cuando lo demás esté verde.
+7. **D8 — Tira de sub-pestañas.** Sólo si lo confirmas antes.
 
 ---
 
 ## 6. Referencias visuales
 
-Están en `Quialia/Images-resourses/`. **Léelas antes de tocar UI.** `RESOURCES.md` documenta la
-procedencia de cada archivo.
+Están en `Quialia/Images-resourses/`. `RESOURCES.md` documenta la procedencia de cada archivo.
+**Míralas antes de tocar la UI.**
 
 | Archivo | Para qué |
 |---|---|
-| `real-screenshots/core-charges-section-b.png` | **La referencia principal.** Única captura real, legible y a resolución completa (3456×1944). De aquí salen la Fase 3 entera, los tokens de color y la densidad tipográfica. |
-| `real-screenshots/core-basic-info-LEGACY-2016.png` | Nombres y agrupamiento de campos de Basic Info → Fases 1 y 2. Chrome de 2016: **copia los campos, no el chrome.** |
-| `real-screenshots/core-loan-LEGACY-2016.png` | Campos de Loan. Misma advertencia. |
-| `wireframes/core-order-tasks.webp` | Los 5 grupos de tareas y los botones → Fase 6. |
-| `wireframes/core-order-dashboard.webp` | El botón verde *Order Dashboard* → Fase 6. |
-| `wireframes/core-order-accounting.webp` | *Account Balances*, *Payment Details / Breakdown*, badge *Ready to Disburse* → Fase 4. |
+| `real-screenshots/core-charges-section-b.png` | **La referencia principal.** Única captura real, legible, a 3456×1944. De aquí sale el panel derecho del §3.1 y los tokens de color |
+| `real-screenshots/core-basic-info-LEGACY-2016.png` | Nombres y agrupación de campos de Basic Info. Chrome de 2016: **copia los campos, no el chrome** |
+| `wireframes/core-order-tasks.webp` | La página Tasks del §3.3 |
+| `wireframes/core-order-dashboard.webp` | La tira de sub-pestañas y el botón verde *Order Dashboard* |
+| `wireframes/core-order-accounting.webp` | *Account Balances*, *Payment Details / Breakdown*, badge *Ready to Disburse* |
 
-**Los wireframes tienen el texto borroso a propósito.** Sirven para layout y nomenclatura de
-sección, no para datos.
+Los wireframes llevan el texto difuminado a propósito: sirven para **maquetación y nomenclatura de
+sección**, no para datos.
 
-**No pidas capturas más nuevas.** Se verificó el 2026-08-26: el Knowledge Base de Qualia
-(`knowledge.qualia.com`) redirige a `login.qualia.io`, Qualia University (`help.qualia.com`)
-exige login, `api.qualia.com/graphql` responde `UNAUTHORIZED`, y `docs.qualia.com` /
-`developer.qualia.com` no existen. Los 4 wireframes del repo son **byte por byte idénticos** a
-los que qualia.com sirve hoy — ya están al día. Detalle completo en `RESOURCES.md §3`.
+**No pidas capturas más nuevas.** Se verificó el 2026-08-26: el Knowledge Base de Qualia redirige a
+`login.qualia.io`, Qualia University exige login, `api.qualia.com/graphql` responde `UNAUTHORIZED` y
+`docs.qualia.com` no existe. Los wireframes del repo son **byte por byte idénticos** a los que
+qualia.com sirve hoy.
 
 ---
 
 ## 7. Fuera de alcance
 
-- **Qualia Connect.** Es el portal del comprador/agente, otro producto con otro layout. Un VA de
-  title/escrow trabaja en **Core**. Se borraron sus capturas en la limpieza del 2026-08-26.
-- Persistencia, backend, red, librerías externas, build step.
-- Rediseñar el chrome, el rail o la capa de datos. Ya están bien.
+- **Qualia Connect.** Es el portal del comprador y del agente: otro producto, otra maquetación. Un
+  VA de title/escrow trabaja en **Core**.
+- Persistencia, backend, red, librerías externas, paso de compilación.
+- Rehacer la capa de datos, el rail o el sistema de Charges. Ya están bien.
+- Convertir en formularios las 4 páginas del §2.1.
 
 ---
 
 ## 8. Criterios de aceptación
 
-Al terminar, **cada uno de estos debe ser cierto y demostrable con el script del §9**:
-
-| # | Criterio | Hoy |
-|---|---|---|
-| 1 | Páginas del expediente con ≥ 1 control editable | **7 / 38** → **≥ 34 / 38** |
-| 2 | Controles editables en Basic Info | 1 → **≥ 20** |
-| 3 | Campos del objeto orden | 16 → **≥ 31** |
-| 4 | Valores distintos de `settlementAgency` / `paralegal` / `county` | 1 / 1 / 1 → **≥ 6 / ≥ 8 / ≥ 5** |
-| 5 | `ledgerLines` | 0 → **≥ 400**, cuadrando con receipts y disbursements |
-| 6 | Órdenes con movimiento de dinero | 3 → **≥ 25** |
-| 7 | Vendors totales / órdenes cubiertas | 8 / 3 → **≥ 150 / ≥ 60** |
-| 8 | Threads / órdenes cubiertas | 3 / 3 → **≥ 60 / ≥ 40** |
-| 9 | Documentos / nombres distintos / abribles | 220 / 12 / 9 → **≥ 900 / ≥ 35 / ≥ 60** |
-| 10 | Títulos de tarea distintos | 11 → **≥ 35** |
-| 11 | Tareas con `taskGroup` asignado | 0 % → **100 %** |
-| 12 | Colecciones con campo `orderId` real | 7 / 14 → **14 / 14** |
-| 13 | Entidades con CRUD completo | 7 / 21 → **≥ 16 / 21** |
-| 14 | Fallbacks literales `\|\| 'Nombre'` en renderers | **19 distintos** → **0** |
-| 15 | Errores de consola en el recorrido completo | 0 → **0** (no regresar) |
-| 16 | `localStorage` sigue con sólo las 10 claves académicas | ✅ → **✅** |
-| 17 | Las 14 lecciones y el examen se completan igual | ✅ → **✅** |
+| # | Criterio | Hoy | Meta |
+|---|---|---|---|
+| 0 | Home tras el logo, con sus chips | no existía | **los 5 chips vivos**: Orders, Order Queue, Action Queue, Tasks, Notifications |
+| 1 | Vista de tareas personales | no existe | **existe**, muestra las 142 |
+| 2 | La campana filtra por responsable | no (muestra 397) | **sí** (muestra 142) |
+| 3 | Enlace *"assigned any tasks"* en el panel | no | **sí**, lleva a la vista personal |
+| 4 | Título de la página Tasks | literal en las 75 | **del workflow de cada orden** |
+| 5 | Grupos leídos de `qzDB.taskGroups` | no (escritos a mano) | **sí** |
+| 6 | Botón *Modify* + franja de estado + ocultar grupo | no | **sí** |
+| 7 | Documentos que abren archivo | **2.150 / 2.150 (100 %)** | ≥ 25 % por orden — **superado en las 75** |
+| 8 | *Void* alcanzable desde Accounting | no | **sí**, en Receipts, Disbursements e Invoices |
+| 9 | `notes` / `messages` | 0 / 0 | **≥ 40 órdenes con notas**, hilos con mensajes |
+| 10 | Órdenes con factura | 14 | **≥ 55** |
+| 11 | Export | toast que miente | **CSV real** o deshabilitado con motivo |
+| 12 | Entidades con CRUD completo | **18 / 24** | ≥ 16 / 24 — **superado** |
+| 13 | Fallbacks literales | 0 | **0** |
+| 14 | Errores de consola en el recorrido | 0 | **0** |
+| 15 | `localStorage` | 1 clave, 10 campos | **igual** |
+| 16 | Las 14 lecciones y el examen | pasan | **pasan** |
 
 ---
 
 ## 9. Cómo medir
 
-Levanta el servidor, abre el simulador, autentícate y pega esto en la consola:
+Pega estos scripts en la consola con el simulador cargado.
 
-```js
-localStorage.setItem('scc_session', JSON.stringify({userId:'maria'}));  // si te redirige al login
-```
+### 9.1 Tareas
 
 ```js
 (() => {
-  const os = qzList('orders');
-  const tabs = []; QZ_CORE_NAV.forEach(s=>s.groups.forEach(g=>g.items.forEach(i=>{ if(i.tab&&!tabs.includes(i.tab)) tabs.push(i.tab); })));
-  const d = document.createElement('div');
-  const editables = tabs.map(t => {
-    qzState.orderId = os[0].id; qzState.orderTab = t; d.innerHTML = qzOrderHTML(os[0]);
-    // -1 descuenta el buscador del panel de Help, presente en todas las páginas
-    return { tab: t, editable: d.querySelectorAll('input:not([disabled]):not([readonly]),select:not([disabled]),textarea:not([disabled]):not([readonly])').length - 1 };
-  });
-  const distinct = k => new Set(os.map(o => o[k])).size;
-  const linked   = k => new Set(qzList(k).map(x => x.orderId).filter(Boolean)).size;
+  const all = qzList('tasks');
+  const abiertas = all.filter(t => qzTaskStatus(t) !== 'Complete');
+  const mias = abiertas.filter(t => /you/i.test(t.assignedTo || ''));
   return {
-    paginasEditables : editables.filter(e => e.editable > 0).length + ' / ' + tabs.length,
-    paginasMuertas   : editables.filter(e => e.editable <= 0).map(e => e.tab),
-    basicInfo        : editables.find(e => e.tab === 'overview').editable,
-    camposOrden      : Object.keys(os[0]).length,
-    variedad         : { agency: distinct('settlementAgency'), paralegal: distinct('paralegal'), county: distinct('county') },
-    ledgerLines      : qzList('ledgerLines').length,
-    dineroPorOrden   : linked('receipts') + ' / ' + linked('disbursements') + ' / ' + linked('invoices'),
-    vendors          : qzList('vendors').length + ' en ' + linked('vendors') + ' ordenes',
-    threads          : qzList('threads').length + ' en ' + linked('threads') + ' ordenes',
-    documentos       : qzList('documents').length,
-    docsDistintos    : new Set(qzList('documents').map(x => x.name)).size,
-    docsAbribles     : qzList('documents').filter(x => x.file).length,
-    tareasDistintas  : new Set(qzList('tasks').map(x => x.title)).size,
-    tareasConGrupo   : qzList('tasks').filter(x => x.taskGroup || x.groupId).length + ' / ' + qzList('tasks').length,
-    lsKeys           : Object.keys(JSON.parse(localStorage.getItem('qz_va_training_v2') || '{}'))
+    total: all.length,
+    abiertas: abiertas.length,
+    mias: mias.length,
+    ordenesConMias: new Set(mias.map(t => t.relatedOrderId)).size,
+    responsables: new Set(all.map(t => t.assignedTo)).size,
+    conGrupo: all.filter(t => t.taskGroup || t.group).length + ' / ' + all.length,
+    campanaFiltra: /assignedTo/.test(qzRenderBellDropdown.toString()),
+    campanaMuestra: qzOpenTasks().length
   };
 })()
 ```
 
-Recorrido completo sin errores:
+Hoy: `{ total: 2633, abiertas: 397, mias: 142, ordenesConMias: 25, responsables: 17,
+conGrupo: "2633 / 2633", campanaFiltra: false, campanaMuestra: 397 }`.
+
+### 9.2 Volumen y enlace con la orden
+
+```js
+(() => {
+  const link = k => new Set(qzList(k).map(x => x.orderId || x.relatedOrderId).filter(Boolean)).size;
+  const cols = ['tasks','documents','chargeLines','vendors','ledgerLines','disbursements',
+                'receipts','threads','invoices','notes','messages'];
+  const out = {};
+  cols.forEach(k => out[k] = qzList(k).length + ' filas / ' + link(k) + ' ordenes');
+  out.docsConArchivo = qzList('documents').filter(d => d.file).length;
+  out.totalOrdenes = qzList('orders').length;
+  return out;
+})()
+```
+
+### 9.3 Campos editables por página
+
+```js
+(() => {
+  const tabs = [];
+  QZ_CORE_NAV.forEach(s => s.groups.forEach(g => g.items.forEach(i => {
+    if (i.tab && !tabs.includes(i.tab)) tabs.push(i.tab);
+  })));
+  const o = qzList('orders')[0], d = document.createElement('div');
+  const rows = tabs.map(t => {
+    qzState.orderId = o.id; qzState.orderTab = t; d.innerHTML = qzOrderHTML(o);
+    // -1 descuenta el buscador del panel de Ayuda, presente en todas
+    const n = d.querySelectorAll('input:not([disabled]):not([readonly]),select:not([disabled]),textarea:not([disabled]):not([readonly])').length - 1;
+    return { tab: t, editables: n };
+  });
+  return {
+    conEditables: rows.filter(r => r.editables > 0).length + ' / ' + tabs.length,
+    sinEditables: rows.filter(r => r.editables <= 0).map(r => r.tab)
+  };
+})()
+```
+
+Hoy: `34 / 38`, sin editables `["cd-j","preview-cd","preview-settlement","review"]` — los cuatro
+correctos así.
+
+### 9.4 Recorrido completo sin errores
 
 ```js
 (() => {
   const errs = []; window.addEventListener('error', e => errs.push(e.message));
-  const tabs = []; QZ_CORE_NAV.forEach(s=>s.groups.forEach(g=>g.items.forEach(i=>{ if(i.tab&&!tabs.includes(i.tab)) tabs.push(i.tab); })));
+  const tabs = [];
+  QZ_CORE_NAV.forEach(s => s.groups.forEach(g => g.items.forEach(i => {
+    if (i.tab && !tabs.includes(i.tab)) tabs.push(i.tab);
+  })));
   const os = qzList('orders'); let n = 0;
-  [os[0], os[10], os[50], os[74]].forEach(o => { qzOpenOrder(o.id); tabs.forEach(t => { try { qzOrderTab(t); n++; } catch(e){ errs.push(t + ': ' + e); } }); });
-  ['contacts','calendar','accounting','reports','compliance','admin'].forEach(v => { try { qzState.view = v; qzRenderRoot(); n++; } catch(e){ errs.push(v + ': ' + e); } });
-  QZ_SHELL_ACCT_TABS.forEach(t => { qzShellState.acctTab = t[0]; qzState.view='accounting'; try { qzRenderRoot(); n++; } catch(e){ errs.push('acct/'+t[0]+': '+e); } });
-  QZ_SHELL_COMP_TABS.forEach(t => { qzShellState.compTab = t[0]; qzState.view='compliance'; try { qzRenderRoot(); n++; } catch(e){ errs.push('comp/'+t[0]+': '+e); } });
-  QZ_SHELL_ADMIN_PAGES.forEach(p => { qzShellState.adminPage = p[0]; qzState.view='admin'; try { qzRenderRoot(); n++; } catch(e){ errs.push('admin/'+p[0]+': '+e); } });
-  return { pantallas: n, errores: errs };
+  [os[0], os[10], os[40], os[74]].forEach(o => {
+    qzOpenOrder(o.id);
+    tabs.forEach(t => { try { qzOrderTab(t); n++; } catch (e) { errs.push(t + ': ' + e); } });
+  });
+  ['contacts','calendar','accounting','reports','compliance','admin'].forEach(v => {
+    try { qzState.view = v; qzRenderRoot(); n++; } catch (e) { errs.push(v + ': ' + e); }
+  });
+  QZ_SHELL_ACCT_TABS.forEach(t => { qzShellState.acctTab = t[0]; qzState.view = 'accounting'; try { qzRenderRoot(); n++; } catch (e) { errs.push('acct/' + t[0]); } });
+  QZ_SHELL_COMP_TABS.forEach(t => { qzShellState.compTab = t[0]; qzState.view = 'compliance'; try { qzRenderRoot(); n++; } catch (e) { errs.push('comp/' + t[0]); } });
+  QZ_SHELL_ADMIN_PAGES.forEach(p => { qzShellState.adminPage = p[0]; qzState.view = 'admin'; try { qzRenderRoot(); n++; } catch (e) { errs.push('admin/' + p[0]); } });
+  return { pantallas: n, errores: errs,
+           lsClaves: Object.keys(JSON.parse(localStorage.getItem('qz_va_training_v2') || '{}')) };
 })()
 ```
 
-Fallbacks literales que quedan (hoy da **19**; debe dar **0**):
+Hoy: `{ pantallas: 180, errores: [], lsClaves: [10 campos] }`.
+
+### 9.5 Fallbacks literales (debe dar 0)
 
 ```bash
 grep -oE "o\.[a-zA-Z]+ \|\| '[A-Z][^']*'" Quialia/qualia-app.js | sort -u
@@ -499,5 +651,6 @@ grep -oE "o\.[a-zA-Z]+ \|\| '[A-Z][^']*'" Quialia/qualia-app.js | sort -u
 
 ## 10. Si algo choca
 
-Este documento manda sobre cualquier comentario en el código que lo contradiga. Si crees que
-necesitas romper una de las reglas duras del §1, **detente y pregunta**.
+Este documento manda sobre cualquier comentario del código que lo contradiga. Si crees que
+necesitas romper una regla del §1, o si una decisión depende de algo del §3.5 que no se pudo
+verificar, **detente y pregunta** en vez de inventarlo.

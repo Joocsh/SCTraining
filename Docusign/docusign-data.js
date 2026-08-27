@@ -180,7 +180,10 @@ const DS_CHECKLISTS = {
       { id: 'ds_env_open', title: 'Open an Envelope', hint: 'Click a row in the envelope list to open its detail view' },
       { id: 'ds_c5_2', title: 'Send Manual Reminder', hint: 'Click "Resend / Reminder" on an awaiting envelope' },
       { id: 'ds_c5_3', title: 'Correct Envelope', hint: 'Edit a recipient email or document on an in-flight envelope' },
-      { id: 'ds_c5_4', title: 'Void In-flight Envelope', hint: 'Void an envelope with a mandatory explanation reason' }
+      { id: 'ds_c5_4', title: 'Void In-flight Envelope', hint: 'Void an envelope with a mandatory explanation reason' },
+      { id: 'ds_mail_open', title: 'Open VA Mailbox', hint: 'Click VA Mailbox in the sidebar to review incoming communications' },
+      { id: 'ds_cert_open', title: 'Open Certificate of Completion', hint: 'View the legal audit trail and cryptographic timestamps' },
+      { id: 'ds_action_open', title: 'Review Action Required Queue', hint: 'Inspect envelopes requiring immediate follow-up' }
     ]
   }
 };
@@ -412,7 +415,7 @@ const DS_LESSONS = [
       { type: 'do', checklistId: 'ds_c5_1', view: 'envelopes', walk: {
           target: '#sb-sent',
           text: 'Click "Sent" in the left sidebar to open your agreement list.',
-          setup: () => dsGoto('dashboard')
+          setup: () => dsGoto('envelopes')
         } },
       { type: 'do', checklistId: 'ds_env_open', view: 'envelope-detail', viewArg: 'ENV-2026-9041', walk: {
           target: 'tr[data-env-id="ENV-2026-9041"]',
@@ -442,12 +445,12 @@ const DS_LESSONS = [
     steps: [
       { type: 'do', checklistId: 'ds_c1_1', view: 'new-envelope', walk: {
           target: '.ds-new-btn',
-          text: 'Click the yellow "NEW ▾" button to open the Send an Envelope wizard.',
-          setup: () => dsGoto('dashboard')
+          text: 'Click the yellow "Start Now" button to open the Send an Envelope wizard.',
+          setup: () => dsGoto('envelopes')
         } },
       { type: 'do', checklistId: 'ds_c1_2', view: 'new-envelope', walk: {
-          target: '#dsAttachPurchaseAgreement',
-          text: 'Click "+ Purchase Agreement (6 pages)" to attach the primary contract document.',
+          target: '#dsBtnSampleDocs',
+          text: 'Click "Sample documents" in the upload area to select and attach the practice Purchase Agreement.',
           setup: () => { dsResetWizard(); dsGoto('new-envelope'); }
         } },
       { type: 'do', checklistId: 'ds_c1_3', view: 'new-envelope', walk: {
@@ -495,6 +498,8 @@ const DS_LESSONS = [
           text: 'Check the "Set Signing Order" box to enforce sequential execution (Order 1 → Order 2).',
           setup: () => {
             dsResetWizard();
+            dsState.wizardData.documents = [{ name: 'Purchase_Agreement_123_Main.pdf', pages: 6 }];
+            dsSeedLessonEnvelope();
             dsState.wizardStep = 2;
             dsState.wizardData.useSequentialOrder = false;
             dsGoto('new-envelope');
@@ -504,7 +509,11 @@ const DS_LESSONS = [
           target: '#chkSeq',
           text: 'Now uncheck "Set Signing Order" to see how parallel routing allows all signers to execute simultaneously.',
           setup: () => {
-            if (!dsState.wizardData) dsResetWizard();
+            if (!dsState.wizardData || !dsState.wizardData.documents.length) {
+              dsResetWizard();
+              dsState.wizardData.documents = [{ name: 'Purchase_Agreement_123_Main.pdf', pages: 6 }];
+              dsSeedLessonEnvelope();
+            }
             dsState.wizardStep = 2;
             dsState.wizardData.useSequentialOrder = true;
             dsGoto('new-envelope');
@@ -523,17 +532,25 @@ const DS_LESSONS = [
     steps: [
       { type: 'do', checklistId: 'ds_c3_1', view: 'new-envelope', walk: {
           target: '#dsBtnAddField',
-          text: 'In Step 3, explore the document canvas and field palette.',
+          text: 'In Step 3, click "Signature" in the palette to place a signature field on the document for John Smith.',
           setup: () => {
             dsResetWizard();
+            dsState.wizardData.documents = [{ name: 'Purchase_Agreement_123_Main.pdf', pages: 6 }];
+            dsState.wizardData.subject = 'Purchase Agreement — 123 Main Street';
+            dsSeedLessonEnvelope();
             dsState.wizardStep = 3;
             dsGoto('new-envelope');
           }
         } },
       { type: 'do', checklistId: 'ds_c3_2', view: 'new-envelope', walk: {
           target: '#dsBtnAuditFields',
-          text: 'Click "⚠ Audit Assignments" to verify that all field slots correspond to the correct signer.',
+          text: 'Click "⚠ Audit Assignments" to verify that every field is assigned to someone who can complete it.',
           setup: () => {
+            if (!dsState.wizardData || !dsState.wizardData.documents.length) {
+              dsResetWizard();
+              dsState.wizardData.documents = [{ name: 'Purchase_Agreement_123_Main.pdf', pages: 6 }];
+              dsSeedLessonEnvelope();
+            }
             dsState.wizardStep = 3;
             dsGoto('new-envelope');
           }
@@ -570,12 +587,11 @@ const DS_LESSONS = [
     id: 'l06-phishing-security', number: 6, title: 'Email Security & Phishing Detection',
     summary: 'Identify deceptive look-alike domains, credential harvesters, and malicious signing links.',
     steps: [
-      /* These were wired as `verify` against three ids that were never authored, so all three
-         steps were permanently unsatisfiable. The items they describe already existed in the
-         triage bank (tri-mail-phish1 / phish2 / real), which is also the mechanic this lesson
-         is supposed to teach: the trainee classifies each notification and reports the fakes,
-         rather than answering a multiple choice about them. The third one is the lesson's
-         "do nothing" case — a legitimate email whose right answer is `none`. */
+      { type: 'do', checklistId: 'ds_mail_open', view: 'mailbox', walk: {
+          target: '#sb-mailbox',
+          text: 'Click "VA Mailbox" in the sidebar to review incoming signer communications and notifications.',
+          setup: () => dsGoto('envelopes')
+        } },
       { type: 'triage', triageId: 'tri-mail-phish1', label: 'Urgent wire transfer notification', walk: {
           target: null,
           text: 'Inspect this urgent wire transfer email. Check the sender domain and the link destination before you decide what to do with it.',
@@ -597,6 +613,16 @@ const DS_LESSONS = [
     id: 'l07-certificate-audit', number: 7, title: 'Certificate of Completion & Audit Trails',
     summary: 'Read DocuSign Certificates of Completion, audit timestamps, and spot security anomalies.',
     steps: [
+      { type: 'do', checklistId: 'ds_env_open', view: 'envelope-detail', viewArg: 'ENV-2026-7734', walk: {
+          target: 'tr[data-env-id="ENV-2026-7734"]',
+          text: 'Click on completed envelope ENV-2026-7734 (Mutual NDA) to inspect its final execution records.',
+          setup: () => dsGoto('envelopes')
+        } },
+      { type: 'do', checklistId: 'ds_cert_open', view: 'envelope-detail', viewArg: 'ENV-2026-7734', walk: {
+          target: '#dsBtnViewCertificate',
+          text: 'Click "Certificate of Completion" to view the tamper-evident audit trail and signer metadata.',
+          setup: () => dsGoto('envelope-detail', 'ENV-2026-7734')
+        } },
       { type: 'verify', reviewId: 'ver-cert-9041', walk: {
           target: null,
           text: 'Open the Certificate of Completion for ENV-2026-9041 and verify the timestamp sequence.',
@@ -613,10 +639,20 @@ const DS_LESSONS = [
     id: 'l08-communication-rubric', number: 8, title: 'Rejection, Expiration & Client Communication',
     summary: 'Handle expired envelopes and draft clear, professional client notifications following a scoring rubric.',
     steps: [
+      { type: 'do', checklistId: 'ds_action_open', view: 'deleted', walk: {
+          target: '#sb-deleted',
+          text: 'Click "Deleted" in the sidebar to review cancelled, rejected and voided agreements.',
+          setup: () => dsGoto('envelopes')
+        } },
+      { type: 'do', checklistId: 'ds_env_open', view: 'envelope-detail', viewArg: 'ENV-2026-6620', walk: {
+          target: 'tr[data-env-id="ENV-2026-6620"]',
+          text: 'Inspect voided envelope ENV-2026-6620 to verify why it was cancelled.',
+          setup: () => dsGoto('envelopes')
+        } },
       { type: 'compose', composeId: 'cmp-void-notice', walk: {
           target: null,
           text: 'Draft a professional notification to the buyer explaining why their previous link was voided and that a new envelope is being sent.',
-          setup: () => dsGoto('dashboard')
+          setup: () => dsGoto('compose', 'cmp-void-notice')
         } }
     ]
   },
@@ -624,6 +660,16 @@ const DS_LESSONS = [
     id: 'l09-authentication-npi', number: 9, title: 'Authentication & Sensitive Data (NPI)',
     summary: 'Protect Social Security Numbers, bank account routing, and understand Access Code requirements.',
     steps: [
+      { type: 'do', checklistId: 'ds_c1_1', view: 'new-envelope', walk: {
+          target: '.ds-new-btn',
+          text: 'Click the yellow "Start Now" button to begin preparing a confidential envelope.',
+          setup: () => dsGoto('envelopes')
+        } },
+      { type: 'do', checklistId: 'ds_c1_2', view: 'new-envelope', walk: {
+          target: '#dsBtnSampleDocs',
+          text: 'Click "Sample documents" to attach the confidential loan document.',
+          setup: () => { dsResetWizard(); dsGoto('new-envelope'); }
+        } },
       { type: 'verify', reviewId: 'ver-loan-npi', walk: {
           target: null,
           text: 'Inspect the loan application document containing unmasked Social Security and Bank Account numbers.',
@@ -635,12 +681,36 @@ const DS_LESSONS = [
     id: 'l10-capstone-bandeja', number: 10, title: 'Capstone: The Morning Bandeja',
     summary: 'Final comprehensive triage challenge: manage a full queue of envelopes and notifications with zero hints.',
     steps: [
-      { type: 'triage', triageId: 'tri-env-9041', label: 'ENV-9041 Pending Sarah' },
-      { type: 'triage', triageId: 'tri-env-8812', label: 'ENV-8812 Email Bounced' },
-      { type: 'triage', triageId: 'tri-env-7734', label: 'ENV-7734 Completed NDA' },
-      { type: 'triage', triageId: 'tri-env-6620', label: 'ENV-6620 Outdated Price' },
-      { type: 'triage', triageId: 'tri-mail-phish1', label: 'Security: Wire Phishing Notice' },
-      { type: 'triage', triageId: 'tri-mail-phish2', label: 'Security: IP Spoofed Link' }
+      { type: 'triage', triageId: 'tri-env-9041', label: 'ENV-9041 Pending Sarah', walk: {
+          target: null,
+          text: 'Triage item 1 of 6: Sarah Johnson has not signed. Determine the appropriate follow-up action.',
+          setup: () => dsGoto('envelope-detail', 'ENV-2026-9041')
+        } },
+      { type: 'triage', triageId: 'tri-env-8812', label: 'ENV-8812 Email Bounced', walk: {
+          target: null,
+          text: 'Triage item 2 of 6: David Miller\'s contractor agreement bounced. Decide how to correct and deliver.',
+          setup: () => dsGoto('envelope-detail', 'ENV-2026-8812')
+        } },
+      { type: 'triage', triageId: 'tri-env-7734', label: 'ENV-7734 Completed NDA', walk: {
+          target: null,
+          text: 'Triage item 3 of 6: Elena Rostova executed the NDA. Verify completion and file archiving.',
+          setup: () => dsGoto('envelope-detail', 'ENV-2026-7734')
+        } },
+      { type: 'triage', triageId: 'tri-env-6620', label: 'ENV-6620 Outdated Price', walk: {
+          target: null,
+          text: 'Triage item 4 of 6: Listing agreement contains outdated price. Determine voiding requirements.',
+          setup: () => dsGoto('envelope-detail', 'ENV-2026-6620')
+        } },
+      { type: 'triage', triageId: 'tri-mail-phish1', label: 'Security: Wire Phishing Notice', walk: {
+          target: null,
+          text: 'Triage item 5 of 6: Evaluate incoming email requesting urgent wire instructions change.',
+          setup: () => SimEngine.viewDoc('documents/email-phishing-1.html', 'Security Inspection: Phishing Sample 1')
+        } },
+      { type: 'triage', triageId: 'tri-mail-phish2', label: 'Security: IP Spoofed Link', walk: {
+          target: null,
+          text: 'Triage item 6 of 6: Evaluate incoming escrow notice for credential harvesting risks.',
+          setup: () => SimEngine.viewDoc('documents/email-phishing-2.html', 'Security Inspection: Phishing Sample 2')
+        } }
     ]
   }
 ];

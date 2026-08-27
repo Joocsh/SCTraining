@@ -28,6 +28,7 @@ const DS_LS_KEY = 'ds_va_training_v3';
    in-memory object, so F5 wipes it and the next visitor gets a clean simulator.
    Note that sessionStorage would NOT work here — it also survives a reload; only
    memory gives the "nothing I did persists" behaviour the demo needs. */
+
 const DS_STORE_DEFAULTS = {
   checklist: {}, scenarios: {},
   reviews: {}, triages: {}, composes: {},
@@ -142,23 +143,93 @@ function dsResetWizard() {
 
 
 /* ---------- Persistence ----------
-   Override layer: base data (DS_ENVELOPES) stays immutable; edits (void, correct,
-   new envelopes) are stored in memory in dsDemo.overrides and applied on top.
-   F5 cleanly resets all demo mutations, while lesson progress (dsStore) persists. */
+   Dual-layer persistence:
+   1. Lesson Progress (`dsStore` -> `ds_va_training_v3`): graded curriculum tracking.
+   2. Interactive Session (`dsDemo` & `dsState` -> `ds_va_demo_v4` & `ds_va_state_v4`):
+      Survives standard page reloads, tab navigation, and back/forward buttons so
+      work is never lost during normal exploration.
+   3. Hard Refresh (`Ctrl + F5` / `Ctrl + Shift + R`) or Reset buttons:
+      Cleans the session data back to initial factory state. */
+
+const DS_LS_DEMO_KEY = 'ds_va_demo_v4';
+const DS_LS_STATE_KEY = 'ds_va_state_v4';
+
+function dsSaveDemo() {
+  try {
+    localStorage.setItem(DS_LS_DEMO_KEY, JSON.stringify(dsDemo));
+    if (dsState && dsState.wizardData) {
+      localStorage.setItem(DS_LS_STATE_KEY, JSON.stringify({
+        view: dsState.view,
+        wizardData: dsState.wizardData,
+        wizardStep: dsState.wizardStep,
+        envelopeFilter: dsState.envelopeFilter,
+        activeFolder: dsState.activeFolder
+      }));
+    }
+  } catch (e) {}
+}
+
 function dsLoad() {
   try {
     const raw = localStorage.getItem(DS_LS_KEY);
     dsStore = raw ? Object.assign(dsDefaultStore(), JSON.parse(raw)) : dsDefaultStore();
   } catch (e) { dsStore = dsDefaultStore(); }
-  /* Demo state is never read back from storage — a fresh object every load is the
-     whole point. Restoring it here would silently defeat the dual-state model. */
-  dsDemo = dsDefaultDemo();
+
+  try {
+    const rawDemo = localStorage.getItem(DS_LS_DEMO_KEY);
+    dsDemo = rawDemo ? Object.assign(dsDefaultDemo(), JSON.parse(rawDemo)) : dsDefaultDemo();
+  } catch (e) { dsDemo = dsDefaultDemo(); }
+
+  try {
+    const rawState = localStorage.getItem(DS_LS_STATE_KEY);
+    if (rawState) {
+      const st = JSON.parse(rawState);
+      if (st.wizardData) dsState.wizardData = st.wizardData;
+      if (st.wizardStep) dsState.wizardStep = st.wizardStep;
+      if (st.view && st.view !== 'signer') dsState.view = st.view;
+      if (st.envelopeFilter) dsState.envelopeFilter = st.envelopeFilter;
+      if (st.activeFolder) dsState.activeFolder = st.activeFolder;
+    }
+  } catch (e) {}
+
   if (!dsState.wizardData) dsResetWizard();
 }
+
 function dsSave() { localStorage.setItem(DS_LS_KEY, JSON.stringify(dsStore)); }
-function dsResetProgress() { localStorage.removeItem(DS_LS_KEY); }
-/* Drops everything the visitor built without touching lesson progress. */
-function dsResetDemo() { dsDemo = dsDefaultDemo(); }
+function dsResetProgress() {
+  try {
+    localStorage.removeItem(DS_LS_KEY);
+    localStorage.removeItem(DS_LS_DEMO_KEY);
+    localStorage.removeItem(DS_LS_STATE_KEY);
+  } catch (e) {}
+  dsStore = dsDefaultStore();
+  dsDemo = dsDefaultDemo();
+  dsResetWizard();
+  dsRenderRoot();
+}
+
+/* Drops visitor session data back to clean factory state */
+function dsResetDemo() {
+  try {
+    localStorage.removeItem(DS_LS_DEMO_KEY);
+    localStorage.removeItem(DS_LS_STATE_KEY);
+  } catch (e) {}
+  dsDemo = dsDefaultDemo();
+  dsResetWizard();
+  dsRenderRoot();
+}
+
+// Intercept Ctrl+F5 or Ctrl+Shift+R to clear transient session state
+if (typeof window !== 'undefined') {
+  window.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'F5' || (e.shiftKey && (e.key === 'R' || e.key === 'r')))) {
+      try {
+        localStorage.removeItem(DS_LS_DEMO_KEY);
+        localStorage.removeItem(DS_LS_STATE_KEY);
+      } catch (err) {}
+    }
+  });
+}
 
 /* ---------- Envelope access (respects overrides) ---------- */
 /* The account is three layers: the five curriculum envelopes (frozen, graded),
@@ -182,12 +253,7 @@ function dsGetEnvelope(envId) {
   return merged;
 }
 /* Everything the account holds: curriculum + background + anything created this
-   session, with overrides applied and newest first.
-
-   The sort matters more than it looks. Lesson 5's walkthrough targets the row
-   for ENV-2026-9041, so that row has to stay near the top of an unfiltered list.
-   Every background envelope is dated DS_TODAY-3 or older precisely so the five
-   curriculum envelopes float above them. */
+   session, with overrides applied and newest first. */
 function dsAllEnvelopes() {
   const base = dsBaseEnvelopes();
   const baseIds = base.map(e => e.id);
@@ -199,16 +265,15 @@ function dsAllEnvelopes() {
     .sort((a, b) => (a.createdDate < b.createdDate ? 1 : a.createdDate > b.createdDate ? -1 : 0));
 }
 
-/* Curriculum templates plus the catalogue plus any templates created this session.
-   The three original ids are untouched because ds_c4_2 is graded off dsUseTemplate('TMPL-03'). */
+/* Curriculum templates plus the catalogue plus any templates created this session. */
 function dsAllTemplates() {
   const base = DS_TEMPLATES.concat(typeof DS_S_TEMPLATES !== 'undefined' ? DS_S_TEMPLATES : []);
   const extra = (dsDemo && dsDemo.templates) ? dsDemo.templates : [];
   return base.concat(extra);
 }
 function dsSetEnvelopeOverride(envId, patch) {
-  /* Demo state: no dsSave(). Envelope edits are meant to vanish on reload. */
   dsDemo.overrides[envId] = Object.assign(dsDemo.overrides[envId] || {}, patch);
+  dsSaveDemo();
 }
 
 /* ---------- Checklist marking (walkthrough-aware) ----------
@@ -765,10 +830,23 @@ function dsToggleSidebarMore() {
 /* Sidebar quick views all land on the same list with a different filter, which is
    how the real product works — they are saved searches, not separate screens. */
 function dsQuickView(filter) {
+  if (filter === 'action' || filter === 'deleted') {
+    dsMark('ds_action_open');
+  }
   dsState.envelopeFilter = filter;
   dsState.activeFolder = 'all';
   dsResetPage();
   dsGoto('envelopes');
+}
+
+function dsOpenMailbox() {
+  dsMark('ds_mail_open');
+  dsGoto('mailbox');
+}
+
+function dsOpenDeleted() {
+  dsMark('ds_action_open');
+  dsQuickView('deleted');
 }
 
 /* Folders are demo state, so the list is painted rather than written into the
@@ -812,8 +890,12 @@ function dsOpenSent() {
 }
 
 function dsOpenNewEnvelope() {
+  dsSkipWizardGuard = true;
+  dsResetWizard();
   dsGoto('new-envelope');
+  dsSkipWizardGuard = false;
   dsMark('ds_c1_1');
+  dsRenderRoot();
 }
 
 function dsOpenEnvelope(envId) {
@@ -842,11 +924,13 @@ function dsWizardDirty() {
   return JSON.stringify(d) !== before;
 }
 
-/* Leaving a half-built envelope should cost a confirmation, not a shrug. The
-   Cancel button routes through here too, so there is one answer to "am I about
-   to lose this?" wherever you leave from. */
 function dsGoto(view, extraId) {
   if (dsWizardDirty() && view !== 'new-envelope' && !dsSkipWizardGuard) {
+    if (typeof SimEngine !== 'undefined' && (SimEngine.walkActive() || dsSuppressMarks)) {
+      dsResetWizard();
+      dsGotoNow(view, extraId);
+      return;
+    }
     dsConfirm({
       title: 'Discard this envelope?',
       body: 'You have changes in the sending wizard that have not been sent. Leaving now discards the documents, recipients and fields you set up.',
@@ -873,14 +957,6 @@ function dsGotoNow(view, extraId) {
     if (BLOCKED_IN_DEMO.indexOf(view) > -1) view = 'dashboard';
   }
   dsState.view = view;
-  /* Page 1 on every arrival. Lesson 5 highlights a row in the agreements list,
-     and a walkthrough pointing at page 3 would point at nothing. */
-  /* M1 fix: navigation is navigation, not grading. The four dsMark() calls that
-     used to live here auto-completed checklist items whenever ANY code path —
-     including lesson setup() functions — navigated to these views. The marks now
-     fire exclusively from the dsOpen*() event handlers above, which are wired to
-     real user gestures. */
-  if (view === 'envelopes')       { dsState.page = 1; }
   if (view === 'envelope-detail') { dsState.activeEnvId = extraId; }
   if (view === 'scenario-detail') dsState.activeScenarioId = extraId;
   if (view === 'triage')          dsState.activeTriageId = extraId;
@@ -1230,6 +1306,23 @@ function dsSyncNav() {
   }
 
   dsRenderSidebarFolders();
+  dsUpdateTrainingButton();
+}
+
+/* Updates the topbar right Training button state and completion fraction */
+function dsUpdateTrainingButton() {
+  const btn = document.getElementById('dsTrainingBtn');
+  const badge = document.getElementById('dsTrainingBadge');
+  if (!btn || !badge) return;
+  const LESSON_VIEWS = ['lessons', 'scenarios', 'lesson', 'scenario-detail', 'triage', 'verify', 'compose', 'exam', 'complete-transaction'];
+  const inTraining = LESSON_VIEWS.indexOf(dsState.view) > -1 || !!dsState.lessonId;
+  btn.classList.toggle('active', inTraining);
+  btn.classList.toggle('in-lesson', !!dsState.lessonId);
+  const total = (typeof DS_LESSONS !== 'undefined' && DS_LESSONS.length) ? DS_LESSONS.length : 10;
+  const done = (typeof SimEngine !== 'undefined' && typeof SimEngine.lessonState === 'function')
+    ? DS_LESSONS.filter((l, i) => SimEngine.lessonState(i) === 'done').length
+    : 0;
+  badge.textContent = `${done}/${total}`;
 }
 
 function dsToggleSidebarMore() {
@@ -1250,6 +1343,7 @@ function dsToggleSidebarGroup(id) {
    lesson they are in, how far they are, and gives them a one-click exit.
    Progress is persisted as you go, so clicking Exit never loses work. */
 function dsRenderLessonBanner() {
+  dsUpdateTrainingButton();
   const el = document.getElementById('dsLessonBanner');
   if (!el) return;
   const lid = dsState.lessonId;
@@ -1631,7 +1725,7 @@ function dsEnvelopesHTML() {
               ${e.status === 'waiting' ? `<div class="ds-row-action-item" onclick="dsActionResend('${escAttr(e.id)}')">${dsIcon('mail')} Send Reminder</div>` : ''}
               ${e.status === 'waiting' ? `<div class="ds-row-action-item" onclick="dsActionCorrect('${escAttr(e.id)}')">${dsIcon('edit')} Correct</div>` : ''}
               ${e.status === 'waiting' ? `<div class="ds-row-action-item danger" onclick="dsActionVoid('${escAttr(e.id)}')">${dsIcon('ban')} Void</div>` : ''}
-              ${e.status === 'waiting' ? `<div class="ds-row-action-item" onclick="dsSimulateSigner('${escAttr(e.id)}')">${dsIcon('pen')} Simulate Signer View</div>` : ''}
+              ${e.status === 'waiting' && !dsDemoMode() ? `<div class="ds-row-action-item" onclick="dsPromptSimulateSigner('${escAttr(e.id)}')">${dsIcon('pen')} Sign as Recipient <span style="background:#ede9fe;color:#4338ca;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:auto;">TRAINING</span></div>` : ''}
               ${e.status === 'completed' ? `<div class="ds-row-action-item" onclick="dsOpenCertificateModal('${escAttr(e.id)}')">${dsIcon('award')} Certificate of Completion</div>` : ''}
               ${e.status === 'expired' ? `<div class="ds-row-action-item" onclick="dsResendExpired('${escAttr(e.id)}')">${dsIcon('refresh')} Resend as New</div>` : ''}
               ${e.status === 'declined' ? `<div class="ds-row-action-item" onclick="dsViewDeclineReason('${escAttr(e.id)}')">${dsIcon('alert')} View Decline Reason</div>` : ''}
@@ -1940,6 +2034,7 @@ function dsBulkMove() {
   if (!target) { simToast('Folder "' + choice + '" not found. Create it first with New Folder.'); return; }
   ids.forEach(id => { dsDemo.folderMap[id] = target; });
   dsDemo.selected = [];
+  dsSaveDemo();
   simToast(ids.length + ' agreement(s) moved to "' + target + '".', { tone: 'good' });
   dsRenderRoot();
 }
@@ -1975,17 +2070,13 @@ function dsOnGlobalSearch(q) {
   if (dsState.view !== 'envelopes') dsGoto('envelopes');
   else dsRenderRoot();
 }
-function dsSetDateFilter(d) {
-  dsState.dateFilter = d;
-  dsResetPage();
-  dsRenderRoot();
-}
 function dsCreateNewFolder() {
   const name = prompt('Enter a name for the new folder (e.g. "Commercial Escrow 2026"):');
   if (!name || !name.trim()) return;
   const clean = name.trim();
   if (dsDemo.folders.indexOf(clean) === -1) {
     dsDemo.folders.push(clean);
+    dsSaveDemo();
     simToast(`Folder "${clean}" created!`, { tone: 'good' });
     dsRenderRoot();
   }
@@ -1997,6 +2088,7 @@ function dsPromptMoveFolder(envId) {
   const target = folders.find(f => f.toLowerCase() === choice.trim().toLowerCase());
   if (target) {
     dsDemo.folderMap[envId] = target;
+    dsSaveDemo();
     simToast(`Envelope ${envId} moved to folder "${target}".`, { tone: 'good' });
     dsRenderRoot();
   } else {
@@ -2702,19 +2794,7 @@ function dsWizardStep1HTML() {
         <span class="ds-drop-sub">PDF, Word or plain text. Your file is never uploaded anywhere &mdash; the name is held in this tab only, and a page refresh clears it.</span>
         <div class="ds-drop-btn-row">
           <button type="button" class="ds-btn primary" onclick="document.getElementById('dsFileInput').click()">${dsIcon('download', 15)} Browse device files</button>
-          <button type="button" class="ds-btn" onclick="dsOpenSampleDocsModal()">${dsIcon('file', 15)} Sample documents</button>
-        </div>
-
-        <!-- The three sample documents are NOT uploads, so they are fenced off
-             below their own label. Presenting them inside the drop zone was
-             actively misleading: people clicked them expecting a file picker. -->
-        <div class="ds-samples${dsShowSampleDocs() ? ' on' : ''}">
-          <span class="ds-samples-label">Sample documents &mdash; for the lesson, no file of your own needed</span>
-          <div class="ds-drop-btn-row">
-            <button type="button" class="ds-btn" id="dsAttachPurchaseAgreement" onclick="dsAttachDoc('Purchase_Agreement_123_Main.pdf',6)">Purchase Agreement <span class="ds-samples-pages">6 pages</span></button>
-            <button type="button" class="ds-btn" onclick="dsAttachDoc('Seller_Property_Disclosure.pdf',3)">Property Disclosure <span class="ds-samples-pages">3 pages</span></button>
-            <button type="button" class="ds-btn" onclick="dsAttachDoc('Independent_Contractor_Agreement.pdf',4)">Contractor Agreement <span class="ds-samples-pages">4 pages</span></button>
-          </div>
+          <button type="button" class="ds-btn" id="dsBtnSampleDocs" onclick="dsOpenSampleDocsModal()">${dsIcon('file', 15)} Sample documents</button>
         </div>
       </div>
 
@@ -2962,7 +3042,7 @@ function dsOpenSampleDocsModal() {
       </div>
       <div class="ds-modal-body">
         <ul class="ds-sampledoc-list">
-          ${DS_DOC_LIBRARY.map(d => `
+          ${DS_DOC_LIBRARY.map((d, idx) => `
             <li class="ds-sampledoc">
               <div class="ds-sampledoc-info">
                 <b>${esc(d.title)}</b>
@@ -2970,7 +3050,7 @@ function dsOpenSampleDocsModal() {
               </div>
               <div class="ds-sampledoc-actions">
                 <button type="button" class="ds-btn" onclick="dsPreviewSampleDoc('${escAttr(d.id)}')">${dsIcon('eye', 14)} Preview</button>
-                <button type="button" class="ds-btn primary" onclick="dsAttachSampleDoc('${escAttr(d.id)}')">${dsIcon('plus', 14)} Attach</button>
+                <button type="button" class="ds-btn primary" ${idx === 0 ? 'id="dsAttachSampleDocBtn"' : ''} onclick="dsAttachSampleDoc('${escAttr(d.id)}')">${dsIcon('plus', 14)} Attach</button>
               </div>
             </li>`).join('')}
         </ul>
@@ -3601,17 +3681,65 @@ function dsPaintCanvasFields(frame) {
     const ri = recs.findIndex(r => r.id === f.recipientId);
     const color = palette[(ri < 0 ? 0 : ri) % palette.length];
     const sel = f.id === dsState.selectedCanvasFieldId;
+    const isInit = /init/i.test(f.type || f.label || '');
+    const isDate = /date/i.test(f.type || f.label || '');
+    const isSig = !isDate && /sign/i.test(f.type || f.label || '');
 
     const m = d.createElement('div');
-    m.className = 'dsfld-marker';
-    m.textContent = f.label || f.type;
+    m.className = 'dsfld-marker' + (isInit ? ' is-initial' : '');
+    
+    // Crisp, compact DocuSign tag label so adjacent fields never collide
+    const rFirstName = (recs[ri] && recs[ri].name) ? recs[ri].name.split(' ')[0] : '';
+    let dispLabel = f.label || f.type;
+    if (isInit) {
+      dispLabel = rFirstName ? `${rFirstName} Init` : 'Initial';
+    } else if (isDate) {
+      dispLabel = rFirstName ? `${rFirstName} Date` : 'Date Signed';
+    } else if (isSig) {
+      dispLabel = rFirstName ? `${rFirstName} Sign` : 'Signature';
+    }
+
+    m.textContent = dispLabel;
+    const widthStyle = isInit ? 'width:76px;min-width:70px;max-width:82px;height:28px;padding:3px 4px;font-size:11px;' :
+                       (isDate ? 'width:80px;min-width:74px;max-width:86px;height:28px;padding:3px 4px;font-size:10.5px;' :
+                       'width:88px;min-width:82px;max-width:94px;height:28px;padding:3px 6px;font-size:11px;');
+
+    let posX = f.x;
+    let posY = f.y;
+    if (isInit && (posX == null || posX < 35)) {
+      const slots = Array.from(page.querySelectorAll('.initials .ibox .slot, .ibox .slot, .slot'));
+      if (slots.length) {
+        const slot = (ri === 1 && slots.length > 1) ? slots[1] : slots[0];
+        const pr = page.getBoundingClientRect();
+        const sr = slot.getBoundingClientRect();
+        if (pr.width && pr.height) {
+          const sMidX = ((sr.left + sr.width / 2 - pr.left) / pr.width) * 100;
+          const tagWidthPct = (76 / pr.width) * 100;
+          posX = Math.round(Math.max(1, Math.min(88, sMidX - (tagWidthPct / 2))) * 10) / 10;
+          posY = Math.round(Math.max(0, ((sr.top - pr.top) / pr.height) * 100) * 10) / 10;
+        } else {
+          posX = (ri === 1 ? 80.1 : 62.4);
+          posY = 86.2;
+        }
+      } else {
+        posX = (ri === 1 ? 80.1 : 62.4);
+        posY = 86.2;
+      }
+      f.x = posX;
+      f.y = posY;
+    }
+
     m.setAttribute('style',
-      'position:absolute;left:' + (f.x == null ? 16 : f.x) + '%;top:' + (f.y == null ? 22 : f.y) + '%;' +
-      'min-width:132px;padding:6px 9px;border-radius:3px;cursor:move;z-index:5;' +
+      'position:absolute;left:' + (posX == null ? 16 : posX) + '%;top:' + (posY == null ? 22 : posY) + '%;' +
+      widthStyle +
+      'border-radius:4px;cursor:move;z-index:5;box-sizing:border-box;' +
+      'display:flex;align-items:center;justify-content:center;text-align:center;' +
+      'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' +
       'font:600 11px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;' +
       'color:#fff;background:' + color + ';' +
+      'border:1.5px solid #ffffff;' +
       'outline:' + (sel ? '2px solid #130032' : 'none') + ';outline-offset:1px;' +
-      'box-shadow:0 2px 6px rgba(19,0,50,.28);user-select:none;');
+      'box-shadow:0 2px 8px rgba(19,0,50,.32);user-select:none;');
     page.appendChild(m);
 
     m.addEventListener('mousedown', ev => dsDragCanvasField(ev, d, page, m, f.id));
@@ -3661,71 +3789,147 @@ function dsVisibleCanvasPage(d, total) {
   return best;
 }
 
-/* ---------- Snapping ----------
-   Docusign anchors fields to marks in the document rather than to arbitrary
-   coordinates. The library documents already carry the marks, so a dragged
-   field looks for one of the right KIND: a signature belongs on a signature
-   line, initials in an initials box. Dropping a signature onto "SELLER
-   INITIALS" is exactly the mistake this prevents.
-
-   Snapping assists, it never imposes — hold Alt to place freely. And a blank
-   uploaded sheet has nothing to anchor to, so there the fallback is a coarse
-   grid, which at least keeps fields aligned with each other. */
+/* ---------- Smart Magnetic Snapping & Auto-Alignment ----------
+   Docusign anchors fields directly onto signature lines and initials boxes with
+   pixel-perfect symmetry. Snapping assists automatically when dragging near
+   an anchor, and displays a magnetic guide halo. Hold Alt to place freely. */
 const DS_FIELD_ANCHORS = {
   'Signature':   '.sig .line',
   'Date Signed': '.sig .line',
-  'Initial':     '.initials .slot'
+  'Initial':     '.initials .ibox .slot, .ibox .slot, .slot',
+  'Name':        '.row .f, .sig',
+  'Email Address': '.row .f',
+  'Company':     '.row .f',
+  'Title':       '.row .f'
 };
-const DS_SNAP_RADIUS = 9;   /* per cent of the page box */
-const DS_SNAP_GRID   = 2;   /* per cent, when there is nothing to anchor to */
+const DS_SNAP_RADIUS = 16;  /* per cent of page box — generous magnetic capture */
+const DS_SNAP_GRID   = 1.5; /* per cent fallback grid */
 
 function dsSnapField(page, type, x, y) {
-  const sel = DS_FIELD_ANCHORS[type];
-  if (sel) {
-    const pr = page.getBoundingClientRect();
-    let best = null, bestD = Infinity;
-    Array.from(page.querySelectorAll(sel)).forEach(a => {
-      const ar = a.getBoundingClientRect();
-      const ax = ((ar.left - pr.left) / pr.width) * 100;
-      const ay = ((ar.top - pr.top) / pr.height) * 100;
-      const dist = Math.hypot(ax - x, ay - y);
-      if (dist < bestD) { bestD = dist; best = { x: ax, y: ay, el: a }; }
-    });
-    if (best && bestD <= DS_SNAP_RADIUS) return best;
-  }
+  if (!page) return { x: Math.round(x / 1.5) * 1.5, y: Math.round(y / 1.5) * 1.5, el: null };
+  const sel = DS_FIELD_ANCHORS[type] || '.sig .line, .slot, .ibox, .line, .sig';
+  const pr = page.getBoundingClientRect();
+  if (!pr.width || !pr.height) return { x, y, el: null };
+
+  let best = null, bestD = Infinity, bestEl = null;
+  const anchors = Array.from(page.querySelectorAll(sel));
+  const searchList = anchors.length ? anchors : Array.from(page.querySelectorAll('.sig .line, .slot'));
+  const recs = (dsState.wizardData && dsState.wizardData.recipients) ? dsState.wizardData.recipients : [];
+
+  searchList.forEach(a => {
+    const ar = a.getBoundingClientRect();
+    const ax = ((ar.left - pr.left) / pr.width) * 100;
+    const ay = ((ar.top - pr.top) / pr.height) * 100;
+    const aMidX = ((ar.left + ar.width / 2 - pr.left) / pr.width) * 100;
+    const aMidY = ((ar.top + ar.height / 2 - pr.top) / pr.height) * 100;
+
+    const dist = Math.hypot(aMidX - x, aMidY - y);
+    if (dist < bestD) {
+      bestD = dist;
+      bestEl = a;
+      const isInitialAnchor = a.classList.contains('slot') || !!a.closest('.ibox');
+
+      // Anchor context label to auto-match recipient & type strictly to the leaf slot
+      const container = a.closest('.ibox') || a.closest('.sig') || a.parentElement || a;
+      const aLabel = ((container.querySelector('label')?.textContent || '') + ' ' + (container.textContent || '')).toLowerCase();
+
+      let targetRole = null;
+      let matchedRecip = null;
+      if (aLabel.includes('buyer')) {
+        targetRole = 'Buyer';
+        matchedRecip = recs.find(r => /buyer|smith/i.test((r.role || '') + ' ' + (r.name || ''))) || recs[0];
+      } else if (aLabel.includes('seller')) {
+        targetRole = 'Seller';
+        matchedRecip = recs.find(r => /seller|johnson/i.test((r.role || '') + ' ' + (r.name || ''))) || (recs.length > 1 ? recs[1] : recs[0]);
+      } else if (aLabel.includes('contractor')) {
+        targetRole = 'Contractor';
+        matchedRecip = recs.find(r => /contractor|rivera/i.test((r.role || '') + ' ' + (r.name || ''))) || recs[0];
+      } else if (aLabel.includes('client')) {
+        targetRole = 'Client';
+        matchedRecip = recs.find(r => /client|broker/i.test((r.role || '') + ' ' + (r.name || ''))) || (recs.length > 1 ? recs[1] : recs[0]);
+      } else if (aLabel.includes('tenant')) {
+        targetRole = 'Tenant';
+        matchedRecip = recs.find(r => /tenant/i.test((r.role || '') + ' ' + (r.name || ''))) || recs[0];
+      } else if (aLabel.includes('landlord')) {
+        targetRole = 'Landlord';
+        matchedRecip = recs.find(r => /landlord/i.test((r.role || '') + ' ' + (r.name || ''))) || (recs.length > 1 ? recs[1] : recs[0]);
+      }
+
+      if (isInitialAnchor) {
+        // Initial tag (76px) centered directly over the 90px slot with smart role match
+        const tagWidthPct = (76 / pr.width) * 100;
+        const tx = Math.max(1, Math.min(88, aMidX - (tagWidthPct / 2)));
+        const ty = Math.max(0, ay);
+        best = {
+          x: Math.round(tx * 10) / 10,
+          y: Math.round(ty * 10) / 10,
+          el: a,
+          snapped: true,
+          targetType: 'Initial',
+          matchedRecip: matchedRecip || recs[0] || null
+        };
+      } else {
+        // Signature / Date line: Sit cleanly ABOVE the black line with generous breathing space
+        const isDateLine = aLabel.includes('date') || /date/i.test(type);
+        const tagHeight = 28;
+        const tagHeightPct = (tagHeight / pr.height) * 100;
+        const lineBottomPct = ((ar.bottom - pr.top) / pr.height) * 100;
+        const tx = Math.max(1, Math.min(84, ax));
+        // Sit 10px above the black bottom border line:
+        const ty = Math.max(0, Math.min(94, lineBottomPct - tagHeightPct - (10 / pr.height * 100)));
+        best = {
+          x: Math.round(tx * 10) / 10,
+          y: Math.round(ty * 10) / 10,
+          el: a,
+          snapped: true,
+          targetType: isDateLine ? 'Date Signed' : 'Signature',
+          matchedRecip: matchedRecip || recs[0] || null
+        };
+      }
+    }
+  });
+
+  if (best && bestD <= DS_SNAP_RADIUS) return best;
   const g = DS_SNAP_GRID;
-  return { x: Math.round(x / g) * g, y: Math.round(y / g) * g, el: null };
+  return { x: Math.round(x / g) * g, y: Math.round(y / g) * g, el: null, snapped: false };
 }
 
-/* Live drag updates only the marker's style; the model is written once on
-   mouseup. Re-rendering on every mousemove would rebuild the iframe mid-drag. */
+/* Live drag updates with magnetic feedback halo */
 function dsDragCanvasField(ev, d, page, marker, fieldId) {
   ev.preventDefault();
   dsState.selectedCanvasFieldId = fieldId;
 
-  /* Where inside the marker the pointer grabbed it. Without this the marker's
-     top-left corner snaps to the cursor on the first move, so a field jumps the
-     moment you touch it — you can never nudge one a few pixels. */
   const mr = marker.getBoundingClientRect();
   const grabX = ev.clientX - mr.left;
   const grabY = ev.clientY - mr.top;
   const startX = ev.clientX;
   const startY = ev.clientY;
 
-  /* A plain click to select fires a mousemove or two from hand jitter. Without
-     a threshold, selecting a field would also move it a fraction of a percent
-     and dirty the envelope for no reason. */
   let moved = false;
+  let lastSnap = null;
   const THRESHOLD = 3;
 
   const field = (dsState.wizardData.fields || []).find(x => x.id === fieldId);
   const type = field ? field.type : '';
   let lit = null;
+
   const light = el => {
     if (lit === el) return;
-    if (lit) lit.style.outline = '';
+    if (lit) {
+      lit.style.outline = '';
+      lit.style.outlineOffset = '';
+      lit.style.backgroundColor = '';
+      lit.style.boxShadow = '';
+    }
     lit = el;
-    if (lit) lit.style.outline = '2px solid #4C00FB';
+    if (lit) {
+      lit.style.outline = '2px dashed #4C00FB';
+      lit.style.outlineOffset = '2px';
+      lit.style.borderRadius = '4px';
+      lit.style.backgroundColor = 'rgba(76, 0, 251, 0.08)';
+      lit.style.boxShadow = '0 0 10px rgba(76, 0, 251, 0.25)';
+      lit.style.transition = 'all 0.12s ease';
+    }
   };
 
   const move = e => {
@@ -3740,28 +3944,254 @@ function dsDragCanvasField(ev, d, page, marker, fieldId) {
     /* Alt places freely — snapping is help, not a rule. */
     if (!e.altKey) {
       const s = dsSnapField(page, type, x, y);
+      lastSnap = s;
       x = s.x; y = s.y;
       light(s.el);
+      if (s.snapped) {
+        marker.style.boxShadow = '0 0 12px rgba(76, 0, 251, 0.55)';
+      } else {
+        marker.style.boxShadow = '0 2px 6px rgba(19,0,50,.28)';
+      }
     } else {
+      lastSnap = null;
       light(null);
+      marker.style.boxShadow = '0 2px 6px rgba(19,0,50,.28)';
     }
 
     marker.style.left = x + '%';
     marker.style.top = y + '%';
   };
+
   const up = () => {
     d.removeEventListener('mousemove', move);
     d.removeEventListener('mouseup', up);
     light(null);
+    marker.style.boxShadow = '0 2px 6px rgba(19,0,50,.28)';
     const f = (dsState.wizardData.fields || []).find(x => x.id === fieldId);
     if (f && moved) {
       f.x = Math.round(parseFloat(marker.style.left) * 10) / 10;
       f.y = Math.round(parseFloat(marker.style.top) * 10) / 10;
+
+      // Smart auto-conversion & role auto-matching upon magnetic drop
+      if (lastSnap && lastSnap.snapped) {
+        let changed = false;
+        if (lastSnap.targetType && f.type !== lastSnap.targetType) {
+          f.type = lastSnap.targetType;
+          f.label = lastSnap.targetType;
+          changed = true;
+        }
+        if (lastSnap.matchedRecip && f.recipientId !== lastSnap.matchedRecip.id) {
+          f.recipientId = lastSnap.matchedRecip.id;
+          dsState.activeCanvasRecipId = lastSnap.matchedRecip.id;
+          changed = true;
+        }
+        if (changed) {
+          simToast(`💡 Auto-matched to ${f.type} for ${lastSnap.matchedRecip ? lastSnap.matchedRecip.name : 'Signer'}.`, { tone: 'good', duration: 2500 });
+        }
+      }
     }
     dsRenderRoot();
   };
   d.addEventListener('mousemove', move);
   d.addEventListener('mouseup', up);
+}
+
+/* ---------- Smart 1-Click Auto-Place Standard Fields ---------- */
+function dsAutoPlaceAllStandardFields() {
+  const d = dsState.wizardData;
+  if (!d) return;
+  const recs = (d.recipients || []).filter(dsRecipientSigns);
+  if (!recs.length) {
+    simToast('Add at least one signer in Step 2 first.');
+    return;
+  }
+  const docs = d.documents || [];
+  if (!docs.length) {
+    simToast('Attach at least one document in Step 1 first.');
+    return;
+  }
+
+  const libDoc = docs[0] ? dsDocFromLibrary(docs[0].name) : null;
+  const totalPages = (libDoc ? libDoc.pages : docs[0].pages) || 1;
+
+  let added = 0;
+  const newFields = [];
+
+  const recipByRole = roleKey => {
+    return recs.find(r => (r.role || '').toLowerCase().includes(roleKey) || (r.name || '').toLowerCase().includes(roleKey));
+  };
+
+  const frame = document.querySelector('.ds-doc-frame');
+  const frameDoc = (frame && frame.contentDocument) ? frame.contentDocument : null;
+
+  for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+    const isFinalPage = pageNum === totalPages;
+    const pageEl = frameDoc ? frameDoc.querySelector('[data-page="' + pageNum + '"]') : null;
+
+    if (pageEl) {
+      const pr = pageEl.getBoundingClientRect();
+      if (!isFinalPage) {
+        // Find all real .slot elements on this page
+        const slots = Array.from(pageEl.querySelectorAll('.initials .ibox .slot, .ibox .slot, .slot'));
+        if (slots.length) {
+          slots.forEach((slot, sIdx) => {
+            const sr = slot.getBoundingClientRect();
+            const sMidX = ((sr.left + sr.width / 2 - pr.left) / pr.width) * 100;
+            const tagWidthPct = (76 / pr.width) * 100;
+            const finalX = Math.round(Math.max(1, Math.min(88, sMidX - (tagWidthPct / 2))) * 10) / 10;
+            const finalY = Math.round(Math.max(0, ((sr.top - pr.top) / pr.height) * 100) * 10) / 10;
+
+            const slotLabel = ((slot.closest('.ibox')?.querySelector('label')?.textContent || '')).toLowerCase();
+            let matchedRecip = null;
+            if (slotLabel.includes('buyer')) matchedRecip = recipByRole('buyer') || recs[0];
+            else if (slotLabel.includes('seller')) matchedRecip = recipByRole('seller') || (recs.length > 1 ? recs[1] : recs[0]);
+            else if (slotLabel.includes('client')) matchedRecip = recipByRole('client') || recs[0];
+            else if (slotLabel.includes('contractor')) matchedRecip = recipByRole('contractor') || (recs.length > 1 ? recs[1] : recs[0]);
+            else matchedRecip = recs[sIdx % recs.length];
+
+            if (matchedRecip) {
+              newFields.push({
+                id: 'wf_' + (100 + dsFieldSeq++),
+                type: 'Initial',
+                label: 'Initial',
+                page: pageNum,
+                docIndex: 0,
+                recipientId: matchedRecip.id,
+                x: finalX,
+                y: finalY,
+                required: true
+              });
+              added++;
+            }
+          });
+        }
+      } else {
+        // Final Page: Execution Signatures & Dates
+        const sigRows = Array.from(pageEl.querySelectorAll('.sigrow'));
+        if (sigRows.length) {
+          sigRows.forEach((row, rIdx) => {
+            const sigs = Array.from(row.querySelectorAll('.sig'));
+            const rowRecip = recs[rIdx % recs.length];
+            if (!rowRecip) return;
+
+            sigs.forEach(sig => {
+              const label = (sig.querySelector('label')?.textContent || '').toLowerCase();
+              const line = sig.querySelector('.line') || sig;
+              const lr = line.getBoundingClientRect();
+              const tagHeightPct = (28 / pr.height) * 100;
+              const lineBottomPct = ((lr.bottom - pr.top) / pr.height) * 100;
+              const finalX = Math.round(Math.max(1, Math.min(84, ((lr.left - pr.left) / pr.width) * 100)) * 10) / 10;
+              const finalY = Math.round(Math.max(0, Math.min(94, lineBottomPct - tagHeightPct - (10 / pr.height * 100))) * 10) / 10;
+
+              const isDate = label.includes('date');
+              newFields.push({
+                id: 'wf_' + (100 + dsFieldSeq++),
+                type: isDate ? 'Date Signed' : 'Signature',
+                label: isDate ? 'Date Signed' : 'Signature',
+                page: pageNum,
+                docIndex: 0,
+                recipientId: rowRecip.id,
+                x: finalX,
+                y: finalY,
+                required: true
+              });
+              added++;
+            });
+          });
+        }
+      }
+    } else {
+      // Robust Fallback if frame DOM not available (headless/unit test)
+      const buyerRecip = recipByRole('buyer') || recipByRole('client') || recs[0];
+      const sellerRecip = recipByRole('seller') || recipByRole('contractor') || (recs.length > 1 ? recs[1] : recs[0]);
+
+      if (!isFinalPage) {
+        if (buyerRecip) {
+          newFields.push({
+            id: 'wf_' + (100 + dsFieldSeq++),
+            type: 'Initial',
+            label: 'Initial',
+            page: pageNum,
+            docIndex: 0,
+            recipientId: buyerRecip.id,
+            x: 64.5,
+            y: 86.0,
+            required: true
+          });
+          added++;
+        }
+        if (sellerRecip && sellerRecip.id !== buyerRecip.id) {
+          newFields.push({
+            id: 'wf_' + (100 + dsFieldSeq++),
+            type: 'Initial',
+            label: 'Initial',
+            page: pageNum,
+            docIndex: 0,
+            recipientId: sellerRecip.id,
+            x: 82.2,
+            y: 86.0,
+            required: true
+          });
+          added++;
+        }
+      } else {
+        if (buyerRecip) {
+          newFields.push({
+            id: 'wf_' + (100 + dsFieldSeq++),
+            type: 'Signature',
+            label: 'Signature',
+            page: pageNum,
+            docIndex: 0,
+            recipientId: buyerRecip.id,
+            x: 6.8,
+            y: 60.5,
+            required: true
+          });
+          newFields.push({
+            id: 'wf_' + (100 + dsFieldSeq++),
+            type: 'Date Signed',
+            label: 'Date Signed',
+            page: pageNum,
+            docIndex: 0,
+            recipientId: buyerRecip.id,
+            x: 54.5,
+            y: 60.5,
+            required: true
+          });
+          added += 2;
+        }
+        if (sellerRecip && sellerRecip.id !== buyerRecip.id) {
+          newFields.push({
+            id: 'wf_' + (100 + dsFieldSeq++),
+            type: 'Signature',
+            label: 'Signature',
+            page: pageNum,
+            docIndex: 0,
+            recipientId: sellerRecip.id,
+            x: 6.8,
+            y: 70.8,
+            required: true
+          });
+          newFields.push({
+            id: 'wf_' + (100 + dsFieldSeq++),
+            type: 'Date Signed',
+            label: 'Date Signed',
+            page: pageNum,
+            docIndex: 0,
+            recipientId: sellerRecip.id,
+            x: 54.5,
+            y: 70.8,
+            required: true
+          });
+          added += 2;
+        }
+      }
+    }
+  }
+
+  d.fields = newFields;
+  dsRenderRoot();
+  simToast(`✨ Auto-placed ${added} standard signature & initial fields across all ${totalPages} pages!`, { tone: 'good', duration: 4000 });
 }
 
 function dsWizardStep3HTML() {
@@ -3799,12 +4229,59 @@ function dsWizardStep3HTML() {
       </div>`;
   }).join('');
 
+  // Real-Time Heads-Up Audit
+  const signingRecips = recs.filter(dsRecipientSigns);
+  const unassignedRecips = signingRecips.filter(r => !fields.some(f => f.recipientId === r.id));
+  const missingSigRecips = signingRecips.filter(r => !fields.some(f => f.recipientId === r.id && /signature/i.test(f.type)));
+
+  let headsupHTML = '';
+  if (unassignedRecips.length > 0) {
+    headsupHTML = `
+      <div class="ds-headsup-banner warning">
+        <div class="ds-headsup-left">
+          ${dsIcon('alert', 16)}
+          <div>
+            <b>Heads-Up Audit:</b> <b>${esc(unassignedRecips.map(r => r.name || r.role).join(', '))}</b> ${unassignedRecips.length === 1 ? 'is' : 'are'} set to sign but ${unassignedRecips.length === 1 ? 'has' : 'have'} no fields placed yet.
+          </div>
+        </div>
+        <button type="button" class="ds-btn primary sm" onclick="dsAutoPlaceAllStandardFields()">
+          ✨ Auto-Place Standard Fields
+        </button>
+      </div>`;
+  } else if (missingSigRecips.length > 0 && docs.length > 0) {
+    headsupHTML = `
+      <div class="ds-headsup-banner warning">
+        <div class="ds-headsup-left">
+          ${dsIcon('bulb', 16)}
+          <div>
+            <b>Heads-Up:</b> <b>${esc(missingSigRecips.map(r => r.name || r.role).join(', '))}</b> ${missingSigRecips.length === 1 ? 'has initials but no final execution signature' : 'are missing execution signatures'}.
+          </div>
+        </div>
+        <button type="button" class="ds-btn primary sm" onclick="dsAutoPlaceAllStandardFields()">
+          ✨ Auto-Place Standard Fields
+        </button>
+      </div>`;
+  } else if (signingRecips.length > 0 && fields.length > 0) {
+    headsupHTML = `
+      <div class="ds-headsup-banner success">
+        <div class="ds-headsup-left">
+          ${dsIcon('checkCircle', 16)}
+          <div>
+            <b>All Signers Configured:</b> All ${signingRecips.length} signers have signature fields assigned across the envelope.
+          </div>
+        </div>
+        <button type="button" class="ds-btn sm" onclick="dsAutoPlaceAllStandardFields()" title="Re-place all fields automatically">
+          ✨ Re-Apply Auto-Placement
+        </button>
+      </div>`;
+  }
+
   return `
     <div class="ds-panel">
       <div class="ds-step3-head">
         <div>
           <h4 class="ds-step3-title">Step 3 — Place &amp; Assign Fields</h4>
-          <p class="ds-step3-sub">Choose a signer, then click a field type to place it. Every field belongs to exactly one recipient, and its colour tells you which.</p>
+          <p class="ds-step3-sub">Choose a signer, then click a field type or use Auto-Place. Dragging near lines or slots auto-matches type and recipient.</p>
         </div>
         <div class="ds-step3-signer-ctrl">
           <label class="ds-step3-label" for="dsActiveSigner">Placing fields for</label>
@@ -3815,8 +4292,14 @@ function dsWizardStep3HTML() {
         </div>
       </div>
 
+      ${headsupHTML}
+
       <div class="ds-canvas-workspace">
         <div class="ds-tag-palette">
+          <button type="button" class="ds-palette-btn ds-palette-magic-btn"
+                  onclick="dsAutoPlaceAllStandardFields()">
+            ✨ Auto-Place All Fields
+          </button>
           <div class="ds-palette-head">Standard Fields</div>
           ${DS_FIELD_TYPES.map((ft, i) => `
             <button type="button" class="ds-palette-btn${ft.signing ? ' sig' : ''}"
@@ -3827,7 +4310,7 @@ function dsWizardStep3HTML() {
             </button>`).join('')}
           <div class="ds-palette-tip">
             ${activeRecip
-              ? `${dsIcon('bulb', 13)} Fields are placed for <b>${esc(recipLabel(activeRecip))}</b> on <b>the page you are viewing</b> &mdash; scroll the document to place one further in. Change the signer above to place fields for someone else, and drag any field to reposition it.`
+              ? `${dsIcon('bulb', 13)} Fields are placed for <b>${esc(recipLabel(activeRecip))}</b> on <b>the page you are viewing</b>. Drag near any signature line or initial slot to auto-snap and auto-assign.`
               : `${dsIcon('alert', 13)} Add a recipient in step 2 before placing fields.`}
           </div>
         </div>
@@ -3843,7 +4326,7 @@ function dsWizardStep3HTML() {
               <div class="ds-fld-empty">
                 ${dsIcon('pen', 30)}
                 <b>No fields placed yet</b>
-                <span>Pick a field type on the left. Without at least one signature field, nobody can sign this envelope.</span>
+                <span>Pick a field type on the left or click "Auto-Place All Fields" to generate standard placement in 1 click.</span>
               </div>`}
           </div>
         </div>
@@ -3877,18 +4360,21 @@ function dsWizardStep3HTML() {
                   .map(v => `<option ${selectedField.validation === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}
               </select>
             </div>
-            <button type="button" class="ds-btn sm danger ds-prop-del" onclick="dsDeleteCanvasField('${escAttr(selectedField.id)}')">
-              ${dsIcon('trash', 13)} Remove this field
+            <button type="button" class="ds-btn danger sm ds-prop-del"
+                    onclick="dsDeleteCanvasField('${escAttr(selectedField.id)}')">
+              ${dsIcon('trash', 13)} Delete Field
             </button>
           ` : `
-            <p class="ds-empty-p">Select a field on the canvas to edit its label, its owner, and whether it is required.</p>
-          `}
+            <div class="ds-props-empty">
+              ${dsIcon('cursor', 22)}
+              <span>Select a placed field on the document to edit its recipient, label, or required status.</span>
+            </div>`}
         </div>
       </div>
 
-      <div class="ds-step3-foot">
-        <button type="button" class="ds-btn" onclick="dsNextWizardStep(2)">&larr; Back</button>
-        <button type="button" class="ds-btn primary" id="dsBtnNextReview" onclick="dsNextWizardStep(4)">Next: Review &amp; Send &rarr;</button>
+      <div class="ds-wiz-foot">
+        <button class="ds-btn" onclick="dsNextWizardStep(2)">← Back to Recipients</button>
+        <button class="ds-btn primary" onclick="dsNextWizardStep(4)">Review &amp; Send →</button>
       </div>
     </div>`;
 }
@@ -3914,35 +4400,65 @@ function dsSelectCanvasField(fieldId) {
 function dsAddCustomCanvasField(type) {
   dsMark('ds_c3_1');
   const recipId = dsState.activeCanvasRecipId || (dsState.wizardData.recipients[0] ? dsState.wizardData.recipients[0].id : 'wr1');
-  /* Sequential, so the same sequence of clicks always yields the same field ids. */
   const newId = 'wf_' + (100 + dsFieldSeq++);
-  /* page / x / y / value bring wizard-made fields into the same shape the graded
-     curriculum already uses in docusign-data.js, which has always carried `page`
-     and `value` while this path emitted neither. Coordinates are PERCENTAGES of
-     the page box, not pixels, so they survive zoom and a narrower viewport.
-     New fields stack down the page instead of landing on top of each other. */
+  const curPageNum = dsState.canvasPage || 1;
   const onThisPage = (dsState.wizardData.fields || [])
-    .filter(f => (f.page || 1) === dsState.canvasPage).length;
+    .filter(f => (f.page || 1) === curPageNum).length;
+
+  let initX = type === 'Initial' ? 62.4 : (type === 'Date Signed' ? 54.5 : 6.8);
+  let initY = type === 'Initial' ? 86.2 : 60.5;
+  let autoAligned = false;
+  let matchedRecipId = recipId;
+
+  // Smart auto-detection on the visible page in the active frame
+  try {
+    const frame = document.querySelector('.ds-doc-frame');
+    if (frame && frame.contentDocument) {
+      const pEl = frame.contentDocument.querySelector('[data-page="' + curPageNum + '"]');
+      if (pEl) {
+        const pr = pEl.getBoundingClientRect();
+        if (pr.width && pr.height) {
+          const sel = DS_FIELD_ANCHORS[type] || '.sig .line, .slot';
+          const anchors = Array.from(pEl.querySelectorAll(sel));
+          const existingOnPage = (dsState.wizardData.fields || []).filter(f => (f.page || 1) === curPageNum);
+
+          for (let a of anchors) {
+            const ar = a.getBoundingClientRect();
+            const aMidX = ((ar.left + ar.width / 2 - pr.left) / pr.width) * 100;
+            const aMidY = ((ar.top + ar.height / 2 - pr.top) / pr.height) * 100;
+            const isOccupied = existingOnPage.some(f => Math.hypot((f.x || 0) - aMidX, (f.y || 0) - aMidY) < 6);
+            if (!isOccupied) {
+              const s = dsSnapField(pEl, type, aMidX, aMidY);
+              if (s && s.snapped) {
+                initX = s.x;
+                initY = s.y;
+                if (s.matchedRecip) matchedRecipId = s.matchedRecip.id;
+                autoAligned = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {}
+
   const newField = {
     id: newId,
     type: type,
-    recipientId: recipId,
-    /* Which attached document, not just which page. With two documents on one
-       envelope "page 3" is ambiguous, and without this every field showed on
-       every document. Absent on the seeded curriculum fields, which is why
-       readers treat a missing docIndex as 0. */
+    recipientId: matchedRecipId,
     docIndex: dsState.canvasDocIndex || 0,
-    page: dsState.canvasPage || 1,
-    x: 16,
-    y: Math.min(88, 22 + onThisPage * 9),
-    label: dsFieldLabel(type, recipId),
+    page: curPageNum,
+    x: initX,
+    y: initY,
+    label: dsFieldLabel(type, matchedRecipId),
     required: true,
     value: null,
     validation: 'None (standard text)'
   };
   dsState.wizardData.fields.push(newField);
   dsState.selectedCanvasFieldId = newId;
-  simToast(`Added ${type} field for active signer.`, { tone: 'good' });
+  simToast(autoAligned ? `Added ${type} field & auto-aligned to page ${curPageNum}.` : `Added ${type} field for active signer.`, { tone: 'good' });
   dsRenderRoot();
 }
 function dsDeleteCanvasField(fieldId) {
@@ -3993,6 +4509,7 @@ function dsAddField() {
   dsAddCustomCanvasField('Signature');
 }
 function dsAuditFields() {
+  dsMark('ds_c3_2');
   /* Checks four things that would each stop a real envelope from working. The
      previous version only compared two hard-coded field ids against a hard-coded
      buyer and seller — and once those ids stopped existing it found nothing to
@@ -4084,17 +4601,35 @@ function dsComputeExpiryDate(startDate, days) {
 }
 
 function dsWizardStep4HTML() {
-  /* B-2 fix: dsMark('ds_c1_3') and dsMark('ds_c1_4') were here — removed. */
   const d = dsState.wizardData;
   if (!d.reminders) {
     d.reminders = { enabled: true, firstDays: 2, repeatDays: 3, expireDays: 120, warnDays: 3 };
   }
   const rem = d.reminders;
+  const unassignedInStep4 = (d.recipients || []).filter(dsRecipientSigns).filter(r => !(d.fields || []).some(f => f.recipientId === r.id));
 
   return `
     <div class="ds-panel">
       <h4>Step 4 — Review & Send</h4>
       <p class="ds-wiz-sub">Review the envelope summary before sending. Recipients will receive email notifications in signing order.</p>
+
+      ${unassignedInStep4.length > 0 ? `
+        <div class="ds-headsup-banner warning" style="margin-bottom:18px;">
+          <div class="ds-headsup-left">
+            ${dsIcon('alert', 16)}
+            <div>
+              <b>Heads-Up Audit:</b> <b>${esc(unassignedInStep4.map(r => r.name || r.role).join(', '))}</b> ${unassignedInStep4.length === 1 ? 'is' : 'are'} set to "Needs to Sign" but ${unassignedInStep4.length === 1 ? 'has' : 'have'} no signature fields assigned.
+            </div>
+          </div>
+          <button type="button" class="ds-btn primary sm" onclick="dsAutoPlaceAllStandardFields()">
+            ✨ Auto-Place Standard Fields
+          </button>
+        </div>
+      ` : `
+        <div class="ds-wiz-ready-box">
+          ${dsIcon('checkCircle')} Envelope is ready to send. All ${d.recipients.filter(dsRecipientSigns).length} signers have assigned fields.
+        </div>
+      `}
 
       <div class="ds-wiz-summary-card">
         <div class="ds-wiz-summary-row"><span class="ds-wiz-summary-label">EMAIL SUBJECT</span><br>${esc(d.subject)}</div>
@@ -4161,10 +4696,6 @@ function dsWizardStep4HTML() {
           </div>` : ''}
       </div>
 
-      <div class="ds-wiz-ready-box">
-        ${dsIcon('checkCircle')} Envelope is ready to send. Recipients will receive email notifications in the configured signing order.
-      </div>
-
       <div class="ds-wiz-foot">
         <button class="ds-btn" onclick="dsNextWizardStep(3)">← Back to Fields</button>
         <button class="ds-btn yellow ds-wiz-send-btn" id="dsBtnSendFinal" ${dsStep4Problem() ? 'disabled' : ''}
@@ -4228,6 +4759,25 @@ function dsSendEnvelopeFinal() {
 
   const d = dsState.wizardData;
   const validRecips = (d.recipients || []).filter(r => (r.name || '').trim() && (r.email || '').trim());
+
+  // Heads-Up validation before launching envelope
+  const unassigned = validRecips.filter(dsRecipientSigns).filter(r => !(d.fields || []).some(f => f.recipientId === r.id));
+  if (unassigned.length > 0) {
+    dsConfirm({
+      title: 'Heads-Up: Signer Missing Fields',
+      body: `<b>${esc(unassigned.map(r => r.name || r.role).join(', '))}</b> is set to "Needs to Sign" but has 0 signature/initial fields on this envelope. Would you like to auto-place standard fields before sending?`,
+      confirmLabel: '✨ Auto-Place Fields & Send',
+      cancelLabel: 'Review in Step 3',
+      onConfirm: () => {
+        dsAutoPlaceAllStandardFields();
+        setTimeout(dsSendEnvelopeFinal, 100);
+      },
+      onCancel: () => {
+        dsNextWizardStep(3);
+      }
+    });
+    return;
+  }
 
   const rem = Object.assign({ enabled: true, firstDays: 2, repeatDays: 3, expireDays: 120, warnDays: 3 }, d.reminders || {});
 
@@ -4310,7 +4860,10 @@ function dsEnvelopeDetailHTML() {
         <div class="ds-recip-action-col">
           <div><span class="ds-badge ${statusClass}">${esc(r.status === 'authfail' ? 'Auth Failed' : dsStatusLabel(r.status || 'waiting'))}</span></div>
           <div class="ds-recip-subnote">${esc(r.action)}</div>
-          ${isPending ? `<button type="button" class="ds-btn sm ds-recip-resend-btn" onclick="dsActionResendRecipient('${escAttr(env.id)}', '${escAttr(r.id)}')">Resend</button>` : ''}
+          <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+            ${isPending ? `<button type="button" class="ds-btn sm ds-recip-resend-btn" onclick="dsActionResendRecipient('${escAttr(env.id)}', '${escAttr(r.id)}')">Resend</button>` : ''}
+            ${isPending && !dsDemoMode() ? `<button type="button" class="ds-btn sm" title="Simulate signing as ${escAttr(r.name)} (Training Tool)" onclick="dsPromptSimulateSigner('${escAttr(env.id)}', '${escAttr(r.name)}')">${dsIcon('pen', 13)}</button>` : ''}
+          </div>
         </div>
       </div>`;
   }).join('');
@@ -4341,9 +4894,6 @@ function dsEnvelopeDetailHTML() {
       <button class="ds-btn danger" id="dsBtnVoidEnv" onclick="dsActionVoid('${escAttr(env.id)}')">
         ${dsIcon('ban')} Void
       </button>
-      <button class="ds-btn" onclick="dsSimulateSigner('${escAttr(env.id)}')">
-        ${dsIcon('pen')} Simulate Signer View
-      </button>
       <button class="ds-btn" onclick="dsOpenAuditModal('${escAttr(env.id)}')">
         ${dsIcon('history')} History
       </button>
@@ -4358,7 +4908,7 @@ function dsEnvelopeDetailHTML() {
       <button class="ds-btn primary" onclick="dsViewEnvelopeDoc('${escAttr(env.id)}', 0)">
         ${dsIcon('eye')} View Document
       </button>
-      <button class="ds-btn" onclick="dsOpenCertificateModal('${escAttr(env.id)}')">
+      <button class="ds-btn" id="dsBtnViewCertificate" onclick="dsOpenCertificateModal('${escAttr(env.id)}')">
         ${dsIcon('award')} Certificate of Completion
       </button>
       <button class="ds-btn" onclick="dsSaveEnvelopeAsTemplate('${escAttr(env.id)}')">
@@ -4541,20 +5091,33 @@ function dsDuplicateEnvelope(envId) {
 function dsResendExpired(envId) {
   const env = dsGetEnvelope(envId);
   if (!env) return;
-  const newEnvId = 'ENV-' + DS_TODAY.slice(0, 4) + '-' + (9100 + dsSentSeq++);
   const [ty, tm, td] = DS_TODAY.split('-').map(Number);
   const newClosing = new Date(Date.UTC(ty, tm - 1, td + 21)).toISOString().slice(0, 10);
-  const clone = Object.assign({}, env, {
-    id: newEnvId,
+  const updatedRecips = (env.recipients || []).map(r => Object.assign({}, r, {
+    status: r.action === 'Receives a Copy' ? 'received' : 'waiting'
+  }));
+
+  dsSetEnvelopeOverride(envId, {
     status: 'waiting',
-    createdDate: DS_TODAY,
+    statusNote: null,
     closingDate: newClosing,
-    recipients: (env.recipients || []).map(r => Object.assign({}, r, { status: 'waiting' }))
+    recipients: updatedRecips
   });
-  dsSetEnvelopeOverride(newEnvId, clone);
-  dsAddAuditLog(newEnvId, 'Envelope Re-issued', { text: `Re-sent from expired envelope ${envId}. Fresh signing links issued.` });
-  simToast(`Re-issued envelope as ${newEnvId} with active 21-day closing window!`, { tone: 'good' });
-  dsOpenEnvelope(newEnvId);
+
+  dsAddAuditLog(envId, 'Envelope Re-issued & Resent', {
+    text: `Expired envelope reactivated with a 21-day closing window (Closing: ${newClosing}). Fresh signing invitations sent to all pending recipients.`
+  });
+
+  if (typeof dsAddLiveEmail === 'function') {
+    dsAddLiveEmail({
+      type: 'sent',
+      envId: envId,
+      subject: env.subject
+    });
+  }
+
+  simToast(`Envelope ${envId} re-sent as active with a 21-day signing window!`, { tone: 'good', duration: 4500 });
+  dsRenderRoot();
 }
 
 function dsViewDeclineReason(envId) {
@@ -4621,6 +5184,7 @@ function dsActionResend(envId) {
 function dsActionCorrect(envId) {
   const env = dsGetEnvelope(envId);
   if (!env) return;
+  dsMark('ds_c5_3');
   const formId = 'dsCorrectForm-' + envId;
   if (document.getElementById(formId)) return;   /* already open */
   const bar = document.querySelector('.ds-action-bar');
@@ -4707,6 +5271,7 @@ function dsActionVoid(envId) {
   /* B-5/B-8: was prompt() with pre-filled reason + 'Superceded' typo. */
   const env = dsGetEnvelope(envId);
   if (!env) return;
+  dsMark('ds_c5_4');
   const formId = 'dsVoidForm-' + envId;
   if (document.getElementById(formId)) return;
   const bar = document.querySelector('.ds-action-bar');
@@ -6888,6 +7453,7 @@ function dsCloseAuditModal() {
 function dsOpenCertificateModal(envId) {
   const env = dsGetEnvelope(envId);
   if (!env) return;
+  dsMark('ds_cert_open');
 
   const modal = document.createElement('div');
   modal.id = 'dsCertModalWrap';
@@ -6960,6 +7526,152 @@ function dsCloseCertificateModal() {
    coherent contract clauses, party definitions, and status-accurate signature blocks.
    Reuses the visual language of doc.css inlined in <style> so it is 100% self-contained
    and requires zero network requests. */
+function dsGetDocPageContent(env, doc, curPage, totalPages, type, signers, closing, created) {
+  const isFinalPage = curPage === totalPages;
+  const isFirstPage = curPage === 1;
+  const typeLower = (type || '').toLowerCase();
+  const subj = (env.subject || '').toLowerCase();
+
+  // Helper for initial slots at page bottom on intermediate pages
+  const renderInitialsRow = () => {
+    if (isFinalPage) return '';
+    return `
+      <div class="initials" style="display:flex;justify-content:flex-end;gap:20px;margin-top:28px;padding-top:14px;border-top:1px dashed #d8dbe0;">
+        ${signers.map(r => {
+          const isSigned = r.status === 'signed' || r.status === 'completed' || env.status === 'completed';
+          const inits = dsRecipInitials(r.name || 'Signer');
+          return `
+            <div class="ibox" style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <div class="slot" style="width:54px;height:26px;border:1px solid #999;border-radius:3px;display:flex;align-items:center;justify-content:center;background:${isSigned ? 'rgba(238,242,255,0.75)' : '#fafafa'};font-family:'Brush Script MT',cursive,serif;font-size:16px;font-weight:700;color:#1e3a8a;">
+                ${isSigned ? esc(inits) : ''}
+              </div>
+              <label style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:9.5px;color:#777;text-transform:uppercase;">${esc(r.role || 'Signer')} Initials</label>
+            </div>`;
+        }).join('')}
+      </div>`;
+  };
+
+  // PAGE 1: Parties, Property Description, Primary Consideration & Background
+  if (isFirstPage) {
+    if (/purchase|property|real estate/i.test(typeLower) || /purchase/i.test(subj)) {
+      return `
+        <h2 class="sec">1. Parties &amp; Property Identification</h2>
+        <div class="row">
+          ${signers.map(r => `<div class="f"><label>${esc(r.role || 'Party')}</label><div class="v big">${esc(r.name)}</div><div class="v mono">${esc(r.email)}</div></div>`).join('')}
+        </div>
+        <div class="row">
+          <div class="f"><label>Property / Subject Transaction</label><div class="v big">${esc(env.subject)}</div></div>
+          <div class="f"><label>Jurisdiction / County</label><div class="v">Travis County, State of Texas</div></div>
+        </div>
+        <h2 class="sec">2. Purchase Price &amp; Earnest Money Consideration</h2>
+        <p class="clause">Buyer agrees to purchase and Seller agrees to convey the real property described herein. The agreed Purchase Price and Earnest Money escrow deposit shall be held pursuant to the Escrow Agreement and disbursed at final closing on or before <b>${esc(closing)}</b>.</p>
+        <h2 class="sec">3. Effective Date &amp; Mutual Recitals</h2>
+        <p class="clause">This Agreement is made effective as of <b>${esc(created)}</b>. The recitals set forth above are incorporated into and made an essential part of this contractual instrument.</p>
+        ${renderInitialsRow()}`;
+    } else if (/lease|rental/i.test(typeLower) || /lease/i.test(subj)) {
+      return `
+        <h2 class="sec">1. Lease Parties &amp; Demised Premises</h2>
+        <div class="row">
+          ${signers.map(r => `<div class="f"><label>${esc(r.role || 'Party')}</label><div class="v big">${esc(r.name)}</div><div class="v mono">${esc(r.email)}</div></div>`).join('')}
+        </div>
+        <div class="row">
+          <div class="f"><label>Premises Description</label><div class="v big">${esc(env.subject)}</div></div>
+        </div>
+        <h2 class="sec">2. Lease Term &amp; Base Rental Rate</h2>
+        <p class="clause">The lease term commences on <b>${esc(created)}</b> and terminates on <b>${esc(closing)}</b>. Tenant covenants to pay monthly base rent in advance on the first day of each calendar month without offset or deduction.</p>
+        <h2 class="sec">3. Security Deposit &amp; Holding Account</h2>
+        <p class="clause">Tenant has deposited with Landlord a security deposit to secure faithful performance of all covenants hereunder, held in a designated escrow trust account.</p>
+        ${renderInitialsRow()}`;
+    } else if (/hr|contractor|employment|onboarding/i.test(typeLower) || /contractor/i.test(subj)) {
+      return `
+        <h2 class="sec">1. Parties &amp; Engagement Scope</h2>
+        <div class="row">
+          ${signers.map(r => `<div class="f"><label>${esc(r.role || 'Party')}</label><div class="v big">${esc(r.name)}</div><div class="v mono">${esc(r.email)}</div></div>`).join('')}
+        </div>
+        <div class="row">
+          <div class="f"><label>Engagement Project / Title</label><div class="v big">${esc(env.subject)}</div></div>
+        </div>
+        <h2 class="sec">2. Scope of Services &amp; Deliverables</h2>
+        <p class="clause">Contractor shall perform professional services in virtual transaction coordination, document compliance, and client communications as requested by Company during the term commencing <b>${esc(created)}</b>.</p>
+        <h2 class="sec">3. Compensation &amp; Invoicing Schedule</h2>
+        <p class="clause">Company shall compensate Contractor pursuant to the agreed fee schedule upon receipt of verified task milestones and semi-monthly invoicing.</p>
+        ${renderInitialsRow()}`;
+    } else {
+      return `
+        <h2 class="sec">1. Designated Parties &amp; Background</h2>
+        <div class="row">
+          ${signers.map(r => `<div class="f"><label>${esc(r.role || 'Party')}</label><div class="v big">${esc(r.name)}</div><div class="v mono">${esc(r.email)}</div></div>`).join('')}
+        </div>
+        <div class="row">
+          <div class="f"><label>Agreement Reference</label><div class="v big">${esc(env.subject)}</div></div>
+        </div>
+        <h2 class="sec">2. Purpose &amp; Consideration</h2>
+        <p class="clause">This Agreement sets forth the mutual terms and obligations between the parties regarding <b>${esc(env.subject)}</b>, effective as of <b>${esc(created)}</b>.</p>
+        <h2 class="sec">3. Primary Terms &amp; Conditions</h2>
+        <p class="clause">Each party covenants to perform its respective covenants in good faith and in full compliance with applicable state and federal laws.</p>
+        ${renderInitialsRow()}`;
+    }
+  }
+
+  // PAGE 2 (when total >= 3): Financial Schedules, Due Diligence, Inspection & Performance Terms
+  if (curPage === 2 && totalPages >= 3) {
+    return `
+      <h2 class="sec">4. Performance Terms &amp; Due Diligence Covenants</h2>
+      <p class="clause">Each party shall exercise commercially reasonable diligence in satisfying all contractual milestones. The inspection and review period shall run concurrently from the Effective Date of <b>${esc(created)}</b>.</p>
+      <div class="row">
+        <div class="f"><label>Verification Period</label><div class="v">10 Business Days</div></div>
+        <div class="f"><label>Escrow Agent</label><div class="v">Lone Star Title &amp; Escrow</div></div>
+        <div class="f"><label>Target Closing / Completion</label><div class="v big">${esc(closing)}</div></div>
+      </div>
+      <h2 class="sec">5. Representations, Warranties &amp; Authority</h2>
+      <p class="clause">Each signatory represents and warrants that they possess full corporate or personal authority to enter into and bind their respective party to this instrument without restriction.</p>
+      <h2 class="sec">6. Escrow Procedures &amp; Title Verification</h2>
+      <p class="clause">All funds, instruments, and closing certificates shall be delivered into escrow and released only upon full mutual verification and compliance verification.</p>
+      ${renderInitialsRow()}`;
+  }
+
+  // PAGE 3 (when total >= 4): Confidentiality, Risk Allocation, Insurance & Covenants
+  if (curPage === 3 && totalPages >= 4) {
+    return `
+      <h2 class="sec">7. Confidentiality &amp; Non-Public Information (NPI)</h2>
+      <p class="clause">The parties agree that all confidential information, financial data, and Non-Public Personal Information (NPI) disclosed under this Agreement shall remain strictly confidential and protected from unauthorized third-party disclosure.</p>
+      <h2 class="sec">8. Risk of Loss &amp; Indemnification</h2>
+      <p class="clause">Each party shall indemnify, defend, and hold harmless the other party and its agents from any claims, losses, or liabilities arising out of gross negligence or willful misconduct.</p>
+      <h2 class="sec">9. Maintenance &amp; Operating Covenants</h2>
+      <p class="clause">During the pendency of this transaction, all assets, accounts, and premises shall be maintained in substantially the same condition as of the Effective Date.</p>
+      ${renderInitialsRow()}`;
+  }
+
+  // PAGE 4 (when total >= 5): Default, Remedies, Termination & Force Majeure
+  if (curPage === 4 && totalPages >= 5) {
+    return `
+      <h2 class="sec">10. Events of Default &amp; Notice Periods</h2>
+      <p class="clause">Failure of either party to perform any material obligation under this Agreement shall constitute an Event of Default after written notice and expiration of a five (5) business day cure period.</p>
+      <h2 class="sec">11. Remedies, Liquidated Damages &amp; Termination</h2>
+      <p class="clause">Upon an uncured Event of Default, the non-defaulting party may pursue all remedies available at law or in equity, including specific performance or termination of this Agreement with return of deposit.</p>
+      <h2 class="sec">12. Force Majeure &amp; Unforeseen Delays</h2>
+      <p class="clause">Neither party shall be liable for delays occasioned by acts of God, governmental moratoria, strikes, or utility interruptions beyond reasonable control.</p>
+      ${renderInitialsRow()}`;
+  }
+
+  // FINAL PAGE: General Legal Provisions, UETA / ESIGN Act
+  if (isFinalPage) {
+    return `
+      <h2 class="sec">${totalPages > 1 ? (totalPages * 3 - 2) + '. ' : '3. '}General Legal Provisions &amp; Governing Law</h2>
+      <p class="clause">This instrument constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, or oral agreements. This Agreement shall be governed by and construed in accordance with the laws of the State of Texas, with exclusive venue in Travis County.</p>
+      <h2 class="sec">${totalPages > 1 ? (totalPages * 3 - 1) + '. ' : '4. '}Electronic Execution &amp; DocuSign Legal Seal</h2>
+      <p class="clause">The parties expressly agree that mutual electronic signatures transmitted and recorded via DocuSign eSignature satisfy all statutory requirements of the Electronic Signatures in Global and National Commerce Act (15 U.S.C. &sect; 7001 et seq.) and the Uniform Electronic Transactions Act.</p>`;
+  }
+
+  // Intermediate page fallback
+  return `
+    <h2 class="sec">Additional Covenants &amp; Operational Provisions</h2>
+    <p class="clause">The parties further agree to all stipulations, exhibits, and schedules attached hereto and referenced in <b>${esc(env.subject)}</b>.</p>
+    <h2 class="sec">Compliance &amp; Good Faith Cooperation</h2>
+    <p class="clause">Both parties covenant to provide all supplemental documentation and signatures required to effectuate the closing and delivery of this transaction on or before <b>${esc(closing)}</b>.</p>
+    ${renderInitialsRow()}`;
+}
+
 function dsRenderEnvelopeDocument(env, docIndex, pageNum) {
   if (!env) return '<p>Document not available.</p>';
   docIndex = docIndex || 0;
@@ -6977,86 +7689,30 @@ function dsRenderEnvelopeDocument(env, docIndex, pageNum) {
   // Build parties summary
   const signers = recips.filter(r => r.action !== 'Receives a Copy');
 
-  // Realistic clauses tailored to document type
-  let clausesHTML = '';
-  if (/purchase|real estate|property/i.test(type)) {
-    clausesHTML = `
-      <h2 class="sec">1. Parties & Property Description</h2>
-      <div class="row">
-        ${signers.map(r => `<div class="f"><label>${esc(r.role || 'Party')}</label><div class="v big">${esc(r.name)}</div><div class="v mono">${esc(r.email)}</div></div>`).join('')}
-      </div>
-      <div class="row">
-        <div class="f"><label>Property / Transaction Subject</label><div class="v big">${esc(env.subject)}</div></div>
-      </div>
-      <h2 class="sec">2. Financial Consideration & Escrow Terms</h2>
-      <p class="clause">The Buyer and Seller agree to the terms of purchase and escrow deposit as stipulated herein. Earnest money shall be deposited with the designated title and escrow officer within 3 business days of mutual execution. Final closing is scheduled for <b>${esc(closing)}</b>.</p>
-      <h2 class="sec">3. Inspection, Title & Electronic Execution</h2>
-      <p class="clause">This instrument is executed in accordance with the Electronic Signatures in Global and National Commerce Act. Signatures applied electronically through DocuSign eSignature are legally binding upon all parties.</p>`;
-  } else if (/lease|rental/i.test(type)) {
-    clausesHTML = `
-      <h2 class="sec">1. Lease Parties & Demised Premises</h2>
-      <div class="row">
-        ${signers.map(r => `<div class="f"><label>${esc(r.role || 'Party')}</label><div class="v big">${esc(r.name)}</div><div class="v mono">${esc(r.email)}</div></div>`).join('')}
-      </div>
-      <div class="row">
-        <div class="f"><label>Premises</label><div class="v big">${esc(env.subject)}</div></div>
-      </div>
-      <h2 class="sec">2. Term, Rent & Security Deposit</h2>
-      <p class="clause">The lease term commences on <b>${esc(created)}</b> and extends through <b>${esc(closing)}</b>. Rent shall be payable monthly in advance. Tenant shall maintain the premises in good repair.</p>
-      <h2 class="sec">3. Use, Default & Electronic Signatures</h2>
-      <p class="clause">The premises shall be used exclusively for the permitted use outlined in this Agreement. All notices and electronic signatures submitted through DocuSign are recognized as binding.</p>`;
-  } else if (/nda|confidential|legal/i.test(type)) {
-    clausesHTML = `
-      <h2 class="sec">1. Confidentiality Agreement Parties</h2>
-      <div class="row">
-        ${signers.map(r => `<div class="f"><label>${esc(r.role || 'Participant')}</label><div class="v big">${esc(r.name)}</div><div class="v mono">${esc(r.email)}</div></div>`).join('')}
-      </div>
-      <h2 class="sec">2. Scope of Confidential Information</h2>
-      <p class="clause">"Confidential Information" includes all proprietary technical, business, financial, and client data disclosed by either party in connection with <b>${esc(env.subject)}</b>.</p>
-      <h2 class="sec">3. Non-Disclosure & Non-Use Obligations</h2>
-      <p class="clause">The receiving party agrees to hold all Confidential Information in strict confidence and prevent unauthorized disclosure. This obligation survives for a period of two (2) years from <b>${esc(created)}</b>.</p>`;
-  } else if (/hr|contractor|employment|onboarding/i.test(type)) {
-    clausesHTML = `
-      <h2 class="sec">1. Engagement & Contractor Details</h2>
-      <div class="row">
-        ${signers.map(r => `<div class="f"><label>${esc(r.role || 'Contractor')}</label><div class="v big">${esc(r.name)}</div><div class="v mono">${esc(r.email)}</div></div>`).join('')}
-      </div>
-      <h2 class="sec">2. Services & Compensation Terms</h2>
-      <p class="clause">Contractor shall perform virtual transaction coordination and administrative services as set forth under <b>${esc(env.subject)}</b>. Invoices shall be submitted semi-monthly.</p>
-      <h2 class="sec">3. Work Product & Independent Status</h2>
-      <p class="clause">All deliverables created during the engagement shall constitute works made for hire. Contractor operates as an independent contractor and not as an employee.</p>`;
-  } else {
-    clausesHTML = `
-      <h2 class="sec">1. Agreement Scope & Designated Parties</h2>
-      <div class="row">
-        ${signers.map(r => `<div class="f"><label>${esc(r.role || 'Party')}</label><div class="v big">${esc(r.name)}</div><div class="v mono">${esc(r.email)}</div></div>`).join('')}
-      </div>
-      <div class="row">
-        <div class="f"><label>Agreement Reference</label><div class="v big">${esc(env.subject)}</div></div>
-      </div>
-      <h2 class="sec">2. Terms, Conditions & Deliverables</h2>
-      <p class="clause">The undersigned parties agree to perform the duties and obligations stipulated in this instrument. Effective as of <b>${esc(created)}</b> with target completion on <b>${esc(closing)}</b>.</p>
-      <h2 class="sec">3. Execution & Authorization</h2>
-      <p class="clause">Mutual electronic signatures transmitted via DocuSign eSignature constitute valid and enforceable execution of this instrument.</p>`;
-  }
+  // Multi-page contextual legal clauses tailored to current page
+  const clausesHTML = dsGetDocPageContent(env, doc, curPage, totalPages, type, signers, closing, created);
 
-  // Signature Blocks
-  const sigBlocksHTML = `
-    <h2 class="sec">4. Execution & Signatures</h2>
+  // Signature Blocks (rendered on final execution page or single-page documents)
+  const isFinalPage = curPage === totalPages;
+  const sigBlocksHTML = isFinalPage ? `
+    <h2 class="sec">${totalPages > 1 ? (totalPages * 3) + '. ' : '5. '}Execution &amp; Signatures</h2>
     <div class="sigrow">
       ${signers.map(r => {
-        const isSigned = r.status === 'completed' || r.status === 'signed';
+        const isSigned = r.status === 'completed' || r.status === 'signed' || env.status === 'completed';
         const isVoided = env.status === 'voided' || r.status === 'voided';
         const isExpired = env.status === 'expired' || r.status === 'expired';
+        const sigStamp = r.signatureData
+          ? `<img src="${r.signatureData}" alt="Signature" style="max-height:36px;vertical-align:bottom;">`
+          : `<span class="ds-signed-stamp ${r.signatureStyle || 'ds-sig-1'}" style="font-family:'Brush Script MT',cursive,serif;font-size:22px;color:#1e3a8a;font-style:italic;">${esc(r.name)}</span>`;
         return `
           <div class="sig">
-            <div class="line" style="${isSigned ? 'color:#002738;font-style:italic;' : 'color:#999;font-style:normal;font-size:12px;'}">
-              ${isSigned ? '/s/ ' + esc(r.name) : (isVoided ? '[ VOIDED ]' : (isExpired ? '[ EXPIRED ]' : '[ Pending Signature ]'))}
+            <div class="line" style="${isSigned ? 'color:#1e3a8a;' : 'color:#999;font-style:normal;font-size:12px;'}">
+              ${isSigned ? sigStamp : (isVoided ? '[ VOIDED ]' : (isExpired ? '[ EXPIRED ]' : '[ Pending Signature ]'))}
             </div>
-            <label>${esc(r.role || 'Signer')} &mdash; ${esc(r.name)} &middot; ${isSigned ? 'Signed: ' + esc(env.createdDate || DS_TODAY) : esc(r.status || 'waiting')}</label>
+            <label>${esc(r.role || 'Signer')} &mdash; ${esc(r.name)} &middot; ${isSigned ? 'Signed: ' + esc(r.signedDate || env.createdDate || DS_TODAY) : esc(r.status || 'waiting')}</label>
           </div>`;
       }).join('')}
-    </div>`;
+    </div>` : '';
 
   // Doc switcher / page switcher header
   const docNavHTML = docs.length > 1 || totalPages > 1 ? `
@@ -7123,13 +7779,13 @@ function dsRenderEnvelopeDocument(env, docIndex, pageNum) {
     <div class="letterhead">
       <div>
         <h1>${esc(doc.name.replace(/\.pdf$/i, '').replace(/_/g, ' '))}</h1>
-        <div class="sub">${esc(type)} &middot; DocuSign eSignature Package</div>
+        <div class="sub">${esc(type)} &middot; DocuSign eSignature Package ${totalPages > 1 ? `(Page ${curPage} of ${totalPages})` : ''}</div>
       </div>
       <div class="ref"><b>${esc(env.id)}</b>Date: ${esc(created)}</div>
     </div>
     ${clausesHTML}
     ${sigBlocksHTML}
-    <div class="foot">Generated for SkillCloud Academy DocuSign Training &middot; Envelope ID: ${esc(env.id)}</div>
+    <div class="foot">Generated for SkillCloud Academy DocuSign Training &middot; Envelope ID: ${esc(env.id)} &middot; Page ${curPage} of ${totalPages}</div>
   </div>
 </body>
 </html>`;
@@ -7221,6 +7877,90 @@ function dsViewLibraryDoc(env, docIndex, pageNum, lib) {
   if (already) run();
 }
 
+/* Stamping signatures on real library documents (doc-*.html) */
+function dsStampLibraryDocSignatures(d, env) {
+  if (!d || !d.body || !env) return;
+  const recips = env.recipients || [];
+  const isEnvCompleted = env.status === 'completed';
+  const hasCustomFields = (env.fields || []).length > 0;
+
+  // If envelope has custom placed fields, custom fields take precedence on those pages
+  if (hasCustomFields) return;
+
+  // 1. Initial Slots (.initials .ibox .slot)
+  const iboxes = Array.from(d.querySelectorAll('.initials .ibox, .ibox'));
+  iboxes.forEach(ib => {
+    const label = (ib.querySelector('label')?.textContent || '').toLowerCase();
+    const slot = ib.querySelector('.slot');
+    if (!slot) return;
+
+    const recip = recips.find(r => {
+      const name = (r.name || '').toLowerCase();
+      const role = (r.role || '').toLowerCase();
+      return (name && label.includes(name)) || (role && label.includes(role)) ||
+             (label.includes('buyer') && (role.includes('buyer') || name.includes('smith') || name.includes('buyer'))) ||
+             (label.includes('seller') && (role.includes('seller') || name.includes('sarah') || name.includes('seller'))) ||
+             (label.includes('contractor') && (role.includes('contractor') || name.includes('contractor')));
+    }) || recips[0];
+
+    if (recip && (recip.status === 'signed' || recip.status === 'completed' || isEnvCompleted)) {
+      const inits = dsRecipInitials(recip.name || 'Signer');
+      slot.textContent = inits;
+      slot.setAttribute('style',
+        'display:flex;align-items:center;justify-content:center;color:#1e3a8a;' +
+        'font-family:"Brush Script MT",cursive,serif;font-size:16px;font-weight:700;' +
+        'background:rgba(238,242,255,0.7);border-radius:3px;');
+    }
+  });
+
+  // 2. Signature Lines (.sigrow .sig, .sig)
+  const sigRows = Array.from(d.querySelectorAll('.sigrow'));
+  sigRows.forEach(row => {
+    const sigs = Array.from(row.querySelectorAll('.sig'));
+    if (!sigs.length) return;
+
+    let matchedRecip = null;
+    sigs.forEach((sig, idx) => {
+      const label = (sig.querySelector('label')?.textContent || '').toLowerCase();
+      const line = sig.querySelector('.line');
+      if (!line) return;
+
+      if (label.includes('date')) {
+        const r = matchedRecip || recips.find(x => x.status === 'signed' || x.status === 'completed') || recips[0];
+        if (r && (r.status === 'signed' || r.status === 'completed' || isEnvCompleted)) {
+          line.textContent = dsDateUS(r.signedDate || env.createdDate || DS_TODAY);
+          line.setAttribute('style',
+            'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;' +
+            'font-size:12.5px;font-weight:600;color:#1e3a8a;display:flex;align-items:flex-end;padding-bottom:6px;transform:translateY(-6px);');
+        }
+      } else {
+        const recip = recips.find(r => {
+          const name = (r.name || '').toLowerCase();
+          const role = (r.role || '').toLowerCase();
+          return (name && label.includes(name)) || (role && label.includes(role)) ||
+                 (label.includes('buyer') && (role.includes('buyer') || name.includes('smith') || name.includes('buyer'))) ||
+                 (label.includes('seller') && (role.includes('seller') || name.includes('sarah') || name.includes('seller'))) ||
+                 (label.includes('contractor') && (role.includes('contractor') || name.includes('contractor')));
+        }) || (idx === 0 ? recips[0] : recips[1]);
+
+        if (recip) matchedRecip = recip;
+
+        if (recip && (recip.status === 'signed' || recip.status === 'completed' || isEnvCompleted)) {
+          if (recip.signatureData) {
+            line.innerHTML = `<img src="${recip.signatureData}" alt="Signature" style="max-height:28px;vertical-align:bottom;transform:translateY(-10px);display:block;">`;
+            line.setAttribute('style', 'display:flex;align-items:flex-end;padding-bottom:0;');
+          } else {
+            line.textContent = recip.name || 'Signed';
+            line.setAttribute('style',
+              'font-family:"Brush Script MT",cursive,serif;font-size:20px;color:#1e3a8a;font-style:italic;' +
+              'display:flex;align-items:flex-end;padding-bottom:6px;transform:translateY(-6px);');
+          }
+        }
+      }
+    });
+  });
+}
+
 function dsDecorateLibraryDoc(frame, env, docIndex, pageNum, lib) {
   let d;
   try { d = frame.contentDocument; } catch (e) { return; }
@@ -7284,26 +8024,13 @@ function dsDecorateLibraryDoc(frame, env, docIndex, pageNum, lib) {
   bar.appendChild(pager);
   d.body.insertBefore(bar, d.body.firstChild);
 
+  dsStampLibraryDocSignatures(d, env);
   dsPaintViewerFields(d, env, docIndex);
 
   const target = d.querySelector('[data-page="' + cur + '"]');
   if (target && target.scrollIntoView) target.scrollIntoView({ block: 'start' });
 }
 
-/* The fields, on the document, read-only.
-
-   The viewer used to show the pages and nothing else, so an envelope you had
-   just built with signature fields opened looking untouched — there was no way
-   to see where anyone was meant to sign. These are the same coordinates the
-   sender placed, in the same recipient colours, which is the whole point: what
-   you positioned in step 3 is what the document carries.
-
-   Two states. A field still waiting shows a dashed outline with whose it is; a
-   field already completed shows its value, because after signing the document
-   should read as signed rather than as a form. */
-/* dsFieldLabel() builds labels like "Gerald Signature", and the viewer already
-   names the recipient beside the box — so it read "Gerald — Gerald Signature".
-   Trim the leading name when it is there, leave a hand-written label alone. */
 function dsFieldShortLabel(f, who) {
   const label = (f.label || f.type || '').trim();
   const name = (who || '').trim();
@@ -7327,26 +8054,98 @@ function dsPaintViewerFields(d, env, docIndex) {
     if (d.defaultView.getComputedStyle(page).position === 'static') page.style.position = 'relative';
 
     const ri = recs.findIndex(r => r.id === f.recipientId);
+    const recip = recs[ri];
     const color = DS_RECIP_COLORS[(ri < 0 ? 0 : ri) % DS_RECIP_COLORS.length];
-    const who = (recs[ri] && recs[ri].name) || 'Recipient';
-    const done = f.value != null && f.value !== '';
+    const rFirstName = (recip && recip.name) ? recip.name.split(' ')[0] : 'Signer';
+    const isInit = /init/i.test(f.type || f.label || '');
+    const isDate = /date/i.test(f.type || f.label || '');
+    const isSig = !isDate && /sign/i.test(f.type || f.label || '');
+    const isDone = (f.value != null && f.value !== '') || (recip && (recip.status === 'signed' || recip.status === 'completed' || env.status === 'completed'));
+
+    let dispLabel = '';
+    if (isInit) dispLabel = `${rFirstName} Init`;
+    else if (isDate) dispLabel = `${rFirstName} Date`;
+    else if (isSig) dispLabel = `${rFirstName} Sign`;
+    else dispLabel = `${rFirstName} — ${f.type || 'Field'}`;
+
+    // Smart coordinate normalization: measure the exact DOM .slot element if present, or snap to standard slot coordinates
+    let posX = f.x == null ? 16 : f.x;
+    let posY = f.y == null ? 22 : f.y;
+    if (isInit) {
+      const slots = Array.from(page.querySelectorAll('.initials .ibox .slot, .ibox .slot, .slot'));
+      if (slots.length) {
+        const slot = (ri === 1 && slots.length > 1) ? slots[1] : slots[0];
+        const pr = page.getBoundingClientRect();
+        const sr = slot.getBoundingClientRect();
+        if (pr.width && pr.height) {
+          const sMidX = ((sr.left + sr.width / 2 - pr.left) / pr.width) * 100;
+          const tagWidthPct = (76 / pr.width) * 100;
+          posX = Math.round(Math.max(1, Math.min(88, sMidX - (tagWidthPct / 2))) * 10) / 10;
+          posY = Math.round(Math.max(0, ((sr.top - pr.top) / pr.height) * 100) * 10) / 10;
+        } else {
+          posX = (ri === 1 ? 80.1 : 62.4);
+          posY = 86.2;
+        }
+      } else if (posX < 35) {
+        posX = (ri === 1 ? 80.1 : 62.4);
+        posY = 86.2;
+      }
+    }
 
     const box = d.createElement('div');
-    box.className = 'dsview-field';
-    const base =
-      'position:absolute;left:' + (f.x == null ? 16 : f.x) + '%;top:' + (f.y == null ? 22 : f.y) + '%;' +
-      'min-width:150px;padding:7px 10px;border-radius:3px;z-index:4;';
+    box.className = 'dsview-field' + (isInit ? ' is-initial' : '') + (isDone ? ' is-done' : ' is-pending');
 
-    if (done) {
-      box.textContent = f.value;
-      box.setAttribute('style', base +
-        'background:rgba(255,255,255,.94);border-bottom:2px solid ' + color + ';color:#111;' +
-        'font:italic 600 15px/1.2 "Brush Script MT",cursive,serif;');
+    if (isDone) {
+      // Completed Field Stamp: clean signature/initial/date stamp
+      if (isInit) {
+        box.textContent = dsRecipInitials(recip ? recip.name : f.value);
+        box.setAttribute('style',
+          'position:absolute;left:' + posX + '%;top:' + posY + '%;' +
+          'width:76px;height:28px;border-radius:3px;z-index:4;box-sizing:border-box;' +
+          'display:flex;align-items:center;justify-content:center;text-align:center;' +
+          'background:rgba(238,242,255,0.9);border:1px solid #4338ca;' +
+          'font-family:"Brush Script MT",cursive,serif;font-size:16px;font-weight:700;color:#1e3a8a;');
+      } else if (isSig) {
+        if (recip && recip.signatureData) {
+          box.innerHTML = `<img src="${recip.signatureData}" alt="Signature" style="max-height:28px;vertical-align:bottom;transform:translateY(-10px);display:block;">`;
+        } else {
+          const sigText = (f.value || '').replace(/^Signed by /i, '') || (recip ? recip.name : 'Signed');
+          box.textContent = sigText;
+        }
+        box.setAttribute('style',
+          'position:absolute;left:' + posX + '%;top:' + posY + '%;' +
+          'min-width:90px;height:28px;z-index:4;box-sizing:border-box;' +
+          'display:flex;align-items:flex-end;justify-content:flex-start;' +
+          'font-family:"Brush Script MT",cursive,serif;font-size:20px;font-style:italic;color:#1e3a8a;' +
+          'transform:translateY(-12px);padding-bottom:2px;');
+      } else if (isDate) {
+        box.textContent = f.value || dsDateUS(recip?.signedDate || DS_TODAY);
+        box.setAttribute('style',
+          'position:absolute;left:' + posX + '%;top:' + posY + '%;' +
+          'min-width:76px;height:26px;z-index:4;box-sizing:border-box;' +
+          'display:flex;align-items:flex-end;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;' +
+          'font-size:12px;font-weight:600;color:#1e3a8a;transform:translateY(-10px);padding-bottom:2px;');
+      } else {
+        box.textContent = f.value || dispLabel;
+        box.setAttribute('style',
+          'position:absolute;left:' + posX + '%;top:' + posY + '%;' +
+          'padding:3px 8px;border-radius:3px;z-index:4;box-sizing:border-box;' +
+          'background:rgba(255,255,255,0.95);border:1px solid #ccc;font-size:12px;color:#111;');
+      }
     } else {
-      box.textContent = who + ' — ' + dsFieldShortLabel(f, who);
-      box.setAttribute('style', base +
-        'background:' + color + '1f;border:1.5px dashed ' + color + ';color:' + color + ';' +
-        'font:600 11px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;');
+      // Pending Field Indicator: clean, compact tag with recipient color
+      const widthStyle = isInit ? 'width:76px;min-width:70px;max-width:82px;height:28px;' :
+                         (isDate ? 'width:80px;min-width:74px;max-width:86px;height:28px;' :
+                         'width:88px;min-width:82px;max-width:94px;height:28px;');
+      const liftStyle = (!isInit && posY > 45) ? 'transform:translateY(-16px);' : '';
+      box.textContent = dispLabel;
+      box.setAttribute('style',
+        'position:absolute;left:' + posX + '%;top:' + posY + '%;' +
+        widthStyle + liftStyle + 'border-radius:4px;z-index:4;box-sizing:border-box;' +
+        'display:flex;align-items:center;justify-content:center;text-align:center;' +
+        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:3px 4px;' +
+        'background:' + color + '1a;border:1.5px dashed ' + color + ';color:' + color + ';' +
+        'font:600 10.5px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;');
     }
     page.appendChild(box);
   });
@@ -7387,8 +8186,73 @@ function dsViewTemplateDoc(tmplId, docIndex) {
   if (frame) frame.srcdoc = html;
 }
 
-/* ---------- Live Signer Experience Flow ---------- */
-/* ---------- Live Signer Experience Flow (Phase E) ---------- */
+/* ---------- Live Signer Experience Flow & Training Disclaimer ---------- */
+
+function dsPromptSimulateSigner(envId, signerName) {
+  const env = dsGetEnvelope(envId);
+  if (!env) return;
+
+  const mExisting = document.getElementById('dsSimDisclaimerModal');
+  if (mExisting) mExisting.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'dsSimDisclaimerModal';
+  modal.className = 'ds-modal-backdrop';
+  modal.innerHTML = `
+    <div class="ds-modal-card ds-sim-disclaimer-card" style="max-width:520px;box-shadow:0 16px 48px rgba(19,0,50,0.22);border-radius:8px;overflow:hidden;">
+      <div class="ds-modal-head" style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--ds26-hairline, #ebecf0);background:#fff;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:6px;background:#ede9fe;color:#4338ca;">
+            ${dsIcon('pen', 17)}
+          </span>
+          <div>
+            <h3 style="margin:0;font-size:16px;font-weight:700;color:var(--ds26-chrome,#260559);display:flex;align-items:center;gap:8px;">
+              Simulate Client Signing
+              <span style="font-size:10px;font-weight:700;text-transform:uppercase;background:#e0e7ff;color:#3730a3;padding:2px 7px;border-radius:4px;letter-spacing:0.5px;">Training Tool</span>
+            </h3>
+            <div style="font-size:12.5px;color:var(--ds26-muted,#6b6b6b);margin-top:2px;">
+              ${esc(env.subject)} &middot; ID: ${esc(env.id)}
+            </div>
+          </div>
+        </div>
+        <button type="button" class="ds-btn sm" style="padding:4px 8px;border:none;background:transparent;cursor:pointer;color:var(--ds26-muted);" onclick="dsCloseSimDisclaimer()">${dsIcon('x', 14)}</button>
+      </div>
+
+      <div class="ds-modal-body" style="padding:20px;font-size:13.5px;line-height:1.6;color:var(--ds26-ink-90,#1a1a1a);background:#fff;">
+        <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-left:4px solid #4f46e5;border-radius:6px;padding:12px 14px;margin-bottom:14px;font-size:12.5px;color:#3730a3;line-height:1.5;">
+          <b>Training Environment Notice:</b> This feature is an exclusive SkillCloud Academy training simulator tool and is <b>not part of the standard DocuSign interface</b>.
+        </div>
+
+        <p style="margin:0 0 10px;">In a real production environment, clients and recipients receive an email notification in their personal inbox to review and sign documents.</p>
+
+        <p style="margin:0 0 14px;">We created this simulation mode so you can step into the client's shoes (${signerName ? `signing as <b>${esc(signerName)}</b>` : 'experience the signer portal'}), test that your tags are placed accurately, and observe how signatures trigger real-time status updates.</p>
+
+        <div style="font-size:12px;color:var(--ds26-muted,#6b6b6b);background:#fafafa;padding:10px 12px;border-radius:4px;border:1px solid #eee;">
+          💡 <i>Tip: You can also simulate the real-world flow by opening the <b>VA Mailbox</b> in the sidebar and clicking the DocuSign email notification.</i>
+        </div>
+      </div>
+
+      <div class="ds-modal-foot" style="display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--ds26-hairline,#ebecf0);background:#fafbfc;">
+        <button type="button" class="ds-btn" onclick="dsCloseSimDisclaimer()">Cancel</button>
+        <button type="button" class="ds-btn primary" onclick="dsProceedSimSigner('${escAttr(env.id)}')">
+          ${dsIcon('pen', 14)} Continue to Signer View
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+}
+
+function dsCloseSimDisclaimer() {
+  const m = document.getElementById('dsSimDisclaimerModal');
+  if (m) m.remove();
+}
+
+function dsProceedSimSigner(envId) {
+  dsCloseSimDisclaimer();
+  dsSimulateSigner(envId);
+}
+
 function dsSimulateSigner(envId) {
   const env = dsGetEnvelope(envId);
   if (!env) return;
@@ -7401,6 +8265,17 @@ function dsSimulateSigner(envId) {
   dsState.signerAttempts = 0;
   dsState.signerAdoptTab = 'style';
   dsState.signerDrawnData = null;
+  dsState.signerActiveTagId = null;
+
+  const isAlreadySigned = pendingRecip ? (pendingRecip.status === 'signed' || pendingRecip.status === 'completed') : false;
+  dsState.signerAdopted = isAlreadySigned;
+  dsState.signerSignedTags = {};
+
+  if (isAlreadySigned) {
+    const docs = env.documents && env.documents.length ? env.documents : [{ name: env.subject + '.pdf' }];
+    const tags = dsGetSignerDocTags(env, docs[0], pendingRecip);
+    tags.forEach(t => { dsState.signerSignedTags[t.id] = true; });
+  }
 
   // Check Access Code requirement
   if (pendingRecip && pendingRecip.accessCode && !dsState.signerUnlocked) {
@@ -7433,114 +8308,226 @@ function dsOpenDeclineModal() {
     <div class="ds-modal-card ds-role-match-card">
       <div class="ds-modal-head">
         <div>
-          <h3 class="ds-adopt-head-wrap" style="color:var(--ds24-red);">${dsIcon('ban')} Decline to Sign</h3>
-          <div class="ds-audit-actor">This will void the envelope for all parties and record your reason in the audit trail</div>
+          <h3 class="ds-decline-title">${dsIcon('ban', 16)} Decline to Sign</h3>
+          <div class="ds-decline-sub">Envelope will be marked as Declined and originator notified</div>
         </div>
-        <button type="button" class="ds-btn ds-cert-close-btn" onclick="document.getElementById('dsDeclineModalWrap').remove()">${dsIcon('x', 13)}</button>
+        <button type="button" class="ds-btn ds-decline-close-btn" onclick="document.getElementById('dsDeclineModalWrap')?.remove()">${dsIcon('x', 13)}</button>
       </div>
       <div class="ds-modal-body">
-        <label class="ds-corr-label" for="dsDeclineReasonInput">Reason for declining (required, min. 10 characters):</label>
-        <textarea id="dsDeclineReasonInput" rows="3" class="ds-wiz-input" placeholder="e.g. Terms do not match the verbal agreement regarding closing costs." oninput="dsOnDeclineInput()"></textarea>
-        <span class="ds-wiz-count" id="dsDeclineHint">10 characters minimum</span>
+        <label class="ds-decline-label">Reason for declining (required):</label>
+        <textarea id="dsDeclineReasonInput" class="ds-input ds-decline-area" placeholder="Enter reason (e.g. Terms incorrect, Price discrepancy, Document needs revision...)"></textarea>
       </div>
       <div class="ds-modal-foot">
-        <button type="button" class="ds-btn" onclick="document.getElementById('dsDeclineModalWrap').remove()">Cancel</button>
-        <button type="button" class="ds-btn danger-solid" id="dsBtnConfirmDecline" disabled onclick="dsSubmitDeclineReason()">Decline Agreement</button>
+        <button type="button" class="ds-btn" onclick="document.getElementById('dsDeclineModalWrap')?.remove()">Cancel</button>
+        <button type="button" class="ds-btn danger" onclick="dsConfirmDecline()">Decline Document</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
 }
 
-function dsOnDeclineInput() {
-  const ta = document.getElementById('dsDeclineReasonInput');
-  const btn = document.getElementById('dsBtnConfirmDecline');
-  const hint = document.getElementById('dsDeclineHint');
-  if (!ta || !btn) return;
-  const n = ta.value.trim().length;
-  btn.disabled = n < 10;
-  if (hint) hint.textContent = n < 10 ? `${10 - n} more characters required` : 'Reason will be transmitted to sender';
-}
-
-function dsSubmitDeclineReason() {
-  const reason = (document.getElementById('dsDeclineReasonInput') || {}).value || '';
-  if (reason.trim().length < 10) return;
+function dsConfirmDecline() {
+  const reason = (document.getElementById('dsDeclineReasonInput')?.value || '').trim() || 'Signer declined without specific comments';
+  const m = document.getElementById('dsDeclineModalWrap');
+  if (m) m.remove();
 
   const envId = dsState.signerEnvId;
   const recipId = dsState.signerRecipId;
   const env = dsGetEnvelope(envId);
-  const m = document.getElementById('dsDeclineModalWrap');
-  if (m) m.remove();
-
   if (env) {
-    const recip = (env.recipients || []).find(r => r.id === recipId) || { name: 'Signer', role: 'Signer' };
-    const updated = (env.recipients || []).map(r => {
-      if (r.id === recipId) return Object.assign({}, r, { status: 'voided' });
+    const updatedRecips = (env.recipients || []).map(r => {
+      if (r.id === recipId) return Object.assign({}, r, { status: 'declined' });
       return r;
     });
-    dsSetEnvelopeOverride(envId, { status: 'declined', recipients: updated, declineReason: reason.trim() });
-    dsAddAuditLog(envId, 'Signer Declined to Sign', { actor: `${recip.name} (${recip.role})`, text: reason.trim() });
-
-    if (typeof dsAddLiveEmail === 'function') {
-      dsAddLiveEmail({
-        type: 'declined',
-        envId: envId,
-        subject: env.subject,
-        reason: reason.trim()
-      });
-    }
+    dsSetEnvelopeOverride(envId, {
+      status: 'declined',
+      declineReason: reason,
+      recipients: updatedRecips
+    });
+    const actor = (env.recipients || []).find(r => r.id === recipId)?.name || 'Recipient';
+    dsAddAuditLog(envId, 'Declined to Sign', { actor: actor, text: `Decline reason: ${reason}` });
   }
 
-  simToast('You declined to sign. Envelope voided and sender notified.', { tone: 'good', duration: 4500 });
+  simToast('You declined to sign this document. Envelope status updated to Declined.', { tone: 'warn', duration: 5000 });
   dsGoto('envelopes');
 }
 
-function dsSubmitAccessCode() {
-  const env = dsGetEnvelope(dsState.signerEnvId);
-  const recip = (env && env.recipients) ? env.recipients.find(r => r.id === dsState.signerRecipId) : null;
-  const input = document.getElementById('dsAccessCodeAttempt');
-  const val = input ? input.value.trim() : '';
+/* ==================== MULTI-TAG INTERACTIVE SIGNER FLOW ==================== */
 
-  if (!recip || !recip.accessCode) {
-    dsState.signerUnlocked = true;
-    dsState.signerStep = 'consent';
-    dsRenderRoot();
-    return;
+function dsGetSignerDocTags(env, currentDoc, recip) {
+  if (!env || !recip) return [];
+  const docName = (currentDoc?.name || '').toLowerCase();
+  const subj = (env.subject || '').toLowerCase();
+  const typeLower = (env.type || '').toLowerCase();
+
+  // If custom fields were placed in the wizard for this recipient:
+  const customFields = (env.fields || []).filter(f => f.recipientId === recip.id);
+  if (customFields.length > 0) {
+    return customFields.map((f, idx) => ({
+      id: f.id || `tag_${idx}`,
+      type: /init/i.test(f.type || f.label || '') ? 'initial' : 'signature',
+      label: f.label || f.type || 'Signature',
+      section: f.page ? `Page ${f.page}` : `Section ${idx + 1}`,
+      domId: `dsTag_${f.id || idx}`
+    }));
   }
 
-  if (val === recip.accessCode) {
+  // Real estate purchase agreement:
+  if (/purchase|123 main/i.test(docName) || /purchase|123 main/i.test(subj) || /purchase/i.test(typeLower)) {
+    return [
+      { id: 'tag_init_1', type: 'initial', label: 'Section 1 Initials', section: 'Parties & Property', domId: 'dsTag_init_1' },
+      { id: 'tag_init_2', type: 'initial', label: 'Section 2 Initials', section: 'Financial Terms', domId: 'dsTag_init_2' },
+      { id: 'tag_init_3', type: 'initial', label: 'Section 3 Initials', section: 'Contingencies & Inspection', domId: 'dsTag_init_3' },
+      { id: 'tag_init_4', type: 'initial', label: 'Section 4 Initials', section: 'Closing & Disclosures', domId: 'dsTag_init_4' },
+      { id: 'tag_sig_final', type: 'signature', label: 'Execution Signature', section: 'Execution & Signatures', domId: 'dsTag_sig_final' }
+    ];
+  }
+
+  // Independent contractor agreement:
+  if (/contractor|consulting|independent/i.test(docName) || /contractor|consulting/i.test(subj) || /contractor/i.test(typeLower)) {
+    return [
+      { id: 'tag_init_1', type: 'initial', label: 'Section 2 Initials', section: 'Compensation & Invoicing', domId: 'dsTag_init_1' },
+      { id: 'tag_init_2', type: 'initial', label: 'Section 3 Initials', section: 'Work Product', domId: 'dsTag_init_2' },
+      { id: 'tag_sig_final', type: 'signature', label: 'Execution Signature', section: 'Execution & Signatures', domId: 'dsTag_sig_final' }
+    ];
+  }
+
+  // Property disclosure:
+  if (/disclosure/i.test(docName) || /disclosure/i.test(subj)) {
+    return [
+      { id: 'tag_init_1', type: 'initial', label: 'Systems Initials', section: 'Systems & Equipment', domId: 'dsTag_init_1' },
+      { id: 'tag_sig_final', type: 'signature', label: 'Acknowledgement Signature', section: 'Execution & Signatures', domId: 'dsTag_sig_final' }
+    ];
+  }
+
+  // General / synthetic agreements:
+  return [
+    { id: 'tag_init_1', type: 'initial', label: 'Terms Initials', section: 'Terms & Conditions', domId: 'dsTag_init_1' },
+    { id: 'tag_sig_final', type: 'signature', label: 'Execution Signature', section: 'Execution & Signatures', domId: 'dsTag_sig_final' }
+  ];
+}
+
+function dsRenderSignerTag(tag, recip, sigFont, drawnData) {
+  if (!tag) return '';
+  const isSigned = !!(dsState.signerSignedTags && dsState.signerSignedTags[tag.id]);
+
+  if (tag.type === 'initial') {
+    if (isSigned) {
+      return `<span class="ds-signed-init-stamp" style="display:inline-flex;align-items:center;justify-content:center;padding:2px 10px;color:#1e3a8a;font-family:'Brush Script MT',cursive,serif;font-size:18px;font-weight:700;background:rgba(238,242,255,0.85);border-bottom:2px solid #4338ca;border-radius:3px;min-width:48px;">${esc(dsRecipInitials(recip.name))}</span>`;
+    }
+    return `<button type="button" class="ds-init-anchor" id="${escAttr(tag.domId)}" onclick="dsClickSignerTag('${escAttr(tag.id)}')">${dsIcon('edit', 12)} INITIAL</button>`;
+  }
+
+  // Signature
+  if (isSigned) {
+    if (drawnData) {
+      return `<img src="${drawnData}" alt="Signature" style="max-height:44px;vertical-align:bottom;">`;
+    }
+    return `<span class="ds-signed-stamp ${sigFont}" style="font-family:'Brush Script MT',cursive,serif;font-size:24px;color:#1e3a8a;font-style:italic;">${esc(recip.name)}</span>`;
+  }
+  return `<button type="button" class="ds-sign-anchor" id="${escAttr(tag.domId)}" onclick="dsClickSignerTag('${escAttr(tag.id)}')">${dsIcon('pen', 14)} SIGN HERE</button>`;
+}
+
+function dsClickSignerTag(tagId) {
+  if (!dsState.signerSignedTags) dsState.signerSignedTags = {};
+  dsState.signerActiveTagId = tagId;
+
+  if (!dsState.signerAdopted) {
+    dsOpenAdoptModal();
+  } else {
+    dsState.signerSignedTags[tagId] = true;
+    dsCheckAllSignerTagsCompleted();
+    dsRenderRoot();
+    setTimeout(dsScrollToNextPendingTag, 100);
+  }
+}
+
+function dsScrollToNextPendingTag() {
+  const env = dsGetEnvelope(dsState.signerEnvId);
+  if (!env) return;
+  const recips = (env && env.recipients) ? env.recipients : [];
+  const recip = recips.find(r => r.id === dsState.signerRecipId) || recips[0];
+  const docs = env.documents && env.documents.length ? env.documents : [{ name: env.subject + '.pdf' }];
+  const currentDoc = docs[dsState.signerDocIdx || 0] || docs[0];
+  const tags = dsGetSignerDocTags(env, currentDoc, recip);
+  const nextTag = tags.find(t => !dsState.signerSignedTags || !dsState.signerSignedTags[t.id]);
+  if (nextTag) {
+    let el = document.getElementById(nextTag.domId) || document.querySelector('.ds-init-anchor, .ds-sign-anchor');
+    if (el) {
+      if (el.scrollIntoView) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      el.style.outline = '3px solid #4f46e5';
+      el.style.boxShadow = '0 0 14px rgba(79, 70, 229, 0.6)';
+      setTimeout(() => { if (el) { el.style.outline = ''; el.style.boxShadow = ''; } }, 1200);
+      if (!dsState.signerAdopted) {
+        dsClickSignerTag(nextTag.id);
+      }
+    }
+  } else {
+    const finishBtn = document.querySelector('.ds-signer-topbar button.primary');
+    if (finishBtn) finishBtn.focus();
+  }
+}
+
+function dsCheckAllSignerTagsCompleted() {
+  const env = dsGetEnvelope(dsState.signerEnvId);
+  if (!env) return false;
+  const recips = env.recipients || [];
+  const recipId = dsState.signerRecipId;
+  const recip = recips.find(r => r.id === recipId) || recips[0];
+  const docs = env.documents && env.documents.length ? env.documents : [{ name: env.subject + '.pdf' }];
+  const currentDoc = docs[dsState.signerDocIdx || 0] || docs[0];
+  const tags = dsGetSignerDocTags(env, currentDoc, recip);
+
+  const allDone = tags.length > 0 && tags.every(t => dsState.signerSignedTags && dsState.signerSignedTags[t.id]);
+  if (allDone) {
+    const sigStyleName = 'ds-sig-' + ((dsState.signerStyleIdx || 0) + 1);
+    const updatedRecips = recips.map(r => {
+      if (r.id === recipId) {
+        return Object.assign({}, r, {
+          status: 'signed',
+          signatureStyle: sigStyleName,
+          signatureData: dsState.signerDrawnData || null,
+          signedDate: dsDateUS(DS_TODAY)
+        });
+      }
+      return r;
+    });
+    dsSetEnvelopeOverride(env.id, {
+      recipients: updatedRecips,
+      fields: dsFillFieldsForRecipient(env.fields, recip)
+    });
+  }
+  return allDone;
+}
+
+/* ---------- Authentication Gate Screen (Access Code) ---------- */
+function dsSubmitAccessCode() {
+  const input = document.getElementById('dsAccessCodeInput');
+  const code = (input ? input.value : '').trim();
+  const env = dsGetEnvelope(dsState.signerEnvId);
+  const recips = (env && env.recipients) ? env.recipients : [];
+  const recip = recips.find(r => r.id === dsState.signerRecipId);
+
+  if (recip && recip.accessCode && code === String(recip.accessCode)) {
     dsState.signerUnlocked = true;
     dsState.signerStep = 'consent';
-    simToast('Access Code verified! Welcome to DocuSign.', { tone: 'good' });
+    simToast('Access Code verified successfully!', { tone: 'good' });
     dsRenderRoot();
   } else {
     dsState.signerAttempts = (dsState.signerAttempts || 0) + 1;
-    const remaining = 3 - dsState.signerAttempts;
-    if (remaining > 0) {
-      simToast(`Incorrect Access Code. ${remaining} attempt(s) remaining before lockout.`, { tone: 'bad', duration: 4000 });
-      if (input) { input.value = ''; input.focus(); }
-      dsRenderRoot();
-    } else {
-      // 3rd attempt lockout
+    if (dsState.signerAttempts >= 3) {
       dsState.signerStep = 'auth_lockout';
       if (env) {
-        const updated = (env.recipients || []).map(r => {
-          if (r.id === recip.id) return Object.assign({}, r, { status: 'authfail' });
-          return r;
-        });
-        dsSetEnvelopeOverride(env.id, { status: 'authfail', recipients: updated });
-        dsAddAuditLog(env.id, 'Authentication Lockout', { actor: `${recip.name} (${recip.role})`, text: 'Exceeded 3 failed Access Code attempts. Access revoked.' });
-
-        if (typeof dsAddLiveEmail === 'function') {
-          dsAddLiveEmail({
-            type: 'security',
-            envId: env.id,
-            subject: 'Security Alert: Access Code Lockout on ' + env.id,
-            reason: '3 failed Access Code attempts'
-          });
-        }
+        dsSetEnvelopeOverride(env.id, { status: 'authfail' });
+        dsAddAuditLog(env.id, 'Authentication Failed', { text: `3 incorrect access code attempts for recipient ${recip ? recip.name : 'Unknown'}. Envelope locked.` });
       }
-      simToast('Access Code lockout triggered. Envelope locked.', { tone: 'bad', duration: 5000 });
+      simToast('Authentication Failed: 3 incorrect attempts. Envelope locked.', { tone: 'bad', duration: 6000 });
       dsRenderRoot();
+    } else {
+      simToast(`Incorrect Access Code. Attempt ${dsState.signerAttempts} of 3.`, { tone: 'bad' });
+      const el = document.getElementById('dsAuthError');
+      if (el) el.textContent = `Invalid access code. Please check with sender. (${3 - dsState.signerAttempts} attempts left)`;
     }
   }
 }
@@ -7558,12 +8545,13 @@ function dsSignerExperienceHTML() {
     return `
       <div class="ds-signer-shell" style="display:flex;align-items:center;justify-content:center;min-height:80vh;">
         <div class="ds-auth-gate-card">
-          <img src="Images-resources/OIP.webp" alt="DocuSign" style="height:28px;margin-bottom:16px;">
-          <h2 style="font-size:18px;margin:0 0 8px;color:var(--ds24-ink);">${dsIcon('lock', 16)} Access Code Authentication</h2>
+          <div class="ds-auth-icon">${dsIcon('lock', 36)}</div>
+          <h2 style="font-size:18px;margin:0 0 8px;">Identity Verification Required</h2>
           <p style="font-size:13px;color:var(--ds24-muted);line-height:1.5;margin:0 0 16px;">
-            The sender has protected this agreement with an Access Code. Please enter the code provided to you by <b>${esc(env.sender)}</b>.
+            The sender has protected envelope <b>${esc(env.id)}</b> with an Access Code. Please enter the code provided to you to review and sign.
           </p>
-          <input type="password" id="dsAccessCodeAttempt" class="ds-auth-gate-input" placeholder="Enter Access Code" autofocus
+          <div id="dsAuthError" style="color:var(--ds24-red);font-size:12px;font-weight:600;margin-bottom:10px;min-height:16px;"></div>
+          <input type="text" id="dsAccessCodeInput" class="ds-input" style="font-size:16px;text-align:center;letter-spacing:3px;font-weight:700;margin-bottom:12px;" placeholder="Enter Access Code" autofocus
                  onkeydown="if(event.key==='Enter')dsSubmitAccessCode()">
           <div style="font-size:12px;color:var(--ds24-muted);margin-bottom:18px;">
             Attempts remaining: <b>${3 - (dsState.signerAttempts || 0)}</b> of 3
@@ -7594,7 +8582,6 @@ function dsSignerExperienceHTML() {
       </div>`;
   }
 
-  const signed = recip.status === 'signed' || recip.status === 'completed';
   const docs = env.documents && env.documents.length ? env.documents : [{ name: env.subject + '.pdf', pages: 1 }];
   const docIdx = dsState.signerDocIdx || 0;
   const currentDoc = docs[docIdx] || docs[0];
@@ -7606,33 +8593,120 @@ function dsSignerExperienceHTML() {
   const created = env.createdDate || DS_TODAY;
   const closing = env.closingDate || '2026-09-01';
 
-  let clausesHTML = `
-    <p class="ds-signer-doc-body">
-      This Agreement sets forth the complete terms and mutual covenants between the undersigned parties regarding:
-      <br><b class="ds-doc-text-bold">${esc(env.subject)}</b>
-    </p>
-    <p class="ds-signer-doc-clause">
-      <b>Section 2. Terms &amp; Execution:</b> Effective as of ${esc(created)} with completion target on or before ${esc(closing)}. Signatures affixed via DocuSign constitute binding execution.
-    </p>`;
+  // Multi-tag resolution
+  const tags = dsGetSignerDocTags(env, currentDoc, recip);
+  const signedCount = tags.filter(t => dsState.signerSignedTags && dsState.signerSignedTags[t.id]).length;
+  const allTagsSigned = tags.length > 0 && signedCount >= tags.length;
+  const pendingTag = tags.find(t => !dsState.signerSignedTags || !dsState.signerSignedTags[t.id]);
+  const firstTagPending = signedCount === 0;
 
-  if (/purchase|real estate|property/i.test(type)) {
+  const tInit1 = tags.find(t => t.id === 'tag_init_1');
+  const tInit2 = tags.find(t => t.id === 'tag_init_2');
+  const tInit3 = tags.find(t => t.id === 'tag_init_3');
+  const tInit4 = tags.find(t => t.id === 'tag_init_4');
+  const tSig = tags.find(t => t.type === 'signature') || tags[tags.length - 1];
+  const activeDrawn = dsState.signerDrawnData || recip.signatureData;
+
+  let clausesHTML = '';
+  const docName = (currentDoc.name || '').toLowerCase();
+  const subj = (env.subject || '').toLowerCase();
+  const typeLower = type.toLowerCase();
+
+  if (/purchase|123 main/i.test(docName) || /purchase|123 main/i.test(subj) || /purchase/i.test(typeLower)) {
     clausesHTML = `
-      <p class="ds-signer-doc-body">
-        This Purchase and Sale Agreement is made and entered into by and between the designated parties. Buyer agrees to purchase and Seller agrees to sell the real property described as:
-        <br><b class="ds-doc-text-bold">${esc(env.subject)}</b>
-      </p>
-      <p class="ds-signer-doc-clause">
-        <b>Section 4. Closing &amp; Electronic Execution:</b> Closing will take place on or before ${esc(closing)}. Title shall be conveyed free and clear of all liens. Signatures applied electronically through DocuSign eSignature are legally binding upon all parties.
-      </p>`;
-  } else if (/lease|rental/i.test(type)) {
+      <div class="ds-signer-contract-content">
+        <div class="ds-signer-sec-title">1. Parties &amp; Property Description</div>
+        <div class="ds-signer-info-grid">
+          <div class="ds-signer-info-item"><label>Buyer</label><div><b>${esc(signers.find(s => /buyer/i.test(s.role || ''))?.name || 'John Smith')}</b></div></div>
+          <div class="ds-signer-info-item"><label>Seller</label><div><b>${esc(signers.find(s => /seller/i.test(s.role || ''))?.name || 'Sarah Johnson')}</b></div></div>
+          <div class="ds-signer-info-item full"><label>Property Address</label><div><b>123 Main Street, Austin, TX 78701</b></div></div>
+          <div class="ds-signer-info-item"><label>Parcel ID</label><div>0214-0402-0004</div></div>
+          <div class="ds-signer-info-item"><label>Approx. Living Area</label><div>2,140 sq. ft.</div></div>
+        </div>
+        ${tInit1 ? `<div class="ds-signer-initial-row"><span>Buyer / Seller Section 1 Acknowledgement Initials:</span> ${dsRenderSignerTag(tInit1, recip, sigStyleFont, activeDrawn)}</div>` : ''}
+
+        <div class="ds-signer-sec-title">2. Financial &amp; Escrow Terms</div>
+        <div class="ds-signer-info-grid">
+          <div class="ds-signer-info-item"><label>Purchase Price</label><div><b>$485,000.00</b></div></div>
+          <div class="ds-signer-info-item"><label>Earnest Money Deposit</label><div><b>$5,000.00</b> (Lone Star Title Escrow)</div></div>
+          <div class="ds-signer-info-item"><label>Target Closing Date</label><div><b>${esc(closing)}</b></div></div>
+        </div>
+        ${tInit2 ? `<div class="ds-signer-initial-row"><span>Earnest Money &amp; Escrow Initials:</span> ${dsRenderSignerTag(tInit2, recip, sigStyleFont, activeDrawn)}</div>` : ''}
+
+        <div class="ds-signer-sec-title">3. Contingencies &amp; Inspection</div>
+        <p class="ds-signer-clause">Buyer shall obtain written financing approval on or before August 24, 2026. General inspection period shall expire within 7 days of the Effective Date. Seller shall provide title commitment within 10 days.</p>
+        ${tInit3 ? `<div class="ds-signer-initial-row"><span>Contingencies &amp; Inspection Deadlines Initials:</span> ${dsRenderSignerTag(tInit3, recip, sigStyleFont, activeDrawn)}</div>` : ''}
+
+        <div class="ds-signer-sec-title">4. Possession &amp; Electronic Execution</div>
+        <p class="ds-signer-clause">Seller delivers possession upon funding and deed recording. Each party consents to electronic execution through DocuSign eSignature, which carries full legal force under the Uniform Electronic Transactions Act.</p>
+        ${tInit4 ? `<div class="ds-signer-initial-row"><span>Possession Terms Initials:</span> ${dsRenderSignerTag(tInit4, recip, sigStyleFont, activeDrawn)}</div>` : ''}
+      </div>`;
+  } else if (/contractor|consulting|independent/i.test(docName) || /contractor|consulting/i.test(subj) || /contractor/i.test(typeLower)) {
     clausesHTML = `
-      <p class="ds-signer-doc-body">
-        This Lease Agreement is executed by and between the Landlord and Tenant regarding the premises located at:
-        <br><b class="ds-doc-text-bold">${esc(env.subject)}</b>
-      </p>
-      <p class="ds-signer-doc-clause">
-        <b>Section 2. Term &amp; Execution:</b> The term commences on ${esc(created)} and terminates on ${esc(closing)}. The parties agree that electronic records and signatures executed herein are valid and enforceable.
-      </p>`;
+      <div class="ds-signer-contract-content">
+        <div class="ds-signer-sec-title">1. Parties &amp; Engagement Scope</div>
+        <div class="ds-signer-info-grid">
+          <div class="ds-signer-info-item"><label>Client / Brokerage</label><div><b>Austin Premier Realty</b></div></div>
+          <div class="ds-signer-info-item"><label>Contractor</label><div><b>${esc(recip.name || 'Alex Rivera')}</b></div></div>
+          <div class="ds-signer-info-item full"><label>Services Scope</label><div><b>Virtual Transaction Coordination &amp; Document Management</b></div></div>
+        </div>
+
+        <div class="ds-signer-sec-title">2. Compensation &amp; Invoicing</div>
+        <p class="ds-signer-clause">Contractor shall receive compensation of $350.00 per closed transaction file. Invoices shall be processed semi-monthly upon verified completion of escrow audit checklists.</p>
+        ${tInit1 ? `<div class="ds-signer-initial-row"><span>Compensation &amp; Schedule Initials:</span> ${dsRenderSignerTag(tInit1, recip, sigStyleFont, activeDrawn)}</div>` : ''}
+
+        <div class="ds-signer-sec-title">3. Work Product &amp; Independent Status</div>
+        <p class="ds-signer-clause">All deliverables created during the engagement shall constitute works made for hire. Contractor operates strictly as an independent contractor and not as an employee.</p>
+        ${tInit2 ? `<div class="ds-signer-initial-row"><span>Independent Status Terms Initials:</span> ${dsRenderSignerTag(tInit2, recip, sigStyleFont, activeDrawn)}</div>` : ''}
+
+        <div class="ds-signer-sec-title">4. Confidentiality &amp; Electronic Execution</div>
+        <p class="ds-signer-clause">Contractor agrees to maintain strict confidentiality regarding all Non-Public Personal Information (NPI) of clients. Signatures executed via DocuSign eSignature are legally enforceable.</p>
+      </div>`;
+  } else if (/disclosure/i.test(docName) || /disclosure/i.test(subj)) {
+    clausesHTML = `
+      <div class="ds-signer-contract-content">
+        <div class="ds-signer-sec-title">1. Property Condition &amp; Occupancy</div>
+        <div class="ds-signer-info-grid">
+          <div class="ds-signer-info-item full"><label>Property Address</label><div><b>123 Main Street, Austin, TX 78701</b></div></div>
+          <div class="ds-signer-info-item"><label>Seller</label><div><b>Sarah Johnson</b></div></div>
+          <div class="ds-signer-info-item"><label>Occupancy</label><div>Owner Occupied (6 years)</div></div>
+        </div>
+
+        <div class="ds-signer-sec-title">2. Systems, Equipment &amp; Environmental</div>
+        <p class="ds-signer-clause">Central HVAC serviced March 2026. Water heater gas unit installed 2021. Property is located in Flood Zone X (minimal risk) with no flooding history during current ownership.</p>
+        ${tInit1 ? `<div class="ds-signer-initial-row"><span>Systems &amp; Defects Acknowledgement Initials:</span> ${dsRenderSignerTag(tInit1, recip, sigStyleFont, activeDrawn)}</div>` : ''}
+
+        <div class="ds-signer-sec-title">3. Certification &amp; Acknowledgement</div>
+        <p class="ds-signer-clause">Seller certifies that this disclosure notice reflects Seller's true knowledge of property condition. Buyer acknowledges receipt and agrees this disclosure does not substitute for a professional home inspection.</p>
+      </div>`;
+  } else if (/lease|rental/i.test(docName) || /lease|rental/i.test(subj) || /lease/i.test(typeLower)) {
+    clausesHTML = `
+      <div class="ds-signer-contract-content">
+        <div class="ds-signer-sec-title">1. Premises &amp; Designated Parties</div>
+        <div class="ds-signer-info-grid">
+          <div class="ds-signer-info-item full"><label>Leased Premises</label><div><b>${esc(env.subject)}</b></div></div>
+          ${signers.map(s => `<div class="ds-signer-info-item"><label>${esc(s.role || 'Party')}</label><div><b>${esc(s.name)}</b></div></div>`).join('')}
+        </div>
+
+        <div class="ds-signer-sec-title">2. Term, Rent &amp; Electronic Execution</div>
+        <p class="ds-signer-clause">The lease term commences on <b>${esc(created)}</b> and terminates on <b>${esc(closing)}</b>. The parties agree that electronic records and signatures executed herein are valid and enforceable.</p>
+        ${tInit1 ? `<div class="ds-signer-initial-row"><span>Terms &amp; Deliverables Initials:</span> ${dsRenderSignerTag(tInit1, recip, sigStyleFont, activeDrawn)}</div>` : ''}
+      </div>`;
+  } else {
+    clausesHTML = `
+      <div class="ds-signer-contract-content">
+        <div class="ds-signer-sec-title">1. Agreement Scope &amp; Designated Parties</div>
+        <div class="ds-signer-info-grid">
+          ${signers.map(s => `<div class="ds-signer-info-item"><label>${esc(s.role || 'Designated Party')}</label><div><b>${esc(s.name)}</b></div><div style="font-size:11.5px;color:var(--ds24-muted);">${esc(s.email || '')}</div></div>`).join('')}
+          <div class="ds-signer-info-item full"><label>Agreement Reference</label><div><b>${esc(env.subject)}</b></div></div>
+        </div>
+
+        <div class="ds-signer-sec-title">2. Terms, Conditions &amp; Deliverables</div>
+        <p class="ds-signer-clause">The undersigned parties agree to perform the duties and obligations stipulated in this instrument. Effective as of <b>${esc(created)}</b> with target completion on or before <b>${esc(closing)}</b>.</p>
+
+        <div class="ds-signer-sec-title">3. Execution &amp; Electronic Signature Validity</div>
+        <p class="ds-signer-clause">Mutual electronic signatures transmitted and sealed via DocuSign eSignature constitute valid, binding, and enforceable execution of this instrument pursuant to the ESIGN Act and UETA.</p>
+      </div>`;
   }
 
   return `
@@ -7644,12 +8718,17 @@ function dsSignerExperienceHTML() {
           <span class="ds-signer-user-tag">Reviewing as: <b class="ds-signer-user-name">${esc(recip.name)}</b> (${esc(recip.role)})</span>
         </div>
         <div class="ds-signer-topbar-actions">
-          ${signed ? `
+          ${allTagsSigned ? `
             <button type="button" class="ds-btn yellow ds-signer-finish-btn" onclick="dsFinishSigning()">FINISH ${dsIcon('check', 13)}</button>
           ` : `
+            <button type="button" class="ds-btn primary sm" style="font-weight:700;" onclick="dsScrollToNextPendingTag()">
+              ${firstTagPending ? 'START ▾' : 'NEXT ▾'}
+              <span class="ds-signer-tag-counter">${signedCount}/${tags.length}</span>
+            </button>
             <div class="ds-signer-other-wrap">
               <button type="button" class="ds-btn ds-signer-sub-btn" onclick="dsToggleSignerOtherMenu(event)">Other Actions ${dsIcon('caret', 12)}</button>
               <div class="ds-signer-other-dd" id="dsSignerOtherDropdown">
+                <button type="button" onclick="dsAdoptSignatureFinal(true)">${dsIcon('check', 13)} Sign All Fields</button>
                 <button type="button" onclick="dsOpenDeclineModal()">${dsIcon('ban', 13)} Decline to Sign</button>
                 <button type="button" onclick="dsSignerFinishLater()">${dsIcon('clock', 13)} Finish Later</button>
                 <button type="button" onclick="dsOpenAuditModal('${escAttr(env.id)}')">${dsIcon('history', 13)} View History</button>
@@ -7682,9 +8761,9 @@ function dsSignerExperienceHTML() {
         ` : ''}
 
         <div class="ds-signer-doc">
-          ${!signed ? `
-            <div class="ds-start-marker" onclick="document.getElementById('dsSignAnchorTarget')?.scrollIntoView({behavior:'smooth'}); dsOpenAdoptModal(event)">
-              START ${dsIcon('caret', 12)}
+          ${pendingTag ? `
+            <div class="ds-start-marker" onclick="dsScrollToNextPendingTag()">
+              ${firstTagPending ? 'START' : 'NEXT'} ${dsIcon('caret', 12)}
             </div>
           ` : ''}
 
@@ -7695,6 +8774,7 @@ function dsSignerExperienceHTML() {
 
           ${clausesHTML}
 
+          <div class="ds-signer-sec-title" style="margin-top:24px;">Execution &amp; Signatures</div>
           <div class="ds-signer-sig-grid">
             ${signers.map(r => {
               const isCurrent = r.id === recip.id;
@@ -7704,18 +8784,17 @@ function dsSignerExperienceHTML() {
                   <div class="ds-signer-sig-title">${esc(r.role || 'Signer')} (${esc(r.name)})</div>
                   <div class="ds-signer-sig-holder">
                     ${isCurrent ? (
-                      signed ? (
-                        dsState.signerDrawnData
-                           ? `<img src="${dsState.signerDrawnData}" alt="Drawn signature" style="max-height:48px;">`
-                          : `<span class="ds-signed-stamp ${sigStyleFont}">${esc(recip.name)}</span>`
-                      ) : `<button type="button" class="ds-sign-anchor" id="dsSignAnchorBtn" onclick="dsOpenAdoptModal(event)">${dsIcon('pen', 14)} SIGN HERE</button>`
+                      dsRenderSignerTag(tSig, recip, sigStyleFont, activeDrawn)
                     ) : (
-                      isSigned ? `<span class="ds-signed-stamp ds-sig-1">${esc(r.name)}</span>`
-                               : `<div class="ds-sign-pending-box">[ Awaiting Signature: ${esc(r.name)} ]</div>`
+                      isSigned ? (
+                        r.signatureData
+                          ? `<img src="${r.signatureData}" alt="Drawn signature" style="max-height:48px;">`
+                          : `<span class="ds-signed-stamp ${r.signatureStyle || 'ds-sig-1'}">${esc(r.name)}</span>`
+                      ) : `<div class="ds-sign-pending-box">[ Awaiting Signature: ${esc(r.name)} ]</div>`
                     )}
                   </div>
                   <div class="ds-signer-sig-date">
-                    Date: <b>${isCurrent ? (signed ? DS_TODAY : 'Pending Signature') : (isSigned ? (env.createdDate || DS_TODAY) : 'Pending')}</b>
+                    Date: <b>${isCurrent ? (allTagsSigned ? (recip.signedDate || DS_TODAY) : 'Pending Signature') : (isSigned ? (r.signedDate || env.createdDate || DS_TODAY) : 'Pending')}</b>
                   </div>
                 </div>`;
             }).join('')}
@@ -7789,9 +8868,10 @@ function dsOpenAdoptModal(ev) {
           By clicking <b>Adopt and Sign</b>, I agree that the signature and initials will be the electronic representation of my signature and initials for all purposes.
         </div>
       </div>
-      <div class="ds-modal-foot">
+      <div class="ds-modal-foot" style="display:flex;align-items:center;justify-content:flex-end;gap:8px;">
         <button type="button" class="ds-btn" onclick="dsCloseAdoptModal()">Cancel</button>
-        <button type="button" class="ds-btn yellow ds-adopt-finish-btn" onclick="dsAdoptSignatureFinal()">Adopt and Sign ${dsIcon('check', 13)}</button>
+        <button type="button" class="ds-btn" onclick="dsAdoptSignatureFinal(false)">Adopt &amp; Sign</button>
+        <button type="button" class="ds-btn yellow ds-adopt-finish-btn" onclick="dsAdoptSignatureFinal(true)">Adopt &amp; Sign All ${dsIcon('check', 13)}</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -7927,7 +9007,7 @@ function dsFillFieldsForRecipient(fields, recip) {
     if (f.recipientId !== recip.id || f.value != null) return f;
     let v;
     switch (f.type) {
-      case 'Signature':     v = 'Signed by ' + (recip.name || 'Signer'); break;
+      case 'Signature':     v = recip.name || 'Signer'; break;
       case 'Initial':       v = dsRecipInitials(recip.name); break;
       case 'Date Signed':   v = dsDateUS(DS_TODAY); break;
       case 'Name':          v = recip.name || null; break;
@@ -7938,24 +9018,34 @@ function dsFillFieldsForRecipient(fields, recip) {
   });
 }
 
-function dsAdoptSignatureFinal() {
+function dsAdoptSignatureFinal(signAll) {
   dsCloseAdoptModal();
-  const envId = dsState.signerEnvId;
-  const recipId = dsState.signerRecipId;
-  const env = dsGetEnvelope(envId);
-  if (env) {
-    const targetRecip = (env.recipients || []).find(r => r.id === recipId) || { name: 'Signer', role: 'Signer' };
-    const updatedRecips = (env.recipients || []).map(r => {
-      if (r.id === recipId) return Object.assign({}, r, { status: 'signed' });
-      return r;
-    });
-    dsSetEnvelopeOverride(envId, {
-      recipients: updatedRecips,
-      fields: dsFillFieldsForRecipient(env.fields, targetRecip)
-    });
-    dsAddAuditLog(envId, 'Document Signed', { actor: `${targetRecip.name} (${targetRecip.role})`, text: 'Signature adopted and applied electronically' });
+  dsState.signerAdopted = true;
+  if (!dsState.signerSignedTags) dsState.signerSignedTags = {};
+
+  const env = dsGetEnvelope(dsState.signerEnvId);
+  const recips = (env && env.recipients) ? env.recipients : [];
+  const recip = recips.find(r => r.id === dsState.signerRecipId) || recips[0] || { name: 'Signer', role: 'Signer' };
+  const docs = env.documents && env.documents.length ? env.documents : [{ name: env.subject + '.pdf' }];
+  const currentDoc = docs[dsState.signerDocIdx || 0] || docs[0];
+  const tags = dsGetSignerDocTags(env, currentDoc, recip);
+
+  if (signAll || !dsState.signerActiveTagId) {
+    tags.forEach(t => { dsState.signerSignedTags[t.id] = true; });
+  } else {
+    dsState.signerSignedTags[dsState.signerActiveTagId] = true;
   }
-  simToast('Signature adopted and placed on document!', { tone: 'good' });
+
+  const allTagsSigned = dsCheckAllSignerTagsCompleted();
+
+  if (allTagsSigned) {
+    dsAddAuditLog(env.id, 'Document Signed', { actor: `${recip.name} (${recip.role})`, text: 'All required signature and initial fields completed electronically' });
+    simToast('All required fields completed and signed!', { tone: 'good' });
+  } else {
+    simToast('Signature adopted! Click remaining fields or use NEXT to complete.', { tone: 'good' });
+    setTimeout(dsScrollToNextPendingTag, 300);
+  }
+
   dsRenderRoot();
 }
 

@@ -96,6 +96,38 @@
     ok(!!document.getElementById('afSidebar'), 'the dark sidebar exists');
     ok(!!document.getElementById('afRail'), 'the right rail exists');
     ok(!document.querySelector('.af-new'), 'there is no global + New button');
+    /* Rebuilt from the 2026 screenshots: ten sections, a light sidebar, the
+       vertical panel strip, and a topbar carrying Add Functionality rather
+       than the Customer Service entry this module had invented. */
+    ok(!!document.querySelector('.af-railstrip'), 'the Assistant / Tasks / Support strip exists');
+    ok(document.querySelectorAll('.af-railstrip .af-strip-btn').length === 3,
+       'it carries three panels',
+       document.querySelectorAll('.af-railstrip .af-strip-btn').length + ' buttons');
+    ok(document.body.innerHTML.indexOf('Add Functionality') > -1, 'the topbar has Add Functionality');
+    /* Read the MENUS, not document.body.innerHTML. innerHTML carries comments,
+       and the top bar's own comment explains that there is no Customer Service
+       entry — so the substring scan failed on the sentence documenting its
+       absence. The menu itself has never existed. */
+    ok(Array.prototype.slice.call(document.querySelectorAll('.af-topmenu'))
+         .every(function (b) { return (b.textContent || '').indexOf('Customer Service') < 0; }),
+       'and no Customer Service menu, which the real product does not have');
+    ok((document.getElementById('afGlobalSearch') || {}).placeholder === 'Search AppFolio',
+       'the search field says Search AppFolio',
+       (document.getElementById('afGlobalSearch') || {}).placeholder);
+    /* Reading the painted colour back is the only way to know the token swap
+       actually reached the element. */
+    (function () {
+      const sb = document.getElementById('afSidebar');
+      const bg = sb ? getComputedStyle(sb).backgroundColor : '';
+      const m = bg.match(/\d+/g);
+      const light = m && (+m[0] + +m[1] + +m[2]) / 3 > 200;
+      ok(!!light, 'the sidebar is light, not dark', bg);
+    })();
+    ok(AF_NAV.length === 10, 'ten navigation sections', String(AF_NAV.length));
+    (function () {
+      const n = AF_REPORT_INDEX.reduce(function (a, g) { return a + g.reports.length; }, 0);
+      ok(n >= 130, 'the report index carries the full set', String(n));
+    })();
     const secs = document.querySelectorAll('#afSidebar .af-sb-item');
     ok(secs.length >= 8, 'the sidebar lists its sections', secs.length + ' entries');
     ['properties', 'residents', 'leasing', 'maintenance'].forEach(function (s) {
@@ -182,7 +214,17 @@
         ok(afGetLease(newLease.id).signatureStatus === 'unsigned', 'a wrong name does not sign');
         fill('afSignName', newLease.applicantName);
         afSignLease(newLease.id);
-        ok(afGetLease(newLease.id).signatureStatus === 'executed', 'the right name signs it');
+        /* The resident signing no longer executes the lease on its own — it
+           hands it to the manager. A lease is executed when both parties have
+           signed, so the flow is sign -> countersign -> move in. */
+        ok(afGetLease(newLease.id).signatureStatus === 'resident-signed',
+           'the right name signs it, and it moves to Ready to Countersign');
+        afMoveIn(newLease.id);
+        ok(afGetLease(newLease.id).status !== 'active',
+           'move-in is refused while the lease is only half signed');
+        afCountersignLease(newLease.id);
+        ok(afGetLease(newLease.id).signatureStatus === 'executed',
+           'countersigning executes it');
 
         afModalCollectDeposit(newLease.id);
         ok(!!document.getElementById('afDepAmt'), 'the deposit form renders');

@@ -201,6 +201,69 @@
   flex: none;
 }
 
+/* ---------- Lessons: the course's entry point in the top bar ----------
+   This control is NOT Qualia. It used to be an eighth section tab labelled "Training",
+   sitting next to Admin and styled like Orders or Contacts, which is exactly why the course
+   read as part of the product. It now sits beside the search box and borrows the academy's
+   cyan rather than Qualia's green, so the boundary between the simulated product and the
+   training layer is visible at a glance instead of having to be explained. */
+.qz-lessons-btn {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: 14px;
+  padding: 6px 13px 6px 11px;
+  border: 1px solid rgba(23, 195, 212, 0.45);
+  border-radius: 999px;
+  background: rgba(23, 195, 212, 0.12);
+  color: #8fe6ef;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, border-color .15s, color .15s;
+}
+
+.qz-lessons-btn svg { width: 15px; height: 15px; flex: none; }
+
+.qz-lessons-btn:hover {
+  background: rgba(23, 195, 212, 0.22);
+  border-color: rgba(23, 195, 212, 0.7);
+  color: #b8f2f8;
+}
+
+.qz-lessons-btn.active {
+  background: var(--v-cyan, #17c3d4);
+  border-color: var(--v-cyan, #17c3d4);
+  color: #06232a;
+}
+
+/* Steps still outstanding. Hidden entirely at zero — see qzSyncLessonsBadge. */
+.qz-lessons-btn .n {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--qz-gold);
+  color: #3a2c06;
+  font-size: 10.5px;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+
+.qz-lessons-btn.active .n { background: #06232a; color: #8fe6ef; }
+
+/* Below the width where the search box already collapses, the label goes and the pill
+   becomes an icon button, rather than pushing the user chip off the bar. */
+@media (max-width: 900px) {
+  .qz-lessons-btn { margin-left: 10px; padding: 6px 9px; }
+  .qz-lessons-btn .lbl { display: none; }
+}
+
 .qz-top-icons {
   display: flex;
   align-items: center;
@@ -3901,3 +3964,307 @@ table.qz-acct tfoot td {
 /* A standard exception is visibly not curable, so nobody wastes an afternoon
    trying to clear one. */
 .qz-sched-item.is-standard { opacity: .78; }
+
+/* ============================================================================
+   TASKS PIPELINE & FIDELITY (D1, D2)
+   ============================================================================ */
+.qz-my-tasks-page {
+  padding: 24px 32px;
+  max-width: 1300px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.qz-tasks-switch {
+  display: inline-flex;
+  gap: 6px;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 6px;
+}
+.qz-tasks-sec {
+  background: #ffffff;
+  border: 1px solid var(--qz-line);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.qz-tasks-sec-head {
+  padding: 12px 18px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--qz-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.qz-tasks-sec-head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--qz-navy);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.qz-task-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.qz-task-row:hover {
+  background: #f8fafc;
+}
+.qz-task-row td {
+  padding: 10px 14px;
+  font-size: 13px;
+}
+.qz-task-strip-good { border-left: 3px solid #10b981 !important; }
+.qz-task-strip-warn { border-left: 3px solid #f59e0b !important; }
+.qz-task-strip-bad  { border-left: 3px solid #ef4444 !important; }
+.qz-task-strip-open { border-left: 3px solid #94a3b8 !important; }
+
+.qz-tg-eye {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+.qz-tg-eye:hover {
+  color: #1e293b;
+  background: #e2e8f0;
+}
+.qz-task-group-card.collapsed .qz-tbl {
+  display: none;
+}
+.qz-task-group-card.collapsed .qz-tg-empty {
+  display: none;
+}
+
+.qz-panel-empty-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid var(--qz-line);
+  border-left: 3px solid #0d9488;
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #334155;
+  line-height: 1.45;
+}
+.qz-teal-link {
+  color: #0d9488;
+  text-decoration: none;
+  font-weight: 600;
+}
+.qz-teal-link:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Home (the logo) ----------
+   Modelled on the product screenshot of 2026-08-27: breadcrumb row with a house icon, then a
+   strip of pill chips where the active one is a pale-green pill. The strip sits on the light
+   page background, not on the dark topbar. */
+.qz-brand {
+  background: none;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0 2px;
+  align-self: stretch;
+}
+
+.qz-brand:hover .wordmark {
+  color: #fff;
+}
+
+.qz-brand.active {
+  border-color: var(--qz-ocean);
+}
+
+.qz-home-crumb {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--qz-line);
+  color: var(--qz-muted);
+}
+
+.qz-home-crumb svg {
+  width: 26px;
+  height: 26px;
+  flex: none;
+}
+
+.qz-home-crumb h1 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--qz-ink);
+  letter-spacing: -.2px;
+}
+
+.qz-home-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 11px 0 18px;
+  border-bottom: 1px solid var(--qz-line);
+  margin-bottom: 20px;
+}
+
+.qz-home-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--qz-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 13px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+
+.qz-home-chip:hover:not(.disabled) {
+  background: #edeff1;
+  color: var(--qz-ink);
+}
+
+.qz-home-chip.active {
+  background: #dff0e4;
+  color: var(--qz-green);
+}
+
+/* Disabled rather than a toast: Order Queue and Action Queue exist in the product but nobody
+   here has seen inside them, so the chip says so on hover instead of faking a screen. */
+.qz-home-chip.disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.qz-home-chip-n {
+  background: #e2e5e8;
+  color: #4b5563;
+  border-radius: 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 1px 7px;
+}
+
+.qz-home-chip.active .qz-home-chip-n {
+  background: #c3e3cd;
+  color: var(--qz-green-d);
+}
+
+.qz-notif-list {
+  border: 1px solid var(--qz-line);
+  border-radius: 6px;
+  background: var(--qz-card);
+  overflow: hidden;
+}
+
+.qz-notif-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 15px;
+  border-bottom: 1px solid var(--qz-line);
+  border-left: 3px solid transparent;
+  cursor: pointer;
+}
+
+.qz-notif-row:last-child {
+  border-bottom: 0;
+}
+
+.qz-notif-row:hover {
+  background: #f7f8f9;
+}
+
+.qz-notif-row.overdue {
+  border-left-color: #ef4444;
+}
+
+.qz-notif-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.qz-notif-main b {
+  font-size: 13.5px;
+  color: var(--qz-ink);
+}
+
+.qz-notif-main .qz-sub {
+  font-size: 11.5px;
+  color: var(--qz-muted);
+}
+
+.qz-notif-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--qz-muted);
+  white-space: nowrap;
+  flex: none;
+}
+
+/* ---------- Tasks Pipeline: ticking, finished work, legible status ----------
+   The status column was the complaint: 'IN PROGRESS' is eleven uppercase characters at
+   10.5px in a narrow column, so it wrapped into something unreadable while the four-letter
+   'OPEN' beside it stayed crisp. Nowrap plus a hair more size fixes it without touching the
+   badge palette, which is fine on contrast (#2a5c8c on #e3edf7). */
+.qz-status-cell .qz-badge {
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.qz-task-tick {
+  width: 36px;
+  text-align: center;
+  cursor: default;
+}
+
+.qz-task-tick input {
+  cursor: pointer;
+  width: 15px;
+  height: 15px;
+  accent-color: var(--qz-green);
+}
+
+/* Finished work stays readable rather than greyed into illegibility: it is evidence of what
+   the team already did on the file, which is half of what a VA reads a queue for. */
+.qz-my-tasks-page .qz-task-done .qz-task-title b {
+  text-decoration: line-through;
+  color: var(--qz-muted);
+  font-weight: 500;
+}
+
+.qz-tasks-sec-note {
+  font-size: 11.5px;
+  color: var(--qz-muted);
+}
+
+.qz-tasks-sec-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}

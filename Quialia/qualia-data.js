@@ -8,7 +8,46 @@ const QZ_STAGES = ['Opened', 'Title Processing', 'Closing Prep', 'Closing Date',
    "urgent" means. qzDaysFromToday()/qzDueLabel() in qualia-app.js derive overdue and
    days-remaining indicators from it. Anything user-visible that quotes a countdown ("closing
    is in 5 days") reads it from here rather than hardcoding a number into prose. */
-const QZ_TODAY = '2026-08-12';
+/* ---------- the simulator's clock ----------
+   The dataset was written around one fixed week. Every date in it — 463 literals across the
+   three data files, plus everything the generators derive — sits at a fixed distance from
+   that anchor, which means the dataset is already written in relative terms without saying
+   so: an order closing on 2026-10-11 is, literally, "closes in 60 days".
+
+   So the whole world is moved with a single offset, computed against the real clock at load,
+   and every one of those distances survives untouched — including the discrepancies the exam
+   asks the trainee to catch. A trainee opening this in 2027 sees 2027 dates, with the house
+   still closing in 60 days.
+
+   The offset is a whole number of WEEKS on purpose. Title work runs on business days: an
+   arbitrary day count would land closings on Sundays and recordings on Saturdays, which is
+   exactly the kind of detail an experienced VA spots. Whole weeks keep every date on its
+   original weekday, so the anchor's Wednesday is always a Wednesday. The cost is that the
+   simulator's "today" can sit up to 3 days from the real one — a trade worth making.
+
+   qzShiftWorldTime() in qualia-app.js applies the same offset to the data and to the course
+   prose, and qzOpenDocFile() applies it to the documents. This is the only place the number
+   is computed. */
+const QZ_ANCHOR = '2026-08-12';   // a Wednesday: the week this dataset was written
+
+const QZ_SHIFT_DAYS = (function () {
+  const ms = Date.now() - Date.parse(QZ_ANCHOR + 'T00:00:00');
+  if (isNaN(ms)) return 0;
+  return Math.round(ms / 604800000) * 7;
+})();
+
+/* Self-contained: this file loads before qualia-app.js, so it cannot borrow qzAddDaysISO. */
+function qzShiftISO(iso) {
+  if (!QZ_SHIFT_DAYS) return iso;
+  const p = String(iso || '').split('-');
+  if (p.length !== 3) return iso;
+  const d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
+  if (isNaN(d.getTime())) return iso;
+  d.setUTCDate(d.getUTCDate() + QZ_SHIFT_DAYS);
+  return d.toISOString().slice(0, 10);
+}
+
+const QZ_TODAY = qzShiftISO(QZ_ANCHOR);
 
 /* Target value for Lesson 2's "first tracked edit" exercise (de-edit): the buyer's phone
    number on the order (john.smith@example.com's Jon Smith / ORD-2026-1483) is (469) 555-0142.
