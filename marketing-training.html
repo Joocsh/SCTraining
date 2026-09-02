@@ -369,26 +369,43 @@ b,strong{color:var(--v-ink);font-weight:700}
 .ba-good .tag{color:var(--good)}
 .ba-c em{font-style:normal;color:var(--v-ink);font-weight:600}
 
-/* quiz */
-.quiz{background:linear-gradient(160deg,var(--v-navy),var(--v-navy2));border-radius:var(--radius);color:#c7d7e6;padding:24px 26px;margin:0;box-shadow:var(--shadow-m)}
-.quiz .eyebrow{color:#7ee3ee}
-.quiz h2{color:#fff;margin:7px 0 3px}
-.quiz .qsub{color:#9fb4c9;font-size:13.5px;margin-bottom:18px}
-.qq{margin-bottom:20px}
-.qq:last-of-type{margin-bottom:6px}
-.qq .qt{font-size:15px;font-weight:700;color:#fff;margin-bottom:10px;display:flex;gap:10px;line-height:1.45}
-.qq .qt .n{font-family:var(--mono);font-size:11.5px;color:#7ee3ee;flex:none;padding-top:2px}
-.qopt{display:block;width:100%;text-align:left;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.16);border-radius:var(--r-sm);padding:11px 14px;font-size:14px;color:#e3ecf4;margin-bottom:8px;transition:.15s;line-height:1.45}
-.qopt:hover:not(:disabled){border-color:#7ee3ee;background:rgba(255,255,255,.13)}
+/* quiz — one question per screen, light card */
+.quizwrap{max-width:700px;margin-inline:auto}
+.qbar{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.qdots{display:flex;gap:5px}
+.qdot{width:30px;height:4px;border-radius:2px;background:var(--v-line);transition:.25s}
+.qdot.cur{background:var(--v-cyan)}
+.qdot.ok{background:var(--good)}
+.qdot.bad{background:#e8a99c}
+.qbar .lbl{font-size:12px;font-weight:700;color:var(--v-muted)}
+.qcard{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);padding:26px 28px;box-shadow:var(--shadow-m)}
+.qnum{font-size:11px;font-weight:800;letter-spacing:1.2px;color:var(--v-cyan-d);text-transform:uppercase}
+.qtext{font-family:var(--display);font-size:20px;font-weight:800;color:var(--v-navy);letter-spacing:-.4px;margin:7px 0 18px;line-height:1.32}
+.qopt{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:#fff;border:1.5px solid var(--v-line);border-radius:var(--r-sm);padding:13px 15px;font-size:14.5px;color:var(--v-ink);margin-bottom:9px;transition:.15s;line-height:1.45}
+.qopt .ltr{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line-2);display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--v-muted);flex:none;background:#fff}
+.qopt:hover:not(:disabled){border-color:var(--v-cyan);background:#f6fdfe}
 .qopt:disabled{cursor:default}
-.qopt.ok{background:rgba(31,158,90,.32);border-color:#4ad286;color:#fff}
-.qopt.no{background:rgba(210,69,47,.3);border-color:#e8907f;color:#fff}
-.qfb{font-size:13px;color:#bcd0e2;background:rgba(255,255,255,.07);border-radius:var(--r-sm);padding:10px 14px;margin-top:6px;display:none;border-left:3px solid var(--v-cyan)}
+.qopt.ok{border-color:var(--good);background:#eefaf3}
+.qopt.ok .ltr{background:var(--good);border-color:var(--good);color:#fff}
+.qopt.no{border-color:var(--bad);background:#fdf2ef}
+.qopt.no .ltr{background:var(--bad);border-color:var(--bad);color:#fff}
+.qfb{display:none;margin-top:14px;border-radius:var(--r-sm);padding:13px 16px;font-size:13.5px;line-height:1.6;border-left:4px solid}
 .qfb.show{display:block}
-.qscore{display:none;align-items:center;gap:12px;border-top:1px solid rgba(255,255,255,.18);padding-top:15px;margin-top:4px}
-.qscore.show{display:flex}
-.qscore .num{font-family:var(--display);font-size:25px;font-weight:900;color:#7ee3ee;letter-spacing:-1px}
-.qscore .lbl{font-size:13px;color:#9fb4c9}
+.qfb.good{background:#eefaf3;border-color:var(--good);color:#1c5c3c}
+.qfb.bad{background:#fdf2ef;border-color:var(--bad);color:#8a3324}
+.qfb b{color:inherit}
+.qnextwrap{display:none;margin-top:16px;justify-content:flex-end}
+.qnextwrap.show{display:flex}
+.qnext{background:var(--v-navy);color:#fff;border-radius:var(--r-sm);padding:10px 20px;font-size:13.5px;font-weight:800}
+.qnext:hover{background:var(--v-navy2)}
+.qdone{background:linear-gradient(160deg,var(--v-navy),var(--v-navy2));border-radius:var(--radius);padding:28px;color:#c7d7e6;text-align:center;box-shadow:var(--shadow-m)}
+.qdone .big{font-family:var(--display);font-size:38px;font-weight:900;color:#7ee3ee;letter-spacing:-1.5px;line-height:1}
+.qdone h3{color:#fff;font-size:19px;margin:8px 0 5px}
+.qdone p{color:#9fb4c9;font-size:14px;margin:0 auto;max-width:380px}
+.qreview{margin-top:18px;text-align:left;display:grid;gap:7px}
+.qreview div{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;background:rgba(255,255,255,.07);border-radius:8px;padding:9px 12px}
+.qreview .m{flex:none;font-weight:800}
+.qreview .m.y{color:#7ce0a4}.qreview .m.n{color:#f0a89a}
 
 /* footer nav */
 .fnav{position:fixed;bottom:0;left:var(--side);right:0;background:rgba(246,249,252,.97);backdrop-filter:blur(8px);border-top:1px solid var(--v-line);padding:12px 40px;display:flex;align-items:center;gap:14px;z-index:100}
@@ -1548,44 +1565,73 @@ function go(d){
   idx=Math.max(0,Math.min(L.length-1,idx+d));render();
 }
 
-/* ============ QUIZ ============ */
+/* ============ QUIZ · one question per screen ============ */
+let qs=null;
+const LETTERS='ABCDEFG';
+
 function quizHtml(mid){
   const Q=QUIZ[mid], mo=modOf(mid);
+  if(!qs||qs.mid!==mid)qs={mid,i:0,marks:new Array(Q.q.length).fill(null)};
   return `<div class="head"><h1>${mo.n}: <em>knowledge check</em></h1>
-  <p class="lead">Answer each question to complete the module. Miss one and the correct answer appears with an explanation, so it still counts as learning.</p></div>
-  <div class="lay"><div class="txt"><div class="quiz" data-m="${mid}">
-    <span class="eyebrow">Module ${modNum(mid)} &middot; ${Q.q.length} question${Q.q.length>1?'s':''}</span>
-    <h2>${Q.t}</h2>
-    <p class="qsub">Choose the best answer for each.</p>
-    ${Q.q.map((q,qi)=>`<div class="qq" data-q="${qi}">
-      <p class="qt"><span class="n">${String(qi+1).padStart(2,'0')}</span><span>${q.q}</span></p>
-      ${q.o.map((o,oi)=>`<button class="qopt" onclick="ans(this,${qi},${oi})">${o}</button>`).join('')}
-      <div class="qfb"></div>
-    </div>`).join('')}
-    <div class="qscore" id="qscore"><span class="num" id="qnum"></span><span class="lbl" id="qlbl"></span></div>
-  </div></div></div>`;
+    <p class="lead">${Q.q.length} question${Q.q.length>1?'s':''}, one at a time. Miss one and the correct answer appears with an explanation, so it still counts as learning.</p></div>
+    <div class="lay"><div class="txt quizwrap" id="quizArea">${qBody()}</div></div>`;
 }
-function ans(btn,qi,oi){
-  const wrap=btn.closest('.quiz'), mid=wrap.dataset.m, Q=QUIZ[mid], q=Q.q[qi], box=btn.closest('.qq');
-  if(box.dataset.done)return;
-  box.dataset.done='1';
-  box.querySelectorAll('.qopt').forEach((b,i)=>{b.disabled=true;if(i===q.a)b.classList.add('ok');});
-  if(oi!==q.a)btn.classList.add('no');
-  const fb=box.querySelector('.qfb');
-  fb.innerHTML=(oi===q.a?'<b>Correct.</b> ':'<b>Not quite.</b> ')+q.e;
-  fb.classList.add('show');
-  scores[mid]=scores[mid]||{c:0,t:Q.q.length};
-  if(oi===q.a)scores[mid].c++;
-  if(wrap.querySelectorAll('.qq[data-done]').length===Q.q.length){
-    const s=scores[mid];
-    $('#qscore').classList.add('show');
-    $('#qnum').textContent=s.c+'/'+s.t;
-    $('#qlbl').textContent=s.c===s.t?'Perfect. Hit Next to continue.':'Module complete. Review the notes above, then hit Next.';
+
+function qBody(){
+  const Q=QUIZ[qs.mid];
+  if(qs.i>=Q.q.length)return qResults();
+  const q=Q.q[qs.i];
+  return `<div class="qbar">
+      <div class="qdots">${Q.q.map((_,n)=>
+        `<span class="qdot ${n===qs.i?'cur':''} ${qs.marks[n]===true?'ok':qs.marks[n]===false?'bad':''}"></span>`).join('')}</div>
+      <span class="lbl">Question ${qs.i+1} of ${Q.q.length}</span>
+    </div>
+    <div class="qcard">
+      <div class="qnum">Module ${modNum(qs.mid)} &middot; ${modOf(qs.mid).n}</div>
+      <p class="qtext">${q.q}</p>
+      ${q.o.map((o,oi)=>`<button class="qopt" onclick="ans(${oi})"><span class="ltr">${LETTERS[oi]}</span><span>${o}</span></button>`).join('')}
+      <div class="qfb" id="qfb"></div>
+      <div class="qnextwrap" id="qnw"><button class="qnext" onclick="qNext()">${qs.i===Q.q.length-1?'See results':'Next question'} &rarr;</button></div>
+    </div>`;
+}
+
+function ans(oi){
+  const Q=QUIZ[qs.mid], q=Q.q[qs.i];
+  if(qs.marks[qs.i]!==null)return;
+  const ok=oi===q.a;
+  qs.marks[qs.i]=ok;
+  const opts=$$('#quizArea .qopt');
+  opts.forEach((b,i)=>{b.disabled=true;if(i===q.a)b.classList.add('ok');});
+  if(!ok)opts[oi].classList.add('no');
+  const fb=$('#qfb');
+  fb.className='qfb show '+(ok?'good':'bad');
+  fb.innerHTML=(ok?'<b>Correct.</b> ':'<b>Not quite.</b> ')+q.e;
+  $('#qnw').classList.add('show');
+  $$('#quizArea .qdot')[qs.i].classList.add(ok?'ok':'bad');
+}
+
+function qNext(){
+  const Q=QUIZ[qs.mid];
+  qs.i++;
+  if(qs.i>=Q.q.length){
+    scores[qs.mid]={c:qs.marks.filter(Boolean).length,t:Q.q.length};
     if(!done.includes(idx))done.push(idx);
-    toast(s.c===s.t?'&#10003; Perfect score':'&#10003; Module complete');
-    renderSide();
+    toast(scores[qs.mid].c===Q.q.length?'&#10003; Perfect score':'&#10003; Module complete');
+    save();renderSide();
   }
-  save();
+  $('#quizArea').innerHTML=qBody();
+  $('#stage').scrollTop=0;
+}
+
+function qResults(){
+  const Q=QUIZ[qs.mid], s=scores[qs.mid]||{c:0,t:Q.q.length};
+  return `<div class="qdone">
+    <div class="big">${s.c}/${s.t}</div>
+    <h3>${s.c===s.t?'Perfect score':'Module complete'}</h3>
+    <p>${s.c===s.t?'You have this one down. Hit Next to keep going.':'Review the answers below, then hit Next to keep going.'}</p>
+    <div class="qreview">${Q.q.map((q,n)=>
+      `<div><span class="m ${qs.marks[n]?'y':'n'}">${qs.marks[n]?'&#10003;':'&#10007;'}</span><span>${q.q}</span></div>`).join('')}</div>
+  </div>`;
 }
 
 /* ============ PROMPT LIBRARY ============ */
