@@ -330,10 +330,10 @@
   display: none !important;
 }
 .ds-layout.no-sidebar .ds-main {
-  padding: 0;
+  padding: 24px 32px;
 }
 .ds-layout.no-sidebar .ds-home-hero {
-  margin: 0;
+  margin: -24px -32px 28px;
 }
 .ds-layout.no-sidebar .ds-home-first-doc,
 .ds-layout.no-sidebar .ds-home-promo-grid {
@@ -1146,7 +1146,9 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
 .ds-feedback.incorrect { background: #ffebe6; color: #bf2600; border: 1px solid #ffbdad; }
 
 /* =====================================================================
-   GUIDED TOUR OVERLAY  (same pattern as Qualia)
+   GUIDED TOUR OVERLAY (Modern 2026 Redesign)
+   Crystal-clear spotlight with luminous DocuSign blue ring and
+   premium floating guidance card.
    ===================================================================== */
 .ds-tour {
   display: none;
@@ -1155,101 +1157,227 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
   z-index: 9000;
   pointer-events: none;
 }
-.ds-tour.open { display: block; }
-
-/* Dark scrim with DocuSign inkwell tint */
-.ds-tour.open::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: rgba(19, 0, 50, 0.72);
-  pointer-events: all;
+.ds-tour.open {
+  display: block;
 }
 
-/* Spotlight */
+/* Spotlight Highlight with crystal-clear cutout and luminous border */
 .ds-tour-highlight {
   position: fixed;
-  box-shadow: 0 0 0 9999px rgba(19, 0, 50, 0.72);
-  border-radius: 6px;
+  box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.38), 0 0 0 9999px rgba(15, 23, 42, 0.68);
+  border: 2px solid #0066cc;
+  border-radius: 8px;
   pointer-events: none;
-  transition: top .25s, left .25s, width .25s, height .25s, border-radius .25s;
+  transition: top .28s cubic-bezier(0.16, 1, 0.3, 1),
+              left .28s cubic-bezier(0.16, 1, 0.3, 1),
+              width .28s cubic-bezier(0.16, 1, 0.3, 1),
+              height .28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-radius .28s;
   z-index: 9001;
 }
 
-/* Tip card */
+/* Modern Guidance Tooltip Card */
 .ds-tour-tip {
   position: fixed;
-  width: 340px;
-  background: #fff;
-  border-radius: 8px;
-  border: 1px solid rgba(19, 0, 50, 0.08);
-  box-shadow: 0 16px 48px rgba(19, 0, 50, 0.22), 0 2px 8px rgba(19, 0, 50, 0.08);
+  width: 360px;
+  max-width: calc(100vw - 28px);
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 39, 56, 0.12);
+  box-shadow: 0 20px 48px -8px rgba(0, 25, 45, 0.35), 0 4px 16px rgba(0, 0, 0, 0.08);
   z-index: 9002;
   pointer-events: all;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  transition: top .28s cubic-bezier(0.16, 1, 0.3, 1), left .28s cubic-bezier(0.16, 1, 0.3, 1), transform .28s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: dsTourFadeIn .2s ease-out;
+}
+
+@keyframes dsTourFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Progress bar along top card edge */
+.ds-tour-progress-bar {
+  height: 3.5px;
+  width: 100%;
+  background: #eef2f6;
   overflow: hidden;
-  font-family: var(--ds26-font, "DS Indigo", DSIndigo, Helvetica, Arial, sans-serif);
-  transition: top .25s, left .25s, transform .25s;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 }
-.ds-tour-tip-body {
-  padding: 20px 22px 14px;
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: var(--ds26-ink-90, #130032);
+.ds-tour-progress-fill {
+  height: 100%;
+  width: 10%;
+  background: linear-gradient(90deg, #0066cc, #4f46e5);
+  transition: width .3s ease;
 }
-.ds-tour-tip-body b {
-  display: block;
-  font-size: 15px;
+
+/* Tooltip Header */
+.ds-tour-tip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 6px;
+}
+.ds-tour-badge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ds-tour-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #e8f2ff;
+  color: #0055b3;
+  font-size: 10.5px;
   font-weight: 700;
-  color: var(--ds26-chrome, #260559);
-  margin-bottom: 8px;
-  letter-spacing: -0.2px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 3px 9px;
+  border-radius: 100px;
 }
-.ds-tour-tip-body p {
+.ds-tour-close-btn {
+  background: none;
+  border: none;
+  padding: 5px;
+  border-radius: 6px;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, color .15s;
+}
+.ds-tour-close-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Tooltip Body */
+.ds-tour-tip-body {
+  padding: 6px 18px 16px;
+}
+.ds-tour-title {
+  margin: 0 0 6px;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #002738;
+  letter-spacing: -0.2px;
+  line-height: 1.35;
+}
+.ds-tour-text {
   margin: 0;
-  color: var(--ds26-ink-70, rgba(19, 0, 50, 0.75));
   font-size: 13px;
+  color: #475569;
   line-height: 1.55;
 }
+
+/* Tooltip Footer */
 .ds-tour-tip-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 11px 22px 14px;
-  border-top: 1px solid rgba(19, 0, 50, 0.08);
-  background: #fbfafc;
+  padding: 12px 18px 14px;
+  background: #f8fafc;
+  border-top: 1px solid #edf2f7;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
 }
-#dsTourProgress {
+.ds-tour-skip-link {
+  background: none;
+  border: none;
+  color: #64748b;
   font-size: 12px;
   font-weight: 600;
-  color: var(--ds26-ink-50, rgba(19, 0, 50, 0.55));
-  flex: none;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: color .15s;
 }
-.ds-tour-tip-btns { display: flex; gap: 8px; }
-.ds-tour-tip-btns button {
-  border: 1px solid rgba(19, 0, 50, 0.18);
-  background: #fff;
-  color: var(--ds26-ink-90, #130032);
+.ds-tour-skip-link:hover {
+  color: #0f172a;
+  text-decoration: underline;
+}
+
+.ds-tour-tip-btns {
+  display: flex;
+  gap: 8px;
+}
+.ds-tour-btn {
+  padding: 7px 15px;
   font-size: 12.5px;
   font-weight: 600;
-  padding: 6px 14px;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
+  transition: all .15s ease;
   font-family: inherit;
-  transition: background .12s, border-color .12s, color .12s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
-.ds-tour-tip-btns button:hover {
-  border-color: var(--ds26-chrome, #260559);
-  color: var(--ds26-chrome, #260559);
-  background: rgba(19, 0, 50, 0.03);
+.ds-tour-btn.secondary {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
 }
-.ds-tour-tip-btns button.primary {
-  background: var(--ds26-chrome, #260559);
-  border-color: var(--ds26-chrome, #260559);
-  color: #fff;
+.ds-tour-btn.secondary:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
 }
-.ds-tour-tip-btns button.primary:hover {
-  background: var(--ds26-chrome-h, #1b0340);
-  border-color: var(--ds26-chrome-h, #1b0340);
+.ds-tour-btn.primary {
+  background: #0066cc;
+  border: 1px solid #0066cc;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 102, 204, 0.28);
+}
+.ds-tour-btn.primary:hover {
+  background: #0052a3;
+  border-color: #0052a3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 102, 204, 0.35);
+}
+
+/* Directional Pointer Caret Arrow */
+.ds-tour-arrow {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 39, 56, 0.12);
+  transform: rotate(45deg);
+  pointer-events: none;
+  z-index: -1;
+}
+.ds-tour-tip.arrow-top .ds-tour-arrow {
+  top: -6px;
+  left: 28px;
+  border-bottom: none;
+  border-right: none;
+}
+.ds-tour-tip.arrow-bottom .ds-tour-arrow {
+  bottom: -6px;
+  left: 28px;
+  border-top: none;
+  border-left: none;
+  background: #f8fafc;
+  border-color: #edf2f7;
+}
+.ds-tour-tip.arrow-left .ds-tour-arrow {
+  left: -6px;
+  top: 24px;
+  border-top: none;
+  border-right: none;
+}
+.ds-tour-tip.arrow-right .ds-tour-arrow {
+  right: -6px;
+  top: 24px;
+  border-bottom: none;
+  border-left: none;
+}
+.ds-tour-tip.arrow-none .ds-tour-arrow {
+  display: none;
 }
 
 /* Hamburger button for mobile */
@@ -3563,6 +3691,15 @@ table.ds-tbl td .td-sub { font-size: 11.5px; color: var(--ds-muted); margin-top:
   content: '·';
   margin-right: 8px;
 }
+.ds-banner-reopen {
+  color: var(--ds-cobalt, #4C00FB);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-left: 8px;
+}
+.ds-banner-reopen:hover { color: var(--ds26-chrome, #260559); }
+
 .ds-lesson-banner-actions {
   display: flex;
   gap: 6px;
@@ -4522,24 +4659,51 @@ body.ds-demo [data-view="mailbox"] { display: none !important; }
 .ds-audit-actor { color: #555; font-size: 12px; margin-top: 2px; }
 .ds-audit-details { color: #777; font-size: 11.5px; margin-top: 2px; }
 .ds-audit-banner { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 12px 16px; margin-bottom: 16px; font-size: 12px; color: #444; }
-.ds-cert-card { max-width: 720px; }
+/* ---------- Certificate of Completion Modal ----------
+   Mirrors the real DocuSign CoC layout from documents/certificate-9002-auth.html.
+   Modal chrome (card, head, close) is kept; interior uses the same class names
+   as doc.css prefixed with .ds-cert-body so they scope to the modal. */
+.ds-cert-card { max-width: 760px; width: 95vw; }
 .ds-cert-head { background: #001924; color: #fff; }
 .ds-cert-head-left { display: flex; align-items: center; gap: 10px; }
 .ds-cert-sub { font-size: 11.5px; color: #9fb4c9; }
 .ds-cert-close-btn { background: #fff; color: #111; padding: 4px 8px; }
-.ds-cert-body { font-family: 'Times New Roman', Times, serif; padding: 32px; }
-.ds-cert-header { text-align: center; border-bottom: 2px solid #001924; padding-bottom: 16px; margin-bottom: 24px; }
-.ds-cert-h2 { font-size: 22px; margin: 0 0 6px; letter-spacing: 1px; }
-.ds-cert-type { font-size: 13px; color: #444; text-transform: uppercase; }
-.ds-cert-tbl { width: 100%; font-size: 13px; border-collapse: collapse; margin-bottom: 24px; }
-.ds-cert-tbl td { padding: 6px 0; }
-.ds-cert-th { width: 160px; font-weight: 700; }
-.ds-cert-status-tag { color: #2e7d32; font-weight: 700; }
-.ds-cert-sec-title { font-weight: 700; font-size: 14px; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-bottom: 12px; text-transform: uppercase; }
-.ds-cert-recip-card { background: #fdfdfd; border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px; margin-bottom: 12px; font-family: sans-serif; font-size: 12px; }
-.ds-cert-recip-row { display: flex; justify-content: space-between; align-items: center; }
-.ds-cert-recip-sub { color: #666; }
-.ds-cert-sig-col { text-align: right; }
+.ds-cert-body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 9.5px; color: #222; padding: 28px 32px; line-height: 1.45;
+  max-height: 75vh; overflow-y: auto;
+}
+.ds-cert-body .cert-title { text-align: center; font-size: 15px; font-weight: 400; margin: 0 0 18px; letter-spacing: .2px; }
+.ds-cert-body .cert-idline { display: flex; justify-content: space-between; gap: 20px; font-size: 9.5px; border-bottom: 1px solid #d8dbe0; padding-bottom: 8px; margin-bottom: 8px; }
+.ds-cert-body .cert-subject { font-size: 9.5px; margin-bottom: 12px; }
+.ds-cert-body .cert-grid { display: flex; gap: 26px; font-size: 9px; margin-bottom: 16px; }
+.ds-cert-body .cert-grid > div { flex: 1; }
+.ds-cert-body .cert-sec {
+  display: flex; align-items: baseline; gap: 6px; font-size: 9px;
+  background: #f0f1f3; padding: 5px 6px; border-bottom: 1px solid #d8dbe0;
+  margin-top: 10px;
+}
+.ds-cert-body .cert-sec span { font-weight: 700; }
+.ds-cert-body .cert-sec .c2 { width: 200px; flex: none; }
+.ds-cert-body .cert-sec .c3 { width: 190px; flex: none; }
+.ds-cert-body .cert-row { display: flex; justify-content: space-between; gap: 16px; font-size: 9px; padding: 8px 6px; border-bottom: 1px solid #eaeced; }
+.ds-cert-body .cert-row .c1 { flex: 1; }
+.ds-cert-body .cert-row .c2 { width: 200px; flex: none; }
+.ds-cert-body .cert-row .c3 { width: 190px; flex: none; }
+.ds-cert-body .cert-row .who { font-weight: 700; font-size: 9.5px; }
+.ds-cert-body .cert-row .muted { color: #8b9098; }
+.ds-cert-body .cert-empty { font-size: 9px; color: #8b9098; padding: 6px; border-bottom: 1px solid #eaeced; }
+.ds-cert-body .cert-sig { border: 1px solid #b9bdc5; border-radius: 2px; padding: 12px 7px 3px; position: relative; background: #fbfbfb; display: inline-block; min-width: 130px; }
+.ds-cert-body .cert-sig::before { content: "Signed by:"; position: absolute; top: 2px; left: 6px; font-size: 6.5px; color: #8b9098; }
+.ds-cert-body .cert-sig .name { font-family: 'Brush Script MT', cursive, serif; font-size: 19px; font-style: italic; color: #1e3a8a; }
+.ds-cert-body .cert-sig .sid { font-size: 6.5px; color: #8b9098; letter-spacing: .4px; margin-top: 3px; }
+.ds-cert-body .cert-disc { font-size: 8.5px; color: #222; margin-top: 6px; }
+.ds-cert-body .cert-disc .k { color: #8b9098; }
+.ds-cert-body .cert-legal { font-size: 8px; color: #3c4048; line-height: 1.5; margin-top: 8px; }
+.ds-cert-body .cert-legal h3 { font-size: 9px; margin: 12px 0 4px; }
+.ds-cert-body .cert-status-sealed { color: #2e7d32; font-weight: 700; }
+.ds-cert-body .cert-status-pending { color: #b45309; font-weight: 700; }
+.ds-cert-body .cert-status-fail { color: #c62828; font-weight: 700; }
 .ds-popover-avatar { width: 40px; height: 40px; font-size: 14px; }
 .ds-popover-user-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
 .ds-popover-user-name { font-weight: 700; font-size: 13.5px; color: #111; }
@@ -5067,3 +5231,241 @@ body.ds-demo [data-view="mailbox"] { display: none !important; }
 }
 .ds-sampledoc-info span { font-size: 12.5px; color: var(--ds26-ink-70); }
 .ds-sampledoc-actions { display: flex; gap: 8px; flex: none; }
+
+/* =====================================================================
+   DOCUSIGN EMAIL NOTIFICATION ANATOMY (Block A2)
+   Ported from documents/doc.css .dse-* classes for use inside the
+   mailbox email viewer. Scoped within .ds-mail-view-col.
+   ===================================================================== */
+.ds-mail-view-col .dse-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 4px; overflow: hidden; }
+.ds-mail-view-col .dse-logo { padding: 22px 28px 0; }
+.ds-mail-view-col .dse-logo img { height: 26px; display: block; }
+.ds-mail-view-col .dse-logo .wordmark { font-size: 19px; font-weight: 700; color: #1a1a1a; letter-spacing: -.3px; }
+.ds-mail-view-col .dse-body { padding: 20px 28px 28px; color: #333; font-size: 14px; line-height: 1.55; }
+.ds-mail-view-col .dse-lede { font-size: 15px; color: #1a1a1a; margin: 0 0 22px; }
+.ds-mail-view-col .dse-btn {
+  display: inline-block; background: #ffc400; color: #1a1a1a; font-weight: 700;
+  font-size: 14px; padding: 12px 34px; border-radius: 4px; text-decoration: none;
+  cursor: pointer; border: none; text-transform: uppercase; letter-spacing: .3px;
+}
+.ds-mail-view-col .dse-sender { margin: 24px 0 0; font-size: 13.5px; }
+.ds-mail-view-col .dse-sender b { display: block; }
+.ds-mail-view-col .dse-sender .addr { color: #6b778c; font-size: 12.5px; }
+.ds-mail-view-col .dse-msg { margin: 14px 0 0; padding: 12px 14px; background: #f7f8f9; border-left: 3px solid #d8dbe0; font-size: 13px; color: #444; line-height: 1.5; }
+.ds-mail-view-col .dse-rule { border: 0; border-top: 1px solid #e6e8eb; margin: 26px 0 18px; }
+.ds-mail-view-col .dse-powered { font-size: 12px; color: #6b778c; margin: 0 0 20px; }
+.ds-mail-view-col .dse-blk { margin: 0 0 18px; }
+.ds-mail-view-col .dse-blk h4 { font-size: 12.5px; margin: 0 0 4px; color: #1a1a1a; }
+.ds-mail-view-col .dse-blk p { font-size: 12px; color: #6b778c; margin: 0; line-height: 1.55; }
+.ds-mail-view-col .dse-code {
+  display: inline-block; background: #f0f2f5; border: 1px solid #d8dbe0;
+  border-radius: 3px; padding: 6px 14px; font-family: 'SF Mono', 'Consolas', monospace;
+  font-size: 14px; font-weight: 700; letter-spacing: 1.5px; color: #1a1a1a;
+}
+.ds-mail-view-col .dse-foot { font-size: 11px; color: #8d929a; text-align: center; padding: 16px 20px; line-height: 1.6; }
+
+/* =====================================================================
+   VOID / EXPIRED WATERMARK (Block B2)
+   Diagonal repeated text over each .paper page for voided or expired
+   envelopes. Legible but does not obscure content.
+   ===================================================================== */
+.ds-watermark {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none; z-index: 5; overflow: hidden;
+}
+.ds-watermark::before {
+  content: attr(data-mark);
+  font-size: 120px; font-weight: 900; color: rgba(180,40,40,0.09);
+  transform: rotate(-35deg);
+  letter-spacing: 20px; white-space: nowrap;
+  position: absolute;
+}
+.ds-watermark::after {
+  content: attr(data-mark) "  " attr(data-mark);
+  font-size: 80px; font-weight: 900; color: rgba(180,40,40,0.06);
+  transform: rotate(-35deg) translateY(-200px);
+  letter-spacing: 16px; white-space: nowrap;
+  position: absolute;
+}
+
+/* ---- sim-engine token overrides for DocuSign brand ----
+   The shared sim-engine defaults to green (#48a668); DocuSign's brand is deep
+   violet / cobalt, so we re-point the tokens here.
+   Scoped to :root (not .ds-app) because sim-engine injects #simWalk and
+   .sim-toast-host directly on document.body, outside .ds-app. */
+:root {
+  --sim-accent:   var(--ds26-chrome);
+  --sim-accent-d: var(--ds26-chrome-h);
+  --sim-ink:      var(--ds-ink);
+  --sim-muted:    var(--ds-muted);
+  --sim-line:     var(--ds-line);
+  --sim-bg:       var(--ds-bg);
+  --sim-good:     var(--ds-teal);
+  --sim-bad:      var(--ds-red);
+}
+
+/* ============================================================================
+   ASK POPUP — floating question dialog for lesson walkthroughs
+   Uses .ds-panel / .ds-option / .ds-feedback visual language.
+   Z-INDEX:  .ds-ask 190  |  .sim-doc-modal 200  |  .sim-walk 250
+   ============================================================================ */
+.ds-ask {
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  display: none;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 22px 22px 22px 0;
+}
+.ds-ask.open { display: flex; }
+
+.ds-ask-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(19, 0, 50, .12);
+}
+
+.ds-ask-card {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - 44px);
+  margin: 22px;
+  overflow-y: auto;
+  background: var(--ds-card, #fff);
+  border: 1px solid var(--ds-line);
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.03), 0 18px 48px rgba(19, 0, 50, .18);
+}
+
+.ds-ask-card.ds-ask-enter {
+  animation: dsAskIn .16s ease-out;
+}
+@keyframes dsAskIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.ds-ask-head {
+  position: relative;
+  padding: 16px 22px 14px;
+  border-bottom: 1px solid var(--ds-line);
+  border-radius: 10px 10px 0 0;
+}
+
+.ds-ask-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  background: #f0e8ff;
+  color: #5243aa;
+}
+.ds-ask-kicker::before {
+  content: '';
+  display: block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--ds-cobalt, #4C00FB);
+  flex: none;
+}
+
+.ds-ask-close {
+  position: absolute;
+  top: 12px; right: 14px;
+  width: 26px; height: 26px;
+  border: 0; border-radius: var(--ds24-radius, 4px);
+  background: none;
+  color: var(--ds-muted);
+  font-size: 19px; line-height: 1;
+  cursor: pointer; font-family: inherit;
+}
+.ds-ask-close:hover { background: var(--ds26-ink-05); color: var(--ds-ink); }
+
+.ds-ask-head h3 {
+  margin: 8px 0 0;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--ds-navy);
+}
+
+.ds-ask-body {
+  padding: 18px 22px 8px;
+}
+
+.ds-ask-body .situation {
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0 0 16px;
+  color: var(--ds-ink);
+  background: var(--ds-bg, #f7f8f9);
+  padding: 14px 16px;
+  border-radius: 8px;
+  border-left: 4px solid var(--ds-cobalt, #4C00FB);
+}
+
+.ds-ask-body .ds-option {
+  font-size: 13px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+
+.ds-ask-body .ds-feedback {
+  font-size: 13px;
+}
+
+.ds-ask-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 22px 14px;
+  border-top: 1px solid var(--ds-line);
+}
+
+.ds-ask-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.ds-ask-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--ds-line);
+}
+.ds-ask-dot.done { background: var(--ds-cobalt, #4C00FB); }
+.ds-ask-dot.current { background: #fff; box-shadow: inset 0 0 0 2px var(--ds-cobalt, #4C00FB); }
+
+.ds-ask-exit {
+  font-size: 11.5px;
+  color: var(--ds-muted);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.ds-ask-exit:hover { color: var(--ds-ink); }
+
+.ds-ask-sub {
+  margin: 14px 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ds-muted);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.ds-ask-body .ds-triage-actions { display: flex; flex-direction: column; gap: 4px; }
+
+.ds-ask-doc-btn {
+  display: inline-block;
+  margin-bottom: 14px;
+}
+
+body.ds-asking #simWalk { display: none !important; }

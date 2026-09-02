@@ -5,54 +5,69 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DocuSign Security Review — Phishing Sample 1</title>
   <link rel="stylesheet" href="doc.css">
-  <style>
-    .email-container { max-width: 600px; margin: 0 auto; background: #fff; border: 2px solid #de350b; border-radius: 8px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
-    .email-header { background: #002738; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; }
-    .email-header h1 { color: #fff; font-size: 18px; margin: 0; }
-    .email-body { padding: 28px 24px; color: #333; line-height: 1.6; }
-    .email-meta { background: #fff5f5; border: 1px solid #ffcdd2; border-radius: 6px; padding: 14px 16px; margin-bottom: 20px; font-size: 13px; }
-    .email-meta div { margin-bottom: 4px; }
-    .btn-review { display: inline-block; background: #de350b; color: #fff; font-weight: 700; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-size: 14px; margin: 18px 0; }
-    .email-footer { background: #f4f5f7; padding: 18px 24px; font-size: 11.5px; color: #6b778c; text-align: center; border-top: 1px solid #dfe1e6; }
-  </style>
 </head>
-<body>
+<body class="dse">
   <div class="banner">Training Security Sample — Analyze the sender domain and urgency cues below.</div>
-  <div class="email-container">
-    <div class="email-header">
-      <h1>DocuSign Verification</h1>
-      <span style="color:#ff5252;font-size:12px;font-weight:700;">URGENT ACTION REQUIRED</span>
+
+  <div class="dse-wrap">
+    <div class="dse-headers">
+      <div><span class="k">From:</span> "Docusign Security Team" &lt;<span class="dse-bad">service@docus1gn-securesign.net</span>&gt;</div>
+      <div><span class="k">Reply-To:</span> &lt;<span class="dse-bad">support@docus1gn-securesign.net</span>&gt;</div>
+      <div><span class="k">To:</span> alex.rivera@agency.example.com</div>
+      <div><span class="k">Return-Path:</span> &lt;<span class="dse-bad">bounce-trap@phish-payload-delivery.top</span>&gt;</div>
+      <div><span class="k">SPF:</span> <span class="dse-bad">softfail</span> (docus1gn-securesign.net does not designate 45.142.212.89 as permitted sender)</div>
+      <div><span class="k">DKIM:</span> <span class="dse-bad">fail</span> (body hash did not verify)</div>
+      <div><span class="k">Subject:</span> [URGENT] Final Notice: Wire Transfer &amp; Closing Document Expires in 1 Hour</div>
+      <div><span class="k">X-DocuSign-EnvelopeId:</span> <span class="dse-bad">(header absent)</span></div>
     </div>
-    <div class="email-body">
-      <div class="email-meta">
-        <div><b>From:</b> "DocuSign Security Team" &lt;<span style="color:#de350b;font-weight:700;">service@docus1gn-securesign.net</span>&gt;</div>
-        <div><b>Reply-To:</b> &lt;support@docus1gn-securesign.net&gt;</div>
-        <div><b>To:</b> alex.rivera@skillcloudva.com</div>
-        <div><b>Subject:</b> [URGENT] Final Notice: Wire Transfer &amp; Closing Document Expires in 1 Hour</div>
-        <div><b>Envelope ID:</b> None Listed</div>
+
+    <div class="dse-card">
+      <div class="dse-logo"><span class="wordmark">Docusign</span></div>
+      <div class="dse-body">
+        <p class="dse-lede"><b>Docusign Security</b> requires immediate verification of your account.</p>
+
+        <p style="color:#c62828;font-weight:700;font-size:14px;margin:0 0 16px;">
+          Your pending transaction will be terminated and legal penalties applied unless verified within 60 minutes.
+        </p>
+
+        <a class="dse-btn" href="#" onclick="return false;">VERIFY IDENTITY &amp; SIGN NOW</a>
+
+        <div class="dse-sender">
+          <b>Docusign Security Team</b>
+          <span class="addr">service@docus1gn-securesign.net</span>
+        </div>
+        <div class="dse-msg">Sign in with your corporate email address and password to release the emergency wire addendum before the deadline.</div>
+
+        <p style="font-size:12px;color:#6b778c;margin:14px 0 0;">
+          Link destination: <code class="dse-bad">http://login.docus1gn-securesign.net/auth/login.php?id=99281</code>
+        </p>
+
+        <hr class="dse-rule">
+        <p class="dse-powered">Powered by Docusign</p>
+
+        <div class="dse-blk">
+          <h4>Do Not Share This Email</h4>
+          <p>This email contains a secure link to Docusign. Please do not share this email, link, or access code with others.</p>
+        </div>
+
+        <div class="dse-blk">
+          <h4>About Docusign</h4>
+          <p>Sign documents electronically in just minutes. It's safe, secure, and legally binding.</p>
+        </div>
       </div>
-
-      <p style="font-size: 14.5px; margin: 0 0 12px; color: #b71c1c; font-weight: 700;">
-        ⚠️ Your pending transaction will be terminated and legal penalties applied unless verified within 60 minutes.
-      </p>
-      <p style="font-size: 13.5px; color: #444; margin: 0 0 18px;">
-        Click below to login with your corporate email credentials and sign the emergency wire release addendum.
-      </p>
-
-      <div style="text-align: center;">
-        <span class="btn-review">VERIFY IDENTITY &amp; SIGN NOW</span>
-      </div>
-      <p style="font-size: 12px; color: #777; text-align: center; margin-top: 8px;">
-        Destination URL: <code style="color:#de350b;">http://login.docus1gn-securesign.net/auth/login.php?id=99281</code>
-      </p>
-
-      <hr style="border: 0; border-top: 1px solid #eee; margin: 24px 0;">
-      <p style="font-size: 12px; color: #666; margin: 0;">
-        <b>Phishing Clues for VA:</b> Look-alike domain (docus1gn with a number '1'), high-pressure countdown, asks for email login password, missing real Envelope ID.
-      </p>
     </div>
-    <div class="email-footer">
-      Automated Mail System &middot; Unverified Source
+
+    <div class="dse-foot">
+      Docusign, Inc. &middot; 221 Main Street, Suite 1000 &middot; San Francisco, CA 94105
+    </div>
+
+    <div class="dse-tell">
+      <b>Five tells, in the order a coordinator should find them.</b>
+      <b>1.</b> The sending domain is <code>docus1gn-securesign.net</code> &mdash; the letter i replaced by the digit 1, and a suffix that no Docusign domain uses.
+      <b>2.</b> SPF softfails and DKIM fails outright; a real Docusign notification passes both for <code>docusign.net</code>.
+      <b>3.</b> There is <b>no Alternate Signing Method block and no security code</b>, because there is no envelope behind this message. That absence is the cleanest single tell in the email.
+      <b>4.</b> It asks for a corporate email password. Docusign never does; signing is authenticated by the link, an access code, or ID verification.
+      <b>5.</b> A one-hour countdown with legal threats. Urgency is the payload &mdash; it exists to stop you checking the first four.
     </div>
   </div>
 </body>

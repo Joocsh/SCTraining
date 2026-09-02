@@ -5,51 +5,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DocuSign Notification (Legitimate)</title>
   <link rel="stylesheet" href="doc.css">
-  <style>
-    .email-container { max-width: 600px; margin: 0 auto; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
-    .email-header { background: #002738; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; }
-    .email-header h1 { color: #fff; font-size: 18px; margin: 0; }
-    .email-body { padding: 28px 24px; color: #333; line-height: 1.6; }
-    .email-meta { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 14px 16px; margin-bottom: 20px; font-size: 13px; }
-    .email-meta div { margin-bottom: 4px; }
-    .btn-review { display: inline-block; background: #ffc400; color: #002738; font-weight: 700; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-size: 14px; margin: 18px 0; }
-    .email-footer { background: #f4f5f7; padding: 18px 24px; font-size: 11.5px; color: #6b778c; text-align: center; border-top: 1px solid #dfe1e6; }
-  </style>
 </head>
-<body>
+<body class="dse">
   <div class="banner">Inspection Exercise — Examine headers, sender domain, and link destination carefully.</div>
-  <div class="email-container">
-    <div class="email-header">
-      <h1>DocuSign eSignature</h1>
-      <span style="color:#ffc400;font-size:12px;font-weight:700;">OFFICIAL NOTIFICATION</span>
+
+  <div class="dse-wrap">
+    <div class="dse-headers">
+      <div><span class="k">From:</span> "Alex Rivera via Docusign" &lt;dse@docusign.net&gt;</div>
+      <div><span class="k">Reply-To:</span> Alex Rivera &lt;alex.rivera@agency.example.com&gt;</div>
+      <div><span class="k">To:</span> John Smith &lt;john.smith@example.com&gt;</div>
+      <div><span class="k">Return-Path:</span> &lt;dse_NA3@docusign.net&gt;</div>
+      <div><span class="k">SPF:</span> pass (docusign.net: 198.51.100.22 is authorized)</div>
+      <div><span class="k">DKIM:</span> pass (signature verified for domain docusign.net)</div>
+      <div><span class="k">Subject:</span> Complete with Docusign: Purchase_Agreement_123_Main.pdf</div>
+      <div><span class="k">X-DocuSign-EnvelopeId:</span> 4C2B9A173E5F4D8A9B2177E3A1D0F5C6</div>
+      <div><span class="k">Customer Ref:</span> ENV-2026-9041</div>
     </div>
-    <div class="email-body">
-      <div class="email-meta">
-        <div><b>From:</b> "Alex Rivera via DocuSign" &lt;dse@docusign.net&gt;</div>
-        <div><b>Reply-To:</b> Alex Rivera &lt;alex.rivera@skillcloudva.com&gt;</div>
-        <div><b>To:</b> John Smith &lt;john.smith@example.com&gt;</div>
-        <div><b>Subject:</b> Please DocuSign: Purchase Agreement — 123 Main Street, Austin TX</div>
-        <div><b>Envelope ID:</b> ENV-2026-9041</div>
+
+    <div class="dse-card">
+      <div class="dse-logo"><img src="../Images-resources/docusign-lockup-2024-hires.png" alt="Docusign"></div>
+      <div class="dse-body">
+        <p class="dse-lede"><b>Alex Rivera</b> sent you a document to review and sign.</p>
+
+        <a class="dse-btn" href="#" onclick="return false;">REVIEW DOCUMENT</a>
+        <p style="font-size:12px;color:#6b778c;margin:12px 0 0;">
+          Link destination: <code style="color:#1c6b43;">https://na3.docusign.net/Signing/EmailStart.aspx?a=4C2B9A17-3E5F-4D8A-9B21-77E3A1D0F5C6</code>
+        </p>
+
+        <div class="dse-sender">
+          <b>Alex Rivera</b>
+          <span class="addr">alex.rivera@agency.example.com</span>
+        </div>
+        <div class="dse-msg">Please review and sign the attached Purchase Agreement at your earliest convenience. Escrow needs the executed copy before the option period closes.</div>
+
+        <hr class="dse-rule">
+        <p class="dse-powered">Powered by Docusign</p>
+
+        <div class="dse-blk">
+          <h4>Do Not Share This Email</h4>
+          <p>This email contains a secure link to Docusign. Please do not share this email, link, or access code with others.</p>
+        </div>
+
+        <div class="dse-blk">
+          <h4>Alternate Signing Method</h4>
+          <p>Visit Docusign.com, click 'Access Documents', and enter the security code:</p>
+          <span class="dse-code">9C7A2F13B08E4D56A1F4</span>
+        </div>
+
+        <div class="dse-blk">
+          <h4>About Docusign</h4>
+          <p>Sign documents electronically in just minutes. It's safe, secure, and legally binding. Whether you're in an office, at home, on-the-go &mdash; or even across the globe &mdash; Docusign provides a professional trusted solution for Digital Transaction Management.</p>
+        </div>
+
+        <div class="dse-blk">
+          <h4>Questions about the Document?</h4>
+          <p>If you need to modify the document or have questions about the details in the document, please reach out to the sender by emailing them directly.</p>
+        </div>
+
+        <div class="dse-blk">
+          <h4>Stop receiving this email</h4>
+          <p>Report this email or read more about Declining to sign and Managing your Docusign Notifications.</p>
+        </div>
       </div>
-
-      <p style="font-size: 15px; margin: 0 0 12px;"><b>Alex Rivera</b> sent you a document to review and sign.</p>
-      <p style="font-size: 13.5px; color: #555; margin: 0 0 18px;">"Please review and sign the attached Purchase Agreement at your earliest convenience."</p>
-
-      <div style="text-align: center;">
-        <span class="btn-review">REVIEW DOCUMENT</span>
-      </div>
-      <p style="font-size: 12px; color: #777; text-align: center; margin-top: 8px;">
-        Destination URL: <code style="color:#0066cc;">https://na3.docusign.net/Member/PowerFormSigning.aspx?Env=ENV-2026-9041</code>
-      </p>
-
-      <hr style="border: 0; border-top: 1px solid #eee; margin: 24px 0;">
-      <p style="font-size: 12px; color: #666; margin: 0;">
-        <b>Do Not Share This Email:</b> This email contains a secure link to DocuSign. Please do not share this email, link, or access code with others.
-      </p>
     </div>
-    <div class="email-footer">
-      This message was sent to you by DocuSign, Inc. &middot; 221 Main Street, Suite 1550 &middot; San Francisco, CA 94105<br>
-      DocuSign security verified. Certificate hash valid.
+
+    <div class="dse-foot">
+      Docusign, Inc. &middot; 221 Main Street, Suite 1000 &middot; San Francisco, CA 94105<br>
+      Fictitious message reproduced for SkillCloud Academy training. Nothing here is a working link.
+    </div>
+
+    <div class="dse-tell" style="background:#f1f8f2;border-left-color:#1c6b43;color:#14522f;">
+      <b>Why this one is legitimate.</b> The envelope arrives from <code>dse@docusign.net</code> with SPF and DKIM passing for that domain, Reply-To points at the real sender's own address rather than the sending domain, and the <b>Alternate Signing Method</b> block gives a security code you can type into docusign.com yourself. That last part is the habit worth building: you never have to trust the button.
     </div>
   </div>
 </body>

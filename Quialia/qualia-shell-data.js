@@ -373,8 +373,8 @@ const QZS_REPORT_PRODUCTIVITY = [
 
    The first five exceptions are deliberately the same problems the curriculum
    teaches: the Schedule A legal-description mismatch (Lesson 3), the wire
-   instruction change (Lesson 10), the missing HOA certificate (Lesson 11) and
-   the expired payoff (Lesson 12). A trainee who worked those lessons should
+   instruction change (Lesson 8), the missing HOA certificate (Lesson 7) and
+   the expired payoff (Lesson 6). A trainee who worked those lessons should
    recognise their own files here, which is what makes the section feel like the
    same company rather than a separate demo.
    ============================================================================ */

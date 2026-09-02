@@ -256,7 +256,7 @@
         const store = localStorage.getItem('qz_va_training_v2');
         const fields = store ? Object.keys(JSON.parse(store)).length : 0;
         const keys = Object.keys(localStorage).filter(function (k) { return /^qz/.test(k); });
-        ok(keys.length === 1 && fields === 10, 'the course invariant held',
+        ok(keys.length === 1 && fields === 11, 'the course invariant held',
           keys.length + ' key(s), ' + fields + ' fields — no product data leaked into storage');
 
         ok(consoleErrors.length === 0, 'console stayed clean',

@@ -197,15 +197,38 @@ function dsLoad() {
 
 function dsSave() { localStorage.setItem(DS_LS_KEY, JSON.stringify(dsStore)); }
 function dsResetProgress() {
-  try {
-    localStorage.removeItem(DS_LS_KEY);
-    localStorage.removeItem(DS_LS_DEMO_KEY);
-    localStorage.removeItem(DS_LS_STATE_KEY);
-  } catch (e) {}
-  dsStore = dsDefaultStore();
-  dsDemo = dsDefaultDemo();
-  dsResetWizard();
-  dsRenderRoot();
+  dsConfirm({
+    title: 'Reset Sandbox',
+    body: 'Reset all envelopes, documents, and lesson progress to the initial state?',
+    confirmLabel: 'Reset Sandbox',
+    danger: true,
+    onConfirm: () => {
+      if (window.SimEngine && SimEngine.walkActive && SimEngine.walkActive()) {
+        if (window.simWalkExit) simWalkExit(true);
+      }
+      try {
+        localStorage.removeItem(DS_LS_KEY);
+        localStorage.removeItem(DS_LS_DEMO_KEY);
+        localStorage.removeItem(DS_LS_STATE_KEY);
+      } catch (e) {}
+      dsStore = dsDefaultStore();
+      dsDemo = dsDefaultDemo();
+      dsAsk = null;
+      dsAskLast = null;
+      dsState.view = 'dashboard';
+      dsState.lessonId = null;
+      dsState.activeEnvId = null;
+      dsState.activeScenarioId = null;
+      dsState.activeTriageId = null;
+      dsState.activeVerifyId = null;
+      dsState.activeComposeId = null;
+      dsResetWizard();
+      dsSave();
+      simToast('Sandbox and lesson progress restored to initial state.', { tone: 'good' });
+      dsSyncNav();
+      dsRenderRoot();
+    }
+  });
 }
 
 /* Drops visitor session data back to clean factory state */
@@ -285,15 +308,22 @@ function dsSetEnvelopeOverride(envId, patch) {
    triggers stay wired to exactly the same controls they always were — this gate
    decides whether the gesture counts, not where it lives. That is what makes
    this change safe: no call site moves. */
+function dsScopedItemKey(id, lessonId) {
+  if (!id) return id;
+  const lid = lessonId || dsState.lessonId;
+  return lid ? id + '#' + lid : id;
+}
+
 function dsMark(id) {
   /* Product mode and demo mode never grade. */
   if (!dsTrainingActive()) return;
   /* Suppress marks during engine-driven navigation (lesson step setup). */
   if (dsSuppressMarks) return;
 
-  const alreadyDone = !!dsStore.checklist[id];
+  const scopedId = dsScopedItemKey(id);
+  const alreadyDone = !!dsStore.checklist[scopedId];
   if (!alreadyDone) {
-    dsStore.checklist[id] = true;
+    dsStore.checklist[scopedId] = true;
     dsSave();
   }
   /* If the walkthrough is actively showing this step, it needs to hear about it
@@ -416,6 +446,16 @@ let dsSentSeq = 0;
 
 /* Certificate signature id, derived from the envelope and the signer so one
    certificate always shows one number. */
+/* Signature id as DocuSign prints it under an adopted signature: 16 uppercase
+   hex characters. dsSigId() returns a five-digit number used elsewhere in the
+   UI and is deliberately left alone; this is the document-facing form. */
+function dsSignatureHex(envId, email) {
+  const rnd = dsMulberry32(dsHashString('sig|' + String(envId) + '|' + String(email)));
+  let hex = '';
+  while (hex.length < 16) hex += Math.floor(rnd() * 0x100000000).toString(16).padStart(8, '0');
+  return hex.slice(0, 16).toUpperCase();
+}
+
 function dsSigId(envId, email) {
   const h = dsHashString(String(envId) + '|' + String(email));
   return 10000 + (h % 90000);
@@ -829,6 +869,22 @@ function dsToggleSidebarMore() {
 
 /* Sidebar quick views all land on the same list with a different filter, which is
    how the real product works — they are saved searches, not separate screens. */
+/* Lesson steps that highlight one specific row send the trainee here rather than to
+   dsGoto('envelopes') directly. Without clearing the quick view first, a trainee who
+   had left the list on "Completed" (or, now that Inbox means what it says, on Inbox)
+   arrives at a list that does not contain the row the walkthrough is about to point
+   at, and the highlight lands on empty space. */
+function dsGotoAllEnvelopes() {
+  dsState.envelopeFilter = 'all';
+  dsState.activeFolder = 'all';
+  dsState.searchQuery = '';
+  dsState.statusFilter = '';
+  dsState.senderFilter = 'all';
+  dsState.dateFilter = 'all';
+  dsResetPage();
+  dsGoto('envelopes');
+}
+
 function dsQuickView(filter) {
   if (filter === 'action' || filter === 'deleted') {
     dsMark('ds_action_open');
@@ -987,8 +1043,10 @@ function dsRenderSidebar() {
   const layout = document.querySelector('.ds-layout');
   if (!sb) return;
 
-  // View: Dashboard (Home) — No sidebar! (Screenshot 1)
-  if (dsState.view === 'dashboard') {
+  // Views with NO product sidebar (clean full-width experience):
+  // dashboard (Home), lessons (Curriculum), complete-transaction (Final exam), exam, review
+  const NO_SIDEBAR_VIEWS = ['dashboard', 'lessons', 'scenarios', 'complete-transaction', 'exam', 'review'];
+  if (NO_SIDEBAR_VIEWS.includes(dsState.view)) {
     if (layout && layout.classList && layout.classList.add) layout.classList.add('no-sidebar');
     sb.style.display = 'none';
     return;
@@ -1206,7 +1264,7 @@ function dsRenderSidebar() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         PowerForms
       </a></li>
-      <li><a onclick="dsGoto('mailbox')" id="sb-mailbox">
+      <li><a onclick="dsOpenMailbox()" id="sb-mailbox">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>
         VA Mailbox
         <span class="ds-sidebar-badge" id="dsSbMailBadge" style="display:none;"></span>
@@ -1363,12 +1421,25 @@ function dsRenderLessonBanner() {
     stepInfo = 'Practical Final Exam';
   }
 
+  let reopenHint = '';
+  if (!dsAsk && dsAskLast && SimEngine.walkActive()) {
+    const cur = SimEngine.currentStep();
+    const canReopen = !!cur && (
+      (dsAskLast.kind === 'scenario' && cur.type === 'decide' && cur.scenarioId === dsAskLast.id) ||
+      (dsAskLast.kind === 'triage' && cur.type === 'triage' && cur.triageId === dsAskLast.id) ||
+      (dsAskLast.kind === 'verify' && cur.type === 'verify' && cur.reviewId === dsAskLast.id) ||
+      (dsAskLast.kind === 'compose' && cur.type === 'compose' && cur.composeId === dsAskLast.id)
+    );
+    if (canReopen) reopenHint = `<span class="ds-banner-reopen" onclick="dsAskReopen()">Question closed &middot; Reopen it &rarr;</span>`;
+  }
+
   el.innerHTML = `
     <div class="ds-lesson-banner-inner">
       <div class="ds-lesson-banner-info">
         ${dsIcon('book', 15)}
         <span class="ds-lesson-banner-title">${title}</span>
         ${stepInfo ? `<span class="ds-lesson-banner-step">${stepInfo}</span>` : ''}
+        ${reopenHint}
       </div>
       <div class="ds-lesson-banner-actions">
         ${lid ? `<button type="button" class="ds-btn sm ds-banner-btn" onclick="dsGoto('lesson', '${escAttr(lid)}')">Back to lesson</button>` : ''}
@@ -1420,6 +1491,7 @@ function dsRenderRoot() {
   root.innerHTML = (views[dsState.view] || (() => '<p>View not found.</p>'))();
   /* Keep the lesson banner in sync after every render. */
   dsRenderLessonBanner();
+  dsAskRender();
 }
 
 
@@ -1576,10 +1648,19 @@ function dsDashboardHTML() {
    Docusign's sidebar entries are saved filters over one list, not separate screens,
    so they are defined as predicates here and the list renders exactly once. The
    titles double as the big page heading, which is what the 2024 layout shows. */
+/* Whether an envelope was sent BY this account. One predicate, used by both Inbox
+   and Sent, so the two views can never disagree about who sent what. */
+function dsSentByMe(e) { return /alex\s*rivera|\(va\)/i.test(e.sender || ''); }
+
 const DS_QUICK_VIEWS = {
   all:       { title: 'All Agreements',        match: e => e.status !== 'deleted' },
-  inbox:     { title: 'Inbox',                 match: e => e.status !== 'deleted' && e.status !== 'draft' },
-  sent:      { title: 'Sent',                  match: e => e.status !== 'deleted' && /alex|va/i.test(e.sender || '') },
+  /* Inbox is mail that arrived: envelopes somebody else sent to this account. It used
+     to match everything that was not a draft, so all 15 envelopes Alex had sent
+     appeared in his own Inbox and Sent was a strict subset of it — two sidebar
+     destinations showing the same rows under different names. */
+  inbox:     { title: 'Inbox',                 match: e => e.status !== 'deleted' && e.status !== 'draft' && !dsSentByMe(e) },
+  /* Sent excludes drafts for the same reason the product does: a draft was never sent. */
+  sent:      { title: 'Sent',                  match: e => e.status !== 'deleted' && e.status !== 'draft' && dsSentByMe(e) },
   completed: { title: 'Completed',             match: e => e.status === 'completed' },
   /* "Action Required" means the envelope is stuck on something the VA has to fix —
      a bounce, an expiry — not merely that it is open. That is also exactly the set
@@ -4871,14 +4952,29 @@ function dsEnvelopeDetailHTML() {
   // Derived fields summary for all 86 envelopes
   let fieldsSummary = '';
   if (env.fields && env.fields.length) {
-    const sigCount = env.fields.filter(f => /sig/i.test(f.type || f.label)).length;
-    const dateCount = env.fields.filter(f => /date/i.test(f.type || f.label)).length;
-    const otherCount = env.fields.length - sigCount - dateCount;
-    fieldsSummary = `${sigCount} signature field${sigCount === 1 ? '' : 's'}, ${dateCount} date signed field${dateCount === 1 ? '' : 's'}${otherCount > 0 ? ', ' + otherCount + ' other field(s)' : ''} assigned across ${signers.length} recipient${signers.length === 1 ? '' : 's'}.`;
+    /* Buckets are exclusive and tested in this order on purpose. "Date Signed" contains
+       the string "Signed", so a /sig/i test counted every date field as a signature as
+       well — ENV-2026-9041 reported "8 signature fields" over 4, and the leftover
+       arithmetic then lost four initials. Date first, then initials, then signature. */
+    const kind = f => {
+      const t = (f.type || '') + ' ' + (f.label || '');
+      if (/date/i.test(t)) return 'date';
+      if (/init/i.test(t)) return 'initial';
+      if (/sign/i.test(t)) return 'signature';
+      return 'other';
+    };
+    const n = k => env.fields.filter(f => kind(f) === k).length;
+    const sigCount = n('signature'), dateCount = n('date'), initCount = n('initial'), otherCount = n('other');
+    const parts = [`${sigCount} signature field${sigCount === 1 ? '' : 's'}`,
+                   `${dateCount} date signed field${dateCount === 1 ? '' : 's'}`];
+    if (initCount) parts.push(`${initCount} initial field${initCount === 1 ? '' : 's'}`);
+    if (otherCount) parts.push(`${otherCount} other field${otherCount === 1 ? '' : 's'}`);
+    fieldsSummary = `${parts.join(', ')} assigned across ${signers.length} recipient${signers.length === 1 ? '' : 's'}.`;
   } else {
-    const sigCount = Math.max(1, signers.length);
-    const dateCount = sigCount;
-    fieldsSummary = `${sigCount} signature field${sigCount === 1 ? '' : 's'}, ${dateCount} date signed field${dateCount === 1 ? '' : 's'} assigned to ${sigCount} recipient${sigCount === 1 ? '' : 's'}.`;
+    /* No fields on the envelope means no fields on the document. This branch used to
+       invent a plausible-sounding count, so the panel asserted tags a trainee would
+       then fail to find anywhere in the file. */
+    fieldsSummary = 'No fields placed on this envelope.';
   }
 
   // Status Action Buttons (All 8 statuses supported without dead states)
@@ -5332,16 +5428,35 @@ function dsActionDownloadCert(envId) {
 
 /* ==================== PHASE C: VA MAILBOX (OUTLOOK/GMAIL SIMULATOR) ==================== */
 
+/* Mailbox dates were hand-typed and three of them ("Aug 18", "Aug 17", "Aug 16")
+   sat in the FUTURE relative to DS_TODAY, which is 2026-08-12 — an inbox showing
+   mail that has not arrived yet. Same rule as everywhere else in the account now:
+   express the date as an offset and resolve it at load. */
+function dsMailDate(dayOffset, time) {
+  if (dayOffset === 0) return 'Today, ' + time;
+  if (dayOffset === -1) return 'Yesterday, ' + time;
+  const [y, m, d] = DS_TODAY.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + dayOffset));
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return MON[dt.getUTCMonth()] + ' ' + dt.getUTCDate() + ', ' + time;
+}
+
 function dsInitMailbox() {
   if (dsDemo.mailbox && dsDemo.mailbox.length) return dsDemo.mailbox;
 
   dsDemo.mailbox = [
     {
       id: 'em-1',
-      from: 'DocuSign System <docusign@docusign.net>',
-      to: 'Alex Rivera <alex.rivera@kwrealty.example.com>',
-      subject: 'Please DocuSign: Purchase Agreement — 123 Main Street',
-      date: 'Today, 09:14 AM',
+      from: 'Dana Whitfield via DocuSign <dse@docusign.net>',
+      to: 'Alex Rivera <alex.rivera@agency.example.com>',
+      /* Was "Purchase Agreement — 123 Main Street" pointing at ENV-2026-9001 — the
+         subject of ENV-2026-9041 on the id of a different envelope, which is the
+         single most confusing thing in the module: the mail and the envelope list
+         described the same deal under two identities. Subject and envelope now
+         agree, and the sender is a colleague, so this reads as mail that arrived
+         rather than mail Alex sent to himself. */
+      subject: 'Please DocuSign: Purchase Agreement — 4820 Cedar Ridge Dr, Austin TX',
+      date: dsMailDate(-3, '09:14 AM'),
       unread: true,
       category: 'envelopes',
       envId: 'ENV-2026-9001',
@@ -5354,21 +5469,21 @@ function dsInitMailbox() {
         <div class="ds-panel">
           <div class="ds-wiz-summary-card">
             <div><b style="font-size:18px;color:#1e293b;">DocuSign</b></div>
-            <h3 style="margin:12px 0;">Alex Rivera sent you a document to review and sign.</h3>
-            <p class="ds-wiz-sub">Please review and sign the Purchase Agreement for 123 Main Street. Timely execution ensures compliance with Texas escrow deadlines.</p>
+            <h3 style="margin:12px 0;">Dana Whitfield sent you a document to review and sign.</h3>
+            <p class="ds-wiz-sub">Robert Chen has signed. You are next in the signing order on the Purchase Agreement for 4820 Cedar Ridge Dr. Timely execution keeps the file inside the Texas escrow deadlines.</p>
             <div style="margin:20px 0;">
               <button type="button" class="ds-btn yellow" onclick="dsSimulateSigner('ENV-2026-9001')">REVIEW DOCUMENT</button>
             </div>
-            <p class="ds-recip-subnote">This message was sent to you by DocuSign on behalf of Alex Rivera (Keller Williams Realty). Do not share this email.</p>
+            <p class="ds-recip-subnote">This message was sent to you by DocuSign on behalf of Dana Whitfield (Lone Star Realty). Do not share this email.</p>
           </div>
         </div>`
     },
     {
       id: 'em-2',
       from: 'DocuSign System <docusign@docusign.net>',
-      to: 'Alex Rivera <alex.rivera@kwrealty.example.com>',
-      subject: 'Completed: Listing Agreement — 742 Evergreen Terrace',
-      date: 'Yesterday, 04:30 PM',
+      to: 'Alex Rivera <alex.rivera@agency.example.com>',
+      subject: 'Completed: Exclusive Listing Agreement — 742 Evergreen Terrace, Austin TX',
+      date: dsMailDate(-4, '04:30 PM'),
       unread: true,
       category: 'envelopes',
       envId: 'ENV-2026-9002',
@@ -5383,7 +5498,7 @@ function dsInitMailbox() {
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
               <span class="ds-badge completed">DOCUMENT COMPLETED &amp; SEALED</span>
             </div>
-            <h3 style="margin:0 0 10px;">All signers have completed Listing Agreement — 742 Evergreen Terrace</h3>
+            <h3 style="margin:0 0 10px;">All signers have completed Exclusive Listing Agreement — 742 Evergreen Terrace</h3>
             <p class="ds-wiz-sub">All parties have signed. A copy of the completed document and Certificate of Completion are now attached to the envelope record.</p>
             <div style="display:flex;gap:10px;margin-top:16px;">
               <button type="button" class="ds-btn primary" onclick="dsGoto('envelope-detail', 'ENV-2026-9002')">View in DocuSign</button>
@@ -5395,9 +5510,9 @@ function dsInitMailbox() {
     {
       id: 'em-3',
       from: 'DocuSign Security Team <security-alert@docus1gn-securesign.com>',
-      to: 'Alex Rivera <alex.rivera@kwrealty.example.com>',
+      to: 'Alex Rivera <alex.rivera@agency.example.com>',
       subject: 'URGENT: Verify your DocuSign account before permanent suspension',
-      date: 'Today, 08:05 AM',
+      date: dsMailDate(0, '08:05 AM'),
       unread: true,
       category: 'phishing',
       envId: null,
@@ -5428,9 +5543,9 @@ function dsInitMailbox() {
     {
       id: 'em-4',
       from: 'Escrow Wire Instructions <wire-update@title-fontaine-escrow.net>',
-      to: 'Alex Rivera <alex.rivera@kwrealty.example.com>',
+      to: 'Alex Rivera <alex.rivera@agency.example.com>',
       subject: 'UPDATED Wire Transfer Instructions for Closing on 456 Oak Lane',
-      date: 'Today, 10:20 AM',
+      date: dsMailDate(0, '10:20 AM'),
       unread: true,
       category: 'phishing',
       envId: null,
@@ -5464,9 +5579,9 @@ function dsInitMailbox() {
     {
       id: 'em-5',
       from: 'DocuSign Notifications <docusign@docusign.net>',
-      to: 'Alex Rivera <alex.rivera@kwrealty.example.com>',
+      to: 'Alex Rivera <alex.rivera@agency.example.com>',
       subject: 'Declined to Sign: Commercial Lease — Suite 400',
-      date: 'Aug 18, 11:45 AM',
+      date: dsMailDate(-5, '11:45 AM'),
       unread: false,
       category: 'envelopes',
       envId: 'ENV-2026-9005',
@@ -5483,7 +5598,7 @@ function dsInitMailbox() {
             <div class="ds-box-tip">
               "Lease commencement date was stated as Sept 1st instead of Oct 1st agreed in the LOI. Please revise and resend."
             </div>
-            <p class="ds-recip-subnote">The envelope has been voided automatically. You can duplicate it to create a corrected version.</p>
+            <p class="ds-recip-subnote">A decline terminates the envelope for every party — no further signatures can be collected on it. Duplicate it to send a corrected version.</p>
             <div style="margin-top:16px;">
               <button type="button" class="ds-btn primary" onclick="dsGoto('envelope-detail', 'ENV-2026-9005')">View Declined Envelope</button>
             </div>
@@ -5493,9 +5608,9 @@ function dsInitMailbox() {
     {
       id: 'em-6',
       from: 'DocuSign Reminders <docusign@docusign.net>',
-      to: 'Alex Rivera <alex.rivera@kwrealty.example.com>',
+      to: 'Alex Rivera <alex.rivera@agency.example.com>',
       subject: 'Reminder: 504 Westwood Blvd is Expiring in 3 Days',
-      date: 'Aug 17, 04:12 PM',
+      date: dsMailDate(-2, '04:12 PM'),
       unread: false,
       category: 'reminders',
       envId: 'ENV-2026-9008',
@@ -5508,7 +5623,7 @@ function dsInitMailbox() {
         <div class="ds-panel">
           <div class="ds-wiz-summary-card">
             <h3 style="margin:0 0 10px;">Envelope Expiration Warning</h3>
-            <p class="ds-wiz-sub">Envelope <b>ENV-2026-9008</b> (Listing Agreement — 504 Westwood Blvd) is scheduled to expire in 3 days. Sarah Johnson has not yet completed their assigned fields.</p>
+            <p class="ds-wiz-sub">Envelope <b>ENV-2026-9008</b> (Exclusive Listing Agreement — 504 Westwood Blvd) is scheduled to expire in 3 days. Sarah Johnson has not opened it yet.</p>
             <div style="margin-top:16px;">
               <button type="button" class="ds-btn primary" onclick="dsGoto('envelope-detail', 'ENV-2026-9008')">Send Manual Reminder</button>
             </div>
@@ -5518,9 +5633,9 @@ function dsInitMailbox() {
     {
       id: 'em-7',
       from: 'DocuSign Security Alert <security@docusign.net>',
-      to: 'Alex Rivera <alex.rivera@kwrealty.example.com>',
+      to: 'Alex Rivera <alex.rivera@agency.example.com>',
       subject: 'Security Alert: Access Code Lockout on ENV-2026-9014',
-      date: 'Aug 16, 01:10 PM',
+      date: dsMailDate(-4, '01:10 PM'),
       unread: false,
       category: 'security',
       envId: 'ENV-2026-9014',
@@ -5607,7 +5722,7 @@ function dsAddLiveEmail(evt) {
   box.unshift({
     id: newId,
     from: 'DocuSign System <docusign@docusign.net>',
-    to: 'Alex Rivera <alex.rivera@kwrealty.example.com>',
+    to: 'Alex Rivera <alex.rivera@agency.example.com>',
     subject: subject,
     date: 'Today, ' + timeStr,
     unread: true,
@@ -6420,7 +6535,7 @@ function dsScenariosHTML() {
 function dsScenarioDetailHTML() {
   const s = DS_SCENARIOS.find(x => x.id === dsState.activeScenarioId);
   if (!s) return '<p style="color:#888;padding:24px;">Scenario not found.</p>';
-  const r = dsStore.scenarios[s.id];
+  const r = dsStore.scenarios[dsScopedItemKey(s.id)];
   /* A retaken item keeps its record (firstAttempt is preserved) but has no current answer,
      so "answered" has to mean "there is an answer right now" — otherwise Try Again clears
      the answer and leaves the options disabled forever. answered can legitimately be 0. */
@@ -6452,6 +6567,10 @@ function dsScenarioDetailHTML() {
     ? ((r.correct && continueBtn) ? ''
       : `<button type="button" class="ds-btn sm" onclick="dsRetakeScenario('${escAttr(s.id)}')">${r.correct ? 'Retake Scenario' : 'Try Again'}</button>`)
     : '';
+  const scenExec = DS_SCENARIO_EXEC[s.id];
+  const execBtn = (answeredNow && r.correct && scenExec)
+    ? `<button type="button" class="ds-btn primary sm" onclick="dsScenarioExecute('${escAttr(s.id)}')" style="margin-right:6px;">▶ ${esc(scenExec.label)}</button>`
+    : '';
   const firstLine = (answeredNow && r.firstAttempt)
     ? `<div class="ds-first-attempt">First attempt: ${r.firstAttempt.correct ? '&#10003; correct' : '&#10007; incorrect'} &middot; this is what counts toward your score.</div>`
     : '';
@@ -6460,7 +6579,8 @@ function dsScenarioDetailHTML() {
       <b>${r.correct ? 'Correct!' : 'Not quite right.'}</b>
       <p class="ds-feedback-body">${esc(s.explanation)}</p>
       ${firstLine}
-      <div class="ds-feedback-actions">${continueBtn}${retakeBtn}</div>
+      ${r.correct && scenExec ? '<p style="font-size:12px;color:var(--ds-cobalt);font-weight:600;margin:8px 0 4px;">Now do it — execute the action in the system:</p>' : ''}
+      <div class="ds-feedback-actions">${execBtn}${continueBtn}${retakeBtn}</div>
     </div>` : '';
 
   return `
@@ -6481,9 +6601,10 @@ function dsScenarioDetailHTML() {
    for learning, not for laundering a wrong first answer into a right one. Mirrors
    qzRetakeScenario in the Qualia module. */
 function dsRetakeScenario(scenId) {
-  const prev = dsStore.scenarios[scenId] || {};
-  if (prev.firstAttempt) dsStore.scenarios[scenId] = { firstAttempt: prev.firstAttempt };
-  else delete dsStore.scenarios[scenId];
+  const key = dsScopedItemKey(scenId);
+  const prev = dsStore.scenarios[key] || {};
+  if (prev.firstAttempt) dsStore.scenarios[key] = { firstAttempt: prev.firstAttempt };
+  else delete dsStore.scenarios[key];
   dsSave();
   dsRenderRoot();
   /* If the walkthrough is parked on this exact step it is showing "Not quite" with no way
@@ -6497,12 +6618,14 @@ function dsAnswerScenario(scenId, optIdx) {
   const s = DS_SCENARIOS.find(x => x.id === scenId);
   if (!s) return;
   const isCorrect = (optIdx === s.correct);
-  const existing = dsStore.scenarios[scenId];
+  const key = dsScopedItemKey(scenId);
+  const existing = dsStore.scenarios[key];
   const record = { answered: optIdx, correct: isCorrect, ts: Date.now() };
   /* B-3 fix: track first attempt separately for exam-quality grading. */
   if (!existing) record.firstAttempt = { answered: optIdx, correct: isCorrect };
   else record.firstAttempt = existing.firstAttempt || { answered: optIdx, correct: isCorrect };
-  dsStore.scenarios[scenId] = record;
+  dsStore.scenarios[key] = record;
+  if (key !== scenId) dsStore.scenarios[scenId] = record;
   dsSave();
   /* B-7: Report score to SCApp core */
   const su = window.SCApp && SCApp.currentUser && SCApp.currentUser();
@@ -6530,7 +6653,7 @@ const DS_TRIAGE_ACTION_LABELS = {
 function dsTriageHTML() {
   const id = dsState.activeTriageId || 'tri-env-9041';
   const item = DS_TRIAGE_ITEMS.find(x => x.id === id) || DS_TRIAGE_ITEMS[0];
-  const r = dsStore.triages[item.id];
+  const r = dsStore.triages[dsScopedItemKey(item.id)];
   const answeredNow = !!(r && r.answered != null);
 
   const actions = ['resend', 'correct', 'void', 'none', 'report-phishing', 'escalate'];
@@ -6553,11 +6676,16 @@ function dsTriageHTML() {
     ? ((r.correct && continueBtn) ? ''
       : `<button type="button" class="ds-btn sm" onclick="dsRetakeTriage('${escAttr(item.id)}')">${r.correct ? 'Redo' : 'Try Again'}</button>`)
     : '';
+  const execLabel = DS_TRIAGE_EXEC_LABELS[item.rightAction];
+  const execBtn = (answeredNow && r.correct && execLabel)
+    ? `<button type="button" class="ds-btn primary sm" onclick="dsTriageExecute('${escAttr(item.id)}')" style="margin-right:6px;">▶ ${esc(execLabel)}</button>`
+    : '';
   const feedback = answeredNow ? `
     <div class="ds-feedback ${r.correct ? 'correct' : 'incorrect'}">
       <b>${r.correct ? 'Correct triage action.' : 'Not the right action here.'}</b>
       <p class="ds-feedback-body">${esc(item.explain)}</p>
-      <div class="ds-feedback-actions">${continueBtn}${retryBtn}</div>
+      ${r.correct && execLabel ? '<p style="font-size:12px;color:var(--ds-cobalt);font-weight:600;margin:8px 0 4px;">Now execute this action in the system:</p>' : ''}
+      <div class="ds-feedback-actions">${execBtn}${continueBtn}${retryBtn}</div>
     </div>` : '';
 
   return `
@@ -6585,9 +6713,10 @@ function dsTriageHTML() {
    triage and verify banks, which store their records in different bags but with the same
    shape. */
 function dsRetakeItem(bag, itemId, stepType, stepKey) {
-  const prev = bag[itemId] || {};
-  if (prev.firstAttempt) bag[itemId] = { firstAttempt: prev.firstAttempt };
-  else delete bag[itemId];
+  const key = dsScopedItemKey(itemId);
+  const prev = bag[key] || {};
+  if (prev.firstAttempt) bag[key] = { firstAttempt: prev.firstAttempt };
+  else delete bag[key];
   dsSave();
   dsRenderRoot();
   if (SimEngine.walkActive()) {
@@ -6602,17 +6731,172 @@ function dsTriageAnswer(itemId, action) {
   const item = DS_TRIAGE_ITEMS.find(x => x.id === itemId);
   if (!item) return;
   const isCorrect = (action === item.rightAction);
-  /* firstAttempt is written once and never overwritten, so retaking can improve what the
-     trainee understands without rewriting what they actually scored the first time. */
-  const prev = dsStore.triages[itemId];
-  dsStore.triages[itemId] = {
+  const key = dsScopedItemKey(itemId);
+  const prev = dsStore.triages[key];
+  const rec = {
     answered: action, correct: isCorrect, ts: Date.now(),
     firstAttempt: (prev && prev.firstAttempt) || { answered: action, correct: isCorrect }
   };
+  dsStore.triages[key] = rec;
+  if (key !== itemId) dsStore.triages[itemId] = rec;
   if (isCorrect) dsMark('tri:' + itemId);
   dsSave();
   if (isCorrect) dsNotifyStepDone('tri:' + itemId);
   dsRenderRoot();
+}
+
+/* ---------- Triage execution — perform the correct action in real time ---------- */
+const DS_TRIAGE_EXEC_LABELS = {
+  'resend': 'Send Reminder Now',
+  'correct': 'Open Correct Form',
+  'void': 'Open Void Panel',
+  'none': null,
+  'report-phishing': 'Report as Phishing',
+  'escalate': 'Escalate Now'
+};
+
+function dsTriageExecute(triageId) {
+  const item = DS_TRIAGE_ITEMS.find(x => x.id === triageId);
+  if (!item) return;
+  const act = item.rightAction;
+
+  if (act === 'resend' && item.envId) {
+    const env = dsGetEnvelope(item.envId);
+    if (env && env.status === 'expired') {
+      dsResendExpired(item.envId);
+    } else {
+      dsActionResend(item.envId);
+    }
+    dsAsk = null;
+    dsRenderRoot();
+    return;
+  }
+
+  if (act === 'void' && item.envId) {
+    dsAsk = null;
+    dsGoto('envelope-detail', item.envId);
+    requestAnimationFrame(() => {
+      const bar = document.querySelector('.ds-action-bar');
+      if (bar) {
+        const btn = bar.querySelector('[onclick*="dsVoid"]') || bar.querySelector('[onclick*="Void"]');
+        if (btn) btn.click();
+      }
+    });
+    return;
+  }
+
+  if (act === 'correct' && item.envId) {
+    dsAsk = null;
+    dsGoto('envelope-detail', item.envId);
+    requestAnimationFrame(() => dsActionCorrect(item.envId));
+    return;
+  }
+
+  if (act === 'report-phishing') {
+    const box = dsInitMailbox();
+    const mail = item.doc ? box.find(m => m.isPhish && item.doc.indexOf(m.id) > -1) : null;
+    if (mail) {
+      mail.reported = true;
+    }
+    dsAsk = null;
+    simToast('Phishing email reported to IT Security. Removed from inbox.', { tone: 'good', duration: 4000 });
+    dsRenderRoot();
+    return;
+  }
+
+  if (act === 'escalate' && item.envId) {
+    dsAddAuditLog(item.envId, 'Escalated to Supervising Broker', {
+      text: item.situation
+    });
+    dsAsk = null;
+    simToast(`Envelope ${item.envId} escalated to supervising broker with context attached.`, { tone: 'good', duration: 4000 });
+    dsRenderRoot();
+    return;
+  }
+
+  if (act === 'escalate' && !item.envId) {
+    dsAsk = null;
+    simToast('Escalated to supervising broker for review.', { tone: 'good', duration: 4000 });
+    dsRenderRoot();
+    return;
+  }
+
+  if (act === 'none') {
+    dsAsk = null;
+    simToast('No action needed — item is on track.', { tone: 'good', duration: 3000 });
+    dsRenderRoot();
+    return;
+  }
+}
+
+/* ============================================================================
+   SCENARIO EXECUTE — after answering a decide question correctly, the VA
+   can perform the real action in the simulator instead of just knowing the
+   answer.  Not every scenario has an executable action (some are conceptual
+   or communication-based), so missing entries are simply skipped.
+   ============================================================================ */
+const DS_SCENARIO_EXEC = {
+  'ds_scen_1':  { label: 'Open Envelope & Send Reminder', envId: 'ENV-2026-9041', action: 'resend' },
+  'ds_scen_2':  { label: 'Open Correct Form', envId: 'ENV-2026-8812', action: 'correct' },
+  'ds_scen_3':  { label: 'Open Void Panel', envId: 'ENV-2026-9041', action: 'void' },
+  'ds_scen_4':  { label: 'Send Reminder to Sarah', envId: 'ENV-2026-9041', action: 'resend' },
+  'ds_scen_7':  { label: 'Go to Templates', action: 'templates' },
+  'ds_scen_10': { label: 'Open Void Panel', envId: 'ENV-2026-9005', action: 'void' },
+  'ds_scen_11': { label: 'Send Reminder to Sarah', envId: 'ENV-2026-9008', action: 'resend' },
+  'ds_scen_12': { label: 'Escalate to Broker', envId: 'ENV-2026-9014', action: 'escalate' }
+};
+
+function dsScenarioExecute(scenarioId) {
+  const cfg = DS_SCENARIO_EXEC[scenarioId];
+  if (!cfg) return;
+
+  if (cfg.action === 'resend' && cfg.envId) {
+    const env = dsGetEnvelope(cfg.envId);
+    if (env && env.status === 'expired') {
+      dsResendExpired(cfg.envId);
+    } else {
+      dsActionResend(cfg.envId);
+    }
+    dsAsk = null;
+    dsGoto('envelope-detail', cfg.envId);
+    return;
+  }
+
+  if (cfg.action === 'correct' && cfg.envId) {
+    dsAsk = null;
+    dsGoto('envelope-detail', cfg.envId);
+    requestAnimationFrame(() => dsActionCorrect(cfg.envId));
+    return;
+  }
+
+  if (cfg.action === 'void' && cfg.envId) {
+    dsAsk = null;
+    dsGoto('envelope-detail', cfg.envId);
+    requestAnimationFrame(() => {
+      const bar = document.querySelector('.ds-action-bar');
+      if (bar) {
+        const btn = bar.querySelector('[onclick*="dsVoid"]') || bar.querySelector('[onclick*="Void"]');
+        if (btn) btn.click();
+      }
+    });
+    return;
+  }
+
+  if (cfg.action === 'escalate' && cfg.envId) {
+    dsAddAuditLog(cfg.envId, 'Escalated to Supervising Broker', {
+      text: 'Authentication failure — recipient locked out after 3 failed access code attempts.'
+    });
+    dsAsk = null;
+    simToast(`Envelope ${cfg.envId} escalated to supervising broker.`, { tone: 'good', duration: 4000 });
+    dsGoto('envelope-detail', cfg.envId);
+    return;
+  }
+
+  if (cfg.action === 'templates') {
+    dsAsk = null;
+    dsOpenTemplates();
+    return;
+  }
 }
 
 /* ============================================================================
@@ -6621,7 +6905,7 @@ function dsTriageAnswer(itemId, action) {
 function dsVerifyHTML() {
   const id = dsState.activeVerifyId || 'ver-cert-9041';
   const item = DS_VERIFY_ITEMS.find(x => x.id === id) || DS_VERIFY_ITEMS[0];
-  const r = dsStore.reviews[item.id];
+  const r = dsStore.reviews[dsScopedItemKey(item.id)];
   const answeredNow = !!(r && r.answered != null);
 
   const opts = item.options.map(opt => {
@@ -6682,11 +6966,14 @@ function dsVerifyAnswer(itemId, optionId) {
   const item = DS_VERIFY_ITEMS.find(x => x.id === itemId);
   if (!item) return;
   const isCorrect = (optionId === item.rightOptionId);
-  const prev = dsStore.reviews[itemId];
-  dsStore.reviews[itemId] = {
+  const key = dsScopedItemKey(itemId);
+  const prev = dsStore.reviews[key];
+  const vrec = {
     answered: optionId, correct: isCorrect, ts: Date.now(),
     firstAttempt: (prev && prev.firstAttempt) || { answered: optionId, correct: isCorrect }
   };
+  dsStore.reviews[key] = vrec;
+  if (key !== itemId) dsStore.reviews[itemId] = vrec;
   if (isCorrect) dsMark('ver:' + itemId);
   dsSave();
   if (isCorrect) dsNotifyStepDone('ver:' + itemId);
@@ -6699,7 +6986,7 @@ function dsVerifyAnswer(itemId, optionId) {
 function dsComposeHTML() {
   const id = dsState.activeComposeId || 'cmp-void-notice';
   const item = DS_COMPOSE_ITEMS.find(x => x.id === id) || DS_COMPOSE_ITEMS[0];
-  const r = dsStore.composes[item.id];
+  const r = dsStore.composes[dsScopedItemKey(item.id)];
 
   let feedback = '';
   if (r) {
@@ -6756,7 +7043,8 @@ function dsComposeGrade(itemId) {
   const passed = !reqFailed && text.trim().length >= 25;
   const passedCount = results.filter(r => r.pass).length;
 
-  dsStore.composes[itemId] = {
+  const compKey = dsScopedItemKey(itemId);
+  const compRec = {
     text: textarea ? textarea.value : '',
     passed: passed,
     results: results,
@@ -6764,11 +7052,332 @@ function dsComposeGrade(itemId) {
     totalCount: results.length,
     ts: Date.now()
   };
+  dsStore.composes[compKey] = compRec;
+  if (compKey !== itemId) dsStore.composes[itemId] = compRec;
 
   if (passed) dsMark('cmp:' + itemId);
   dsSave();
   if (passed) dsNotifyStepDone('cmp:' + itemId);
   dsRenderRoot();
+}
+
+/* ============================================================================
+   ASK POPUP — floating question dialog for lesson walkthroughs
+   Mirrors Qualia's qzAsk system: questions appear as a right-anchored dialog
+   over the current product screen, rather than navigating to a full page.
+   ============================================================================ */
+let dsAsk = null;
+let dsAskLast = null;
+
+function dsAskLayerEl() {
+  let el = document.getElementById('dsAskLayer');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'dsAskLayer';
+    el.className = 'ds-ask';
+    document.body.appendChild(el);
+  }
+  return el;
+}
+
+function dsAskClose() { dsAsk = null; dsRenderRoot(); }
+
+function dsAskReopen() {
+  if (!dsAskLast) return;
+  if (dsAskLast.kind === 'scenario') dsAskScenario(dsAskLast.id);
+  else if (dsAskLast.kind === 'triage') dsAskTriage(dsAskLast.id);
+  else if (dsAskLast.kind === 'verify') dsAskVerify(dsAskLast.id);
+  else if (dsAskLast.kind === 'compose') dsAskCompose(dsAskLast.id);
+}
+
+function dsAskScenario(scenarioId) {
+  dsAsk = { kind: 'scenario', id: scenarioId };
+  dsAskLast = dsAsk;
+  dsRenderRoot();
+}
+
+function dsAskTriage(triageId) {
+  dsAsk = { kind: 'triage', id: triageId };
+  dsAskLast = dsAsk;
+  dsRenderRoot();
+}
+
+function dsAskVerify(verifyId) {
+  dsAsk = { kind: 'verify', id: verifyId };
+  dsAskLast = dsAsk;
+  dsRenderRoot();
+}
+
+function dsAskCompose(composeId) {
+  dsAsk = { kind: 'compose', id: composeId };
+  dsAskLast = dsAsk;
+  dsRenderRoot();
+}
+
+function dsAskStepMeta() {
+  if (!SimEngine.walkActive()) return null;
+  const l = SimEngine.currentLesson();
+  const w = SimEngine.walkState();
+  return (l && w) ? { lesson: l, index: w.stepIndex } : null;
+}
+
+function dsAskChromeHTML(title) {
+  const meta = dsAskStepMeta();
+  const kicker = meta
+    ? `Lesson ${meta.lesson.number} — Step ${meta.index + 1} of ${meta.lesson.steps.length}`
+    : 'Practice question';
+  return `<div class="ds-ask-head">
+    <button type="button" class="ds-ask-close" onclick="dsAskClose()" title="Close">&times;</button>
+    <div class="ds-ask-kicker">${esc(kicker)}</div>
+    <h3>${esc(title)}</h3>
+  </div>`;
+}
+
+function dsAskFootHTML() {
+  const meta = dsAskStepMeta();
+  if (!meta) return '<div class="ds-ask-foot"></div>';
+  const dots = meta.lesson.steps.map((s, i) => {
+    const cls = i === meta.index ? 'current' : (SimEngine.stepDone(s) ? 'done' : '');
+    return `<span class="ds-ask-dot ${cls}"></span>`;
+  }).join('');
+  return `<div class="ds-ask-foot">
+    <div class="ds-ask-dots">${dots}</div>
+    <span class="ds-ask-exit" onclick="simWalkExit()">Exit walkthrough</span>
+  </div>`;
+}
+
+function dsAskScenarioHTML(id) {
+  const s = DS_SCENARIOS.find(x => x.id === id);
+  if (!s) return '';
+  const r = dsStore.scenarios[dsScopedItemKey(s.id)];
+  const answeredNow = !!(r && r.answered != null);
+
+  const order = dsOptionOrder(s.id, s.options.length);
+  const opts = order.map(origIdx => {
+    let cls = '';
+    if (answeredNow) {
+      if (origIdx === s.correct) cls = 'correct';
+      else if (origIdx === r.answered && !r.correct) cls = 'incorrect';
+    }
+    return `<button type="button" class="ds-option ${cls}" ${answeredNow ? 'disabled' : ''} onclick="dsAnswerScenario('${s.id}',${origIdx})">${esc(s.options[origIdx])}</button>`;
+  }).join('');
+
+  const continueBtn = (answeredNow && r.correct && SimEngine.continueHTML)
+    ? SimEngine.continueHTML(dsFindLessonStep('decide', 'scenarioId', s.id)) : '';
+  const retakeBtn = answeredNow
+    ? ((r.correct && continueBtn) ? ''
+      : `<button type="button" class="ds-btn sm" onclick="dsRetakeScenario('${escAttr(s.id)}')">${r.correct ? 'Retake' : 'Try Again'}</button>`)
+    : '';
+  const scenExec = DS_SCENARIO_EXEC[s.id];
+  const execBtn = (answeredNow && r.correct && scenExec)
+    ? `<button type="button" class="ds-btn primary sm" onclick="dsScenarioExecute('${escAttr(s.id)}')" style="margin-right:6px;">▶ ${esc(scenExec.label)}</button>`
+    : '';
+  const firstLine = (answeredNow && r.firstAttempt)
+    ? `<div class="ds-first-attempt">First attempt: ${r.firstAttempt.correct ? '&#10003; correct' : '&#10007; incorrect'}</div>` : '';
+  const feedback = answeredNow ? `
+    <div class="ds-feedback ${r.correct ? 'correct' : 'incorrect'}">
+      <b>${r.correct ? 'Correct!' : 'Not quite right.'}</b>
+      <p class="ds-feedback-body">${esc(s.explanation)}</p>
+      ${firstLine}
+      ${r.correct && scenExec ? '<p style="font-size:12px;color:var(--ds-cobalt);font-weight:600;margin:8px 0 4px;">Now do it — execute the action in the system:</p>' : ''}
+      <div class="ds-feedback-actions">${execBtn}${continueBtn}${retakeBtn}</div>
+    </div>` : '';
+
+  return dsAskChromeHTML(s.title) +
+    `<div class="ds-ask-body">
+      <p class="situation">${esc(s.situation)}</p>
+      <div class="ds-ask-sub">Select the best action:</div>
+      ${opts}
+      ${feedback}
+    </div>` +
+    dsAskFootHTML();
+}
+
+function dsAskTriageHTML(id) {
+  const item = DS_TRIAGE_ITEMS.find(x => x.id === id);
+  if (!item) return '';
+  const r = dsStore.triages[dsScopedItemKey(item.id)];
+  const answeredNow = !!(r && r.answered != null);
+
+  const actions = ['resend', 'correct', 'void', 'none', 'report-phishing', 'escalate'];
+  const btns = actions.map(act => {
+    let cls = '';
+    if (answeredNow) {
+      if (act === item.rightAction) cls = 'correct';
+      else if (act === r.answered && !r.correct) cls = 'incorrect';
+    }
+    return `<button type="button" class="ds-option ${cls}" ${answeredNow ? 'disabled' : ''} onclick="dsTriageAnswer('${item.id}','${act}')">
+      <b>${esc(DS_TRIAGE_ACTION_LABELS[act])}</b>
+    </button>`;
+  }).join('');
+
+  const docBtn = item.doc
+    ? `<div class="ds-ask-doc-btn"><button type="button" class="ds-btn primary sm" onclick="SimEngine.viewDoc('${escAttr(item.doc)}','${escAttr(item.docTitle)}')">Open &amp; Inspect ${esc(item.docTitle || 'Document')}</button></div>`
+    : '';
+
+  const continueBtn = (answeredNow && r.correct && SimEngine.continueHTML)
+    ? SimEngine.continueHTML(dsFindLessonStep('triage', 'triageId', item.id)) : '';
+  const retryBtn = answeredNow
+    ? ((r.correct && continueBtn) ? ''
+      : `<button type="button" class="ds-btn sm" onclick="dsRetakeTriage('${escAttr(item.id)}')">${r.correct ? 'Redo' : 'Try Again'}</button>`)
+    : '';
+  const execLabel = DS_TRIAGE_EXEC_LABELS[item.rightAction];
+  const execBtn = (answeredNow && r.correct && execLabel)
+    ? `<button type="button" class="ds-btn primary sm" onclick="dsTriageExecute('${escAttr(item.id)}')" style="margin-right:6px;">▶ ${esc(execLabel)}</button>`
+    : '';
+  const feedback = answeredNow ? `
+    <div class="ds-feedback ${r.correct ? 'correct' : 'incorrect'}">
+      <b>${r.correct ? 'Correct triage action.' : 'Not the right action here.'}</b>
+      <p class="ds-feedback-body">${esc(item.explain)}</p>
+      ${r.correct && execLabel ? '<p style="font-size:12px;color:var(--ds-cobalt);font-weight:600;margin:8px 0 4px;">Now execute this action in the system:</p>' : ''}
+      <div class="ds-feedback-actions">${execBtn}${continueBtn}${retryBtn}</div>
+    </div>` : '';
+
+  return dsAskChromeHTML(item.title) +
+    `<div class="ds-ask-body">
+      <p class="situation">${esc(item.situation)}</p>
+      ${docBtn}
+      <div class="ds-ask-sub">What is the appropriate action?</div>
+      <div class="ds-triage-actions">${btns}</div>
+      ${feedback}
+    </div>` +
+    dsAskFootHTML();
+}
+
+function dsAskVerifyHTML(id) {
+  const item = DS_VERIFY_ITEMS.find(x => x.id === id);
+  if (!item) return '';
+  const r = dsStore.reviews[dsScopedItemKey(item.id)];
+  const answeredNow = !!(r && r.answered != null);
+
+  const opts = item.options.map(opt => {
+    let cls = '';
+    if (answeredNow) {
+      if (opt.id === item.rightOptionId) cls = 'correct';
+      else if (opt.id === r.answered && !r.correct) cls = 'incorrect';
+    }
+    return `<button type="button" class="ds-option ${cls}" ${answeredNow ? 'disabled' : ''} onclick="dsVerifyAnswer('${item.id}','${opt.id}')">
+      <b>${opt.id.toUpperCase()}.</b> ${esc(opt.text)}
+    </button>`;
+  }).join('');
+
+  const docBtn = `<button type="button" class="ds-btn primary sm" onclick="SimEngine.viewDoc('${escAttr(item.doc)}','${escAttr(item.docTitle)}')">Open ${esc(item.docTitle)} &rarr;</button>`;
+
+  const continueBtn = (answeredNow && r.correct && SimEngine.continueHTML)
+    ? SimEngine.continueHTML(dsFindLessonStep('verify', 'reviewId', item.id)) : '';
+  const retryBtn = answeredNow
+    ? ((r.correct && continueBtn) ? ''
+      : `<button type="button" class="ds-btn sm" onclick="dsRetakeVerify('${escAttr(item.id)}')">${r.correct ? 'Redo' : 'Try Again'}</button>`)
+    : '';
+  const feedback = answeredNow ? `
+    <div class="ds-feedback ${r.correct ? 'correct' : 'incorrect'}">
+      <b>${r.correct ? 'Audit verified.' : 'That is not what the document shows.'}</b>
+      <p class="ds-feedback-body">${esc(item.explain)}</p>
+      <div class="ds-feedback-actions">${continueBtn}${retryBtn}</div>
+    </div>` : '';
+
+  return dsAskChromeHTML(item.title) +
+    `<div class="ds-ask-body">
+      <div style="background:#f0f4ff;border:1px solid #c5d8ff;border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div>
+          <span style="font-size:11px;font-weight:700;color:#1a237e;">INSPECT SOURCE DOCUMENT</span>
+          <div style="font-size:12px;color:#333;margin-top:2px;">Compare system records with the document audit trail.</div>
+        </div>
+        ${docBtn}
+      </div>
+      <div style="font-size:12.5px;line-height:1.6;color:#333;margin-bottom:14px;background:#fafafa;padding:10px 14px;border-radius:6px;border:1px solid #e0e0e0;">
+        <span style="font-size:10px;font-weight:700;color:var(--ds-muted);text-transform:uppercase;">SYSTEM LOG</span><br>
+        <b>${esc(item.systemValue)}</b>
+      </div>
+      <div class="ds-ask-sub">${esc(item.question)}</div>
+      ${opts}
+      ${feedback}
+    </div>` +
+    dsAskFootHTML();
+}
+
+function dsAskComposeHTML(id) {
+  const item = DS_COMPOSE_ITEMS.find(x => x.id === id);
+  if (!item) return '';
+  const r = dsStore.composes[dsScopedItemKey(item.id)];
+
+  let feedback = '';
+  if (r) {
+    const rubricRows = r.results.map(crit => `
+      <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;margin-bottom:3px;color:${crit.pass ? '#2e7d32' : '#c62828'};">
+        <span>${crit.pass ? dsIcon('check', 12) : dsIcon('x', 12)}</span>
+        <span>${esc(crit.label)} ${crit.required ? '(Required)' : ''}</span>
+      </div>`).join('');
+
+    const continueBtn = (r.passed && SimEngine.continueHTML)
+      ? SimEngine.continueHTML(dsFindLessonStep('compose', 'composeId', item.id)) : '';
+
+    feedback = `
+      <div class="ds-feedback ${r.passed ? 'correct' : 'incorrect'}">
+        <b>${r.passed ? 'Rubric Criteria Met (' + r.passedCount + '/' + r.totalCount + ')' : 'Needs Revision (' + r.passedCount + '/' + r.totalCount + ')'}</b>
+        <div style="margin-top:6px;">${rubricRows}</div>
+        ${continueBtn}
+      </div>`;
+  }
+
+  return dsAskChromeHTML(item.title) +
+    `<div class="ds-ask-body">
+      <p class="situation">${esc(item.scenario)}</p>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:10.5px;font-weight:700;color:var(--ds-muted);margin-bottom:5px;text-transform:uppercase;">Draft Email Message</label>
+        <textarea id="dsComposeText" rows="5" placeholder="Dear Robert,..." style="width:100%;padding:8px 10px;border:1px solid var(--ds-line);border-radius:6px;font-size:12.5px;line-height:1.6;resize:vertical;box-sizing:border-box;">${r ? esc(r.text) : ''}</textarea>
+      </div>
+      <div style="margin-bottom:12px;">
+        <button type="button" class="ds-btn primary sm" onclick="dsComposeGrade('${item.id}')">Submit &amp; Check Rubric &rarr;</button>
+      </div>
+      ${feedback}
+    </div>` +
+    dsAskFootHTML();
+}
+
+function dsAskRender() {
+  const el = dsAskLayerEl();
+  const wasOpen = el.classList.contains('open');
+
+  if (dsAsk && !SimEngine.walkActive()) dsAsk = null;
+  if (dsAsk && SimEngine.walkActive()) {
+    const cur = SimEngine.currentStep();
+    const mine = !!cur && (
+      (dsAsk.kind === 'scenario' && cur.type === 'decide' && cur.scenarioId === dsAsk.id) ||
+      (dsAsk.kind === 'triage' && cur.type === 'triage' && cur.triageId === dsAsk.id) ||
+      (dsAsk.kind === 'verify' && cur.type === 'verify' && cur.reviewId === dsAsk.id) ||
+      (dsAsk.kind === 'compose' && cur.type === 'compose' && cur.composeId === dsAsk.id)
+    );
+    if (!mine) dsAsk = null;
+  }
+
+  let savedComposeText = null;
+  if (dsAsk && dsAsk.kind === 'compose') {
+    const ta = el.querySelector('#dsComposeText');
+    if (ta) savedComposeText = ta.value;
+  }
+
+  let html = '';
+  if (dsAsk && dsAsk.kind === 'scenario') html = dsAskScenarioHTML(dsAsk.id);
+  else if (dsAsk && dsAsk.kind === 'triage') html = dsAskTriageHTML(dsAsk.id);
+  else if (dsAsk && dsAsk.kind === 'verify') html = dsAskVerifyHTML(dsAsk.id);
+  else if (dsAsk && dsAsk.kind === 'compose') html = dsAskComposeHTML(dsAsk.id);
+
+  const open = !!html;
+  el.innerHTML = open ? `<div class="ds-ask-scrim"></div><div class="ds-ask-card">${html}</div>` : '';
+  el.classList.toggle('open', open);
+
+  if (open && !wasOpen) {
+    const card = el.querySelector('.ds-ask-card');
+    if (card) card.classList.add('ds-ask-enter');
+  }
+
+  if (savedComposeText !== null) {
+    const ta = el.querySelector('#dsComposeText');
+    if (ta && !ta.value) ta.value = savedComposeText;
+  }
+
+  document.body.classList.toggle('ds-asking', open);
 }
 
 /* ============================================================================
@@ -7087,21 +7696,29 @@ function dsFindLessonStep(type, key, id) {
   return null;
 }
 function dsLessonStepDone(step) {
-  if (step.type === 'do') return !!dsStore.checklist[step.checklistId];
+  const lid = step._lessonId;
+  if (step.type === 'do') {
+    const key = lid ? step.checklistId + '#' + lid : step.checklistId;
+    return !!dsStore.checklist[key];
+  }
   if (step.type === 'decide') {
-    const r = dsStore.scenarios[step.scenarioId];
+    const key = lid ? step.scenarioId + '#' + lid : step.scenarioId;
+    const r = dsStore.scenarios[key];
     return !!(r && r.correct);
   }
   if (step.type === 'triage') {
-    const r = dsStore.triages[step.triageId];
+    const key = lid ? step.triageId + '#' + lid : step.triageId;
+    const r = dsStore.triages[key];
     return !!(r && r.correct);
   }
   if (step.type === 'verify') {
-    const r = dsStore.reviews[step.reviewId];
+    const key = lid ? step.reviewId + '#' + lid : step.reviewId;
+    const r = dsStore.reviews[key];
     return !!(r && r.correct);
   }
   if (step.type === 'compose') {
-    const r = dsStore.composes[step.composeId];
+    const key = lid ? step.composeId + '#' + lid : step.composeId;
+    const r = dsStore.composes[key];
     return !!(r && r.passed);
   }
   if (step.type === 'configure') return !!dsStore.checklist['cfg:' + step.id];
@@ -7156,7 +7773,23 @@ function dsLessonStepLabel(step) {
 
 /* Step chip: good / bad / pending. */
 function dsLessonStepStatus(step) {
+  const lid = step._lessonId;
   if (dsLessonStepDone(step)) return 'good';
+  if (step.type === 'decide') {
+    const key = lid ? step.scenarioId + '#' + lid : step.scenarioId;
+    const s = dsStore.scenarios[key];
+    if (s && s.answered != null && !s.correct) return 'bad';
+  }
+  if (step.type === 'triage') {
+    const key = lid ? step.triageId + '#' + lid : step.triageId;
+    const s = dsStore.triages[key];
+    if (s && s.answered != null && !s.correct) return 'bad';
+  }
+  if (step.type === 'verify') {
+    const key = lid ? step.reviewId + '#' + lid : step.reviewId;
+    const s = dsStore.reviews[key];
+    if (s && s.answered != null && !s.correct) return 'bad';
+  }
   return 'pending';
 }
 
@@ -7218,16 +7851,14 @@ function dsResetItemState(bag, id) {
    the trainee replays a lesson whose whole premise ("stop this from being signed") is gone.
    Only lessons that actually mutate something appear here. */
 const DS_LESSON_UNDO = {
-  'l02-prepare-send': () => {
-    // The wizard send creates an envelope override and resets the draft.
+  'l03-send-envelope': () => {
     dsClearEnvelopeOverride('ENV-2026-9041');
     dsResetWizard();
   },
-  'l05-triage-actions': () => {
-    // Correct / resend / void performed against the triage envelopes.
+  'l06-templates-actions': () => {
     ['ENV-2026-9041', 'ENV-2026-8812', 'ENV-2026-6620', 'ENV-2026-7734'].forEach(dsClearEnvelopeOverride);
   },
-  'l10-capstone-bandeja': () => {
+  'l10-capstone': () => {
     DS_ENVELOPES.forEach(e => dsClearEnvelopeOverride(e.id));
   }
 };
@@ -7239,20 +7870,28 @@ function dsClearEnvelopeOverride(envId) {
   if (dsDemo.overrides && dsDemo.overrides[envId]) delete dsDemo.overrides[envId];
 }
 
-/* Clears one lesson so it can be run again. Note the deliberate consequence for items shared
-   between lessons (the capstone reuses several of the earlier triage envelopes): clearing
-   them also drops them from the other lesson's progress bar. That is honest — the item really
-   was cleared — and it is safe, because unlocking reads lessonsDone, not live progress, so a
-   lesson already finished stays finished and nothing downstream re-locks. */
+/* Clears one lesson so it can be run again. Scoped keys ensure that resetting one lesson
+   does not touch another lesson's progress on shared items. */
 function dsResetLesson(lessonId) {
   const l = SimEngine.findLesson(lessonId);
   if (!l) return;
   l.steps.forEach(step => {
-    if (step.type === 'do' && step.checklistId) delete dsStore.checklist[step.checklistId];
-    if (step.type === 'decide' && step.scenarioId) dsResetItemState(dsStore.scenarios, step.scenarioId);
-    if (step.type === 'triage' && step.triageId) dsResetItemState(dsStore.triages, step.triageId);
-    if (step.type === 'verify' && step.reviewId) dsResetItemState(dsStore.reviews, step.reviewId);
-    if (step.type === 'compose' && step.composeId) dsResetItemState(dsStore.composes, step.composeId);
+    if (step.type === 'do' && step.checklistId) {
+      delete dsStore.checklist[step.checklistId + '#' + lessonId];
+      delete dsStore.checklist[step.checklistId];
+    }
+    if (step.type === 'decide' && step.scenarioId) {
+      delete dsStore.scenarios[step.scenarioId + '#' + lessonId];
+    }
+    if (step.type === 'triage' && step.triageId) {
+      delete dsStore.triages[step.triageId + '#' + lessonId];
+    }
+    if (step.type === 'verify' && step.reviewId) {
+      delete dsStore.reviews[step.reviewId + '#' + lessonId];
+    }
+    if (step.type === 'compose' && step.composeId) {
+      delete dsStore.composes[step.composeId + '#' + lessonId];
+    }
     if (step.type === 'configure') {
       delete dsStore.checklist['cfg:' + step.id];
       if (dsStore.configures) dsResetItemState(dsStore.configures, step.id);
@@ -7449,11 +8088,235 @@ function dsCloseAuditModal() {
   if (m) m.remove();
 }
 
-/* ---------- Certificate of Completion Modal ---------- */
+function dsCertPendingLabel(r, env) {
+  switch (r.status) {
+    case 'declined': return 'Declined to sign' + (env.statusNote ? '' : '');
+    case 'authfail': return 'Authentication failed — signing blocked';
+    case 'expired':  return 'Access expired before signing';
+    case 'voided':   return 'Envelope voided before signing';
+    case 'created':  return 'Not yet sent';
+    default:         return 'Awaiting signature';
+  }
+}
+
 function dsOpenCertificateModal(envId) {
   const env = dsGetEnvelope(envId);
   if (!env) return;
   dsMark('ds_cert_open');
+
+  /* Status derivation — unchanged from the audited version. */
+  const certSigners = (env.recipients || []).filter(r => r.action !== 'Receives a Copy');
+  const ccRecips = (env.recipients || []).filter(r => r.action === 'Receives a Copy');
+  const signedCount = certSigners.filter(r => r.status === 'completed' || r.status === 'signed').length;
+  const sealed = env.status === 'completed' && certSigners.length > 0 && signedCount === certSigners.length;
+  const certStatus =
+    sealed                        ? 'Completed' :
+    env.status === 'voided'       ? 'Voided' :
+    env.status === 'declined'     ? 'Declined' :
+    env.status === 'expired'      ? 'Expired' :
+    env.status === 'authfail'     ? 'Authentication Failed' :
+    env.status === 'draft'        ? 'Created' :
+                                    'Sent';
+
+  const envGuid = dsEnvelopeGuid(env.id);
+  const guidFlat = envGuid.replace(/-/g, '');
+
+  /* 12h timestamp helper: convert an ISO date to "M/D/YYYY H:MM:SS AM/PM" in Central Time.
+     Deterministic: the minute/second comes from the PRNG seeded on the envelope + recipient,
+     never from the clock. The hour parameter is the base hour (24h), offset is the day offset. */
+  const rndTs = dsMulberry32(dsHashString('certts|' + env.id));
+  function certTs(dateStr, hourBase) {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const h24 = hourBase || (9 + Math.floor(rndTs() * 8));
+    const mn = Math.floor(rndTs() * 60);
+    const sc = Math.floor(rndTs() * 60);
+    const h12 = h24 === 0 ? 12 : (h24 > 12 ? h24 - 12 : h24);
+    const ampm = h24 >= 12 ? 'PM' : 'AM';
+    return m + '/' + d + '/' + y + ' ' + h12 + ':' + String(mn).padStart(2, '0') + ':' + String(sc).padStart(2, '0') + ' ' + ampm;
+  }
+
+  const createdDate = env.createdDate || DS_TODAY;
+  const sentTs = certTs(createdDate, 10);
+
+  /* Per-signer timestamps: sent, viewed, signed — each advanced from the previous by PRNG minutes. */
+  const signerRows = certSigners.map((r, idx) => {
+    const hasSigned = r.status === 'completed' || r.status === 'signed';
+    const rndR = dsMulberry32(dsHashString('certr|' + env.id + '|' + r.email));
+
+    /* Sent timestamp: first signer gets sentTs, subsequent get a bit later */
+    const [sy, sm, sd] = createdDate.split('-').map(Number);
+    const sentH = 10 + idx;
+    const sentMn = Math.floor(rndR() * 60);
+    const sentSc = Math.floor(rndR() * 60);
+    const sentH12 = sentH > 12 ? sentH - 12 : sentH;
+    const sentAmpm = sentH >= 12 ? 'PM' : 'AM';
+    const rSent = sm + '/' + sd + '/' + sy + ' ' + sentH12 + ':' + String(sentMn).padStart(2, '0') + ':' + String(sentSc).padStart(2, '0') + ' ' + sentAmpm;
+
+    /* Viewed: 1-48 hours later */
+    const viewHoursLater = 1 + Math.floor(rndR() * 47);
+    const viewDate = new Date(Date.UTC(sy, sm - 1, sd, sentH + viewHoursLater, Math.floor(rndR() * 60), Math.floor(rndR() * 60)));
+    const vM = viewDate.getUTCMonth() + 1, vD = viewDate.getUTCDate(), vY = viewDate.getUTCFullYear();
+    const vH = viewDate.getUTCHours(), vMn = viewDate.getUTCMinutes(), vSc = viewDate.getUTCSeconds();
+    const vH12 = vH === 0 ? 12 : (vH > 12 ? vH - 12 : vH);
+    const vAmpm = vH >= 12 ? 'PM' : 'AM';
+    const rViewed = vM + '/' + vD + '/' + vY + ' ' + vH12 + ':' + String(vMn).padStart(2, '0') + ':' + String(vSc).padStart(2, '0') + ' ' + vAmpm;
+
+    /* Signed: 5-30 min after viewed */
+    const signMinLater = 5 + Math.floor(rndR() * 25);
+    const signDate = new Date(viewDate.getTime() + signMinLater * 60000);
+    const sM = signDate.getUTCMonth() + 1, sD = signDate.getUTCDate(), sY = signDate.getUTCFullYear();
+    const sH = signDate.getUTCHours(), sMn = signDate.getUTCMinutes(), sSc = signDate.getUTCSeconds();
+    const sH12 = sH === 0 ? 12 : (sH > 12 ? sH - 12 : sH);
+    const sAmpm = sH >= 12 ? 'PM' : 'AM';
+    const rSigned = sM + '/' + sD + '/' + sY + ' ' + sH12 + ':' + String(sMn).padStart(2, '0') + ':' + String(sSc).padStart(2, '0') + ' ' + sAmpm;
+
+    const ip = dsSOfficeIp(env.id + '|' + r.email);
+    const sigHex = dsSignatureHex(env.id, r.email);
+
+    /* Authentication Details block */
+    let authBlock = '';
+    if (r.accessCode) {
+      const authTs = rViewed; /* code entered just before viewing */
+      authBlock = `
+        <div class="cert-disc">
+          <span class="k">Authentication Details</span><br>
+          &nbsp;&nbsp;Access Code Entered: ${authTs}<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;Result: Passed<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;Attempts: 1 of 3<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;Code Reference: ${esc(r.accessCode)}
+        </div>`;
+    } else if (r.smsAuth) {
+      authBlock = `
+        <div class="cert-disc">
+          <span class="k">Authentication Details</span><br>
+          &nbsp;&nbsp;SMS Authentication:<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;Type: SMS<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;Status: Passed<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;Phone: *** *** ${Math.floor(rndR() * 9000 + 1000)}
+        </div>`;
+    } else if (r.idv) {
+      authBlock = `
+        <div class="cert-disc">
+          <span class="k">Authentication Details</span><br>
+          &nbsp;&nbsp;ID Verification Details:<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;Type: IDV<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;Status: Passed<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;Document Presented: State Driver Licence (TX)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;Checks: Document authenticity, biometric selfie match<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;Submitted: ${rViewed}<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;Performed: ${rViewed}
+        </div>`;
+    }
+
+    /* Electronic Record and Signature Disclosure per signer */
+    const discRndH = dsMulberry32(dsHashString('disc|' + env.id + '|' + r.email));
+    const discId = (function () {
+      let hex = '';
+      while (hex.length < 32) hex += Math.floor(discRndH() * 0x100000000).toString(16).padStart(8, '0');
+      hex = hex.slice(0, 32);
+      return hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) + '-' + hex.slice(16, 20) + '-' + hex.slice(20, 32);
+    })();
+    const discBlock = hasSigned ? `
+        <div class="cert-disc">
+          <span class="k">Electronic Record and Signature Disclosure:</span><br>
+          &nbsp;&nbsp;Accepted: ${rViewed}<br>
+          &nbsp;&nbsp;ID: ${discId}
+        </div>` : '';
+
+    /* Security level label */
+    const secLabel = r.accessCode ? 'Email, Account Authentication (None), <b>Access Code</b>' :
+      r.smsAuth ? 'Email, Account Authentication (None), <b>SMS</b>' :
+      r.idv ? 'Email, Account Authentication (None), <b>ID Verification</b>' :
+      'Email, Account Authentication (None)';
+
+    return `
+      <div class="cert-row">
+        <div class="c1">
+          <div class="who">${esc(r.name)}</div>
+          <div>${esc(r.email)}</div>
+          <div>${esc(r.role)}</div>
+          <div class="muted">Security Level: ${secLabel}</div>
+          ${authBlock}
+          ${discBlock}
+        </div>
+        <div class="c2">
+          ${hasSigned ? `
+            <div class="cert-sig">
+              <div class="name">${esc(r.name)}</div>
+              <div class="sid">${sigHex}</div>
+            </div>
+            <div class="muted" style="margin-top:6px;">Signature Adoption: Pre-selected Style<br>Using IP Address: ${esc(ip)}</div>
+          ` : `<div class="muted" style="font-style:italic;">${esc(dsCertPendingLabel(r, env))}</div>`}
+        </div>
+        <div class="c3">
+          Sent: ${rSent}<br>
+          ${hasSigned ? `Viewed: ${rViewed}<br>Signed: ${rSigned}` :
+            (r.status === 'waiting' || r.status === 'created') ? '' : `Status: ${esc(r.status)}`}
+        </div>
+      </div>`;
+  }).join('');
+
+  /* Carbon Copy rows */
+  const ccRows = ccRecips.map(r => {
+    const rndC = dsMulberry32(dsHashString('certcc|' + env.id + '|' + r.email));
+    const ccH = 10 + Math.floor(rndC() * 8);
+    const [cy, cm, cd] = createdDate.split('-').map(Number);
+    const ccTs = cm + '/' + cd + '/' + cy + ' ' + (ccH > 12 ? ccH - 12 : ccH) + ':' + String(Math.floor(rndC() * 60)).padStart(2, '0') + ':' + String(Math.floor(rndC() * 60)).padStart(2, '0') + ' ' + (ccH >= 12 ? 'PM' : 'AM');
+    return `
+      <div class="cert-row">
+        <div class="c1">
+          <div class="who">${esc(r.name)}</div>
+          <div>${esc(r.email)}</div>
+          <div>${esc(r.role)}</div>
+          <div class="muted">Security Level: Email, Account Authentication (None)</div>
+        </div>
+        <div class="c2">COPIED</div>
+        <div class="c3">Sent: ${ccTs}</div>
+      </div>`;
+  }).join('');
+
+  /* Envelope Summary Events — derive from actual status */
+  let summaryRows = `<div class="cert-row"><div class="c1">Envelope Sent</div><div class="c2">Hashed/Encrypted</div><div class="c3">${sentTs}</div></div>`;
+  if (sealed || signedCount > 0) {
+    /* Last signer timestamp for Certified Delivered and Signing Complete */
+    const lastRnd = dsMulberry32(dsHashString('certlast|' + env.id));
+    const lH = 14 + Math.floor(lastRnd() * 6);
+    const [ly, lm, ld] = createdDate.split('-').map(Number);
+    const deliverDate = new Date(Date.UTC(ly, lm - 1, ld + 1 + Math.floor(lastRnd() * 3), lH, Math.floor(lastRnd() * 60), Math.floor(lastRnd() * 60)));
+    const dM = deliverDate.getUTCMonth() + 1, dD = deliverDate.getUTCDate(), dY = deliverDate.getUTCFullYear();
+    const dH = deliverDate.getUTCHours(), dMn = deliverDate.getUTCMinutes(), dSc = deliverDate.getUTCSeconds();
+    const dH12 = dH === 0 ? 12 : (dH > 12 ? dH - 12 : dH);
+    const dAmpm = dH >= 12 ? 'PM' : 'AM';
+    const deliverTs = dM + '/' + dD + '/' + dY + ' ' + dH12 + ':' + String(dMn).padStart(2, '0') + ':' + String(dSc).padStart(2, '0') + ' ' + dAmpm;
+
+    summaryRows += `<div class="cert-row"><div class="c1">Certified Delivered</div><div class="c2">Security Checked</div><div class="c3">${deliverTs}</div></div>`;
+    if (sealed) {
+      const completeDate = new Date(deliverDate.getTime() + (5 + Math.floor(lastRnd() * 25)) * 60000);
+      const cM = completeDate.getUTCMonth() + 1, cD = completeDate.getUTCDate(), cY = completeDate.getUTCFullYear();
+      const cH = completeDate.getUTCHours(), cMn = completeDate.getUTCMinutes(), cSc = completeDate.getUTCSeconds();
+      const cH12 = cH === 0 ? 12 : (cH > 12 ? cH - 12 : cH);
+      const cAmpm = cH >= 12 ? 'PM' : 'AM';
+      const completeTs = cM + '/' + cD + '/' + cY + ' ' + cH12 + ':' + String(cMn).padStart(2, '0') + ':' + String(cSc).padStart(2, '0') + ' ' + cAmpm;
+      summaryRows += `<div class="cert-row"><div class="c1">Signing Complete</div><div class="c2">Security Checked</div><div class="c3">${completeTs}</div></div>`;
+      const sealDate = new Date(completeDate.getTime() + 2000);
+      const seM = sealDate.getUTCMonth() + 1, seD = sealDate.getUTCDate(), seY = sealDate.getUTCFullYear();
+      const seH = sealDate.getUTCHours(), seMn = sealDate.getUTCMinutes(), seSc = sealDate.getUTCSeconds();
+      const seH12 = seH === 0 ? 12 : (seH > 12 ? seH - 12 : seH);
+      const seAmpm = seH >= 12 ? 'PM' : 'AM';
+      const sealTs = seM + '/' + seD + '/' + seY + ' ' + seH12 + ':' + String(seMn).padStart(2, '0') + ':' + String(seSc).padStart(2, '0') + ' ' + seAmpm;
+      summaryRows += `<div class="cert-row"><div class="c1">Completed</div><div class="c2">Security Checked</div><div class="c3">${sealTs}</div></div>`;
+    }
+  }
+
+  /* Source Envelope metadata */
+  const docs = env.documents || [];
+  const totalDocPages = docs.reduce((s, d) => s + (d.pages || 1), 0);
+  const totalSigs = certSigners.length;
+  const totalInits = (env.fields || []).filter(f => f.type === 'Initial').length;
+  const senderName = (env.sender || 'Alex Rivera').replace(/\s*\(VA\)/, '');
+  const senderEmail = 'alex.rivera@agency.example.com';
+  const senderIp = dsSOfficeIp(env.id);
 
   const modal = document.createElement('div');
   modal.id = 'dsCertModalWrap';
@@ -7465,48 +8328,109 @@ function dsOpenCertificateModal(envId) {
           <span>${dsIcon('award', 20)}</span>
           <div>
             <h3 class="ds-cert-title">Certificate of Completion</h3>
-            <div class="ds-cert-sub">Envelope Tracking ID: ${esc(env.id)} &middot; SHA-256 Verified</div>
+            <div class="ds-cert-sub">Envelope Tracking ID: ${esc(env.id)}</div>
           </div>
         </div>
         <button type="button" class="ds-btn ds-cert-close-btn" onclick="dsCloseCertificateModal()">${dsIcon('x', 13)}</button>
       </div>
       <div class="ds-modal-body ds-cert-body">
-        <div class="ds-cert-header">
-          <h2 class="ds-cert-h2">SUMMARY & AUDIT CERTIFICATE</h2>
-          <div class="ds-cert-type">DocuSign Electronic Signature Custody Verification</div>
+
+        <h1 class="cert-title">Certificate Of Completion</h1>
+
+        <div class="cert-idline">
+          <span>Envelope Id: ${guidFlat}</span>
+          <span><b>Status: ${esc(certStatus)}</b></span>
+        </div>
+        <div class="cert-subject">
+          Subject: ${esc(env.subject)}<br>
+          Customer Reference: ${esc(env.id)}
         </div>
 
-        <table class="ds-cert-tbl">
-          <tr><td class="ds-cert-th">Subject:</td><td>${esc(env.subject)}</td></tr>
-          <tr><td class="ds-cert-th">Envelope Originator:</td><td>${esc(env.sender)}</td></tr>
-          <tr><td class="ds-cert-th">Account:</td><td>Keller Williams Realty — Lone Star (#KW-TX-98421)</td></tr>
-          <tr><td class="ds-cert-th">Status:</td><td><b class="ds-cert-status-tag">COMPLETED & SEALED</b></td></tr>
-          <tr><td class="ds-cert-th">Time Zone:</td><td>(UTC-06:00) Central Time (US & Canada)</td></tr>
-        </table>
-
-        <div class="ds-cert-sec-title">Signer Events</div>
-        ${(env.recipients || []).map(r => `
-          <div class="ds-cert-recip-card">
-            <div class="ds-cert-recip-row">
-              <div>
-                <b>${esc(r.name)}</b> (${esc(r.role)})<br>
-                <span class="ds-cert-recip-sub">${esc(r.email)}</span>
-              </div>
-              <div class="ds-cert-sig-col">
-                <div class="ds-sig-1 ds-sig-init">${esc(r.name)}</div>
-                <div class="ds-cert-sigid">Signature ID: DS-SIG-${dsSigId(env.id, r.email)}</div>
-              </div>
-            </div>
-            <div class="ds-audit-actor">
-              <span>Security: ${r.accessCode ? 'Access Code (Verified)' : r.smsAuth ? 'SMS Authentication (Verified)' : r.idv ? 'DocuSign ID Verification (Pass)' : 'Email Verified'}</span> &middot;
-              <span>IP: 192.168.1.42</span> &middot;
-              <span>Disclosure Accepted: YES</span>
-            </div>
-          </div>`).join('')}
-
-        <div class="ds-audit-details">
-          Electronic Record and Signature Disclosure: By executing this agreement through DocuSign, all parties agree that electronic signatures have the same legal validity and enforceability as handwritten signatures pursuant to the U.S. Electronic Signatures in Global and National Commerce Act (E-SIGN) and UETA.
+        <div style="font-size:9.5px;font-weight:700;margin-bottom:4px;">Source Envelope:</div>
+        <div class="cert-grid">
+          <div>
+            <div>Document Pages: ${totalDocPages}</div>
+            <div>Certificate Pages: ${totalDocPages + 1}</div>
+            <div>AutoNav: Enabled</div>
+            <div>EnvelopeId Stamping: Enabled</div>
+            <div>Time Zone: (UTC-06:00) Central Time (US &amp; Canada)</div>
+          </div>
+          <div>
+            <div>Signatures: ${totalSigs}</div>
+            <div>Initials: ${totalInits}</div>
+          </div>
+          <div>
+            <div>Envelope Originator:</div>
+            <div>${esc(senderName)}</div>
+            <div>1201 Guadalupe St, Suite 300</div>
+            <div>Austin, TX 78701</div>
+            <div>${esc(senderEmail)}</div>
+            <div>IP Address: ${esc(senderIp)}</div>
+          </div>
         </div>
+
+        <div class="cert-sec"><span>Record Tracking</span></div>
+        <div class="cert-row">
+          <div class="c1">Status: Original<br><span class="muted">${sentTs}</span></div>
+          <div class="c2">Holder: ${esc(senderName)}<br><span class="muted">${esc(senderEmail)}</span></div>
+          <div class="c3">Location: DocuSign</div>
+        </div>
+
+        <div class="cert-sec"><span>Signer Events</span><span class="c2">Signature</span><span class="c3">Timestamp</span></div>
+        ${signerRows || '<div class="cert-empty">&nbsp;</div>'}
+
+        <div class="cert-sec"><span>In Person Signer Events</span><span class="c2">Signature</span><span class="c3">Timestamp</span></div>
+        <div class="cert-empty">&nbsp;</div>
+
+        <div class="cert-sec"><span>Editor Delivery Events</span><span class="c2">Status</span><span class="c3">Timestamp</span></div>
+        <div class="cert-empty">&nbsp;</div>
+
+        <div class="cert-sec"><span>Agent Delivery Events</span><span class="c2">Status</span><span class="c3">Timestamp</span></div>
+        <div class="cert-empty">&nbsp;</div>
+
+        <div class="cert-sec"><span>Intermediary Delivery Events</span><span class="c2">Status</span><span class="c3">Timestamp</span></div>
+        <div class="cert-empty">&nbsp;</div>
+
+        <div class="cert-sec"><span>Certified Delivery Events</span><span class="c2">Status</span><span class="c3">Timestamp</span></div>
+        <div class="cert-empty">&nbsp;</div>
+
+        <div class="cert-sec"><span>Carbon Copy Events</span><span class="c2">Status</span><span class="c3">Timestamp</span></div>
+        ${ccRows || '<div class="cert-empty">&nbsp;</div>'}
+
+        <div class="cert-sec"><span>Witness Events</span><span class="c2">Signature</span><span class="c3">Timestamp</span></div>
+        <div class="cert-empty">&nbsp;</div>
+
+        <div class="cert-sec"><span>Notary Events</span><span class="c2">Signature</span><span class="c3">Timestamp</span></div>
+        <div class="cert-empty">&nbsp;</div>
+
+        <div class="cert-sec"><span>Envelope Summary Events</span><span class="c2">Status</span><span class="c3">Timestamps</span></div>
+        ${summaryRows}
+
+        <div class="cert-sec"><span>Payment Events</span><span class="c2">Status</span><span class="c3">Timestamps</span></div>
+        <div class="cert-empty">&nbsp;</div>
+
+        <div class="cert-sec"><span>Electronic Record and Signature Disclosure</span></div>
+        <div class="cert-legal">
+          <h3>Electronic Record and Signature Disclosure created on: 1/14/2024 10:02:41 AM</h3>
+          <p>From time to time, Lone Star Realty may be required by law to provide to you certain
+          written notices or disclosures. Described below are the terms and conditions for providing
+          to you such notices and disclosures electronically through the DocuSign system.</p>
+          <h3>Signer authentication</h3>
+          <p>Where the sender has applied an authentication requirement to a recipient, that recipient
+          must satisfy it before the signing session will open. An Access Code is a secret supplied by
+          the sender and shared with the recipient out of band; three consecutive failures block the
+          recipient and the envelope must be corrected before they can proceed. ID Verification
+          requires the recipient to submit a government-issued photo identity document, which is
+          checked for authenticity and matched against a live capture of the recipient.</p>
+          <h3>Getting paper copies</h3>
+          <p>At any time, you may request from us a paper copy of any record provided or made available
+          electronically to you by us.</p>
+          <h3>Required hardware and software</h3>
+          <p>Operating Systems: Windows 2000 or above, Mac OS X. Browsers: Final release versions of
+          Internet Explorer 6.0 or above, Mozilla Firefox, Safari, or Chrome. PDF Reader: Acrobat or
+          similar software may be required to view and print PDF files.</p>
+        </div>
+
       </div>
       <div class="ds-modal-foot">
         <button type="button" class="ds-btn" onclick="simToast('Downloading Certificate of Completion PDF...', { tone:'good' })">${dsIcon('download')} Download Certificate</button>
@@ -7620,7 +8544,7 @@ function dsGetDocPageContent(env, doc, curPage, totalPages, type, signers, closi
       <p class="clause">Each party shall exercise commercially reasonable diligence in satisfying all contractual milestones. The inspection and review period shall run concurrently from the Effective Date of <b>${esc(created)}</b>.</p>
       <div class="row">
         <div class="f"><label>Verification Period</label><div class="v">10 Business Days</div></div>
-        <div class="f"><label>Escrow Agent</label><div class="v">Lone Star Title &amp; Escrow</div></div>
+        <div class="f"><label>Escrow Agent</label><div class="v">Kaplan Title &amp; Escrow</div></div>
         <div class="f"><label>Target Closing / Completion</label><div class="v big">${esc(closing)}</div></div>
       </div>
       <h2 class="sec">5. Representations, Warranties &amp; Authority</h2>
@@ -7672,6 +8596,55 @@ function dsGetDocPageContent(env, doc, curPage, totalPages, type, signers, closi
     ${renderInitialsRow()}`;
 }
 
+/* ---------- Envelope GUID ----------
+   DocuSign identifies an envelope by a GUID and, with EnvelopeId Stamping on,
+   burns "Docusign Envelope ID: <GUID>" into the top-left margin of every page
+   it produces. The generated documents carried no such stamp, so the 88
+   background envelopes printed as plain contracts while the three real library
+   files — once stamped — printed as DocuSign output. Same account, two kinds of
+   paper.
+
+   ENV-2026-9041 stays exactly as it is: it is this simulator's customer
+   reference, and the lessons, the exam, the notifications and the walkthrough
+   row targets all address envelopes by it. The GUID is derived from it, so the
+   pairing is stable across reloads and a trainee can match a stamped page back
+   to a row in Agreements.
+
+   Deterministic by construction — same envelope id, same GUID, forever. A
+   Math.random() here would rewrite the stamp on every repaint, which is the
+   one thing a document identifier must never do. */
+/* The documents in documents/ carry their envelope GUID as a literal, burned into
+   every page and repeated in their certificates and notification emails. Those
+   literals are the source of truth for the envelopes they belong to — deriving a
+   second, different GUID for the same envelope would put two identifiers on one
+   file, which is precisely the confusion this stamp exists to remove. Everything
+   else is derived. */
+const DS_ENVELOPE_GUIDS = {
+  'ENV-2026-9041': '4C2B9A17-3E5F-4D8A-9B21-77E3A1D0F5C6',  /* doc-purchase-agreement + doc-property-disclosure */
+  'ENV-2026-8812': '9D4A61E7-2B08-4F3C-A5D1-6C8B037E9142',  /* doc-contractor-agreement */
+  'ENV-2026-9002': '3F1C07B6-A9D2-4E58-BA0C-7719E4D3F820',  /* certificate-9002-auth */
+  'ENV-2026-7799': 'E3B0C442-98FC-4C14-9AFB-F4C8996FB924'   /* certificate-anomaly, counterparty */
+};
+
+function dsEnvelopeGuid(envId) {
+  if (DS_ENVELOPE_GUIDS[envId]) return DS_ENVELOPE_GUIDS[envId];
+  /* Drawn from mulberry32 rather than by concatenating dsHashString(seed + i).
+     FNV-1a over inputs that differ only in a trailing digit leaves the chunks
+     visibly correlated — the first attempt produced 666B257C-676B-270F-686B-...,
+     which no GUID has ever looked like. The PRNG is already in this file and
+     mixes properly. */
+  const rnd = dsMulberry32(dsHashString('envelope-guid|' + String(envId || '')));
+  let hex = '';
+  while (hex.length < 32) hex += Math.floor(rnd() * 0x100000000).toString(16).padStart(8, '0');
+  hex = hex.slice(0, 32).split('');
+  /* Version 4, variant 1 — the shape a DocuSign envelope id actually has. */
+  hex[12] = '4';
+  hex[16] = '89ab'[Math.floor(rnd() * 4)];
+  hex = hex.join('').toUpperCase();
+  return hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) +
+         '-' + hex.slice(16, 20) + '-' + hex.slice(20, 32);
+}
+
 function dsRenderEnvelopeDocument(env, docIndex, pageNum) {
   if (!env) return '<p>Document not available.</p>';
   docIndex = docIndex || 0;
@@ -7685,16 +8658,26 @@ function dsRenderEnvelopeDocument(env, docIndex, pageNum) {
   const type = env.type || 'Agreement';
   const created = env.createdDate || DS_TODAY;
   const closing = env.closingDate || '2026-09-01';
+  /* When this document carries fields, the viewer paints a real "Sign here" tag over
+     every unsigned line after load. Printing "[ Pending Signature ]" underneath one
+     leaves two overlapping labels saying the same thing, so the placeholder gives way
+     to the tag. Documents with no fields keep it — there the line would otherwise be
+     an unexplained blank. */
+  const hasTags = (env.fields || []).some(f => (f.docIndex || 0) === docIndex);
+  const envGuid = dsEnvelopeGuid(env.id);
 
   // Build parties summary
   const signers = recips.filter(r => r.action !== 'Receives a Copy');
 
-  // Multi-page contextual legal clauses tailored to current page
-  const clausesHTML = dsGetDocPageContent(env, doc, curPage, totalPages, type, signers, closing, created);
-
-  // Signature Blocks (rendered on final execution page or single-page documents)
-  const isFinalPage = curPage === totalPages;
-  const sigBlocksHTML = isFinalPage ? `
+  /* One sheet per page, all of them, in one scroll.
+     This used to render ONLY the active page, so a generated document had exactly one
+     `.paper` in the DOM and scrolling stopped at the bottom of it, while the three real
+     library documents ship all their pages at once and scroll straight through. Two
+     navigation models in one viewer: the same "Next Page" control meant "regenerate the
+     frame" on 88 envelopes and "jump within the document" on 3. DocuSign presents an
+     envelope as a continuous scroll, so that is the model both paths use now, and
+     pageNum became "scroll here after load" rather than "render only this". */
+  const sigBlocksFor = () => `
     <h2 class="sec">${totalPages > 1 ? (totalPages * 3) + '. ' : '5. '}Execution &amp; Signatures</h2>
     <div class="sigrow">
       ${signers.map(r => {
@@ -7707,30 +8690,35 @@ function dsRenderEnvelopeDocument(env, docIndex, pageNum) {
         return `
           <div class="sig">
             <div class="line" style="${isSigned ? 'color:#1e3a8a;' : 'color:#999;font-style:normal;font-size:12px;'}">
-              ${isSigned ? sigStamp : (isVoided ? '[ VOIDED ]' : (isExpired ? '[ EXPIRED ]' : '[ Pending Signature ]'))}
+              ${isSigned ? sigStamp : (isVoided ? '[ VOIDED ]' : (isExpired ? '[ EXPIRED ]' : (hasTags ? '' : '[ Pending Signature ]')))}
             </div>
             <label>${esc(r.role || 'Signer')} &mdash; ${esc(r.name)} &middot; ${isSigned ? 'Signed: ' + esc(r.signedDate || env.createdDate || DS_TODAY) : esc(r.status || 'waiting')}</label>
           </div>`;
       }).join('')}
-    </div>` : '';
+    </div>`;
 
-  // Doc switcher / page switcher header
-  const docNavHTML = docs.length > 1 || totalPages > 1 ? `
-    <div class="doc-nav-bar">
-      ${docs.length > 1 ? `
-        <div class="doc-tabs">
-          ${docs.map((d, i) => `
-            <button type="button" class="doc-tab-btn ${i === docIndex ? 'active' : ''}" onclick="parent.dsViewEnvelopeDoc('${escAttr(env.id)}', ${i}, 1)">
-              ${esc(d.name)}
-            </button>`).join('')}
-        </div>` : ''}
-      ${totalPages > 1 ? `
-        <div class="page-pager">
-          <button type="button" class="page-btn" ${curPage <= 1 ? 'disabled' : ''} onclick="parent.dsViewEnvelopeDoc('${escAttr(env.id)}', ${docIndex}, ${curPage - 1})">&larr; Prev Page</button>
-          <span class="page-count">Page ${curPage} of ${totalPages}</span>
-          <button type="button" class="page-btn" ${curPage >= totalPages ? 'disabled' : ''} onclick="parent.dsViewEnvelopeDoc('${escAttr(env.id)}', ${docIndex}, ${curPage + 1})">Next Page &rarr;</button>
-        </div>` : ''}
-    </div>` : '';
+  const sheetsHTML = Array.from({ length: totalPages }, (_, i) => {
+    const pg = i + 1;
+    const clauses = dsGetDocPageContent(env, doc, pg, totalPages, type, signers, closing, created);
+    return `
+  <div class="paper" data-page="${pg}">
+    <div class="ds-envstamp" aria-hidden="true"><span>Docusign Envelope ID: ${esc(envGuid)}</span></div>
+    ${pg === 1 ? `
+    <div class="letterhead">
+      <div>
+        <h1>${esc(doc.name.replace(/\.pdf$/i, '').replace(/_/g, ' '))}</h1>
+        <div class="sub">${esc(type)} &middot; DocuSign eSignature Package${totalPages > 1 ? ` &middot; ${totalPages} pages` : ''}</div>
+      </div>
+      <div class="ref"><b>${esc(env.id)}</b>Date: ${esc(created)}</div>
+    </div>` : `
+    <div class="contd">${esc(doc.name.replace(/\.pdf$/i, '').replace(/_/g, ' '))} &middot; ${esc(env.id)} &middot; continued</div>`}
+    ${clauses}
+    ${pg === totalPages ? sigBlocksFor() : ''}
+    <div class="foot">Generated for SkillCloud Academy DocuSign Training &middot; Envelope ID: ${esc(env.id)}</div>
+    <div class="pagenum">Page ${pg} of ${totalPages}</div>
+  </div>`;
+  }).join('');
+
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -7751,7 +8739,12 @@ function dsRenderEnvelopeDocument(env, docIndex, pageNum) {
     .page-btn { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 4px 8px; font-size: 11.5px; cursor: pointer; font-family: inherit; }
     .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .page-count { font-weight: 600; color: #555; }
-    .paper { max-width: 760px; margin: 0 auto; background: #fff; padding: 44px 52px; box-shadow: 0 8px 30px rgba(20, 25, 22, .15); line-height: 1.6; }
+    .paper { position: relative; max-width: 760px; margin: 0 auto 26px; background: #fff; padding: 44px 52px 46px 78px; box-shadow: 0 8px 30px rgba(20, 25, 22, .15); line-height: 1.6; scroll-margin-top: 56px; }
+    .ds-envstamp { position: absolute; left: 20px; top: 40px; height: 340px; width: 14px; pointer-events: none; }
+    .ds-envstamp span { display: block; writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; font-family: Arial, Helvetica, sans-serif; font-size: 8px; letter-spacing: .55px; color: #8d929a; }
+    .paper:last-of-type { margin-bottom: 0; }
+    .contd { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 22px; }
+    .pagenum { position: absolute; bottom: 16px; right: 52px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10.5px; letter-spacing: .4px; color: var(--muted); }
     .letterhead { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--ink); padding-bottom: 14px; margin-bottom: 24px; }
     .letterhead h1 { font-size: 18px; margin: 0 0 4px; letter-spacing: .3px; }
     .letterhead .sub { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
@@ -7768,25 +8761,17 @@ function dsRenderEnvelopeDocument(env, docIndex, pageNum) {
     .sigrow { display: flex; gap: 24px; margin-top: 16px; flex-wrap: wrap; }
     .sig { flex: 1; min-width: 180px; }
     .sig .line { border-bottom: 1px solid var(--ink); height: 32px; font-family: 'Brush Script MT', cursive, sans-serif; font-size: 19px; padding-top: 4px; }
+    /* Once a line holds a signature it becomes the bordered "Signed by:" block
+       DocuSign draws, rather than a name resting on an underline. */
+    .sig .line:not(:empty) { border: 1px solid #b9bdc5; border-radius: 2px; background: #fff; height: auto; min-height: 46px; padding: 13px 8px 3px; position: relative; }
+    .sig .line:not(:empty)::before { content: "Signed by:"; position: absolute; top: 2px; left: 7px; font-family: Arial, Helvetica, sans-serif; font-size: 7px; font-style: normal; letter-spacing: .3px; color: #6e727c; }
     .sig label { display: block; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); margin-top: 6px; }
     .foot { margin-top: 28px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; color: var(--muted); }
   </style>
 </head>
 <body>
-  <div class="banner">Official DocuSign Test Drive Document &middot; ${esc(env.id)} &middot; Page ${curPage} of ${totalPages}</div>
-  ${docNavHTML}
-  <div class="paper">
-    <div class="letterhead">
-      <div>
-        <h1>${esc(doc.name.replace(/\.pdf$/i, '').replace(/_/g, ' '))}</h1>
-        <div class="sub">${esc(type)} &middot; DocuSign eSignature Package ${totalPages > 1 ? `(Page ${curPage} of ${totalPages})` : ''}</div>
-      </div>
-      <div class="ref"><b>${esc(env.id)}</b>Date: ${esc(created)}</div>
-    </div>
-    ${clausesHTML}
-    ${sigBlocksHTML}
-    <div class="foot">Generated for SkillCloud Academy DocuSign Training &middot; Envelope ID: ${esc(env.id)} &middot; Page ${curPage} of ${totalPages}</div>
-  </div>
+  <div class="banner">Official DocuSign Test Drive Document &middot; Envelope ID ${esc(envGuid)} &middot; Ref ${esc(env.id)} &middot; ${totalPages} page${totalPages === 1 ? '' : 's'}</div>
+  ${sheetsHTML}
 </body>
 </html>`;
 }
@@ -7826,7 +8811,11 @@ function dsViewEnvelopeDoc(envId, docIndex, pageNum) {
       upFrame.onload = () => {
         let ud;
         try { ud = upFrame.contentDocument; } catch (e) { return; }
-        if (ud && ud.body) dsPaintViewerFields(ud, env, docIndex);
+        if (!ud || !ud.body) return;
+        dsPaintViewerFields(ud, env, docIndex);
+        /* Blank practice sheets are a document like any other: same bar, same scroll. */
+        const uDocs = (env.documents && env.documents.length) ? env.documents : [doc];
+        dsWireDocNav(ud, env, docIndex, pageNum, uDocs, doc.pages || DS_UPLOAD_BLANK_PAGES);
       };
       upFrame.srcdoc = dsBlankDocHTML(docName, doc.pages || DS_UPLOAD_BLANK_PAGES);
     }
@@ -7842,7 +8831,26 @@ function dsViewEnvelopeDoc(envId, docIndex, pageNum) {
   const html = dsRenderEnvelopeDocument(env, docIndex, pageNum);
   SimEngine.viewDoc('about:blank', docName);
   const frame = document.getElementById('simDocFrame');
-  if (frame) frame.srcdoc = html;
+  /* data-ds-doc identifies which library FILE the frame currently holds. A generated
+     document is not one of them, so the marker has to go — left behind, dsViewLibraryDoc
+     would read it as "already showing this file" and skip the reload that repaints the
+     page bar. */
+  if (frame) {
+    frame.removeAttribute('data-ds-doc');
+    /* The generated sheet gets the same tag layer as a library document. Without this
+       the 81 background envelopes rendered signature LINES but never a single "Sign
+       here" tag, while the detail panel told the trainee the envelope had fields on
+       it. Anchoring measures element boxes, so it has to wait for layout. */
+    frame.onload = () => {
+      let gd;
+      try { gd = frame.contentDocument; } catch (e) { return; }
+      if (!gd || !gd.body) return;
+      dsPaintViewerFields(gd, env, docIndex, { pendingOnly: true });
+      const gDocs = (env.documents && env.documents.length) ? env.documents : [doc];
+      dsWireDocNav(gd, env, docIndex, pageNum, gDocs, doc.pages || 1);
+    };
+    frame.srcdoc = html;
+  }
 }
 
 /* ---------- Library documents ----------
@@ -7878,30 +8886,38 @@ function dsViewLibraryDoc(env, docIndex, pageNum, lib) {
 }
 
 /* Stamping signatures on real library documents (doc-*.html) */
-function dsStampLibraryDocSignatures(d, env) {
+/* Fills the document's own execution slots for parties who have already signed.
+   `consumed` is the set of elements the tag layer already claimed, handed in by
+   dsPaintViewerFields.
+
+   This used to bail out entirely whenever the envelope carried any custom field —
+   which meant the three curriculum envelopes, the only ones with real documents
+   behind them, never had a single signature or initial rendered. John Smith read
+   as "completed" everywhere in the product while his signature line sat blank.
+   Now the two passes cooperate: tags win on the slots they occupy, and every other
+   slot is still stamped according to that recipient's actual status. */
+function dsStampLibraryDocSignatures(d, env, consumed) {
   if (!d || !d.body || !env) return;
   const recips = env.recipients || [];
+  /* Only signers are ever stamped. A "Receives a Copy" recipient putting a signature
+     on a document would contradict the whole point of Lesson 2. */
+  const signerRecips = recips.filter(r => r.action !== 'Receives a Copy');
   const isEnvCompleted = env.status === 'completed';
-  const hasCustomFields = (env.fields || []).length > 0;
-
-  // If envelope has custom placed fields, custom fields take precedence on those pages
-  if (hasCustomFields) return;
+  const taken = consumed || new Set();
 
   // 1. Initial Slots (.initials .ibox .slot)
   const iboxes = Array.from(d.querySelectorAll('.initials .ibox, .ibox'));
   iboxes.forEach(ib => {
     const label = (ib.querySelector('label')?.textContent || '').toLowerCase();
     const slot = ib.querySelector('.slot');
-    if (!slot) return;
+    if (!slot || taken.has(slot)) return;
 
-    const recip = recips.find(r => {
-      const name = (r.name || '').toLowerCase();
-      const role = (r.role || '').toLowerCase();
-      return (name && label.includes(name)) || (role && label.includes(role)) ||
-             (label.includes('buyer') && (role.includes('buyer') || name.includes('smith') || name.includes('buyer'))) ||
-             (label.includes('seller') && (role.includes('seller') || name.includes('sarah') || name.includes('seller'))) ||
-             (label.includes('contractor') && (role.includes('contractor') || name.includes('contractor')));
-    }) || recips[0];
+    /* No `|| recips[0]` fallback. A document carries execution slots for parties who
+       are not recipients of this envelope at all — the purchase agreement has a
+       "Broker Acknowledgement — Austin Premier Realty" line, and falling back to the
+       first recipient stamped John Smith's name onto the broker's line. An unmatched
+       slot is a slot nobody on this envelope signs, and it stays blank. */
+    const recip = dsMatchRecipByLabel(label, signerRecips);
 
     if (recip && (recip.status === 'signed' || recip.status === 'completed' || isEnvCompleted)) {
       const inits = dsRecipInitials(recip.name || 'Signer');
@@ -7923,27 +8939,23 @@ function dsStampLibraryDocSignatures(d, env) {
     sigs.forEach((sig, idx) => {
       const label = (sig.querySelector('label')?.textContent || '').toLowerCase();
       const line = sig.querySelector('.line');
-      if (!line) return;
+      if (!line || taken.has(line)) return;
 
       if (label.includes('date')) {
-        const r = matchedRecip || recips.find(x => x.status === 'signed' || x.status === 'completed') || recips[0];
+        /* A date belongs to the signature immediately to its left. Guessing "any
+           recipient who happens to have signed" put a date next to an empty line. */
+        const r = matchedRecip;
         if (r && (r.status === 'signed' || r.status === 'completed' || isEnvCompleted)) {
-          line.textContent = dsDateUS(r.signedDate || env.createdDate || DS_TODAY);
+          line.textContent = dsDateUS(r.signedDate || env.completedDate || env.createdDate || DS_TODAY);
           line.setAttribute('style',
             'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;' +
             'font-size:12.5px;font-weight:600;color:#1e3a8a;display:flex;align-items:flex-end;padding-bottom:6px;transform:translateY(-6px);');
         }
       } else {
-        const recip = recips.find(r => {
-          const name = (r.name || '').toLowerCase();
-          const role = (r.role || '').toLowerCase();
-          return (name && label.includes(name)) || (role && label.includes(role)) ||
-                 (label.includes('buyer') && (role.includes('buyer') || name.includes('smith') || name.includes('buyer'))) ||
-                 (label.includes('seller') && (role.includes('seller') || name.includes('sarah') || name.includes('seller'))) ||
-                 (label.includes('contractor') && (role.includes('contractor') || name.includes('contractor')));
-        }) || (idx === 0 ? recips[0] : recips[1]);
+        const recip = dsMatchRecipByLabel(label, signerRecips);
 
         if (recip) matchedRecip = recip;
+        else matchedRecip = null;   /* so the Date cell beside it stays blank too */
 
         if (recip && (recip.status === 'signed' || recip.status === 'completed' || isEnvCompleted)) {
           if (recip.signatureData) {
@@ -7961,18 +8973,33 @@ function dsStampLibraryDocSignatures(d, env) {
   });
 }
 
-function dsDecorateLibraryDoc(frame, env, docIndex, pageNum, lib) {
-  let d;
-  try { d = frame.contentDocument; } catch (e) { return; }
+/* ---------- Document navigation bar ----------
+   One implementation for both kinds of document, injected into the frame after load.
+
+   What it replaces: the library path built its own bar, the generated path baked a
+   different one into its markup, and both drove "Prev / Next" by calling
+   dsViewEnvelopeDoc() again — reloading the whole frame to perform what is, in a
+   document that already holds all its pages, a scroll. The counter was printed once at
+   render time and never updated, so scrolling to page 6 left it reading "Page 1 of 6",
+   Prev stayed disabled because it believed you were still on page 1, and Next moved you
+   BACKWARDS to page 2.
+
+   Now the counter follows the scroll and the buttons scroll. Only switching to a
+   different document in the envelope reloads the frame, because that genuinely is a
+   different file. */
+function dsWireDocNav(d, env, docIndex, pageNum, docs, totalPages) {
   if (!d || !d.body) return;
+  const win = d.defaultView;
+  const sheets = Array.from(d.querySelectorAll('[data-page]'));
 
-  const docs  = (env.documents && env.documents.length) ? env.documents : [{ name: lib.name, pages: lib.pages }];
-  const total = lib.pages || 1;
-  const cur   = Math.max(1, Math.min(pageNum || 1, total));
-
-  /* Rebuilt on every call so the counter never goes stale. */
+  /* Re-decorating is normal: dsViewLibraryDoc calls the decorator on load AND directly
+     when the browser serves the same src without reloading. Tear the previous bar and
+     its listener down first, or every re-entry stacks another scroll handler. */
   const prev = d.getElementById('dsDocNav');
   if (prev) prev.remove();
+  if (d.__dsNavScroll && win) win.removeEventListener('scroll', d.__dsNavScroll);
+
+  if (!sheets.length) return;
 
   const bar = d.createElement('div');
   bar.id = 'dsDocNav';
@@ -7983,52 +9010,205 @@ function dsDecorateLibraryDoc(frame, env, docIndex, pageNum, lib) {
     'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;' +
     'font-size:12.5px;box-shadow:0 2px 8px rgba(20,25,22,.08);margin-bottom:18px;');
 
-  const tabs = d.createElement('div');
-  tabs.setAttribute('style', 'display:flex;gap:6px;flex-wrap:wrap;');
-  docs.forEach((dd, i) => {
-    const b = d.createElement('button');
-    b.type = 'button';
-    b.textContent = dd.name;
-    b.setAttribute('style',
-      'border:1px solid ' + (i === docIndex ? '#260559' : '#ccc') + ';' +
-      'background:' + (i === docIndex ? '#260559' : '#fff') + ';' +
-      'color:' + (i === docIndex ? '#fff' : '#24262b') + ';' +
-      'border-radius:4px;padding:5px 10px;font-size:11.5px;cursor:pointer;font-family:inherit;');
-    b.addEventListener('click', () => dsViewEnvelopeDoc(env.id, i, 1));
-    tabs.appendChild(b);
-  });
+  /* Document tabs. Switching document IS a reload — it is another file. */
+  if (docs.length > 1) {
+    const tabs = d.createElement('div');
+    tabs.setAttribute('style', 'display:flex;gap:6px;flex-wrap:wrap;');
+    docs.forEach((dd, i) => {
+      const b = d.createElement('button');
+      b.type = 'button';
+      b.textContent = dd.name;
+      b.setAttribute('style',
+        'border:1px solid ' + (i === docIndex ? '#260559' : '#ccc') + ';' +
+        'background:' + (i === docIndex ? '#260559' : '#fff') + ';' +
+        'color:' + (i === docIndex ? '#fff' : '#24262b') + ';' +
+        'border-radius:4px;padding:5px 10px;font-size:11.5px;cursor:pointer;font-family:inherit;');
+      b.addEventListener('click', () => dsViewEnvelopeDoc(env.id, i, 1));
+      tabs.appendChild(b);
+    });
+    bar.appendChild(tabs);
+  }
 
   const pager = d.createElement('div');
-  pager.setAttribute('style', 'display:flex;align-items:center;gap:10px;');
-  const mkBtn = (label, page, disabled) => {
+  pager.setAttribute('style', 'display:flex;align-items:center;gap:10px;margin-left:auto;');
+
+  /* Positions the scroller by hand rather than calling scrollIntoView.
+     Same reason the counter no longer waits on requestAnimationFrame: a smooth
+     scrollIntoView is animation, and animation does not run in a frame that is not
+     compositing, so the button would silently do nothing. Adjusting scrollTop by the
+     sheet's current offset is exact, instant and always happens — and it is what a page
+     button in a document viewer should do anyway. sync() is called straight after so the
+     counter never lags a frame behind the jump. */
+  const goTo = pg => {
+    const t = sheets.find(x => +x.getAttribute('data-page') === pg);
+    if (!t) return;
+    const scroller = d.scrollingElement || d.documentElement;
+    scroller.scrollTop += t.getBoundingClientRect().top - 56;
+    sync();
+  };
+  const mkBtn = (label, delta) => {
     const b = d.createElement('button');
     b.type = 'button';
     b.textContent = label;
-    b.disabled = !!disabled;
     b.setAttribute('style',
       'background:#fff;border:1px solid #ccc;border-radius:4px;padding:4px 8px;' +
-      'font-size:11.5px;font-family:inherit;cursor:' + (disabled ? 'not-allowed' : 'pointer') + ';' +
-      'opacity:' + (disabled ? '.4' : '1') + ';');
-    if (!disabled) b.addEventListener('click', () => dsViewEnvelopeDoc(env.id, docIndex, page));
+      'font-size:11.5px;font-family:inherit;cursor:pointer;');
+    b.addEventListener('click', () => goTo(current() + delta));
     return b;
   };
+
   const count = d.createElement('span');
-  count.setAttribute('style', 'font-weight:600;color:#555;');
-  count.textContent = 'Page ' + cur + ' of ' + total;
+  count.setAttribute('style', 'font-weight:600;color:#555;min-width:88px;text-align:center;');
 
-  pager.appendChild(mkBtn('← Prev Page', cur - 1, cur <= 1));
+  /* Which page you are actually looking at: the last sheet whose top has passed under
+     the bar. Sheets are in document order, so a plain scan is exact — and it stays
+     correct for a sheet taller than the viewport, which threshold-based observers do
+     not handle cleanly. */
+  const current = () => {
+    const probe = 72;
+    let cur = sheets[0];
+    for (const sh of sheets) { if (sh.getBoundingClientRect().top <= probe) cur = sh; }
+    return +cur.getAttribute('data-page') || 1;
+  };
+
+  const prevBtn = mkBtn('← Prev Page', -1);
+  const nextBtn = mkBtn('Next Page →', 1);
+  pager.appendChild(prevBtn);
   pager.appendChild(count);
-  pager.appendChild(mkBtn('Next Page →', cur + 1, cur >= total));
-
-  if (docs.length > 1) bar.appendChild(tabs);
+  pager.appendChild(nextBtn);
   bar.appendChild(pager);
+
+  const sync = () => {
+    const pg = current();
+    count.textContent = 'Page ' + pg + ' of ' + totalPages;
+    [[prevBtn, pg <= 1], [nextBtn, pg >= totalPages]].forEach(([b, off]) => {
+      b.disabled = off;
+      b.style.opacity = off ? '.4' : '1';
+      b.style.cursor = off ? 'not-allowed' : 'pointer';
+    });
+  };
+
+  /* Called straight from the scroll event, deliberately not coalesced through
+     requestAnimationFrame. rAF does not run while the frame is not compositing — a
+     background tab, a hidden pane — and the counter would then sit frozen on whatever
+     page it last saw while the reader scrolled on. sync() is a read of at most a dozen
+     bounding rects, which is far cheaper than the risk of it silently not running. */
+  const onScroll = () => sync();
+  d.__dsNavScroll = onScroll;
+  if (win) win.addEventListener('scroll', onScroll, { passive: true });
+
+  /* The pager only earns its place on a multi-page document; the tabs on a multi-document
+     envelope. With neither, the bar is noise. */
+  if (totalPages <= 1) pager.style.display = 'none';
+  if (docs.length <= 1 && totalPages <= 1) return;
+
   d.body.insertBefore(bar, d.body.firstChild);
+  sheets.forEach(sh => { sh.style.scrollMarginTop = '56px'; });
+  sync();
 
-  dsStampLibraryDocSignatures(d, env);
-  dsPaintViewerFields(d, env, docIndex);
+  /* Open on the requested page. Callers still pass a page number — the lesson steps and
+     the "View" chips do — it just means "start here" now instead of "render only this". */
+  const startPage = Math.max(1, Math.min(pageNum || 1, totalPages));
+  if (startPage > 1) goTo(startPage);
+  sync();
+}
 
-  const target = d.querySelector('[data-page="' + cur + '"]');
-  if (target && target.scrollIntoView) target.scrollIntoView({ block: 'start' });
+function dsDecorateLibraryDoc(frame, env, docIndex, pageNum, lib) {
+  let d;
+  try { d = frame.contentDocument; } catch (e) { return; }
+  if (!d || !d.body) return;
+
+  const docs  = (env.documents && env.documents.length) ? env.documents : [{ name: lib.name, pages: lib.pages }];
+  const total = lib.pages || 1;
+
+  /* Order matters: the tag layer runs first and reports which slots it took, so the
+     stamping pass can fill only what is left instead of writing underneath a tag. */
+  const consumed = dsPaintViewerFields(d, env, docIndex);
+  dsStampLibraryDocSignatures(d, env, consumed);
+
+  /* Same bar the generated documents get. It used to be hand-built here, with a counter
+     printed once and Prev/Next that reloaded the file. */
+  dsWireDocNav(d, env, docIndex, pageNum, docs, total);
+}
+
+/* ---------- Anchoring fields to the document's own slots ----------
+   Every library document (documents/doc-*.html) marks its own execution points:
+   `.sigrow > .sig > (.line + label)` for signatures and dates, `.ibox > .slot` for
+   initials. Before this existed, a field with no x/y fell back to a single default
+   coordinate, so ENV-2026-9041's four fields all landed stacked on top of each other
+   at 16%/22% of page 1 while the real signature block on page 6 stayed empty. The
+   fix is to stop guessing: find the element the field belongs on, measure it, and
+   place the tag there. Fields the trainee places by hand already carry real x/y and
+   are left exactly where they were dropped. */
+
+/* One matcher, shared by the tag layer and the stamping pass, so a label can never
+   resolve to one recipient in one and a different one in the other. */
+function dsMatchRecipByLabel(label, recips) {
+  label = (label || '').toLowerCase();
+  if (!label) return null;
+  return (recips || []).find(r => {
+    const name = (r.name || '').toLowerCase();
+    const role = (r.role || '').toLowerCase();
+    if (name && label.indexOf(name) > -1) return true;
+    if (role && label.indexOf(role) > -1) return true;
+    /* Last-name match: documents say "Buyer Signature — John Smith", correction may
+       have renamed the recipient, and a surname still identifies the party. */
+    const last = name.split(' ').filter(Boolean).pop();
+    return !!(last && last.length > 2 && label.indexOf(last) > -1);
+  }) || null;
+}
+
+/* Percentage offset of `el` inside `page`, or null when either has no layout yet
+   (a frame decorated before paint would divide by zero). */
+function dsPctWithin(page, el) {
+  const pr = page.getBoundingClientRect();
+  const er = el.getBoundingClientRect();
+  if (!pr.width || !pr.height) return null;
+  return {
+    x: Math.round(((er.left - pr.left) / pr.width) * 1000) / 10,
+    y: Math.round(((er.top - pr.top) / pr.height) * 1000) / 10,
+    w: Math.round((er.width / pr.width) * 1000) / 10
+  };
+}
+
+/* Finds the element a field should sit on. `kind` is 'initial' | 'signature' | 'date'.
+   Returns { pos, el } — el is handed back so the stamping pass knows this slot is
+   already spoken for and must not double-fill it. */
+function dsFieldAnchor(page, kind, recip, recips, seq) {
+  if (kind === 'initial') {
+    const slots = Array.from(page.querySelectorAll('.ibox'));
+    if (!slots.length) return null;
+    /* Match the box by its own label first; only fall back to signing order. */
+    let box = slots.find(b => dsMatchRecipByLabel(b.querySelector('label') ? b.querySelector('label').textContent : '', [recip]) );
+    if (!box) box = slots[Math.min(seq || 0, slots.length - 1)];
+    const slot = box.querySelector('.slot') || box;
+    const pos = dsPctWithin(page, slot);
+    return pos ? { pos: pos, el: slot } : null;
+  }
+
+  const rows = Array.from(page.querySelectorAll('.sigrow'));
+  if (!rows.length) return null;
+
+  /* A row belongs to whichever recipient its signature label names. */
+  let row = rows.find(rw => {
+    const sig = rw.querySelector('.sig');
+    if (!sig) return false;
+    const lb = sig.querySelector('label');
+    return dsMatchRecipByLabel(lb ? lb.textContent : '', [recip]) === recip;
+  });
+  if (!row) row = rows[Math.min(seq || 0, rows.length - 1)];
+
+  const sigs = Array.from(row.querySelectorAll('.sig'));
+  if (!sigs.length) return null;
+  const labelOf = sg => ((sg.querySelector('label') || {}).textContent || '').toLowerCase();
+
+  let cell;
+  if (kind === 'date') cell = sigs.find(sg => labelOf(sg).indexOf('date') > -1) || sigs[1] || sigs[0];
+  else                 cell = sigs.find(sg => labelOf(sg).indexOf('date') === -1) || sigs[0];
+
+  const line = cell.querySelector('.line') || cell;
+  const pos = dsPctWithin(page, line);
+  return pos ? { pos: pos, el: line } : null;
 }
 
 function dsFieldShortLabel(f, who) {
@@ -8041,15 +9221,28 @@ function dsFieldShortLabel(f, who) {
   return label || f.type;
 }
 
-function dsPaintViewerFields(d, env, docIndex) {
+/* Returns the set of document elements the tag layer took over, so the stamping
+   pass that runs after it does not write a second signature underneath a tag. */
+function dsPaintViewerFields(d, env, docIndex, opts) {
+  const consumed = new Set();
+  /* pendingOnly is for the generated sheet, which already draws completed signatures
+     and initials into its own markup. Painting a "done" tag over those would print
+     the same signature twice on the same line. Library documents arrive blank and
+     need the full set. */
+  const pendingOnly = !!(opts && opts.pendingOnly);
   const fields = (env.fields || []).filter(f => (f.docIndex || 0) === (docIndex || 0));
-  if (!fields.length) return;
+  Array.from(d.querySelectorAll('.dsview-field')).forEach(n => n.remove());
+  if (!fields.length) return consumed;
   const recs = env.recipients || [];
 
-  Array.from(d.querySelectorAll('.dsview-field')).forEach(n => n.remove());
+  /* Per-page counter, used two ways: to pick which execution row an unlabelled field
+     belongs to, and — when a page has no anchors at all — to stagger the fallback
+     coordinates so fields can never pile up on one spot the way they used to. */
+  const seqByPage = {};
 
   fields.forEach(f => {
-    const page = d.querySelector('[data-page="' + (f.page || 1) + '"]');
+    const pageNo = f.page || 1;
+    const page = d.querySelector('[data-page="' + pageNo + '"]');
     if (!page) return;
     if (d.defaultView.getComputedStyle(page).position === 'static') page.style.position = 'relative';
 
@@ -8061,6 +9254,7 @@ function dsPaintViewerFields(d, env, docIndex) {
     const isDate = /date/i.test(f.type || f.label || '');
     const isSig = !isDate && /sign/i.test(f.type || f.label || '');
     const isDone = (f.value != null && f.value !== '') || (recip && (recip.status === 'signed' || recip.status === 'completed' || env.status === 'completed'));
+    if (pendingOnly && isDone) return;
 
     let dispLabel = '';
     if (isInit) dispLabel = `${rFirstName} Init`;
@@ -8068,28 +9262,34 @@ function dsPaintViewerFields(d, env, docIndex) {
     else if (isSig) dispLabel = `${rFirstName} Sign`;
     else dispLabel = `${rFirstName} — ${f.type || 'Field'}`;
 
-    // Smart coordinate normalization: measure the exact DOM .slot element if present, or snap to standard slot coordinates
-    let posX = f.x == null ? 16 : f.x;
-    let posY = f.y == null ? 22 : f.y;
-    if (isInit) {
-      const slots = Array.from(page.querySelectorAll('.initials .ibox .slot, .ibox .slot, .slot'));
-      if (slots.length) {
-        const slot = (ri === 1 && slots.length > 1) ? slots[1] : slots[0];
-        const pr = page.getBoundingClientRect();
-        const sr = slot.getBoundingClientRect();
-        if (pr.width && pr.height) {
-          const sMidX = ((sr.left + sr.width / 2 - pr.left) / pr.width) * 100;
-          const tagWidthPct = (76 / pr.width) * 100;
-          posX = Math.round(Math.max(1, Math.min(88, sMidX - (tagWidthPct / 2))) * 10) / 10;
-          posY = Math.round(Math.max(0, ((sr.top - pr.top) / pr.height) * 100) * 10) / 10;
-        } else {
-          posX = (ri === 1 ? 80.1 : 62.4);
-          posY = 86.2;
+    const key = 'p' + pageNo;
+    const seq = seqByPage[key] || 0;
+
+    let posX = f.x;
+    let posY = f.y;
+
+    /* A hand-placed field keeps its own coordinates. Everything else is anchored to
+       the document's own execution slot, which is the only way a tag lands on the
+       line it belongs to instead of on a guess. */
+    const wantsAnchor = (posX == null || posY == null);
+    if (wantsAnchor) {
+      const kind = isInit ? 'initial' : (isDate ? 'date' : 'signature');
+      const anchor = dsFieldAnchor(page, kind, recip, recs, ri < 0 ? seq : ri);
+      if (anchor) {
+        consumed.add(anchor.el);
+        posX = anchor.pos.x;
+        posY = anchor.pos.y;
+        /* Initial boxes are small and centred; centre the 76px tag on them. */
+        if (isInit) {
+          const pw = page.getBoundingClientRect().width || 1;
+          posX = Math.round(Math.max(1, Math.min(88, anchor.pos.x + anchor.pos.w / 2 - (76 / pw) * 50)) * 10) / 10;
         }
-      } else if (posX < 35) {
-        posX = (ri === 1 ? 80.1 : 62.4);
-        posY = 86.2;
+      } else {
+        /* No anchor on this page — spread down the sheet instead of stacking. */
+        posX = 16;
+        posY = Math.min(88, 22 + seq * 7);
       }
+      seqByPage[key] = seq + 1;
     }
 
     const box = d.createElement('div');
@@ -8106,18 +9306,24 @@ function dsPaintViewerFields(d, env, docIndex) {
           'background:rgba(238,242,255,0.9);border:1px solid #4338ca;' +
           'font-family:"Brush Script MT",cursive,serif;font-size:16px;font-weight:700;color:#1e3a8a;');
       } else if (isSig) {
-        if (recip && recip.signatureData) {
-          box.innerHTML = `<img src="${recip.signatureData}" alt="Signature" style="max-height:28px;vertical-align:bottom;transform:translateY(-10px);display:block;">`;
-        } else {
-          const sigText = (f.value || '').replace(/^Signed by /i, '') || (recip ? recip.name : 'Signed');
-          box.textContent = sigText;
-        }
+        /* An adopted signature in DocuSign is not a name written on the line: it is a
+           bordered block captioned "Signed by:", holding the signature, with the
+           16-character signature id beneath it. Printing just the script name was the
+           single biggest tell that these documents had not been through DocuSign. */
+        const sigText = (f.value || '').replace(/^Signed by /i, '') || (recip ? recip.name : 'Signed');
+        const mark = (recip && recip.signatureData)
+          ? `<img src="${recip.signatureData}" alt="Signature" style="max-height:22px;display:block;">`
+          : `<span style="font-family:'Brush Script MT',cursive,serif;font-size:19px;font-style:italic;color:#002738;line-height:1;">${esc(sigText)}</span>`;
+        box.innerHTML =
+          `<span style="position:absolute;top:2px;left:6px;font:400 6.5px/1 Arial,Helvetica,sans-serif;color:#6e727c;letter-spacing:.3px;">Signed by:</span>` +
+          mark +
+          `<span style="position:absolute;bottom:2px;left:6px;font:400 6.5px/1 Arial,Helvetica,sans-serif;color:#8d929a;letter-spacing:.4px;">${esc(dsSignatureHex(env.id, (recip && recip.email) || f.id))}</span>`;
         box.setAttribute('style',
           'position:absolute;left:' + posX + '%;top:' + posY + '%;' +
-          'min-width:90px;height:28px;z-index:4;box-sizing:border-box;' +
-          'display:flex;align-items:flex-end;justify-content:flex-start;' +
-          'font-family:"Brush Script MT",cursive,serif;font-size:20px;font-style:italic;color:#1e3a8a;' +
-          'transform:translateY(-12px);padding-bottom:2px;');
+          'min-width:150px;height:46px;z-index:4;box-sizing:border-box;' +
+          'display:flex;align-items:center;justify-content:flex-start;' +
+          'border:1px solid #b9bdc5;border-radius:2px;background:#fff;' +
+          'padding:11px 8px 3px;transform:translateY(-30px);');
       } else if (isDate) {
         box.textContent = f.value || dsDateUS(recip?.signedDate || DS_TODAY);
         box.setAttribute('style',
@@ -8149,6 +9355,8 @@ function dsPaintViewerFields(d, env, docIndex) {
     }
     page.appendChild(box);
   });
+
+  return consumed;
 }
 
 
@@ -8183,7 +9391,7 @@ function dsViewTemplateDoc(tmplId, docIndex) {
   const html = dsRenderEnvelopeDocument(pseudoEnv, docIndex, 1);
   SimEngine.viewDoc('about:blank', docName);
   const frame = document.getElementById('simDocFrame');
-  if (frame) frame.srcdoc = html;
+  if (frame) { frame.removeAttribute('data-ds-doc'); frame.srcdoc = html; }
 }
 
 /* ---------- Live Signer Experience Flow & Training Disclaimer ---------- */
@@ -8359,8 +9567,19 @@ function dsGetSignerDocTags(env, currentDoc, recip) {
   const subj = (env.subject || '').toLowerCase();
   const typeLower = (env.type || '').toLowerCase();
 
-  // If custom fields were placed in the wizard for this recipient:
-  const customFields = (env.fields || []).filter(f => f.recipientId === recip.id);
+  /* Fields placed on THIS document for this recipient.
+     The docIndex filter is what stops the signing session for the Purchase Agreement
+     from listing the Seller Disclosure's tags alongside its own — every curriculum and
+     background envelope carries fields per document now, so an unfiltered list mixes
+     two documents into one signing ceremony.
+     Date Signed is excluded on purpose: DocuSign fills it from the signature event, so
+     it is not something a signer clicks, and offering it as a tag would teach the
+     opposite. */
+  const curDocIndex = Math.max(0, (env.documents || []).indexOf(currentDoc));
+  const customFields = (env.fields || []).filter(f =>
+    f.recipientId === recip.id &&
+    (f.docIndex || 0) === curDocIndex &&
+    !/date/i.test(f.type || f.label || ''));
   if (customFields.length > 0) {
     return customFields.map((f, idx) => ({
       id: f.id || `tag_${idx}`,
@@ -8628,7 +9847,7 @@ function dsSignerExperienceHTML() {
         <div class="ds-signer-sec-title">2. Financial &amp; Escrow Terms</div>
         <div class="ds-signer-info-grid">
           <div class="ds-signer-info-item"><label>Purchase Price</label><div><b>$485,000.00</b></div></div>
-          <div class="ds-signer-info-item"><label>Earnest Money Deposit</label><div><b>$5,000.00</b> (Lone Star Title Escrow)</div></div>
+          <div class="ds-signer-info-item"><label>Earnest Money Deposit</label><div><b>$5,000.00</b> (Kaplan Title &amp; Escrow)</div></div>
           <div class="ds-signer-info-item"><label>Target Closing Date</label><div><b>${esc(closing)}</b></div></div>
         </div>
         ${tInit2 ? `<div class="ds-signer-initial-row"><span>Earnest Money &amp; Escrow Initials:</span> ${dsRenderSignerTag(tInit2, recip, sigStyleFont, activeDrawn)}</div>` : ''}
@@ -8646,7 +9865,7 @@ function dsSignerExperienceHTML() {
       <div class="ds-signer-contract-content">
         <div class="ds-signer-sec-title">1. Parties &amp; Engagement Scope</div>
         <div class="ds-signer-info-grid">
-          <div class="ds-signer-info-item"><label>Client / Brokerage</label><div><b>Austin Premier Realty</b></div></div>
+          <div class="ds-signer-info-item"><label>Client / Brokerage</label><div><b>Lone Star Realty</b></div></div>
           <div class="ds-signer-info-item"><label>Contractor</label><div><b>${esc(recip.name || 'Alex Rivera')}</b></div></div>
           <div class="ds-signer-info-item full"><label>Services Scope</label><div><b>Virtual Transaction Coordination &amp; Document Management</b></div></div>
         </div>
@@ -10006,6 +11225,7 @@ function dsLessonDetailHTML() {
    curriculum changes, and `store` is a getter rather than the object itself because
    dsLoad() REPLACES dsStore wholesale on load. */
 function dsInitEngine() {
+  DS_LESSONS.forEach(function (l) { l.steps.forEach(function (s) { s._lessonId = l.id; }); });
   SimEngine.init({
     lessons: DS_LESSONS,
     store: () => dsStore,

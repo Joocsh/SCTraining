@@ -93,50 +93,61 @@ const DS_EXAM_BANK_EXT = [
     id: 'ex-tri-ext-2', category: 'triage', type: 'triage',
     label: 'Triage: Phishing simulation email received',
     situation: 'Suspicious email claiming account suspension from docus1gn-securesign.com with failed SPF/DKIM.',
-    rightAction: 'void', points: 5,
-    explain: 'Flag and report phishing immediately without clicking any internal links.'
+    /* Was rightAction: 'void', which marked the trainee wrong for choosing "Report
+       Phishing / Security Threat" — the action this item's own explanation asks for,
+       and the one that exists in the vocabulary. There is also nothing to void: a
+       phishing email is not an envelope in this account. */
+    rightAction: 'report-phishing', points: 5,
+    explain: 'Report it as a security threat. There is no envelope to void — the message is not tied to anything in the account — and clicking any link in it to "check" is exactly what the sender is counting on.'
   },
   {
     id: 'ex-tri-ext-3', category: 'triage', type: 'triage',
-    label: 'Triage: Expiring purchase contract (2 days left)',
-    situation: 'ENV-2026-9008: Listing agreement expiring in 48 hours; Sarah Johnson has not opened the envelope.',
+    label: 'Triage: Expiring listing agreement (3 days left)',
+    /* The envelope and the mailbox reminder both say 504 Westwood Blvd, 3 days. This
+       item said 48 hours and named no property, so the three disagreed. */
+    situation: 'ENV-2026-9008 (Exclusive Listing Agreement — 504 Westwood Blvd): expires in 3 days; Sarah Johnson has been sent the envelope and has not opened it.',
     rightAction: 'resend', points: 5,
     explain: 'Send an immediate reminder to prompt the pending signer before the expiration window closes.'
   },
   {
     id: 'ex-tri-ext-4', category: 'triage', type: 'triage',
-    label: 'Triage: Voided contract with decline notice',
-    situation: 'ENV-2026-9005: Elena Rostova declined to sign due to incorrect commencement date; envelope is voided.',
+    label: 'Triage: Declined contract with decline notice',
+    situation: 'ENV-2026-9005 (Commercial Lease — Suite 400): Elena Rostova declined to sign, reason given "commencement date does not match the agreed letter of intent". The landlord had already signed.',
     rightAction: 'none', points: 5,
-    explain: 'No further action on the voided envelope itself; prepare a revised envelope if instructed.'
+    explain: 'A decline terminates the envelope for every party, so there is nothing left to resend, correct or void on it. The fix is a corrected lease in a new envelope, which is the supervising agent\'s call, not the VA\'s.'
   },
   {
     id: 'ex-ver-ext-1', category: 'verify', type: 'verify',
     label: 'Audit Certificate: Access Code Verification',
-    doc: 'documents/certificate-9041.html',
-    docTitle: 'Certificate of Completion (Security Audit)',
-    systemValue: 'Security Level: Access Code (Verified) for Buyer John Smith.',
-    question: 'Does this Certificate of Completion confirm enhanced two-factor authentication was enforced for the signer?',
+    /* Pointed at certificate-9041.html, which records "Security: Email Authentication"
+       and contains no Access Code at all — the graded-correct answer contradicted the
+       evidence document. ENV-2026-9002's certificate really does record an Access Code
+       (Grace Liu, LS-4417) and an IDV pass (Leilani Kealoha), and the envelope carries
+       the same two flags so the in-app certificate modal agrees. */
+    doc: 'documents/certificate-9002-auth.html',
+    docTitle: 'Certificate of Completion — ENV-2026-9002 (Security Audit)',
+    systemValue: 'Security Level for Grace Liu (Seller): Access Code (Verified), reference LS-4417.',
+    question: 'Does this Certificate of Completion confirm that a second factor was enforced on the Seller before she could open the signing session?',
     options: [
-      { id: 'a', text: 'Yes: Security level explicitly confirms Access Code was validated prior to document access.' },
-      { id: 'b', text: 'No: Only basic email verification was recorded.' }
+      { id: 'a', text: 'Yes: the certificate records an Access Code validated on attempt 1 of 3 before the session opened.' },
+      { id: 'b', text: 'No: only basic email verification was recorded for this signer.' }
     ],
     rightOptionId: 'a', points: 5,
-    explain: 'The audit certificate records "Access Code (Verified)" under Security Level for recipients protected by access codes.'
+    explain: 'An Access Code is a sender-supplied second factor. The certificate logs the Access Code Entered event before Viewed / Delivered, which is the proof that the code gated access rather than being collected afterwards. Three consecutive failures block the recipient — that is the lockout in ENV-2026-9014.'
   },
   {
     id: 'ex-ver-ext-2', category: 'verify', type: 'verify',
     label: 'Audit Certificate: IDV Government ID Tag',
-    doc: 'documents/certificate-9041.html',
-    docTitle: 'Certificate of Completion (IDV Audit)',
-    systemValue: 'Security Level: DocuSign ID Verification (Pass).',
-    question: 'What level of signer authentication is verified by this certificate record?',
+    doc: 'documents/certificate-9002-auth.html',
+    docTitle: 'Certificate of Completion — ENV-2026-9002 (IDV Audit)',
+    systemValue: 'Security Level for Leilani Kealoha (Agent): DocuSign ID Verification (Pass).',
+    question: 'The two signers on this envelope were not authenticated the same way. What did the Agent, Leilani Kealoha, have to do that the Seller did not?',
     options: [
-      { id: 'a', text: 'Standard email link with no secondary verification.' },
-      { id: 'b', text: 'DocuSign IDV: Signer submitted valid government-issued photo ID verified by biometric analysis.' }
+      { id: 'a', text: 'Nothing extra — she opened a standard email link with no secondary verification.' },
+      { id: 'b', text: 'DocuSign IDV: she submitted a government-issued photo ID, checked for authenticity and matched to a live selfie, before any signature field became available.' }
     ],
     rightOptionId: 'b', points: 5,
-    explain: 'DocuSign ID Verification validates government photo IDs before granting access to signature fields.'
+    explain: 'ID Verification is a stronger factor than an Access Code: the code proves the signer knows a shared secret, IDV proves the signer is the person on a government document. The certificate logs both the submission and the Pass result before the Viewed event.'
   },
   {
     id: 'ex-cmp-ext-1', category: 'compose', type: 'compose',

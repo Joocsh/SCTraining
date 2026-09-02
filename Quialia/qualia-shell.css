@@ -1582,3 +1582,28 @@ body.qzs-demo .td-strip-app {
 body.qzs-demo .td-strip-msg {
   margin-left: 0;
 }
+
+/* Badge reset to prevent style collisions with global styles.css .progress */
+.qz-badge,
+span.qz-badge,
+.qz-tbl .qz-badge {
+  display: inline-block;
+  height: auto !important;
+  min-height: 18px !important;
+  line-height: 1.3 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+.qz-badge.progress,
+span.qz-badge.progress,
+.qz-tbl .qz-badge.progress {
+  height: auto !important;
+  min-height: 18px !important;
+  overflow: visible !important;
+  margin: 0 !important;
+  background: #e3edf7 !important;
+  color: #2a5c8c !important;
+}
+

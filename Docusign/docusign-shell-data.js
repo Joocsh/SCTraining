@@ -142,6 +142,9 @@ const DS_S_CONTACTS = [
   { name: 'Leilani Kealoha',   email: 'leilani.kealoha@example.com',   company: 'Kealoha Realty',           role: 'Agent',            lastUsed: dsSDay(-13) },
   { name: 'Victor Nunes',      email: 'victor.nunes@example.com',      company: 'Nunes Construction',       role: 'Contractor',       lastUsed: dsSDay(-40) },
   { name: 'Harriet Vance',     email: 'harriet.vance@example.com',     company: 'Vance Estate',             role: 'Seller',           lastUsed: dsSDay(-52) },
+  /* On ENV-2026-6620, the voided listing agreement Lesson 8 sends the trainee to.
+     He was the one external party on a curriculum envelope who was not in the book. */
+  { name: 'Robert Vance',      email: 'robert@vance.com',              company: 'Vance Estate',             role: 'Seller',           lastUsed: dsSDay(-15) },
   { name: 'Idris Mahmoud',     email: 'idris.mahmoud@example.com',     company: 'Mahmoud Property',         role: 'Buyer',            lastUsed: dsSDay(-24) },
   { name: 'Chloe Bergeron',    email: 'chloe.bergeron@example.com',    company: 'Bergeron Design',          role: 'Vendor',           lastUsed: dsSDay(-61) },
   { name: 'Samuel Adeyemi',    email: 'samuel.adeyemi@example.com',    company: 'Adeyemi Group',            role: 'Buyer',            lastUsed: dsSDay(-30) },
@@ -229,6 +232,53 @@ const DS_S_RECIP_STATUS = {
   authfail:  ['completed', 'authfail', 'received'],
   deleted:   ['completed', 'completed', 'received']
 };
+
+/* ---------- Fields ----------
+   Until this existed, all 81 background envelopes carried zero fields while the
+   envelope detail panel confidently reported "2 signature fields, 2 date signed
+   fields assigned to 2 recipients". Open the document and there was not a single
+   tag on it — the one screen in the module that states a fact the document then
+   contradicts.
+
+   The generated document (dsRenderEnvelopeDocument) puts its execution block on
+   the last page of each document and an initials row on every page before it, so
+   that is exactly where the fields go. No x/y: the viewer anchors each tag to the
+   slot it belongs to, the same way it does for the three real library documents.
+
+   Only signers get fields. A "Receives a Copy" recipient signing something would
+   teach the opposite of what Lesson 2 is for. */
+function dsSBuildFields(env) {
+  const out = [];
+  const signers = (env.recipients || []).filter(r => r.action !== 'Receives a Copy');
+  if (!signers.length) return out;
+
+  const signed = r => r.status === 'completed' || r.status === 'signed';
+  const dateUS = iso => {
+    const p = String(iso || '').split('-');
+    return p.length === 3 ? p[1] + '/' + p[2] + '/' + p[0] : '';
+  };
+
+  (env.documents || []).forEach((doc, di) => {
+    const pages = Math.max(1, doc.pages || 1);
+    signers.forEach((r, si) => {
+      const done = signed(r);
+      out.push({ id: 'sf-' + di + '-' + si + '-sig', type: 'Signature', recipientId: r.id,
+                 docIndex: di, page: pages, label: (r.role || 'Signer') + ' Signature',
+                 required: true, value: done ? 'Signed by ' + r.name : null });
+      out.push({ id: 'sf-' + di + '-' + si + '-dt', type: 'Date Signed', recipientId: r.id,
+                 docIndex: di, page: pages, label: 'Date Signed',
+                 required: true, value: done ? dateUS(env.createdDate) : null });
+      /* One initials box per signer on every page before the execution page — which
+         is precisely where the renderer draws them. */
+      for (let pg = 1; pg < pages; pg++) {
+        out.push({ id: 'sf-' + di + '-' + si + '-i' + pg, type: 'Initial', recipientId: r.id,
+                   docIndex: di, page: pg, label: (r.role || 'Signer') + ' Initials',
+                   required: true, value: done ? 'X' : null });
+      }
+    });
+  });
+  return out;
+}
 
 /* Builds the background account. Seeded once with a fixed string, so the same
    84 envelopes come out in the same order on every load, forever. */
@@ -330,6 +380,7 @@ function dsSBuildEnvelopes() {
         documents: docs,
         recipients: recipients
       };
+      env.fields = dsSBuildFields(env);
 
       /* Only the statuses that imply a problem carry a note — a note on a
          healthy envelope would read as noise in the Action Required view. */
@@ -346,7 +397,122 @@ function dsSBuildEnvelopes() {
   return out.sort((a, b) => (a.createdDate < b.createdDate ? 1 : a.createdDate > b.createdDate ? -1 : 0));
 }
 
-const DS_S_ENVELOPES = dsSBuildEnvelopes();
+/* ============================================================================
+   THE FIVE ENVELOPES THE MAILBOX TALKS ABOUT
+   ============================================================================
+
+   dsInitMailbox() in docusign-app.js has always cited ENV-2026-9001, 9002, 9005,
+   9008 and 9014, and three exam items in docusign-data-ext.js cite three of them.
+   None of the five existed. Every "View in DocuSign" button in the VA Mailbox
+   answered "Envelope not found.", the certificate button opened nothing, and the
+   exam asked about envelopes a trainee could not look up. This is the other half
+   of R2: a notification is only a signpost if it points at something.
+
+   Written by hand rather than generated because each one has to say exactly what
+   its email and its exam item already say about it. Cross-references, both ways:
+
+     ENV-2026-9001  em-1  sent TO this account, so it lands in Inbox, not Sent
+     ENV-2026-9002  em-2  completed, so the certificate button has a sealed envelope
+     ENV-2026-9005  em-5  declined  — also ex-tri-ext-4
+     ENV-2026-9008  em-6  expiring  — also ex-tri-ext-3
+     ENV-2026-9014  em-7  authfail  — also ex-tri-ext-1 and ex-cmp-ext-1 (code TX-8821)
+
+   All five sit at or before DS_S_MAX_OFFSET, so they cannot push ENV-2026-9041
+   down the list and break Lesson 5's row target. Read the note on the generator
+   above before changing a date here.
+   ============================================================================ */
+const DS_S_MAIL_ENVELOPES = [
+  {
+    id: 'ENV-2026-9001',
+    subject: 'Purchase Agreement — 4820 Cedar Ridge Dr, Austin TX',
+    type: 'Real Estate Purchase',
+    /* Sent by a colleague TO this account. That is what makes it a genuine Inbox
+       item and not another copy of something Alex sent himself. */
+    sender: 'Dana Whitfield',
+    status: 'waiting',
+    createdDate: dsSDay(-3),
+    closingDate: dsSDay(12),
+    documents: [{ name: 'Purchase_Agreement_4820_Cedar_Ridge.pdf', pages: 5 }],
+    recipients: [
+      { id: 'r1', role: 'Buyer', name: 'Robert Chen', email: 'robert.chen@example.com', status: 'completed', action: 'Needs to Sign', order: 1 },
+      { id: 'r2', role: 'Transaction Coordinator', name: 'Alex Rivera', email: 'alex.rivera@agency.example.com', status: 'waiting', action: 'Needs to Sign', order: 2 },
+      { id: 'r3', role: 'Escrow Officer', name: 'Mira Kaplan', email: 'mira.kaplan@example.com', status: 'received', action: 'Receives a Copy', order: 3 }
+    ]
+  },
+  {
+    id: 'ENV-2026-9002',
+    subject: 'Exclusive Listing Agreement — 742 Evergreen Terrace, Austin TX',
+    type: 'Listing Agreement',
+    sender: 'Alex Rivera (VA)',
+    status: 'completed',
+    createdDate: dsSDay(-6),
+    closingDate: dsSDay(-4),
+    documents: [{ name: 'Listing_Agreement_742_Evergreen.pdf', pages: 4 }],
+    recipients: [
+      /* accessCode and idv are read by the certificate modal to report the security
+         level, and documents/certificate-9002-auth.html documents the same two
+         levels on the same two people. Exam items ex-ver-ext-1 and ex-ver-ext-2 are
+         graded against that document, so these three must never drift apart. */
+      { id: 'r1', role: 'Seller', name: 'Grace Liu', email: 'grace.liu@example.com', status: 'completed', action: 'Needs to Sign', order: 1, accessCode: 'LS-4417' },
+      { id: 'r2', role: 'Agent', name: 'Leilani Kealoha', email: 'leilani.kealoha@example.com', status: 'completed', action: 'Needs to Sign', order: 2, idv: true }
+    ]
+  },
+  {
+    id: 'ENV-2026-9005',
+    subject: 'Commercial Lease — Suite 400, 1201 Guadalupe St',
+    type: 'Lease Agreement',
+    sender: 'Alex Rivera (VA)',
+    status: 'declined',
+    statusNote: 'Declined by Elena Rostova — reason given: commencement date does not match the agreed letter of intent',
+    createdDate: dsSDay(-5),
+    closingDate: dsSDay(9),
+    documents: [{ name: 'Commercial_Lease_Suite_400.pdf', pages: 9 }],
+    recipients: [
+      { id: 'r1', role: 'Landlord', name: 'Yara Haddad', email: 'yara.haddad@example.com', status: 'completed', action: 'Needs to Sign', order: 1 },
+      { id: 'r2', role: 'Tenant', name: 'Elena Rostova', email: 'elena.rostova@example.com', status: 'declined', action: 'Needs to Sign', order: 2 }
+    ]
+  },
+  {
+    id: 'ENV-2026-9008',
+    subject: 'Exclusive Listing Agreement — 504 Westwood Blvd, Austin TX',
+    type: 'Listing Agreement',
+    sender: 'Alex Rivera (VA)',
+    /* Three days left, and the signer has not opened it — which is why the trailing
+       audit event for her stops at Delivered. This is the envelope ex-tri-ext-3
+       asks the trainee to triage, so the right answer there is a reminder. */
+    status: 'waiting',
+    createdDate: dsSDay(-9),
+    closingDate: dsSDay(3),
+    documents: [{ name: 'Listing_Agreement_504_Westwood.pdf', pages: 4 }],
+    recipients: [
+      { id: 'r1', role: 'Seller', name: 'Sarah Johnson', email: 'sarah.j@example.com', status: 'waiting', action: 'Needs to Sign', order: 1 }
+    ]
+  },
+  {
+    id: 'ENV-2026-9014',
+    subject: 'Loan Package & Closing Disclosure — 1180 Quarry Bend Ln',
+    type: 'Real Estate Purchase',
+    sender: 'Alex Rivera (VA)',
+    status: 'authfail',
+    statusNote: 'Recipient failed the Access Code challenge three times; signing access is blocked until the envelope is corrected',
+    createdDate: dsSDay(-4),
+    closingDate: dsSDay(11),
+    documents: [{ name: 'Loan_Package_1180_Quarry_Bend.pdf', pages: 7 }],
+    recipients: [
+      /* accessCode is what the certificate modal reads to report the security level,
+         and it is the code ex-cmp-ext-1 asks the trainee to communicate. */
+      { id: 'r1', role: 'Buyer', name: 'David Kowalski', email: 'david.kowalski@example.com', status: 'authfail', action: 'Needs to Sign', order: 1, accessCode: 'TX-8821' },
+      { id: 'r2', role: 'Lender', name: 'Rosalind Fischer', email: 'rosalind.fischer@example.com', status: 'received', action: 'Receives a Copy', order: 2 }
+    ]
+  }
+];
+DS_S_MAIL_ENVELOPES.forEach(e => { e.fields = dsSBuildFields(e); });
+
+/* The generated catalogue plus the five hand-written mailbox envelopes, re-sorted
+   as one list so the envelope table never has to know where a row came from. */
+const DS_S_ENVELOPES = dsSBuildEnvelopes()
+  .concat(DS_S_MAIL_ENVELOPES)
+  .sort((a, b) => (a.createdDate < b.createdDate ? 1 : a.createdDate > b.createdDate ? -1 : 0));
 
 
 /* ============================================================================

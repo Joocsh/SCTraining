@@ -100,19 +100,30 @@
   }
 
   /* ---------- document modal ---------- */
-  function simViewDoc(file, title) {
+  /* srcdoc has to go before src is touched. Per the HTML spec an iframe that carries a
+     srcdoc attribute navigates to that attribute and ignores src entirely, so a host that
+     had previously written frame.srcdoc (the DocuSign module does exactly that for its
+     generated documents) left every later viewDoc call painting the PREVIOUS document —
+     library files, phishing samples and certificates all silently served stale content for
+     the rest of the session. Clearing it first is what makes src authoritative again. */
+  function simViewDoc(file, title, hint) {
     var frame = document.getElementById('simDocFrame');
     var t = document.getElementById('simDocModalTitle');
+    var h = document.getElementById('simDocModalHint');
     if (!frame) return;
+    frame.removeAttribute('srcdoc');
     frame.src = file;
     if (t) t.textContent = title || 'Document';
+    if (h) h.textContent = hint || '📖 Review the document details. When finished, click "Done Reading" to return to the exercise.';
     document.getElementById('simDocModal').classList.add('open');
   }
   function simCloseDoc() {
     var m = document.getElementById('simDocModal');
     if (m) m.classList.remove('open');
     var frame = document.getElementById('simDocFrame');
-    if (frame) frame.src = 'about:blank';
+    /* Same reason as simViewDoc: without dropping srcdoc the frame keeps rendering the last
+       generated document behind a closed modal, and the next open inherits it. */
+    if (frame) { frame.removeAttribute('srcdoc'); frame.src = 'about:blank'; }
     /* Closing the modal needs a full resync, not just a reposition. While it was open the
        step's target resolved to null and its text resolved to the "read it, then close it"
        variant, so repositioning alone leaves that stale sentence on screen next to a
@@ -153,10 +164,10 @@
     var all = lessons();
     // 'done' tracks live progress so a restarted lesson visibly reopens; unlocking tracks
     // ever-complete so restarting one never takes the rest of the curriculum away.
-    if (index === 0) return simLessonProgress(all[0]).complete ? 'done' : 'unlocked';
+    if (index === 0) return (simLessonProgress(all[0]).complete || get('lessonEverComplete')(all[0].id)) ? 'done' : 'unlocked';
     var prev = all[index - 1];
     if (!simLessonProgress(prev).complete && !get('lessonEverComplete')(prev.id)) return 'locked';
-    return simLessonProgress(all[index]).complete ? 'done' : 'unlocked';
+    return (simLessonProgress(all[index]).complete || get('lessonEverComplete')(all[index].id)) ? 'done' : 'unlocked';
   }
   function simFindLesson(id) {
     var all = lessons();
@@ -195,12 +206,25 @@
      pause rather than navigating separately — the trainee already said they are ready
      by clicking. Otherwise navigate directly. */
   function simLessonContinue(lessonId, stepIndex) {
+    var l = simFindLesson(lessonId);
+    if (!l) return;
+    var isLastStep = stepIndex >= l.steps.length - 1;
+    if (isLastStep) {
+      if (walk && walk.doneTimer) { clearTimeout(walk.doneTimer); walk.doneTimer = null; }
+      walk = null;
+      var w = document.getElementById('simWalk');
+      if (w) w.classList.remove('open');
+      var h = document.getElementById('simWalkHighlight');
+      if (h) h.classList.remove('on');
+      get('noteLessonComplete')(l.id);
+      simToast('🎉 Lesson ' + l.number + ' complete! Next lesson unlocked.', { tone: 'good' });
+      get('goHome')();
+      return;
+    }
     if (walk && walk.lessonId === lessonId && walk.stepIndex === stepIndex) {
       simWalkSkipWait();
       return;
     }
-    var l = simFindLesson(lessonId);
-    if (!l) return;
     var next = l.steps[stepIndex + 1];
     if (next) get('navigate')(next);
     else get('goHome')();
@@ -312,7 +336,21 @@
        settle, so getBoundingClientRect() measures the final position rather than an
        element that is about to move. */
     requestAnimationFrame(function () {
-      requestAnimationFrame(function () { simWalkPosition(step, { scrollIntoView: true }); });
+      requestAnimationFrame(function () {
+        simWalkPosition(step, { scrollIntoView: true });
+        simWalkFlashActiveTab();
+      });
+    });
+  }
+  function simWalkFlashActiveTab() {
+    document.querySelectorAll('.qz-nav-item.active, .qz-subtabs span.active, .qz-otab.active').forEach(function (el) {
+      el.classList.remove('tab-flash');
+      void el.offsetWidth;
+      el.classList.add('tab-flash');
+      el.addEventListener('animationend', function handler() {
+        el.classList.remove('tab-flash');
+        el.removeEventListener('animationend', handler);
+      });
     });
   }
   /* For a step that is purely explanatory ("this is the Upload button") where nothing
@@ -322,9 +360,10 @@
   function simWalkRenderSkipClick(step) {
     var l = simWalkCurrentLesson();
     var text = typeof step.walk.text === 'function' ? step.walk.text() : step.walk.text;
+    var backLink = walk.stepIndex > 0 ? '<span class="sim-walk-back" onclick="simWalkBack()">&larr; Back</span>' : '';
     simWalkSetTipBody('<b>Lesson ' + l.number + ' &middot; Step ' + (walk.stepIndex + 1) + ' of ' + l.steps.length + '</b><p>' + esc(text) + '</p>' +
       '<button class="' + get('btnClass') + ' primary sim-walk-next" onclick="simWalkRunNextAction()">Next &rarr;</button>' +
-      '<div class="sim-walk-exit" onclick="simWalkExit()">Exit walkthrough</div>');
+      '<div class="sim-walk-exit">' + backLink + '<span onclick="simWalkExit()">Exit walkthrough</span></div>');
   }
   function simWalkRunNextAction() {
     var step = simWalkCurrentStep();
@@ -338,8 +377,12 @@
     var l = simWalkCurrentLesson();
     if (!l) return '';
     var dots = l.steps.map(function (s, i) {
-      var cls = i === walk.stepIndex ? 'current' : (simLessonStepDone(s) ? 'done' : '');
-      return '<span class="sim-walk-dot ' + cls + '"></span>';
+      var isCurrent = i === walk.stepIndex;
+      var isDone = simLessonStepDone(s);
+      var cls = isCurrent ? 'current' : (isDone ? 'done' : '');
+      var clickable = (i < walk.stepIndex || isDone) && !isCurrent;
+      var onclick = clickable ? ' onclick="simWalkJumpTo(' + i + ')" title="Go to step ' + (i + 1) + '"' : '';
+      return '<span class="sim-walk-dot ' + cls + (clickable ? ' clickable' : '') + '"' + onclick + '></span>';
     }).join('');
     return '<div class="sim-walk-dots">' + dots + '</div>';
   }
@@ -361,8 +404,9 @@
       ? '<button type="button" class="sim-walk-example-toggle" id="simWalkExampleToggle" onclick="simWalkToggleExample()">See example &rarr;</button>' +
         '<div class="sim-walk-example" id="simWalkExampleBox" style="display:none">' + esc(example) + '</div>'
       : '';
+    var backLink = walk.stepIndex > 0 ? '<span class="sim-walk-back" onclick="simWalkBack()">&larr; Back</span>' : '';
     simWalkSetTipBody('<b>Lesson ' + l.number + ' &middot; Step ' + (walk.stepIndex + 1) + ' of ' + l.steps.length + '</b><p>' + esc(text) + '</p>' + exampleHTML +
-      '<div class="sim-walk-exit" onclick="simWalkExit()">Exit walkthrough</div>');
+      '<div class="sim-walk-exit">' + backLink + '<span onclick="simWalkExit()">Exit walkthrough</span></div>');
   }
   /* Expanding the example changes the tip's height. Without recomputing position the
      card's top/left stay where they were calculated for the shorter version, letting the
@@ -480,6 +524,18 @@
   function simWalkAdvance() {
     if (!walk) return; // may have been exited during the pause
     walk.stepIndex++;
+    simWalkShowCurrent();
+  }
+  function simWalkBack() {
+    if (!walk || walk.stepIndex <= 0) return;
+    walk.stepIndex--;
+    simWalkShowCurrent();
+  }
+  function simWalkJumpTo(index) {
+    if (!walk) return;
+    var l = simWalkCurrentLesson();
+    if (!l || index < 0 || index >= l.steps.length) return;
+    walk.stepIndex = index;
     simWalkShowCurrent();
   }
   /* Lets an on-page "Continue" button skip the ~1s pause simWalkStepDone shows before
@@ -714,8 +770,15 @@
       '<div class="sim-doc-modal" id="simDocModal" onclick="if(event.target===this) simCloseDoc()">' +
       '  <div class="sim-doc-modal-card">' +
       '    <div class="sim-doc-modal-head">' +
-      '      <span id="simDocModalTitle">Document</span>' +
-      '      <button type="button" class="sim-doc-modal-close" onclick="simCloseDoc()" aria-label="Close">&times;</button>' +
+      '      <div class="sim-doc-modal-meta">' +
+      '        <span class="sim-doc-modal-tag">Source Document</span>' +
+      '        <span id="simDocModalTitle" class="sim-doc-modal-title">Document</span>' +
+      '      </div>' +
+      '      <div class="sim-doc-modal-hint" id="simDocModalHint">📖 Read the document to verify the information. When finished, click &quot;Done Reading&quot;.</div>' +
+      '      <div class="sim-doc-modal-actions">' +
+      '        <button type="button" class="sim-doc-modal-done-btn" onclick="simCloseDoc()">Done Reading &middot; Return to Exercise &rarr;</button>' +
+      '        <button type="button" class="sim-doc-modal-close" onclick="simCloseDoc()" aria-label="Close">&times;</button>' +
+      '      </div>' +
       '    </div>' +
       '    <iframe id="simDocFrame" title="Document preview"></iframe>' +
       '  </div>' +
@@ -793,6 +856,8 @@
   global.simCloseDoc = simCloseDoc;
   global.simWalkStart = simWalkStart;
   global.simWalkExit = simWalkExit;
+  global.simWalkBack = simWalkBack;
+  global.simWalkJumpTo = simWalkJumpTo;
   global.simWalkAdvance = simWalkAdvance;
   global.simWalkTourNext = simWalkTourNext;
   global.simWalkRunNextAction = simWalkRunNextAction;

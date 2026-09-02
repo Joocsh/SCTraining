@@ -87,3 +87,217 @@ table.line-items tfoot td { font-weight: 800; border-top: 2px solid var(--ink); 
   color: var(--muted);
   margin-top: 5px;
 }
+
+/* =====================================================================
+   DOCUSIGN ENVELOPE CHROME
+   ---------------------------------------------------------------------
+   What a document that has actually been through DocuSign carries, and
+   what these training documents were missing. Three things, in order of
+   how instantly they identify a file as a DocuSign output:
+
+   1. The EnvelopeId stamp. With "EnvelopeId Stamping" enabled — the
+      account default — DocuSign burns "Docusign Envelope ID: <GUID>"
+      into the top-left margin of EVERY page, rotated to read bottom to
+      top. It is the first thing a transaction coordinator looks for to
+      tell a signed original from a printout of the draft.
+   2. Envelope IDs are GUIDs, uppercase, hyphenated. ENV-2026-9041 is
+      this simulator's own tracking reference and stays as it is, because
+      the lessons, the exam and the notifications all address envelopes by
+      it. The GUID lives beside it, which is exactly how an account with a
+      customer reference looks.
+   3. The adopted-signature block: a bordered box captioned "Signed by:"
+      holding the script signature, with the signature GUID underneath.
+      Not a name written on a ruled line.
+   ===================================================================== */
+
+/* The stamp needs a clear left margin to sit in; without this it prints
+   over the body text of every page. */
+.paper[data-page] { padding-left: 78px; }
+
+.ds-envstamp {
+  position: absolute;
+  left: 20px;
+  top: 44px;
+  height: 340px;
+  width: 14px;
+  pointer-events: none;
+}
+.ds-envstamp span {
+  display: block;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  transform-origin: center;
+  white-space: nowrap;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 8px;
+  letter-spacing: .55px;
+  color: #8d929a;
+}
+
+/* ---- Adopted signature block ----
+   Applied to a .sig .line once it holds a signature, and to the floating
+   field tag the viewer paints for a completed signature field. :not(:empty)
+   is what keeps an unsigned line looking like an unsigned line. */
+.sig .line.ds-signed,
+.sig .line:not(:empty) {
+  border: 1px solid #b9bdc5;
+  border-radius: 2px;
+  background: #fff;
+  height: auto;
+  min-height: 46px;
+  padding: 13px 8px 3px;
+  position: relative;
+}
+.sig .line:not(:empty)::before {
+  content: "Signed by:";
+  position: absolute;
+  top: 2px;
+  left: 7px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 7px;
+  font-style: normal;
+  letter-spacing: .3px;
+  color: #6e727c;
+}
+.sig .line[data-sigid]::after {
+  content: attr(data-sigid);
+  position: absolute;
+  bottom: 2px;
+  left: 7px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 6.5px;
+  font-style: normal;
+  letter-spacing: .4px;
+  color: #8d929a;
+}
+
+/* A date the signer's system filled in. DocuSign renders these in the
+   document's own face, small, with no box — they are not adopted marks. */
+.sig .line.ds-date:not(:empty) {
+  border: none;
+  min-height: 0;
+  padding: 0;
+  background: none;
+  border-bottom: 1px solid var(--ink);
+}
+.sig .line.ds-date:not(:empty)::before { content: none; }
+
+/* =====================================================================
+   CERTIFICATE OF COMPLETION
+   ---------------------------------------------------------------------
+   DocuSign's certificate is not a designed document — it is a fixed
+   report, and its rigidity is the point: a coordinator learns to find
+   "Signer Events" and read down the Timestamp column without reading
+   anything else. The previous certificates here were nicely laid out and
+   nothing like it, which taught trainees to look in the wrong places.
+
+   The real anatomy, in order, all of it present even when a section is
+   empty (an empty section is itself information — it says no notary was
+   involved, nobody was CC'd):
+     Envelope Id / Status · Subject · Source Envelope · Record Tracking ·
+     Signer Events · In Person Signer Events · Editor / Agent /
+     Intermediary / Certified Delivery Events · Carbon Copy Events ·
+     Witness Events · Notary Events · Envelope Summary Events ·
+     Payment Events · Electronic Record and Signature Disclosure
+   Arial throughout, ~8pt, because that is what it is.
+   ===================================================================== */
+body.ds-cert { background: #e9ebee; font-family: Arial, Helvetica, sans-serif; }
+body.ds-cert .paper { font-family: Arial, Helvetica, sans-serif; padding: 46px 52px; line-height: 1.45; }
+
+.cert-title { text-align: center; font-size: 15px; font-weight: 400; margin: 0 0 18px; letter-spacing: .2px; }
+.cert-idline { display: flex; justify-content: space-between; gap: 20px; font-size: 9.5px; border-bottom: 1px solid var(--ink); padding-bottom: 5px; margin-bottom: 5px; }
+.cert-subject { font-size: 9.5px; margin-bottom: 12px; }
+
+/* The three-column "Source Envelope" grid. */
+.cert-grid { display: flex; gap: 26px; font-size: 9px; margin-bottom: 16px; }
+.cert-grid > div { flex: 1; }
+.cert-grid .lbl { color: var(--ink); }
+
+/* Section banner — grey bar, left-aligned title, right-aligned column heads. */
+.cert-sec {
+  display: flex; justify-content: space-between; gap: 16px;
+  background: #e8eaed; border-top: 1px solid #b9bdc5;
+  font-size: 9.5px; font-weight: 700; padding: 4px 6px; margin: 14px 0 0;
+}
+.cert-sec span { font-weight: 700; }
+.cert-sec .c2 { width: 200px; flex: none; }
+.cert-sec .c3 { width: 190px; flex: none; }
+
+/* One signer / recipient row: identity, signature, timestamps. */
+.cert-row { display: flex; justify-content: space-between; gap: 16px; font-size: 9px; padding: 8px 6px; border-bottom: 1px solid #e4e6e9; }
+.cert-row .c1 { flex: 1; }
+.cert-row .c2 { width: 200px; flex: none; }
+.cert-row .c3 { width: 190px; flex: none; }
+.cert-row .who { font-weight: 700; font-size: 9.5px; }
+.cert-row .muted { color: var(--muted); }
+.cert-empty { font-size: 9px; color: var(--muted); padding: 6px; border-bottom: 1px solid #e4e6e9; }
+
+/* The adopted signature as the certificate prints it. */
+.cert-sig { border: 1px solid #b9bdc5; border-radius: 2px; padding: 12px 7px 3px; position: relative; background: #fff; min-height: 44px; }
+.cert-sig::before { content: "Signed by:"; position: absolute; top: 2px; left: 6px; font-size: 6.5px; color: var(--muted); }
+.cert-sig .name { font-family: 'Brush Script MT', cursive, serif; font-size: 19px; font-style: italic; color: #002738; line-height: 1; }
+.cert-sig .sid { font-size: 6.5px; color: var(--muted); letter-spacing: .4px; margin-top: 3px; }
+.cert-nosig { font-size: 9px; color: var(--muted); font-style: italic; }
+
+.cert-disc { font-size: 8.5px; color: var(--ink); margin-top: 6px; }
+.cert-disc .k { color: var(--muted); }
+.cert-legal { font-size: 8px; color: #3c4048; line-height: 1.5; margin-top: 8px; }
+.cert-legal h3 { font-size: 9px; margin: 12px 0 4px; }
+
+/* =====================================================================
+   DOCUSIGN NOTIFICATION EMAIL
+   ---------------------------------------------------------------------
+   The real signing invitation is a narrow, plain, almost ugly email, and
+   every block in it is load-bearing for the phishing lesson:
+
+     logo · "<Sender> sent you a document to review and sign." ·
+     REVIEW DOCUMENT button · sender name and address · the sender's own
+     message · Powered by Docusign · Do Not Share This Email ·
+     ALTERNATE SIGNING METHOD with a security code · About Docusign ·
+     Questions about the Document? · Stop receiving this email · address
+
+   The Alternate Signing Method block matters most and was missing here
+   altogether. It is the reason a trainee never has to click a link in a
+   signing email: the code can be typed into docusign.com directly. A
+   phishing sample that omits it, or supplies a code that goes nowhere, is
+   caught by a coordinator who knows the block should be there.
+
+   The three samples share this skeleton on purpose. A fake that looks
+   nothing like the real article teaches nobody anything.
+   ===================================================================== */
+body.dse { background: #f4f5f7; font-family: Arial, Helvetica, sans-serif; padding: 24px 16px; }
+.dse-wrap { max-width: 600px; margin: 0 auto; }
+.dse-card { background: #fff; border: 1px solid #e0e0e0; }
+.dse-logo { padding: 22px 28px 0; }
+.dse-logo img { height: 26px; display: block; }
+.dse-logo .wordmark { font-size: 19px; font-weight: 700; color: #1a1a1a; letter-spacing: -.3px; }
+.dse-body { padding: 20px 28px 28px; color: #333; font-size: 14px; line-height: 1.55; }
+.dse-lede { font-size: 15px; color: #1a1a1a; margin: 0 0 22px; }
+.dse-btn {
+  display: inline-block; background: #ffc400; color: #1a1a1a; font-weight: 700;
+  padding: 13px 34px; text-decoration: none; font-size: 14px; letter-spacing: .2px;
+}
+.dse-sender { margin: 24px 0 0; font-size: 13.5px; }
+.dse-sender b { display: block; }
+.dse-sender .addr { color: #6b778c; font-size: 12.5px; }
+.dse-msg { margin: 14px 0 0; padding: 12px 14px; background: #f7f8f9; border-left: 3px solid #d8dbe0; font-size: 13.5px; color: #444; }
+.dse-rule { border: 0; border-top: 1px solid #e6e8eb; margin: 26px 0 18px; }
+.dse-powered { font-size: 12px; color: #6b778c; margin: 0 0 20px; }
+.dse-blk { margin: 0 0 18px; }
+.dse-blk h4 { font-size: 12.5px; margin: 0 0 4px; color: #1a1a1a; }
+.dse-blk p { font-size: 12px; color: #6b778c; margin: 0; line-height: 1.55; }
+.dse-code {
+  display: inline-block; margin-top: 6px; font-family: Consolas, "Courier New", monospace;
+  font-size: 13px; letter-spacing: 1.4px; color: #1a1a1a; background: #f2f3f5;
+  border: 1px solid #dfe1e6; padding: 7px 12px;
+}
+.dse-foot { font-size: 11px; color: #8d929a; text-align: center; padding: 16px 20px 0; line-height: 1.6; }
+
+/* Header pane above the message — the simulator's own framing, not part of
+   the email, so it is visually separated from it. */
+.dse-headers { background: #fff; border: 1px solid #e0e0e0; border-bottom: 0; padding: 12px 16px; font-size: 12px; color: #444; }
+.dse-headers div { margin-bottom: 3px; }
+.dse-headers .k { color: #6b778c; display: inline-block; min-width: 92px; }
+.dse-bad { color: #c62828; font-weight: 700; }
+.dse-tell { max-width: 600px; margin: 14px auto 0; background: #fff4f4; border-left: 4px solid #c62828; color: #7d1d1d; font-size: 12.5px; padding: 12px 16px; line-height: 1.55; }
+.dse-tell b { color: #5c1414; }

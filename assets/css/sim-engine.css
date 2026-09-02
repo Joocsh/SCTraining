@@ -92,26 +92,93 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 13px 18px;
-  border-bottom: 1px solid var(--sim-line);
+  padding: 10px 18px;
+  background: #0f172a;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 14px;
+  color: #fff;
+  gap: 12px;
+}
+
+.sim-doc-modal-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.sim-doc-modal-tag {
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #86efac;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--sim-ink);
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+
+.sim-doc-modal-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.sim-doc-modal-hint {
+  flex: 1;
+  margin: 0 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 5px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #22c55e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sim-doc-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+
+.sim-doc-modal-done-btn {
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sim-doc-modal-done-btn:hover {
+  background: #15803d;
+  transform: translateY(-1px);
 }
 
 .sim-doc-modal-close {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1;
-  color: var(--sim-muted);
+  color: #94a3b8;
   cursor: pointer;
   padding: 0 4px;
+  transition: color .15s;
 }
 
 .sim-doc-modal-close:hover {
-  color: var(--sim-bad);
+  color: #f87171;
 }
 
 .sim-doc-modal-card iframe {
@@ -238,10 +305,21 @@
   font-weight: 700;
   color: var(--sim-muted);
   cursor: pointer;
+  display: flex;
+  gap: 14px;
+  align-items: center;
 }
 
-.sim-walk-exit:hover {
+.sim-walk-exit > span:hover {
   color: var(--sim-bad);
+  text-decoration: underline;
+}
+
+.sim-walk-back {
+  color: var(--sim-accent);
+  cursor: pointer;
+}
+.sim-walk-back:hover {
   text-decoration: underline;
 }
 

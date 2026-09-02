@@ -60,10 +60,10 @@ Tres invariantes que deben seguir siendo ciertos al terminar:
 
 1. `localStorage` contiene **una sola clave**, `qz_va_training_v2`, con **exactamente 10 campos**:
    `checklist, scenarios, reviews, reconciles, composes, exam, lessonsDone, checklistScoped,
-   shuffleSalt, tourSeen`. **Ningún dato de producto entra ahí.**
+   shuffleSalt, tourSeen, tourOptOut`. **Ningún dato de producto entra ahí.**
 2. Los datos del producto viven **sólo en memoria** (`qzDB`). Al recargar, el mundo vuelve a
    estado de fábrica. Ya funciona: no metas persistencia.
-3. Las 14 lecciones y el examen se completan igual que hoy.
+3. Las 10 lecciones y el examen se completan igual que hoy.
 
 ### 1.2 Convenciones
 
@@ -543,7 +543,7 @@ qualia.com sirve hoy.
 | 13 | Fallbacks literales | 0 | **0** |
 | 14 | Errores de consola en el recorrido | 0 | **0** |
 | 15 | `localStorage` | 1 clave, 10 campos | **igual** |
-| 16 | Las 14 lecciones y el examen | pasan | **pasan** |
+| 16 | Las 10 lecciones y el examen | pasan | **pasan** |
 
 ---
 

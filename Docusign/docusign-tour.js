@@ -92,22 +92,32 @@ function dsTourShow(i) {
     try { step.before(); } catch (e) {}
   }
 
-  const tipBody = document.getElementById('dsTourTipBody');
-  const progEl = document.getElementById('dsTourProgress');
-  const backBtn = document.getElementById('dsTourBackBtn');
-  const nextBtn = document.getElementById('dsTourNextBtn');
+  const tip       = document.getElementById('dsTourTip');
+  const titleEl   = document.getElementById('dsTourTitle');
+  const textEl    = document.getElementById('dsTourText');
+  const tipBody   = document.getElementById('dsTourTipBody');
+  const badgeEl   = document.getElementById('dsTourBadge');
+  const progEl    = document.getElementById('dsTourProgress');
+  const fillEl    = document.getElementById('dsTourProgressFill');
+  const backBtn   = document.getElementById('dsTourBackBtn');
+  const nextBtn   = document.getElementById('dsTourNextBtn');
+
+  const total = DS_TOUR_STEPS.length;
+  const pct = Math.round(((i + 1) / total) * 100);
+
+  if (badgeEl) badgeEl.textContent = 'Step ' + (i + 1) + ' of ' + total;
+  if (progEl) progEl.textContent = (i + 1) + ' / ' + total;
+  if (fillEl) fillEl.style.width = pct + '%';
 
   if (tipBody) {
-    tipBody.innerHTML = '<b>' + esc(step.title) + '</b><p>' + esc(step.text) + '</p>';
+    tipBody.innerHTML = '<h3 class="ds-tour-title" id="dsTourTitle">' + esc(step.title) + '</h3><p class="ds-tour-text" id="dsTourText">' + esc(step.text) + '</p>';
   }
-  if (progEl) {
-    progEl.textContent = (i + 1) + ' / ' + DS_TOUR_STEPS.length;
-  }
+
   if (backBtn) {
     backBtn.style.visibility = i === 0 ? 'hidden' : 'visible';
   }
   if (nextBtn) {
-    nextBtn.textContent = i === DS_TOUR_STEPS.length - 1 ? 'Finish' : 'Next';
+    nextBtn.textContent = i === total - 1 ? 'Finish Tour' : 'Next →';
   }
 
   const el = step.target ? document.querySelector(step.target) : null;
@@ -121,10 +131,14 @@ function dsTourShow(i) {
 function dsTourPosition(step) {
   const highlight = document.getElementById('dsTourHighlight');
   const tip       = document.getElementById('dsTourTip');
+  const arrow     = document.getElementById('dsTourArrow');
   if (!highlight || !tip) return;
 
   const el   = step && step.target ? document.querySelector(step.target) : null;
   const rect = el ? el.getBoundingClientRect() : null;
+
+  // Reset arrow class
+  tip.className = 'ds-tour-tip';
 
   if (rect && rect.width > 0 && rect.height > 0) {
     const pad = 8;
@@ -134,36 +148,53 @@ function dsTourPosition(step) {
     const b = Math.min(window.innerHeight - margin, rect.bottom + pad);
     const r = Math.min(window.innerWidth - margin, rect.right + pad);
 
+    highlight.style.display      = 'block';
+    highlight.style.opacity      = '1';
     highlight.style.top          = t + 'px';
     highlight.style.left         = l + 'px';
     highlight.style.width        = Math.max(0, r - l) + 'px';
     highlight.style.height       = Math.max(0, b - t) + 'px';
     highlight.style.borderRadius = '8px';
 
-    const tipW = 340;
-    const tipH = tip.offsetHeight || 190;
+    const tipW = Math.min(360, window.innerWidth - 28);
+    const tipH = tip.offsetHeight || 210;
+
     let top = b + margin;
+    let arrowDir = 'arrow-top';
+
+    // If placing below overflows viewport bottom, place above
     if (top + tipH > window.innerHeight - margin) {
-      top = t - margin - tipH;
-      if (top < margin) {
-        top = Math.max(margin, window.innerHeight - tipH - margin);
+      const topAbove = t - margin - tipH;
+      if (topAbove >= margin) {
+        top = topAbove;
+        arrowDir = 'arrow-bottom';
+      } else {
+        // Center vertically if tight
+        top = Math.max(margin, Math.min(window.innerHeight - tipH - margin, b + margin));
+        arrowDir = 'arrow-none';
       }
     }
-    const left = Math.min(
+
+    // Horizontal placement aligned to target left, clamped in viewport
+    let left = Math.min(
       Math.max(margin, rect.left),
       Math.max(margin, window.innerWidth - tipW - margin)
     );
 
+    // Calculate dynamic arrow horizontal position aligned with target center
+    const targetCenterX = rect.left + rect.width / 2;
+    const arrowLeft = Math.max(20, Math.min(tipW - 32, targetCenterX - left - 6));
+    if (arrow) arrow.style.left = arrowLeft + 'px';
+
+    tip.classList.add(arrowDir);
     tip.style.top       = top  + 'px';
     tip.style.left      = left + 'px';
     tip.style.transform = 'none';
   } else {
     /* Centered — no target */
-    highlight.style.top          = (window.innerHeight / 2 - 1) + 'px';
-    highlight.style.left         = (window.innerWidth  / 2 - 1) + 'px';
-    highlight.style.width        = '2px';
-    highlight.style.height       = '2px';
-    highlight.style.borderRadius = '50%';
+    highlight.style.display      = 'none';
+    highlight.style.opacity      = '0';
+    tip.classList.add('arrow-none');
     tip.style.top                = '50%';
     tip.style.left               = '50%';
     tip.style.transform          = 'translate(-50%, -50%)';
