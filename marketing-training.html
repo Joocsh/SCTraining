@@ -102,12 +102,26 @@ b,strong{color:var(--v-ink);font-weight:700}
 /* ============ STAGE + LESSON LAYOUT ============ */
 .stage{position:fixed;top:calc(var(--top) + 3px);left:var(--side);right:0;bottom:0;overflow-y:auto}
 @media(max-width:960px){.stage{left:0}}
-.lesson{max-width:1160px;margin:0 auto;padding:30px 52px 104px;min-height:100%;display:flex;flex-direction:column}
+.lesson{max-width:1160px;margin:0 auto;padding:30px 52px 88px;min-height:100%;display:flex;flex-direction:column}
 .lesson.vcenter{justify-content:safe center}
 .lesson.anim{animation:fade .28s ease}
-@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-@media(max-width:1240px){.lesson{padding:28px 36px 104px}}
-@media(max-width:700px){.lesson{padding:20px 18px 100px}}
+/* Opacity only. A translate here pushes the stage into scrollable overflow for
+   the length of the animation and flickers a scrollbar on every lesson change. */
+@keyframes fade{from{opacity:0}to{opacity:1}}
+/* Scale the whole lesson up to use the screen the reader actually has. The
+   tallest lesson is 660px unscaled, so each step is the largest factor that
+   still keeps every lesson on one screen at that viewport, and the width gate
+   keeps the two column split from getting cramped. */
+@media(min-width:1290px) and (min-height:790px){.lesson{zoom:1.08}}
+@media(min-width:1335px) and (min-height:820px){.lesson{zoom:1.13}}
+@media(min-width:1380px) and (min-height:850px){.lesson{zoom:1.18}}
+@media(min-width:1425px) and (min-height:880px){.lesson{zoom:1.23}}
+@media(min-width:1461px) and (min-height:910px){.lesson{zoom:1.27}}
+@media(min-width:1506px) and (min-height:940px){.lesson{zoom:1.32}}
+@media(min-width:1560px) and (min-height:980px){.lesson{zoom:1.38}}
+@media(min-width:1623px) and (min-height:1030px){.lesson{zoom:1.45}}
+@media(max-width:1240px){.lesson{padding:28px 36px 88px}}
+@media(max-width:700px){.lesson{padding:20px 18px 88px}}
 
 .crumb{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;color:var(--v-muted);margin-bottom:14px;flex-wrap:wrap}
 .crumb .pill{background:var(--v-navy);color:#fff;border-radius:999px;padding:4px 12px;font-size:11px;letter-spacing:.5px}
@@ -124,7 +138,9 @@ b,strong{color:var(--v-ink);font-weight:700}
 .txt,.med{min-width:0}
 .txt > :first-child,.med > :first-child{margin-top:0}
 .txt > :last-child,.med > :last-child{margin-bottom:0}
-@media(max-width:1040px){
+/* The lesson is zoomed, so the split needs more real viewport width than its
+   own 1040px would suggest before the two columns stay comfortable. */
+@media(max-width:1240px){
   .lay.split{grid-template-columns:1fr;gap:20px}
   .lesson{max-width:840px}
 }
@@ -133,6 +149,30 @@ b,strong{color:var(--v-ink);font-weight:700}
 .lesson li{margin-bottom:7px}
 .lesson h2{margin:26px 0 10px}
 .lesson h3{margin:20px 0 8px}
+
+/* On a large screen the lesson is scaled up, so the chrome around it grows too
+   and the whole platform stays in proportion. */
+@media(min-width:1425px) and (min-height:880px){
+  :root{--side:318px; --top:64px}
+  .tb-back{font-size:14.5px}
+  .tb-brand{font-size:19px}
+  .tb-count{font-size:13.5px}
+  .tb-btn{width:37px;height:37px;font-size:16.5px}
+  .side-hd{padding:20px 22px 18px}
+  .side-hd .ttl{font-size:17.5px}
+  .side-hd .sub{font-size:13.5px}
+  .side-hd .pct{font-size:12.5px}
+  .mod-h{padding:14px 18px}
+  .mod-n{width:27px;height:27px;font-size:12.5px}
+  .mod-t .nm{font-size:14.5px}
+  .mod-t .ct{font-size:12.5px}
+  .les{font-size:14px;min-height:43px}
+  .les-tick{width:17px;height:17px}
+  .les-kind{font-size:10.5px}
+  .fnav{padding:14px 46px}
+  .fbtn{font-size:15px;padding:12px 22px}
+  .fnav .pos{font-size:14px}
+}
 
 /* ============ CONTENT BLOCKS ============ */
 .card{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin:16px 0}
@@ -382,7 +422,7 @@ b,strong{color:var(--v-ink);font-weight:700}
 .qdot.ok{background:var(--good)}
 .qdot.bad{background:#e8a99c}
 .qbar .lbl{font-size:12px;font-weight:700;color:var(--v-muted)}
-.qcard{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);padding:26px 28px;box-shadow:var(--shadow-m);min-height:352px;display:flex;flex-direction:column}
+.qcard{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);padding:26px 28px;box-shadow:var(--shadow-m);min-height:326px;display:flex;flex-direction:column}
 .qnum{font-size:11px;font-weight:800;letter-spacing:1.2px;color:var(--v-cyan-d);text-transform:uppercase}
 .qtext{font-family:var(--display);font-size:20px;font-weight:800;color:var(--v-navy);letter-spacing:-.4px;margin:7px 0 18px;line-height:1.32}
 .qopt{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:#fff;border:1.5px solid var(--v-line);border-radius:var(--r-sm);padding:13px 15px;font-size:14.5px;color:var(--v-ink);margin-bottom:9px;transition:.15s;line-height:1.45}
