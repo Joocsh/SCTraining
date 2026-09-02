@@ -3,588 +3,599 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Marketing Training · Sotheby's Ecosystem · SkillCloud Academy</title>
+<title>Marketing Training · SkillCloud Academy</title>
+<meta name="description" content="Interactive marketing training on the Sotheby's International Realty tool ecosystem: brand, campaign playbook, the five platforms, and AI prompting.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Cormorant is loaded ONLY to preview the Sotheby's serif inside the typography lesson. The UI itself uses the SkillCloud system stack. -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --sir:#002349; --sir-2:#0d3560; --sir-3:#123f6e; --sir-soft:#e8eef5;
-  --offwhite:#EDECE6; --paper:#F7F6F2; --card:#FFFFFF;
-  --gold:#B99145; --gold-soft:#F0E7D4; --gold-line:#E3D4B0;
-  --ink:#12243a; --body:#31465e; --muted:#5f7085; --faint:#93a2b4;
-  --line:#e4e2da; --line-2:#d0cec4;
-  --good:#1f9e5a; --good-bg:#e4f4ec; --bad:#d2452f; --bad-bg:#fbe8e4; --warn:#a86e10; --warn-bg:#fbf1dc;
-  --cyan:#17c3d4; --cyan-d:#0fa6b6;
-  --sh:0 1px 3px rgba(0,35,73,.06); --sh-m:0 4px 16px rgba(0,35,73,.09); --sh-l:0 14px 44px rgba(0,35,73,.16);
-  --side:294px; --top:60px;
+  /* SkillCloud brand tokens — identical to assets/css/styles.css */
+  --v-navy:#0a2647; --v-navy2:#0f3460; --v-blue:#1565c0; --v-sky:#5aa9e6;
+  --v-cyan:#17c3d4; --v-cyan-d:#0fa6b6; --v-ink:#0c1e33; --v-muted:#5b6b7e;
+  --v-bg:#f6f9fc; --v-line:#e3eaf1;
+  --gold:#b08d3f;
+  --body:#33465e; --faint:#8fa1b3; --line-2:#cfdbe6; --soft:#eef3f8;
+  --good:#1f9e5a; --good-bg:#e4f4ec; --bad:#d2452f; --warn:#a86e10; --warn-bg:#fbf1dc;
+  --shadow:0 2px 10px rgba(10,38,71,.08); --shadow-m:0 6px 22px rgba(10,38,71,.1); --shadow-l:0 8px 30px rgba(10,38,71,.14);
+  --radius:14px; --r-sm:10px;
+  --side:290px; --top:58px;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --display:"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,Menlo,Consolas,monospace;
+  --serif-demo:'Cormorant Garamond',Georgia,serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{font-family:'Libre Franklin',Arial,sans-serif;background:var(--paper);color:var(--body);font-size:15.5px;line-height:1.65;-webkit-font-smoothing:antialiased;overflow:hidden}
+body{font-family:var(--sans);background:var(--v-bg);color:var(--body);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow:hidden}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
-a{color:var(--cyan-d);text-decoration:none}
-h1,h2,h3,.serif{font-family:'Cormorant Garamond',Georgia,serif;color:var(--sir);font-weight:600}
-.mono{font-family:'IBM Plex Mono',monospace}
-.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:500}
-::-webkit-scrollbar{width:9px;height:9px}
+a{color:var(--v-cyan-d);text-decoration:none}
+h1,h2,h3,h4{font-family:var(--display);color:var(--v-navy);letter-spacing:-.5px;line-height:1.2}
+h1{font-size:31px;font-weight:900;letter-spacing:-1px}
+h2{font-size:22px;font-weight:800}
+h3{font-size:17px;font-weight:800;color:var(--v-navy2)}
+h4{font-size:15.5px;font-weight:800}
+b,strong{color:var(--v-ink);font-weight:700}
+:focus-visible{outline:2px solid var(--v-cyan-d);outline-offset:2px;border-radius:4px}
+::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:#cdd5de;border-radius:6px;border:2px solid var(--paper)}
-::-webkit-scrollbar-thumb:hover{background:#adb9c6}
+::-webkit-scrollbar-thumb{background:#cfdbe6;border-radius:6px;border:3px solid var(--v-bg)}
+::-webkit-scrollbar-thumb:hover{background:#b4c4d4}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--v-cyan-d)}
+.mono{font-family:var(--mono)}
 
-/* ===================== TOP BAR ===================== */
-.topbar{position:fixed;top:0;left:0;right:0;height:var(--top);background:var(--sir);color:#fff;display:flex;align-items:center;gap:14px;padding:0 18px;z-index:120}
-.tb-back{display:flex;align-items:center;gap:8px;color:#c5d6e6;font-size:13px;font-weight:600;padding:7px 12px;border-radius:8px}
-.tb-back:hover{background:rgba(255,255,255,.1);color:#fff}
-.tb-title{font-family:'Cormorant Garamond',serif;color:#fff;font-size:19px;font-weight:600;letter-spacing:.2px;white-space:nowrap}
-.tb-title b{color:var(--gold-soft);font-weight:600;font-style:italic}
-.tb-mid{flex:1;max-width:420px;margin:0 auto;display:flex;align-items:center;gap:11px}
-.tb-track{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden}
-.tb-fill{height:100%;width:0;background:linear-gradient(90deg,var(--gold),#d8b269);border-radius:3px;transition:width .45s cubic-bezier(.4,0,.2,1)}
-.tb-pct{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#a9c0d6;min-width:38px;text-align:right}
-.tb-right{display:flex;align-items:center;gap:10px;margin-left:auto}
-.tb-btn{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;color:#c5d6e6;font-size:16px}
-.tb-btn:hover{background:rgba(255,255,255,.12);color:#fff}
+/* ============ TOP BAR ============ */
+.topbar{position:fixed;top:0;left:0;right:0;height:var(--top);background:#fff;border-bottom:1px solid var(--v-line);display:flex;align-items:center;gap:12px;padding:0 16px;z-index:120}
+.tb-back{display:inline-flex;align-items:center;gap:7px;color:var(--v-muted);font-size:13.5px;font-weight:700;padding:8px 12px;border-radius:var(--r-sm)}
+.tb-back:hover{background:var(--soft);color:var(--v-navy)}
+.tb-brand{font-family:var(--display);font-size:17px;font-weight:900;letter-spacing:-.6px;color:var(--v-navy);white-space:nowrap}
+.tb-brand span{color:var(--v-cyan-d)}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.tb-count{font-size:12.5px;color:var(--v-muted);font-weight:600;white-space:nowrap}
+.tb-count b{color:var(--v-navy)}
+.tb-btn{width:34px;height:34px;border-radius:var(--r-sm);display:grid;place-items:center;color:var(--v-muted);font-size:15px}
+.tb-btn:hover{background:var(--soft);color:var(--v-navy)}
 .burger{display:none}
-@media(max-width:960px){
-  .burger{display:grid}
-  .tb-mid{max-width:none}
-  .tb-title{display:none}
-}
+.tb-prog{position:fixed;top:var(--top);left:0;right:0;height:3px;background:var(--v-line);z-index:121}
+.tb-prog i{display:block;height:100%;width:0;background:var(--v-cyan);transition:width .4s cubic-bezier(.4,0,.2,1)}
+@media(max-width:960px){.burger{display:grid}.tb-brand{font-size:15px}.tb-count{display:none}}
 
-/* ===================== SIDEBAR ===================== */
-.side{position:fixed;top:var(--top);left:0;bottom:0;width:var(--side);background:#fff;border-right:1px solid var(--line);overflow-y:auto;z-index:110;padding-bottom:26px;transition:transform .28s ease}
-.side-hd{padding:20px 20px 14px;border-bottom:1px solid var(--line)}
-.side-hd .ttl{font-family:'Cormorant Garamond',serif;font-size:21px;color:var(--sir);font-weight:600;line-height:1.2}
-.side-hd .meta{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-top:6px}
-.side-hd .bar{height:4px;border-radius:3px;background:var(--sir-soft);margin-top:11px;overflow:hidden}
-.side-hd .bar i{display:block;height:100%;width:0;background:var(--gold);border-radius:3px;transition:width .45s}
+/* ============ SIDEBAR ============ */
+.side{position:fixed;top:calc(var(--top) + 3px);left:0;bottom:0;width:var(--side);background:#fff;border-right:1px solid var(--v-line);overflow-y:auto;z-index:110;padding-bottom:24px;transition:transform .25s ease}
+.side-hd{padding:18px 20px 16px;border-bottom:1px solid var(--v-line)}
+.side-hd .ttl{font-family:var(--display);font-size:16px;font-weight:800;color:var(--v-navy);letter-spacing:-.4px;line-height:1.25}
+.side-hd .sub{font-size:12.5px;color:var(--v-muted);margin-top:3px}
+.side-hd .bar{height:6px;border-radius:4px;background:var(--v-line);margin-top:12px;overflow:hidden}
+.side-hd .bar i{display:block;height:100%;width:0;background:var(--v-cyan);border-radius:4px;transition:width .4s}
+.side-hd .pct{display:flex;justify-content:space-between;font-size:11.5px;color:var(--v-muted);margin-top:6px;font-weight:600}
 
-.mod{border-bottom:1px solid var(--line)}
-.mod-h{width:100%;display:flex;align-items:center;gap:11px;padding:13px 18px;text-align:left}
-.mod-h:hover{background:#faf9f5}
-.mod-n{width:25px;height:25px;border-radius:50%;background:var(--sir-soft);color:var(--sir);display:grid;place-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;flex:none;transition:.2s}
+.mod + .mod{border-top:1px solid var(--v-line)}
+.mod-h{width:100%;display:flex;align-items:center;gap:11px;padding:11px 16px;text-align:left;transition:background .15s}
+.mod-h:hover{background:var(--v-bg)}
+.mod-n{width:24px;height:24px;border-radius:50%;background:var(--soft);color:var(--v-navy2);display:grid;place-items:center;font-size:11.5px;font-weight:800;flex:none;transition:.2s}
 .mod.done .mod-n{background:var(--good);color:#fff}
-.mod.active .mod-n{background:var(--sir);color:#fff}
+.mod.active .mod-n{background:var(--v-navy);color:#fff}
 .mod-t{flex:1;min-width:0}
-.mod-t .nm{display:block;font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.3}
-.mod-t .ct{display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--faint);margin-top:2px;line-height:1.35}
-.mod-chev{color:var(--faint);font-size:11px;transition:transform .2s;flex:none}
+.mod-t .nm{display:block;font-size:13.5px;font-weight:700;color:var(--v-ink);line-height:1.35}
+.mod-t .ct{display:block;font-size:11.5px;color:var(--faint);margin-top:1px}
+.mod-chev{color:var(--faint);font-size:10px;transition:transform .2s;flex:none}
 .mod.open .mod-chev{transform:rotate(90deg)}
-.mod-b{display:none;padding:0 0 8px}
+.mod-b{display:none;padding:0 8px 8px}
 .mod.open .mod-b{display:block}
-.les{width:100%;display:flex;align-items:flex-start;gap:10px;padding:8px 18px 8px 25px;text-align:left;font-size:13px;color:var(--muted);line-height:1.4;position:relative}
-.les:hover{background:#faf9f5;color:var(--ink)}
-.les.on{background:var(--gold-soft);color:var(--sir);font-weight:600}
-.les.on::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold)}
-.les-tick{width:17px;height:17px;border-radius:50%;border:1.5px solid var(--line-2);flex:none;margin-top:1px;display:grid;place-items:center;font-size:8.5px;color:transparent;background:#fff;transition:.2s}
+
+.les{width:100%;display:flex;align-items:center;gap:10px;min-height:38px;padding:7px 10px 7px 12px;text-align:left;font-size:13px;color:var(--v-muted);line-height:1.35;border-radius:8px;transition:background .13s,color .13s}
+.les:hover{background:var(--v-bg);color:var(--v-ink)}
+.les.cur{background:var(--soft);color:var(--v-navy);font-weight:700;box-shadow:inset 3px 0 0 var(--v-cyan);padding:7px 10px 7px 12px}
+.les-tick{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line-2);flex:none;display:grid;place-items:center;font-size:8px;color:transparent;background:#fff;transition:.2s}
 .les.done .les-tick{background:var(--good);border-color:var(--good);color:#fff}
-.les.on .les-tick{border-color:var(--gold)}
-.les.done.on .les-tick{background:var(--good);border-color:var(--good)}
-.les-x{flex:1}
-.les-kind{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.08em;color:var(--gold);text-transform:uppercase;display:block;margin-top:1px}
-.side-veil{display:none;position:fixed;inset:0;background:rgba(10,25,45,.4);z-index:105}
+.les.cur:not(.done) .les-tick{border-color:var(--v-cyan-d)}
+.les-x{flex:1;min-width:0}
+.les-kind{display:block;font-size:10px;font-weight:800;letter-spacing:.7px;color:var(--v-cyan-d);text-transform:uppercase;margin-top:1px}
+.side-veil{display:none;position:fixed;inset:0;background:rgba(10,38,71,.42);z-index:105}
 @media(max-width:960px){
-  .side{transform:translateX(-100%);box-shadow:var(--sh-l)}
+  .side{transform:translateX(-100%);box-shadow:var(--shadow-l)}
   .side.open{transform:none}
   .side-veil.on{display:block}
 }
 
-/* ===================== STAGE ===================== */
-.stage{position:fixed;top:var(--top);left:var(--side);right:0;bottom:0;overflow-y:auto;scroll-behavior:smooth}
+/* ============ STAGE ============ */
+.stage{position:fixed;top:calc(var(--top) + 3px);left:var(--side);right:0;bottom:0;overflow-y:auto}
 @media(max-width:960px){.stage{left:0}}
-.lesson{max-width:900px;margin:0 auto;padding:38px 40px 130px;animation:fadeUp .38s cubic-bezier(.2,.8,.3,1)}
-@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-@media(max-width:700px){.lesson{padding:26px 20px 130px}}
-.crumb{display:flex;align-items:center;gap:9px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
-.crumb .pill{background:var(--sir);color:#fff;border-radius:20px;padding:3px 11px;letter-spacing:.1em}
-.crumb .sep{color:var(--line-2)}
-.lesson h1{font-size:clamp(28px,4vw,40px);line-height:1.12;font-weight:600;margin-bottom:10px}
-.lesson h1 em{font-style:italic;color:var(--gold)}
-.lead{font-size:17px;color:var(--body);max-width:730px;margin-bottom:24px}
-.lesson h2{font-size:25px;margin:32px 0 10px}
-.lesson h3{font-size:19px;margin:24px 0 8px}
-.lesson p{margin-bottom:12px}
-.lesson ul,.lesson ol{margin:8px 0 14px 22px}
-.lesson li{margin-bottom:7px}
-.lesson li b,.lesson p b{color:var(--ink)}
+.lesson{max-width:840px;margin:0 auto;padding:30px 40px 118px;animation:fade .3s ease}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media(max-width:700px){.lesson{padding:22px 18px 118px}}
 
-/* slide viewer */
-.slide{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--sh-m);background:var(--offwhite);margin:20px 0 8px;cursor:zoom-in;transition:.22s}
-.slide:hover{box-shadow:var(--sh-l);transform:translateY(-2px)}
+.crumb{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;color:var(--v-muted);margin-bottom:14px;flex-wrap:wrap}
+.crumb .pill{background:var(--v-navy);color:#fff;border-radius:999px;padding:4px 12px;font-size:11px;letter-spacing:.5px}
+.crumb .sep{color:var(--line-2)}
+.lesson h1{margin-bottom:10px}
+.lesson h1 em{font-style:normal;color:var(--v-cyan-d)}
+.lead{font-size:16.5px;color:var(--body);margin-bottom:22px;line-height:1.6}
+.lesson h2{margin:30px 0 10px}
+.lesson h3{margin:22px 0 8px}
+.lesson p{margin-bottom:12px}
+.lesson ul,.lesson ol{margin:8px 0 14px 20px}
+.lesson li{margin-bottom:6px}
+
+/* slides */
+.slide{position:relative;border-radius:var(--radius);overflow:hidden;border:1px solid var(--v-line);box-shadow:var(--shadow);background:#EDECE6;margin:18px 0 8px;cursor:zoom-in;transition:box-shadow .2s,transform .2s;display:block;width:100%}
+.slide:hover{box-shadow:var(--shadow-m);transform:translateY(-2px)}
 .slide img{width:100%;display:block}
-.slide .zoom{position:absolute;right:12px;bottom:12px;background:rgba(0,35,73,.82);color:#fff;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:600;display:flex;gap:6px;align-items:center;opacity:0;transition:.2s;backdrop-filter:blur(4px)}
-.slide:hover .zoom{opacity:1}
-.slide-cap{font-size:12.5px;color:var(--muted);text-align:center;margin-bottom:22px;font-style:italic}
-.slide-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0 8px}
+.slide .zoom{position:absolute;right:10px;bottom:10px;background:rgba(10,38,71,.86);color:#fff;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;opacity:0;transition:opacity .2s}
+.slide:hover .zoom,.slide:focus-visible .zoom{opacity:1}
+.slide-cap{font-size:12.5px;color:var(--v-muted);text-align:center;margin-bottom:20px}
+.slide-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0 8px}
 @media(max-width:760px){.slide-row{grid-template-columns:1fr}}
 .slide-row .slide{margin:0}
 
 /* lightbox */
-.lb{position:fixed;inset:0;background:rgba(6,18,32,.94);z-index:400;display:none;align-items:center;justify-content:center;padding:34px;cursor:zoom-out}
+.lb{position:fixed;inset:0;background:rgba(8,20,35,.95);z-index:400;display:none;align-items:center;justify-content:center;padding:5vh 6vw;cursor:zoom-out}
 .lb.on{display:flex}
 .lb img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 30px 90px rgba(0,0,0,.6)}
-.lb-x{position:absolute;top:20px;right:26px;color:#fff;font-size:26px;opacity:.75}
-.lb-x:hover{opacity:1}
-.lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.13);color:#fff;display:grid;place-items:center;font-size:19px;backdrop-filter:blur(4px)}
-.lb-nav:hover{background:rgba(255,255,255,.26)}
-.lb-prev{left:22px}.lb-next{right:22px}
+.lb-x{position:absolute;top:16px;right:22px;color:#fff;font-size:26px;opacity:.7;width:40px;height:40px;border-radius:50%}
+.lb-x:hover{opacity:1;background:rgba(255,255,255,.12)}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;display:grid;place-items:center;font-size:20px}
+.lb-nav:hover{background:rgba(255,255,255,.28)}
+.lb-prev{left:18px}.lb-next{right:18px}
+.lb-count{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);color:#9fb4c9;font-size:12.5px;font-weight:600}
 
-/* content blocks */
-.card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:22px 26px;box-shadow:var(--sh);margin:18px 0}
-.card h3{margin-top:0}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:18px 0}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}
+/* ============ CONTENT BLOCKS ============ */
+.card{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);padding:20px 24px;box-shadow:var(--shadow);margin:16px 0}
+.card > h3:first-child,.card > h4:first-child{margin-top:0}
+.card p:last-child,.card ul:last-child,.card ol:last-child{margin-bottom:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0;align-items:stretch}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:16px 0;align-items:stretch}
+.grid2 > .card,.grid3 > .card{margin:0}
 @media(max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
-.navy{background:linear-gradient(155deg,var(--sir),var(--sir-3));border:none;color:#c9d8e6}
-.navy h3,.navy h2{color:#fff}
-.navy li b,.navy p b{color:#fff}
-.navy .eyebrow{color:#7ED9E6}
-.note{border-left:3px solid var(--gold);background:#fff;border-radius:0 11px 11px 0;padding:14px 18px;margin:16px 0;font-size:14.5px;box-shadow:var(--sh)}
-.note b{color:var(--sir)}
+.navy{background:linear-gradient(160deg,var(--v-navy),var(--v-navy2));border-color:transparent;color:#c7d7e6}
+.navy h2,.navy h3,.navy h4{color:#fff}
+.navy b,.navy strong{color:#fff}
+.navy .eyebrow{color:#7ee3ee}
+.note{border-left:4px solid var(--v-cyan);background:#fff;border-radius:0 var(--r-sm) var(--r-sm) 0;padding:14px 18px;margin:16px 0;font-size:14.5px;box-shadow:var(--shadow)}
+.note b{color:var(--v-navy)}
 .note.warn{border-left-color:var(--warn);background:var(--warn-bg)}
-.note.tip{border-left-color:var(--cyan-d);background:#eaf9fb}
-.kv{display:flex;gap:12px;padding:11px 0;border-bottom:1px dashed var(--line)}
-.kv:last-child{border-bottom:none}
-.kv .k{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);min-width:130px;flex:none;padding-top:3px}
-.stat-row{display:flex;gap:30px;flex-wrap:wrap;margin:20px 0}
-.stat b{font-family:'Cormorant Garamond',serif;font-size:38px;color:var(--sir);font-weight:600;display:block;line-height:1}
-.stat span{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.note.tip{border-left-color:var(--v-cyan);background:#e9f9fb}
+
+.kv{display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--v-line)}
+.kv:last-child{border-bottom:none;padding-bottom:0}
+.kv:first-child{padding-top:0}
+.kv .k{font-size:11.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--v-cyan-d);width:132px;flex:none;padding-top:2px}
+@media(max-width:600px){.kv{flex-direction:column;gap:4px}.kv .k{width:auto}}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--v-line);border:1px solid var(--v-line);border-radius:var(--radius);overflow:hidden;margin:18px 0}
+.stats .s{background:#fff;padding:16px 12px;text-align:center}
+.stats .s b{display:block;font-family:var(--display);font-size:26px;font-weight:900;color:var(--v-navy);letter-spacing:-1px;line-height:1.1}
+.stats .s span{font-size:11px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--v-muted)}
+@media(max-width:600px){.stats{grid-template-columns:1fr 1fr}}
 
 /* timeline */
-.tl{position:relative;margin:20px 0;padding-left:26px;border-left:2px solid var(--gold-line)}
+.tl{position:relative;margin:18px 0;padding-left:24px;border-left:2px solid var(--v-line)}
 .tl-i{position:relative;padding-bottom:20px}
-.tl-i::before{content:'';position:absolute;left:-33px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--gold);border:2.5px solid var(--paper)}
-.tl-i .yr{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--gold);letter-spacing:.1em}
-.tl-i h4{font-size:17px;color:var(--sir);margin:2px 0 4px;font-family:'Cormorant Garamond',serif;font-weight:600}
+.tl-i:last-child{padding-bottom:0}
+.tl-i::before{content:'';position:absolute;left:-31px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--v-cyan);border:3px solid var(--v-bg)}
+.tl-i .yr{font-size:11.5px;font-weight:800;letter-spacing:.8px;color:var(--v-cyan-d)}
+.tl-i h4{margin:3px 0 4px}
 .tl-i p{font-size:14.5px;margin:0}
 
 /* steps */
-.steps{counter-reset:st;display:grid;gap:11px;margin:18px 0}
-.step{display:flex;gap:16px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 20px;box-shadow:var(--sh);align-items:flex-start;transition:.2s}
-.step:hover{border-color:var(--gold-line);transform:translateX(3px)}
-.step::before{counter-increment:st;content:counter(st);font-family:'Cormorant Garamond',serif;font-size:31px;color:var(--gold);font-weight:600;line-height:.9;min-width:26px}
-.step h4{font-size:16px;color:var(--sir);margin-bottom:3px}
-.step h4 i{font-style:italic;color:var(--gold);font-family:'Cormorant Garamond',serif;font-size:1.06em}
+.steps{counter-reset:st;display:grid;gap:10px;margin:16px 0}
+.step{display:flex;gap:15px;background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);padding:15px 20px;box-shadow:var(--shadow);align-items:flex-start;transition:border-color .18s,transform .18s}
+.step:hover{border-color:var(--v-cyan);transform:translateX(3px)}
+.step::before{counter-increment:st;content:counter(st);width:28px;height:28px;border-radius:50%;background:var(--v-navy);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800;flex:none}
+.step h4{margin-bottom:3px}
+.step h4 i{font-style:normal;color:var(--v-cyan-d)}
 .step p{font-size:14px;margin:0}
 
 /* tool cards */
-.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:13px;margin:20px 0}
-.tool{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:var(--sh);cursor:pointer;transition:.2s;text-align:left}
-.tool:hover{transform:translateY(-3px);box-shadow:var(--sh-m);border-color:var(--sir)}
-.tool .tn{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--sir);font-weight:600;line-height:1.1}
-.tool .tr{font-size:12.5px;color:var(--muted);margin-top:5px;min-height:52px}
-.tool .tg{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--gold);text-transform:uppercase;margin-top:9px;display:block}
+.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;margin:18px 0}
+.tool{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);padding:17px;box-shadow:var(--shadow);cursor:pointer;transition:.18s;text-align:left;display:flex;flex-direction:column}
+.tool:hover{transform:translateY(-3px);box-shadow:var(--shadow-m);border-color:var(--v-cyan)}
+.tool .tn{font-family:var(--display);font-size:17px;font-weight:800;color:var(--v-navy);letter-spacing:-.4px}
+.tool .tr{font-size:12.5px;color:var(--v-muted);margin-top:5px;flex:1}
+.tool .tg{font-size:11px;font-weight:800;letter-spacing:.5px;color:var(--v-cyan-d);text-transform:uppercase;margin-top:10px}
 
 /* accordion */
-.acc{border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:var(--sh);margin-bottom:11px;overflow:hidden}
-.acc-h{width:100%;display:flex;align-items:center;gap:12px;padding:15px 20px;font-size:15px;font-weight:600;color:var(--sir);text-align:left}
-.acc-h:hover{background:#faf9f5}
-.acc-h .ic{width:24px;height:24px;border-radius:6px;background:var(--gold-soft);color:var(--gold);display:grid;place-items:center;font-size:11px;flex:none}
-.acc-h .chev{margin-left:auto;color:var(--faint);transition:transform .2s}
+.acc{border:1px solid var(--v-line);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden}
+.acc-h{width:100%;display:flex;align-items:center;gap:12px;padding:14px 18px;font-size:14.5px;font-weight:700;color:var(--v-navy);text-align:left}
+.acc-h:hover{background:var(--v-bg)}
+.acc-h .ic{width:24px;height:24px;border-radius:7px;background:var(--soft);color:var(--v-navy2);display:grid;place-items:center;font-size:11.5px;font-weight:800;flex:none}
+.acc-h .chev{margin-left:auto;color:var(--faint);transition:transform .2s;font-size:11px}
 .acc.open .chev{transform:rotate(90deg)}
-.acc-b{display:none;padding:0 20px 18px 56px;font-size:14.5px}
+.acc.open .ic{background:var(--v-cyan);color:#03282c}
+.acc-b{display:none;padding:0 18px 16px 54px;font-size:14.5px}
 .acc.open .acc-b{display:block}
-.acc-b ul{margin:2px 0 6px 18px}
+.acc-b ul{margin:2px 0 4px 18px}
+.acc-b p:last-child{margin-bottom:0}
 
 /* swatches */
-.sws{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}
+.sws{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:16px 0}
 @media(max-width:700px){.sws{grid-template-columns:1fr}}
-.sw{border-radius:12px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--sh);cursor:pointer;background:#fff;transition:.2s}
-.sw:hover{transform:translateY(-3px);box-shadow:var(--sh-m)}
-.sw .chip{height:104px;position:relative}
-.sw .chip::after{content:'Click to copy';position:absolute;inset:0;display:grid;place-items:center;font-size:11.5px;font-weight:700;color:#fff;background:rgba(0,0,0,.32);opacity:0;transition:.2s}
+.sw{border-radius:var(--radius);overflow:hidden;border:1px solid var(--v-line);box-shadow:var(--shadow);cursor:pointer;background:#fff;transition:.18s;text-align:left;width:100%}
+.sw:hover{transform:translateY(-3px);box-shadow:var(--shadow-m)}
+.sw .chip{height:88px;position:relative}
+.sw .chip::after{content:'Click to copy';position:absolute;inset:0;display:grid;place-items:center;font-size:11.5px;font-weight:800;color:#fff;background:rgba(10,38,71,.4);opacity:0;transition:opacity .18s}
 .sw:hover .chip::after{opacity:1}
 .sw .info{padding:12px 15px}
-.sw .nm{font-weight:700;color:var(--ink);font-size:14px}
-.sw .vals{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.65}
+.sw .nm{font-weight:800;color:var(--v-ink);font-size:14px}
+.sw .vals{font-family:var(--mono);font-size:11.5px;color:var(--v-muted);margin-top:5px;line-height:1.7}
 
-/* type specimen */
-.spec{background:#fff;border:1px solid var(--line);border-radius:13px;box-shadow:var(--sh);padding:24px 26px;margin:18px 0}
-.spec .r{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:18px;align-items:baseline;border-bottom:1px dashed var(--line);padding:13px 0}
-.spec .r:last-child{border-bottom:none}
-.spec .who{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--muted);text-align:right;line-height:1.75}
-.d-h1{font-family:'Cormorant Garamond',serif;font-size:40px;color:var(--sir);font-weight:500;line-height:1.1}
-.d-h2{font-family:'Cormorant Garamond',serif;font-size:27px;color:var(--sir);font-weight:600}
-.d-sub{font-size:16px;font-weight:600;color:var(--ink)}
+/* type specimen — the ONLY place the SIR serif appears, as a preview */
+.spec{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px;margin:16px 0}
+.spec .r{display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:18px;align-items:baseline;border-bottom:1px solid var(--v-line);padding:14px 0}
+.spec .r:first-child{padding-top:0}
+.spec .r:last-child{border-bottom:none;padding-bottom:0}
+.spec .who{font-family:var(--mono);font-size:11px;color:var(--v-muted);text-align:right;line-height:1.7}
+@media(max-width:640px){.spec .r{grid-template-columns:1fr}.spec .who{text-align:left}}
+.d-h1{font-family:var(--serif-demo);font-size:36px;color:var(--v-navy);font-weight:500;line-height:1.15}
+.d-h2{font-family:var(--serif-demo);font-size:25px;color:var(--v-navy);font-weight:600}
+.d-sub{font-size:16px;font-weight:700;color:var(--v-ink)}
 .d-body{font-size:15px}
 
 /* table */
-.tbl{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:var(--sh);border:1px solid var(--line);margin:16px 0}
-.tbl th{background:var(--sir);color:#fff;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;padding:11px 14px;text-align:left;font-weight:600}
-.tbl td{padding:12px 14px;border-top:1px solid var(--line);font-size:14px;vertical-align:top}
-.tbl td.k{font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--sir);font-style:italic;white-space:nowrap}
+.tbl{width:100%;border-collapse:collapse;background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--v-line);margin:16px 0}
+.tbl th{background:var(--v-navy);color:#fff;font-size:11.5px;letter-spacing:.6px;text-transform:uppercase;padding:11px 14px;text-align:left;font-weight:800}
+.tbl td{padding:12px 14px;border-top:1px solid var(--v-line);font-size:14px;vertical-align:top}
+.tbl td.k{font-weight:800;color:var(--v-navy);white-space:nowrap}
 
 /* shapes */
-.shapes{display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap;margin:16px 0}
-.shp{background:var(--offwhite);width:82px;border:1px solid var(--line)}
-.s-rect{height:104px}
-.s-oval{height:104px;border-radius:50%/44%}
-.s-arch{height:104px;border-radius:42px 42px 0 0}
-.s-curve{height:104px;border-radius:24px 4px 24px 4px}
-.s-step{height:104px;clip-path:polygon(0 12%,12% 12%,12% 0,88% 0,88% 12%,100% 12%,100% 88%,88% 88%,88% 100%,12% 100%,12% 88%,0 88%)}
-.shp-l{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-align:center;margin-top:8px}
+.shapes{display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap;margin:16px 0}
+.shp{background:#EDECE6;width:78px;border:1px solid var(--v-line)}
+.s-rect{height:98px}
+.s-oval{height:98px;border-radius:50%/44%}
+.s-arch{height:98px;border-radius:39px 39px 0 0}
+.s-curve{height:98px;border-radius:22px 4px 22px 4px}
+.s-step{height:98px;clip-path:polygon(0 12%,12% 12%,12% 0,88% 0,88% 12%,100% 12%,100% 88%,88% 88%,88% 100%,12% 100%,12% 88%,0 88%)}
+.shp-l{font-size:11.5px;font-weight:600;color:var(--v-muted);text-align:center;margin-top:8px}
 
 /* prompt library */
-.ptabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}
-.ptab{border:1.5px solid var(--line-2);border-radius:20px;padding:8px 17px;font-size:13px;font-weight:600;color:var(--muted);background:#fff;transition:.18s}
-.ptab:hover{border-color:var(--sir);color:var(--sir)}
-.ptab.on{background:var(--sir);border-color:var(--sir);color:#fff}
-.pc{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh);margin-bottom:12px;overflow:hidden}
-.pc-h{width:100%;display:flex;align-items:center;gap:12px;padding:16px 20px;text-align:left}
-.pc-h:hover{background:#faf9f5}
-.pc-h .t{font-weight:700;color:var(--sir);font-size:15px}
-.pc-h .s{font-size:12.5px;color:var(--muted);margin-top:2px}
-.pc-h .chev{margin-left:auto;color:var(--faint);transition:transform .2s;flex:none}
+.ptabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+.ptab{border:1.5px solid var(--line-2);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:700;color:var(--v-muted);background:#fff;transition:.16s}
+.ptab:hover{border-color:var(--v-navy);color:var(--v-navy)}
+.ptab.on{background:var(--v-navy);border-color:var(--v-navy);color:#fff}
+.pc{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:11px;overflow:hidden}
+.pc-h{width:100%;display:flex;align-items:center;gap:12px;padding:15px 18px;text-align:left}
+.pc-h:hover{background:var(--v-bg)}
+.pc-h .t{font-weight:800;color:var(--v-navy);font-size:14.5px}
+.pc-h .s{font-size:12.5px;color:var(--v-muted);margin-top:2px}
+.pc-h .chev{margin-left:auto;color:var(--faint);transition:transform .2s;flex:none;font-size:11px}
 .pc.open .chev{transform:rotate(90deg)}
-.pc-b{display:none;padding:0 20px 18px}
+.pc-b{display:none;padding:0 18px 16px}
 .pc.open .pc-b{display:block}
-.ing{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.ing span{font-size:10px;font-weight:700;letter-spacing:.06em;border-radius:4px;padding:3px 9px;text-transform:uppercase;font-family:'IBM Plex Mono',monospace}
+.ing{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:11px}
+.ing span{font-size:10px;font-weight:800;letter-spacing:.5px;border-radius:5px;padding:3px 9px;text-transform:uppercase}
 .i-role{background:#e3edf9;color:#1c5290}
 .i-ctx{background:#efe9fb;color:#5b3ea8}
 .i-task{background:#fbe9e2;color:#a0452c}
 .i-fmt{background:#e2f4ea;color:#1f7a4a}
-.i-ex{background:#faf0da;color:#8a6a14}
-.pre{background:#0c1f33;color:#d7e5f2;border-radius:11px;padding:17px 19px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;white-space:pre-wrap;position:relative}
+.pre{background:var(--v-navy);color:#d7e5f2;border-radius:var(--r-sm);padding:16px 18px;font-family:var(--mono);font-size:12.5px;line-height:1.8;white-space:pre-wrap;position:relative;word-break:break-word}
 .pre .role{color:#8ec3f0}.pre .ctx{color:#c4b1ef}.pre .task{color:#f0b096}.pre .fmt{color:#93dcb2}
-.pcopy{position:absolute;top:11px;right:11px;background:rgba(255,255,255,.13);border-radius:7px;padding:6px 12px;font-size:11px;color:#cfe2f2;font-family:'Libre Franklin',sans-serif;font-weight:600}
-.pcopy:hover{background:rgba(255,255,255,.24)}
-.pwhy{font-size:13.5px;color:var(--muted);margin-top:11px;border-left:2px solid var(--gold);padding-left:13px}
-.pwhy b{color:var(--sir)}
+.pcopy{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.14);border-radius:7px;padding:6px 12px;font-size:11px;color:#e0ecf6;font-family:var(--sans);font-weight:700}
+.pcopy:hover{background:var(--v-cyan);color:#03282c}
+.pwhy{font-size:13.5px;color:var(--v-muted);margin-top:11px;border-left:3px solid var(--v-cyan);padding-left:13px}
+.pwhy b{color:var(--v-navy)}
 
 /* quiz */
-.quiz{background:linear-gradient(155deg,var(--sir),var(--sir-3));border-radius:16px;color:#fff;padding:30px 34px;margin:8px 0 20px;box-shadow:var(--sh-m)}
-.quiz .eyebrow{color:#7ED9E6}
-.quiz h2{color:#fff;font-size:26px;margin:8px 0 6px}
-.quiz .qsub{color:#a9c0d6;font-size:14.5px;margin-bottom:20px}
-.qq{margin-bottom:24px}
-.qq:last-of-type{margin-bottom:8px}
-.qq .qt{font-size:16px;font-weight:600;color:#fff;margin-bottom:12px;display:flex;gap:10px}
-.qq .qt .n{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--gold-soft);flex:none;padding-top:3px}
-.qopt{display:block;width:100%;text-align:left;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.16);border-radius:11px;padding:12px 16px;font-size:14.5px;color:#e3ecf4;margin-bottom:9px;transition:.16s}
-.qopt:hover:not(:disabled){border-color:#7ED9E6;background:rgba(255,255,255,.12)}
+.quiz{background:linear-gradient(160deg,var(--v-navy),var(--v-navy2));border-radius:var(--radius);color:#c7d7e6;padding:26px 28px;margin:6px 0 18px;box-shadow:var(--shadow-m)}
+.quiz .eyebrow{color:#7ee3ee}
+.quiz h2{color:#fff;margin:8px 0 4px}
+.quiz .qsub{color:#9fb4c9;font-size:14px;margin-bottom:20px}
+.qq{margin-bottom:22px}
+.qq:last-of-type{margin-bottom:6px}
+.qq .qt{font-size:15.5px;font-weight:700;color:#fff;margin-bottom:11px;display:flex;gap:10px;line-height:1.45}
+.qq .qt .n{font-family:var(--mono);font-size:12px;color:#7ee3ee;flex:none;padding-top:2px}
+.qopt{display:block;width:100%;text-align:left;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.16);border-radius:var(--r-sm);padding:12px 15px;font-size:14.5px;color:#e3ecf4;margin-bottom:8px;transition:.15s;line-height:1.45}
+.qopt:hover:not(:disabled){border-color:#7ee3ee;background:rgba(255,255,255,.13)}
 .qopt:disabled{cursor:default}
-.qopt.ok{background:rgba(31,158,90,.3);border-color:#4ad286;color:#fff}
-.qopt.no{background:rgba(210,69,47,.28);border-color:#e8907f;color:#fff}
-.qfb{font-size:13.5px;color:#bcd0e2;background:rgba(255,255,255,.07);border-radius:9px;padding:11px 15px;margin-top:6px;display:none;border-left:2px solid var(--gold)}
+.qopt.ok{background:rgba(31,158,90,.32);border-color:#4ad286;color:#fff}
+.qopt.no{background:rgba(210,69,47,.3);border-color:#e8907f;color:#fff}
+.qfb{font-size:13.5px;color:#bcd0e2;background:rgba(255,255,255,.07);border-radius:var(--r-sm);padding:11px 15px;margin-top:6px;display:none;border-left:3px solid var(--v-cyan)}
 .qfb.show{display:block}
-.qscore{display:flex;align-items:center;gap:14px;border-top:1px solid rgba(255,255,255,.16);padding-top:18px;margin-top:6px}
-.qscore .num{font-family:'Cormorant Garamond',serif;font-size:32px;color:#fff;font-weight:600}
-.qscore .lbl{font-size:13.5px;color:#a9c0d6}
+.qscore{display:none;align-items:center;gap:13px;border-top:1px solid rgba(255,255,255,.18);padding-top:16px;margin-top:4px}
+.qscore.show{display:flex}
+.qscore .num{font-family:var(--display);font-size:26px;font-weight:900;color:#7ee3ee;letter-spacing:-1px}
+.qscore .lbl{font-size:13.5px;color:#9fb4c9}
 
 /* footer nav */
-.fnav{position:fixed;bottom:0;left:var(--side);right:0;background:rgba(247,246,242,.96);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:13px 40px;display:flex;align-items:center;gap:14px;z-index:100}
-@media(max-width:960px){.fnav{left:0;padding:12px 20px}}
-.fbtn{display:inline-flex;align-items:center;gap:9px;border-radius:11px;padding:11px 22px;font-size:14px;font-weight:700;transition:.18s;white-space:nowrap}
-.fbtn.prev{border:1.5px solid var(--line-2);color:var(--muted);background:#fff}
-.fbtn.prev:hover{border-color:var(--sir);color:var(--sir)}
-.fbtn.next{background:var(--sir);color:#fff;margin-left:auto}
-.fbtn.next:hover{background:var(--sir-3)}
-.fbtn.next.gold{background:var(--gold);color:#3d2f0f}
-.fbtn.next.gold:hover{background:#c9a05a}
-.fbtn:disabled{opacity:.35;cursor:not-allowed}
-.fnav .pos{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted);text-align:center;flex:1}
-@media(max-width:600px){.fnav .pos{display:none}.fbtn{padding:11px 16px;font-size:13px}}
+.fnav{position:fixed;bottom:0;left:var(--side);right:0;background:rgba(246,249,252,.97);backdrop-filter:blur(8px);border-top:1px solid var(--v-line);padding:12px 40px;display:flex;align-items:center;gap:14px;z-index:100}
+@media(max-width:960px){.fnav{left:0;padding:11px 18px}}
+.fbtn{display:inline-flex;align-items:center;gap:8px;border-radius:var(--r-sm);padding:11px 20px;font-size:13.5px;font-weight:800;transition:.16s;white-space:nowrap}
+.fbtn.prev{border:1.5px solid var(--line-2);color:var(--v-muted);background:#fff}
+.fbtn.prev:hover:not(:disabled){border-color:var(--v-navy);color:var(--v-navy)}
+.fbtn.next{background:var(--v-cyan);color:#03282c;margin-left:auto;box-shadow:0 4px 14px rgba(23,195,212,.3)}
+.fbtn.next:hover{background:var(--v-cyan-d);color:#fff}
+.fbtn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.fnav .pos{flex:1;text-align:center;font-size:12.5px;color:var(--v-muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fnav .pos b{color:var(--v-navy)}
+@media(max-width:620px){.fnav .pos{display:none}.fbtn{padding:11px 15px;font-size:13px}}
 
 /* completion */
-.done{max-width:640px;margin:20px auto;background:linear-gradient(160deg,var(--sir),var(--sir-3));border-radius:18px;color:#fff;padding:46px 44px;text-align:center;box-shadow:var(--sh-l);position:relative;overflow:hidden}
-.done::after{content:'1 of 1';position:absolute;right:-24px;bottom:-56px;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:170px;color:rgba(255,255,255,.05);line-height:1}
-.done .in{position:relative;z-index:2}
-.done .seal{width:74px;height:74px;border-radius:50%;background:var(--gold);color:var(--sir);display:grid;place-items:center;font-size:32px;margin:0 auto 18px;box-shadow:0 8px 24px rgba(185,145,69,.4)}
-.done h2{color:#fff;font-size:32px;margin-bottom:8px}
-.done p{color:#b9cbdc;max-width:460px;margin:0 auto 20px}
-.done-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.18);border-radius:12px;overflow:hidden;margin:24px 0}
-.done-stats .d{background:rgba(0,20,44,.5);padding:16px 8px}
-.done-stats .d b{font-family:'Cormorant Garamond',serif;font-size:26px;color:var(--gold-soft);display:block;line-height:1.1}
-.done-stats .d span{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:#9fb4c9}
-.btn{display:inline-flex;align-items:center;gap:8px;background:var(--cyan);color:#03282c;border-radius:11px;padding:12px 26px;font-size:14px;font-weight:800}
-.btn:hover{background:var(--cyan-d);color:#fff;text-decoration:none}
+.finish{background:linear-gradient(160deg,var(--v-navy),var(--v-navy2));border-radius:var(--radius);color:#c7d7e6;padding:42px 40px;text-align:center;box-shadow:var(--shadow-l);margin:10px 0}
+.finish .seal{width:64px;height:64px;border-radius:50%;background:var(--v-cyan);color:#03282c;display:grid;place-items:center;font-size:27px;margin:0 auto 16px}
+.finish h2{color:#fff;font-size:27px;margin-bottom:8px}
+.finish p{color:#9fb4c9;max-width:460px;margin:0 auto 18px}
+.finish .stats{border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.18);margin:22px auto}
+.finish .stats .s{background:rgba(10,38,71,.55)}
+.finish .stats .s b{color:#7ee3ee}
+.finish .stats .s span{color:#9fb4c9}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--v-cyan);color:#03282c;border-radius:var(--r-sm);padding:12px 24px;font-size:14px;font-weight:800}
+.btn:hover{background:var(--v-cyan-d);color:#fff;text-decoration:none}
 .btn.ghost{background:transparent;border:1.5px solid rgba(255,255,255,.4);color:#fff}
 .btn.ghost:hover{border-color:#fff;background:rgba(255,255,255,.1)}
 
 /* misc */
-.toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--sir);color:#fff;padding:12px 22px;border-radius:11px;font-size:13.5px;box-shadow:var(--sh-l);opacity:0;transition:.26s;z-index:500;pointer-events:none}
+.toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--v-navy);color:#fff;padding:12px 22px;border-radius:var(--r-sm);font-size:13.5px;font-weight:600;box-shadow:var(--shadow-l);opacity:0;transition:.24s;z-index:500;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.kbd{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11px;background:#fff;border:1px solid var(--line-2);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:var(--muted)}
-.hint{font-size:12.5px;color:var(--faint);text-align:center;margin-top:14px}
+.kbd{display:inline-block;font-family:var(--mono);font-size:11.5px;background:#eef2f6;border:1px solid var(--v-line);border-bottom-width:2px;border-radius:6px;padding:1px 7px;color:var(--v-muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 </style>
 </head>
 <body>
 
-<div class="topbar">
-  <button class="tb-btn burger" onclick="toggleSide()" title="Course menu">&#9776;</button>
-  <a class="tb-back" href="index.html">&larr; <span>Home</span></a>
-  <span class="tb-title">Marketing <b>Training</b></span>
-  <div class="tb-mid">
-    <div class="tb-track"><div class="tb-fill" id="tbFill"></div></div>
-    <span class="tb-pct" id="tbPct">0%</span>
-  </div>
+<header class="topbar">
+  <button class="tb-btn burger" onclick="toggleSide()" aria-label="Open course menu">&#9776;</button>
+  <a class="tb-back" href="index.html">&larr; Home</a>
+  <span class="tb-brand">Marketing <span>Training</span></span>
   <div class="tb-right">
-    <button class="tb-btn" onclick="resetAll()" title="Reset progress">&#8635;</button>
+    <span class="tb-count" id="tbCount"></span>
+    <button class="tb-btn" onclick="resetAll()" aria-label="Reset progress" title="Reset progress">&#8635;</button>
   </div>
-</div>
+</header>
+<div class="tb-prog"><i id="tbFill"></i></div>
 
-<aside class="side" id="side">
+<aside class="side" id="side" aria-label="Course outline">
   <div class="side-hd">
-    <div class="ttl">The Sotheby&rsquo;s Ecosystem</div>
-    <div class="meta" id="sideMeta">9 modules &middot; 0% complete</div>
+    <div class="ttl">The Sotheby&rsquo;s tool ecosystem</div>
+    <div class="sub">Marketing team onboarding</div>
     <div class="bar"><i id="sideBar"></i></div>
+    <div class="pct"><span id="sideMeta">0 of 46 lessons</span><span id="sidePct">0%</span></div>
   </div>
-  <div id="sideNav"></div>
+  <nav id="sideNav"></nav>
 </aside>
 <div class="side-veil" id="sideVeil" onclick="toggleSide()"></div>
 
 <main class="stage" id="stage"><div id="lesson"></div></main>
 
-<div class="fnav">
+<nav class="fnav" aria-label="Lesson navigation">
   <button class="fbtn prev" id="btnPrev" onclick="go(-1)">&larr; Previous</button>
   <span class="pos" id="posLbl"></span>
   <button class="fbtn next" id="btnNext" onclick="go(1)">Next &rarr;</button>
-</div>
+</nav>
 
-<div class="lb" id="lb" onclick="closeLb(event)">
-  <button class="lb-x" onclick="closeLb(event,1)">&times;</button>
-  <button class="lb-nav lb-prev" onclick="lbNav(event,-1)">&#8249;</button>
-  <img id="lbImg" src="" alt="">
-  <button class="lb-nav lb-next" onclick="lbNav(event,1)">&#8250;</button>
+<div class="lb" id="lb" onclick="closeLb(event)" role="dialog" aria-label="Slide viewer">
+  <button class="lb-x" onclick="closeLb(event,1)" aria-label="Close">&times;</button>
+  <button class="lb-nav lb-prev" onclick="lbNav(event,-1)" aria-label="Previous slide">&#8249;</button>
+  <img id="lbImg" src="" alt="Training slide">
+  <button class="lb-nav lb-next" onclick="lbNav(event,1)" aria-label="Next slide">&#8250;</button>
+  <span class="lb-count" id="lbCount"></span>
 </div>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 const IMG='assets/img/marketing/';
 
-/* ============ helpers used inside lesson HTML ============ */
-const sl=(f,cap)=>`<div class="slide" onclick="openLb('${f}')"><img src="${IMG}${f}" alt="${cap||''}" loading="lazy"><span class="zoom">&#9974; Expand</span></div>`+(cap?`<div class="slide-cap">${cap}</div>`:'');
-const slr=(a,b,cap)=>`<div class="slide-row"><div class="slide" onclick="openLb('${a}')"><img src="${IMG}${a}" alt="" loading="lazy"><span class="zoom">&#9974;</span></div><div class="slide" onclick="openLb('${b}')"><img src="${IMG}${b}" alt="" loading="lazy"><span class="zoom">&#9974;</span></div></div>`+(cap?`<div class="slide-cap">${cap}</div>`:'');
+/* ============ helpers ============ */
+const sl=(f,cap)=>`<button class="slide" onclick="openLb('${f}')" aria-label="Expand slide"><img src="${IMG}${f}" alt="${(cap||'Training slide').replace(/"/g,'')}" loading="lazy"><span class="zoom">&#9974; Expand</span></button>`+(cap?`<p class="slide-cap">${cap}</p>`:'');
+const slr=(a,b,cap)=>`<div class="slide-row"><button class="slide" onclick="openLb('${a}')" aria-label="Expand slide"><img src="${IMG}${a}" alt="" loading="lazy"><span class="zoom">&#9974;</span></button><button class="slide" onclick="openLb('${b}')" aria-label="Expand slide"><img src="${IMG}${b}" alt="" loading="lazy"><span class="zoom">&#9974;</span></button></div>`+(cap?`<p class="slide-cap">${cap}</p>`:'');
 
 /* ============ MODULES ============ */
 const MODS=[
- {id:'m1',n:'The brand',d:'Where SIR comes from and what it stands for'},
- {id:'m2',n:'The toolbox',d:'The five platforms and how they connect'},
- {id:'m3',n:'The 1 of 1 playbook',d:'Messaging, layout, logo, color, type, shape, photo'},
+ {id:'m1',n:'The brand',d:'Where SIR comes from'},
+ {id:'m2',n:'The toolbox',d:'The five platforms'},
+ {id:'m3',n:'The 1 of 1 playbook',d:'Brand rules you apply daily'},
  {id:'m4',n:'Propel',d:'Your daily hub'},
  {id:'m5',n:'ActivePipe',d:'Email marketing'},
  {id:'m6',n:'Design Vault',d:'Design studio'},
- {id:'m7',n:'ListTrac',d:'Analytics and seller reports'},
- {id:'m8',n:'MoxiWorks',d:'CMAs and presentations'},
- {id:'m9',n:'Claude',d:'AI prompting and the prompt library'}
+ {id:'m7',n:'ListTrac',d:'Analytics & reports'},
+ {id:'m8',n:'MoxiWorks',d:'CMAs & presentations'},
+ {id:'m9',n:'Claude',d:'AI prompting'}
 ];
 
-/* ============ LESSONS ============ */
 const L=[];
 const add=(m,t,k,html)=>L.push({m,t,k,html});
 
-/* ---------- M1 ---------- */
-add('m1','Welcome to the ecosystem','Start',`
-<h1>You are joining a brand that has been <em>curating the unique</em> since 1976.</h1>
-<p class="lead">This training takes you through everything the marketing team touches: the brand story, the five platforms you will work in every day, the campaign rules that keep our work on brand, and how to get real leverage out of Claude.</p>
-<div class="stat-row">
-  <div class="stat"><b>9</b><span>Modules</span></div>
-  <div class="stat"><b>46</b><span>Slides</span></div>
-  <div class="stat"><b>16</b><span>Prompt templates</span></div>
-  <div class="stat"><b>~45</b><span>Minutes</span></div>
+/* ================= M1 ================= */
+add('m1','Welcome','Start',`
+<h1>Everything the marketing team touches, <em>in one place.</em></h1>
+<p class="lead">Nine short modules. One idea per screen. By the end you will know which tool to open for any task, how to keep work on brand, and how to get real leverage out of Claude.</p>
+<div class="stats">
+  <div class="s"><b>9</b><span>Modules</span></div>
+  <div class="s"><b>46</b><span>Slides</span></div>
+  <div class="s"><b>16</b><span>Prompts</span></div>
+  <div class="s"><b>~45</b><span>Minutes</span></div>
 </div>
-<div class="grid2">
-  <div class="card"><h3>How this works</h3>
-    <ul>
-      <li>One lesson per screen. Use <span class="kbd">&larr;</span> <span class="kbd">&rarr;</span> or the buttons below to move.</li>
-      <li>Every module ends with a short check to lock in what you learned.</li>
-      <li>Click any slide to open it full screen.</li>
-      <li>Your progress saves automatically in this browser.</li>
-    </ul>
-  </div>
-  <div class="card navy"><span class="eyebrow">What you will be able to do</span>
-    <h3>By the end</h3>
-    <ul>
-      <li>Pick the right platform for any marketing task without asking.</li>
-      <li>Produce assets that pass a brand review the first time.</li>
-      <li>Write prompts that return usable work, not generic filler.</li>
-      <li>Know exactly where to go when something breaks.</li>
-    </ul>
-  </div>
-</div>
-<div class="note tip"><b>Tip.</b> If you get interrupted, just close the tab. When you come back, the course reopens exactly where you left off.</div>`);
+<div class="note tip"><b>How to move.</b> Use <span class="kbd">&larr;</span> <span class="kbd">&rarr;</span> or the buttons at the bottom. Click any slide to open it full screen. Your progress saves automatically, so you can stop and come back.</div>`);
 
 add('m1','What is Sotheby&rsquo;s International Realty?','Lesson',`
 <h1>A premier luxury real estate brokerage.</h1>
-<p class="lead">Founded in 1976, SIR operates a global network of more than <b>1,100 offices</b> across <b>84 countries</b>.</p>
-${sl('m1-what-is-sir.jpg','Slide 3 of the internal deck')}
-<div class="stat-row">
-  <div class="stat"><b>1976</b><span>Founded</span></div>
-  <div class="stat"><b>1,100+</b><span>Offices</span></div>
-  <div class="stat"><b>84</b><span>Countries</span></div>
-</div>
-<p>Everything else in this training sits on top of that fact. When you place a listing in the SIR system, you are not marketing to one city. You are placing it inside a curated global collection that buyers around the world already trust.</p>`);
-
-add('m1','The Art of Living: how SIR was born','Lesson',`
-<h1>From auction house to real estate.</h1>
-${sl('m1-art-of-living.jpg','Sir Samuel White Baker, Sotheby&rsquo;s founder')}
-<div class="tl">
-  <div class="tl-i"><div class="yr">MID 1970s</div><h4>A pattern nobody had named</h4><p>The Sotheby&rsquo;s auction house noticed something recurring: its wealthiest clients were not just buying Rare Dutch Masters or Ming vases. They were often buying and selling the grand estates required to house them.</p></div>
-  <div class="tl-i"><div class="yr">1976</div><h4>SIR launches as a subsidiary</h4><p>The original intent was simple: provide a specialized real estate service for the auction house&rsquo;s existing clientele. By leveraging the trust and prestige of the Sotheby&rsquo;s name, they created a seamless pipeline between the world of fine art and luxury property.</p></div>
-  <div class="tl-i"><div class="yr">NEXT 30 YEARS</div><h4>A brokerage with a ceiling</h4><p>SIR operated primarily as a brokerage that owned its own offices. The brand&rsquo;s global potential was limited by the capital required to open physical locations everywhere.</p></div>
-</div>
-<div class="note"><b>Why this matters to you.</b> The brand&rsquo;s origin explains its whole aesthetic. We are not selling square footage, we are curating objects of value, exactly the way an auction house presents a piece.</div>`);
-
-add('m1','The franchise turn and Compass','Lesson',`
-<h1>2004: the deal that made SIR global.</h1>
-${sl('m1-franchise-compass.jpg','The Realogy alliance and the 2026 Compass merger')}
-<div class="card">
-  <div class="kv"><div class="k">The deal</div><div>In 2004 Sotheby&rsquo;s entered a long term strategic alliance with Realogy (now Anywhere Real Estate). Realogy paid <b>$100 million</b> for the right to license the Sotheby&rsquo;s International Realty name for <b>50 years</b>, with options to renew.</div></div>
-  <div class="kv"><div class="k">The result</div><div>This transformed SIR into a <b>franchise system</b>. Independent luxury brokerages around the world could rebrand as Sotheby&rsquo;s International Realty, instantly gaining the prestige of a 280 year old brand while remaining locally owned.</div></div>
-  <div class="kv"><div class="k">Early 2026</div><div>A landmark merger between Anywhere and Compass created <b>Compass International Holdings</b>. Despite the corporate consolidation, SIR maintains its distinct identity and &ldquo;vibe&rdquo;, operating as the ultra luxury crown jewel of the portfolio.</div></div>
+<p class="lead">Founded in 1976, operating a global network of more than 1,100 offices across 84 countries.</p>
+${sl('m1-what-is-sir.jpg')}
+<div class="stats" style="grid-template-columns:repeat(3,1fr)">
+  <div class="s"><b>1976</b><span>Founded</span></div>
+  <div class="s"><b>1,100+</b><span>Offices</span></div>
+  <div class="s"><b>84</b><span>Countries</span></div>
 </div>`);
 
-add('m1','The current global standard: 1 of 1','Lesson',`
+add('m1','Where the brand came from','Lesson',`
+<h1>It started at an auction house.</h1>
+${sl('m1-art-of-living.jpg')}
+<div class="tl">
+  <div class="tl-i"><div class="yr">MID 1970s</div><h4>A pattern nobody had named</h4><p>The auction house noticed its wealthiest clients were not only buying rare art. They were also buying and selling the estates required to house it.</p></div>
+  <div class="tl-i"><div class="yr">1976</div><h4>SIR launches</h4><p>A specialized real estate service for that same clientele, leveraging the trust of the Sotheby&rsquo;s name.</p></div>
+</div>`);
+
+add('m1','The deal that made SIR global','Lesson',`
+<h1>2004: from brokerage to franchise.</h1>
+<p class="lead">For 30 years SIR owned its own offices, which capped how fast it could grow. The 2004 agreement changed that.</p>
+${sl('m1-franchise-compass.jpg')}
+<div class="card">
+  <div class="kv"><div class="k">The deal</div><div>Realogy paid <b>$100 million</b> to license the SIR name for <b>50 years</b>, with options to renew.</div></div>
+  <div class="kv"><div class="k">The result</div><div>Independent luxury brokerages worldwide could rebrand as SIR: instant prestige, still locally owned.</div></div>
+  <div class="kv"><div class="k">Early 2026</div><div>Anywhere and Compass merged into <b>Compass International Holdings</b>. SIR keeps its identity as the ultra luxury crown jewel.</div></div>
+</div>`);
+
+add('m1','The global standard: 1 of 1','Lesson',`
 <h1>Not a promotion. <em>A permanent standard.</em></h1>
-${sl('m1-global-standard.jpg','The 1 of 1 campaign as global brand identity')}
-<p>For several years SIR has used the <b>&ldquo;1 of 1&rdquo;</b> campaign as its global brand identity, integrating the philosophy into every aspect of the business. Rather than a temporary promotion, it serves as a permanent standard for everything: from local yard signs and social media posts to high end print features in <i>The New York Times</i> and <i>Architectural Digest</i>.</p>
-<div class="note"><b>The point.</b> This consistent, long term application ensures that every property, regardless of its location, is positioned not just as a listing, but as a singular, irreplaceable masterpiece within a curated global collection.</div>
-<h2>Your gate: SIR Access</h2>
-<p>Accessing the SIR platform is one of the first steps in our day. It is a gated environment where <b>your role defines your toolkit</b>: whether you are managing listing data, creating high end marketing, or tracking global analytics, everything you need is available the moment you log in.</p>
-<ul>
-  <li>Secure login requiring <b>two factor authentication</b>.</li>
-  <li>Two main ways agents access their tools: the <b>SIR platform</b> and <b>Propel</b>.</li>
-  <li>Links and available resources within Propel vary depending on the client and specific account configuration.</li>
-</ul>
-<div class="note warn"><b>Permissions.</b> The permissions granted by your client may affect your access to these assets. It is recommended to discuss access levels with them to ensure you have what is needed for an efficient workflow.</div>`);
+${sl('m1-global-standard.jpg')}
+<p>&ldquo;1 of 1&rdquo; is applied to everything, from local yard signs to print features in <i>The New York Times</i> and <i>Architectural Digest</i>.</p>
+<div class="note"><b>What it does.</b> It positions every property, at any price point, not as a listing but as a singular, irreplaceable piece within a curated global collection.</div>`);
 
-add('m1','Module 1 check','Quiz',`__QUIZ__m1`);
+add('m1','Your gate: SIR Access','Lesson',`
+<h1>One login. Your role defines the toolkit.</h1>
+<p class="lead">Accessing the SIR platform is one of the first steps of your day. It is a gated environment where everything you need appears the moment you log in.</p>
+<div class="card">
+  <ul>
+    <li>Secure login with <b>two factor authentication</b>.</li>
+    <li>Two main entry points: the <b>SIR platform</b> and <b>Propel</b>.</li>
+    <li>Links and resources inside Propel vary by client and account configuration.</li>
+  </ul>
+</div>
+<div class="note warn"><b>Permissions.</b> What your client grants may affect your access. Agree on access levels up front so your workflow never stalls.</div>`);
 
-/* ---------- M2 ---------- */
-add('m2','The five most utilized assets','Lesson',`
-<h1>Five platforms. <em>One workflow.</em></h1>
-<p class="lead">These are the key assets the marketing team uses most frequently. Every task in your day maps to one of them.</p>
-${sl('m2-most-utilized-assets.jpg','ActivePipe, MoxiWorks, ListTrac, Design Vault and Propel')}
+add('m1','Module 1 check','Quiz','__QUIZ__m1');
+
+/* ================= M2 ================= */
+add('m2','The five tools you will live in','Lesson',`
+<h1>Every task maps to one of five platforms.</h1>
+${sl('m2-most-utilized-assets.jpg')}
 <div class="tools">
-  <button class="tool" onclick="jump('m4')"><span class="tn">Propel</span><p class="tr">Daily all in one hub: forums, calendar, resources, quick links.</p><span class="tg">Module 4 &rarr;</span></button>
-  <button class="tool" onclick="jump('m5')"><span class="tn">ActivePipe</span><p class="tr">Email marketing and database manager for the after launch phase.</p><span class="tg">Module 5 &rarr;</span></button>
-  <button class="tool" onclick="jump('m6')"><span class="tn">Design Vault</span><p class="tr">Brand safe design studio for print and digital marketing.</p><span class="tg">Module 6 &rarr;</span></button>
-  <button class="tool" onclick="jump('m7')"><span class="tn">ListTrac</span><p class="tr">Analytics and automated seller reports across syndicated sites.</p><span class="tg">Module 7 &rarr;</span></button>
-  <button class="tool" onclick="jump('m8')"><span class="tn">MoxiWorks</span><p class="tr">CMAs and listing presentations built from live MLS data.</p><span class="tg">Module 8 &rarr;</span></button>
+  <button class="tool" onclick="jump('m4')"><span class="tn">Propel</span><span class="tr">Daily hub: forums, calendar, resources.</span><span class="tg">Module 4 &rarr;</span></button>
+  <button class="tool" onclick="jump('m5')"><span class="tn">ActivePipe</span><span class="tr">Email marketing after launch.</span><span class="tg">Module 5 &rarr;</span></button>
+  <button class="tool" onclick="jump('m6')"><span class="tn">Design Vault</span><span class="tr">Brand safe design studio.</span><span class="tg">Module 6 &rarr;</span></button>
+  <button class="tool" onclick="jump('m7')"><span class="tn">ListTrac</span><span class="tr">Analytics and seller reports.</span><span class="tg">Module 7 &rarr;</span></button>
+  <button class="tool" onclick="jump('m8')"><span class="tn">MoxiWorks</span><span class="tr">CMAs and presentations.</span><span class="tg">Module 8 &rarr;</span></button>
 </div>`);
 
 add('m2','The admin workflow','Lesson',`
-<h1>Five steps, five tools.</h1>
-${sl('m2-admin-workflow.jpg','The admin workflow as presented in the deck')}
+<h1>Five steps, in this order.</h1>
+${sl('m2-admin-workflow.jpg')}
 <div class="steps">
-  <div class="step"><div><h4>Listing setup &middot; <i>Dash</i></h4><p>Enter and manage property data, upload media, and ensure listing accuracy for global distribution.</p></div></div>
-  <div class="step"><div><h4>Marketing creation &middot; <i>Design Vault &amp; ActivePipe</i></h4><p>Create branded marketing materials and launch email campaigns to promote the property.</p></div></div>
-  <div class="step"><div><h4>Agent presentation support &middot; <i>MoxiWorks</i></h4><p>Build CMAs and listing presentations using live market data and comps.</p></div></div>
-  <div class="step"><div><h4>Internal communication &middot; <i>Propel</i></h4><p>Centralized hub to access SIR.com resources, collaborate in forums, and share exclusive off market listings.</p></div></div>
-  <div class="step"><div><h4>Performance reporting &middot; <i>ListTrac</i></h4><p>Generate seller reports and track listing visibility across global platforms.</p></div></div>
+  <div class="step"><div><h4>Listing setup &middot; <i>Dash</i></h4><p>Enter property data, upload media, ensure accuracy for global distribution.</p></div></div>
+  <div class="step"><div><h4>Marketing creation &middot; <i>Design Vault &amp; ActivePipe</i></h4><p>Create branded materials and launch email campaigns.</p></div></div>
+  <div class="step"><div><h4>Presentation support &middot; <i>MoxiWorks</i></h4><p>Build CMAs and listing presentations from live market data.</p></div></div>
+  <div class="step"><div><h4>Internal comms &middot; <i>Propel</i></h4><p>Share resources, collaborate in forums, post off market listings.</p></div></div>
+  <div class="step"><div><h4>Reporting &middot; <i>ListTrac</i></h4><p>Generate seller reports and track visibility across platforms.</p></div></div>
 </div>`);
 
-add('m2','Bringing it all together','Lesson',`
-<h1>A connected ecosystem, not five separate apps.</h1>
-${sl('m2-bringing-together.jpg','SIR operates through a connected ecosystem')}
-<p>Sotheby&rsquo;s International Realty operates through a connected ecosystem of tools designed to support every stage of the real estate process.</p>
-<p>For admins, <b>understanding how these platforms work together is key</b> to maintaining accuracy, efficiency, and consistency across the business. When used correctly, these tools not only streamline daily operations but also help agents deliver a higher level of service to their clients.</p>
-<div class="note tip"><b>Mental model.</b> Data starts in Dash, becomes marketing in Design Vault and ActivePipe, becomes a pitch in MoxiWorks, gets coordinated in Propel, and gets measured in ListTrac. Same listing, five jobs.</div>`);
+add('m2','How they connect','Lesson',`
+<h1>One listing. Five jobs.</h1>
+${sl('m2-bringing-together.jpg')}
+<p>For admins, understanding how these platforms work together is the key to accuracy, efficiency and consistency. Used correctly they streamline operations and help agents deliver a higher level of service.</p>
+<div class="note tip"><b>Mental model.</b> Data starts in Dash, becomes marketing in Design Vault and ActivePipe, becomes a pitch in MoxiWorks, gets coordinated in Propel, and gets measured in ListTrac.</div>`);
 
-add('m2','Module 2 check','Quiz',`__QUIZ__m2`);
+add('m2','Module 2 check','Quiz','__QUIZ__m2');
 
-/* ---------- M3 ---------- */
+/* ================= M3 ================= */
 add('m3','The campaign proposition','Lesson',`
 <h1>Curators of <em>the unique.</em></h1>
-${sl('m3-curators-unique.jpg','The campaign proposition')}
-<p class="lead">Sotheby&rsquo;s International Realty is a curator of the unique, connecting the world&rsquo;s most unique homes with the buyers who appreciate their potential.</p>
-<p>An authority for a new era of luxury, defined by our eye for what is special about homes and the unique experiences and lifestyles they open up.</p>
-<div class="note"><b>Use this as your filter.</b> Every headline, image and layout decision in this module traces back to one question: does this celebrate what makes this property singular?</div>`);
+${sl('m3-curators-unique.jpg')}
+<p class="lead">SIR connects the world&rsquo;s most unique homes with the buyers who appreciate their potential.</p>
+<div class="note"><b>Use this as your filter.</b> Every headline, image and layout decision in this module answers one question: does this celebrate what makes this property singular?</div>`);
 
 add('m3','The messaging system','Lesson',`
 <h1>One lead headline, four ways to extend it.</h1>
-${sl('m3-messaging-system.jpg','Lead campaign headline and alternative headline types')}
-<p>The lead campaign headline is always <b>&ldquo;1 of 1&rdquo;</b>. Around it, the system gives you four types of alternative headlines:</p>
+${sl('m3-messaging-system.jpg')}
 <table class="tbl">
-  <tr><th style="width:150px">Type</th><th>References</th></tr>
-  <tr><td class="k">Universal</td><td>Headlines that work with any property shown.</td></tr>
-  <tr><td class="k">Property</td><td>Headlines that reference specific features of the property shown.</td></tr>
-  <tr><td class="k">Location</td><td>Headlines that reference the locations shown.</td></tr>
-  <tr><td class="k">Lifestyle</td><td>Headlines that reference the lifestyle implied by the property shown.</td></tr>
-</table>
-<h3>Audience specific headlines</h3>
-<div class="grid2">
-  <div class="card"><h3 style="font-size:17px">Buyers &amp; Renters</h3><ul><li>Unique access</li><li>Unique leadership</li><li>Call to action</li></ul></div>
-  <div class="card"><h3 style="font-size:17px">Sellers</h3><ul><li>Unique appreciation</li><li>Unique leadership</li><li>Call to action</li></ul></div>
-</div>
-<div class="card"><h3 style="font-size:17px">Agents</h3><ul><li>Unique advantage</li><li>Unique leadership</li><li>Call to action</li></ul></div>`);
+  <tr><th style="width:120px">Type</th><th>What it references</th></tr>
+  <tr><td class="k">Universal</td><td>Works with any property shown.</td></tr>
+  <tr><td class="k">Property</td><td>Specific features of the property shown.</td></tr>
+  <tr><td class="k">Location</td><td>The locations shown.</td></tr>
+  <tr><td class="k">Lifestyle</td><td>The lifestyle the property implies.</td></tr>
+</table>`);
 
-add('m3','Headlines for all','Lesson',`
-<h1>The copy bank.</h1>
-${sl('m3-headlines-for-all.jpg','Universal and property led headline copy')}
-<div class="grid2">
-  <div class="card"><span class="eyebrow">Universal &middot; works with any property</span>
-    <h3>Copy (One)</h3>
-    <ul><li>The one for you</li><li>The special one</li><li>The rare one</li><li>The one you want</li><li>One of a kind</li><li>Find your one</li><li>Your one awaits</li></ul>
-    <h3>Copy (Uniqueness)</h3>
-    <ul><li>Character as unique as yours</li><li>Curators of the unique</li><li>Unique homes, uniquely for you</li><li>Live unique</li><li>A genuine original</li><li>Homes as unique as you</li><li>Discover the unique</li></ul>
-  </div>
-  <div class="card"><span class="eyebrow">Property led &middot; matches features shown</span>
-    <h3>Copy (One)</h3>
-    <p style="font-size:14px;color:var(--muted)">The [style of home] one, e.g.</p>
-    <ul><li>The midcentury one</li><li>The contemporary one</li><li>The townhouse one</li><li>The decadent one</li></ul>
-    <h3>Copy (Uniqueness)</h3>
-    <ul><li>Exquisite detail</li><li>Uncommon beauty</li><li>True original</li><li>Living masterpiece</li></ul>
-  </div>
-</div>`);
-
-add('m3','Layout','Lesson',`
-<h1>A flexible system, not a rigid template.</h1>
-${slr('m3-layout.jpg','m3-layout-considerations.jpg','Layout system and considerations')}
-<div class="grid2">
-  <div class="card"><h3>The spectrum</h3>
-    <p>Our layouts have been designed to make a flexible system that allows us to make visuals that reflect the eras of our properties, as well as adapt for varying degrees of information.</p>
-    <p>A <b>centered, simple and classic layout</b> can be used to appeal to our established core audiences, showcasing properties in a clean and classical fashion.</p>
-    <p style="font-size:14px;color:var(--muted)">These two ends of the spectrum are not the only approaches, as we can take elements from each to create layouts that blend both.</p>
-  </div>
-  <div class="card"><h3>Considerations</h3>
-    <div class="kv"><div class="k">Image scale</div><div>Hero images should be <b>half the width of the canvas or more</b> to ensure they are the most prominent element. Supporting images can be significantly smaller to create a hierarchy.</div></div>
-    <div class="kv"><div class="k">Spacing</div><div>Elements should always have room to breathe so they can be easily discernible from each other in complex layouts. This particularly applies to text.</div></div>
-  </div>
-</div>`);
-
-add('m3','Logo rules','Lesson',`
-<h1>The logo follows the masterbrand.</h1>
-${slr('m3-logo-masterbrand.jpg','m3-logo-affiliates.jpg','Logo positioning, clear space, color, and affiliate lockups')}
+add('m3','Headlines by audience','Lesson',`
+<h1>Each audience gets its own angle.</h1>
 <div class="grid3">
-  <div class="card"><h3 style="font-size:17px">Positioning</h3><p style="font-size:14px">Depending on the layout, our logo can be positioned in different places. For more classic layouts, we usually position the logo <b>centered at the bottom</b>. In more modern layouts, we position the logo <b>in the corners</b>.</p></div>
-  <div class="card"><h3 style="font-size:17px">Minimum distance</h3><p style="font-size:14px">The minimum distance from any other elements or the edge of the canvas should be the <b>&ldquo;S&rdquo; height</b> around each edge.</p></div>
-  <div class="card"><h3 style="font-size:17px">On color</h3><p style="font-size:14px">On SIR blue backgrounds the logo should be <b>pure white</b>. On off white and pure white backgrounds the logo should be <b>SIR blue</b>.</p></div>
+  <div class="card"><h4>Buyers &amp; renters</h4><ul><li>Unique access</li><li>Unique leadership</li><li>Call to action</li></ul></div>
+  <div class="card"><h4>Sellers</h4><ul><li>Unique appreciation</li><li>Unique leadership</li><li>Call to action</li></ul></div>
+  <div class="card"><h4>Agents</h4><ul><li>Unique advantage</li><li>Unique leadership</li><li>Call to action</li></ul></div>
 </div>
-<div class="note"><b>Affiliates.</b> The same rules apply to affiliate logos. When selecting an affiliate lockup, choose the best one to complement the application size and scale and the other elements around it.</div>`);
+<div class="note tip"><b>Every angle pairs with the same two things:</b> unique leadership, then a call to action. Only the first line changes.</div>`);
 
-add('m3','Colors','Lesson',`
-<h1>Three colors. <em>No exceptions.</em></h1>
-${slr('m3-colors-rgb.jpg','m3-colors-cmyk.jpg','RGB values for digital, CMYK for print')}
-<p style="font-size:14px;color:var(--muted)">Click any swatch to copy its hex code.</p>
-<div class="sws">
-  <div class="sw" onclick="copyHex('#002349')"><div class="chip" style="background:#002349"></div><div class="info"><div class="nm">SIR Blue</div><div class="vals">HEX #002349<br>RGB 0 &middot; 35 &middot; 73<br>CMYK 100 &middot; 64 &middot; 0 &middot; 60</div></div></div>
-  <div class="sw" onclick="copyHex('#FFFFFF')"><div class="chip" style="background:#fff;border-bottom:1px solid var(--line)"></div><div class="info"><div class="nm">Pure White</div><div class="vals">HEX #FFFFFF<br>RGB 255 &middot; 255 &middot; 255<br>CMYK 0 &middot; 0 &middot; 0 &middot; 0</div></div></div>
-  <div class="sw" onclick="copyHex('#EDECE6')"><div class="chip" style="background:#EDECE6"></div><div class="info"><div class="nm">Off White</div><div class="vals">HEX #EDECE6<br>RGB 237 &middot; 236 &middot; 230<br>CMYK 9 &middot; 5 &middot; 10 &middot; 0</div></div></div>
-</div>
+add('m3','The copy bank','Lesson',`
+<h1>Approved phrases, ready to use.</h1>
+${sl('m3-headlines-for-all.jpg')}
 <div class="grid2">
-  <div class="card"><h3 style="font-size:17px">Why off white exists</h3><p style="font-size:14px">The 1 of 1 campaign uses SIR blue and Pure white from our masterbrand, and introduces a new off white into the palette. It brings a <b>warm, distinctive and modern background</b> to the campaign, whilst also allowing the brand to stand out subtly on predominantly white spaces, such as a banner on a primarily white website.</p></div>
-  <div class="card"><h3 style="font-size:17px">Print rules</h3><p style="font-size:14px">When printing, all applications can use SIR blue and Pure White in both background and elements. When printing on <b>newsprint or lower quality print processes</b>, Pure white should be used for the light background and off white should be avoided as it may appear &ldquo;muddy&rdquo; on the page. Off white is for high quality lithographic and digital print applications only.</p></div>
+  <div class="card"><h4>Universal &middot; any property</h4>
+    <p style="font-size:14px;color:var(--v-muted);margin-bottom:6px">The one</p>
+    <ul><li>The one for you &middot; The special one &middot; The rare one</li><li>One of a kind &middot; Find your one &middot; Your one awaits</li></ul>
+    <p style="font-size:14px;color:var(--v-muted);margin:10px 0 6px">Uniqueness</p>
+    <ul><li>Curators of the unique &middot; Live unique</li><li>Homes as unique as you &middot; A genuine original</li></ul>
+  </div>
+  <div class="card"><h4>Property led &middot; matches the home</h4>
+    <p style="font-size:14px;color:var(--v-muted);margin-bottom:6px">The [style] one</p>
+    <ul><li>The midcentury one &middot; The contemporary one</li><li>The townhouse one &middot; The decadent one</li></ul>
+    <p style="font-size:14px;color:var(--v-muted);margin:10px 0 6px">Uniqueness</p>
+    <ul><li>Exquisite detail &middot; Uncommon beauty</li><li>True original &middot; Living masterpiece</li></ul>
+  </div>
+</div>`);
+
+add('m3','Layout: the spectrum','Lesson',`
+<h1>A flexible system, not a rigid template.</h1>
+${sl('m3-layout.jpg')}
+<p>Layouts are designed to reflect the era of each property and adapt to varying amounts of information. A <b>centered, simple, classic layout</b> appeals to our established core audiences.</p>
+<div class="note"><b>These are two ends of a spectrum.</b> You can take elements from each to create layouts that blend both.</div>`);
+
+add('m3','Layout: scale and spacing','Lesson',`
+<h1>Two rules that fix most layouts.</h1>
+${sl('m3-layout-considerations.jpg')}
+<div class="grid2">
+  <div class="card"><h4>Image scale</h4><p style="margin:0">Hero images should be <b>half the canvas width or more</b> so they stay the most prominent element. Supporting images stay significantly smaller to build hierarchy.</p></div>
+  <div class="card"><h4>Spacing</h4><p style="margin:0">Every element needs room to breathe so it stays discernible in complex layouts. This applies to text most of all.</p></div>
+</div>`);
+
+add('m3','Logo: placement and clear space','Lesson',`
+<h1>Where the logo goes, and how much room it needs.</h1>
+${sl('m3-logo-masterbrand.jpg')}
+<div class="grid2">
+  <div class="card"><h4>Positioning</h4><p style="margin:0">Classic layouts: logo <b>centered at the bottom</b>. Modern layouts: logo <b>in a corner</b>.</p></div>
+  <div class="card"><h4>Minimum distance</h4><p style="margin:0">Clear space from any element or canvas edge equals the <b>height of the &ldquo;S&rdquo;</b>, on every edge.</p></div>
+</div>`);
+
+add('m3','Logo: color and affiliates','Lesson',`
+<h1>The background decides the logo color.</h1>
+${sl('m3-logo-affiliates.jpg')}
+<div class="card">
+  <div class="kv"><div class="k">On SIR blue</div><div>Logo is <b>pure white</b>.</div></div>
+  <div class="kv"><div class="k">On white / off white</div><div>Logo is <b>SIR blue</b>.</div></div>
+  <div class="kv"><div class="k">Affiliates</div><div>Same rules. Choose the lockup that best complements the application size, scale and surrounding elements.</div></div>
+</div>`);
+
+add('m3','The three brand colors','Lesson',`
+<h1>Three colors. <em>No exceptions.</em></h1>
+${sl('m3-colors-rgb.jpg')}
+<p style="font-size:14px;color:var(--v-muted)">Click any swatch to copy its hex code.</p>
+<div class="sws">
+  <button class="sw" onclick="copyHex('#002349')"><span class="chip" style="background:#002349;display:block"></span><span class="info"><span class="nm">SIR Blue</span><span class="vals">HEX #002349<br>RGB 0 &middot; 35 &middot; 73</span></span></button>
+  <button class="sw" onclick="copyHex('#FFFFFF')"><span class="chip" style="background:#fff;border-bottom:1px solid var(--v-line);display:block"></span><span class="info"><span class="nm">Pure White</span><span class="vals">HEX #FFFFFF<br>RGB 255 &middot; 255 &middot; 255</span></span></button>
+  <button class="sw" onclick="copyHex('#EDECE6')"><span class="chip" style="background:#EDECE6;display:block"></span><span class="info"><span class="nm">Off White</span><span class="vals">HEX #EDECE6<br>RGB 237 &middot; 236 &middot; 230</span></span></button>
+</div>
+<div class="note"><b>Why off white exists.</b> It brings a warm, modern background to the campaign and lets the brand stand out subtly on predominantly white spaces, like a banner on a mostly white website.</div>`);
+
+add('m3','Colors in print','Lesson',`
+<h1>One rule that saves a reprint.</h1>
+${sl('m3-colors-cmyk.jpg')}
+<div class="card">
+  <div class="kv"><div class="k">Always safe</div><div>SIR blue and pure white work in both backgrounds and elements, on any print process.</div></div>
+  <div class="kv"><div class="k">Newsprint</div><div>Use <b>pure white</b> for the light background. <b>Avoid off white</b>, it can appear muddy on the page.</div></div>
+  <div class="kv"><div class="k">Off white</div><div>High quality lithographic and digital print only.</div></div>
 </div>`);
 
 add('m3','Typography','Lesson',`
 <h1>Two families, one hierarchy.</h1>
-${slr('m3-typography.jpg','m3-typography-hierarchy.jpg','Freight Display Pro and Benton Sans')}
-<p>The 1 of 1 campaign uses the two main font families from the Sotheby&rsquo;s International Realty Masterbrand: <b>Freight</b> and <b>Benton Sans</b>. Freight Display Pro serves as the primary typeface, used for headlines, titles, and short statements, while Benton Sans is used for body text and subheaders.</p>
+${sl('m3-typography.jpg')}
+<p><b>Freight Display Pro</b> is the primary typeface for headlines, titles and short statements. <b>Benton Sans</b> covers subheaders, body copy and calls to action.</p>
 <div class="spec">
-  <div class="r"><div class="d-h1">Large expressive headline</div><div class="who">FREIGHTDISP LIGHT<br>Large, expressive headlines</div></div>
-  <div class="r"><div class="d-h2">Smaller detailed headline</div><div class="who">FREIGHTDISP BOOK<br>Smaller or more detailed layouts</div></div>
+  <div class="r"><div class="d-h1">Large expressive headline</div><div class="who">FREIGHTDISP LIGHT<br>Large headlines</div></div>
+  <div class="r"><div class="d-h2">Smaller detailed headline</div><div class="who">FREIGHTDISP BOOK<br>Detailed layouts</div></div>
   <div class="r"><div class="d-sub">Subheader in Benton Sans</div><div class="who">BENTONSANS MEDIUM<br>Subheaders</div></div>
-  <div class="r"><div class="d-body">Body copy and calls to action, built for a clear and readable visual hierarchy across all applications.</div><div class="who">BENTONSANS REGULAR<br>Body copy and CTAs</div></div>
+  <div class="r"><div class="d-body">Body copy and calls to action.</div><div class="who">BENTONSANS REGULAR<br>Body &amp; CTAs</div></div>
 </div>
-<div class="note"><b>Weights available.</b> Freight Disp Pro: Light &amp; Light Italic, Book &amp; Book Italic, Medium &amp; Medium Italic, Semibold &amp; Semibold Italic, Bold &amp; Bold Italic, Black &amp; Black Italic. Benton Sans: Thin, Extra Light, Light, Book, Regular, Medium, Bold, Black, plus Extra Condensed, Condensed, Compressed &amp; Regular widths.</div>
-<p style="font-size:13.5px;color:var(--faint)">The specimen above previews the hierarchy with visually similar substitutes, since the licensed families are not embedded in this page.</p>`);
+<p style="font-size:13px;color:var(--faint)">The specimen above previews the hierarchy with a visually similar substitute, since the licensed families are not embedded in this page.</p>`);
 
 add('m3','Shape types','Lesson',`
 <h1>Five shapes to hold every image.</h1>
-${sl('m3-shape-types.jpg','The shape system')}
+${sl('m3-shape-types.jpg')}
 <div class="shapes">
   <div><div class="shp s-rect"></div><div class="shp-l">Rectangle</div></div>
   <div><div class="shp s-oval"></div><div class="shp-l">Oval</div></div>
@@ -592,255 +603,235 @@ ${sl('m3-shape-types.jpg','The shape system')}
   <div><div class="shp s-curve"></div><div class="shp-l">Curve</div></div>
   <div><div class="shp s-step"></div><div class="shp-l">Step</div></div>
 </div>
-<div class="card"><h3>When to use each</h3>
-  <div class="kv"><div class="k">Rectangle</div><div>Our most functional shape that can hold any type of image and flex to any size, usually used as a secondary asset or when the more elaborate shapes cannot be used.</div></div>
-  <div class="kv"><div class="k">Oval &amp; Arch</div><div>Our most unique forms that work brilliantly for portrait imagery, but can also hold landscape imagery as well.</div></div>
-  <div class="kv"><div class="k">Curve, Step &amp; Double step</div><div>Three shapes that have as much flexibility as a rectangle but with distinctive corner cutouts. These work brilliantly as a whole shape or cropped too. They can hold just about any type of image.</div></div>
+<div class="card">
+  <div class="kv"><div class="k">Rectangle</div><div>Most functional. Holds any image at any size, usually a secondary asset.</div></div>
+  <div class="kv"><div class="k">Oval &amp; arch</div><div>Most unique. Brilliant for portrait imagery, works for landscape too.</div></div>
+  <div class="kv"><div class="k">Curve, step</div><div>As flexible as a rectangle but with distinctive corner cutouts. Work whole or cropped.</div></div>
 </div>`);
 
-add('m3','Photography and sample assets','Lesson',`
+add('m3','Photography','Lesson',`
 <h1>Celebrate what makes it singular.</h1>
-${sl('m3-photography.jpg','Selecting images for the campaign')}
-<p>When selecting images, the campaign proposition should be in the front of mind: <b>Curators of the unique</b>. We should showcase and celebrate the unique features of every property we have.</p>
-<p>Breathtaking views, amazing ceiling details, unique features, beautiful rooms, stunning gardens, incredible approaches, distinct windows, and we endlessly celebrate all of these in every instance possible.</p>
-${sl('m3-sample-assets.jpg','Sample assets for print, web banners, social and brand film')}
-<p>An initial set of sample assets has been created to cover <b>print advertising, web banners, and social media</b>, plus a brand film. Static templates have been created for all of the sample assets.</p>`);
+${sl('m3-photography.jpg')}
+<p class="lead">Keep the proposition in front of mind when selecting images: we are <b>curators of the unique</b>.</p>
+<p>Breathtaking views, amazing ceiling details, unique features, beautiful rooms, stunning gardens, incredible approaches, distinct windows. We celebrate all of these in every instance possible.</p>`);
 
-add('m3','Module 3 check','Quiz',`__QUIZ__m3`);
+add('m3','Module 3 check','Quiz','__QUIZ__m3');
 
-/* ---------- M4 ---------- */
-add('m4','Propel: your daily hub','Lesson',`
-<h1>Everything in one place, so you stop hunting.</h1>
-<p class="lead">Propel serves as the primary hub for SIR agents to collaborate, access marketing assets, and stay updated on local market trends. By integrating everything from &ldquo;Haves/Wants&rdquo; forums to listing templates in one place, it simplifies your daily operations so you spend less time searching for tools.</p>
-${sl('m4-propel-dashboard.jpg','The Propel dashboard with Quick Links')}
-<div class="card"><h3>How do I use it?</h3>
-<ul>
-  <li>Navigate to the platform URL and log in using your company Gmail account via <b>Single Sign On (SSO)</b>. No new password required.</li>
-  <li>Use the <b>Quick Links dashboard</b> to instantly access the Design Vault or training videos, and join regional <b>Community Forums</b> to share off market listings and collaborate with colleagues.</li>
-  <li>It functions as your daily <b>all in one hub</b> where you can manage meetings through the integrated calendar and pull essential resources for your listings without ever leaving the SIR ecosystem.</li>
-</ul></div>
-<div class="note warn"><b>Login information.</b> Many tools within Propel require two step verification. Ensure you have your client&rsquo;s or your own login credentials handy.</div>`);
+/* ================= M4 ================= */
+add('m4','What Propel is','Lesson',`
+<h1>Your daily all in one hub.</h1>
+<p class="lead">The primary hub where SIR agents collaborate, access marketing assets, and stay on top of local market trends, so you spend less time hunting for tools.</p>
+${sl('m4-propel-dashboard.jpg')}
+<div class="note warn"><b>Login.</b> Sign in with your company Gmail via Single Sign On, no new password. Many tools inside Propel still require two step verification, so keep credentials handy.</div>`);
 
 add('m4','Its two primary functions','Lesson',`
 <h1>Post updates. Find resources.</h1>
-${sl('m4-propel-functions.jpg','The two primary functions of Propel')}
+${sl('m4-propel-functions.jpg')}
 <div class="grid2">
-  <div class="card"><h3>Posting updates</h3><p>Agents can share new listings, price adjustments, back on market notifications, and open house details. These updates are <b>organized by region</b> (e.g. Vermont, New Hampshire, New York) and are <b>automatically emailed</b> to other agents in the office.</p></div>
-  <div class="card"><h3>Accessing training and resources</h3><p>The platform serves as a hub for webinars, training videos, marketing materials (flyers, postcards), and legal or accounting forms.</p></div>
+  <div class="card"><h4>Posting updates</h4><p style="margin:0">New listings, price adjustments, back on market notices, open houses. Organized <b>by region</b> and <b>automatically emailed</b> to the other agents in the office.</p></div>
+  <div class="card"><h4>Training and resources</h4><p style="margin:0">Webinars, training videos, marketing materials such as flyers and postcards, and legal or accounting forms.</p></div>
 </div>`);
 
 add('m4','The Launch Pad','Lesson',`
 <h1>One stop access to the whole stack.</h1>
-${sl('m4-propel-launchpad.jpg','Propel provides a Launch Pad for third party and internal tools')}
+${sl('m4-propel-launchpad.jpg')}
 <div class="card">
-  <div class="kv"><div class="k">Marketing &amp; sales</div><div>Integration with platforms like <b>ActivePipe, MoxiWorks, Testimonial Tree, and Design Vault</b>.</div></div>
-  <div class="kv"><div class="k">Regional forums</div><div>Specific spaces for agents to collaborate based on their clients&rsquo; location.</div></div>
-  <div class="kv"><div class="k">Interactive calendar</div><div>A schedule of upcoming meetings, company holidays, and professional development training.</div></div>
-  <div class="kv"><div class="k">Resource library</div><div>Guides for working with sellers and buyers, including the <b>SIR Style Guide</b> and Market Reports.</div></div>
+  <div class="kv"><div class="k">Marketing tools</div><div>ActivePipe, MoxiWorks, Testimonial Tree and Design Vault.</div></div>
+  <div class="kv"><div class="k">Regional forums</div><div>Spaces to collaborate based on your clients&rsquo; location.</div></div>
+  <div class="kv"><div class="k">Calendar</div><div>Upcoming meetings, company holidays, professional development.</div></div>
+  <div class="kv"><div class="k">Resource library</div><div>Seller and buyer guides, the SIR Style Guide, market reports.</div></div>
 </div>`);
 
-add('m4','Module 4 check','Quiz',`__QUIZ__m4`);
+add('m4','Module 4 check','Quiz','__QUIZ__m4');
 
-/* ---------- M5 ---------- */
-add('m5','ActivePipe: email that sells the listing','Lesson',`
-<h1>The after launch workhorse.</h1>
-<p class="lead">ActivePipe is a powerful email marketing solution designed for enterprises. It allows you to create stunning, professional, and mobile responsive emails within minutes. The SIR brand uses this platform to provide branded email templates that promote properties and programs to local markets.</p>
-${sl('m5-activepipe-email.jpg','A tool used for email marketing')}
-<div class="grid2">
-  <div class="card"><h3>When you use it</h3><p>It is typically utilized during the <b>&ldquo;after launch&rdquo; phase</b>, once a home is active or available on the market, to promote listings, open houses, price adjustments, and events.</p></div>
-  <div class="card"><h3>What you see first</h3><p>Upon logging in, users are presented with a dashboard that provides statistics on recent emails, contacts, property notifications, and general activity.</p></div>
-</div>
-<div class="card"><h3>How do I use it?</h3>
-<p>ActivePipe is integrated with the SIR listings database for easy <b>drag and drop</b> of property information. Beyond using pre designed templates to showcase listings or announce open houses, you can build custom campaigns from scratch using the platform&rsquo;s intuitive drag and drop elements.</p>
-<p>This tool serves as a powerful <b>database manager</b>, allowing you to create distribution lists, categorize contacts, and automate monthly newsletters. By tracking which properties clients click on, ActivePipe provides actionable insights that help agents focus their efforts on the most active leads in their database.</p></div>
-<div class="note warn"><b>ActivePipe requires a paid subscription.</b></div>`);
+/* ================= M5 ================= */
+add('m5','What ActivePipe is','Lesson',`
+<h1>The email platform for the after launch phase.</h1>
+<p class="lead">Enterprise grade email marketing. SIR uses it to provide branded templates that promote properties and programs to local markets.</p>
+${sl('m5-activepipe-email.jpg')}
+<div class="note"><b>When you use it.</b> Once a home is <b>active on the market</b>, to promote listings, open houses, price adjustments and events.</div>`);
 
 add('m5','Inside the platform','Lesson',`
-<h1>Dashboard, builder, campaigns, contacts.</h1>
-${sl('m5-activepipe-platform.jpg','A real estate marketing platform that automates client communication')}
-<div class="acc open"><button class="acc-h" onclick="tAcc(this)"><span class="ic">1</span> Dashboard <span class="chev">&#8250;</span></button><div class="acc-b"><p>After logging in, users can access email statistics, campaign activity, contacts, and property updates from a centralized dashboard.</p></div></div>
-<div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">2</span> Email builder <span class="chev">&#8250;</span></button><div class="acc-b"><p>Includes a drag and drop editor that allows users to create professional marketing emails quickly and easily.</p></div></div>
-<div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">3</span> Smart campaigns <span class="chev">&#8250;</span></button><div class="acc-b"><p>Allows users to automate follow up communication using drip campaigns and engagement triggers.</p></div></div>
-<div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">4</span> Contacts &amp; audiences <span class="chev">&#8250;</span></button><div class="acc-b"><p>Contacts can be added manually or imported through CSV files. Users can organize databases with tags and audience groups for targeted communication.</p></div></div>`);
+<h1>Four areas you will use.</h1>
+${sl('m5-activepipe-platform.jpg')}
+<div class="card">
+  <div class="kv"><div class="k">Dashboard</div><div>Email statistics, campaign activity, contacts and property updates.</div></div>
+  <div class="kv"><div class="k">Email builder</div><div>Drag and drop editor for professional marketing emails.</div></div>
+  <div class="kv"><div class="k">Smart campaigns</div><div>Automate follow up with drip campaigns and engagement triggers.</div></div>
+  <div class="kv"><div class="k">Contacts</div><div>Add manually or import CSV, then organize with tags and audience groups.</div></div>
+</div>`);
 
-add('m5','Building, sending and fixing','Lesson',`
+add('m5','Building and sending','Lesson',`
 <h1>Preview before you send. Always.</h1>
-${slr('m5-activepipe-building.jpg','m5-activepipe-troubleshooting.jpg','Building and sending emails, plus troubleshooting')}
-<div class="grid2">
-  <div class="card"><h3>Building and sending</h3>
-    <div class="kv"><div class="k">Design</div><div>Drag and drop editor for titles, text, images, buttons, videos, and property listings.</div></div>
-    <div class="kv"><div class="k">Listing integration</div><div>Automatically populate live listings using the property integration tools when listings are available in the system.</div></div>
-    <div class="kv"><div class="k">Preview &amp; testing</div><div>Use <b>&ldquo;View Preview&rdquo;</b> to review formatting, links, and mobile responsiveness. <b>&ldquo;Send Preview&rdquo;</b> lets you test emails internally before distribution.</div></div>
-  </div>
-  <div class="card"><h3>Troubleshooting &amp; best practices</h3>
-    <div class="kv"><div class="k">Images</div><div>If uploads fail, ensure files are properly resized and optimized to meet platform size requirements while maintaining quality.</div></div>
-    <div class="kv"><div class="k">Videos</div><div>Linked videos must be set to <b>public</b> for ActivePipe to display them correctly. Vimeo is often recommended for cleaner visual presentation.</div></div>
-    <div class="kv"><div class="k">Listing availability</div><div>New listings may take <b>1 to 2 days</b> to sync. If a listing does not appear after that, add the content manually or contact your office administrator.</div></div>
-    <div class="kv"><div class="k">Mobile formatting</div><div>Always review emails using the mobile preview before sending. Side by side images or columns may stack vertically on smaller screens.</div></div>
-  </div>
-</div>
-<div class="note"><b>Login information.</b> Marketing and admin accounts can manage most ActivePipe features without the agent&rsquo;s login, depending on assigned permission levels.</div>`);
+${sl('m5-activepipe-building.jpg')}
+<div class="card">
+  <div class="kv"><div class="k">Design</div><div>Drag and drop titles, text, images, buttons, videos and property listings.</div></div>
+  <div class="kv"><div class="k">Listings</div><div>Auto populate live listings with the property integration tools, cutting manual entry.</div></div>
+  <div class="kv"><div class="k">Preview</div><div><b>View Preview</b> checks formatting, links and mobile responsiveness. <b>Send Preview</b> tests internally before distribution.</div></div>
+</div>`);
 
-add('m5','Module 5 check','Quiz',`__QUIZ__m5`);
+add('m5','When something breaks','Lesson',`
+<h1>The four issues you will actually hit.</h1>
+${sl('m5-activepipe-troubleshooting.jpg')}
+<div class="acc open"><button class="acc-h" onclick="tAcc(this)"><span class="ic">1</span> Images will not upload <span class="chev">&#9656;</span></button><div class="acc-b"><p>Resize and optimize the files to meet platform size requirements while maintaining quality.</p></div></div>
+<div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">2</span> Video does not display <span class="chev">&#9656;</span></button><div class="acc-b"><p>Linked videos must be set to <b>public</b>. Vimeo is often recommended for cleaner presentation.</p></div></div>
+<div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">3</span> The listing is missing <span class="chev">&#9656;</span></button><div class="acc-b"><p>New listings take <b>1 to 2 days</b> to sync. After that, add the content manually or contact your office administrator.</p></div></div>
+<div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">4</span> It looks wrong on phones <span class="chev">&#9656;</span></button><div class="acc-b"><p>Always review the mobile preview. Side by side images or columns may stack vertically on small screens.</p></div></div>
+<div class="note warn"><b>Two things to remember.</b> ActivePipe requires a paid subscription, and marketing or admin accounts can manage most features without the agent&rsquo;s login, depending on permissions.</div>`);
 
-/* ---------- M6 ---------- */
-add('m6','Design Vault: agency quality, no cost','Lesson',`
-<h1>Brand safe design, in minutes.</h1>
-<p class="lead">Design Vault is a complimentary design tool that allows you to create agency quality marketing campaigns for you and your business. This is an easy tool for creating elements for both print and digital placements within your listing&rsquo;s marketing plan.</p>
-${sl('m6-designvault-platform.jpg','Centralized marketing platform for digital and print advertising')}
-<div class="card"><h3>How do I use it?</h3>
-<p>Design Vault templates are <b>preset to align with the brand&rsquo;s aesthetics</b>, simplifying the personalization of ads with your listing photos, details, and contact information.</p>
-<p>The editor is integrated with the SIR listings database, enabling easy drag and drop of property information. Also, you can directly send items to a professional printer and easily share graphics on social media with optimized integration.</p>
-<ul>
-  <li>The platform streamlines the design process by providing professionally branded templates that maintain consistent style guidelines, fonts, colors, and logo standards across all marketing materials.</li>
-  <li>Users can quickly customize and produce a wide range of assets, including <b>flyers, luxury flyers, lookbooks, social media graphics, property marketing materials, and presentations</b>.</li>
-</ul></div>
-<div class="note"><b>Login information.</b> Access login via SIR Access is required. Design Vault supports both client and admin logins, with each user receiving access based on their assigned permissions.</div>`);
+add('m5','Module 5 check','Quiz','__QUIZ__m5');
+
+/* ================= M6 ================= */
+add('m6','What Design Vault is','Lesson',`
+<h1>Agency quality design, at no cost.</h1>
+<p class="lead">A complimentary design tool for print and digital placements. Templates come preset to the brand&rsquo;s aesthetics, so fonts, colors and logo standards stay consistent while you personalize.</p>
+${sl('m6-designvault-platform.jpg')}
+<div class="note"><b>What you can make.</b> Flyers, luxury flyers, lookbooks, social media graphics, property marketing materials and presentations.</div>`);
 
 add('m6','The workspace','Lesson',`
 <h1>Where everything lives.</h1>
-${sl('m6-designvault-workspace.jpg','A centralized workspace to manage projects and track performance')}
+${sl('m6-designvault-workspace.jpg')}
 <div class="card">
-  <div class="kv"><div class="k">Dashboard</div><div>Upon logging in, users can view recent projects, featured templates, and starred items.</div></div>
-  <div class="kv"><div class="k">My Projects</div><div>This section contains all edited or previously created templates.</div></div>
-  <div class="kv"><div class="k">Template library</div><div>Users can browse various categories such as social media, postcards, property marketing, and presentations.</div></div>
-  <div class="kv"><div class="k">Asset management</div><div>The platform stores images uploaded by the user or shared through integrations.</div></div>
-  <div class="kv"><div class="k">Analytics</div><div>Users can access reports on projects, QR code usage, and template categories.</div></div>
+  <div class="kv"><div class="k">Dashboard</div><div>Recent projects, featured templates and starred items.</div></div>
+  <div class="kv"><div class="k">My Projects</div><div>Everything you have edited or created.</div></div>
+  <div class="kv"><div class="k">Templates</div><div>Browse by category: social, postcards, property marketing, presentations.</div></div>
+  <div class="kv"><div class="k">Assets</div><div>Images you upload or that arrive through integrations.</div></div>
+  <div class="kv"><div class="k">Analytics</div><div>Reports on projects, QR code usage and template categories.</div></div>
 </div>`);
 
-add('m6','Creating, printing and best practices','Lesson',`
-<h1>From duplicate to printer.</h1>
-${slr('m6-designvault-creating.jpg','m6-designvault-printing.jpg','Creating and editing materials, printing and exporting')}
+add('m6','Creating and editing','Lesson',`
+<h1>Duplicate, then personalize.</h1>
+${sl('m6-designvault-creating.jpg')}
+<div class="card">
+  <div class="kv"><div class="k">To start</div><div>Duplicate an existing template and rename it.</div></div>
+  <div class="kv"><div class="k">Locked parts</div><div>Some sections, such as branded elements, cannot be edited. That is on purpose.</div></div>
+  <div class="kv"><div class="k">Active listings</div><div>The <b>property listings</b> feature pulls home information and photos into the template automatically.</div></div>
+  <div class="kv"><div class="k">Not live yet</div><div>Update images and text manually.</div></div>
+</div>`);
+
+add('m6','Printing and exporting','Lesson',`
+<h1>Pick the right PDF.</h1>
+${sl('m6-designvault-printing.jpg')}
 <div class="grid2">
-  <div class="card"><h3>Creating and editing</h3>
-    <div class="kv"><div class="k">Workflow</div><div>Materials can be prepared before a listing goes live or updated after launch based on client requests.</div></div>
-    <div class="kv"><div class="k">Duplicating</div><div>To create a new project, users can duplicate an existing template and rename it.</div></div>
-    <div class="kv"><div class="k">Editing limits</div><div>Some template sections, such as branded elements, are <b>locked and cannot be edited</b>.</div></div>
-    <div class="kv"><div class="k">Property listings tool</div><div>For active listings, use the &ldquo;property listings&rdquo; feature to automatically pull home information and photos into a template.</div></div>
-    <div class="kv"><div class="k">Manual adjustments</div><div>If the listing is not yet live or if preferred, images and text can be updated manually.</div></div>
-  </div>
-  <div class="card"><h3>Printing and exporting</h3>
-    <div class="kv"><div class="k">Ordering prints</div><div>Users can order prints directly through the platform&rsquo;s integrated print portal, which links to a third party service.</div></div>
-    <div class="kv"><div class="k">Local printing</div><div>Assets can be downloaded as PDFs for use with an external printing company.</div></div>
-    <div class="kv"><div class="k">Standard PDF</div><div>Best for digital references and email distribution.</div></div>
-    <div class="kv"><div class="k">Print PDF</div><div>Selecting this format with advanced settings for <b>crop and bleed marks</b> is required for professional printing.</div></div>
-  </div>
+  <div class="card"><h4>Standard PDF</h4><p style="margin:0">Best for digital reference and email distribution.</p></div>
+  <div class="card"><h4>Print PDF</h4><p style="margin:0">Required for professional printing. Use the advanced settings for <b>crop and bleed marks</b>.</p></div>
 </div>
-<div class="card"><h3>Best practices and troubleshooting</h3>
-  <div class="kv"><div class="k">Page reloading</div><div>Refreshing the page before editing ensures that changes are saved automatically and helps prevent technical issues.</div></div>
-  <div class="kv"><div class="k">Review process</div><div>Users should utilize the preview tool to check for typos, layout errors, or missing information before finalizing.</div></div>
-  <div class="kv"><div class="k">QR codes</div><div>It is a best practice to <b>scan and verify the destination of all QR codes before printing</b>.</div></div>
-</div>`);
+<div class="note"><b>Two ways to print.</b> Order directly through the integrated print portal, which links to a third party service, or download a PDF for an external printing company.</div>`);
 
-add('m6','Module 6 check','Quiz',`__QUIZ__m6`);
+add('m6','Three habits that prevent reprints','Lesson',`
+<h1>Do these before you finalize.</h1>
+<div class="steps">
+  <div class="step"><div><h4>Reload the page before editing</h4><p>Ensures changes save automatically and prevents technical issues.</p></div></div>
+  <div class="step"><div><h4>Use the preview tool</h4><p>Check for typos, layout errors and missing information before finalizing.</p></div></div>
+  <div class="step"><div><h4>Scan every QR code</h4><p>Verify the destination of all QR codes before printing. Always.</p></div></div>
+</div>
+<div class="note warn"><b>Login.</b> Access via SIR Access. Design Vault supports both client and admin logins, each with permission based access.</div>`);
 
-/* ---------- M7 ---------- */
-add('m7','ListTrac: proof the marketing works','Lesson',`
-<h1>Turn exposure into evidence.</h1>
-<p class="lead">List Trac is the comprehensive reporting and analytics platform for the Sotheby&rsquo;s International Realty network. It aggregates online traffic data from thousands of websites, providing a clear picture of how many potential buyers are viewing our listings globally.</p>
-${sl('m7-listtrac-reports.jpg','A platform used to create automatic seller reports')}
-<div class="card"><h3>How do I use it?</h3>
-<p>It is used to generate professional <b>&ldquo;Seller Reports&rdquo;</b> that prove the value of the brand&rsquo;s global syndication. It tracks listing performance across major sites like <b>The Wall Street Journal, Zillow, and SIR.com</b>, allowing admins to provide clients with concrete data on their home&rsquo;s digital exposure.</p>
-<p>This tool simplifies the process of demonstrating marketing reach. By pulling real time views and engagement metrics into one easy to read report, ListTrac helps agents justify their strategy and keep sellers informed with transparent, data backed updates on their property&rsquo;s performance.</p></div>
-<div class="note"><b>Login information.</b> Access login via SIR Access is required. Admin and marketing users may have the same reporting and listing features as agents, depending on brokerage assigned permission levels.</div>`);
+add('m6','Module 6 check','Quiz','__QUIZ__m6');
 
-add('m7','Dashboard and statistics','Lesson',`
-<h1>What the data actually tells you.</h1>
-${slr('m7-listtrac-dashboard.jpg','m7-listtrac-statistics.jpg','Centralized dashboard, listing statistics and report history')}
+/* ================= M7 ================= */
+add('m7','What ListTrac is','Lesson',`
+<h1>Proof that the marketing works.</h1>
+<p class="lead">The reporting and analytics platform of the network. It aggregates traffic from thousands of websites to show how many potential buyers are viewing our listings globally.</p>
+${sl('m7-listtrac-reports.jpg')}
+<div class="note"><b>What it is for.</b> Generating professional <b>seller reports</b> that prove the value of global syndication, tracking performance across The Wall Street Journal, Zillow and SIR.com.</div>`);
+
+add('m7','The dashboard','Lesson',`
+<h1>Everything in one view.</h1>
+${sl('m7-listtrac-dashboard.jpg')}
+<p>After logging in you can see listing activity, website performance, visitor traffic and engagement analytics from a centralized dashboard.</p>
+<div class="note tip"><b>Seller reports.</b> Select the listing, add contact information, customize the settings, then schedule <b>weekly, bi weekly or monthly</b>.</div>`);
+
+add('m7','Reading the statistics','Lesson',`
+<h1>Which numbers matter.</h1>
+${sl('m7-listtrac-statistics.jpg')}
 <div class="card">
-  <div class="kv"><div class="k">Dashboard</div><div>After logging in, users can view listing activity, website performance, visitor traffic, and engagement analytics from a centralized dashboard.</div></div>
-  <div class="kv"><div class="k">Seller reports</div><div>ListTrac allows users to create automated reports for sellers by selecting the appropriate listing, adding contact information, and customizing report settings. Reports can be scheduled <b>weekly, bi weekly, or monthly</b> and include performance summaries, website traffic, and listing engagement statistics.</div></div>
-  <div class="kv"><div class="k">Listing statistics</div><div>The platform tracks listing performance across affiliated real estate websites and displays detailed analytics for each property. Users can monitor <b>views, inquiries, favorites, shares, and traffic activity</b> while identifying which websites generate the most engagement.</div></div>
-  <div class="kv"><div class="k">Report history</div><div>ListTrac stores report history and delivery activity, allowing users to confirm when reports were sent, delivered, and opened by sellers. This helps agents and marketing teams maintain consistent communication and verify report activity when needed.</div></div>
+  <div class="kv"><div class="k">Listing stats</div><div>Views, inquiries, favorites, shares and traffic across affiliated sites, so you can see which websites generate the most engagement.</div></div>
+  <div class="kv"><div class="k">Report history</div><div>Confirms when reports were sent, delivered and opened by sellers. This is how you verify activity when a seller says they never got one.</div></div>
 </div>`);
 
-add('m7','Best practices and troubleshooting','Lesson',`
-<h1>Check before you activate.</h1>
-${sl('m7-listtrac-practices.jpg','Best practices and common issues')}
-<p>Before activating reports, users should <b>verify seller contact information, review scheduling settings, and preview report formatting</b>. New listings may take several days to fully sync into the system before analytics become available.</p>
-<div class="card"><h3>Common issues may include</h3>
-<ul>
-  <li>Listings may take <b>3 to 5 days</b> to appear after going live.</li>
-  <li>Analytics and engagement data may not update immediately.</li>
-  <li>Seller reports may be filtered into <b>spam or junk folders</b>.</li>
-  <li>Incorrect seller email addresses can prevent report delivery.</li>
-  <li>Early listing activity may show limited statistics until data fully syncs.</li>
-</ul></div>`);
+add('m7','Before you activate reports','Lesson',`
+<h1>Check three things, then send.</h1>
+${sl('m7-listtrac-practices.jpg')}
+<div class="steps">
+  <div class="step"><div><h4>Verify seller contact information</h4><p>An incorrect email address prevents delivery entirely.</p></div></div>
+  <div class="step"><div><h4>Review the scheduling settings</h4><p>Weekly, bi weekly or monthly, matched to what the seller expects.</p></div></div>
+  <div class="step"><div><h4>Preview the report formatting</h4><p>Catch layout issues before the client sees them.</p></div></div>
+</div>
+<div class="note warn"><b>Give it time.</b> Listings may take <b>3 to 5 days</b> to appear after going live, analytics may not update immediately, and reports can land in spam or junk folders.</div>`);
 
-add('m7','Module 7 check','Quiz',`__QUIZ__m7`);
+add('m7','Module 7 check','Quiz','__QUIZ__m7');
 
-/* ---------- M8 ---------- */
-add('m8','MoxiWorks: win the listing','Lesson',`
-<h1>Data driven presentations that close.</h1>
-<p class="lead">MoxiWorks is the premier presentation and business suite for the SIR network. It empowers agents to create visually stunning, data driven presentations that showcase market expertise and the power of the global brand in a digital first format.</p>
-${sl('m8-moxi-platform.jpg','A platform designed to support agents through the listing and client presentation process')}
-<div class="card"><h3>How do I use it?</h3>
-<p>It is used to build sophisticated listing presentations and <b>Comparative Market Analyses (CMAs)</b> that integrate live property data. It allows admins and agents to quickly pull &ldquo;comps&rdquo; and create interactive, web based decks that look exceptional on any device, from tablets to large screens.</p>
-<p>Beyond presentations, the suite simplifies the creation of marketing materials and ensures every touchpoint is high impact. By automating the data flow from the MLS, MoxiWorks enables the office to deliver professional, real time market insights that help win more listings and guide clients through the selling process.</p>
-<p>In addition to CMAs, MoxiWorks integrates tools such as <b>RealScout and Testimonial Tree</b> for lead engagement and marketing support.</p></div>
-<div class="note"><b>Login information.</b> Access via SIR Access is required. MoxiWorks may require two step verification, and sign in works with username or email, Google, or a Microsoft account.</div>`);
+/* ================= M8 ================= */
+add('m8','What MoxiWorks is','Lesson',`
+<h1>Win the listing before it exists.</h1>
+<p class="lead">The presentation and business suite of the network. Visually stunning, data driven decks that showcase market expertise in a digital first format.</p>
+${sl('m8-moxi-platform.jpg')}
+<div class="note"><b>Also integrates</b> RealScout and Testimonial Tree for lead engagement and marketing support.</div>`);
 
 add('m8','Building a presentation','Lesson',`
 <h1>Let the MLS do the typing.</h1>
-${sl('m8-moxi-client-ready.jpg','Client ready listing materials using MLS driven property and market data')}
+${sl('m8-moxi-client-ready.jpg')}
 <div class="card">
-  <div class="kv"><div class="k">Dashboard</div><div>After logging in, users can access CMA presentations, templates, property data, and client marketing tools from a centralized dashboard. The platform also stores saved drafts and previously created presentations, allowing users to continue editing at any time.</div></div>
-  <div class="kv"><div class="k">Building</div><div>Users begin by selecting <b>&ldquo;Create New&rdquo;</b> and choosing a CMA or listing presentation template. Property information is pulled directly from the MLS system to help streamline the setup process.</div></div>
-  <div class="kv"><div class="k">MLS shortcut</div><div>If a property was previously listed, entering the <b>MLS number</b> may automatically populate listing photos, descriptions, tax information, and additional property details.</div></div>
+  <div class="kv"><div class="k">To start</div><div>Select <b>Create New</b> and choose a CMA or listing presentation template.</div></div>
+  <div class="kv"><div class="k">The shortcut</div><div>Enter the <b>MLS number</b> of a previously listed property and photos, descriptions and tax information can populate automatically.</div></div>
+  <div class="kv"><div class="k">Drafts</div><div>Saved automatically, so you can continue editing at any time.</div></div>
 </div>`);
 
-add('m8','Comparisons, output and pitfalls','Lesson',`
-<h1>Frame the price, then review it twice.</h1>
-${slr('m8-moxi-comparisons.jpg','m8-moxi-practices.jpg','Market comparisons, review and output, plus best practices')}
-<div class="grid2">
-  <div class="card"><h3>Market comparisons &amp; output</h3>
-    <p>MoxiWorks allows users to add comparable properties from <b>active, pending, withdrawn, or sold</b> listings to help determine an accurate price range. The platform generates side by side market comparisons that help agents present pricing strategies and market trends clearly to clients.</p>
-    <p>Presentations can also be customized by removing pages or adjusting content sections as needed. Before sending, users can preview the final presentation to review formatting, property summaries, market comparisons, and preparation checklists. Completed presentations can then be shared with clients, while drafts remain automatically saved for future edits.</p>
-  </div>
-  <div class="card"><h3>Common issues</h3>
-    <ul>
-      <li>Outdated MLS or tax information may require manual updates.</li>
-      <li>Incorrect MLS numbers can prevent property data from loading.</li>
-      <li>Missing listing photos may occur if MLS syncing is delayed.</li>
-      <li>Comparable properties may need adjustment for accuracy.</li>
-      <li>Presentation formatting should always be reviewed before sending.</li>
-    </ul>
-  </div>
-</div>
-<div class="note"><b>Before finalizing a CMA</b>, users should verify MLS information, review comparable properties carefully, and confirm pricing recommendations are accurate and current. Customizing presentation pages can help create a cleaner and more personalized client experience.</div>`);
+add('m8','Market comparisons','Lesson',`
+<h1>Frame the price with real comps.</h1>
+${sl('m8-moxi-comparisons.jpg')}
+<p>Add comparable properties from <b>active, pending, withdrawn or sold</b> listings to determine an accurate price range. The platform generates side by side comparisons that make pricing strategy and market trends clear to clients.</p>
+<div class="note tip"><b>Before sending,</b> preview the presentation to review formatting, property summaries, comparisons and preparation checklists. You can also remove pages for a cleaner, more personal client experience.</div>`);
 
-add('m8','Module 8 check','Quiz',`__QUIZ__m8`);
-
-/* ---------- M9 ---------- */
-add('m9','What is Claude','Lesson',`
-<h1>Your copilot for everything written.</h1>
-<p class="lead">Claude is a highly capable AI assistant and large language model developed by Anthropic. Designed to handle advanced reasoning, coding, and natural language tasks, it is used for drafting content, analyzing complex datasets, and building automated agents.</p>
-<h2>The model family</h2>
-<div class="grid3">
-  <div class="card"><h3 style="font-size:19px">Opus</h3><p style="font-size:14px;margin:0">The flagship, most advanced model built for highly complex reasoning and enterprise tasks.</p></div>
-  <div class="card"><h3 style="font-size:19px">Sonnet</h3><p style="font-size:14px;margin:0">The standard model that balances high speed performance and intelligence, commonly used for everyday workflows.</p></div>
-  <div class="card"><h3 style="font-size:19px">Haiku</h3><p style="font-size:14px;margin:0">The fastest and most efficient model for high speed, light duty tasks.</p></div>
-</div>
-<div class="note tip"><b>In this training.</b> The next lesson breaks down the prompt structure, then you get a library of 16 ready to use templates organized by role. Copy, fill the brackets, send.</div>`);
-
-add('m9','How to structure a prompt','Lesson',`
-<h1>Five ingredients that turn a vague request into a great response.</h1>
-${sl('m9-prompt-structure.jpg','Role + Context + Task + Format + Example')}
+add('m8','Common pitfalls','Lesson',`
+<h1>What goes wrong, and why.</h1>
+${sl('m8-moxi-practices.jpg')}
 <div class="card">
-  <div class="kv"><div class="k">1 &middot; Role</div><div>Tell Claude who to be. Its expertise, tone, and perspective.</div></div>
-  <div class="kv"><div class="k">2 &middot; Context</div><div>Share the background: who the audience is, what the situation is.</div></div>
-  <div class="kv"><div class="k">3 &middot; Task</div><div>State clearly what you want done. Use action verbs.</div></div>
-  <div class="kv"><div class="k">4 &middot; Format</div><div>Specify length, structure, or style: bullet list, 2 paragraphs, table.</div></div>
-  <div class="kv"><div class="k">5 &middot; Example</div><div>Optional but powerful. Show Claude a sample of what good looks like.</div></div>
+  <ul>
+    <li>Outdated MLS or tax information may require manual updates.</li>
+    <li>An incorrect MLS number prevents property data from loading.</li>
+    <li>Missing listing photos usually mean MLS syncing is delayed.</li>
+    <li>Comparable properties may need adjustment for accuracy.</li>
+    <li>Presentation formatting should always be reviewed before sending.</li>
+  </ul>
 </div>
-<div class="note"><b>The key insight.</b> Claude works best when it understands <b>who it is talking to, what the situation is, and what success looks like</b>. Most people skip these details and then wonder why the output feels generic.</div>`);
+<div class="note warn"><b>Login.</b> Via SIR Access. MoxiWorks may require two step verification, and sign in works with username or email, Google, or a Microsoft account.</div>`);
+
+add('m8','Module 8 check','Quiz','__QUIZ__m8');
+
+/* ================= M9 ================= */
+add('m9','What Claude is','Lesson',`
+<h1>Your copilot for everything written.</h1>
+<p class="lead">A highly capable AI assistant and large language model developed by Anthropic, built for advanced reasoning, coding and natural language work: drafting content, analyzing datasets, building automated agents.</p>
+<div class="grid3">
+  <div class="card"><h4>Opus</h4><p style="font-size:14px;margin:0">The flagship. Highly complex reasoning and enterprise tasks.</p></div>
+  <div class="card"><h4>Sonnet</h4><p style="font-size:14px;margin:0">The standard. Balances speed and intelligence for everyday workflows.</p></div>
+  <div class="card"><h4>Haiku</h4><p style="font-size:14px;margin:0">The fastest. High speed, light duty tasks.</p></div>
+</div>`);
+
+add('m9','The five ingredients','Lesson',`
+<h1>What turns a vague request into a great response.</h1>
+${sl('m9-prompt-structure.jpg')}
+<div class="card">
+  <div class="kv"><div class="k">1 &middot; Role</div><div>Tell Claude who to be: expertise, tone, perspective.</div></div>
+  <div class="kv"><div class="k">2 &middot; Context</div><div>The background. Who the audience is, what the situation is.</div></div>
+  <div class="kv"><div class="k">3 &middot; Task</div><div>Exactly what you want done. Use action verbs.</div></div>
+  <div class="kv"><div class="k">4 &middot; Format</div><div>Length, structure, style. Bullet list, two paragraphs, table.</div></div>
+  <div class="kv"><div class="k">5 &middot; Example</div><div>Optional but powerful. Show what good looks like.</div></div>
+</div>`);
+
+add('m9','Why most prompts fail','Lesson',`
+<h1>The output is generic because the input was.</h1>
+<div class="note tip" style="font-size:16px"><b>The key insight.</b> Claude works best when it understands <b>who it is talking to, what the situation is, and what success looks like</b>. Most people skip these three details and then wonder why the result feels generic.</div>
+<div class="grid2">
+  <div class="card"><h4>Vague</h4><p style="margin:0;color:var(--v-muted)">&ldquo;Write me a social post for a new listing.&rdquo;</p></div>
+  <div class="card navy"><h4>Structured</h4><p style="margin:0">Role as a real estate social copywriter, context with your brand colors and voice, the task with the exact deliverable, and the format with slide count and character limits.</p></div>
+</div>`);
 
 add('m9','The prompt library','Lesson',`
 <h1>Sixteen templates, four roles.</h1>
-<p class="lead">Each template follows the five ingredient structure, color coded so you can see the pattern. Copy the skeleton, replace the bracketed fields, and adjust to your case. The <b>key move</b> under each one explains why it works.</p>
-<div class="ing" style="margin:0 0 18px">
-  <span class="i-role">Role</span><span class="i-ctx">Context</span><span class="i-task">Task</span><span class="i-fmt">Format</span>
-</div>
+<p class="lead">Copy the skeleton, replace the bracketed fields, send. Each one is color coded by ingredient, and the <b>key move</b> explains why it works.</p>
 <div class="ptabs">
   <button class="ptab on" data-g="all" onclick="pFilter(this)">All 16</button>
   <button class="ptab" data-g="gd" onclick="pFilter(this)">Graphic design</button>
@@ -850,26 +841,33 @@ add('m9','The prompt library','Lesson',`
 </div>
 <div id="plib"></div>`);
 
-add('m9','Prompt examples in the wild','Lesson',`
-<h1>What a detailed prompt actually returns.</h1>
-<p class="lead">These are real outputs Claude generated from single, well structured prompts. Notice how much of the work is already done.</p>
-${sl('m9-example-email.jpg','Email layout: a complete campaign for a luxury residential launch, generated from one prompt')}
-<p>By providing campaign objectives, audience information, branding direction, content requirements, and layout specifications, Claude generated a complete email marketing campaign for a luxury residential development launch, including messaging, visual structure, calls to action, and overall email design.</p>
-${sl('m9-example-carousel.jpg','Carousel layout: a full Instagram carousel concept, slide by slide')}
-<p>By providing brand guidelines, audience information, design requirements, content objectives, and formatting instructions, Claude generated a complete Instagram carousel concept, including slide by slide content, visual hierarchy, branding elements, calls to action, and a supporting social media caption.</p>
-<div class="note"><b>Note from the deck.</b> The complete HTML outputs were provided as additional course material in Google Classroom, so you can review the fully rendered pieces exactly as Claude generated them.</div>`);
+add('m9','A prompt that built an email','Lesson',`
+<h1>One prompt. A finished campaign.</h1>
+${sl('m9-example-email.jpg')}
+<p>By providing campaign objectives, audience, branding direction, content requirements and layout specifications, Claude generated a complete email marketing campaign for a luxury residential launch, including messaging, visual structure and calls to action.</p>`);
 
-add('m9','The onboarding roadmap example','Lesson',`
-<h1>One prompt, a whole 30 day plan.</h1>
-${sl('m9-onboarding-example.jpg','30 day onboarding plan generated for a transaction coordinator')}
-<p>By providing clear context, role specific requirements, and desired outcomes, Claude generated a structured onboarding plan that can be customized to support new team members during their first 30 days, wiring in Propel, ActivePipe, Design Vault and List Trac from the pre Day 1 access checklist onward.</p>
-${sl('m9-onboarding-week1.jpg','Week 1: orientation and foundation')}
-<p><b>Week 1</b> focuses on onboarding, company orientation, and building a strong foundation through daily activities designed to familiarize new team members with their role, expectations, tools, and workflows.</p>
-${sl('m9-onboarding-week4.jpg','Week 4: independent execution and integration')}
-<p><b>Week 4</b> focuses on execution, allowing the new team member to apply their training in real world scenarios while following a structured daily action plan, closing with a formal 30 day performance review and 60 day goals.</p>
-<div class="note tip"><b>Weeks 2 and 3.</b> Week 2 shifts to hands on training, introducing key systems, platforms, and processes required to perform the role effectively. Week 3 emphasizes practical application, combining daily tasks with clearly defined objectives to reinforce knowledge, build confidence, and increase independence.</div>`);
+add('m9','A prompt that built a carousel','Lesson',`
+<h1>Same method, different format.</h1>
+${sl('m9-example-carousel.jpg')}
+<p>Brand guidelines, audience, design requirements, content objectives and formatting instructions produced a full Instagram carousel concept: slide by slide content, visual hierarchy, branding, calls to action and the caption.</p>
+<div class="note"><b>From the deck.</b> The complete HTML outputs are course material in Google Classroom, so you can review the fully rendered pieces exactly as Claude generated them.</div>`);
 
-add('m9','Final check','Quiz',`__QUIZ__m9`);
+add('m9','A prompt that built an onboarding plan','Lesson',`
+<h1>Thirty days, planned day by day.</h1>
+${sl('m9-onboarding-example.jpg')}
+<p>Clear context, role specific requirements and desired outcomes produced a structured onboarding plan wiring in Propel, ActivePipe, Design Vault and ListTrac from the pre Day 1 access checklist onward.</p>`);
+
+add('m9','Inside that plan','Lesson',`
+<h1>Each week has a theme and a checkpoint.</h1>
+${slr('m9-onboarding-week1.jpg','m9-onboarding-week4.jpg','Week 1 orientation, and Week 4 independent execution')}
+<div class="card">
+  <div class="kv"><div class="k">Week 1</div><div>Onboarding, company orientation, building a foundation: role, expectations, tools, workflows.</div></div>
+  <div class="kv"><div class="k">Week 2</div><div>Hands on training on the key systems, platforms and processes.</div></div>
+  <div class="kv"><div class="k">Week 3</div><div>Practical application. Daily tasks with defined objectives to build confidence and independence.</div></div>
+  <div class="kv"><div class="k">Week 4</div><div>Independent execution, closing with a formal 30 day review and 60 day goals.</div></div>
+</div>`);
+
+add('m9','Final check','Quiz','__QUIZ__m9');
 
 /* ============ PROMPT LIBRARY DATA ============ */
 const PROMPTS=[
@@ -1030,43 +1028,58 @@ const QUIZ={
 
 /* ============ STATE ============ */
 let idx=0, done=[], scores={}, booted=false;
-try{done=JSON.parse(localStorage.getItem('mt2_done')||'[]');scores=JSON.parse(localStorage.getItem('mt2_scores')||'{}');idx=+(localStorage.getItem('mt2_idx')||0);}catch(e){}
-if(idx<0||idx>=L.length)idx=0;
-const save=()=>{try{localStorage.setItem('mt2_done',JSON.stringify(done));localStorage.setItem('mt2_scores',JSON.stringify(scores));localStorage.setItem('mt2_idx',idx);}catch(e){}};
+try{
+  done=JSON.parse(localStorage.getItem('mt2_done')||'[]');
+  scores=JSON.parse(localStorage.getItem('mt2_scores')||'{}');
+  idx=+(localStorage.getItem('mt2_idx')||0);
+}catch(e){}
+if(!(idx>=0&&idx<L.length))idx=0;
+const save=()=>{try{
+  localStorage.setItem('mt2_done',JSON.stringify(done));
+  localStorage.setItem('mt2_scores',JSON.stringify(scores));
+  localStorage.setItem('mt2_idx',idx);
+}catch(e){}};
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const modOf=id=>MODS.find(m=>m.id===id);
+const modNum=id=>MODS.findIndex(m=>m.id===id)+1;
+const lessonsOf=id=>L.map((l,i)=>({...l,i})).filter(l=>l.m===id);
 function toast(m){const t=$('#toast');t.innerHTML=m;t.classList.add('show');clearTimeout(window._t);window._t=setTimeout(()=>t.classList.remove('show'),2400);}
 
 /* ============ SIDEBAR ============ */
 function renderSide(){
   const cur=L[idx];
   $('#sideNav').innerHTML=MODS.map(mo=>{
-    const ls=L.map((l,i)=>({...l,i})).filter(l=>l.m===mo.id);
-    const allDone=ls.every(l=>done.includes(l.i));
-    const isCur=cur&&cur.m===mo.id;
-    const n=MODS.indexOf(mo)+1;
-    return `<div class="mod ${allDone?'done':''} ${isCur?'active open':''}" data-m="${mo.id}">
-      <button class="mod-h" onclick="tMod(this)">
-        <span class="mod-n">${allDone?'&#10003;':n}</span>
-        <span class="mod-t"><span class="nm">${mo.n}</span><span class="ct">${ls.filter(l=>done.includes(l.i)).length}/${ls.length} &middot; ${mo.d}</span></span>
+    const ls=lessonsOf(mo.id), d=ls.filter(l=>done.includes(l.i)).length;
+    const all=d===ls.length, isCur=cur&&cur.m===mo.id;
+    return `<section class="mod ${all?'done':''} ${isCur?'active open':''}">
+      <button class="mod-h" onclick="tMod(this)" aria-expanded="${isCur}">
+        <span class="mod-n">${all?'&#10003;':modNum(mo.id)}</span>
+        <span class="mod-t"><span class="nm">${mo.n}</span><span class="ct">${d}/${ls.length} &middot; ${mo.d}</span></span>
         <span class="mod-chev">&#9656;</span>
       </button>
       <div class="mod-b">${ls.map(l=>`
-        <button class="les ${done.includes(l.i)?'done':''} ${l.i===idx?'on':''}" onclick="jumpTo(${l.i})">
+        <button class="les ${done.includes(l.i)?'done':''} ${l.i===idx?'cur':''}" onclick="jumpTo(${l.i})">
           <span class="les-tick">&#10003;</span>
           <span class="les-x">${l.t}${l.k==='Quiz'?'<span class="les-kind">Knowledge check</span>':''}</span>
         </button>`).join('')}</div>
-    </div>`;
+    </section>`;
   }).join('');
+
   const pct=Math.round(done.length/L.length*100);
-  $('#tbFill').style.width=pct+'%';$('#tbPct').textContent=pct+'%';
+  $('#tbFill').style.width=pct+'%';
   $('#sideBar').style.width=pct+'%';
-  $('#sideMeta').textContent=`${MODS.length} modules · ${pct}% complete`;
-  const on=$('.les.on');
-  if(on&&booted){const r=on.getBoundingClientRect(),s=$('#side').getBoundingClientRect();
-    if(r.top<s.top+60||r.bottom>s.bottom-10)on.scrollIntoView({block:'center'});}
+  $('#sidePct').textContent=pct+'%';
+  $('#sideMeta').textContent=`${done.length} of ${L.length} lessons`;
+  $('#tbCount').innerHTML=`<b>${done.length}</b> / ${L.length} lessons`;
+
+  const on=$('.les.cur');
+  if(on&&booted){
+    const r=on.getBoundingClientRect(), s=$('#side').getBoundingClientRect();
+    if(r.top<s.top+70||r.bottom>s.bottom-10)on.scrollIntoView({block:'center'});
+  }
 }
-function tMod(h){h.parentNode.classList.toggle('open');}
+function tMod(h){const m=h.parentNode;m.classList.toggle('open');h.setAttribute('aria-expanded',m.classList.contains('open'));}
 function jumpTo(i){idx=i;render();if(window.innerWidth<=960)closeSide();}
 function jump(mid){const i=L.findIndex(l=>l.m===mid);if(i>=0)jumpTo(i);}
 function toggleSide(){$('#side').classList.toggle('open');$('#sideVeil').classList.toggle('on');}
@@ -1074,46 +1087,50 @@ function closeSide(){$('#side').classList.remove('open');$('#sideVeil').classLis
 
 /* ============ RENDER ============ */
 function render(){
-  const l=L[idx], mo=MODS.find(m=>m.id===l.m), mn=MODS.indexOf(mo)+1;
+  const l=L[idx], mo=modOf(l.m);
   const body=l.html.startsWith('__QUIZ__')?quizHtml(l.html.slice(8)):l.html;
-  $('#lesson').innerHTML=`<div class="crumb"><span class="pill">Module ${mn}</span><span>${mo.n}</span><span class="sep">/</span><span>${l.k}</span></div>${body}`;
+  $('#lesson').innerHTML=
+    `<div class="crumb"><span class="pill">Module ${modNum(l.m)}</span><span>${mo.n}</span><span class="sep">&rsaquo;</span><span>${l.k}</span></div>${body}`;
   $('#stage').scrollTop=0;
+
   $('#btnPrev').disabled=idx===0;
-  const last=idx===L.length-1;
+  const last=idx===L.length-1, nxt=L[idx+1];
   $('#btnNext').innerHTML=last?'Finish &#10003;':'Next &rarr;';
-  $('#btnNext').classList.toggle('gold',last);
-  $('#posLbl').textContent=`Lesson ${idx+1} of ${L.length}`;
-  if(l.k!=='Quiz'&&!done.includes(idx)){done.push(idx);save();}
+  $('#posLbl').innerHTML=last
+    ? `Last lesson &middot; <b>${l.t}</b>`
+    : `Up next: <b>${nxt.t}</b>`;
+
+  if(l.k!=='Quiz'&&!done.includes(idx)){done.push(idx);}
   if(l.html==='__QUIZ__m9'||l.t==='The prompt library')setTimeout(renderPlib,0);
   renderSide();save();
 }
 function go(d){
   const l=L[idx];
-  if(d>0&&l.k==='Quiz'&&!done.includes(idx)){toast('Answer the questions above to continue.');return;}
+  if(d>0&&l.k==='Quiz'&&!done.includes(idx)){toast('Answer every question above to continue');return;}
   if(d>0&&idx===L.length-1){showDone();return;}
   idx=Math.max(0,Math.min(L.length-1,idx+d));render();
 }
 
 /* ============ QUIZ ============ */
 function quizHtml(mid){
-  const Q=QUIZ[mid],mo=MODS.find(m=>m.id===mid);
+  const Q=QUIZ[mid], mo=modOf(mid);
   return `<h1>${mo.n}: <em>knowledge check</em></h1>
-  <p class="lead">Answer each question to complete this module. If you miss one, the correct answer is highlighted with an explanation, so it still counts as learning.</p>
+  <p class="lead">Answer each question to complete the module. Miss one and the correct answer appears with an explanation, so it still counts as learning.</p>
   <div class="quiz" data-m="${mid}">
-    <span class="eyebrow">Module ${MODS.indexOf(mo)+1} &middot; ${Q.q.length} question${Q.q.length>1?'s':''}</span>
+    <span class="eyebrow">Module ${modNum(mid)} &middot; ${Q.q.length} question${Q.q.length>1?'s':''}</span>
     <h2>${Q.t}</h2>
-    <div class="qsub">Choose the best answer for each.</div>
+    <p class="qsub">Choose the best answer for each.</p>
     ${Q.q.map((q,qi)=>`<div class="qq" data-q="${qi}">
-      <div class="qt"><span class="n">${String(qi+1).padStart(2,'0')}</span><span>${q.q}</span></div>
+      <p class="qt"><span class="n">${String(qi+1).padStart(2,'0')}</span><span>${q.q}</span></p>
       ${q.o.map((o,oi)=>`<button class="qopt" onclick="ans(this,${qi},${oi})">${o}</button>`).join('')}
       <div class="qfb"></div>
     </div>`).join('')}
-    <div class="qscore" id="qscore" style="display:none"><span class="num" id="qnum"></span><span class="lbl" id="qlbl"></span></div>
+    <div class="qscore" id="qscore"><span class="num" id="qnum"></span><span class="lbl" id="qlbl"></span></div>
   </div>`;
 }
 function ans(btn,qi,oi){
-  const wrap=btn.closest('.quiz'), mid=wrap.dataset.m, Q=QUIZ[mid], q=Q.q[qi];
-  const box=btn.closest('.qq'); if(box.dataset.done)return;
+  const wrap=btn.closest('.quiz'), mid=wrap.dataset.m, Q=QUIZ[mid], q=Q.q[qi], box=btn.closest('.qq');
+  if(box.dataset.done)return;
   box.dataset.done='1';
   box.querySelectorAll('.qopt').forEach((b,i)=>{b.disabled=true;if(i===q.a)b.classList.add('ok');});
   if(oi!==q.a)btn.classList.add('no');
@@ -1122,13 +1139,12 @@ function ans(btn,qi,oi){
   fb.classList.add('show');
   scores[mid]=scores[mid]||{c:0,t:Q.q.length};
   if(oi===q.a)scores[mid].c++;
-  const answered=wrap.querySelectorAll('.qq[data-done]').length;
-  if(answered===Q.q.length){
+  if(wrap.querySelectorAll('.qq[data-done]').length===Q.q.length){
     const s=scores[mid];
-    $('#qscore').style.display='flex';
+    $('#qscore').classList.add('show');
     $('#qnum').textContent=s.c+'/'+s.t;
-    $('#qlbl').textContent=s.c===s.t?'Perfect. Module complete, hit Next to continue.':'Module complete. Review the explanations above, then hit Next.';
-    if(!done.includes(idx)){done.push(idx);}
+    $('#qlbl').textContent=s.c===s.t?'Perfect. Hit Next to continue.':'Module complete. Review the notes above, then hit Next.';
+    if(!done.includes(idx))done.push(idx);
     toast(s.c===s.t?'&#10003; Perfect score':'&#10003; Module complete');
     renderSide();
   }
@@ -1136,18 +1152,16 @@ function ans(btn,qi,oi){
 }
 
 /* ============ PROMPT LIBRARY ============ */
+const KIND={role:'Role',ctx:'Context',task:'Task',fmt:'Format'};
 function renderPlib(){
   const el=$('#plib'); if(!el)return;
-  el.innerHTML=PROMPTS.map((p,i)=>{
-    const kinds={role:'Role',ctx:'Context',task:'Task',fmt:'Format'};
-    return `<div class="pc" data-g="${p.g}">
-      <button class="pc-h" onclick="tCard(this)"><div><div class="t">${p.t}</div><div class="s">${p.s}</div></div><span class="chev">&#9656;</span></button>
-      <div class="pc-b">
-        <div class="ing">${p.p.map(x=>`<span class="i-${x[0]}">${kinds[x[0]]}</span>`).join('')}</div>
-        <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button>${p.p.map(x=>`<span class="${x[0]}">${x[1]}</span>`).join('\n\n')}</div>
-        <p class="pwhy"><b>Key move:</b> ${p.w}</p>
-      </div></div>`;
-  }).join('');
+  el.innerHTML=PROMPTS.map(p=>`<article class="pc" data-g="${p.g}">
+    <button class="pc-h" onclick="tCard(this)"><span><span class="t">${p.t}</span><span class="s">${p.s}</span></span><span class="chev">&#9656;</span></button>
+    <div class="pc-b">
+      <div class="ing">${p.p.map(x=>`<span class="i-${x[0]}">${KIND[x[0]]}</span>`).join('')}</div>
+      <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button>${p.p.map(x=>`<span class="${x[0]}">${x[1]}</span>`).join('\n\n')}</div>
+      <p class="pwhy"><b>Key move:</b> ${p.w}</p>
+    </div></article>`).join('');
 }
 function pFilter(b){
   $$('.ptab').forEach(x=>x.classList.remove('on'));b.classList.add('on');
@@ -1158,7 +1172,7 @@ function tCard(h){h.parentNode.classList.toggle('open');}
 function tAcc(h){h.parentNode.classList.toggle('open');}
 function copyPre(btn){
   const c=btn.parentNode.cloneNode(true);c.querySelector('.pcopy').remove();
-  navigator.clipboard.writeText(c.innerText.trim()).then(()=>toast('&#10003; Prompt copied to clipboard'));
+  navigator.clipboard.writeText(c.innerText.trim()).then(()=>toast('&#10003; Prompt copied'));
 }
 function copyHex(h){navigator.clipboard.writeText(h).then(()=>toast('&#10003; '+h+' copied'));}
 
@@ -1167,29 +1181,36 @@ let lbList=[],lbI=0;
 function openLb(f){
   lbList=$$('.slide img').map(i=>i.getAttribute('src').split('/').pop());
   lbI=Math.max(0,lbList.indexOf(f));
-  $('#lbImg').src=IMG+f;$('#lb').classList.add('on');
+  paintLb();$('#lb').classList.add('on');
+}
+function paintLb(){
+  $('#lbImg').src=IMG+lbList[lbI];
+  $('#lbCount').textContent=lbList.length>1?`${lbI+1} / ${lbList.length}`:'';
+  const one=lbList.length<2;
+  $('.lb-prev').style.display=one?'none':'grid';
+  $('.lb-next').style.display=one?'none':'grid';
 }
 function closeLb(e,force){if(force||e.target.id==='lb'||e.target.classList.contains('lb-x'))$('#lb').classList.remove('on');}
-function lbNav(e,d){e.stopPropagation();if(!lbList.length)return;lbI=(lbI+d+lbList.length)%lbList.length;$('#lbImg').src=IMG+lbList[lbI];}
+function lbNav(e,d){e.stopPropagation();if(lbList.length<2)return;lbI=(lbI+d+lbList.length)%lbList.length;paintLb();}
 
 /* ============ COMPLETION ============ */
 function showDone(){
   const tot=Object.values(scores).reduce((a,s)=>a+s.t,0), got=Object.values(scores).reduce((a,s)=>a+s.c,0);
-  $('#lesson').innerHTML=`<div class="done"><div class="in">
-    <div class="seal">&#9733;</div>
-    <span class="eyebrow" style="color:#7ED9E6">Training complete</span>
+  $('#lesson').innerHTML=`<div class="finish">
+    <div class="seal">&#10003;</div>
+    <span class="eyebrow">Training complete</span>
     <h2>You know the ecosystem.</h2>
     <p>Brand, playbook, the five platforms and the prompt library. You are ready to produce work that passes a brand review the first time.</p>
-    <div class="done-stats">
-      <div class="d"><b>${L.length}</b><span>Lessons</span></div>
-      <div class="d"><b>${got}/${tot||0}</b><span>Quiz answers</span></div>
-      <div class="d"><b>9</b><span>Modules</span></div>
+    <div class="stats" style="grid-template-columns:repeat(3,1fr);max-width:420px">
+      <div class="s"><b>${L.length}</b><span>Lessons</span></div>
+      <div class="s"><b>${got}/${tot||0}</b><span>Quiz answers</span></div>
+      <div class="s"><b>9</b><span>Modules</span></div>
     </div>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
       <a class="btn" href="index.html">Back to Home</a>
       <button class="btn ghost" onclick="jumpTo(L.findIndex(l=>l.t==='The prompt library'))">Open the prompt library</button>
     </div>
-  </div></div>`;
+  </div>`;
   $('#stage').scrollTop=0;
 }
 function resetAll(){
@@ -1201,12 +1222,13 @@ function resetAll(){
 document.addEventListener('keydown',e=>{
   if($('#lb').classList.contains('on')){
     if(e.key==='Escape')$('#lb').classList.remove('on');
-    if(e.key==='ArrowLeft')lbNav(e,-1); if(e.key==='ArrowRight')lbNav(e,1);
+    else if(e.key==='ArrowLeft')lbNav(e,-1);
+    else if(e.key==='ArrowRight')lbNav(e,1);
     return;
   }
-  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
-  if(e.key==='ArrowLeft')go(-1);
-  if(e.key==='ArrowRight')go(1);
+  if(/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))return;
+  if(e.key==='ArrowLeft'){e.preventDefault();go(-1);}
+  if(e.key==='ArrowRight'){e.preventDefault();go(1);}
 });
 render();
 booted=true;
