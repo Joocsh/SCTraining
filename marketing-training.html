@@ -7,24 +7,25 @@
 <meta name="description" content="Interactive marketing training on the Sotheby's International Realty tool ecosystem: brand, campaign playbook, the five platforms, and AI prompting.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- Cormorant is loaded ONLY to preview the Sotheby's serif inside the typography lesson. The UI itself uses the SkillCloud system stack. -->
+<!-- Cormorant is used ONLY to depict the Sotheby's serif inside brand lessons. The UI itself uses the SkillCloud stack. -->
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
 <style>
 :root{
-  /* SkillCloud brand tokens — identical to assets/css/styles.css */
+  /* SkillCloud tokens — same values as assets/css/styles.css */
   --v-navy:#0a2647; --v-navy2:#0f3460; --v-blue:#1565c0; --v-sky:#5aa9e6;
   --v-cyan:#17c3d4; --v-cyan-d:#0fa6b6; --v-ink:#0c1e33; --v-muted:#5b6b7e;
   --v-bg:#f6f9fc; --v-line:#e3eaf1;
-  --gold:#b08d3f;
   --body:#33465e; --faint:#8fa1b3; --line-2:#cfdbe6; --soft:#eef3f8;
-  --good:#1f9e5a; --good-bg:#e4f4ec; --bad:#d2452f; --warn:#a86e10; --warn-bg:#fbf1dc;
+  --good:#1f9e5a; --bad:#d2452f; --warn:#a86e10; --warn-bg:#fbf1dc;
+  /* SIR brand colors, shown as subject matter */
+  --sir:#002349; --sir-off:#EDECE6; --sir-gold:#b08d3f;
   --shadow:0 2px 10px rgba(10,38,71,.08); --shadow-m:0 6px 22px rgba(10,38,71,.1); --shadow-l:0 8px 30px rgba(10,38,71,.14);
   --radius:14px; --r-sm:10px;
-  --side:290px; --top:58px;
+  --side:288px; --top:58px;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --display:"Helvetica Neue",Arial,sans-serif;
   --mono:ui-monospace,Menlo,Consolas,monospace;
-  --serif-demo:'Cormorant Garamond',Georgia,serif;
+  --serif:'Cormorant Garamond',Georgia,serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
@@ -32,10 +33,10 @@ body{font-family:var(--sans);background:var(--v-bg);color:var(--body);font-size:
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 a{color:var(--v-cyan-d);text-decoration:none}
 h1,h2,h3,h4{font-family:var(--display);color:var(--v-navy);letter-spacing:-.5px;line-height:1.2}
-h1{font-size:31px;font-weight:900;letter-spacing:-1px}
-h2{font-size:22px;font-weight:800}
+h1{font-size:30px;font-weight:900;letter-spacing:-1px}
+h2{font-size:21px;font-weight:800}
 h3{font-size:17px;font-weight:800;color:var(--v-navy2)}
-h4{font-size:15.5px;font-weight:800}
+h4{font-size:15px;font-weight:800}
 b,strong{color:var(--v-ink);font-weight:700}
 :focus-visible{outline:2px solid var(--v-cyan-d);outline-offset:2px;border-radius:4px}
 ::-webkit-scrollbar{width:10px;height:10px}
@@ -43,7 +44,6 @@ b,strong{color:var(--v-ink);font-weight:700}
 ::-webkit-scrollbar-thumb{background:#cfdbe6;border-radius:6px;border:3px solid var(--v-bg)}
 ::-webkit-scrollbar-thumb:hover{background:#b4c4d4}
 .eyebrow{font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--v-cyan-d)}
-.mono{font-family:var(--mono)}
 
 /* ============ TOP BAR ============ */
 .topbar{position:fixed;top:0;left:0;right:0;height:var(--top);background:#fff;border-bottom:1px solid var(--v-line);display:flex;align-items:center;gap:12px;padding:0 16px;z-index:120}
@@ -64,34 +64,34 @@ b,strong{color:var(--v-ink);font-weight:700}
 /* ============ SIDEBAR ============ */
 .side{position:fixed;top:calc(var(--top) + 3px);left:0;bottom:0;width:var(--side);background:#fff;border-right:1px solid var(--v-line);overflow-y:auto;z-index:110;padding-bottom:24px;transition:transform .25s ease}
 .side-hd{padding:18px 20px 16px;border-bottom:1px solid var(--v-line)}
-.side-hd .ttl{font-family:var(--display);font-size:16px;font-weight:800;color:var(--v-navy);letter-spacing:-.4px;line-height:1.25}
+.side-hd .ttl{font-family:var(--display);font-size:16px;font-weight:800;color:var(--v-navy);letter-spacing:-.4px;line-height:1.3}
 .side-hd .sub{font-size:12.5px;color:var(--v-muted);margin-top:3px}
-.side-hd .bar{height:6px;border-radius:4px;background:var(--v-line);margin-top:12px;overflow:hidden}
+.side-hd .bar{height:6px;border-radius:4px;background:var(--v-line);margin-top:13px;overflow:hidden}
 .side-hd .bar i{display:block;height:100%;width:0;background:var(--v-cyan);border-radius:4px;transition:width .4s}
-.side-hd .pct{display:flex;justify-content:space-between;font-size:11.5px;color:var(--v-muted);margin-top:6px;font-weight:600}
+.side-hd .pct{display:flex;justify-content:space-between;font-size:11.5px;color:var(--v-muted);margin-top:7px;font-weight:600}
 
 .mod + .mod{border-top:1px solid var(--v-line)}
-.mod-h{width:100%;display:flex;align-items:center;gap:11px;padding:11px 16px;text-align:left;transition:background .15s}
+.mod-h{width:100%;display:flex;align-items:center;gap:12px;padding:13px 16px;text-align:left;transition:background .15s}
 .mod-h:hover{background:var(--v-bg)}
-.mod-n{width:24px;height:24px;border-radius:50%;background:var(--soft);color:var(--v-navy2);display:grid;place-items:center;font-size:11.5px;font-weight:800;flex:none;transition:.2s}
-.mod.done .mod-n{background:var(--good);color:#fff}
+.mod-n{width:25px;height:25px;border-radius:50%;background:var(--soft);color:var(--v-navy2);display:grid;place-items:center;font-size:11.5px;font-weight:800;flex:none;transition:.2s}
+.mod.fin .mod-n{background:var(--good);color:#fff}
 .mod.active .mod-n{background:var(--v-navy);color:#fff}
 .mod-t{flex:1;min-width:0}
 .mod-t .nm{display:block;font-size:13.5px;font-weight:700;color:var(--v-ink);line-height:1.35}
-.mod-t .ct{display:block;font-size:11.5px;color:var(--faint);margin-top:1px}
+.mod-t .ct{display:block;font-size:11.5px;color:var(--faint);margin-top:2px}
 .mod-chev{color:var(--faint);font-size:10px;transition:transform .2s;flex:none}
 .mod.open .mod-chev{transform:rotate(90deg)}
-.mod-b{display:none;padding:0 8px 8px}
+.mod-b{display:none;padding:2px 8px 10px}
 .mod.open .mod-b{display:block}
 
-.les{width:100%;display:flex;align-items:center;gap:10px;min-height:38px;padding:7px 10px 7px 12px;text-align:left;font-size:13px;color:var(--v-muted);line-height:1.35;border-radius:8px;transition:background .13s,color .13s}
+.les{width:100%;display:flex;align-items:center;gap:11px;min-height:40px;padding:8px 10px 8px 12px;text-align:left;font-size:13px;color:var(--v-muted);line-height:1.4;border-radius:8px;transition:background .13s,color .13s}
 .les:hover{background:var(--v-bg);color:var(--v-ink)}
-.les.cur{background:var(--soft);color:var(--v-navy);font-weight:700;box-shadow:inset 3px 0 0 var(--v-cyan);padding:7px 10px 7px 12px}
+.les.cur{background:var(--soft);color:var(--v-navy);font-weight:700;box-shadow:inset 3px 0 0 var(--v-cyan);padding:8px 10px 8px 12px}
 .les-tick{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line-2);flex:none;display:grid;place-items:center;font-size:8px;color:transparent;background:#fff;transition:.2s}
-.les.done .les-tick{background:var(--good);border-color:var(--good);color:#fff}
-.les.cur:not(.done) .les-tick{border-color:var(--v-cyan-d)}
+.les.seen .les-tick{background:var(--good);border-color:var(--good);color:#fff}
+.les.cur:not(.seen) .les-tick{border-color:var(--v-cyan-d)}
 .les-x{flex:1;min-width:0}
-.les-kind{display:block;font-size:10px;font-weight:800;letter-spacing:.7px;color:var(--v-cyan-d);text-transform:uppercase;margin-top:1px}
+.les-kind{display:block;font-size:10px;font-weight:800;letter-spacing:.7px;color:var(--v-cyan-d);text-transform:uppercase;margin-top:2px}
 .side-veil{display:none;position:fixed;inset:0;background:rgba(10,38,71,.42);z-index:105}
 @media(max-width:960px){
   .side{transform:translateX(-100%);box-shadow:var(--shadow-l)}
@@ -99,79 +99,66 @@ b,strong{color:var(--v-ink);font-weight:700}
   .side-veil.on{display:block}
 }
 
-/* ============ STAGE ============ */
+/* ============ STAGE + LESSON LAYOUT ============ */
 .stage{position:fixed;top:calc(var(--top) + 3px);left:var(--side);right:0;bottom:0;overflow-y:auto}
 @media(max-width:960px){.stage{left:0}}
-.lesson{max-width:840px;margin:0 auto;padding:30px 40px 118px;animation:fade .3s ease}
+.lesson{max-width:1180px;margin:0 auto;padding:26px 40px 100px;animation:fade .3s ease}
 @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-@media(max-width:700px){.lesson{padding:22px 18px 118px}}
+@media(max-width:700px){.lesson{padding:20px 18px 100px}}
 
 .crumb{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;color:var(--v-muted);margin-bottom:14px;flex-wrap:wrap}
 .crumb .pill{background:var(--v-navy);color:#fff;border-radius:999px;padding:4px 12px;font-size:11px;letter-spacing:.5px}
 .crumb .sep{color:var(--line-2)}
-.lesson h1{margin-bottom:10px}
-.lesson h1 em{font-style:normal;color:var(--v-cyan-d)}
-.lead{font-size:16.5px;color:var(--body);margin-bottom:22px;line-height:1.6}
-.lesson h2{margin:30px 0 10px}
-.lesson h3{margin:22px 0 8px}
+.head{max-width:880px;margin-bottom:22px}
+.head h1{margin-bottom:9px}
+.head h1 em{font-style:normal;color:var(--v-cyan-d)}
+.head .lead{font-size:16.5px;color:var(--body);margin:0}
+
+/* two column: copy left, recreated visual right */
+.lay{display:grid;gap:34px;align-items:start}
+.lay.split{grid-template-columns:minmax(0,1fr) minmax(0,1.04fr)}
+.lay:not(.split){max-width:820px}
+.txt,.med{min-width:0}
+.txt > :first-child,.med > :first-child{margin-top:0}
+.txt > :last-child,.med > :last-child{margin-bottom:0}
+@media(max-width:1040px){
+  .lay.split{grid-template-columns:1fr;gap:20px}
+  .lesson{max-width:840px}
+}
 .lesson p{margin-bottom:12px}
 .lesson ul,.lesson ol{margin:8px 0 14px 20px}
-.lesson li{margin-bottom:6px}
-
-/* slides */
-.slide{position:relative;border-radius:var(--radius);overflow:hidden;border:1px solid var(--v-line);box-shadow:var(--shadow);background:#EDECE6;margin:18px 0 8px;cursor:zoom-in;transition:box-shadow .2s,transform .2s;display:block;width:100%}
-.slide:hover{box-shadow:var(--shadow-m);transform:translateY(-2px)}
-.slide img{width:100%;display:block}
-.slide .zoom{position:absolute;right:10px;bottom:10px;background:rgba(10,38,71,.86);color:#fff;border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:700;opacity:0;transition:opacity .2s}
-.slide:hover .zoom,.slide:focus-visible .zoom{opacity:1}
-.slide-cap{font-size:12.5px;color:var(--v-muted);text-align:center;margin-bottom:20px}
-.slide-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0 8px}
-@media(max-width:760px){.slide-row{grid-template-columns:1fr}}
-.slide-row .slide{margin:0}
-
-/* lightbox */
-.lb{position:fixed;inset:0;background:rgba(8,20,35,.95);z-index:400;display:none;align-items:center;justify-content:center;padding:5vh 6vw;cursor:zoom-out}
-.lb.on{display:flex}
-.lb img{max-width:100%;max-height:100%;border-radius:8px;box-shadow:0 30px 90px rgba(0,0,0,.6)}
-.lb-x{position:absolute;top:16px;right:22px;color:#fff;font-size:26px;opacity:.7;width:40px;height:40px;border-radius:50%}
-.lb-x:hover{opacity:1;background:rgba(255,255,255,.12)}
-.lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;display:grid;place-items:center;font-size:20px}
-.lb-nav:hover{background:rgba(255,255,255,.28)}
-.lb-prev{left:18px}.lb-next{right:18px}
-.lb-count{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);color:#9fb4c9;font-size:12.5px;font-weight:600}
+.lesson li{margin-bottom:7px}
+.lesson h2{margin:26px 0 10px}
+.lesson h3{margin:20px 0 8px}
 
 /* ============ CONTENT BLOCKS ============ */
-.card{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);padding:20px 24px;box-shadow:var(--shadow);margin:16px 0}
-.card > h3:first-child,.card > h4:first-child{margin-top:0}
-.card p:last-child,.card ul:last-child,.card ol:last-child{margin-bottom:0}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0;align-items:stretch}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:16px 0;align-items:stretch}
+.card{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin:16px 0}
+.card > :first-child{margin-top:0}
+.card > :last-child{margin-bottom:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0;align-items:stretch}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0;align-items:stretch}
 .grid2 > .card,.grid3 > .card{margin:0}
 @media(max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
 .navy{background:linear-gradient(160deg,var(--v-navy),var(--v-navy2));border-color:transparent;color:#c7d7e6}
 .navy h2,.navy h3,.navy h4{color:#fff}
 .navy b,.navy strong{color:#fff}
-.navy .eyebrow{color:#7ee3ee}
-.note{border-left:4px solid var(--v-cyan);background:#fff;border-radius:0 var(--r-sm) var(--r-sm) 0;padding:14px 18px;margin:16px 0;font-size:14.5px;box-shadow:var(--shadow)}
+.note{border-left:4px solid var(--v-cyan);background:#fff;border-radius:0 var(--r-sm) var(--r-sm) 0;padding:13px 17px;margin:16px 0;font-size:14.5px;box-shadow:var(--shadow)}
 .note b{color:var(--v-navy)}
 .note.warn{border-left-color:var(--warn);background:var(--warn-bg)}
 .note.tip{border-left-color:var(--v-cyan);background:#e9f9fb}
-
 .kv{display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--v-line)}
 .kv:last-child{border-bottom:none;padding-bottom:0}
 .kv:first-child{padding-top:0}
-.kv .k{font-size:11.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--v-cyan-d);width:132px;flex:none;padding-top:2px}
+.kv .k{font-size:11.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--v-cyan-d);width:124px;flex:none;padding-top:2px}
 @media(max-width:600px){.kv{flex-direction:column;gap:4px}.kv .k{width:auto}}
-
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--v-line);border:1px solid var(--v-line);border-radius:var(--radius);overflow:hidden;margin:18px 0}
-.stats .s{background:#fff;padding:16px 12px;text-align:center}
-.stats .s b{display:block;font-family:var(--display);font-size:26px;font-weight:900;color:var(--v-navy);letter-spacing:-1px;line-height:1.1}
-.stats .s span{font-size:11px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--v-muted)}
-@media(max-width:600px){.stats{grid-template-columns:1fr 1fr}}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:1px;background:var(--v-line);border:1px solid var(--v-line);border-radius:var(--radius);overflow:hidden;margin:16px 0}
+.stats .s{background:#fff;padding:15px 10px;text-align:center}
+.stats .s b{display:block;font-family:var(--display);font-size:25px;font-weight:900;color:var(--v-navy);letter-spacing:-1px;line-height:1.1}
+.stats .s span{font-size:10.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--v-muted)}
 
 /* timeline */
-.tl{position:relative;margin:18px 0;padding-left:24px;border-left:2px solid var(--v-line)}
-.tl-i{position:relative;padding-bottom:20px}
+.tl{position:relative;margin:14px 0;padding-left:24px;border-left:2px solid var(--v-line)}
+.tl-i{position:relative;padding-bottom:18px}
 .tl-i:last-child{padding-bottom:0}
 .tl-i::before{content:'';position:absolute;left:-31px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--v-cyan);border:3px solid var(--v-bg)}
 .tl-i .yr{font-size:11.5px;font-weight:800;letter-spacing:.8px;color:var(--v-cyan-d)}
@@ -179,122 +166,229 @@ b,strong{color:var(--v-ink);font-weight:700}
 .tl-i p{font-size:14.5px;margin:0}
 
 /* steps */
-.steps{counter-reset:st;display:grid;gap:10px;margin:16px 0}
-.step{display:flex;gap:15px;background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);padding:15px 20px;box-shadow:var(--shadow);align-items:flex-start;transition:border-color .18s,transform .18s}
+.steps{counter-reset:st;display:grid;gap:10px;margin:14px 0}
+.step{display:flex;gap:14px;background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);padding:14px 18px;box-shadow:var(--shadow);align-items:flex-start;transition:border-color .18s,transform .18s}
 .step:hover{border-color:var(--v-cyan);transform:translateX(3px)}
-.step::before{counter-increment:st;content:counter(st);width:28px;height:28px;border-radius:50%;background:var(--v-navy);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800;flex:none}
-.step h4{margin-bottom:3px}
+.step::before{counter-increment:st;content:counter(st);width:26px;height:26px;border-radius:50%;background:var(--v-navy);color:#fff;display:grid;place-items:center;font-size:12.5px;font-weight:800;flex:none}
+.step h4{margin-bottom:2px}
 .step h4 i{font-style:normal;color:var(--v-cyan-d)}
-.step p{font-size:14px;margin:0}
+.step p{font-size:13.5px;margin:0}
 
-/* tool cards */
-.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:12px;margin:18px 0}
-.tool{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);padding:17px;box-shadow:var(--shadow);cursor:pointer;transition:.18s;text-align:left;display:flex;flex-direction:column}
+/* tools */
+.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:11px;margin:16px 0}
+.tool{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);padding:15px;box-shadow:var(--shadow);cursor:pointer;transition:.18s;text-align:left;display:flex;flex-direction:column}
 .tool:hover{transform:translateY(-3px);box-shadow:var(--shadow-m);border-color:var(--v-cyan)}
-.tool .tn{font-family:var(--display);font-size:17px;font-weight:800;color:var(--v-navy);letter-spacing:-.4px}
-.tool .tr{font-size:12.5px;color:var(--v-muted);margin-top:5px;flex:1}
-.tool .tg{font-size:11px;font-weight:800;letter-spacing:.5px;color:var(--v-cyan-d);text-transform:uppercase;margin-top:10px}
+.tool .tn{font-family:var(--display);font-size:16px;font-weight:800;color:var(--v-navy);letter-spacing:-.4px}
+.tool .tr{font-size:12.5px;color:var(--v-muted);margin-top:4px;flex:1}
+.tool .tg{font-size:10.5px;font-weight:800;letter-spacing:.5px;color:var(--v-cyan-d);text-transform:uppercase;margin-top:9px}
 
 /* accordion */
-.acc{border:1px solid var(--v-line);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden}
-.acc-h{width:100%;display:flex;align-items:center;gap:12px;padding:14px 18px;font-size:14.5px;font-weight:700;color:var(--v-navy);text-align:left}
+.acc{border:1px solid var(--v-line);border-radius:var(--radius);background:#fff;box-shadow:var(--shadow);margin-bottom:9px;overflow:hidden}
+.acc-h{width:100%;display:flex;align-items:center;gap:12px;padding:13px 17px;font-size:14.5px;font-weight:700;color:var(--v-navy);text-align:left}
 .acc-h:hover{background:var(--v-bg)}
-.acc-h .ic{width:24px;height:24px;border-radius:7px;background:var(--soft);color:var(--v-navy2);display:grid;place-items:center;font-size:11.5px;font-weight:800;flex:none}
+.acc-h .ic{width:23px;height:23px;border-radius:7px;background:var(--soft);color:var(--v-navy2);display:grid;place-items:center;font-size:11.5px;font-weight:800;flex:none}
 .acc-h .chev{margin-left:auto;color:var(--faint);transition:transform .2s;font-size:11px}
 .acc.open .chev{transform:rotate(90deg)}
 .acc.open .ic{background:var(--v-cyan);color:#03282c}
-.acc-b{display:none;padding:0 18px 16px 54px;font-size:14.5px}
+.acc-b{display:none;padding:0 17px 15px 52px;font-size:14.5px}
 .acc.open .acc-b{display:block}
-.acc-b ul{margin:2px 0 4px 18px}
 .acc-b p:last-child{margin-bottom:0}
 
+/* table */
+.tbl{width:100%;border-collapse:collapse;background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--v-line);margin:14px 0}
+.tbl th{background:var(--v-navy);color:#fff;font-size:11px;letter-spacing:.6px;text-transform:uppercase;padding:10px 13px;text-align:left;font-weight:800}
+.tbl td{padding:11px 13px;border-top:1px solid var(--v-line);font-size:14px;vertical-align:top}
+.tbl td.k{font-weight:800;color:var(--v-navy);white-space:nowrap}
+
+/* ==================================================================
+   RECREATED VISUALS — every slide from the deck rebuilt in HTML/CSS
+   ================================================================== */
+.fig{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin:0 0 14px}
+.fig-b{padding:20px}
+.fig-b.sir{background:var(--sir-off)}
+.fig-b.navy{background:var(--sir);border-color:transparent}
+.fig-cap{font-size:11.5px;color:var(--v-muted);padding:9px 14px;border-top:1px solid var(--v-line);background:#fbfcfd}
+.fig-cap b{color:var(--v-navy)}
+
+/* Sotheby's wordmark, drawn in type */
+.mark{text-align:center;color:var(--sir);line-height:1}
+.mark .n{font-family:var(--serif);font-size:clamp(20px,3.4vw,30px);font-weight:600;letter-spacing:-.4px;display:block}
+.mark .s{font-family:var(--sans);font-size:clamp(6px,.95vw,8px);letter-spacing:.34em;text-transform:uppercase;font-weight:600;margin-top:5px;display:block}
+.mark.light{color:#fff}
+.mark.sm .n{font-size:17px}.mark.sm .s{font-size:5.5px}
+
+/* the 1 of 1 lockup */
+.one1{font-family:var(--serif);color:var(--sir);text-align:center;line-height:1;font-size:clamp(34px,6vw,58px);font-weight:500}
+.one1 i{font-style:italic}
+.one1.light{color:#fff}
+
+/* app UI mockup */
+.mock{border:1px solid var(--line-2);border-radius:10px;overflow:hidden;background:#fff}
+.mock-bar{background:var(--sir);padding:8px 12px;display:flex;align-items:center;gap:7px}
+.mock-bar i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.28);display:block}
+.mock-bar span{margin-left:8px;font-family:var(--mono);font-size:10px;color:#8fa9c2}
+.mock-body{display:grid;grid-template-columns:74px 1fr;min-height:180px}
+.mock-body.full{grid-template-columns:1fr}
+.mock-nav{background:#f2f6fa;border-right:1px solid var(--v-line);padding:11px 9px;display:flex;flex-direction:column;gap:7px}
+.mock-nav i{display:block;height:6px;border-radius:3px;background:#d8e2ec}
+.mock-nav i.on{background:var(--v-cyan)}
+.mock-nav i.w70{width:70%}.mock-nav i.w85{width:85%}.mock-nav i.w55{width:55%}
+.mock-main{padding:13px}
+.mock-hd{height:9px;width:42%;border-radius:4px;background:#c6d4e1;margin-bottom:11px}
+.mock-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mock-grid.c2{grid-template-columns:repeat(2,1fr)}
+.mock-tile{border:1px solid var(--v-line);border-radius:7px;padding:8px;background:#fff}
+.mock-tile .ph{height:32px;border-radius:5px;background:linear-gradient(135deg,#d9e5f0,#bed0e0);margin-bottom:6px}
+.mock-tile .ph.g{background:linear-gradient(135deg,#d6ebe2,#b6d9c9)}
+.mock-tile .l{height:5px;border-radius:3px;background:#dde5ec;margin-bottom:4px}
+.mock-tile .l.s{width:58%;background:#e9eff5;margin-bottom:0}
+.mock-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--v-line);font-size:11px;color:var(--v-muted)}
+.mock-row:last-child{border-bottom:none}
+.mock-row .dot{width:7px;height:7px;border-radius:50%;background:var(--v-cyan);flex:none}
+.mock-row .grow{flex:1;height:5px;border-radius:3px;background:#dde5ec}
+
+/* bar chart for analytics */
+.bars{display:flex;align-items:flex-end;gap:7px;height:96px;padding-top:6px}
+.bars i{flex:1;background:linear-gradient(180deg,var(--v-cyan),#0d93a1);border-radius:3px 3px 0 0;display:block}
+.bars-x{display:flex;gap:7px;margin-top:6px}
+.bars-x span{flex:1;text-align:center;font-family:var(--mono);font-size:9px;color:var(--faint)}
+
+/* layout principle diagrams */
+.ldemo{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lbox{background:var(--sir-off);border:1px solid var(--line-2);border-radius:8px;padding:12px;aspect-ratio:4/3;display:flex;flex-direction:column}
+.lbox.center{align-items:center;justify-content:center;text-align:center;gap:8px}
+.lbox .img{background:#c9cec4;border-radius:4px;flex:1;min-height:0}
+.lbox .img.half{flex:0 0 52%}
+.lbox .img.sm{flex:0 0 24%}
+.lbox .ln{height:5px;border-radius:3px;background:var(--sir);opacity:.35}
+.lbox .ln.w60{width:60%}.lbox .ln.w40{width:40%}.lbox .ln.w80{width:80%}
+.lbox-l{font-size:11px;font-weight:700;color:var(--v-muted);text-align:center;margin-top:7px}
+
+/* logo clear space */
+.clear{background:var(--sir-off);border:1px solid var(--line-2);border-radius:8px;padding:26px;position:relative}
+.clear .guide{border:1.5px dashed rgba(0,35,73,.3);padding:22px;display:grid;place-items:center}
+.clear .sq{position:absolute;width:22px;height:22px;background:rgba(23,195,212,.28);border:1px solid var(--v-cyan-d);display:grid;place-items:center;font-family:var(--serif);font-size:14px;color:var(--sir);font-weight:600}
+.clear .sq.tl{top:26px;left:26px}.clear .sq.br{bottom:26px;right:26px}
+
+/* logo on color */
+.oncolor{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.oncolor div{border-radius:8px;padding:18px 8px;display:grid;place-items:center;border:1px solid var(--line-2)}
+.oncolor .b1{background:var(--sir);border-color:transparent}
+.oncolor .b2{background:var(--sir-off)}
+.oncolor .b3{background:#fff}
+
 /* swatches */
-.sws{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:16px 0}
+.sws{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}
 @media(max-width:700px){.sws{grid-template-columns:1fr}}
 .sw{border-radius:var(--radius);overflow:hidden;border:1px solid var(--v-line);box-shadow:var(--shadow);cursor:pointer;background:#fff;transition:.18s;text-align:left;width:100%}
 .sw:hover{transform:translateY(-3px);box-shadow:var(--shadow-m)}
-.sw .chip{height:88px;position:relative}
-.sw .chip::after{content:'Click to copy';position:absolute;inset:0;display:grid;place-items:center;font-size:11.5px;font-weight:800;color:#fff;background:rgba(10,38,71,.4);opacity:0;transition:opacity .18s}
+.sw .chip{height:74px;position:relative;display:block}
+.sw .chip::after{content:'Copy hex';position:absolute;inset:0;display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff;background:rgba(10,38,71,.42);opacity:0;transition:opacity .18s}
 .sw:hover .chip::after{opacity:1}
-.sw .info{padding:12px 15px}
-.sw .nm{font-weight:800;color:var(--v-ink);font-size:14px}
-.sw .vals{font-family:var(--mono);font-size:11.5px;color:var(--v-muted);margin-top:5px;line-height:1.7}
+.sw .info{padding:11px 13px;display:block}
+.sw .nm{font-weight:800;color:var(--v-ink);font-size:13.5px;display:block}
+.sw .vals{font-family:var(--mono);font-size:11px;color:var(--v-muted);margin-top:4px;line-height:1.7;display:block}
 
-/* type specimen — the ONLY place the SIR serif appears, as a preview */
-.spec{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px;margin:16px 0}
-.spec .r{display:grid;grid-template-columns:minmax(0,1fr) 180px;gap:18px;align-items:baseline;border-bottom:1px solid var(--v-line);padding:14px 0}
+/* type specimen */
+.spec .r{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:16px;align-items:baseline;border-bottom:1px solid var(--v-line);padding:13px 0}
 .spec .r:first-child{padding-top:0}
 .spec .r:last-child{border-bottom:none;padding-bottom:0}
-.spec .who{font-family:var(--mono);font-size:11px;color:var(--v-muted);text-align:right;line-height:1.7}
+.spec .who{font-family:var(--mono);font-size:10.5px;color:var(--v-muted);text-align:right;line-height:1.7}
 @media(max-width:640px){.spec .r{grid-template-columns:1fr}.spec .who{text-align:left}}
-.d-h1{font-family:var(--serif-demo);font-size:36px;color:var(--v-navy);font-weight:500;line-height:1.15}
-.d-h2{font-family:var(--serif-demo);font-size:25px;color:var(--v-navy);font-weight:600}
-.d-sub{font-size:16px;font-weight:700;color:var(--v-ink)}
-.d-body{font-size:15px}
-
-/* table */
-.tbl{width:100%;border-collapse:collapse;background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--v-line);margin:16px 0}
-.tbl th{background:var(--v-navy);color:#fff;font-size:11.5px;letter-spacing:.6px;text-transform:uppercase;padding:11px 14px;text-align:left;font-weight:800}
-.tbl td{padding:12px 14px;border-top:1px solid var(--v-line);font-size:14px;vertical-align:top}
-.tbl td.k{font-weight:800;color:var(--v-navy);white-space:nowrap}
+.d-h1{font-family:var(--serif);font-size:clamp(24px,3.6vw,34px);color:var(--sir);font-weight:500;line-height:1.15}
+.d-h2{font-family:var(--serif);font-size:23px;color:var(--sir);font-weight:600}
+.d-sub{font-size:15.5px;font-weight:700;color:var(--v-ink)}
+.d-body{font-size:14.5px}
 
 /* shapes */
-.shapes{display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap;margin:16px 0}
-.shp{background:#EDECE6;width:78px;border:1px solid var(--v-line)}
-.s-rect{height:98px}
-.s-oval{height:98px;border-radius:50%/44%}
-.s-arch{height:98px;border-radius:39px 39px 0 0}
-.s-curve{height:98px;border-radius:22px 4px 22px 4px}
-.s-step{height:98px;clip-path:polygon(0 12%,12% 12%,12% 0,88% 0,88% 12%,100% 12%,100% 88%,88% 88%,88% 100%,12% 100%,12% 88%,0 88%)}
-.shp-l{font-size:11.5px;font-weight:600;color:var(--v-muted);text-align:center;margin-top:8px}
+.shapes{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+.shp{background:#c9cec4;width:66px;border:1px solid var(--line-2)}
+.s-rect{height:84px}
+.s-oval{height:84px;border-radius:50%/44%}
+.s-arch{height:84px;border-radius:33px 33px 0 0}
+.s-curve{height:84px;border-radius:20px 4px 20px 4px}
+.s-step{height:84px;clip-path:polygon(0 12%,12% 12%,12% 0,88% 0,88% 12%,100% 12%,100% 88%,88% 88%,88% 100%,12% 100%,12% 88%,0 88%)}
+.shp-l{font-size:11px;font-weight:600;color:var(--v-muted);text-align:center;margin-top:7px}
+
+/* photography grid */
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pgrid div{aspect-ratio:4/3;border-radius:6px;display:grid;place-items:end;padding:7px;font-size:9.5px;font-weight:700;color:rgba(255,255,255,.95);text-shadow:0 1px 3px rgba(0,0,0,.4)}
+.pg1{background:linear-gradient(150deg,#7d94a8,#4a6478)}
+.pg2{background:linear-gradient(150deg,#b8a68c,#8a7657)}
+.pg3{background:linear-gradient(150deg,#6f8a7c,#415b4f)}
+.pg4{background:linear-gradient(150deg,#a08d94,#6d5b62)}
+.pg5{background:linear-gradient(150deg,#8fa3b5,#5b7288)}
+.pg6{background:linear-gradient(150deg,#c0b099,#948063)}
+
+/* email + phone mockups */
+.mail{border:1px solid var(--line-2);border-radius:8px;overflow:hidden;background:#fff}
+.mail-hero{background:linear-gradient(150deg,#31465e,#16283d);padding:20px 16px;text-align:center}
+.mail-hero .kick{font-size:8.5px;letter-spacing:.22em;text-transform:uppercase;color:#8fd9e2;font-weight:700}
+.mail-hero .h{font-family:var(--serif);color:#fff;font-size:19px;margin-top:5px;line-height:1.2}
+.mail-b{padding:14px 16px}
+.mail-b .l{height:5px;border-radius:3px;background:#dde5ec;margin-bottom:6px}
+.mail-b .l.s{width:62%}
+.mail-cta{background:var(--v-cyan);color:#03282c;border-radius:6px;padding:7px;text-align:center;font-size:10.5px;font-weight:800;margin-top:10px}
+.phone{width:132px;margin:0 auto;border:7px solid #1c2a3a;border-radius:18px;overflow:hidden;background:#fff}
+.phone .top{height:14px;background:#1c2a3a}
 
 /* prompt library */
-.ptabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
-.ptab{border:1.5px solid var(--line-2);border-radius:999px;padding:8px 16px;font-size:13px;font-weight:700;color:var(--v-muted);background:#fff;transition:.16s}
+.ptabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.ptab{border:1.5px solid var(--line-2);border-radius:999px;padding:7px 15px;font-size:12.5px;font-weight:700;color:var(--v-muted);background:#fff;transition:.16s}
 .ptab:hover{border-color:var(--v-navy);color:var(--v-navy)}
 .ptab.on{background:var(--v-navy);border-color:var(--v-navy);color:#fff}
-.pc{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:11px;overflow:hidden}
-.pc-h{width:100%;display:flex;align-items:center;gap:12px;padding:15px 18px;text-align:left}
+.pc{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden}
+.pc-h{width:100%;display:flex;align-items:center;gap:12px;padding:14px 17px;text-align:left}
 .pc-h:hover{background:var(--v-bg)}
-.pc-h .t{font-weight:800;color:var(--v-navy);font-size:14.5px}
-.pc-h .s{font-size:12.5px;color:var(--v-muted);margin-top:2px}
+.pc-h .t{font-weight:800;color:var(--v-navy);font-size:14px;display:block}
+.pc-h .s{font-size:12.5px;color:var(--v-muted);margin-top:2px;display:block}
 .pc-h .chev{margin-left:auto;color:var(--faint);transition:transform .2s;flex:none;font-size:11px}
 .pc.open .chev{transform:rotate(90deg)}
-.pc-b{display:none;padding:0 18px 16px}
+.pc-b{display:none;padding:0 17px 15px}
 .pc.open .pc-b{display:block}
-.ing{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:11px}
+.ing{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .ing span{font-size:10px;font-weight:800;letter-spacing:.5px;border-radius:5px;padding:3px 9px;text-transform:uppercase}
 .i-role{background:#e3edf9;color:#1c5290}
 .i-ctx{background:#efe9fb;color:#5b3ea8}
 .i-task{background:#fbe9e2;color:#a0452c}
 .i-fmt{background:#e2f4ea;color:#1f7a4a}
-.pre{background:var(--v-navy);color:#d7e5f2;border-radius:var(--r-sm);padding:16px 18px;font-family:var(--mono);font-size:12.5px;line-height:1.8;white-space:pre-wrap;position:relative;word-break:break-word}
+.pre{background:var(--v-navy);color:#d7e5f2;border-radius:var(--r-sm);padding:15px 17px;font-family:var(--mono);font-size:12px;line-height:1.8;white-space:pre-wrap;position:relative;word-break:break-word}
 .pre .role{color:#8ec3f0}.pre .ctx{color:#c4b1ef}.pre .task{color:#f0b096}.pre .fmt{color:#93dcb2}
-.pcopy{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.14);border-radius:7px;padding:6px 12px;font-size:11px;color:#e0ecf6;font-family:var(--sans);font-weight:700}
+.pcopy{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.14);border-radius:7px;padding:5px 11px;font-size:11px;color:#e0ecf6;font-family:var(--sans);font-weight:700}
 .pcopy:hover{background:var(--v-cyan);color:#03282c}
-.pwhy{font-size:13.5px;color:var(--v-muted);margin-top:11px;border-left:3px solid var(--v-cyan);padding-left:13px}
+.pwhy{font-size:13.5px;color:var(--v-muted);margin-top:10px;border-left:3px solid var(--v-cyan);padding-left:12px}
 .pwhy b{color:var(--v-navy)}
 
+/* before / after prompt comparison */
+.ba{display:grid;gap:12px}
+.ba-c{border-radius:var(--r-sm);padding:14px 16px;font-size:13.5px;border:1px solid}
+.ba-c .tag{font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;display:block;margin-bottom:6px}
+.ba-bad{background:#fdf1ee;border-color:#f2ccc2}
+.ba-bad .tag{color:var(--bad)}
+.ba-good{background:#eaf7f0;border-color:#bfe3d0}
+.ba-good .tag{color:var(--good)}
+.ba-c em{font-style:normal;color:var(--v-ink);font-weight:600}
+
 /* quiz */
-.quiz{background:linear-gradient(160deg,var(--v-navy),var(--v-navy2));border-radius:var(--radius);color:#c7d7e6;padding:26px 28px;margin:6px 0 18px;box-shadow:var(--shadow-m)}
+.quiz{background:linear-gradient(160deg,var(--v-navy),var(--v-navy2));border-radius:var(--radius);color:#c7d7e6;padding:24px 26px;margin:0;box-shadow:var(--shadow-m)}
 .quiz .eyebrow{color:#7ee3ee}
-.quiz h2{color:#fff;margin:8px 0 4px}
-.quiz .qsub{color:#9fb4c9;font-size:14px;margin-bottom:20px}
-.qq{margin-bottom:22px}
+.quiz h2{color:#fff;margin:7px 0 3px}
+.quiz .qsub{color:#9fb4c9;font-size:13.5px;margin-bottom:18px}
+.qq{margin-bottom:20px}
 .qq:last-of-type{margin-bottom:6px}
-.qq .qt{font-size:15.5px;font-weight:700;color:#fff;margin-bottom:11px;display:flex;gap:10px;line-height:1.45}
-.qq .qt .n{font-family:var(--mono);font-size:12px;color:#7ee3ee;flex:none;padding-top:2px}
-.qopt{display:block;width:100%;text-align:left;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.16);border-radius:var(--r-sm);padding:12px 15px;font-size:14.5px;color:#e3ecf4;margin-bottom:8px;transition:.15s;line-height:1.45}
+.qq .qt{font-size:15px;font-weight:700;color:#fff;margin-bottom:10px;display:flex;gap:10px;line-height:1.45}
+.qq .qt .n{font-family:var(--mono);font-size:11.5px;color:#7ee3ee;flex:none;padding-top:2px}
+.qopt{display:block;width:100%;text-align:left;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.16);border-radius:var(--r-sm);padding:11px 14px;font-size:14px;color:#e3ecf4;margin-bottom:8px;transition:.15s;line-height:1.45}
 .qopt:hover:not(:disabled){border-color:#7ee3ee;background:rgba(255,255,255,.13)}
 .qopt:disabled{cursor:default}
 .qopt.ok{background:rgba(31,158,90,.32);border-color:#4ad286;color:#fff}
 .qopt.no{background:rgba(210,69,47,.3);border-color:#e8907f;color:#fff}
-.qfb{font-size:13.5px;color:#bcd0e2;background:rgba(255,255,255,.07);border-radius:var(--r-sm);padding:11px 15px;margin-top:6px;display:none;border-left:3px solid var(--v-cyan)}
+.qfb{font-size:13px;color:#bcd0e2;background:rgba(255,255,255,.07);border-radius:var(--r-sm);padding:10px 14px;margin-top:6px;display:none;border-left:3px solid var(--v-cyan)}
 .qfb.show{display:block}
-.qscore{display:none;align-items:center;gap:13px;border-top:1px solid rgba(255,255,255,.18);padding-top:16px;margin-top:4px}
+.qscore{display:none;align-items:center;gap:12px;border-top:1px solid rgba(255,255,255,.18);padding-top:15px;margin-top:4px}
 .qscore.show{display:flex}
-.qscore .num{font-family:var(--display);font-size:26px;font-weight:900;color:#7ee3ee;letter-spacing:-1px}
-.qscore .lbl{font-size:13.5px;color:#9fb4c9}
+.qscore .num{font-family:var(--display);font-size:25px;font-weight:900;color:#7ee3ee;letter-spacing:-1px}
+.qscore .lbl{font-size:13px;color:#9fb4c9}
 
 /* footer nav */
 .fnav{position:fixed;bottom:0;left:var(--side);right:0;background:rgba(246,249,252,.97);backdrop-filter:blur(8px);border-top:1px solid var(--v-line);padding:12px 40px;display:flex;align-items:center;gap:14px;z-index:100}
@@ -310,24 +404,23 @@ b,strong{color:var(--v-ink);font-weight:700}
 @media(max-width:620px){.fnav .pos{display:none}.fbtn{padding:11px 15px;font-size:13px}}
 
 /* completion */
-.finish{background:linear-gradient(160deg,var(--v-navy),var(--v-navy2));border-radius:var(--radius);color:#c7d7e6;padding:42px 40px;text-align:center;box-shadow:var(--shadow-l);margin:10px 0}
-.finish .seal{width:64px;height:64px;border-radius:50%;background:var(--v-cyan);color:#03282c;display:grid;place-items:center;font-size:27px;margin:0 auto 16px}
-.finish h2{color:#fff;font-size:27px;margin-bottom:8px}
-.finish p{color:#9fb4c9;max-width:460px;margin:0 auto 18px}
-.finish .stats{border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.18);margin:22px auto}
+.finish{background:linear-gradient(160deg,var(--v-navy),var(--v-navy2));border-radius:var(--radius);color:#c7d7e6;padding:40px;text-align:center;box-shadow:var(--shadow-l);max-width:640px;margin:10px auto}
+.finish .seal{width:60px;height:60px;border-radius:50%;background:var(--v-cyan);color:#03282c;display:grid;place-items:center;font-size:25px;margin:0 auto 15px}
+.finish h2{color:#fff;font-size:26px;margin-bottom:8px}
+.finish p{color:#9fb4c9;max-width:440px;margin:0 auto 16px}
+.finish .stats{border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.18);margin:20px 0}
 .finish .stats .s{background:rgba(10,38,71,.55)}
 .finish .stats .s b{color:#7ee3ee}
 .finish .stats .s span{color:#9fb4c9}
-.btn{display:inline-flex;align-items:center;gap:8px;background:var(--v-cyan);color:#03282c;border-radius:var(--r-sm);padding:12px 24px;font-size:14px;font-weight:800}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--v-cyan);color:#03282c;border-radius:var(--r-sm);padding:11px 22px;font-size:13.5px;font-weight:800}
 .btn:hover{background:var(--v-cyan-d);color:#fff;text-decoration:none}
 .btn.ghost{background:transparent;border:1.5px solid rgba(255,255,255,.4);color:#fff}
 .btn.ghost:hover{border-color:#fff;background:rgba(255,255,255,.1)}
 
 /* misc */
-.toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--v-navy);color:#fff;padding:12px 22px;border-radius:var(--r-sm);font-size:13.5px;font-weight:600;box-shadow:var(--shadow-l);opacity:0;transition:.24s;z-index:500;pointer-events:none}
+.toast{position:fixed;bottom:82px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--v-navy);color:#fff;padding:11px 21px;border-radius:var(--r-sm);font-size:13.5px;font-weight:600;box-shadow:var(--shadow-l);opacity:0;transition:.24s;z-index:500;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.kbd{display:inline-block;font-family:var(--mono);font-size:11.5px;background:#eef2f6;border:1px solid var(--v-line);border-bottom-width:2px;border-radius:6px;padding:1px 7px;color:var(--v-muted)}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.kbd{display:inline-block;font-family:var(--mono);font-size:11px;background:#eef2f6;border:1px solid var(--v-line);border-bottom-width:2px;border-radius:6px;padding:1px 6px;color:var(--v-muted)}
 </style>
 </head>
 <body>
@@ -348,7 +441,7 @@ b,strong{color:var(--v-ink);font-weight:700}
     <div class="ttl">The Sotheby&rsquo;s tool ecosystem</div>
     <div class="sub">Marketing team onboarding</div>
     <div class="bar"><i id="sideBar"></i></div>
-    <div class="pct"><span id="sideMeta">0 of 46 lessons</span><span id="sidePct">0%</span></div>
+    <div class="pct"><span id="sideMeta"></span><span id="sidePct">0%</span></div>
   </div>
   <nav id="sideNav"></nav>
 </aside>
@@ -361,22 +454,15 @@ b,strong{color:var(--v-ink);font-weight:700}
   <span class="pos" id="posLbl"></span>
   <button class="fbtn next" id="btnNext" onclick="go(1)">Next &rarr;</button>
 </nav>
-
-<div class="lb" id="lb" onclick="closeLb(event)" role="dialog" aria-label="Slide viewer">
-  <button class="lb-x" onclick="closeLb(event,1)" aria-label="Close">&times;</button>
-  <button class="lb-nav lb-prev" onclick="lbNav(event,-1)" aria-label="Previous slide">&#8249;</button>
-  <img id="lbImg" src="" alt="Training slide">
-  <button class="lb-nav lb-next" onclick="lbNav(event,1)" aria-label="Next slide">&#8250;</button>
-  <span class="lb-count" id="lbCount"></span>
-</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
-const IMG='assets/img/marketing/';
 
-/* ============ helpers ============ */
-const sl=(f,cap)=>`<button class="slide" onclick="openLb('${f}')" aria-label="Expand slide"><img src="${IMG}${f}" alt="${(cap||'Training slide').replace(/"/g,'')}" loading="lazy"><span class="zoom">&#9974; Expand</span></button>`+(cap?`<p class="slide-cap">${cap}</p>`:'');
-const slr=(a,b,cap)=>`<div class="slide-row"><button class="slide" onclick="openLb('${a}')" aria-label="Expand slide"><img src="${IMG}${a}" alt="" loading="lazy"><span class="zoom">&#9974;</span></button><button class="slide" onclick="openLb('${b}')" aria-label="Expand slide"><img src="${IMG}${b}" alt="" loading="lazy"><span class="zoom">&#9974;</span></button></div>`+(cap?`<p class="slide-cap">${cap}</p>`:'');
+/* ============ visual helpers ============ */
+const fig=(inner,cap,cls='')=>`<figure class="fig"><div class="fig-b ${cls}">${inner}</div>${cap?`<figcaption class="fig-cap">${cap}</figcaption>`:''}</figure>`;
+const MARK=`<span class="mark"><span class="n">Sotheby&rsquo;s</span><span class="s">International Realty</span></span>`;
+const MARK_L=`<span class="mark light"><span class="n">Sotheby&rsquo;s</span><span class="s">International Realty</span></span>`;
+const MARK_S=`<span class="mark sm"><span class="n">Sotheby&rsquo;s</span><span class="s">International Realty</span></span>`;
 
 /* ============ MODULES ============ */
 const MODS=[
@@ -392,402 +478,696 @@ const MODS=[
 ];
 
 const L=[];
-const add=(m,t,k,html)=>L.push({m,t,k,html});
+/* head = h1 + lead (full width) · txt = left column · med = right column visual */
+const add=(m,t,k,head,txt,med)=>L.push({m,t,k,head,txt,med:med||''});
 
 /* ================= M1 ================= */
-add('m1','Welcome','Start',`
-<h1>Everything the marketing team touches, <em>in one place.</em></h1>
-<p class="lead">Nine short modules. One idea per screen. By the end you will know which tool to open for any task, how to keep work on brand, and how to get real leverage out of Claude.</p>
-<div class="stats">
+add('m1','Welcome','Start',
+`<h1>Everything the marketing team touches, <em>in one place.</em></h1>
+<p class="lead">Nine short modules, one idea per screen. By the end you will know which tool to open for any task, how to keep work on brand, and how to get real leverage out of Claude.</p>`,
+`<div class="stats">
   <div class="s"><b>9</b><span>Modules</span></div>
-  <div class="s"><b>46</b><span>Slides</span></div>
+  <div class="s"><b>55</b><span>Lessons</span></div>
   <div class="s"><b>16</b><span>Prompts</span></div>
   <div class="s"><b>~45</b><span>Minutes</span></div>
 </div>
-<div class="note tip"><b>How to move.</b> Use <span class="kbd">&larr;</span> <span class="kbd">&rarr;</span> or the buttons at the bottom. Click any slide to open it full screen. Your progress saves automatically, so you can stop and come back.</div>`);
+<div class="note tip"><b>How to move.</b> Use <span class="kbd">&larr;</span> <span class="kbd">&rarr;</span> or the buttons at the bottom. Every module ends with a short check. Your progress saves automatically, so you can stop and come back.</div>`,
+fig(`<div class="one1">1 <i>of</i> 1</div><div style="margin-top:18px">${MARK}</div>`,
+   'The campaign standard you will be working inside, recreated here in the same type treatment the brand uses.','sir'));
 
-add('m1','What is Sotheby&rsquo;s International Realty?','Lesson',`
-<h1>A premier luxury real estate brokerage.</h1>
-<p class="lead">Founded in 1976, operating a global network of more than 1,100 offices across 84 countries.</p>
-${sl('m1-what-is-sir.jpg')}
-<div class="stats" style="grid-template-columns:repeat(3,1fr)">
+add('m1','What is Sotheby&rsquo;s International Realty?','Lesson',
+`<h1>A premier luxury real estate brokerage.</h1>
+<p class="lead">Founded in 1976, operating a global network of more than 1,100 offices across 84 countries.</p>`,
+`<div class="stats">
   <div class="s"><b>1976</b><span>Founded</span></div>
   <div class="s"><b>1,100+</b><span>Offices</span></div>
   <div class="s"><b>84</b><span>Countries</span></div>
-</div>`);
+</div>
+<p>Everything else in this training sits on top of that fact. When you place a listing in the SIR system you are not marketing to one city, you are placing it inside a curated global collection that buyers worldwide already trust.</p>`,
+fig(`<div style="text-align:center">
+  <div class="d-h1" style="margin-bottom:14px">What is Sotheby&rsquo;s<br>International Realty?</div>
+  <p style="font-size:13.5px;max-width:300px;margin:0 auto 16px">A premier luxury real estate brokerage that operates a global network of over</p>
+  <div style="font-family:var(--serif);color:var(--sir);font-size:34px;line-height:1.1">
+    <b style="font-weight:600;color:var(--sir)">1,100</b> <span style="font-size:20px">offices in</span> <b style="font-weight:600;color:var(--sir)">84</b> <span style="font-size:20px">countries.</span>
+  </div>
+</div>`,'Slide 3 of the deck, rebuilt in HTML.','sir'));
 
-add('m1','Where the brand came from','Lesson',`
-<h1>It started at an auction house.</h1>
-${sl('m1-art-of-living.jpg')}
-<div class="tl">
+add('m1','Where the brand came from','Lesson',
+`<h1>It started at an auction house.</h1>`,
+`<div class="tl">
   <div class="tl-i"><div class="yr">MID 1970s</div><h4>A pattern nobody had named</h4><p>The auction house noticed its wealthiest clients were not only buying rare art. They were also buying and selling the estates required to house it.</p></div>
-  <div class="tl-i"><div class="yr">1976</div><h4>SIR launches</h4><p>A specialized real estate service for that same clientele, leveraging the trust of the Sotheby&rsquo;s name.</p></div>
-</div>`);
+  <div class="tl-i"><div class="yr">1976</div><h4>SIR launches</h4><p>A specialized real estate service for that same clientele, leveraging the trust and prestige of the Sotheby&rsquo;s name to create a seamless pipeline between fine art and luxury property.</p></div>
+  <div class="tl-i"><div class="yr">NEXT 30 YEARS</div><h4>A brokerage with a ceiling</h4><p>SIR owned its own offices, so global growth was capped by the capital required to open physical locations.</p></div>
+</div>`,
+fig(`<div style="text-align:center">
+  <div style="font-family:var(--serif);font-style:italic;color:var(--sir-gold);font-size:22px">The Art of Living</div>
+  <div style="width:52px;height:1px;background:var(--sir-gold);margin:12px auto"></div>
+  <div style="font-family:var(--serif);font-size:44px;color:var(--sir);line-height:1">1976</div>
+  <p style="font-size:12.5px;margin:12px auto 0;max-width:280px">Born from the auction house, for clients who collected both art and the homes that held it.</p>
+</div>`,'Slide 4, rebuilt.','sir'));
 
-add('m1','The deal that made SIR global','Lesson',`
-<h1>2004: from brokerage to franchise.</h1>
-<p class="lead">For 30 years SIR owned its own offices, which capped how fast it could grow. The 2004 agreement changed that.</p>
-${sl('m1-franchise-compass.jpg')}
-<div class="card">
+add('m1','The deal that made SIR global','Lesson',
+`<h1>2004: from brokerage to franchise.</h1>
+<p class="lead">For 30 years SIR owned its own offices, which capped how fast it could grow. The 2004 agreement changed that.</p>`,
+`<div class="card">
   <div class="kv"><div class="k">The deal</div><div>Realogy paid <b>$100 million</b> to license the SIR name for <b>50 years</b>, with options to renew.</div></div>
-  <div class="kv"><div class="k">The result</div><div>Independent luxury brokerages worldwide could rebrand as SIR: instant prestige, still locally owned.</div></div>
-  <div class="kv"><div class="k">Early 2026</div><div>Anywhere and Compass merged into <b>Compass International Holdings</b>. SIR keeps its identity as the ultra luxury crown jewel.</div></div>
-</div>`);
+  <div class="kv"><div class="k">The result</div><div>Independent luxury brokerages worldwide could rebrand as SIR: instant prestige of a 280 year old name, still locally owned.</div></div>
+  <div class="kv"><div class="k">Early 2026</div><div>Anywhere and Compass merged into <b>Compass International Holdings</b>. SIR keeps its distinct identity as the ultra luxury crown jewel of the portfolio.</div></div>
+</div>`,
+fig(`<div style="display:grid;gap:9px">
+  <div style="border:1px solid var(--line-2);border-radius:8px;padding:12px 14px;background:#fff">
+    <div style="font-size:10.5px;font-weight:800;letter-spacing:.7px;color:var(--v-cyan-d)">2004</div>
+    <div style="font-weight:700;color:var(--v-ink);font-size:14px;margin-top:2px">Realogy licenses the name</div>
+    <div style="font-size:12.5px;margin-top:3px">$100M &middot; 50 year term &middot; franchise model unlocked</div>
+  </div>
+  <div style="text-align:center;color:var(--faint);font-size:15px">&#8595;</div>
+  <div style="border:1px solid var(--line-2);border-radius:8px;padding:12px 14px;background:#fff">
+    <div style="font-size:10.5px;font-weight:800;letter-spacing:.7px;color:var(--v-cyan-d)">EARLY 2026</div>
+    <div style="font-weight:700;color:var(--v-ink);font-size:14px;margin-top:2px">Compass International Holdings</div>
+    <div style="font-size:12.5px;margin-top:3px">Anywhere + Compass merge. SIR keeps its own identity.</div>
+  </div>
+</div>`,'Slide 5, rebuilt as a two step flow.'));
 
-add('m1','The global standard: 1 of 1','Lesson',`
-<h1>Not a promotion. <em>A permanent standard.</em></h1>
-${sl('m1-global-standard.jpg')}
-<p>&ldquo;1 of 1&rdquo; is applied to everything, from local yard signs to print features in <i>The New York Times</i> and <i>Architectural Digest</i>.</p>
-<div class="note"><b>What it does.</b> It positions every property, at any price point, not as a listing but as a singular, irreplaceable piece within a curated global collection.</div>`);
+add('m1','The global standard: 1 of 1','Lesson',
+`<h1>Not a promotion. <em>A permanent standard.</em></h1>`,
+`<p>&ldquo;1 of 1&rdquo; is applied to everything, from local yard signs and social posts to high end print features in <i>The New York Times</i> and <i>Architectural Digest</i>.</p>
+<div class="note"><b>What it does.</b> It positions every property, at any price point or location, not as a listing but as a singular, irreplaceable piece within a curated global collection.</div>`,
+fig(`<div class="one1 light">1 <i>of</i> 1</div>
+<div style="margin-top:20px;display:flex;justify-content:space-between;align-items:flex-end">
+  <span style="font-family:var(--serif);font-style:italic;color:#c7d7e6;font-size:15px">Campaign<br>Playbook</span>
+  ${MARK_L}
+</div>`,'Slide 18 of the deck, rebuilt.','navy'));
 
-add('m1','Your gate: SIR Access','Lesson',`
-<h1>One login. Your role defines the toolkit.</h1>
-<p class="lead">Accessing the SIR platform is one of the first steps of your day. It is a gated environment where everything you need appears the moment you log in.</p>
-<div class="card">
+add('m1','Your gate: SIR Access','Lesson',
+`<h1>One login. Your role defines the toolkit.</h1>
+<p class="lead">Accessing the SIR platform is one of the first steps of your day. It is a gated environment where everything you need appears the moment you log in.</p>`,
+`<div class="card">
   <ul>
     <li>Secure login with <b>two factor authentication</b>.</li>
     <li>Two main entry points: the <b>SIR platform</b> and <b>Propel</b>.</li>
     <li>Links and resources inside Propel vary by client and account configuration.</li>
   </ul>
 </div>
-<div class="note warn"><b>Permissions.</b> What your client grants may affect your access. Agree on access levels up front so your workflow never stalls.</div>`);
+<div class="note warn"><b>Permissions.</b> What your client grants may affect your access. Agree on access levels up front so your workflow never stalls.</div>`,
+fig(`<div class="mock">
+  <div class="mock-bar"><i></i><i></i><i></i><span>sir access</span></div>
+  <div class="mock-body full"><div class="mock-main" style="text-align:center;padding:22px 16px">
+    ${MARK_S}
+    <div style="margin-top:16px;display:grid;gap:7px;max-width:210px;margin-inline:auto">
+      <div style="border:1px solid var(--line-2);border-radius:6px;height:26px;background:#fff"></div>
+      <div style="border:1px solid var(--line-2);border-radius:6px;height:26px;background:#fff"></div>
+      <div style="background:var(--sir);color:#fff;border-radius:6px;height:26px;display:grid;place-items:center;font-size:10.5px;font-weight:700">Sign in</div>
+      <div style="font-size:9.5px;color:var(--faint);margin-top:2px">Two factor verification required</div>
+    </div>
+  </div></div>
+</div>`,'The gated entry point, rebuilt.'));
 
-add('m1','Module 1 check','Quiz','__QUIZ__m1');
+add('m1','Module 1 check','Quiz','__Q__m1','','');
 
 /* ================= M2 ================= */
-add('m2','The five tools you will live in','Lesson',`
-<h1>Every task maps to one of five platforms.</h1>
-${sl('m2-most-utilized-assets.jpg')}
-<div class="tools">
+add('m2','The five tools you will live in','Lesson',
+`<h1>Every task maps to one of five platforms.</h1>`,
+`<div class="tools">
   <button class="tool" onclick="jump('m4')"><span class="tn">Propel</span><span class="tr">Daily hub: forums, calendar, resources.</span><span class="tg">Module 4 &rarr;</span></button>
   <button class="tool" onclick="jump('m5')"><span class="tn">ActivePipe</span><span class="tr">Email marketing after launch.</span><span class="tg">Module 5 &rarr;</span></button>
   <button class="tool" onclick="jump('m6')"><span class="tn">Design Vault</span><span class="tr">Brand safe design studio.</span><span class="tg">Module 6 &rarr;</span></button>
   <button class="tool" onclick="jump('m7')"><span class="tn">ListTrac</span><span class="tr">Analytics and seller reports.</span><span class="tg">Module 7 &rarr;</span></button>
   <button class="tool" onclick="jump('m8')"><span class="tn">MoxiWorks</span><span class="tr">CMAs and presentations.</span><span class="tg">Module 8 &rarr;</span></button>
-</div>`);
+</div>`,
+fig(`<div class="mock">
+  <div class="mock-bar"><i></i><i></i><i></i><span>launch pad</span></div>
+  <div class="mock-body"><div class="mock-nav"><i class="on"></i><i class="w85"></i><i class="w70"></i><i class="w85"></i><i class="w55"></i></div>
+  <div class="mock-main">
+    <div class="mock-hd"></div>
+    <div class="mock-grid c2">
+      <div class="mock-tile"><div class="ph"></div><div class="l"></div><div class="l s"></div></div>
+      <div class="mock-tile"><div class="ph g"></div><div class="l"></div><div class="l s"></div></div>
+      <div class="mock-tile"><div class="ph"></div><div class="l"></div><div class="l s"></div></div>
+      <div class="mock-tile"><div class="ph g"></div><div class="l"></div><div class="l s"></div></div>
+    </div>
+  </div></div>
+</div>`,'The Launch Pad tiles, rebuilt.'));
 
-add('m2','The admin workflow','Lesson',`
-<h1>Five steps, in this order.</h1>
-${sl('m2-admin-workflow.jpg')}
-<div class="steps">
+add('m2','The admin workflow','Lesson',
+`<h1>Five steps, in this order.</h1>`,
+`<div class="steps">
   <div class="step"><div><h4>Listing setup &middot; <i>Dash</i></h4><p>Enter property data, upload media, ensure accuracy for global distribution.</p></div></div>
   <div class="step"><div><h4>Marketing creation &middot; <i>Design Vault &amp; ActivePipe</i></h4><p>Create branded materials and launch email campaigns.</p></div></div>
   <div class="step"><div><h4>Presentation support &middot; <i>MoxiWorks</i></h4><p>Build CMAs and listing presentations from live market data.</p></div></div>
   <div class="step"><div><h4>Internal comms &middot; <i>Propel</i></h4><p>Share resources, collaborate in forums, post off market listings.</p></div></div>
   <div class="step"><div><h4>Reporting &middot; <i>ListTrac</i></h4><p>Generate seller reports and track visibility across platforms.</p></div></div>
-</div>`);
+</div>`,
+fig(`<div style="display:grid;gap:7px;font-size:12.5px">
+  ${['Listing setup','Marketing creation','Agent presentation','Internal communication','Performance reporting'].map((s,i)=>
+   `<div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line-2);border-radius:7px;padding:9px 11px">
+      <span style="font-family:var(--serif);font-size:20px;color:var(--sir-gold);line-height:1;width:18px">${i+1}</span>
+      <span style="font-weight:700;color:var(--v-ink)">${s}</span>
+    </div>`).join('')}
+</div>`,'Slide 15, the admin workflow, rebuilt.','sir'));
 
-add('m2','How they connect','Lesson',`
-<h1>One listing. Five jobs.</h1>
-${sl('m2-bringing-together.jpg')}
-<p>For admins, understanding how these platforms work together is the key to accuracy, efficiency and consistency. Used correctly they streamline operations and help agents deliver a higher level of service.</p>
-<div class="note tip"><b>Mental model.</b> Data starts in Dash, becomes marketing in Design Vault and ActivePipe, becomes a pitch in MoxiWorks, gets coordinated in Propel, and gets measured in ListTrac.</div>`);
+add('m2','How they connect','Lesson',
+`<h1>One listing. Five jobs.</h1>`,
+`<p>For admins, understanding how these platforms work together is the key to accuracy, efficiency and consistency. Used correctly they streamline daily operations and help agents deliver a higher level of service.</p>
+<div class="note tip"><b>Mental model.</b> Data starts in Dash, becomes marketing in Design Vault and ActivePipe, becomes a pitch in MoxiWorks, gets coordinated in Propel, and gets measured in ListTrac.</div>`,
+fig(`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;font-size:11px;font-weight:700">
+  <div style="background:#fff;border:1px solid var(--line-2);border-radius:7px;padding:11px 6px;color:var(--v-navy)">Dash<br><span style="font-weight:500;color:var(--v-muted);font-size:10px">data in</span></div>
+  <div style="background:#fff;border:1px solid var(--line-2);border-radius:7px;padding:11px 6px;color:var(--v-navy)">Design Vault<br><span style="font-weight:500;color:var(--v-muted);font-size:10px">assets</span></div>
+  <div style="background:#fff;border:1px solid var(--line-2);border-radius:7px;padding:11px 6px;color:var(--v-navy)">ActivePipe<br><span style="font-weight:500;color:var(--v-muted);font-size:10px">email</span></div>
+  <div style="grid-column:1/-1;background:var(--sir);color:#fff;border-radius:7px;padding:12px;font-size:12px">The listing</div>
+  <div style="background:#fff;border:1px solid var(--line-2);border-radius:7px;padding:11px 6px;color:var(--v-navy)">MoxiWorks<br><span style="font-weight:500;color:var(--v-muted);font-size:10px">the pitch</span></div>
+  <div style="background:#fff;border:1px solid var(--line-2);border-radius:7px;padding:11px 6px;color:var(--v-navy)">Propel<br><span style="font-weight:500;color:var(--v-muted);font-size:10px">coordination</span></div>
+  <div style="background:#fff;border:1px solid var(--line-2);border-radius:7px;padding:11px 6px;color:var(--v-navy)">ListTrac<br><span style="font-weight:500;color:var(--v-muted);font-size:10px">proof</span></div>
+</div>`,'Slide 16, the connected ecosystem, rebuilt as a diagram.','sir'));
 
-add('m2','Module 2 check','Quiz','__QUIZ__m2');
+add('m2','Module 2 check','Quiz','__Q__m2','','');
 
 /* ================= M3 ================= */
-add('m3','The campaign proposition','Lesson',`
-<h1>Curators of <em>the unique.</em></h1>
-${sl('m3-curators-unique.jpg')}
-<p class="lead">SIR connects the world&rsquo;s most unique homes with the buyers who appreciate their potential.</p>
-<div class="note"><b>Use this as your filter.</b> Every headline, image and layout decision in this module answers one question: does this celebrate what makes this property singular?</div>`);
+add('m3','The campaign proposition','Lesson',
+`<h1>Curators of <em>the unique.</em></h1>
+<p class="lead">SIR connects the world&rsquo;s most unique homes with the buyers who appreciate their potential. An authority for a new era of luxury, defined by our eye for what is special about homes.</p>`,
+`<div class="note"><b>Use this as your filter.</b> Every headline, image and layout decision in this module answers one question: does this celebrate what makes this property singular?</div>`,
+fig(`<div style="text-align:center">
+  <div style="font-size:12px;color:var(--v-muted);margin-bottom:6px">The campaign proposition:</div>
+  <div style="font-family:var(--serif);font-style:italic;color:var(--sir-gold);font-size:clamp(22px,4vw,32px);line-height:1.15">Curators of the unique</div>
+  <div class="pgrid" style="margin-top:18px;grid-template-columns:repeat(3,1fr)">
+    <div class="pg1"></div><div class="pg2"></div><div class="pg3"></div>
+  </div>
+</div>`,'Slide 19, rebuilt.','sir'));
 
-add('m3','The messaging system','Lesson',`
-<h1>One lead headline, four ways to extend it.</h1>
-${sl('m3-messaging-system.jpg')}
-<table class="tbl">
-  <tr><th style="width:120px">Type</th><th>What it references</th></tr>
+add('m3','The messaging system','Lesson',
+`<h1>One lead headline, four ways to extend it.</h1>`,
+`<table class="tbl">
+  <tr><th style="width:110px">Type</th><th>What it references</th></tr>
   <tr><td class="k">Universal</td><td>Works with any property shown.</td></tr>
   <tr><td class="k">Property</td><td>Specific features of the property shown.</td></tr>
   <tr><td class="k">Location</td><td>The locations shown.</td></tr>
   <tr><td class="k">Lifestyle</td><td>The lifestyle the property implies.</td></tr>
-</table>`);
+</table>`,
+fig(`<div style="text-align:center">
+  <div style="font-size:11px;color:var(--v-muted);margin-bottom:6px">Lead campaign headline</div>
+  <div style="background:#fff;border:1px solid var(--line-2);border-radius:6px;padding:12px"><span class="one1" style="font-size:26px">1 <i>of</i> 1</span></div>
+  <div style="font-size:11px;color:var(--v-muted);margin:14px 0 6px">Types of alternative headlines</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+    ${['Universal','Property','Location','Lifestyle'].map(x=>`<div style="background:#fff;border:1px solid var(--line-2);border-radius:6px;padding:9px 4px;font-family:var(--serif);font-size:13px;color:var(--sir)">${x}</div>`).join('')}
+  </div>
+  <div style="font-size:11px;color:var(--v-muted);margin:14px 0 6px">Audience specific headlines</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+    ${['Buyers','Renters','Sellers','Agents'].map(x=>`<div style="background:#fff;border:1px solid var(--line-2);border-radius:6px;padding:9px 4px;font-family:var(--serif);font-size:13px;color:var(--sir)">${x}</div>`).join('')}
+  </div>
+</div>`,'Slide 20, the messaging system, rebuilt.','sir'));
 
-add('m3','Headlines by audience','Lesson',`
-<h1>Each audience gets its own angle.</h1>
-<div class="grid3">
+add('m3','Headlines by audience','Lesson',
+`<h1>Each audience gets its own angle.</h1>`,
+`<div class="grid3">
   <div class="card"><h4>Buyers &amp; renters</h4><ul><li>Unique access</li><li>Unique leadership</li><li>Call to action</li></ul></div>
   <div class="card"><h4>Sellers</h4><ul><li>Unique appreciation</li><li>Unique leadership</li><li>Call to action</li></ul></div>
   <div class="card"><h4>Agents</h4><ul><li>Unique advantage</li><li>Unique leadership</li><li>Call to action</li></ul></div>
 </div>
-<div class="note tip"><b>Every angle pairs with the same two things:</b> unique leadership, then a call to action. Only the first line changes.</div>`);
+<div class="note tip"><b>Every angle pairs with the same two things:</b> unique leadership, then a call to action. Only the first line changes.</div>`,'');
 
-add('m3','The copy bank','Lesson',`
-<h1>Approved phrases, ready to use.</h1>
-${sl('m3-headlines-for-all.jpg')}
-<div class="grid2">
-  <div class="card"><h4>Universal &middot; any property</h4>
-    <p style="font-size:14px;color:var(--v-muted);margin-bottom:6px">The one</p>
-    <ul><li>The one for you &middot; The special one &middot; The rare one</li><li>One of a kind &middot; Find your one &middot; Your one awaits</li></ul>
-    <p style="font-size:14px;color:var(--v-muted);margin:10px 0 6px">Uniqueness</p>
-    <ul><li>Curators of the unique &middot; Live unique</li><li>Homes as unique as you &middot; A genuine original</li></ul>
+add('m3','The copy bank','Lesson',
+`<h1>Approved phrases, ready to use.</h1>`,
+`<div class="card"><h4>Universal &middot; works with any property</h4>
+  <p style="font-size:12.5px;color:var(--v-muted);margin:6px 0 4px">The one</p>
+  <p style="margin:0">The one for you &middot; The special one &middot; The rare one &middot; The one you want &middot; One of a kind &middot; Find your one &middot; Your one awaits</p>
+  <p style="font-size:12.5px;color:var(--v-muted);margin:10px 0 4px">Uniqueness</p>
+  <p style="margin:0">Character as unique as yours &middot; Curators of the unique &middot; Unique homes, uniquely for you &middot; Live unique &middot; A genuine original &middot; Homes as unique as you &middot; Discover the unique</p>
+</div>`,
+fig(`<div class="card" style="margin:0;box-shadow:none;border-color:var(--line-2)">
+  <h4>Property led &middot; matches the home</h4>
+  <p style="font-size:12.5px;color:var(--v-muted);margin:6px 0 4px">The [style] one</p>
+  <p style="margin:0">The midcentury one &middot; The contemporary one &middot; The townhouse one &middot; The decadent one</p>
+  <p style="font-size:12.5px;color:var(--v-muted);margin:10px 0 4px">Uniqueness</p>
+  <p style="margin:0">Exquisite detail &middot; Uncommon beauty &middot; True original &middot; Living masterpiece</p>
+</div>`,'Slide 21, the copy bank, rebuilt.'));
+
+add('m3','Layout: the spectrum','Lesson',
+`<h1>A flexible system, not a rigid template.</h1>`,
+`<p>Layouts are designed to reflect the era of each property and adapt to varying amounts of information. A <b>centered, simple, classic layout</b> appeals to our established core audiences.</p>
+<div class="note"><b>Two ends of a spectrum.</b> These are not the only approaches. You can take elements from each to create layouts that blend both.</div>`,
+fig(`<div class="ldemo">
+  <div><div class="lbox center">
+    <div class="ln w40"></div>
+    <div class="img" style="width:100%"></div>
+    <div class="ln w60"></div>
+    <div style="margin-top:4px">${MARK_S}</div>
+  </div><div class="lbox-l">Classic &middot; centered</div></div>
+  <div><div class="lbox">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start"><div class="ln w40"></div>${MARK_S}</div>
+    <div class="img half" style="margin:8px 0"></div>
+    <div class="ln w80"></div>
+  </div><div class="lbox-l">Modern &middot; asymmetric</div></div>
+</div>`,'Slide 22, the layout spectrum, rebuilt as two wireframes.','sir'));
+
+add('m3','Layout: scale and spacing','Lesson',
+`<h1>Two rules that fix most layouts.</h1>`,
+`<div class="card">
+  <div class="kv"><div class="k">Image scale</div><div>Hero images should be <b>half the canvas width or more</b> so they stay the most prominent element. Supporting images stay significantly smaller to build hierarchy.</div></div>
+  <div class="kv"><div class="k">Spacing</div><div>Every element needs room to breathe so it stays discernible in complex layouts. This applies to text most of all.</div></div>
+</div>`,
+fig(`<div class="lbox" style="aspect-ratio:auto;padding:14px">
+  <div style="display:flex;gap:10px;align-items:flex-start">
+    <div class="img" style="flex:0 0 55%;height:78px"></div>
+    <div style="flex:1;display:grid;gap:5px">
+      <div class="ln w80"></div><div class="ln w60"></div><div class="ln w40"></div>
+    </div>
   </div>
-  <div class="card"><h4>Property led &middot; matches the home</h4>
-    <p style="font-size:14px;color:var(--v-muted);margin-bottom:6px">The [style] one</p>
-    <ul><li>The midcentury one &middot; The contemporary one</li><li>The townhouse one &middot; The decadent one</li></ul>
-    <p style="font-size:14px;color:var(--v-muted);margin:10px 0 6px">Uniqueness</p>
-    <ul><li>Exquisite detail &middot; Uncommon beauty</li><li>True original &middot; Living masterpiece</li></ul>
+  <div style="display:flex;gap:8px;margin-top:12px">
+    <div class="img" style="flex:0 0 22%;height:34px"></div>
+    <div class="img" style="flex:0 0 22%;height:34px"></div>
   </div>
-</div>`);
+  <div style="margin-top:12px;text-align:right">${MARK_S}</div>
+</div>
+<div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--v-muted);margin-top:8px">
+  <span><b style="color:var(--v-cyan-d)">55%</b> hero</span><span><b style="color:var(--v-cyan-d)">22%</b> supporting</span>
+</div>`,'Slide 23, image scale hierarchy, rebuilt.','sir'));
 
-add('m3','Layout: the spectrum','Lesson',`
-<h1>A flexible system, not a rigid template.</h1>
-${sl('m3-layout.jpg')}
-<p>Layouts are designed to reflect the era of each property and adapt to varying amounts of information. A <b>centered, simple, classic layout</b> appeals to our established core audiences.</p>
-<div class="note"><b>These are two ends of a spectrum.</b> You can take elements from each to create layouts that blend both.</div>`);
-
-add('m3','Layout: scale and spacing','Lesson',`
-<h1>Two rules that fix most layouts.</h1>
-${sl('m3-layout-considerations.jpg')}
-<div class="grid2">
-  <div class="card"><h4>Image scale</h4><p style="margin:0">Hero images should be <b>half the canvas width or more</b> so they stay the most prominent element. Supporting images stay significantly smaller to build hierarchy.</p></div>
-  <div class="card"><h4>Spacing</h4><p style="margin:0">Every element needs room to breathe so it stays discernible in complex layouts. This applies to text most of all.</p></div>
-</div>`);
-
-add('m3','Logo: placement and clear space','Lesson',`
-<h1>Where the logo goes, and how much room it needs.</h1>
-${sl('m3-logo-masterbrand.jpg')}
-<div class="grid2">
+add('m3','Logo: placement and clear space','Lesson',
+`<h1>Where the logo goes, and how much room it needs.</h1>`,
+`<div class="grid2">
   <div class="card"><h4>Positioning</h4><p style="margin:0">Classic layouts: logo <b>centered at the bottom</b>. Modern layouts: logo <b>in a corner</b>.</p></div>
   <div class="card"><h4>Minimum distance</h4><p style="margin:0">Clear space from any element or canvas edge equals the <b>height of the &ldquo;S&rdquo;</b>, on every edge.</p></div>
-</div>`);
+</div>`,
+fig(`<div class="clear">
+  <span class="sq tl">S</span><span class="sq br">S</span>
+  <div class="guide">${MARK}</div>
+</div>`,'Slide 24, the clear space rule, rebuilt. The cyan squares are the &ldquo;S&rdquo; height.','sir'));
 
-add('m3','Logo: color and affiliates','Lesson',`
-<h1>The background decides the logo color.</h1>
-${sl('m3-logo-affiliates.jpg')}
-<div class="card">
+add('m3','Logo: color and affiliates','Lesson',
+`<h1>The background decides the logo color.</h1>`,
+`<div class="card">
   <div class="kv"><div class="k">On SIR blue</div><div>Logo is <b>pure white</b>.</div></div>
   <div class="kv"><div class="k">On white / off white</div><div>Logo is <b>SIR blue</b>.</div></div>
   <div class="kv"><div class="k">Affiliates</div><div>Same rules. Choose the lockup that best complements the application size, scale and surrounding elements.</div></div>
-</div>`);
-
-add('m3','The three brand colors','Lesson',`
-<h1>Three colors. <em>No exceptions.</em></h1>
-${sl('m3-colors-rgb.jpg')}
-<p style="font-size:14px;color:var(--v-muted)">Click any swatch to copy its hex code.</p>
-<div class="sws">
-  <button class="sw" onclick="copyHex('#002349')"><span class="chip" style="background:#002349;display:block"></span><span class="info"><span class="nm">SIR Blue</span><span class="vals">HEX #002349<br>RGB 0 &middot; 35 &middot; 73</span></span></button>
-  <button class="sw" onclick="copyHex('#FFFFFF')"><span class="chip" style="background:#fff;border-bottom:1px solid var(--v-line);display:block"></span><span class="info"><span class="nm">Pure White</span><span class="vals">HEX #FFFFFF<br>RGB 255 &middot; 255 &middot; 255</span></span></button>
-  <button class="sw" onclick="copyHex('#EDECE6')"><span class="chip" style="background:#EDECE6;display:block"></span><span class="info"><span class="nm">Off White</span><span class="vals">HEX #EDECE6<br>RGB 237 &middot; 236 &middot; 230</span></span></button>
+</div>`,
+fig(`<div class="oncolor">
+  <div class="b1">${MARK_L}</div>
+  <div class="b2">${MARK_S}</div>
+  <div class="b3">${MARK_S}</div>
 </div>
-<div class="note"><b>Why off white exists.</b> It brings a warm, modern background to the campaign and lets the brand stand out subtly on predominantly white spaces, like a banner on a mostly white website.</div>`);
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;font-size:10px;color:var(--v-muted);text-align:center">
+  <span>SIR blue &rarr; white logo</span><span>Off white &rarr; blue logo</span><span>Pure white &rarr; blue logo</span>
+</div>`,'Slides 24 and 25, logo on color, rebuilt.'));
 
-add('m3','Colors in print','Lesson',`
-<h1>One rule that saves a reprint.</h1>
-${sl('m3-colors-cmyk.jpg')}
-<div class="card">
+add('m3','The three brand colors','Lesson',
+`<h1>Three colors. <em>No exceptions.</em></h1>
+<p class="lead">Click any swatch to copy its hex code.</p>`,
+`<div class="sws">
+  <button class="sw" onclick="copyHex('#002349')"><span class="chip" style="background:#002349"></span><span class="info"><span class="nm">SIR Blue</span><span class="vals">HEX #002349<br>RGB 0 &middot; 35 &middot; 73<br>CMYK 100 64 0 60</span></span></button>
+  <button class="sw" onclick="copyHex('#FFFFFF')"><span class="chip" style="background:#fff;border-bottom:1px solid var(--v-line)"></span><span class="info"><span class="nm">Pure White</span><span class="vals">HEX #FFFFFF<br>RGB 255 &middot; 255 &middot; 255<br>CMYK 0 0 0 0</span></span></button>
+  <button class="sw" onclick="copyHex('#EDECE6')"><span class="chip" style="background:#EDECE6"></span><span class="info"><span class="nm">Off White</span><span class="vals">HEX #EDECE6<br>RGB 237 &middot; 236 &middot; 230<br>CMYK 9 5 10 0</span></span></button>
+</div>
+<div class="note"><b>Why off white exists.</b> It brings a warm, distinctive, modern background to the campaign and lets the brand stand out subtly on predominantly white spaces, like a banner on a mostly white website.</div>`,'');
+
+add('m3','Colors in print','Lesson',
+`<h1>One rule that saves a reprint.</h1>`,
+`<div class="card">
   <div class="kv"><div class="k">Always safe</div><div>SIR blue and pure white work in both backgrounds and elements, on any print process.</div></div>
   <div class="kv"><div class="k">Newsprint</div><div>Use <b>pure white</b> for the light background. <b>Avoid off white</b>, it can appear muddy on the page.</div></div>
   <div class="kv"><div class="k">Off white</div><div>High quality lithographic and digital print only.</div></div>
-</div>`);
+</div>`,
+fig(`<div style="display:grid;gap:9px">
+  <div style="background:#fff;border:1px solid var(--line-2);border-radius:7px;padding:13px;display:flex;align-items:center;gap:11px">
+    <span style="width:26px;height:26px;border-radius:6px;background:#fff;border:1px solid var(--line-2);flex:none"></span>
+    <span style="font-size:12.5px"><b style="color:var(--good)">Pure white</b> on newsprint &middot; clean</span>
+  </div>
+  <div style="background:#fff;border:1px solid var(--line-2);border-radius:7px;padding:13px;display:flex;align-items:center;gap:11px">
+    <span style="width:26px;height:26px;border-radius:6px;background:#d8d4c6;flex:none"></span>
+    <span style="font-size:12.5px"><b style="color:var(--bad)">Off white</b> on newsprint &middot; muddy</span>
+  </div>
+  <div style="background:#fff;border:1px solid var(--line-2);border-radius:7px;padding:13px;display:flex;align-items:center;gap:11px">
+    <span style="width:26px;height:26px;border-radius:6px;background:#EDECE6;flex:none"></span>
+    <span style="font-size:12.5px"><b style="color:var(--good)">Off white</b> on litho and digital &middot; warm</span>
+  </div>
+</div>`,'Slide 27, the CMYK print rule, rebuilt.'));
 
-add('m3','Typography','Lesson',`
-<h1>Two families, one hierarchy.</h1>
-${sl('m3-typography.jpg')}
-<p><b>Freight Display Pro</b> is the primary typeface for headlines, titles and short statements. <b>Benton Sans</b> covers subheaders, body copy and calls to action.</p>
-<div class="spec">
-  <div class="r"><div class="d-h1">Large expressive headline</div><div class="who">FREIGHTDISP LIGHT<br>Large headlines</div></div>
-  <div class="r"><div class="d-h2">Smaller detailed headline</div><div class="who">FREIGHTDISP BOOK<br>Detailed layouts</div></div>
-  <div class="r"><div class="d-sub">Subheader in Benton Sans</div><div class="who">BENTONSANS MEDIUM<br>Subheaders</div></div>
-  <div class="r"><div class="d-body">Body copy and calls to action.</div><div class="who">BENTONSANS REGULAR<br>Body &amp; CTAs</div></div>
-</div>
-<p style="font-size:13px;color:var(--faint)">The specimen above previews the hierarchy with a visually similar substitute, since the licensed families are not embedded in this page.</p>`);
+add('m3','Typography','Lesson',
+`<h1>Two families, one hierarchy.</h1>
+<p class="lead"><b>Freight Display Pro</b> is the primary typeface for headlines, titles and short statements. <b>Benton Sans</b> covers subheaders, body copy and calls to action.</p>`,
+`<div class="note"><b>Weights available.</b> Freight Disp Pro ships Light, Book, Medium, Semibold, Bold and Black, each with an italic. Benton Sans ships Thin through Black, plus Extra Condensed, Condensed and Compressed widths.</div>
+<p style="font-size:13px;color:var(--faint)">The specimen preview uses a visually similar serif, since the licensed families are not embedded in this page.</p>`,
+fig(`<div class="spec">
+  <div class="r"><div class="d-h1">Large expressive headline</div><div class="who">FREIGHTDISP<br>LIGHT</div></div>
+  <div class="r"><div class="d-h2">Smaller detailed headline</div><div class="who">FREIGHTDISP<br>BOOK</div></div>
+  <div class="r"><div class="d-sub">Subheader in Benton Sans</div><div class="who">BENTONSANS<br>MEDIUM</div></div>
+  <div class="r"><div class="d-body">Body copy and calls to action.</div><div class="who">BENTONSANS<br>REGULAR</div></div>
+</div>`,'Slides 28 and 29, the type hierarchy, rebuilt.'));
 
-add('m3','Shape types','Lesson',`
-<h1>Five shapes to hold every image.</h1>
-${sl('m3-shape-types.jpg')}
-<div class="shapes">
+add('m3','Shape types','Lesson',
+`<h1>Five shapes to hold every image.</h1>`,
+`<div class="card">
+  <div class="kv"><div class="k">Rectangle</div><div>Most functional. Holds any image at any size, usually a secondary asset or when the more elaborate shapes cannot be used.</div></div>
+  <div class="kv"><div class="k">Oval &amp; arch</div><div>Most unique. Brilliant for portrait imagery, and they hold landscape too.</div></div>
+  <div class="kv"><div class="k">Curve, step, double step</div><div>As flexible as a rectangle but with distinctive corner cutouts. They work whole or cropped.</div></div>
+</div>`,
+fig(`<div class="shapes">
   <div><div class="shp s-rect"></div><div class="shp-l">Rectangle</div></div>
   <div><div class="shp s-oval"></div><div class="shp-l">Oval</div></div>
   <div><div class="shp s-arch"></div><div class="shp-l">Arch</div></div>
   <div><div class="shp s-curve"></div><div class="shp-l">Curve</div></div>
   <div><div class="shp s-step"></div><div class="shp-l">Step</div></div>
+</div>`,'Slide 30, the shape system, rebuilt with pure CSS.','sir'));
+
+add('m3','Photography','Lesson',
+`<h1>Celebrate what makes it singular.</h1>
+<p class="lead">Keep the proposition in front of mind when selecting images: we are <b>curators of the unique</b>.</p>`,
+`<p>Breathtaking views, amazing ceiling details, unique features, beautiful rooms, stunning gardens, incredible approaches, distinct windows. We celebrate all of these in every instance possible.</p>
+<div class="note tip"><b>Sample assets exist</b> for print advertising, web banners, social media and a brand film, with static templates created for all of them.</div>`,
+fig(`<div class="pgrid">
+  <div class="pg1">Views</div><div class="pg2">Ceilings</div><div class="pg3">Gardens</div>
+  <div class="pg4">Rooms</div><div class="pg5">Windows</div><div class="pg6">Approaches</div>
+</div>`,'Slide 31, what to look for when selecting images.','sir'));
+
+add('m3','Module 3 check','Quiz','__Q__m3','','');
+
+/* ================= M4 · PROPEL ================= */
+add('m4','What Propel is','Lesson',
+`<h1>Your daily all in one hub.</h1>
+<p class="lead">The primary hub where SIR agents collaborate, access marketing assets and stay on top of local market trends, so you spend less time hunting for tools.</p>`,
+`<div class="card">
+  <div class="kv"><div class="k">Sign in</div><div>Company Gmail via <b>Single Sign On</b>. No new password.</div></div>
+  <div class="kv"><div class="k">Quick Links</div><div>Design Vault, training videos, SIR Access, helpdesk tickets, referrals, 1:1 training, property journey videos, holiday schedule.</div></div>
+  <div class="kv"><div class="k">Forums</div><div>Regional Community Forums to share off market listings and collaborate by client location.</div></div>
 </div>
-<div class="card">
-  <div class="kv"><div class="k">Rectangle</div><div>Most functional. Holds any image at any size, usually a secondary asset.</div></div>
-  <div class="kv"><div class="k">Oval &amp; arch</div><div>Most unique. Brilliant for portrait imagery, works for landscape too.</div></div>
-  <div class="kv"><div class="k">Curve, step</div><div>As flexible as a rectangle but with distinctive corner cutouts. Work whole or cropped.</div></div>
-</div>`);
+<div class="note warn"><b>Two step verification.</b> Many tools inside Propel still require it, so keep your own or your client&rsquo;s credentials handy.</div>`,
+fig(`<div class="mock">
+  <div class="mock-bar"><i></i><i></i><i></i><span>propel</span></div>
+  <div class="mock-body"><div class="mock-nav"><i class="on"></i><i class="w85"></i><i class="w70"></i><i class="w85"></i><i class="w55"></i><i class="w70"></i></div>
+  <div class="mock-main">
+    <div style="background:linear-gradient(120deg,var(--sir),#1b4a7a);border-radius:6px;padding:12px;color:#fff;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700">Hello,</div>
+      <div style="font-size:9.5px;color:#9fc0da">Welcome to Propel.</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:8px">
+      <div style="background:#2b3a4a;border-radius:6px;min-height:62px;display:grid;place-items:center;color:#fff;font-family:var(--serif);font-size:13px">the insider</div>
+      <div style="border:1px solid var(--v-line);border-radius:6px;padding:8px">
+        <div style="font-size:9px;font-weight:800;color:var(--sir);margin-bottom:5px">QUICK LINKS</div>
+        <div class="mock-row"><span class="dot"></span><span class="grow"></span></div>
+        <div class="mock-row"><span class="dot"></span><span class="grow"></span></div>
+        <div class="mock-row"><span class="dot"></span><span class="grow"></span></div>
+      </div>
+    </div>
+  </div></div>
+</div>`,'Slide 39, the Propel dashboard, rebuilt.'));
 
-add('m3','Photography','Lesson',`
-<h1>Celebrate what makes it singular.</h1>
-${sl('m3-photography.jpg')}
-<p class="lead">Keep the proposition in front of mind when selecting images: we are <b>curators of the unique</b>.</p>
-<p>Breathtaking views, amazing ceiling details, unique features, beautiful rooms, stunning gardens, incredible approaches, distinct windows. We celebrate all of these in every instance possible.</p>`);
-
-add('m3','Module 3 check','Quiz','__QUIZ__m3');
-
-/* ================= M4 ================= */
-add('m4','What Propel is','Lesson',`
-<h1>Your daily all in one hub.</h1>
-<p class="lead">The primary hub where SIR agents collaborate, access marketing assets, and stay on top of local market trends, so you spend less time hunting for tools.</p>
-${sl('m4-propel-dashboard.jpg')}
-<div class="note warn"><b>Login.</b> Sign in with your company Gmail via Single Sign On, no new password. Many tools inside Propel still require two step verification, so keep credentials handy.</div>`);
-
-add('m4','Its two primary functions','Lesson',`
-<h1>Post updates. Find resources.</h1>
-${sl('m4-propel-functions.jpg')}
-<div class="grid2">
-  <div class="card"><h4>Posting updates</h4><p style="margin:0">New listings, price adjustments, back on market notices, open houses. Organized <b>by region</b> and <b>automatically emailed</b> to the other agents in the office.</p></div>
+add('m4','Its two primary functions','Lesson',
+`<h1>Post updates. Find resources.</h1>`,
+`<div class="grid2">
+  <div class="card"><h4>Posting updates</h4><p style="margin:0">New listings, price adjustments, back on market notices and open houses. Organized <b>by region</b> (Vermont, New Hampshire, New York) and <b>automatically emailed</b> to the other agents in the office.</p></div>
   <div class="card"><h4>Training and resources</h4><p style="margin:0">Webinars, training videos, marketing materials such as flyers and postcards, and legal or accounting forms.</p></div>
-</div>`);
+</div>`,
+fig(`<div style="display:grid;gap:9px">
+  <div style="background:#fff;border:1px solid var(--line-2);border-radius:7px;padding:11px 13px">
+    <div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--v-cyan-d);font-weight:800"><span>NEW LISTING</span><span>VERMONT</span></div>
+    <div style="height:6px;background:#dde5ec;border-radius:3px;margin-top:7px;width:72%"></div>
+    <div style="height:6px;background:#e9eff5;border-radius:3px;margin-top:5px;width:48%"></div>
+    <div style="font-size:9.5px;color:var(--faint);margin-top:8px">&#9993; auto emailed to the office</div>
+  </div>
+  <div style="background:#fff;border:1px solid var(--line-2);border-radius:7px;padding:11px 13px">
+    <div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--sir-gold);font-weight:800"><span>PRICE ADJUSTMENT</span><span>NEW YORK</span></div>
+    <div style="height:6px;background:#dde5ec;border-radius:3px;margin-top:7px;width:64%"></div>
+    <div style="font-size:9.5px;color:var(--faint);margin-top:8px">&#9993; auto emailed to the office</div>
+  </div>
+</div>`,'Slide 37, regional updates, rebuilt.'));
 
-add('m4','The Launch Pad','Lesson',`
-<h1>One stop access to the whole stack.</h1>
-${sl('m4-propel-launchpad.jpg')}
-<div class="card">
+add('m4','The Launch Pad','Lesson',
+`<h1>One stop access to the whole stack.</h1>`,
+`<div class="card">
   <div class="kv"><div class="k">Marketing tools</div><div>ActivePipe, MoxiWorks, Testimonial Tree and Design Vault.</div></div>
   <div class="kv"><div class="k">Regional forums</div><div>Spaces to collaborate based on your clients&rsquo; location.</div></div>
-  <div class="kv"><div class="k">Calendar</div><div>Upcoming meetings, company holidays, professional development.</div></div>
+  <div class="kv"><div class="k">Calendar</div><div>Upcoming meetings, company holidays, professional development training.</div></div>
   <div class="kv"><div class="k">Resource library</div><div>Seller and buyer guides, the SIR Style Guide, market reports.</div></div>
-</div>`);
+</div>`,
+fig(`<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+  ${['ActivePipe','MoxiWorks','Testimonial Tree','Design Vault'].map(x=>
+   `<div style="background:#fff;border:1px solid var(--line-2);border-radius:7px;padding:13px 10px;text-align:center;font-size:12px;font-weight:700;color:var(--v-navy)">${x}</div>`).join('')}
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">
+  ${['Forums','Calendar','Resources'].map(x=>
+   `<div style="background:var(--soft);border-radius:7px;padding:11px 6px;text-align:center;font-size:11px;font-weight:700;color:var(--v-muted)">${x}</div>`).join('')}
+</div>`,'Slide 38, the Launch Pad, rebuilt.','sir'));
 
-add('m4','Module 4 check','Quiz','__QUIZ__m4');
+add('m4','Module 4 check','Quiz','__Q__m4','','');
 
-/* ================= M5 ================= */
-add('m5','What ActivePipe is','Lesson',`
-<h1>The email platform for the after launch phase.</h1>
-<p class="lead">Enterprise grade email marketing. SIR uses it to provide branded templates that promote properties and programs to local markets.</p>
-${sl('m5-activepipe-email.jpg')}
-<div class="note"><b>When you use it.</b> Once a home is <b>active on the market</b>, to promote listings, open houses, price adjustments and events.</div>`);
+/* ================= M5 · ACTIVEPIPE ================= */
+add('m5','What ActivePipe is','Lesson',
+`<h1>The email platform for the after launch phase.</h1>
+<p class="lead">Enterprise grade email marketing. SIR uses it to provide branded templates that promote properties and programs to local markets.</p>`,
+`<div class="note"><b>When you use it.</b> Once a home is <b>active on the market</b>, to promote listings, open houses, price adjustments and events.</div>
+<p>It also works as a <b>database manager</b>: distribution lists, categorized contacts, automated monthly newsletters. By tracking which properties clients click, it shows you the most active leads so agents focus where it counts.</p>
+<div class="note warn"><b>ActivePipe requires a paid subscription.</b></div>`,
+fig(`<div class="mail">
+  <div class="mail-hero"><div class="kick">Now on market</div><div class="h">1 <i style="font-style:italic">of</i> 1</div></div>
+  <div class="mail-b">
+    <div class="l"></div><div class="l"></div><div class="l s"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:11px">
+      <div style="height:44px;border-radius:5px;background:linear-gradient(135deg,#d9e5f0,#bed0e0)"></div>
+      <div style="height:44px;border-radius:5px;background:linear-gradient(135deg,#d6ebe2,#b6d9c9)"></div>
+    </div>
+    <div class="mail-cta">View the listing</div>
+  </div>
+</div>`,'A branded ActivePipe campaign, rebuilt.','sir'));
 
-add('m5','Inside the platform','Lesson',`
-<h1>Four areas you will use.</h1>
-${sl('m5-activepipe-platform.jpg')}
-<div class="card">
+add('m5','Inside the platform','Lesson',
+`<h1>Four areas you will use.</h1>`,
+`<div class="card">
   <div class="kv"><div class="k">Dashboard</div><div>Email statistics, campaign activity, contacts and property updates.</div></div>
-  <div class="kv"><div class="k">Email builder</div><div>Drag and drop editor for professional marketing emails.</div></div>
+  <div class="kv"><div class="k">Email builder</div><div>Drag and drop editor for titles, text, images, buttons, videos and property listings.</div></div>
   <div class="kv"><div class="k">Smart campaigns</div><div>Automate follow up with drip campaigns and engagement triggers.</div></div>
-  <div class="kv"><div class="k">Contacts</div><div>Add manually or import CSV, then organize with tags and audience groups.</div></div>
-</div>`);
+  <div class="kv"><div class="k">Contacts</div><div>Add manually or import CSV, then organize with tags and audience groups for targeted sends.</div></div>
+</div>`,
+fig(`<div class="mock">
+  <div class="mock-bar"><i></i><i></i><i></i><span>activepipe</span></div>
+  <div class="mock-body"><div class="mock-nav"><i class="on"></i><i class="w85"></i><i class="w70"></i><i class="w55"></i></div>
+  <div class="mock-main">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:9px">
+      ${[['426','Sends'],['20','Opens'],['16','Clicks']].map(([n,l])=>
+        `<div style="border:1px solid var(--v-line);border-radius:6px;padding:8px;text-align:center">
+          <div style="font-family:var(--display);font-weight:900;font-size:15px;color:var(--v-navy)">${n}</div>
+          <div style="font-size:8.5px;color:var(--v-muted);font-weight:700;letter-spacing:.5px;text-transform:uppercase">${l}</div>
+        </div>`).join('')}
+    </div>
+    <div class="mock-row"><span class="dot"></span><span class="grow"></span></div>
+    <div class="mock-row"><span class="dot"></span><span class="grow"></span></div>
+    <div class="mock-row"><span class="dot"></span><span class="grow"></span></div>
+  </div></div>
+</div>`,'Slide 43, the ActivePipe dashboard, rebuilt.'));
 
-add('m5','Building and sending','Lesson',`
-<h1>Preview before you send. Always.</h1>
-${sl('m5-activepipe-building.jpg')}
-<div class="card">
+add('m5','Building and sending','Lesson',
+`<h1>Preview before you send. Always.</h1>`,
+`<div class="card">
   <div class="kv"><div class="k">Design</div><div>Drag and drop titles, text, images, buttons, videos and property listings.</div></div>
   <div class="kv"><div class="k">Listings</div><div>Auto populate live listings with the property integration tools, cutting manual entry.</div></div>
   <div class="kv"><div class="k">Preview</div><div><b>View Preview</b> checks formatting, links and mobile responsiveness. <b>Send Preview</b> tests internally before distribution.</div></div>
-</div>`);
+</div>`,
+fig(`<div class="phone">
+  <div class="top"></div>
+  <div style="padding:9px">
+    <div style="background:var(--sir);border-radius:4px;padding:10px 6px;text-align:center;color:#fff;font-family:var(--serif);font-size:12px">1 <i>of</i> 1</div>
+    <div style="height:4px;background:#dde5ec;border-radius:2px;margin-top:8px"></div>
+    <div style="height:4px;background:#dde5ec;border-radius:2px;margin-top:4px;width:70%"></div>
+    <div style="height:36px;background:linear-gradient(135deg,#d9e5f0,#bed0e0);border-radius:4px;margin-top:8px"></div>
+    <div style="height:36px;background:linear-gradient(135deg,#d6ebe2,#b6d9c9);border-radius:4px;margin-top:6px"></div>
+    <div style="background:var(--v-cyan);border-radius:4px;height:16px;margin-top:8px"></div>
+  </div>
+</div>
+<p style="font-size:11.5px;color:var(--v-muted);text-align:center;margin:10px 0 0">Side by side columns stack vertically on small screens. Always check the mobile preview.</p>`,'Slide 45, the mobile preview, rebuilt.','sir'));
 
-add('m5','When something breaks','Lesson',`
-<h1>The four issues you will actually hit.</h1>
-${sl('m5-activepipe-troubleshooting.jpg')}
-<div class="acc open"><button class="acc-h" onclick="tAcc(this)"><span class="ic">1</span> Images will not upload <span class="chev">&#9656;</span></button><div class="acc-b"><p>Resize and optimize the files to meet platform size requirements while maintaining quality.</p></div></div>
-<div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">2</span> Video does not display <span class="chev">&#9656;</span></button><div class="acc-b"><p>Linked videos must be set to <b>public</b>. Vimeo is often recommended for cleaner presentation.</p></div></div>
+add('m5','When something breaks','Lesson',
+`<h1>The four issues you will actually hit.</h1>`,
+`<div class="acc open"><button class="acc-h" onclick="tAcc(this)"><span class="ic">1</span> Images will not upload <span class="chev">&#9656;</span></button><div class="acc-b"><p>Resize and optimize the files to meet platform size requirements while maintaining quality.</p></div></div>
+<div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">2</span> Video does not display <span class="chev">&#9656;</span></button><div class="acc-b"><p>Linked videos must be set to <b>public</b>. Vimeo is often recommended for cleaner visual presentation and formatting.</p></div></div>
 <div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">3</span> The listing is missing <span class="chev">&#9656;</span></button><div class="acc-b"><p>New listings take <b>1 to 2 days</b> to sync. After that, add the content manually or contact your office administrator.</p></div></div>
-<div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">4</span> It looks wrong on phones <span class="chev">&#9656;</span></button><div class="acc-b"><p>Always review the mobile preview. Side by side images or columns may stack vertically on small screens.</p></div></div>
-<div class="note warn"><b>Two things to remember.</b> ActivePipe requires a paid subscription, and marketing or admin accounts can manage most features without the agent&rsquo;s login, depending on permissions.</div>`);
+<div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">4</span> It looks wrong on phones <span class="chev">&#9656;</span></button><div class="acc-b"><p>Always review the mobile preview. Side by side images or columns may stack vertically on smaller screens.</p></div></div>
+<div class="note"><b>Login.</b> Marketing and admin accounts can manage most features without the agent&rsquo;s login, depending on assigned permission levels.</div>`,'');
 
-add('m5','Module 5 check','Quiz','__QUIZ__m5');
+add('m5','Module 5 check','Quiz','__Q__m5','','');
 
-/* ================= M6 ================= */
-add('m6','What Design Vault is','Lesson',`
-<h1>Agency quality design, at no cost.</h1>
-<p class="lead">A complimentary design tool for print and digital placements. Templates come preset to the brand&rsquo;s aesthetics, so fonts, colors and logo standards stay consistent while you personalize.</p>
-${sl('m6-designvault-platform.jpg')}
-<div class="note"><b>What you can make.</b> Flyers, luxury flyers, lookbooks, social media graphics, property marketing materials and presentations.</div>`);
+/* ================= M6 · DESIGN VAULT ================= */
+add('m6','What Design Vault is','Lesson',
+`<h1>Agency quality design, at no cost.</h1>
+<p class="lead">A complimentary design tool for print and digital placements. Templates come preset to the brand&rsquo;s aesthetics, so fonts, colors and logo standards stay consistent while you personalize.</p>`,
+`<div class="note"><b>What you can make.</b> Flyers, luxury flyers, lookbooks, social media graphics, property marketing materials and presentations.</div>
+<p>The editor connects to the SIR listings database with drag and drop, sends items directly to a professional printer, and shares graphics to social with optimized integration.</p>`,
+fig(`<div class="mock">
+  <div class="mock-bar"><i></i><i></i><i></i><span>design vault</span></div>
+  <div class="mock-body"><div class="mock-nav"><i class="on"></i><i class="w85"></i><i class="w70"></i><i class="w55"></i></div>
+  <div class="mock-main">
+    <div class="mock-hd"></div>
+    <div class="mock-grid">
+      <div class="mock-tile"><div class="ph"></div><div class="l s"></div></div>
+      <div class="mock-tile"><div class="ph g"></div><div class="l s"></div></div>
+      <div class="mock-tile"><div class="ph"></div><div class="l s"></div></div>
+      <div class="mock-tile"><div class="ph g"></div><div class="l s"></div></div>
+      <div class="mock-tile"><div class="ph"></div><div class="l s"></div></div>
+      <div class="mock-tile"><div class="ph g"></div><div class="l s"></div></div>
+    </div>
+  </div></div>
+</div>`,'Slide 50, the template library, rebuilt.'));
 
-add('m6','The workspace','Lesson',`
-<h1>Where everything lives.</h1>
-${sl('m6-designvault-workspace.jpg')}
-<div class="card">
-  <div class="kv"><div class="k">Dashboard</div><div>Recent projects, featured templates and starred items.</div></div>
-  <div class="kv"><div class="k">My Projects</div><div>Everything you have edited or created.</div></div>
-  <div class="kv"><div class="k">Templates</div><div>Browse by category: social, postcards, property marketing, presentations.</div></div>
-  <div class="kv"><div class="k">Assets</div><div>Images you upload or that arrive through integrations.</div></div>
-  <div class="kv"><div class="k">Analytics</div><div>Reports on projects, QR code usage and template categories.</div></div>
-</div>`);
-
-add('m6','Creating and editing','Lesson',`
-<h1>Duplicate, then personalize.</h1>
-${sl('m6-designvault-creating.jpg')}
-<div class="card">
+add('m6','Creating and editing','Lesson',
+`<h1>Duplicate, then personalize.</h1>`,
+`<div class="card">
   <div class="kv"><div class="k">To start</div><div>Duplicate an existing template and rename it.</div></div>
   <div class="kv"><div class="k">Locked parts</div><div>Some sections, such as branded elements, cannot be edited. That is on purpose.</div></div>
   <div class="kv"><div class="k">Active listings</div><div>The <b>property listings</b> feature pulls home information and photos into the template automatically.</div></div>
   <div class="kv"><div class="k">Not live yet</div><div>Update images and text manually.</div></div>
-</div>`);
+</div>`,
+fig(`<div class="mock">
+  <div class="mock-bar"><i></i><i></i><i></i><span>editor</span></div>
+  <div class="mock-body" style="grid-template-columns:64px 1fr">
+    <div class="mock-nav"><i class="on"></i><i class="w70"></i><i class="w85"></i></div>
+    <div class="mock-main" style="background:var(--sir-off)">
+      <div style="background:#fff;border-radius:5px;padding:11px;box-shadow:var(--shadow)">
+        <div style="height:46px;border-radius:4px;background:linear-gradient(135deg,#d9e5f0,#bed0e0);margin-bottom:8px"></div>
+        <div style="height:5px;background:#dde5ec;border-radius:3px;width:70%"></div>
+        <div style="height:5px;background:#e9eff5;border-radius:3px;width:45%;margin-top:4px"></div>
+        <div style="margin-top:9px;text-align:center">${MARK_S}</div>
+        <div style="position:relative;margin-top:8px;border:1.5px dashed var(--v-cyan-d);border-radius:4px;padding:5px;font-size:9px;color:var(--v-cyan-d);text-align:center;font-weight:700">locked brand element</div>
+      </div>
+    </div>
+  </div>
+</div>`,'Slide 51, editing a template, rebuilt.'));
 
-add('m6','Printing and exporting','Lesson',`
-<h1>Pick the right PDF.</h1>
-${sl('m6-designvault-printing.jpg')}
-<div class="grid2">
+add('m6','Printing and exporting','Lesson',
+`<h1>Pick the right PDF.</h1>`,
+`<div class="grid2">
   <div class="card"><h4>Standard PDF</h4><p style="margin:0">Best for digital reference and email distribution.</p></div>
   <div class="card"><h4>Print PDF</h4><p style="margin:0">Required for professional printing. Use the advanced settings for <b>crop and bleed marks</b>.</p></div>
 </div>
-<div class="note"><b>Two ways to print.</b> Order directly through the integrated print portal, which links to a third party service, or download a PDF for an external printing company.</div>`);
+<div class="note"><b>Two ways to print.</b> Order directly through the integrated print portal, which links to a third party service, or download a PDF for an external printing company.</div>`,
+fig(`<div style="background:var(--sir-off);border-radius:8px;padding:20px;position:relative">
+  <div style="background:#fff;padding:14px;box-shadow:var(--shadow)">
+    <div style="height:40px;background:linear-gradient(135deg,#d9e5f0,#bed0e0);border-radius:3px"></div>
+    <div style="height:5px;background:#dde5ec;border-radius:3px;margin-top:8px;width:60%"></div>
+    <div style="margin-top:10px;text-align:center">${MARK_S}</div>
+  </div>
+  ${['top:10px;left:10px','top:10px;right:10px','bottom:10px;left:10px','bottom:10px;right:10px'].map(p=>
+    `<span style="position:absolute;${p};width:14px;height:14px;border-left:1px solid var(--v-muted);border-top:1px solid var(--v-muted)"></span>`).join('')}
+</div>
+<p style="font-size:11.5px;color:var(--v-muted);text-align:center;margin:9px 0 0">Crop marks in the corners, required for professional print.</p>`,'Slide 52, the Print PDF export, rebuilt.'));
 
-add('m6','Three habits that prevent reprints','Lesson',`
-<h1>Do these before you finalize.</h1>
-<div class="steps">
+add('m6','Three habits that prevent reprints','Lesson',
+`<h1>Do these before you finalize.</h1>`,
+`<div class="steps">
   <div class="step"><div><h4>Reload the page before editing</h4><p>Ensures changes save automatically and prevents technical issues.</p></div></div>
   <div class="step"><div><h4>Use the preview tool</h4><p>Check for typos, layout errors and missing information before finalizing.</p></div></div>
   <div class="step"><div><h4>Scan every QR code</h4><p>Verify the destination of all QR codes before printing. Always.</p></div></div>
 </div>
-<div class="note warn"><b>Login.</b> Access via SIR Access. Design Vault supports both client and admin logins, each with permission based access.</div>`);
+<div class="note warn"><b>Login.</b> Access via SIR Access. Design Vault supports both client and admin logins, each with permission based access.</div>`,'');
 
-add('m6','Module 6 check','Quiz','__QUIZ__m6');
+add('m6','Module 6 check','Quiz','__Q__m6','','');
 
-/* ================= M7 ================= */
-add('m7','What ListTrac is','Lesson',`
-<h1>Proof that the marketing works.</h1>
-<p class="lead">The reporting and analytics platform of the network. It aggregates traffic from thousands of websites to show how many potential buyers are viewing our listings globally.</p>
-${sl('m7-listtrac-reports.jpg')}
-<div class="note"><b>What it is for.</b> Generating professional <b>seller reports</b> that prove the value of global syndication, tracking performance across The Wall Street Journal, Zillow and SIR.com.</div>`);
+/* ================= M7 · LISTTRAC ================= */
+add('m7','What ListTrac is','Lesson',
+`<h1>Proof that the marketing works.</h1>
+<p class="lead">The reporting and analytics platform of the network. It aggregates online traffic from thousands of websites to show how many potential buyers are viewing our listings globally.</p>`,
+`<div class="note"><b>What it is for.</b> Generating professional <b>seller reports</b> that prove the value of global syndication, tracking listing performance across <b>The Wall Street Journal, Zillow and SIR.com</b>.</div>
+<p>By pulling real time views and engagement into one easy to read report, ListTrac helps agents justify their strategy and keep sellers informed with transparent, data backed updates.</p>`,
+fig(`<div class="mock">
+  <div class="mock-bar"><i></i><i></i><i></i><span>listtrac</span></div>
+  <div class="mock-body full"><div class="mock-main">
+    <div style="font-size:9px;font-weight:800;letter-spacing:.6px;color:var(--v-muted);text-align:center;margin-bottom:9px">ONLINE ACTIVITY REPORT</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:11px">
+      ${[['1,284','Views'],['96','Saves'],['41','Shares'],['12','Inquiries']].map(([n,l])=>
+       `<div style="text-align:center"><div style="width:34px;height:34px;border-radius:50%;background:var(--sir);color:#fff;display:grid;place-items:center;margin:0 auto 4px;font-size:10px;font-weight:800">${n}</div>
+        <div style="font-size:8px;color:var(--v-muted);font-weight:700;text-transform:uppercase">${l}</div></div>`).join('')}
+    </div>
+    <div class="bars"><i style="height:46%"></i><i style="height:62%"></i><i style="height:55%"></i><i style="height:78%"></i><i style="height:70%"></i><i style="height:92%"></i><i style="height:84%"></i></div>
+    <div class="bars-x"><span>W1</span><span>W2</span><span>W3</span><span>W4</span><span>W5</span><span>W6</span><span>W7</span></div>
+  </div></div>
+</div>`,'Slide 58, an automated seller report, rebuilt.'));
 
-add('m7','The dashboard','Lesson',`
-<h1>Everything in one view.</h1>
-${sl('m7-listtrac-dashboard.jpg')}
-<p>After logging in you can see listing activity, website performance, visitor traffic and engagement analytics from a centralized dashboard.</p>
-<div class="note tip"><b>Seller reports.</b> Select the listing, add contact information, customize the settings, then schedule <b>weekly, bi weekly or monthly</b>.</div>`);
-
-add('m7','Reading the statistics','Lesson',`
-<h1>Which numbers matter.</h1>
-${sl('m7-listtrac-statistics.jpg')}
-<div class="card">
+add('m7','Reading the statistics','Lesson',
+`<h1>Which numbers matter.</h1>`,
+`<div class="card">
+  <div class="kv"><div class="k">Dashboard</div><div>Listing activity, website performance, visitor traffic and engagement analytics in one place.</div></div>
   <div class="kv"><div class="k">Listing stats</div><div>Views, inquiries, favorites, shares and traffic across affiliated sites, so you can see which websites generate the most engagement.</div></div>
   <div class="kv"><div class="k">Report history</div><div>Confirms when reports were sent, delivered and opened by sellers. This is how you verify activity when a seller says they never got one.</div></div>
-</div>`);
+</div>
+<div class="note tip"><b>Scheduling.</b> Select the listing, add contact information, customize the settings, then send <b>weekly, bi weekly or monthly</b>.</div>`,
+fig(`<div style="background:#fff;border:1px solid var(--line-2);border-radius:8px;padding:14px">
+  <div style="font-size:10px;font-weight:800;color:var(--v-muted);letter-spacing:.5px;margin-bottom:9px">TRAFFIC BY SITE</div>
+  ${[['SIR.com',88],['Zillow',64],['WSJ',41],['Affiliate sites',27]].map(([s,w])=>
+   `<div style="margin-bottom:9px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px"><span style="font-weight:600;color:var(--v-ink)">${s}</span><span style="color:var(--v-muted)">${w}%</span></div>
+      <div style="height:7px;background:var(--v-line);border-radius:4px;overflow:hidden"><i style="display:block;height:100%;width:${w}%;background:var(--v-cyan);border-radius:4px"></i></div>
+    </div>`).join('')}
+</div>`,'Slide 59, listing statistics by site, rebuilt.'));
 
-add('m7','Before you activate reports','Lesson',`
-<h1>Check three things, then send.</h1>
-${sl('m7-listtrac-practices.jpg')}
-<div class="steps">
+add('m7','Before you activate reports','Lesson',
+`<h1>Check three things, then send.</h1>`,
+`<div class="steps">
   <div class="step"><div><h4>Verify seller contact information</h4><p>An incorrect email address prevents delivery entirely.</p></div></div>
   <div class="step"><div><h4>Review the scheduling settings</h4><p>Weekly, bi weekly or monthly, matched to what the seller expects.</p></div></div>
   <div class="step"><div><h4>Preview the report formatting</h4><p>Catch layout issues before the client sees them.</p></div></div>
 </div>
-<div class="note warn"><b>Give it time.</b> Listings may take <b>3 to 5 days</b> to appear after going live, analytics may not update immediately, and reports can land in spam or junk folders.</div>`);
+<div class="note warn"><b>Give it time.</b> Listings may take <b>3 to 5 days</b> to appear after going live, analytics may not update immediately, and reports can land in spam or junk folders.</div>`,'');
 
-add('m7','Module 7 check','Quiz','__QUIZ__m7');
+add('m7','Module 7 check','Quiz','__Q__m7','','');
 
-/* ================= M8 ================= */
-add('m8','What MoxiWorks is','Lesson',`
-<h1>Win the listing before it exists.</h1>
-<p class="lead">The presentation and business suite of the network. Visually stunning, data driven decks that showcase market expertise in a digital first format.</p>
-${sl('m8-moxi-platform.jpg')}
-<div class="note"><b>Also integrates</b> RealScout and Testimonial Tree for lead engagement and marketing support.</div>`);
+/* ================= M8 · MOXIWORKS ================= */
+add('m8','What MoxiWorks is','Lesson',
+`<h1>Win the listing before it exists.</h1>
+<p class="lead">The presentation and business suite of the network. Visually stunning, data driven decks that showcase market expertise and the power of the global brand, in a digital first format.</p>`,
+`<div class="note"><b>Also integrates</b> RealScout and Testimonial Tree for lead engagement and marketing support.</div>
+<div class="note warn"><b>Login.</b> Via SIR Access. MoxiWorks may require two step verification, and sign in works with username or email, Google, or a Microsoft account.</div>`,
+fig(`<div class="mock">
+  <div class="mock-bar"><i></i><i></i><i></i><span>moxiworks &middot; cma</span></div>
+  <div class="mock-body"><div class="mock-nav"><i class="on"></i><i class="w85"></i><i class="w70"></i><i class="w85"></i><i class="w55"></i></div>
+  <div class="mock-main" style="background:var(--sir-off)">
+    <div style="background:#fff;border-radius:5px;padding:12px;box-shadow:var(--shadow)">
+      <div style="font-family:var(--serif);color:var(--sir);font-size:15px">Our numbers<br><i style="font-style:italic">are your assurance</i></div>
+      <div style="display:flex;gap:14px;margin-top:11px">
+        <div><div style="font-family:var(--serif);font-size:19px;color:var(--sir)">48M</div><div style="font-size:8px;color:var(--v-muted)">VISITS</div></div>
+        <div><div style="font-family:var(--serif);font-size:19px;color:var(--sir)">1093</div><div style="font-size:8px;color:var(--v-muted)">OFFICES</div></div>
+        <div><div style="font-family:var(--serif);font-size:19px;color:var(--sir)">14</div><div style="font-size:8px;color:var(--v-muted)">LANGUAGES</div></div>
+      </div>
+    </div>
+  </div></div>
+</div>`,'Slide 47, a listing presentation page, rebuilt.'));
 
-add('m8','Building a presentation','Lesson',`
-<h1>Let the MLS do the typing.</h1>
-${sl('m8-moxi-client-ready.jpg')}
-<div class="card">
+add('m8','Building a presentation','Lesson',
+`<h1>Let the MLS do the typing.</h1>`,
+`<div class="card">
   <div class="kv"><div class="k">To start</div><div>Select <b>Create New</b> and choose a CMA or listing presentation template.</div></div>
-  <div class="kv"><div class="k">The shortcut</div><div>Enter the <b>MLS number</b> of a previously listed property and photos, descriptions and tax information can populate automatically.</div></div>
+  <div class="kv"><div class="k">The shortcut</div><div>Enter the <b>MLS number</b> of a previously listed property and photos, descriptions, tax information and additional details can populate automatically.</div></div>
   <div class="kv"><div class="k">Drafts</div><div>Saved automatically, so you can continue editing at any time.</div></div>
-</div>`);
+</div>`,
+fig(`<div style="background:#fff;border:1px solid var(--line-2);border-radius:8px;padding:14px">
+  <div style="font-size:11px;font-weight:800;color:var(--v-navy);margin-bottom:9px">New presentation</div>
+  <div style="display:grid;gap:6px">
+    ${['Seller CMA','Property review','Buyer tour','New listing'].map((x,i)=>
+     `<div style="display:flex;align-items:center;gap:9px;border:1px solid ${i===0?'var(--v-cyan)':'var(--v-line)'};border-radius:6px;padding:8px 10px;font-size:11.5px;background:${i===0?'#eafafc':'#fff'}">
+        <span style="width:12px;height:12px;border-radius:50%;border:1.5px solid ${i===0?'var(--v-cyan-d)':'var(--line-2)'};background:${i===0?'var(--v-cyan)':'#fff'};flex:none"></span>
+        <span style="font-weight:${i===0?'700':'500'};color:${i===0?'var(--v-navy)':'var(--v-muted)'}">${x}</span>
+      </div>`).join('')}
+  </div>
+  <div style="margin-top:10px;background:var(--soft);border-radius:6px;padding:8px 10px;font-size:10.5px;color:var(--v-muted)">
+    MLS # <b style="color:var(--v-navy)">4482910</b> &rarr; photos, description and tax data populate
+  </div>
+</div>`,'Slide 67, creating a new presentation, rebuilt.'));
 
-add('m8','Market comparisons','Lesson',`
-<h1>Frame the price with real comps.</h1>
-${sl('m8-moxi-comparisons.jpg')}
-<p>Add comparable properties from <b>active, pending, withdrawn or sold</b> listings to determine an accurate price range. The platform generates side by side comparisons that make pricing strategy and market trends clear to clients.</p>
-<div class="note tip"><b>Before sending,</b> preview the presentation to review formatting, property summaries, comparisons and preparation checklists. You can also remove pages for a cleaner, more personal client experience.</div>`);
+add('m8','Market comparisons','Lesson',
+`<h1>Frame the price with real comps.</h1>`,
+`<p>Add comparable properties from <b>active, pending, withdrawn or sold</b> listings to determine an accurate price range. The platform generates side by side comparisons that make pricing strategy and market trends clear to clients.</p>
+<div class="note tip"><b>Before sending,</b> preview the presentation to review formatting, property summaries, comparisons and preparation checklists. You can remove pages for a cleaner, more personal client experience.</div>`,
+fig(`<div style="background:#fff;border:1px solid var(--line-2);border-radius:8px;padding:14px">
+  <div style="font-size:10px;font-weight:800;color:var(--v-muted);letter-spacing:.5px;margin-bottom:10px">PRICING</div>
+  ${[['Low',52],['Suggested',78],['Comparable avg',68],['High',94]].map(([s,w],i)=>
+   `<div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;font-size:10.5px;margin-bottom:3px"><span style="color:var(--v-muted)">${s}</span></div>
+      <div style="height:11px;background:var(--v-line);border-radius:3px;overflow:hidden"><i style="display:block;height:100%;width:${w}%;background:${i===1?'var(--sir)':'#8fb2ce'};border-radius:3px"></i></div>
+    </div>`).join('')}
+  <div style="display:flex;gap:12px;margin-top:12px;border-top:1px solid var(--v-line);padding-top:10px">
+    ${[['3.5','BEDS'],['3','BATHS'],['2,567','SQFT'],['31','DOM']].map(([n,l])=>
+     `<div><div style="font-weight:800;color:var(--v-navy);font-size:13px">${n}</div><div style="font-size:8px;color:var(--v-muted);font-weight:700">${l}</div></div>`).join('')}
+  </div>
+</div>`,'Slide 66, side by side market comparison, rebuilt.'));
 
-add('m8','Common pitfalls','Lesson',`
-<h1>What goes wrong, and why.</h1>
-${sl('m8-moxi-practices.jpg')}
-<div class="card">
+add('m8','Common pitfalls','Lesson',
+`<h1>What goes wrong, and why.</h1>`,
+`<div class="card">
   <ul>
     <li>Outdated MLS or tax information may require manual updates.</li>
     <li>An incorrect MLS number prevents property data from loading.</li>
@@ -796,78 +1176,127 @@ ${sl('m8-moxi-practices.jpg')}
     <li>Presentation formatting should always be reviewed before sending.</li>
   </ul>
 </div>
-<div class="note warn"><b>Login.</b> Via SIR Access. MoxiWorks may require two step verification, and sign in works with username or email, Google, or a Microsoft account.</div>`);
+<div class="note"><b>Before finalizing a CMA</b>, verify MLS information, review comparable properties carefully, and confirm the pricing recommendation is accurate and current.</div>`,'');
 
-add('m8','Module 8 check','Quiz','__QUIZ__m8');
+add('m8','Module 8 check','Quiz','__Q__m8','','');
 
-/* ================= M9 ================= */
-add('m9','What Claude is','Lesson',`
-<h1>Your copilot for everything written.</h1>
-<p class="lead">A highly capable AI assistant and large language model developed by Anthropic, built for advanced reasoning, coding and natural language work: drafting content, analyzing datasets, building automated agents.</p>
-<div class="grid3">
-  <div class="card"><h4>Opus</h4><p style="font-size:14px;margin:0">The flagship. Highly complex reasoning and enterprise tasks.</p></div>
-  <div class="card"><h4>Sonnet</h4><p style="font-size:14px;margin:0">The standard. Balances speed and intelligence for everyday workflows.</p></div>
-  <div class="card"><h4>Haiku</h4><p style="font-size:14px;margin:0">The fastest. High speed, light duty tasks.</p></div>
-</div>`);
+/* ================= M9 · CLAUDE ================= */
+add('m9','What Claude is','Lesson',
+`<h1>Your copilot for everything written.</h1>
+<p class="lead">A highly capable AI assistant and large language model developed by Anthropic, built for advanced reasoning, coding and natural language work: drafting content, analyzing datasets, building automated agents.</p>`,
+`<div class="grid3">
+  <div class="card"><h4>Opus</h4><p style="font-size:13.5px;margin:0">The flagship. Highly complex reasoning and enterprise tasks.</p></div>
+  <div class="card"><h4>Sonnet</h4><p style="font-size:13.5px;margin:0">The standard. Balances speed and intelligence for everyday workflows.</p></div>
+  <div class="card"><h4>Haiku</h4><p style="font-size:13.5px;margin:0">The fastest. High speed, light duty tasks.</p></div>
+</div>`,'');
 
-add('m9','The five ingredients','Lesson',`
-<h1>What turns a vague request into a great response.</h1>
-${sl('m9-prompt-structure.jpg')}
-<div class="card">
+add('m9','The five ingredients','Lesson',
+`<h1>What turns a vague request into a great response.</h1>`,
+`<div class="card">
   <div class="kv"><div class="k">1 &middot; Role</div><div>Tell Claude who to be: expertise, tone, perspective.</div></div>
   <div class="kv"><div class="k">2 &middot; Context</div><div>The background. Who the audience is, what the situation is.</div></div>
   <div class="kv"><div class="k">3 &middot; Task</div><div>Exactly what you want done. Use action verbs.</div></div>
   <div class="kv"><div class="k">4 &middot; Format</div><div>Length, structure, style. Bullet list, two paragraphs, table.</div></div>
   <div class="kv"><div class="k">5 &middot; Example</div><div>Optional but powerful. Show what good looks like.</div></div>
-</div>`);
+</div>`,
+fig(`<div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+  ${[['Role','i-role'],['Context','i-ctx'],['Task','i-task'],['Format','i-fmt']].map((x,i)=>
+   `${i?'<span style="color:var(--faint);font-size:12px">+</span>':''}<span class="${x[1]}" style="font-size:10.5px;font-weight:800;border-radius:5px;padding:5px 11px;text-transform:uppercase;letter-spacing:.5px">${x[0]}</span>`).join('')}
+  <span style="color:var(--faint);font-size:12px">+</span><span style="background:#faf0da;color:#8a6a14;font-size:10.5px;font-weight:800;border-radius:5px;padding:5px 11px;text-transform:uppercase;letter-spacing:.5px">Example</span>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+  ${[['Role','Tell Claude who to be'],['Context','Share the background'],['Task','State clearly what you want'],['Format','Specify length and structure'],['Example','Show what good looks like']].map(([t,d])=>
+   `<div style="background:#fff;border:1px solid var(--v-line);border-radius:7px;padding:10px">
+      <div style="font-size:11px;font-weight:800;color:var(--v-navy)">${t}</div>
+      <div style="font-size:10.5px;color:var(--v-muted);margin-top:3px;line-height:1.4">${d}</div>
+    </div>`).join('')}
+</div>`,'Slide 74, the five ingredients, rebuilt.'));
 
-add('m9','Why most prompts fail','Lesson',`
-<h1>The output is generic because the input was.</h1>
-<div class="note tip" style="font-size:16px"><b>The key insight.</b> Claude works best when it understands <b>who it is talking to, what the situation is, and what success looks like</b>. Most people skip these three details and then wonder why the result feels generic.</div>
-<div class="grid2">
-  <div class="card"><h4>Vague</h4><p style="margin:0;color:var(--v-muted)">&ldquo;Write me a social post for a new listing.&rdquo;</p></div>
-  <div class="card navy"><h4>Structured</h4><p style="margin:0">Role as a real estate social copywriter, context with your brand colors and voice, the task with the exact deliverable, and the format with slide count and character limits.</p></div>
-</div>`);
+add('m9','Before and after','Lesson',
+`<h1>The same request, two results.</h1>
+<p class="lead">Claude works best when it understands who it is talking to, what the situation is, and what success looks like. Most people skip these details and then wonder why the output feels generic.</p>`,
+`<div class="ba">
+  <div class="ba-c ba-bad"><span class="tag">Vague prompt</span>
+    <em>&ldquo;Write me a social post for a new listing.&rdquo;</em>
+    <p style="margin:8px 0 0;font-size:13px">Claude has no audience, no brand voice, no format. You get something generic that needs a full rewrite.</p>
+  </div>
+  <div class="ba-c ba-good"><span class="tag">Structured prompt</span>
+    <em>Role</em> as a real estate social copywriter, <em>context</em> with the brand colors, tone and audience, <em>task</em> with the exact deliverable, and <em>format</em> with slide count and character limits.
+    <p style="margin:8px 0 0;font-size:13px">You get something you can post after a quick review.</p>
+  </div>
+</div>`,
+fig(`<div class="pre" style="font-size:11px">
+<span class="role">Act as a real estate social media copywriter.</span>
 
-add('m9','The prompt library','Lesson',`
-<h1>Sixteen templates, four roles.</h1>
-<p class="lead">Copy the skeleton, replace the bracketed fields, send. Each one is color coded by ingredient, and the <b>key move</b> explains why it works.</p>
-<div class="ptabs">
+<span class="ctx">Our agency posts every new listing on Instagram. Brand voice is warm, confident and community focused. We never use aggressive sales language.</span>
+
+<span class="task">Write a Just Listed caption with fill in fields in [BRACKETS].</span>
+
+<span class="fmt">Caption, then a shorter LinkedIn version, then 15 hashtags.</span>
+</div>`,'Slide 75, before and after prompt structure, rebuilt.'));
+
+add('m9','The prompt library','Lesson',
+`<h1>Sixteen templates, four roles.</h1>
+<p class="lead">Copy the skeleton, replace the bracketed fields, send. Each one is color coded by ingredient, and the <b>key move</b> explains why it works.</p>`,
+`<div class="ptabs">
   <button class="ptab on" data-g="all" onclick="pFilter(this)">All 16</button>
   <button class="ptab" data-g="gd" onclick="pFilter(this)">Graphic design</button>
   <button class="ptab" data-g="sm" onclick="pFilter(this)">Social media</button>
   <button class="ptab" data-g="tc" onclick="pFilter(this)">Transaction coordinator</button>
   <button class="ptab" data-g="ops" onclick="pFilter(this)">Operations</button>
 </div>
-<div id="plib"></div>`);
+<div id="plib"></div>`,'');
 
-add('m9','A prompt that built an email','Lesson',`
-<h1>One prompt. A finished campaign.</h1>
-${sl('m9-example-email.jpg')}
-<p>By providing campaign objectives, audience, branding direction, content requirements and layout specifications, Claude generated a complete email marketing campaign for a luxury residential launch, including messaging, visual structure and calls to action.</p>`);
+add('m9','What a good prompt returns','Lesson',
+`<h1>One prompt. A finished campaign.</h1>
+<p class="lead">By providing campaign objectives, audience, branding direction, content requirements and layout specifications, Claude generated a complete email campaign for a luxury residential launch: messaging, visual structure, calls to action and the overall design.</p>`,
+`<p>The same method produced a full Instagram carousel concept, with slide by slide content, visual hierarchy, branding elements, calls to action and a supporting caption.</p>
+<div class="note"><b>From the deck.</b> The complete HTML outputs are course material in Google Classroom, so you can review the fully rendered pieces exactly as Claude generated them.</div>`,
+fig(`<div class="mail">
+  <div class="mail-hero" style="background:linear-gradient(150deg,#1a2740,#0d1626)">
+    <div class="kick">Now launching</div>
+    <div class="h">Above the City.<br>Above Expectation.</div>
+  </div>
+  <div class="mail-b">
+    <div class="l"></div><div class="l s"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:11px">
+      <div style="border:1px solid var(--v-line);border-radius:5px;padding:8px">
+        <div style="font-size:8.5px;color:var(--v-muted);font-weight:700">TYPE A</div>
+        <div style="font-family:var(--serif);font-size:13px;color:var(--sir)">1-Bedroom</div>
+        <div style="font-size:9px;color:var(--v-muted);margin-top:2px">From $485,000</div>
+      </div>
+      <div style="border:1px solid var(--v-line);border-radius:5px;padding:8px">
+        <div style="font-size:8.5px;color:var(--v-muted);font-weight:700">TYPE B</div>
+        <div style="font-family:var(--serif);font-size:13px;color:var(--sir)">2-Bedroom</div>
+        <div style="font-size:9px;color:var(--v-muted);margin-top:2px">From $720,000</div>
+      </div>
+    </div>
+  </div>
+</div>`,'Slide 78, the generated email campaign, rebuilt.'));
 
-add('m9','A prompt that built a carousel','Lesson',`
-<h1>Same method, different format.</h1>
-${sl('m9-example-carousel.jpg')}
-<p>Brand guidelines, audience, design requirements, content objectives and formatting instructions produced a full Instagram carousel concept: slide by slide content, visual hierarchy, branding, calls to action and the caption.</p>
-<div class="note"><b>From the deck.</b> The complete HTML outputs are course material in Google Classroom, so you can review the fully rendered pieces exactly as Claude generated them.</div>`);
-
-add('m9','A prompt that built an onboarding plan','Lesson',`
-<h1>Thirty days, planned day by day.</h1>
-${sl('m9-onboarding-example.jpg')}
-<p>Clear context, role specific requirements and desired outcomes produced a structured onboarding plan wiring in Propel, ActivePipe, Design Vault and ListTrac from the pre Day 1 access checklist onward.</p>`);
-
-add('m9','Inside that plan','Lesson',`
-<h1>Each week has a theme and a checkpoint.</h1>
-${slr('m9-onboarding-week1.jpg','m9-onboarding-week4.jpg','Week 1 orientation, and Week 4 independent execution')}
-<div class="card">
+add('m9','A prompt that built an onboarding plan','Lesson',
+`<h1>Thirty days, planned day by day.</h1>
+<p class="lead">Clear context, role specific requirements and desired outcomes produced a structured onboarding plan wiring in Propel, ActivePipe, Design Vault and ListTrac from the pre Day 1 access checklist onward.</p>`,
+`<div class="card">
   <div class="kv"><div class="k">Week 1</div><div>Onboarding, company orientation, building a foundation: role, expectations, tools, workflows.</div></div>
   <div class="kv"><div class="k">Week 2</div><div>Hands on training on the key systems, platforms and processes.</div></div>
   <div class="kv"><div class="k">Week 3</div><div>Practical application. Daily tasks with defined objectives to build confidence and independence.</div></div>
   <div class="kv"><div class="k">Week 4</div><div>Independent execution, closing with a formal 30 day review and 60 day goals.</div></div>
-</div>`);
+</div>`,
+fig(`<div style="background:#fff;border:1px solid var(--line-2);border-radius:8px;padding:14px">
+  <div style="font-size:11.5px;font-weight:800;color:var(--v-navy)">30 day onboarding &middot; transaction coordinator</div>
+  <div style="display:flex;gap:5px;flex-wrap:wrap;margin:8px 0 12px">
+    ${['Start June 5','Manager: Bertha','3 yrs experience'].map(x=>`<span style="background:var(--soft);border-radius:4px;padding:3px 8px;font-size:9.5px;font-weight:600;color:var(--v-muted)">${x}</span>`).join('')}
+  </div>
+  ${[['Week 1','Orientation & foundation','#e8f1fa'],['Week 2','Systems training','#f6efe2'],['Week 3','Practical application','#e9f5ec'],['Week 4','Independent execution','#f0ecf9']].map(([w,t,bg])=>
+   `<div style="display:flex;gap:10px;align-items:center;background:${bg};border-radius:6px;padding:8px 10px;margin-bottom:6px">
+      <span style="font-size:9.5px;font-weight:800;color:var(--v-navy);width:46px;flex:none">${w}</span>
+      <span style="font-size:11px;color:var(--v-ink)">${t}</span>
+    </div>`).join('')}
+  <div style="font-size:9.5px;color:var(--v-muted);margin-top:8px">Pre Day 1: Propel &middot; ActivePipe &middot; Design Vault &middot; ListTrac access</div>
+</div>`,'Slides 95 to 99, the generated onboarding roadmap, rebuilt.'));
 
-add('m9','Final check','Quiz','__QUIZ__m9');
+add('m9','Final check','Quiz','__Q__m9','','');
 
 /* ============ PROMPT LIBRARY DATA ============ */
 const PROMPTS=[
@@ -1029,15 +1458,15 @@ const QUIZ={
 /* ============ STATE ============ */
 let idx=0, done=[], scores={}, booted=false;
 try{
-  done=JSON.parse(localStorage.getItem('mt2_done')||'[]');
-  scores=JSON.parse(localStorage.getItem('mt2_scores')||'{}');
-  idx=+(localStorage.getItem('mt2_idx')||0);
+  done=JSON.parse(localStorage.getItem('mt3_done')||'[]');
+  scores=JSON.parse(localStorage.getItem('mt3_scores')||'{}');
+  idx=+(localStorage.getItem('mt3_idx')||0);
 }catch(e){}
 if(!(idx>=0&&idx<L.length))idx=0;
 const save=()=>{try{
-  localStorage.setItem('mt2_done',JSON.stringify(done));
-  localStorage.setItem('mt2_scores',JSON.stringify(scores));
-  localStorage.setItem('mt2_idx',idx);
+  localStorage.setItem('mt3_done',JSON.stringify(done));
+  localStorage.setItem('mt3_scores',JSON.stringify(scores));
+  localStorage.setItem('mt3_idx',idx);
 }catch(e){}};
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -1052,14 +1481,14 @@ function renderSide(){
   $('#sideNav').innerHTML=MODS.map(mo=>{
     const ls=lessonsOf(mo.id), d=ls.filter(l=>done.includes(l.i)).length;
     const all=d===ls.length, isCur=cur&&cur.m===mo.id;
-    return `<section class="mod ${all?'done':''} ${isCur?'active open':''}">
+    return `<section class="mod ${all?'fin':''} ${isCur?'active open':''}">
       <button class="mod-h" onclick="tMod(this)" aria-expanded="${isCur}">
         <span class="mod-n">${all?'&#10003;':modNum(mo.id)}</span>
         <span class="mod-t"><span class="nm">${mo.n}</span><span class="ct">${d}/${ls.length} &middot; ${mo.d}</span></span>
         <span class="mod-chev">&#9656;</span>
       </button>
       <div class="mod-b">${ls.map(l=>`
-        <button class="les ${done.includes(l.i)?'done':''} ${l.i===idx?'cur':''}" onclick="jumpTo(${l.i})">
+        <button class="les ${done.includes(l.i)?'seen':''} ${l.i===idx?'cur':''}" onclick="jumpTo(${l.i})">
           <span class="les-tick">&#10003;</span>
           <span class="les-x">${l.t}${l.k==='Quiz'?'<span class="les-kind">Knowledge check</span>':''}</span>
         </button>`).join('')}</div>
@@ -1088,7 +1517,17 @@ function closeSide(){$('#side').classList.remove('open');$('#sideVeil').classLis
 /* ============ RENDER ============ */
 function render(){
   const l=L[idx], mo=modOf(l.m);
-  const body=l.html.startsWith('__QUIZ__')?quizHtml(l.html.slice(8)):l.html;
+  let body;
+  if(l.head.startsWith('__Q__')){
+    body=quizHtml(l.head.slice(5));
+  }else{
+    const split=!!l.med;
+    body=`<div class="head">${l.head}</div>
+      <div class="lay ${split?'split':''}">
+        <div class="txt">${l.txt}</div>
+        ${split?`<div class="med">${l.med}</div>`:''}
+      </div>`;
+  }
   $('#lesson').innerHTML=
     `<div class="crumb"><span class="pill">Module ${modNum(l.m)}</span><span>${mo.n}</span><span class="sep">&rsaquo;</span><span>${l.k}</span></div>${body}`;
   $('#stage').scrollTop=0;
@@ -1096,12 +1535,10 @@ function render(){
   $('#btnPrev').disabled=idx===0;
   const last=idx===L.length-1, nxt=L[idx+1];
   $('#btnNext').innerHTML=last?'Finish &#10003;':'Next &rarr;';
-  $('#posLbl').innerHTML=last
-    ? `Last lesson &middot; <b>${l.t}</b>`
-    : `Up next: <b>${nxt.t}</b>`;
+  $('#posLbl').innerHTML=last?`Last lesson &middot; <b>${l.t}</b>`:`Up next: <b>${nxt.t}</b>`;
 
-  if(l.k!=='Quiz'&&!done.includes(idx)){done.push(idx);}
-  if(l.html==='__QUIZ__m9'||l.t==='The prompt library')setTimeout(renderPlib,0);
+  if(l.k!=='Quiz'&&!done.includes(idx))done.push(idx);
+  if(l.t==='The prompt library')setTimeout(renderPlib,0);
   renderSide();save();
 }
 function go(d){
@@ -1114,9 +1551,9 @@ function go(d){
 /* ============ QUIZ ============ */
 function quizHtml(mid){
   const Q=QUIZ[mid], mo=modOf(mid);
-  return `<h1>${mo.n}: <em>knowledge check</em></h1>
-  <p class="lead">Answer each question to complete the module. Miss one and the correct answer appears with an explanation, so it still counts as learning.</p>
-  <div class="quiz" data-m="${mid}">
+  return `<div class="head"><h1>${mo.n}: <em>knowledge check</em></h1>
+  <p class="lead">Answer each question to complete the module. Miss one and the correct answer appears with an explanation, so it still counts as learning.</p></div>
+  <div class="lay"><div class="txt"><div class="quiz" data-m="${mid}">
     <span class="eyebrow">Module ${modNum(mid)} &middot; ${Q.q.length} question${Q.q.length>1?'s':''}</span>
     <h2>${Q.t}</h2>
     <p class="qsub">Choose the best answer for each.</p>
@@ -1126,7 +1563,7 @@ function quizHtml(mid){
       <div class="qfb"></div>
     </div>`).join('')}
     <div class="qscore" id="qscore"><span class="num" id="qnum"></span><span class="lbl" id="qlbl"></span></div>
-  </div>`;
+  </div></div></div>`;
 }
 function ans(btn,qi,oi){
   const wrap=btn.closest('.quiz'), mid=wrap.dataset.m, Q=QUIZ[mid], q=Q.q[qi], box=btn.closest('.qq');
@@ -1176,23 +1613,6 @@ function copyPre(btn){
 }
 function copyHex(h){navigator.clipboard.writeText(h).then(()=>toast('&#10003; '+h+' copied'));}
 
-/* ============ LIGHTBOX ============ */
-let lbList=[],lbI=0;
-function openLb(f){
-  lbList=$$('.slide img').map(i=>i.getAttribute('src').split('/').pop());
-  lbI=Math.max(0,lbList.indexOf(f));
-  paintLb();$('#lb').classList.add('on');
-}
-function paintLb(){
-  $('#lbImg').src=IMG+lbList[lbI];
-  $('#lbCount').textContent=lbList.length>1?`${lbI+1} / ${lbList.length}`:'';
-  const one=lbList.length<2;
-  $('.lb-prev').style.display=one?'none':'grid';
-  $('.lb-next').style.display=one?'none':'grid';
-}
-function closeLb(e,force){if(force||e.target.id==='lb'||e.target.classList.contains('lb-x'))$('#lb').classList.remove('on');}
-function lbNav(e,d){e.stopPropagation();if(lbList.length<2)return;lbI=(lbI+d+lbList.length)%lbList.length;paintLb();}
-
 /* ============ COMPLETION ============ */
 function showDone(){
   const tot=Object.values(scores).reduce((a,s)=>a+s.t,0), got=Object.values(scores).reduce((a,s)=>a+s.c,0);
@@ -1201,7 +1621,7 @@ function showDone(){
     <span class="eyebrow">Training complete</span>
     <h2>You know the ecosystem.</h2>
     <p>Brand, playbook, the five platforms and the prompt library. You are ready to produce work that passes a brand review the first time.</p>
-    <div class="stats" style="grid-template-columns:repeat(3,1fr);max-width:420px">
+    <div class="stats">
       <div class="s"><b>${L.length}</b><span>Lessons</span></div>
       <div class="s"><b>${got}/${tot||0}</b><span>Quiz answers</span></div>
       <div class="s"><b>9</b><span>Modules</span></div>
@@ -1220,12 +1640,6 @@ function resetAll(){
 
 /* ============ KEYS + BOOT ============ */
 document.addEventListener('keydown',e=>{
-  if($('#lb').classList.contains('on')){
-    if(e.key==='Escape')$('#lb').classList.remove('on');
-    else if(e.key==='ArrowLeft')lbNav(e,-1);
-    else if(e.key==='ArrowRight')lbNav(e,1);
-    return;
-  }
   if(/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))return;
   if(e.key==='ArrowLeft'){e.preventDefault();go(-1);}
   if(e.key==='ArrowRight'){e.preventDefault();go(1);}
