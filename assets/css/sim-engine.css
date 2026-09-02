@@ -276,42 +276,121 @@
 .sim-walk-dots {
   display: flex;
   gap: 6px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .sim-walk-dot {
-  width: 7px;
-  height: 7px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: var(--sim-line);
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  transition: all .15s ease;
   flex: none;
 }
 
+.sim-walk-dot.clickable:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
+}
+
 .sim-walk-dot.done {
-  background: var(--sim-accent);
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
 }
 
 .sim-walk-dot.current {
-  width: 9px;
-  height: 9px;
-  background: #fff;
-  border: 2px solid var(--sim-accent);
-  margin-top: -1px;
+  background: var(--sim-accent, #2563eb);
+  color: #ffffff;
+  border-color: var(--sim-accent-d, #1d4ed8);
+  transform: scale(1.12);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, .3);
+}
+
+/* Stepper Bar & Navigation */
+.sim-walk-stepper-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.sim-walk-step-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  transition: all .15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sim-walk-step-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.sim-walk-step-btn.next {
+  background: var(--sim-accent, #2563eb);
+  color: #ffffff;
+  border-color: var(--sim-accent-d, #1d4ed8);
+}
+
+.sim-walk-step-btn.next:hover:not(:disabled) {
+  opacity: .92;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .12);
+}
+
+.sim-walk-step-btn:disabled,
+.sim-walk-step-btn.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.sim-walk-step-indicator {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: .2px;
 }
 
 .sim-walk-exit {
-  margin-top: 10px;
+  margin-top: 8px;
   font-size: 11px;
   font-weight: 700;
-  color: var(--sim-muted);
+  color: #94a3b8;
   cursor: pointer;
   display: flex;
-  gap: 14px;
-  align-items: center;
+  justify-content: flex-end;
+}
+
+.sim-walk-exit > span {
+  cursor: pointer;
+  transition: color .12s;
 }
 
 .sim-walk-exit > span:hover {
-  color: var(--sim-bad);
+  color: #ef4444;
   text-decoration: underline;
 }
 
