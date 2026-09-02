@@ -49,7 +49,7 @@ function qzShiftISO(iso) {
 
 const QZ_TODAY = qzShiftISO(QZ_ANCHOR);
 
-/* Target value for Lesson 2's "first tracked edit" exercise (de-edit): the buyer's phone
+/* Target value for the "first tracked edit" exercise (de-edit, Lesson 1): the buyer's phone
    number on the order (john.smith@example.com's Jon Smith / ORD-2026-1483) is (469) 555-0142.
    The walkthrough tells the trainee the buyer called with this updated number, and only
    counts the edit once it matches exactly, so the exercise checks real data-entry accuracy
@@ -144,17 +144,19 @@ const QZ_DOCUMENTS = [
   { id: 14, orderId: 'ORD-2026-1483', name: 'Source Deed', type: 'Title', status: 'Reviewed', uploadedBy: 'Lucas Adminton', date: '2026-06-18', file: 'documents/source-deed-1483.html' },
   { id: 15, orderId: 'ORD-2026-1483', name: 'Proposed Deed (Draft)', type: 'Title', status: 'Received', uploadedBy: 'Lucas Adminton', date: '2026-06-22', file: 'documents/proposed-deed-1483.html' },
   { id: 3, orderId: 'ORD-2026-1483', name: 'Loan Estimate', type: 'Lender', status: 'Pending', uploadedBy: '—', date: '—', file: 'documents/loan-estimate-1483.html' },
+  { id: 17, orderId: 'ORD-2026-1483', name: 'Addendum No. 1', type: 'Contract', status: 'Reviewed', uploadedBy: 'Samantha Bee', date: '2026-07-24', file: 'documents/addendum-1483.html' },
   { id: 4, orderId: 'ORD-2026-1483', name: 'Homeowners Insurance Binder', type: 'Insurance', status: 'Received', uploadedBy: 'John Smith', date: '2026-06-25' },
 
   { id: 5, orderId: 'ORD-2026-1512', name: 'Purchase Agreement', type: 'Contract', status: 'Reviewed', uploadedBy: 'Dana Ruiz', date: '2026-05-15' },
-  { id: 6, orderId: 'ORD-2026-1512', name: 'Title Commitment', type: 'Title', status: 'Reviewed', uploadedBy: 'Lucas Adminton', date: '2026-06-02' },
+  { id: 6, orderId: 'ORD-2026-1512', name: 'Title Commitment', type: 'Title', status: 'Reviewed', uploadedBy: 'Lucas Adminton', date: '2026-06-02', file: 'documents/commitment-schedule-b-1512.html' },
   { id: 7, orderId: 'ORD-2026-1512', name: 'HOA Resale Certificate', type: 'HOA', status: 'Pending', uploadedBy: '—', date: '—' },
   { id: 8, orderId: 'ORD-2026-1512', name: 'Survey', type: 'Property', status: 'Received', uploadedBy: 'Marcus Webb', date: '2026-06-18' },
 
   { id: 9, orderId: 'ORD-2026-1398', name: 'Purchase Agreement', type: 'Contract', status: 'Reviewed', uploadedBy: 'Paula Aragone', date: '2026-04-23' },
   { id: 10, orderId: 'ORD-2026-1398', name: 'Title Commitment', type: 'Title', status: 'Reviewed', uploadedBy: 'Lucas Adminton', date: '2026-05-10' },
   { id: 11, orderId: 'ORD-2026-1398', name: 'Final Loan Documents', type: 'Lender', status: 'Pending', uploadedBy: '—', date: '—' },
-  { id: 12, orderId: 'ORD-2026-1398', name: 'Closing Disclosure', type: 'Lender', status: 'Pending', uploadedBy: '—', date: '—' }
+  { id: 12, orderId: 'ORD-2026-1398', name: 'Closing Disclosure', type: 'Lender', status: 'Pending', uploadedBy: '—', date: '—', file: 'documents/closing-disclosure-1398.html' },
+  { id: 16, orderId: 'ORD-2026-1398', name: 'Payoff Statement', type: 'Payoff', status: 'Received', uploadedBy: 'Northgate Home Loans', date: '2026-08-02', file: 'documents/payoff-statement-1398.html' }
 ];
 
 const QZ_TASKS = [
@@ -165,7 +167,7 @@ const QZ_TASKS = [
   { id: 4, title: 'Request HOA Resale Certificate from management company', assignedTo: 'You (VA)', dueDate: '2026-08-13', status: 'In Progress', relatedOrderId: 'ORD-2026-1512' },
   { id: 5, title: "Notify buyer's agent of outstanding HOA item", assignedTo: 'You (VA)', dueDate: '2026-08-14', status: 'Open', relatedOrderId: 'ORD-2026-1512' },
 
-  { id: 6, title: 'Log lender follow-up call re: final loan documents', assignedTo: 'You (VA)', dueDate: '2026-08-12', status: 'Open', relatedOrderId: 'ORD-2026-1398' },
+  { id: 6, title: 'Log lender follow-up call re: final loan documents', assignedTo: 'Samantha Bee', dueDate: '2026-08-12', status: 'In Progress', relatedOrderId: 'ORD-2026-1398' },
   { id: 7, title: 'Escalate closing date change to supervisor for confirmation', assignedTo: 'You (VA)', dueDate: '2026-08-13', status: 'Open', relatedOrderId: 'ORD-2026-1398' },
   { id: 8, title: 'Update all parties on revised closing date', assignedTo: 'You (VA)', dueDate: '2026-08-14', status: 'Open', relatedOrderId: 'ORD-2026-1398' }
 ];
@@ -199,11 +201,11 @@ const QZ_MESSAGES = [
 const QZ_VENDORS = [
   { id: 1, orderId: 'ORD-2026-1483', name: 'Best Closing Inc.', service: 'Title & Settlement', status: 'In Progress' },
   { id: 2, orderId: 'ORD-2026-1483', name: 'North Texas Notary Group', service: 'Mobile Notary', status: 'Scheduled' },
-  { id: 3, orderId: 'ORD-2026-1483', name: 'Ace Home Inspections', service: 'Home Inspection', status: 'Completed' },
+  { id: 3, orderId: 'ORD-2026-1483', name: 'Ace Home Inspections', service: 'Home Inspection', status: 'Complete' },
 
   { id: 4, orderId: 'ORD-2026-1512', name: 'Best Closing Inc.', service: 'Title & Settlement', status: 'In Progress' },
   { id: 5, orderId: 'ORD-2026-1512', name: 'Ridgeview HOA Management', service: 'HOA Resale Certificate', status: 'Pending Confirmation' },
-  { id: 6, orderId: 'ORD-2026-1512', name: 'Precision Land Surveying', service: 'Survey', status: 'Completed' },
+  { id: 6, orderId: 'ORD-2026-1512', name: 'Precision Land Surveying', service: 'Survey', status: 'Complete' },
 
   { id: 7, orderId: 'ORD-2026-1398', name: 'Best Closing Inc.', service: 'Title & Settlement', status: 'In Progress' },
   { id: 8, orderId: 'ORD-2026-1398', name: 'Lakeshore Notary Services', service: 'Mobile Notary', status: 'Pending Confirmation' }
@@ -241,10 +243,10 @@ const QZ_CHECKLISTS = {
   ]},
   vendors: { label: 'Vendors', items: [
     { id: 'vendors-open', label: 'Open the Vendors tab' },
-    { id: 'vendors-check', label: "Check a vendor's status" }
+    { id: 'vendors-check', label: "Update a vendor's status" }
   ]},
   closing: { label: 'Closing', items: [
-    { id: 'closing-open', label: 'Open the Closing tab' },
+    { id: 'closing-open', label: 'Open the Disclosures page' },
     { id: 'closing-review', label: 'Review the closing checklist' }
   ]},
   accounting: { label: 'Accounting', items: [
@@ -316,6 +318,19 @@ const QZ_SCENARIOS = [
     }
   },
   {
+    id: 'not-a-typo',
+    title: 'A name discrepancy that is not a typo',
+    situation: 'You are reviewing documents on a file and notice that a name on a legal document does not exactly match the recorded deed. The difference is not a misspelling — it includes missing legal language about how title is held (for example, a middle initial and "a single person"). A coworker suggests you just update the name to match.',
+    options: [
+      'Update the name yourself — matching the deed is always the right thing to do, and the file needs to keep moving',
+      'Flag it but make the correction anyway, since leaving a known discrepancy unresolved is worse than fixing it quickly',
+      'Do not touch it — vesting language on a deed is a legal matter, not a data correction, and it goes to the Settlement Agent to confirm',
+      'Ask the parties directly which version of their name they prefer'
+    ],
+    correct: 2,
+    explanation: 'Deed vesting is legal language that determines what the deed conveys and what the title policy insures. It looks like a name field, but it is not one: "Tanya Hart" and "Tanya R. Hart, a single person" are legally different. A VA never edits vesting directly. The Settlement Agent must confirm the correct form before any document is prepared. Recognizing what is NOT your correction to make is as important as catching what is.'
+  },
+  {
     id: 'lender-followup',
     title: 'The lender has not sent final loan documents',
     situation: () => `Order ORD-2026-1398 is waiting on final loan documents from Northgate Home Loans. The lender has already told you in writing that they are behind. Closing is ${qzDaysPhrase(qzGetOrder('ORD-2026-1398').closingDate)}.`,
@@ -366,7 +381,7 @@ const QZ_SCENARIOS = [
     ],
     correct: 1,
     explanation: 'Three of these compare the price to something downstream of the contract. The Loan Estimate reflects what the lender underwrote, Accounting reflects what was entered, and internal consistency only proves the same number was copied around. If the contract price was mistyped at intake, every one of those agrees with the mistake. Verification means going back to the document the number came from, and doing it whether or not anything looks wrong.'
-    // No practice CTA here either, same reasoning as buyer-name-error: Lesson 5's two verify
+    // No practice CTA here either, same reasoning as buyer-name-error: Lesson 4's two verify
     // steps (rev-1483-price, rev-1483-inspection) already do this exact comparison for real.
   },
   {
@@ -414,7 +429,10 @@ const QZ_SCENARIOS = [
   {
     id: 'task-honesty',
     title: 'A task says "In Progress" but nothing has been done',
-    situation: 'A coworker marked a task as "In Progress" on your file last week, but when you check, no actual work has been done on it. The task is due in two days.',
+    situation: () => {
+      const t = QZ_TASKS.find(x => x.id === 6);
+      return `On Order ORD-2026-1398, "${t.title}" is assigned to ${t.assignedTo} and has shown "${t.status}" since last week. You check the file: no call has been logged and nothing on the thread says it happened. It is due ${qzDaysPhrase(t.dueDate)}.`;
+    },
     options: [
       'Follow up with the person who owns it to confirm where it stands, then update the status to match what is actually true',
       'Leave the status alone and raise it with your supervisor: changing someone else\'s entry is not your call',
@@ -448,7 +466,7 @@ const QZ_SCENARIOS = [
   {
     id: 'accounting-flag',
     title: 'You spot a charge that does not match',
-    // Reads the live charge instead of naming a number in prose: Lesson 3's inspection review
+    // Reads the live charge instead of naming a number in prose: Lesson 2's inspection review
     // can correct this very figure, and the scenario used to keep quoting the pre-correction
     // amount, describing a screen the trainee could no longer see.
     situation: () => {
@@ -469,7 +487,7 @@ const QZ_SCENARIOS = [
     title: 'Outstanding documents at closing time',
     situation: () => {
       const o = qzGetOrder('ORD-2026-1398');
-      return `You open the Closing tab on Order ORD-2026-1398 and see Final Loan Documents and Closing Disclosure both still marked Pending. Closing is ${qzDaysPhrase(o.closingDate)}, on ${fmtDate(o.closingDate)}, and this file's date has already moved once.`;
+      return `You open Disclosures on Order ORD-2026-1398 and see Final Loan Documents and Closing Disclosure both still marked Pending. Closing is ${qzDaysPhrase(o.closingDate)}, on ${fmtDate(o.closingDate)}, and this file's date has already moved once.`;
     },
     options: [
       'Flag both as outstanding, follow up with the lender for a submission date, and keep the file out of closing-ready until they arrive',
@@ -481,7 +499,7 @@ const QZ_SCENARIOS = [
     explanation: 'Lender packages really do arrive late in the process, so waiting is not an unreasonable instinct — but on a file whose date has already slipped once, "it usually shows up" is the assumption that produced the first delay. Escalating is premature while you have not yet asked the lender for a date. And "closing-ready with a note" is the quiet one: a status everyone downstream trusts, qualified by a caveat only someone who opens the file will read. Chase the date, keep the status honest, and escalate when the answer you get is bad — not before you have asked.'
   }
   ,
-  /* --- Lesson 9: document hierarchy --------------------------------------- */
+  /* --- Lesson 7: document hierarchy --------------------------------------- */
   {
     id: 'which-governs',
     title: 'Two documents, two numbers',
@@ -496,7 +514,7 @@ const QZ_SCENARIOS = [
     explanation: 'A later instrument that expressly amends a term replaces that term; the base contract survives for everything the addendum did not touch, which is why "the contract governs" is nearly right but not the answer here. The loan estimate is downstream: it reflects what the lender was told, so when it disagrees with the contract, it is evidence that the lender has not been updated, not evidence about the price. And counting how many documents repeat a number measures how far an error travelled, not whether it is correct.'
   },
 
-  /* --- Lesson 10: wire fraud ---------------------------------------------- */
+  /* --- Lesson 8: wire fraud ----------------------------------------------- */
   {
     id: 'wire-first-instinct',
     title: 'An email changes where the money goes',
@@ -524,7 +542,7 @@ const QZ_SCENARIOS = [
     explanation: 'This one really is legitimate, which is what makes it hard. Accepting it because it looks right skips the verification the document itself demands, and "they asked me to verify" is not the same as having verified. Treating every wire change as fraud is its own failure: real lockbox changes happen, and a VA who cannot process one is not doing the job. Calling the number in the email is the subtle trap, an attacker supplies their own callback number. Use the number on the statement, then hand it to the person with authority to act on it.'
   },
 
-  /* --- Lesson 11: title commitment ---------------------------------------- */
+  /* --- Lesson 7: title commitment ----------------------------------------- */
   {
     id: 'schedule-b-basics',
     title: 'What Schedule B is for',
@@ -539,7 +557,7 @@ const QZ_SCENARIOS = [
     explanation: 'Requirements are conditions: satisfy them and the policy issues. Exceptions are carve-outs: they survive closing and describe what the policy will never insure against. The distinction matters because a VA clears requirements and never "clears" exceptions. The other framings sound reasonable but collapse the two into one idea, which is exactly the mistake that leads someone to treat a standing easement as an outstanding task.'
   },
 
-  /* --- Lesson 12: prorations and payoff ----------------------------------- */
+  /* --- Lesson 6: prorations and payoff ------------------------------------ */
   {
     id: 'proration-basics',
     title: 'Prorating the annual tax bill',
@@ -567,7 +585,7 @@ const QZ_SCENARIOS = [
     explanation: 'Your arithmetic tells the file how big the gap is, which is worth knowing, but the servicer\'s figure is what releases the lien. Funding your own calculation risks being short by a fee you could not see, and a short payoff means the lien stays on the property after closing. Using the stale figure guarantees that outcome. Involving the seller to paper over it moves a servicing problem onto a party who cannot fix it. Order a current statement.'
   },
 
-  /* --- Lesson 13: triage --------------------------------------------------- */
+  /* --- Lesson 9: triage ---------------------------------------------------- */
   {
     id: 'triage-order',
     title: 'Five things happened overnight',
@@ -625,7 +643,7 @@ const QZ_SCENARIOS = [
     explanation: 'This is the one you leave alone, and it is harder than it looks after a morning of finding problems. The figure agrees with its source, the status is accurate, and the work was done. Re-checking it, chasing payment that is not yours to chase, or annotating the file to show you looked all consume time the rest of the queue needed. Recognising that something is finished is part of triage, not an absence of it.'
   },
 
-  /* --- Lesson 14: capstone ------------------------------------------------- */
+  /* --- Lesson 10: capstone ------------------------------------------------- */
   {
     id: 'over-escalation',
     title: 'The cost of flagging everything',
@@ -654,8 +672,8 @@ const QZ_SCENARIOS = [
             with escalate-, a closed-list category (rightCategory) plus an ungraded free note.
    Overall `correct` = every applicable graded sub-part correct. This same shape is reused
    by the exam's `verify` items (see QZ_EXAM_ITEMS) through the same grading engine. */
-// Order matches how Lesson 3 visits them (buyer -> price -> inspection -> vesting), then loan
-// at the end since it's only used later in Lesson 4. The Review tab lists every item for an
+// Order matches how Lesson 2 visits them (buyer -> price -> inspection), with vesting and
+// the legal description after them since Lesson 3 is where those two are now read. The Review tab lists every item for an
 // order in this array's order, so this keeps the on-screen list and the walkthrough's
 // highlight moving top-to-bottom together instead of jumping around the page.
 const QZ_REVIEWS = [
@@ -675,6 +693,18 @@ const QZ_REVIEWS = [
     ],
     rightSourceOptionId: 'b',
     rightAction: 'correct',
+    /* Where the trainee goes to fix it. A value that is wrong on the order is corrected on the
+       screen that owns it, in the product's own form, not typed into the exercise. Only set on
+       items whose field a VA can actually edit: the charges grid is read-only in Lesson mode,
+       so rev-1483-inspection has no fixAt and keeps the inline field.
+       Rendered by qzRevItemHTML step 4, acted on by qzRevGoFix. */
+    fixAt: { tab: 'dataentry', deTab: 'parties', label: 'Data Entry → Parties', sel: '.qz-party-card[data-role="Buyer"] input[data-field="name"]' },
+    /* Where this value LIVES in Core. Declaring it opts the item into the ask layer:
+       the question is posed as a dialog over this screen with the field itself ringed,
+       and the correction is made in this form. Without it the item still renders on the
+       standalone Document Review page, which is what every review outside this lesson
+       still does. See the ASK LAYER block in qualia-app.js. */
+    fieldAt: { tab: 'dataentry', deTab: 'parties', label: 'Data Entry → Parties', sel: '.qz-party-card[data-role="Buyer"] input[data-field="name"]' },
     rightCategory: null,
     correctedValue: 'John Smith',
     partyRole: 'Buyer',
@@ -689,6 +719,7 @@ const QZ_REVIEWS = [
     instruction: 'Verify the purchase price on the order against the Purchase Agreement.',
     doc: 'documents/purchase-agreement-1483.html', docTitle: 'Purchase Agreement',
     systemValue: '$365,120.00',
+    fieldAt: { tab: 'dataentry', deTab: 'transaction', label: 'Data Entry → Transaction Information', sel: '#qzDePrice' },
     sourceOptions: [
       { id: 'a', text: '$365,120.00 — matches, no discrepancy' },
       { id: 'b', text: '$365,210.00' },
@@ -711,6 +742,7 @@ const QZ_REVIEWS = [
     instruction: 'Open the Home Inspection Invoice and confirm the charge on the order matches what the vendor actually billed.',
     doc: 'documents/home-inspection-invoice-1483.html', docTitle: 'Home Inspection Invoice',
     systemValue: '$450.00',
+    fieldAt: { tab: 'accounting', label: 'Accounting → Settlement Statement', sel: 'tr[data-acct-desc="Home Inspection Fee"]' },
     sourceOptions: [
       { id: 'a', text: '$450.00 — matches, no discrepancy' },
       { id: 'b', text: '$425.00' },
@@ -720,6 +752,11 @@ const QZ_REVIEWS = [
     rightSourceOptionId: 'b',
     rightAction: 'correct',
     rightCategory: null,
+    /* The Lesson-mode settlement grid stays read-only everywhere except this one line
+       while a correction is in flight: acctDesc names the line, and qzAccountingHTML
+       opens that single cell. Before this the item had no fixAt at all and the figure
+       was typed into the exercise instead of onto the statement that carries it. */
+    fixAt: { tab: 'accounting', label: 'Accounting → Settlement Statement', acctDesc: 'Home Inspection Fee', sel: '#qzAcctFixInput' },
     correctedValue: '425.00',
     partyRole: null,
     field: 'inspectionCharge',
@@ -733,6 +770,7 @@ const QZ_REVIEWS = [
     instruction: 'Compare how the seller (grantor) is vested on the Proposed Deed against the Source Deed.',
     doc: 'documents/source-deed-1483.html', docTitle: 'Source Deed',
     systemValue: 'Tanya Hart',
+    fieldAt: { tab: 'dataentry', deTab: 'parties', label: 'Data Entry → Parties', sel: '.qz-party-card[data-role="Seller"] input[data-field="name"]' },
     sourceOptions: [
       { id: 'a', text: 'Tanya Hart — matches, no discrepancy' },
       { id: 'b', text: 'Tanya R. Hart' },
@@ -762,6 +800,7 @@ const QZ_REVIEWS = [
     instruction: 'Open the Title Commitment and compare the legal description in Schedule A against the one recorded on this order.',
     doc: 'documents/title-commitment-1483.html', docTitle: 'Title Commitment',
     systemValue: 'Lot 14, Block C, Maple Ridge Estates, Phase 1, Collin County, Texas',
+    fieldAt: { tab: 'dataentry', deTab: 'property', label: 'Data Entry → Property', sel: '#qzDeLegal' },
     sourceOptions: [
       { id: 'a', text: 'Lot 14, Block C, Maple Ridge Estates, Phase 1, Collin County, Texas — matches, no discrepancy' },
       { id: 'b', text: 'Lot 14, Block C, Maple Ridge Estates, Phase 2, Collin County, Texas' },
@@ -892,6 +931,7 @@ const QZ_RECONCILES = [
         ],
         rightAction: 'correct',
         correctedValue: 'Received',
+        fixAt: { tab: 'documents', docId: 7, action: 'upload', sel: 'tr[data-doc-id="7"] [data-doc-action="upload"]' },
         field: null,
         explain: 'The certificate has actually arrived and it states the account is current, which satisfies the requirement. The order still shows it Pending. That is a status that no longer matches reality, and updating a document status is squarely within a VA\'s authority.'
       },
@@ -1083,20 +1123,20 @@ const QZ_ACTION_CHOICES = [
 ];
 const QZ_ACTION_LABEL = QZ_ACTION_CHOICES.reduce((m, a) => (m[a.id] = a.label, m), {});
 
-/* 14 lessons — the trainee's guided
+/* 10 lessons — the trainee's guided
    curriculum. Each step references an id that already
    lives in QZ_CHECKLISTS ('do'), QZ_REVIEWS ('verify'), or QZ_SCENARIOS ('decide') — no
    content is duplicated here. Lesson N+1 unlocks only once every step of lesson N is
    resolved correctly (lock state is always derived at render time, never stored). */
 const QZ_LESSONS = [
   {
-    id: 'l01-orientation', number: 1, title: 'Orientation & Navigation',
-    summary: 'Find your way around Orders, read where a file stands, and know your first move on anything new.',
-    // Merged with the old, separate "l02-overview-stage": its workflow-view step and the
-    // new-order decide step both belong to the same "getting oriented" arc as this lesson's
-    // search/open/back steps. new-order in particular fits here better than it fit on its
-    // own, "what do you do when a new file lands in your queue" is exactly what Orientation
-    // is about, and it gives this lesson the judgment component it didn't have before.
+    id: 'l01-orientation', number: 1, title: 'Orientation, Navigation & Data Entry',
+    summary: 'Find your way around Orders, read where a file stands, know your first move on anything new, and put the file together field by field.',
+    // Merged with the old 'l02-data-entry'. That lesson was four 'do' steps and nothing
+    // else — the only lesson in the course that asked for no judgment at all — and it was
+    // the shortest by a wide margin. Its four fields are the natural continuation of this
+    // lesson's arc: find the file, open it, read where it stands, then fill it in. The
+    // 'return to the Orders list' step moved to the end so it still closes the lesson.
     steps: [
       { type: 'do', checklistId: 'orders-search', walk: {
           target: '#qzTopSearchInput',
@@ -1143,57 +1183,48 @@ const QZ_LESSONS = [
         } },
       { type: 'do', checklistId: 'workflow-view', walk: {
           target: '[data-tab="workflow"]',
-          text: "Now click the Workflow tab to see exactly where this order stands right now.",
-          // Shown after the click instead of an instant auto-advance: a 3-stop mini-tour of
-          // the panel that just appeared (using live order data, not generic filler), so this
-          // step actually teaches "reading a file" instead of just "clicking a tab."
+          text: "🎯 Goal: Check where this file stands.\n👉 Action: Click the Workflow tab.\n💡 Context: Workflow provides a live stage overview and notes from the settlement team.",
           tour: [
             { target: '.qz-tl-step.current', text: () => `This marker shows exactly where the order is right now: "${QZ_STAGES[qzGetOrder('ORD-2026-1483').stageIndex]}".` },
             { target: '.qz-tl-status', text: () => `And this confirms it in words: ${qzGetOrder('ORD-2026-1483').statusNote}` },
-            { target: '.qz-tl-readonly-note', text: 'One more thing: this whole view is read-only. Workflow structure and stage rules are configured by admins, not by a VA, you read it, you never edit it directly.' }
+            { target: '.qz-tl-readonly-note', text: 'One more thing: this whole view is read-only. Workflow structure and stage rules are configured by admins, not by a VA — you read it, you never edit it directly.' }
           ],
           setup: () => qzOpenOrder('ORD-2026-1483')
         } },
       { type: 'decide', scenarioId: 'new-order', walk: {
           target: null,
-          text: "You just practiced opening a file and checking where it stands. Now think about a brand new one landing in your queue: read the situation below, then pick the option you believe is correct.",
-          setup: () => qzOpenScenario('new-order')
+          text: "🎯 Goal: Practice new order triage.\n👉 Action: Read the situation in the box on the right and select the correct first step.\n💡 Context: Understanding the intake sequence prevents costly delays later.",
+          setup: () => qzAskScenario('new-order', { orderId: 'ORD-2026-1483', tab: 'workflow', label: 'Workflow' })
         } },
-      // Closing the file's tab, not a back link and not the top-bar Orders section. The old
-      // `.qz-back` went away with the Connect shell, and Orders already renders as the active
-      // section while an order is open, so pointing there tells the trainee to click something
-      // that already looks selected. Core is a multi-document app: you leave a file by closing
-      // it, which is also the mechanic Lesson 13's triage exercise is built on.
-      { type: 'do', checklistId: 'orders-back', walk: {
-          target: '#qzOrderTabs [data-order-tab="ORD-2026-1483"] .x',
-          text: 'Last one. Core keeps every file you open as a tab up here, so you leave one by closing it: click the × on the "5445 Main Street" tab. With no files left open you land back on the Orders list.',
-          setup: () => { qzOpenOrder('ORD-2026-1483'); }
-        } }
-    ]
-  },
-  {
-    id: 'l02-data-entry', number: 2, title: 'Data Entry: Property & Parties',
-    summary: 'Tour the Data Entry tabs and make your first tracked edit.',
-    steps: [
       { type: 'do', checklistId: 'de-property', walk: {
           target: '[data-tab="dataentry"]',
-          text: 'Click the Data Entry tab. It opens straight to Property, the first stop.',
+          text: "🎯 Goal: Review property data fields.\n👉 Action: Click the Data Entry tab.\n💡 Context: Data Entry is where all core order details are maintained and verified.",
+          tour: [
+            { target: '#qzDeStreet', text: () => { const o = qzGetOrder('ORD-2026-1483'); return `The property address: ${o.propertyAddress}. Street, city, state, and zip — each in its own field.`; } },
+            { target: '#qzDeLegal', text: 'The legal description identifies the parcel on the deed, not just by street address. You will verify this against the Title Commitment in a later lesson.' },
+            { target: '.qz-subtabs', text: 'Data Entry has three sub-tabs: Property, Parties, and Transaction Information. Everything a VA enters on a file lives under one of these.' }
+          ],
           setup: () => qzOpenOrder('ORD-2026-1483')
         } },
       { type: 'do', checklistId: 'de-parties', walk: {
           target: '[data-detab="parties"]',
-          text: 'Click the Parties sub-tab to see everyone on this file.',
+          text: "🎯 Goal: Inspect transaction parties.\n👉 Action: Click the Parties sub-tab.\n💡 Context: Buyer and seller identities govern the entire title chain.",
+          tour: [
+            { target: '.qz-party-card[data-role="Buyer"]', text: () => { const o = qzGetOrder('ORD-2026-1483'); const b = o.parties.find(p => p.role === 'Buyer'); return `The buyer: ${b.name}. Name, email, and phone — all editable, and all must match the contract exactly.`; } },
+            { target: '.qz-party-card[data-role="Seller"]', text: () => { const o = qzGetOrder('ORD-2026-1483'); const s = o.parties.find(p => p.role === 'Seller'); return `The seller: ${s.name}. You will verify this name against the Source Deed in a later lesson.`; } }
+          ],
           setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('dataentry'); }
         } },
       { type: 'do', checklistId: 'de-transaction', walk: {
           target: '[data-detab="transaction"]',
-          text: 'Click Transaction Information to see the price, loan amount, and closing date.',
+          text: "🎯 Goal: Verify transaction figures.\n👉 Action: Click Transaction Information.\n💡 Context: Key figures determine escrow balances and closing settlement dates.",
+          tour: [
+            { target: '#qzDePrice', text: () => { const o = qzGetOrder('ORD-2026-1483'); return `Purchase price: ${fmtMoney(o.purchasePrice)}. This must match the Purchase Agreement — you will verify it in Lesson 2.`; } },
+            { target: '#qzDeClosing', text: () => { const o = qzGetOrder('ORD-2026-1483'); return `Closing date: ${fmtDate(o.closingDate)}. Every deadline, proration, and payoff on the file is calculated from this date.`; } }
+          ],
           setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('dataentry'); }
         } },
       { type: 'do', checklistId: 'de-edit', walk: {
-          // Stays on the phone field until it actually matches the target number, not just
-          // "something changed" (the Save button appears on the very first keystroke, which
-          // was yanking the highlight away before the trainee finished typing).
           target: () => {
             const phoneEl = document.querySelector('.qz-party-card[data-role="Buyer"] input[data-field="phone"]');
             const v = phoneEl ? phoneEl.value.trim() : '';
@@ -1201,8 +1232,6 @@ const QZ_LESSONS = [
             if (v === QZ_DE_EDIT_TARGET_PHONE && btn && btn.offsetParent !== null) return btn;
             return phoneEl;
           },
-          // Live text: a real target number to enter, not "type anything" — and it says so
-          // immediately if what's in the field doesn't match, same pattern as orders-search.
           text: () => {
             const phoneEl = document.querySelector('.qz-party-card[data-role="Buyer"] input[data-field="phone"]');
             const v = phoneEl ? phoneEl.value.trim() : '';
@@ -1211,91 +1240,67 @@ const QZ_LESSONS = [
             if (saveVisible && v && v !== QZ_DE_EDIT_TARGET_PHONE) {
               return `That doesn't match — the buyer said their new number is ${QZ_DE_EDIT_TARGET_PHONE}. Fix it, then click Save.`;
             }
-            return `The buyer just called with an updated phone number: ${QZ_DE_EDIT_TARGET_PHONE}. Type it into the Phone field, then click Save.`;
+            return `🎯 Goal: Update contact info.\n👉 Action: Enter ${QZ_DE_EDIT_TARGET_PHONE} in the Phone field, then click Save.\n💡 Context: Keeping party details up-to-date ensures seamless communication during closing.`;
           },
           setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('dataentry'); qzDeTab('parties'); }
+        } },
+      { type: 'do', checklistId: 'orders-back', walk: {
+          target: '#qzOrderTabs [data-order-tab="ORD-2026-1483"] .x',
+          text: "🎯 Goal: Close the open file.\n👉 Action: Click the × on the '5445 Main Street' tab.\n💡 Context: Closing open tabs returns you to your main Orders list.",
+          setup: () => { qzOpenOrder('ORD-2026-1483'); }
         } }
     ]
   },
   {
-    // Merged with the old "l04-verify-figures" (which had already absorbed vesting from an
-    // even older "l08-vesting-escalation"): buyer-name-error and data-error were teaching the
-    // identical habit ("verify against source, whether or not it turns out to be wrong") in
-    // two separate lessons back to back. One lesson now covers all 4 flavors of the
-    // discrepancy-report engine in escalating order: a plain typo, a value that's actually
-    // correct, a wrong figure, and a legal issue that isn't a VA's call to fix. Each decide
-    // sits right before the verify item it sets up, instead of both decides bunched at the
-    // front.
-    id: 'l03-verify-against-source', number: 3, title: 'Verify Against Source: Names, Figures & Vesting',
-    summary: 'Every field can be wrong, whether or not it turns out to be. Learn to check it before you trust it, and recognize what is not yours to fix.',
+    id: 'l02-verify-against-source', number: 2, title: 'Verify Against Source: Names & Figures',
+    summary: 'Never take a value on trust. Open the document it came from, compare it character by character, and record what you found either way.',
+    // Vesting and the legal description moved out to the Documents lesson: both are read
+    // off the deed and the commitment, which is what that lesson already covers, and this
+    // one was running half again as long as any other. What is left is the pure form of the
+    // skill — a name and three figures, each checked against the paper that governs it.
     steps: [
       { type: 'decide', scenarioId: 'buyer-name-error', walk: {
           target: null,
-          text: "Read the situation below, then pick the option you believe is correct. This sets the rule we're about to apply for real.",
-          setup: () => qzOpenScenario('buyer-name-error')
+          text: "Read the situation in the box on the right, then pick the option you believe is correct. This sets the rule we're about to apply for real.",
+          setup: () => qzAskScenario('buyer-name-error', { orderId: 'ORD-2026-1483', tab: 'dataentry', deTab: 'parties', label: 'Data Entry → Parties', sel: '.qz-party-card[data-role="Buyer"] input[data-field="name"]' })
         } },
       { type: 'verify', reviewId: 'rev-1483-buyer', walk: {
           target: () => qzVerifyTarget('rev-1483-buyer'),
           text: () => qzVerifyText('rev-1483-buyer'),
-          setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('review'); }
+          setup: () => { qzVerifyDrive('rev-1483-buyer'); }
         } },
       { type: 'decide', scenarioId: 'data-error', walk: {
           target: null,
-          text: "Same rule, a different kind of field. Read the situation below, then pick the option you believe is correct. This is what we're about to apply a few times.",
-          setup: () => qzOpenScenario('data-error')
+          text: "Same rule, a different kind of field. Read the situation in the box on the right. This is what we're about to apply a few times.",
+          setup: () => qzAskScenario('data-error', { orderId: 'ORD-2026-1483', tab: 'dataentry', deTab: 'transaction', label: 'Data Entry → Transaction Information', sel: '#qzDePrice' })
         } },
       { type: 'verify', reviewId: 'rev-1483-price', walk: {
           target: () => qzVerifyTarget('rev-1483-price'),
           text: () => qzVerifyText('rev-1483-price'),
-          setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('review'); }
+          setup: () => { qzVerifyDrive('rev-1483-price'); }
         } },
       { type: 'verify', reviewId: 'rev-1483-inspection', walk: {
           target: () => qzVerifyTarget('rev-1483-inspection'),
           text: () => qzVerifyText('rev-1483-inspection'),
-          setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('review'); }
-        } },
-      { type: 'verify', reviewId: 'rev-1483-vesting', walk: {
-          target: () => qzVerifyTarget('rev-1483-vesting'),
-          text: () => qzVerifyText('rev-1483-vesting'),
-          example: () => qzVerifyExample('rev-1483-vesting'),
-          setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('review'); }
-        } },
-      // Deliberately last: it's the only item in this lesson whose answer is neither "fix it"
-      // nor "escalate to the Settlement Agent", so it lands after the trainee has built the
-      // reflex — and breaks it.
-      { type: 'verify', reviewId: 'rev-1483-legal', walk: {
-          target: () => qzVerifyTarget('rev-1483-legal'),
-          text: () => qzVerifyText('rev-1483-legal'),
-          example: () => qzVerifyExample('rev-1483-legal'),
-          setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('review'); }
+          setup: () => { qzVerifyDrive('rev-1483-inspection'); }
         } }
     ]
   },
   {
-    // Merged with the old "l07-missing-document": both lived in the Documents domain, and
-    // this gives the lifecycle steps below a judgment component they didn't have on their
-    // own (nothing here previously tested whether the trainee understood that a status has
-    // to be honest, not just clicked through).
-    id: 'l04-documents', number: 4, title: 'Documents: Lifecycle & Verification',
-    summary: 'Move a document through its real lifecycle, verify a figure against it, then handle one that never showed up.',
-    // Same document (Loan Estimate, id 3 on ORD-2026-1483) through the first four steps on
-    // purpose: it starts Pending, so its own lifecycle demonstrates received -> viewed ->
-    // reviewed -> verified exactly as the summary above describes, no need to jump between rows.
+    id: 'l03-documents', number: 3, title: 'Documents: Lifecycle, Vesting & Legal Description',
+    summary: 'Move a document through its lifecycle, then learn to recognise what is a correction you make yourself and what is a legal matter you escalate.',
     steps: [
+      // --- Part 1: Document lifecycle (Upload → View → Mark Reviewed) ---
       { type: 'do', checklistId: 'docs-upload', walk: {
           target: 'tr[data-doc-id="3"] [data-doc-action="upload"]',
           text: "The Loan Estimate is still Pending. This is the Upload button, this is where you'd bring a new document into the file once it's received. There's no real file to upload in this practice, so just click Next to continue.",
-          // Nothing would really upload in this simulator, so don't make clicking the real
-          // button the requirement, just point at it and explain, then advance. nextAction
-          // still runs the real qzUploadDoc so the document's status genuinely changes to
-          // Received, keeping the next two steps (View, Mark Reviewed) working normally.
           skipClick: true,
           nextAction: () => qzUploadDoc(3),
           setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('documents'); }
         } },
       { type: 'do', checklistId: 'docs-download', walk: {
           target: 'tr[data-doc-id="3"] [data-doc-action="view"]',
-          text: "It's received. Click View to open it and confirm the details.",
+          text: "It's received. Click the document's name to open it and confirm the details.",
           setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('documents'); }
         } },
       { type: 'do', checklistId: 'docs-review', walk: {
@@ -1303,36 +1308,86 @@ const QZ_LESSONS = [
           text: 'Click "Mark Reviewed" to close out this document.',
           setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('documents'); }
         } },
-      { type: 'verify', reviewId: 'rev-1483-loan', walk: {
-          target: () => qzVerifyTarget('rev-1483-loan'),
-          text: () => qzVerifyText('rev-1483-loan'),
-          setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('review'); }
+      // --- Part 2: Not every discrepancy is yours to fix ---
+      { type: 'decide', scenarioId: 'not-a-typo', walk: {
+          target: null,
+          text: "In Lesson 2 you corrected typos and wrong figures. Now a different kind of discrepancy: read the situation in the box on the right.",
+          setup: () => qzAskScenario('not-a-typo', { orderId: 'ORD-2026-1483', tab: 'dataentry', deTab: 'parties', label: 'Data Entry → Parties', sel: '.qz-party-card[data-role="Seller"] input[data-field="name"]' })
+        } },
+      { type: 'verify', reviewId: 'rev-1483-vesting', walk: {
+          target: () => qzVerifyTarget('rev-1483-vesting'),
+          text: () => qzVerifyText('rev-1483-vesting'),
+          example: () => qzVerifyExample('rev-1483-vesting'),
+          setup: () => { qzVerifyDrive('rev-1483-vesting'); }
+        } },
+      // Deliberately after vesting: the trainee just learned to escalate to the Settlement
+      // Agent, and this item breaks that reflex — it goes to the supervisor instead.
+      { type: 'verify', reviewId: 'rev-1483-legal', walk: {
+          target: () => qzVerifyTarget('rev-1483-legal'),
+          text: () => qzVerifyText('rev-1483-legal'),
+          example: () => qzVerifyExample('rev-1483-legal'),
+          setup: () => { qzVerifyDrive('rev-1483-legal'); }
+        } },
+      // --- Part 3: A document that has not arrived at all ---
+      { type: 'do', checklistId: 'orders-open', orderId: 'ORD-2026-1512', walk: {
+          target: () => document.querySelector('tr[data-order-id="ORD-2026-1512"]') || '#qzTopSearchInput',
+          text: () => {
+            if (document.querySelector('tr[data-order-id="ORD-2026-1512"]')) return 'This next case is on a different file. Click this row to open Order ORD-2026-1512 (812 Birchwood Lane).';
+            return 'This next case is on a different file. Type "1512" to find Order ORD-2026-1512.';
+          },
+          setup: () => {
+            qzState.view = 'orders'; qzState.orderId = null; qzState.orderFilter = '1512';
+            const input = document.getElementById('qzTopSearchInput');
+            if (input) { input.value = '1512'; input.disabled = true; input.title = 'Order found — click the row below to open it.'; }
+            qzSyncTopTabs(); qzRenderRoot();
+          }
         } },
       { type: 'decide', scenarioId: 'missing-document', walk: {
           target: null,
-          text: "Now a different case: Order ORD-2026-1512 is waiting on a document that hasn't arrived at all. Read the situation below, then pick the option you believe is correct.",
-          setup: () => qzOpenScenario('missing-document')
+          text: "This order is waiting on a document that hasn't arrived at all. Read the situation in the box on the right, then pick the option you believe is correct.",
+          setup: () => qzAskScenario('missing-document', { orderId: 'ORD-2026-1512', tab: 'documents', label: 'Documents' })
         } },
-      { type: 'do', checklistId: 'comm-followup', orderId: 'ORD-2026-1512', walk: {
-          target: '[data-comm-action="followup"]',
-          text: "Order 812 Birchwood Lane is still waiting on the HOA Resale Certificate. Click \"Log Follow-up\" to record that you're on it.",
-          setup: () => { qzOpenOrder('ORD-2026-1512'); qzOrderTab('communication'); }
-        } }
     ]
   },
   {
-    id: 'l05-communication', number: 5, title: 'Professional Communication',
-    summary: 'Read the thread before you reply, keep it professional, and know when to follow up vs. when to escalate.',
+    id: 'l04-communication', number: 4, title: 'Professional Communication & What Is Not Your Call',
+    summary: 'Write to agents, buyers and lenders without promising what is not yours to promise, and recognise the question you must hand to someone else.',
     steps: [
+      // --- Open the order this lesson works on ---
+      { type: 'do', checklistId: 'orders-open', orderId: 'ORD-2026-1398', walk: {
+          target: () => document.querySelector('tr[data-order-id="ORD-2026-1398"]') || '#qzTopSearchInput',
+          text: () => {
+            if (document.querySelector('tr[data-order-id="ORD-2026-1398"]')) return 'This lesson works on a different file. Click this row to open Order ORD-2026-1398 (219 Lakeshore Drive).';
+            return 'This lesson works on a different file. Type "1398" to find Order ORD-2026-1398.';
+          },
+          setup: () => {
+            qzState.view = 'orders'; qzState.orderId = null; qzState.orderFilter = '1398';
+            const input = document.getElementById('qzTopSearchInput');
+            if (input) { input.value = '1398'; input.disabled = true; input.title = 'Order found — click the row below to open it.'; }
+            qzSyncTopTabs(); qzRenderRoot();
+          }
+        } },
+      // --- Part 1: Read before you write ---
       { type: 'do', checklistId: 'comm-open', orderId: 'ORD-2026-1398', walk: {
           target: '.qz-thread-item',
-          text: "Click on a message thread to read the full conversation history before doing anything else. (You'll also see a \"Log Follow-up\" button next to Send Reply, that's for later in this lesson.)",
+          text: "Click on this thread to read the full conversation history before doing anything else.",
+          tour: [
+            { target: '[data-msg-index="1"]', text: 'First message: you (the VA) followed up with the lender about final loan documents. Read it.' },
+            { target: '[data-msg-index="2"]', text: "The lender's response: they are behind and recommend pushing the closing date. This is the key fact on this thread." },
+            { target: '[data-msg-index="3"]', text: "Last: the selling agent wants to be kept posted as soon as there is a new date. Now you know what everyone has said — you'll need this in a moment." }
+          ],
           setup: () => { qzOpenOrder('ORD-2026-1398'); qzOrderTab('communication'); }
         } },
       { type: 'decide', scenarioId: 'comm-read-context', walk: {
           target: null,
-          text: "Before you write a reply, make sure you actually read what's in that thread, not just that you opened it. Answer the question below.",
-          setup: () => qzOpenScenario('comm-read-context')
+          text: "You just read the thread. Now prove it: answer the question in the box on the right.",
+          setup: () => qzAskScenario('comm-read-context', { orderId: 'ORD-2026-1398', tab: 'communication', label: 'Communication' })
+        } },
+      // --- Part 2: First the rule, then the practice ---
+      { type: 'decide', scenarioId: 'comm-tone', walk: {
+          target: null,
+          text: "Now think about what the right reply looks like. Read the situation in the box on the right.",
+          setup: () => qzAskScenario('comm-tone', { orderId: 'ORD-2026-1398', tab: 'communication', label: 'Communication' })
         } },
       { type: 'do', checklistId: 'comm-reply', orderId: 'ORD-2026-1398', walk: {
           target: () => {
@@ -1340,16 +1395,12 @@ const QZ_LESSONS = [
             if (box && box.value.trim().length >= 20) return document.querySelector('[data-comm-action="reply"]');
             return box;
           },
-          // Live text: matches the target function above, once there's enough written it
-          // stops repeating "write a reply" and confirms it's ready to send instead.
           text: () => {
             const box = document.getElementById('qzReplyBox');
             const len = box ? box.value.trim().length : 0;
             if (len >= 20) return "That's a good length. Click Send Reply when you're happy with it.";
             return `Write a professional reply (at least 20 characters) and click Send. ${len ? `(${len} of 20)` : ''}`;
           },
-          // Also conditional: once there's enough written, the example has done its job and
-          // just clutters the tip next to the "click Send" instruction.
           example: () => {
             const box = document.getElementById('qzReplyBox');
             const len = box ? box.value.trim().length : 0;
@@ -1358,157 +1409,235 @@ const QZ_LESSONS = [
           },
           setup: () => { qzOpenOrder('ORD-2026-1398'); qzOrderTab('communication'); }
         } },
-      { type: 'decide', scenarioId: 'comm-tone', walk: {
+      // --- Part 3: Following up on a vendor ---
+      { type: 'decide', scenarioId: 'lender-followup', walk: {
           target: null,
-          text: "You've seen how threads work. Now think about what the right reply looks like. Read the scenario below.",
-          setup: () => qzOpenScenario('comm-tone')
+          text: "A vendor is late with critical documents. Read the situation in the box on the right and decide what to do.",
+          setup: () => qzAskScenario('lender-followup', { orderId: 'ORD-2026-1398', tab: 'communication', label: 'Communication' })
         } },
       { type: 'do', checklistId: 'comm-followup', orderId: 'ORD-2026-1398', walk: {
           target: '[data-comm-action="followup"]',
-          text: 'Click "Log Follow-up" to record that you followed up on this file.',
+          text: 'You just decided to follow up. Now do it: click "Log Follow-up" to record it on the file.',
           setup: () => { qzOpenOrder('ORD-2026-1398'); qzOrderTab('communication'); }
         } },
-      { type: 'decide', scenarioId: 'lender-followup', walk: {
+      // --- Part 4: The line you do not cross ---
+      { type: 'decide', scenarioId: 'triage-not-mine', walk: {
           target: null,
-          text: 'A vendor is late with critical documents. Read the scenario and decide what to do.',
-          setup: () => qzOpenScenario('lender-followup')
+          text: "Not everything that lands on you is yours to answer. Read the situation in the box on the right.",
+          setup: () => qzAskScenario('triage-not-mine', { orderId: 'ORD-2026-1398', tab: 'communication', label: 'Communication' })
         } }
     ]
   },
   {
-    id: 'l06-tasks', number: 6, title: 'Tasks & Prioritization',
-    summary: 'Learn to read your task queue, prioritize by urgency and closing impact, and keep statuses honest.',
+    id: 'l05-tasks-closing', number: 5, title: 'Tasks, Prioritization & the Closing Checklist',
+    summary: 'Work two lists the same way: your own task queue and the closing checklist. Decide what comes first, and never mark done what is not done.',
+    // Merged with the old 'l08-closing'. The two lessons had the same shape — open a list,
+    // work an item on it, then two judgment calls — and the same underlying skill applied to
+    // two different lists. Running them separately taught it twice at half length.
     steps: [
+      // --- Part 1: Your own queue ---
       { type: 'do', checklistId: 'tasks-open', orderId: 'ORD-2026-1398', walk: {
           target: '[data-tab="tasks"]',
-          text: 'Click the Tasks tab to see what needs to be done on this file.',
+          text: 'Open Order Tasks in the rail to see what needs to be done on this file.',
+          // Same shape as Lesson 1's workflow-view: the click alone teaches nothing, so a
+          // short tour of the list that just appeared reads the two columns every later
+          // step in this lesson depends on. Deliberately does NOT point at task 7 - the
+          // next step asks the trainee to work out for themselves that it comes first.
+          tour: [
+            { target: 'tr[data-task-id="6"] .qz-badge', text: () => `Status column. This row has read "${QZ_TASKS.find(t => t.id === 6).status}" since last week, and it belongs to ${QZ_TASKS.find(t => t.id === 6).assignedTo}, not to you. Remember it.` },
+            { target: 'tr[data-task-id="8"] .qz-due', text: 'And the due column. The chip beside each date is how overdue, or how close, that item is. This is what you sort a morning by.' }
+          ],
           setup: () => qzOpenOrder('ORD-2026-1398')
         } },
+      // No `sel` here: ringing a row would hand over the answer, since the whole question
+      // is which of the rows on the screen behind the box goes first.
       { type: 'decide', scenarioId: 'task-priority', walk: {
           target: null,
-          text: 'You have multiple tasks across your queue. Read the scenario and decide which to handle first.',
-          setup: () => qzOpenScenario('task-priority')
+          text: 'Order 1398 and its Tasks tab are open behind this box, that is where item (B) lives. (A) and (C) sit on Order 1483. Read the situation, then decide which one you pick up first.',
+          setup: () => qzAskScenario('task-priority', { orderId: 'ORD-2026-1398', tab: 'tasks', label: 'Order Tasks' })
         } },
       // Task id 7, "Escalate closing date change to supervisor for confirmation", is the
       // specific task the task-priority scenario just taught should come first, targeted by
       // id (not "whichever button renders first") so the walkthrough actually matches what
-      // the trainee was just asked to reason about.
+      // the trainee was just asked to reason about. The checkbox, not `button`: the first
+      // button in the row is the Edit pencil, which opens a modal instead of completing it.
       { type: 'do', checklistId: 'tasks-complete', orderId: 'ORD-2026-1398', walk: {
-          target: 'tr[data-task-id="7"] button',
-          text: 'Mark the closing-date escalation task complete, the one you just decided should come first.',
+          target: 'tr[data-task-id="7"] input[type="checkbox"]',
+          text: 'Now do it in the file: tick the checkbox on the closing-date escalation task, the one you just decided comes first.',
           setup: () => { qzOpenOrder('ORD-2026-1398'); qzOrderTab('tasks'); }
         } },
+      // Rings task 6 - the stale "In Progress" row the opening tour pointed at - so the
+      // question is about a line on the screen behind it, not a hypothetical.
       { type: 'decide', scenarioId: 'task-honesty', walk: {
           target: null,
-          text: 'Task statuses have to be honest. Read the scenario.',
-          setup: () => qzOpenScenario('task-honesty')
-        } }
-    ]
-  },
-  {
-    id: 'l07-vendors-accounting', number: 7, title: 'Vendors & Read-Only Accounting',
-    summary: 'Check vendor status, follow up when something is not confirmed, and understand where the money is tracked without touching it.',
-    steps: [
-      { type: 'do', checklistId: 'vendors-open', orderId: 'ORD-2026-1483', walk: {
-          target: '[data-tab="vendors"]',
-          text: 'Click the Vendors tab to see the vendors assigned to this order.',
-          setup: () => qzOpenOrder('ORD-2026-1483')
+          text: 'You just made a status true by completing it. Now the opposite case, on the row ringed behind this box.',
+          setup: () => qzAskScenario('task-honesty', { orderId: 'ORD-2026-1398', tab: 'tasks', label: 'Order Tasks', sel: 'tr[data-task-id="6"]' })
         } },
-      { type: 'do', checklistId: 'vendors-check', orderId: 'ORD-2026-1483', walk: {
-          target: () => {
-            const btns = document.querySelectorAll('.qz-tbl tbody .qz-btn');
-            return btns.length ? btns[0] : null;
-          },
-          text: 'Click "Check Status" on any vendor to see where they stand.',
-          setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('vendors'); }
-        } },
-      { type: 'decide', scenarioId: 'vendor-pending', walk: {
-          target: null,
-          text: 'A vendor is in "Pending Confirmation" and closing is close. Read the scenario.',
-          setup: () => qzOpenScenario('vendor-pending')
-        } },
-      { type: 'do', checklistId: 'accounting-open', orderId: 'ORD-2026-1483', walk: {
-          target: '[data-tab="accounting"]',
-          text: 'Click Accounting to review the charges on this file. Remember: this tab is read-only for VAs.',
-          setup: () => qzOpenOrder('ORD-2026-1483')
-        } },
-      { type: 'decide', scenarioId: 'accounting-flag', walk: {
-          target: null,
-          text: 'You noticed something in accounting that does not match. Read the scenario.',
-          setup: () => qzOpenScenario('accounting-flag')
-        } }
-    ]
-  },
-  {
-    id: 'l08-closing', number: 8, title: 'Closing: Checklist & Date Changes',
-    summary: 'Confirm every document is accounted for before clearing the closing checklist, and escalate anything that moves the date.',
-    steps: [
+      // --- Part 2: The same discipline on the closing checklist ---
       { type: 'do', checklistId: 'closing-open', orderId: 'ORD-2026-1398', walk: {
           target: '[data-tab="closing"]',
-          text: 'Click the Closing tab to see the closing checklist for this order.',
+          text: 'Open Disclosures, under Closing File in the rail. The same skill, applied to the list that decides whether this file can close.',
+          tour: [
+            { target: '.qz-checklist', text: 'Every document on the file that is not yet Reviewed shows up here. Ticking one marks that document reviewed on the Documents tab: it is the same record, not a second copy of it.' },
+            { target: '.qz-kv-in[data-field="closingDate"]', text: () => `And the date the whole list is racing: ${fmtDate(qzGetOrder('ORD-2026-1398').closingDate)}. This file was originally set to close ${fmtDate(qzGetOrder('ORD-2026-1398').originalClosingDate)} - it has already moved once.` }
+          ],
           setup: () => qzOpenOrder('ORD-2026-1398')
         } },
       { type: 'do', checklistId: 'closing-review', orderId: 'ORD-2026-1398', walk: {
-          target: () => document.querySelector('.qz-panel .qz-btn.primary'),
-          text: 'Review the items on the checklist, then click "Mark Checklist Reviewed."',
+          target: '[data-closing-action="review"]',
+          text: 'Read the outstanding items, then click "Mark Checklist Reviewed" to record that you worked the list.',
           setup: () => { qzOpenOrder('ORD-2026-1398'); qzOrderTab('closing'); }
         } },
       { type: 'decide', scenarioId: 'closing-docs-outstanding', walk: {
           target: null,
-          text: 'The closing checklist has outstanding items. Read the scenario and decide what to do.',
-          setup: () => qzOpenScenario('closing-docs-outstanding')
+          text: 'You just worked the list, and two lender items are still Pending on it. Read the situation and decide what happens next.',
+          setup: () => qzAskScenario('closing-docs-outstanding', { orderId: 'ORD-2026-1398', tab: 'closing', label: 'Disclosures', sel: '.qz-checklist' })
         } },
       { type: 'decide', scenarioId: 'closing-delay', walk: {
           target: null,
-          text: 'The closing date cannot be met. Read the scenario and decide the right course of action.',
-          setup: () => qzOpenScenario('closing-delay')
+          text: 'Last one, and it is about the field ringed behind this box: the closing date itself.',
+          setup: () => qzAskScenario('closing-delay', { orderId: 'ORD-2026-1398', tab: 'closing', label: 'Disclosures', sel: '.qz-kv-in[data-field="closingDate"]' })
         } }
     ]
-  }
-  ,
-  /* ---------------------------------------------------------------------------
-     Lessons 9-14: the domain half of the course.
-     Lessons 1-8 teach coordination habits (verify, escalate, keep records
-     honest, write professionally) which are real but generic. These six teach
-     title and escrow specifically: which document governs when two disagree,
-     how wire fraud actually arrives, what a commitment's Schedule B is asking
-     for, payoff arithmetic, working a queue, and finally all of it at once.
-     Every one of them contains at least one item whose right answer is "nothing
-     is wrong here" and one whose right answer is "this is not mine to fix" —
-     without both, the trainee learns that every screen hides an error, which is
-     as damaging as never checking.
-     --------------------------------------------------------------------------- */
+  },
   {
-    id: 'l09-conflicting-sources', number: 9, title: 'When Sources Disagree',
-    summary: 'Three documents, three numbers, one file. Learn which document governs, what an effective date changes, and when the right move is not to correct anything.',
+    id: 'l06-money', number: 6, title: 'Vendors, Accounting, Prorations & Payoffs',
+    summary: 'Everything the file does with money: what a vendor invoice should look like, what the ledger is telling you, and the arithmetic behind prorations and payoffs.',
+    // Merged with the old 'l12-prorations-payoff'. Both lessons are the money side of a file
+    // — one reads what has been charged, the other works out what the numbers should be —
+    // and neither carried enough weight to stand alone.
+    steps: [
+      { type: 'do', checklistId: 'vendors-open', orderId: 'ORD-2026-1483', walk: {
+          target: '[data-tab="vendors"]',
+          text: 'Open Marketplace in the rail to see the vendors engaged on this order.',
+          setup: () => qzOpenOrder('ORD-2026-1483')
+        } },
+      { type: 'do', checklistId: 'vendors-check', orderId: 'ORD-2026-1483', walk: {
+          target: 'tr[data-vendor-id="2"] .qz-vendor-st',
+          text: "The notary has just called to confirm the appointment. Set North Texas Notary Group to \"In Progress\" using the status dropdown on its row - the list is the record other people read, so it has to say what is actually true.",
+          setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('vendors'); }
+        } },
+      { type: 'decide', scenarioId: 'vendor-pending', walk: {
+          target: null,
+          text: 'A vendor is in "Pending Confirmation" and closing is close. Read the situation in the box on the right.',
+          setup: () => qzAskScenario('vendor-pending', { orderId: 'ORD-2026-1483', tab: 'vendors', label: 'Marketplace' })
+        } },
+      { type: 'do', checklistId: 'accounting-open', orderId: 'ORD-2026-1483', walk: {
+          target: '[data-tab="accounting"]',
+          text: 'Open Accounting in the rail to review the charges on this file. Remember: this page is read-only for VAs.',
+          setup: () => qzOpenOrder('ORD-2026-1483')
+        } },
+      { type: 'decide', scenarioId: 'accounting-flag', walk: {
+          target: null,
+          text: 'You noticed something in accounting that does not match. Read the situation in the box on the right.',
+          setup: () => qzAskScenario('accounting-flag', { orderId: 'ORD-2026-1483', tab: 'accounting', label: 'Services Borrower Did Not Shop For (Section B)' })
+        } },
+      { type: 'decide', scenarioId: 'proration-basics', walk: {
+          target: null,
+          text: 'Start with the arithmetic itself, then apply it to the file. Read the situation in the box on the right.',
+          setup: () => qzAskScenario('proration-basics', { orderId: 'ORD-2026-1483', tab: 'prorations', label: 'Taxes & Prorations Calculator' })
+        } },
+      // --- Part 3: Payoff on a different order ---
+      { type: 'do', checklistId: 'orders-open', orderId: 'ORD-2026-1398', walk: {
+          target: () => document.querySelector('tr[data-order-id="ORD-2026-1398"]') || '#qzTopSearchInput',
+          text: () => {
+            if (document.querySelector('tr[data-order-id="ORD-2026-1398"]')) return 'The payoff exercise is on a different file. Click this row to open Order ORD-2026-1398 (219 Lakeshore Drive).';
+            return 'The payoff exercise is on a different file. Type "1398" to find Order ORD-2026-1398.';
+          },
+          setup: () => {
+            qzState.view = 'orders'; qzState.orderId = null; qzState.orderFilter = '1398';
+            const input = document.getElementById('qzTopSearchInput');
+            if (input) { input.value = '1398'; input.disabled = true; input.title = 'Order found — click the row below to open it.'; }
+            qzSyncTopTabs(); qzRenderRoot();
+          }
+        } },
+      { type: 'reconcile', reconcileId: 'rec-1398-payoff', walk: {
+          target: () => qzReconcileTarget('rec-1398-payoff'),
+          text: () => qzReconcileText('rec-1398-payoff'),
+          example: () => qzReconcileExample('rec-1398-payoff'),
+          setup: () => { qzReconcileDrive('rec-1398-payoff'); }
+        } },
+      { type: 'decide', scenarioId: 'payoff-expired', walk: {
+          target: null,
+          text: 'One more judgment call about the payoff you just worked. Read the situation in the box on the right.',
+          setup: () => qzAskScenario('payoff-expired', { orderId: 'ORD-2026-1398', tab: 'payoffs', label: 'Existing Loan Payoffs' })
+        } }
+    ]
+  },
+  {
+    id: 'l07-conflicting-sources', number: 7, title: 'When Sources Disagree & the Title Commitment',
+    summary: 'Two files where the paperwork does not agree with itself. Work out which document governs, what an effective date changes, and when the right move is to correct nothing.',
+    // Merged with the old 'l11-commitment'. Both were a single reconcile plus a single
+    // scenario, and both answer the same question from different directions: which document
+    // governs. Three sources disagreeing on a price, then Schedule B saying something the
+    // trainee did not expect.
     steps: [
       { type: 'reconcile', reconcileId: 'rec-1483-price-conflict', walk: {
           target: () => qzReconcileTarget('rec-1483-price-conflict'),
           text: () => qzReconcileText('rec-1483-price-conflict'),
           example: () => qzReconcileExample('rec-1483-price-conflict'),
-          setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('review'); }
+          setup: () => { qzReconcileDrive('rec-1483-price-conflict'); }
         } },
       { type: 'decide', scenarioId: 'which-governs', walk: {
           target: null,
-          text: 'You just worked a real conflict. Now name the rule behind it.',
-          setup: () => qzOpenScenario('which-governs')
+          text: 'You just worked a real conflict. Now name the rule behind it. Read the situation in the box on the right.',
+          setup: () => qzAskScenario('which-governs', { orderId: 'ORD-2026-1483', tab: 'documents', label: 'Documents' })
+        } },
+      { type: 'decide', scenarioId: 'schedule-b-basics', walk: {
+          target: null,
+          text: 'First, what Schedule B actually is. Read the situation in the box on the right and pick the right description.',
+          setup: () => qzAskScenario('schedule-b-basics', { orderId: 'ORD-2026-1483', tab: 'documents', label: 'Documents' })
+        } },
+      // --- Part 2: Title commitment on a different order ---
+      { type: 'do', checklistId: 'orders-open', orderId: 'ORD-2026-1512', walk: {
+          target: () => document.querySelector('tr[data-order-id="ORD-2026-1512"]') || '#qzTopSearchInput',
+          text: () => {
+            if (document.querySelector('tr[data-order-id="ORD-2026-1512"]')) return 'The next exercise is on a different file. Click this row to open Order ORD-2026-1512 (812 Birchwood Lane).';
+            return 'The next exercise is on a different file. Type "1512" to find Order ORD-2026-1512.';
+          },
+          setup: () => {
+            qzState.view = 'orders'; qzState.orderId = null; qzState.orderFilter = '1512';
+            const input = document.getElementById('qzTopSearchInput');
+            if (input) { input.value = '1512'; input.disabled = true; input.title = 'Order found — click the row below to open it.'; }
+            qzSyncTopTabs(); qzRenderRoot();
+          }
+        } },
+      { type: 'reconcile', reconcileId: 'rec-1512-commitment', walk: {
+          target: () => qzReconcileTarget('rec-1512-commitment'),
+          text: () => qzReconcileText('rec-1512-commitment'),
+          example: () => qzReconcileExample('rec-1512-commitment'),
+          setup: () => { qzReconcileDrive('rec-1512-commitment'); }
         } }
     ]
   },
   {
-    id: 'l10-wire-fraud', number: 10, title: 'Wire Instructions & Business Email Compromise',
-    summary: 'The single most expensive mistake in this industry arrives as an ordinary email. Learn to spot it, and learn why even the legitimate version still gets verified by phone.',
+    id: 'l08-wire-fraud', number: 8, title: 'Wire Instructions & Business Email Compromise',
+    summary: 'The one mistake that cannot be undone. Read a wire request the way an attacker hopes you will not, and answer it without moving the money.',
     steps: [
+      // --- Open the order this lesson works on ---
+      { type: 'do', checklistId: 'orders-open', orderId: 'ORD-2026-1398', walk: {
+          target: () => document.querySelector('tr[data-order-id="ORD-2026-1398"]') || '#qzTopSearchInput',
+          text: () => {
+            if (document.querySelector('tr[data-order-id="ORD-2026-1398"]')) return 'This lesson works on Order ORD-2026-1398 (219 Lakeshore Drive). Click to open it.';
+            return 'This lesson works on a different file. Type "1398" to find Order ORD-2026-1398.';
+          },
+          setup: () => {
+            qzState.view = 'orders'; qzState.orderId = null; qzState.orderFilter = '1398';
+            const input = document.getElementById('qzTopSearchInput');
+            if (input) { input.value = '1398'; input.disabled = true; input.title = 'Order found — click the row below to open it.'; }
+            qzSyncTopTabs(); qzRenderRoot();
+          }
+        } },
       { type: 'decide', scenarioId: 'wire-first-instinct', walk: {
           target: null,
-          text: "Before you look at anything, answer this. It sets the rule the rest of the lesson tests.",
-          setup: () => qzOpenScenario('wire-first-instinct')
+          text: "Before you look at anything, answer this. It sets the rule the rest of the lesson tests. Read the situation in the box on the right.",
+          setup: () => qzAskScenario('wire-first-instinct', { orderId: 'ORD-2026-1398', tab: 'communication', label: 'Communication' })
         } },
       { type: 'reconcile', reconcileId: 'rec-1398-wire', walk: {
           target: () => qzReconcileTarget('rec-1398-wire'),
           text: () => qzReconcileText('rec-1398-wire'),
           example: () => qzReconcileExample('rec-1398-wire'),
-          setup: () => { qzOpenOrder('ORD-2026-1398'); qzOrderTab('review'); }
+          setup: () => { qzReconcileDrive('rec-1398-wire'); }
         } },
       { type: 'compose', composeId: 'cmp-1398-wire', orderId: 'ORD-2026-1398', walk: {
           target: () => qzComposeTarget('cmp-1398-wire'),
@@ -1522,53 +1651,16 @@ const QZ_LESSONS = [
         } },
       { type: 'decide', scenarioId: 'wire-legit-change', walk: {
           target: null,
-          text: "Last one, and it is the harder half: not every change of instructions is an attack.",
-          setup: () => qzOpenScenario('wire-legit-change')
+          text: "Last one, and it is the harder half: not every change of instructions is an attack. Read the situation in the box on the right.",
+          setup: () => qzAskScenario('wire-legit-change', { orderId: 'ORD-2026-1398', tab: 'communication', label: 'Communication' })
         } }
     ]
   },
   {
-    id: 'l11-commitment', number: 11, title: 'Reading a Title Commitment',
-    summary: "Schedule B is a list of what has to happen before a policy can issue. Trace each requirement to its evidence: some are already satisfied, some are yours to clear, and some cannot move without the client.",
-    steps: [
-      { type: 'decide', scenarioId: 'schedule-b-basics', walk: {
-          target: null,
-          text: 'First, what Schedule B actually is. Read the situation and pick the right description.',
-          setup: () => qzOpenScenario('schedule-b-basics')
-        } },
-      { type: 'reconcile', reconcileId: 'rec-1512-commitment', walk: {
-          target: () => qzReconcileTarget('rec-1512-commitment'),
-          text: () => qzReconcileText('rec-1512-commitment'),
-          example: () => qzReconcileExample('rec-1512-commitment'),
-          setup: () => { qzOpenOrder('ORD-2026-1512'); qzOrderTab('review'); }
-        } }
-    ]
-  },
-  {
-    id: 'l12-prorations-payoff', number: 12, title: 'Prorations & Payoff Arithmetic',
-    summary: 'Real numbers, to the cent. A payoff that expired, a per diem that has been running, and a tax proration nobody has calculated yet.',
-    steps: [
-      { type: 'decide', scenarioId: 'proration-basics', walk: {
-          target: null,
-          text: 'Start with the arithmetic itself, then apply it to the file.',
-          setup: () => qzOpenScenario('proration-basics')
-        } },
-      { type: 'reconcile', reconcileId: 'rec-1398-payoff', walk: {
-          target: () => qzReconcileTarget('rec-1398-payoff'),
-          text: () => qzReconcileText('rec-1398-payoff'),
-          example: () => qzReconcileExample('rec-1398-payoff'),
-          setup: () => { qzOpenOrder('ORD-2026-1398'); qzOrderTab('review'); }
-        } },
-      { type: 'decide', scenarioId: 'payoff-expired', walk: {
-          target: null,
-          text: 'One more judgment call about the payoff you just worked.',
-          setup: () => qzOpenScenario('payoff-expired')
-        } }
-    ]
-  },
-  {
-    id: 'l13-triage', number: 13, title: 'Triage: Five Files, One Morning',
+    id: 'l09-triage', number: 9, title: 'Triage: Five Files, One Morning',
     summary: 'Every file in your queue wants something. Order the work, then do the top of it. What is graded is the order you chose, not just the actions you took.',
+    // triage-not-mine moved to the communication lesson — it was the one item here that
+    // tested what a VA may answer rather than what to work first.
     steps: [
       { type: 'do', checklistId: 'triage-open-all', walk: {
           target: '#qzOrderTabs',
@@ -1579,23 +1671,18 @@ const QZ_LESSONS = [
         } },
       { type: 'decide', scenarioId: 'triage-order', walk: {
           target: null,
-          text: 'Three files, three incoming events, one morning. Which do you touch first?',
-          setup: () => qzOpenScenario('triage-order')
+          text: 'Three files, three incoming events, one morning. Which do you touch first? Read the situation in the box on the right.',
+          setup: () => qzAskScenario('triage-order', { orderId: 'ORD-2026-1483', tab: 'overview', label: 'Overview' })
         } },
       { type: 'decide', scenarioId: 'triage-second', walk: {
           target: null,
-          text: 'You handled the first one. What is second, and why is it not the loudest?',
-          setup: () => qzOpenScenario('triage-second')
-        } },
-      { type: 'decide', scenarioId: 'triage-not-mine', walk: {
-          target: null,
-          text: 'Further down the queue. Not everything that lands on you is yours to answer.',
-          setup: () => qzOpenScenario('triage-not-mine')
+          text: 'You handled the first one. What is second, and why is it not the loudest? Read the situation in the box on the right.',
+          setup: () => qzAskScenario('triage-second', { orderId: 'ORD-2026-1483', tab: 'overview', label: 'Overview' })
         } },
       { type: 'decide', scenarioId: 'triage-leave-it', walk: {
           target: null,
-          text: 'Last item. After a morning of finding problems, this one is the hard one.',
-          setup: () => qzOpenScenario('triage-leave-it')
+          text: 'Last item. After a morning of finding problems, this one is the hard one. Read the situation in the box on the right.',
+          setup: () => qzAskScenario('triage-leave-it', { orderId: 'ORD-2026-1483', tab: 'overview', label: 'Overview' })
         } },
       { type: 'compose', composeId: 'cmp-1398-delay', orderId: 'ORD-2026-1398', walk: {
           target: () => qzComposeTarget('cmp-1398-delay'),
@@ -1610,24 +1697,28 @@ const QZ_LESSONS = [
     ]
   },
   {
-    id: 'l14-capstone', number: 14, title: 'Capstone: Take a File to Closing-Ready',
+    id: 'l10-capstone', number: 10, title: 'Capstone: Take a File to Closing-Ready',
     summary: 'No walkthrough, no hints. Work the file the way you would on the job, and remember that reporting something that is not wrong costs you as much as missing something that is.',
     // Deliberately has no `walk` on any step: the walkthrough engine only offers "Start
     // walkthrough" when every step declares one, so this lesson simply never offers it.
     // Everything here has been taught; the point is whether it transfers unaided.
+    //
+    // cmp-1398-delay was removed: the triage lesson immediately before this one already
+    // grades that exact email, and re-grading it made this the longest lesson in the course
+    // at twice the average. Every remaining step is still a revisit, which is what a capstone
+    // is for — but a revisit of four different lessons, not a repeat of the previous one.
     steps: [
       { type: 'verify', reviewId: 'rev-1483-legal' },
       { type: 'reconcile', reconcileId: 'rec-1483-price-conflict' },
       { type: 'reconcile', reconcileId: 'rec-1512-commitment' },
-      { type: 'decide', scenarioId: 'over-escalation' },
-      { type: 'compose', composeId: 'cmp-1398-delay', orderId: 'ORD-2026-1398' }
+      { type: 'decide', scenarioId: 'over-escalation' }
     ]
   }
 ];
 
 /* ============================================================================
    FINAL EXAM — sampled from a bank, not a fixed list.
-   With 14 lessons a 10-item fixed exam is both too short and too memorable: two
+   Against ten lessons a 10-item fixed exam is both too short and too memorable: two
    attempts saw exactly the same questions in the same order. QZ_EXAM_BANK holds
    more items than any single attempt uses; qzExamBuild() draws a fixed number
    from each category so every sitting has the same shape and difficulty mix

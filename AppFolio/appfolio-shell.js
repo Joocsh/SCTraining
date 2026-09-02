@@ -1234,5 +1234,9 @@ function afSettingsSandboxHTML() {
     '<p class="af-page-lede">' + done + ' lesson' + (done === 1 ? '' : 's') + ' completed &middot; ' +
       steps + ' step' + (steps === 1 ? '' : 's') + ' recorded. This is the only thing the simulator stores between visits.</p>' +
     '<button type="button" class="af-btn danger" onclick="afConfirmResetProgress()">Reset training progress</button>' +
+    '</section>' +
+    '<section class="af-card"><h3>Guided tour</h3>' +
+    '<p class="af-page-lede">The short orientation to the shell that runs on a first visit. Replaying it changes nothing you have done.</p>' +
+    '<button type="button" class="af-btn" onclick="afTourReplay()">Replay the tour</button>' +
     '</section>';
 }

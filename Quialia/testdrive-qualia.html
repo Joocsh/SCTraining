@@ -33,7 +33,7 @@
     <a class="td-strip-back" href="../index.html#test-drive-open">&larr; Test Drive</a>
     <span class="td-strip-dot"></span>
     <span class="td-strip-app">Qualia <b>Test Drive</b></span>
-    <button type="button" class="td-strip-reset-btn" onclick="qzResetSandbox()" title="Reset sandbox environment without affecting course progress">Reset sandbox</button>
+    <button type="button" class="td-strip-reset-btn" onclick="qzResetSandbox()" title="Reiniciar sandbox y progreso del curso al estado inicial">Reset sandbox</button>
     <span class="td-strip-msg">Practice copy only. Nothing here is saved or connected to a real account.</span>
   </div>
 
@@ -54,19 +54,26 @@
            an academy-coloured pill, deliberately unlike the product's own topbar icons.
            It used to be an eighth section tab next to Admin, which read as part of the
            product and is why trainees found lesson material inside an order. -->
-      <button type="button" class="qz-lessons-btn" id="qzLessonsBtn" onclick="qzGotoLessons()" title="Course lessons and exam — training, not part of Qualia">
+      <button type="button" class="qz-lessons-btn" id="qzLessonsBtn" onclick="qzGotoLessons()" title="Training Course &amp; Lessons">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H19v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H19v3H6.5A2.5 2.5 0 0 1 4 20.5z"/></svg>
-        <span class="lbl">Lessons</span><span class="n" id="qzLessonsBadge"></span>
+        <span class="lbl">Training</span>
       </button>
 
       <div class="qz-top-icons">
-        <button type="button" class="qz-top-ic" title="Documents" onclick="qzCoreStub('Documents')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></button>
-        <button type="button" class="qz-top-ic" title="Messages" onclick="qzCoreStub('Messages')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span class="dot-badge" id="qzMailBadge">0</span></button>
-        <div class="qz-bell" id="qzBell" onclick="qzToggleBellDropdown(event)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="n">0</span>
+        <button type="button" class="qz-top-ic" id="qzDocBtn" title="Document Center" onclick="qzToggleDocDropdown(event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg></button>
+        <div class="qz-topbar-dropdown qz-doc-dropdown" id="qzDocDropdown" onclick="event.stopPropagation()"></div>
+
+        <button type="button" class="qz-top-ic" id="qzMailBtn" title="Connect Messages" onclick="qzToggleMessagesDropdown(event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span class="dot-badge" id="qzMailBadge">3</span></button>
+        <div class="qz-topbar-dropdown qz-messages-dropdown" id="qzMessagesDropdown" onclick="event.stopPropagation()"></div>
+
+        <div class="qz-bell" id="qzBell" onclick="qzToggleBellDropdown(event)" title="Notifications & Activity">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="n" id="qzBellBadge">14</span>
           <div class="qz-bell-dropdown" id="qzBellDropdown" onclick="event.stopPropagation()"></div>
         </div>
-        <div class="qz-user"><span class="av" id="qzUserAvatar">VA</span><span id="qzUserLabel">Trainee</span><svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
+
+        <div class="qz-user" id="qzUserBtn" onclick="qzToggleUserDropdown(event)" title="User Profile & Settings"><span class="av" id="qzUserAvatar">A</span><span id="qzUserLabel">Alex</span><svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          <div class="qz-topbar-dropdown qz-user-dropdown" id="qzUserDropdown" onclick="event.stopPropagation()"></div>
+        </div>
       </div>
     </div>
 
@@ -93,8 +100,10 @@
 
   <div class="qz-tour" id="qzTour">
     <div class="qz-tour-highlight" id="qzTourHighlight"></div>
-    <div class="qz-tour-tip" id="qzTourTip">
-      <div class="qz-tour-tip-body" id="qzTourTipBody"></div>
+    <div class="qz-tour-tip" id="qzTourTip" role="dialog" aria-modal="true" aria-label="Guided tour">
+      <!-- aria-live because focus stays on Next between steps: without it a screen reader
+           announces the button again and never the step that just changed underneath it. -->
+      <div class="qz-tour-tip-body" id="qzTourTipBody" aria-live="polite"></div>
       <div class="qz-tour-tip-foot">
         <span id="qzTourProgress"></span>
         <div class="qz-tour-tip-btns">
@@ -103,23 +112,29 @@
           <button type="button" id="qzTourNextBtn" class="primary" onclick="qzTourNext()">Next</button>
         </div>
       </div>
+      <!-- Distinct from Skip on purpose. Skip means "not now" and the tour returns on the
+           next launch; this means "never again" and is the only control that says so. -->
+      <label class="qz-tour-optout">
+        <input type="checkbox" id="qzTourOptOut" onchange="qzTourSetOptOut(this.checked)">
+        Don't show this tour when I launch Qualia
+      </label>
     </div>
   </div>
 
-  <script src="../assets/js/app-core.js"></script>
-  <script src="../assets/js/site.js"></script>
-  <script src="../assets/js/sim-engine.js"></script>
-  <script src="qualia-data.js"></script>
-  <script src="qualia-catalog-data.js"></script>
+  <script src="../assets/js/app-core.js?v=20260902"></script>
+  <script src="../assets/js/site.js?v=20260902"></script>
+  <script src="../assets/js/sim-engine.js?v=20260902"></script>
+  <script src="qualia-data.js?v=20260902"></script>
+  <script src="qualia-catalog-data.js?v=20260902"></script>
   <!-- Facade data before qualia-app.js, renderers after it: qualia-shell.js reads helpers
        (esc, fmtDate, qzGetOrder, simToast) that qualia-app.js defines. -->
-  <script src="qualia-shell-data.js"></script>
-  <script src="qualia-app.js"></script>
-  <script src="qualia-shell.js"></script>
-  <script src="qualia-tour.js"></script>
+  <script src="qualia-shell-data.js?v=20260902"></script>
+  <script src="qualia-app.js?v=20260902"></script>
+  <script src="qualia-shell.js?v=20260902"></script>
+  <script src="qualia-tour.js?v=20260902"></script>
   <!-- Inert unless ?selftest=1 is in the URL. Measures that the clock shift reached the data,
        the course prose and the documents — see the header of the file. -->
-  <script src="qualia-selftest.js"></script>
+  <script src="qualia-selftest.js?v=20260902"></script>
   <script>
     const tdMe = SCApp.requireAuth();
   </script>

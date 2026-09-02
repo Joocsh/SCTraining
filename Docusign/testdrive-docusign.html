@@ -20,6 +20,8 @@
     .td-strip-app { font-weight: 800; flex: none; }
     .td-strip-app b { color: #ffc400; }
     .td-strip-msg { color: #9fb4c9; margin-left: auto; font-size: 12px; }
+    .td-strip-reset-btn { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); color: #e2e8f0; border-radius: 4px; font-size: 11px; font-weight: 600; padding: 3px 9px; cursor: pointer; margin-left: 8px; }
+    .td-strip-reset-btn:hover { background: rgba(255,255,255,.25); color: #fff; }
     @media (max-width: 640px) { .td-strip-msg { display: none; } }
   </style>
 </head>
@@ -30,6 +32,7 @@
     <a class="td-strip-back" href="../index.html#test-drive-open" onclick="if(window.dsResetProgress) dsResetProgress()">&larr; Test Drive</a>
     <span class="td-strip-dot"></span>
     <span class="td-strip-app">DocuSign <b>Test Drive</b></span>
+    <button type="button" class="td-strip-reset-btn" onclick="dsResetProgress()" title="Reset sandbox and lesson progress to initial state">Reset sandbox</button>
     <span class="td-strip-msg">Practice copy only. Nothing here is saved or connected to a real account.</span>
   </div>
 
@@ -223,19 +226,33 @@
     <span class="ds-legal-copy">Copyright &copy; 2026 Docusign, Inc. All rights reserved</span>
   </footer>
 
-  <!-- ===================== Tour Overlay ===================== -->
+  <!-- ===================== Guided Tour Overlay ===================== -->
   <div class="ds-tour" id="dsTour">
     <div class="ds-tour-highlight" id="dsTourHighlight"></div>
-    <div class="ds-tour-tip" id="dsTourTip" role="dialog" aria-modal="true" aria-labelledby="dsTourTipBody">
-      <div class="ds-tour-tip-body" id="dsTourTipBody"></div>
+    <div class="ds-tour-tip" id="dsTourTip" role="dialog" aria-modal="true" aria-labelledby="dsTourTitle">
+      <div class="ds-tour-progress-bar">
+        <div class="ds-tour-progress-fill" id="dsTourProgressFill"></div>
+      </div>
+      <div class="ds-tour-tip-head">
+        <div class="ds-tour-badge-wrap">
+          <span class="ds-tour-badge" id="dsTourBadge">Step 1 of 10</span>
+        </div>
+        <button type="button" class="ds-tour-close-btn" onclick="dsTourSkip()" aria-label="Close tour" title="Close tour (Esc)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="ds-tour-tip-body" id="dsTourTipBody">
+        <h3 class="ds-tour-title" id="dsTourTitle"></h3>
+        <p class="ds-tour-text" id="dsTourText"></p>
+      </div>
       <div class="ds-tour-tip-foot">
-        <span id="dsTourProgress"></span>
+        <button type="button" class="ds-tour-skip-link" onclick="dsTourSkip()">Skip tour</button>
         <div class="ds-tour-tip-btns">
-          <button type="button" onclick="dsTourSkip()">Skip</button>
-          <button type="button" id="dsTourBackBtn" onclick="dsTourBack()">Back</button>
-          <button type="button" id="dsTourNextBtn" class="primary" onclick="dsTourNext()">Next</button>
+          <button type="button" id="dsTourBackBtn" class="ds-tour-btn secondary" onclick="dsTourBack()">← Back</button>
+          <button type="button" id="dsTourNextBtn" class="ds-tour-btn primary" onclick="dsTourNext()">Next →</button>
         </div>
       </div>
+      <div class="ds-tour-arrow" id="dsTourArrow"></div>
     </div>
   </div>
 

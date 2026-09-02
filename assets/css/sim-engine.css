@@ -92,26 +92,93 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 13px 18px;
-  border-bottom: 1px solid var(--sim-line);
+  padding: 10px 18px;
+  background: #0f172a;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 14px;
+  color: #fff;
+  gap: 12px;
+}
+
+.sim-doc-modal-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.sim-doc-modal-tag {
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #86efac;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--sim-ink);
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+
+.sim-doc-modal-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.sim-doc-modal-hint {
+  flex: 1;
+  margin: 0 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 5px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #22c55e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sim-doc-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+
+.sim-doc-modal-done-btn {
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sim-doc-modal-done-btn:hover {
+  background: #15803d;
+  transform: translateY(-1px);
 }
 
 .sim-doc-modal-close {
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1;
-  color: var(--sim-muted);
+  color: #94a3b8;
   cursor: pointer;
   padding: 0 4px;
+  transition: color .15s;
 }
 
 .sim-doc-modal-close:hover {
-  color: var(--sim-bad);
+  color: #f87171;
 }
 
 .sim-doc-modal-card iframe {
@@ -209,39 +276,129 @@
 .sim-walk-dots {
   display: flex;
   gap: 6px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
 .sim-walk-dot {
-  width: 7px;
-  height: 7px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: var(--sim-line);
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  transition: all .15s ease;
   flex: none;
 }
 
+.sim-walk-dot.clickable:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
+}
+
 .sim-walk-dot.done {
-  background: var(--sim-accent);
+  background: #dcfce7;
+  color: #166534;
+  border-color: #86efac;
 }
 
 .sim-walk-dot.current {
-  width: 9px;
-  height: 9px;
-  background: #fff;
-  border: 2px solid var(--sim-accent);
-  margin-top: -1px;
+  background: var(--sim-accent, #2563eb);
+  color: #ffffff;
+  border-color: var(--sim-accent-d, #1d4ed8);
+  transform: scale(1.12);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, .3);
+}
+
+/* Stepper Bar & Navigation */
+.sim-walk-stepper-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.sim-walk-step-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  transition: all .15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sim-walk-step-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.sim-walk-step-btn.next {
+  background: var(--sim-accent, #2563eb);
+  color: #ffffff;
+  border-color: var(--sim-accent-d, #1d4ed8);
+}
+
+.sim-walk-step-btn.next:hover:not(:disabled) {
+  opacity: .92;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .12);
+}
+
+.sim-walk-step-btn:disabled,
+.sim-walk-step-btn.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.sim-walk-step-indicator {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: .2px;
 }
 
 .sim-walk-exit {
-  margin-top: 10px;
+  margin-top: 8px;
   font-size: 11px;
   font-weight: 700;
-  color: var(--sim-muted);
+  color: #94a3b8;
   cursor: pointer;
+  display: flex;
+  justify-content: flex-end;
 }
 
-.sim-walk-exit:hover {
-  color: var(--sim-bad);
+.sim-walk-exit > span {
+  cursor: pointer;
+  transition: color .12s;
+}
+
+.sim-walk-exit > span:hover {
+  color: #ef4444;
+  text-decoration: underline;
+}
+
+.sim-walk-back {
+  color: var(--sim-accent);
+  cursor: pointer;
+}
+.sim-walk-back:hover {
   text-decoration: underline;
 }
 

@@ -1853,7 +1853,10 @@
           <span class="td-tile-copy"><b>Sierra</b><span>Guided tour of the CRM, dashboard, leads, and follow up.</span></span>
           <span class="td-tile-go">Launch &rarr;</span>
         </a>
-        <a class="td-tile ku" href="Quialia/testdrive-qualia.html">
+        <!-- ?tour=1 so launching from here always opens with the orientation walkthrough,
+             regardless of whether this browser has seen it before (qzStore.tourSeen). A Test
+             Drive launch is a first look every time it is taken. -->
+        <a class="td-tile ku" href="Quialia/testdrive-qualia.html?tour=1">
           <span class="td-tile-logo"><img src="Quialia/Images-resourses/brand/qualia-icon.svg" alt="Qualia"></span>
           <span class="td-tile-copy"><b>Qualia</b><span>Real estate title processing: open orders, audit closing documents, resolve file escalations, and prepare settlement files.</span></span>
           <span class="td-tile-go">Launch &rarr;</span>

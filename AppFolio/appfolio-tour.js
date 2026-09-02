@@ -46,6 +46,13 @@ function afTourStart() {
   afTourShow();
 }
 
+/* Replay entry point for Settings. afTourEnd sets tourSeen, and nothing else clears it
+   short of erasing every lesson result with afResetProgress, so a trainee who skipped the
+   tour on day one had no way back to it. */
+function afTourReplay() {
+  afTourStart();
+}
+
 function afTourShow() {
   const step = AF_TOUR_STEPS[afTourIndex];
   if (!step) return afTourEnd();
@@ -107,7 +114,10 @@ function afTourEnd() {
    product does not need a tour of a course they cannot see. */
 document.addEventListener('DOMContentLoaded', function () {
   if (afDemoMode()) return;
-  if (afStore.tourSeen) return;
+  /* ?tour=1 forces the first-run experience back, the way ?demo=1 forces the other one. */
+  var force = false;
+  try { force = new URLSearchParams(location.search).get('tour') === '1'; } catch (e) { force = false; }
+  if (afStore.tourSeen && !force) return;
   /* After the first paint, so the targets exist to be measured. */
   requestAnimationFrame(function () { requestAnimationFrame(afTourStart); });
 });

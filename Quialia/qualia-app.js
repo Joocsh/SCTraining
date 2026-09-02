@@ -3,6 +3,7 @@
 
 /* Small monochrome line-icon set (stroke=currentColor) so nothing falls back to color emoji glyphs. */
 const QZ_ICONS = {
+  eyeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.7 5.1A9.9 9.9 0 0 1 12 5c5 0 9 4.5 10 7a15.6 15.6 0 0 1-2.9 3.9"/><path d="M6.6 6.8A15.1 15.1 0 0 0 2 12c1 2.5 5 7 10 7a9.7 9.7 0 0 0 4.5-1.1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="m3 3 18 18"/></svg>',
   overview: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v2a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V3"/><path d="M8 11h8M8 15h5"/></svg>',
   summary: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15 15 9"/><path d="M11 6.4 12 5.3a4 4 0 1 1 5.7 5.7L16.6 12"/><path d="M13 17.6 12 18.7a4 4 0 1 1-5.7-5.7L7.4 12"/></svg>',
   parties: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M2.5 20c0-3.3 2.9-6 6.5-6s6.5 2.7 6.5 6"/><circle cx="17.5" cy="9" r="2.3"/><path d="M15.8 14.3c2.6.5 4.7 2.7 4.7 5.7"/></svg>',
@@ -34,7 +35,13 @@ const QZ_STORE_DEFAULTS = {
   // Set once qzMigrateChecklistScope has run against this store.
   checklistScoped: false,
   shuffleSalt: null,
-  tourSeen: false
+  // Written once the tour has run to the end or been skipped: gates the first-run showing.
+  tourSeen: false,
+  // Written only by the tour's own "don't show this again" checkbox. Kept apart from
+  // tourSeen because they answer different questions: tourSeen is "has this browser met the
+  // tour", tourOptOut is "has this person asked it to stop", and only the second one is
+  // strong enough to override an explicit ?tour=1 launch.
+  tourOptOut: false
 };
 function qzDefaultStore() { return JSON.parse(JSON.stringify(QZ_STORE_DEFAULTS)); }
 let qzStore = qzDefaultStore();
@@ -2014,7 +2021,21 @@ const QZ_VENDOR_CATALOG = [
   ['Notary / Signing Agent', ['North Texas Notary Group', 'Mobile Signing Partners', 'Statewide Notary Network']],
   ['Payoff & Lien Release', ['NationalLink Payoff', 'LienClear Services']]
 ];
-const QZ_VENDOR_STATUS = ['Ordered', 'In Progress', 'Complete', 'Delayed'];
+/* The one vendor vocabulary. There used to be four and they did not agree: the row
+   dropdown offered Ordered/In Progress/Delayed/Complete/Cancelled, the generator picked
+   from Ordered/In Progress/Complete/Delayed, the edit modal offered Pending/Scheduled/
+   In Progress/Completed, and the seeded curriculum vendors carried 'Pending Confirmation',
+   'Scheduled' and 'Completed'. Only 'In Progress' appeared in all of them, so a seeded
+   vendor matched no <option> and the browser fell back to displaying the FIRST one -
+   every seeded vendor read as "Ordered" no matter what its record said. Lakeshore Notary
+   Services, whose whole role in Lesson 6 is to sit at "Pending Confirmation", displayed
+   as "Ordered". */
+const QZ_VENDOR_STATUS = [
+  'Ordered', 'Pending Confirmation', 'Scheduled', 'In Progress', 'Delayed', 'Complete', 'Cancelled'
+];
+/* What a generated (non-curriculum) vendor can be born as - a subset, because a fresh file
+   has not had time to be delayed or cancelled. */
+const QZ_VENDOR_STATUS_SEEDABLE = ['Ordered', 'In Progress', 'Complete', 'Delayed'];
 
 function qzBuildVendors(orders, existing) {
   const out = existing.slice();
@@ -2036,7 +2057,7 @@ function qzBuildVendors(orders, existing) {
         orderId: o.id,
         name: pool ? qzPick(pool, o.id, 'v' + i) : o.settlementAgency,
         service: service,
-        status: stage >= 4 ? 'Complete' : QZ_VENDOR_STATUS[qzHashString(o.id + service) % 3],
+        status: stage >= 4 ? 'Complete' : QZ_VENDOR_STATUS_SEEDABLE[qzHashString(o.id + service) % 3],
         ordered: qzAddDaysISO(o.opened, 2 + (qzHashString(o.id + service) % 20))
       });
     });
@@ -2367,8 +2388,90 @@ let qzState = {
   orderViews: {},      // per-order view state, so switching tabs restores where you were
   panel: { chat: true, tasks: true, help: true, notes: false },
   homeTab: 'orders',   // which chip of the Home strip is showing (see qzHomeHTML)
+  reviewOrderId: null, // which order the Document Review course screen is working (see qzGotoReview)
+  pendingRevFix: null, // a review whose correction is being made on the real screen (qzRevGoFix)
+  pendingRevDoc: null, // a review whose source document is being fetched from Documents (qzRevGoDoc)
+  pendingRecDoc: null, // { recId, docId } — a reconcile whose source doc is being fetched from Documents (qzRecGoDoc)
+  pendingRecFix: null, // { recId, rowId } — a reconcile row whose correction is being made on the real screen
+  pendingWalk: null,   // { lessonId, stepIndex } read back by qzRestoreNav, consumed once by qzEnter
   qzMode: 'sandbox'   // 'sandbox' | 'lesson'
 };
+
+const QZ_NAV_KEY = 'qz_nav_v1';
+
+/* Only the navigation slice. Anything derived, or anything that would be wrong to
+   restore into a rebuilt qzDB, is left out. */
+function qzSaveNav() {
+  try {
+    const w = (window.SimEngine && SimEngine.walkState && SimEngine.walkState()) || null;
+    sessionStorage.setItem(QZ_NAV_KEY, JSON.stringify({
+      view: qzState.view, orderId: qzState.orderId, orderTab: qzState.orderTab,
+      deTab: qzState.deTab, threadId: qzState.threadId, composeId: qzState.composeId,
+      openOrders: qzState.openOrders, orderViews: qzState.orderViews,
+      lessonId: qzState.lessonId, reviewOrderId: qzState.reviewOrderId,
+      homeTab: qzState.homeTab, panel: qzState.panel, qzMode: qzState.qzMode,
+      docFolder: qzDocActiveFolder,
+      walk: w ? { lessonId: w.lessonId, stepIndex: w.stepIndex } : null
+    }));
+  } catch (e) { /* private mode, quota — never worth breaking a render over */ }
+}
+
+/* Validated against the live qzDB rather than trusted: the seed is rebuilt on every load,
+   so a stored id can point at a row that no longer exists (after Reset course, or a data
+   change between deploys). Anything that does not resolve is dropped, not restored. */
+function qzRestoreNav() {
+  let p = null;
+  try { p = JSON.parse(sessionStorage.getItem(QZ_NAV_KEY) || 'null'); } catch (e) { p = null; }
+  if (!p) return false;
+
+  const liveOrder = id => !!(id && qzFind('orders', id));
+  qzState.openOrders = (p.openOrders || []).filter(liveOrder);
+  qzState.orderViews = p.orderViews || {};
+  qzState.panel = p.panel || qzState.panel;
+  qzState.homeTab = p.homeTab || qzState.homeTab;
+  qzState.qzMode = p.qzMode || qzState.qzMode;
+  qzState.lessonId = (p.lessonId && typeof QZ_LESSONS !== 'undefined'
+    && QZ_LESSONS.some(l => l.id === p.lessonId)) ? p.lessonId : null;
+  if (p.docFolder) qzDocActiveFolder = p.docFolder;
+
+  if (p.view === 'order' && liveOrder(p.orderId)) {
+    qzState.orderId = p.orderId;
+    qzState.orderTab = p.orderTab || 'overview';
+    qzState.deTab = p.deTab || 'property';
+    qzState.threadId = p.threadId != null ? p.threadId : null;
+    qzState.composeId = p.composeId || null;
+    qzState.view = 'order';
+  } else if (p.view === 'review' && liveOrder(p.reviewOrderId)) {
+    qzState.reviewOrderId = p.reviewOrderId;
+    qzState.view = 'review';
+  } else if (p.view && p.view !== 'order' && p.view !== 'review') {
+    qzState.view = p.view;
+  } else {
+    return false;
+  }
+
+  qzState.pendingWalk = (p.walk && qzState.lessonId === p.walk.lessonId) ? p.walk : null;
+  return true;
+}
+
+/* simWalkStart always opens at step 0. Restoring the index and re-running that step's own
+   setup() is what puts the trainee back on the screen the step is about — and because
+   setup() is also what opens the question dialog, the popup comes back with it. */
+function qzResumeWalk(w) {
+  if (!w || !window.SimEngine || !SimEngine.walkStart) return;
+  SimEngine.walkStart(w.lessonId);
+  const st = SimEngine.walkState();
+  const l = SimEngine.currentLesson();
+  if (!st || !l || !l.steps[w.stepIndex]) return;
+  st.stepIndex = w.stepIndex;
+  st.tourIndex = null;
+  st.stepDoneFired = false;
+  const step = l.steps[w.stepIndex];
+  if (step.walk && step.walk.setup) step.walk.setup();
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () { SimEngine.sync(); });
+  });
+}
 
 function qzLoad() {
   try {
@@ -2388,21 +2491,64 @@ function qzLoad() {
 }
 function qzSave() { localStorage.setItem(QZ_LS_KEY, JSON.stringify(qzStore)); }
 
-/* One-time backfill for progress saved before checklist keys became order-scoped */
+/* One-time backfill for progress saved before checklist keys became lesson-scoped */
 function qzMigrateChecklistScope() {
-  if (qzStore.checklistScoped || typeof QZ_LESSONS === 'undefined') return;
-  QZ_LESSONS.forEach(l => {
-    if (!qzStore.lessonsDone[l.id]) return;
-    l.steps.forEach(s => {
-      if (s.type !== 'do' || !s.orderId) return;
-      if (qzStore.checklist[s.checklistId]) qzStore.checklist[qzScopedChecklistKey(s.checklistId, s.orderId)] = true;
+  if (typeof QZ_LESSONS === 'undefined') return;
+  if (!qzStore.checklistScoped) {
+    QZ_LESSONS.forEach(l => {
+      if (!qzStore.lessonsDone[l.id]) return;
+      l.steps.forEach(s => {
+        if (s.type !== 'do' || !s.orderId) return;
+        if (qzStore.checklist[s.checklistId]) qzStore.checklist[qzScopedChecklistKey(s.checklistId, s.orderId)] = true;
+      });
     });
-  });
-  qzStore.checklistScoped = true;
+    qzStore.checklistScoped = true;
+  }
+  if (!qzStore.checklistLessonScoped) {
+    QZ_LESSONS.forEach(l => {
+      if (!qzStore.lessonsDone[l.id]) return;
+      l.steps.forEach(s => {
+        if (s.type !== 'do') return;
+        var oldKey = qzScopedChecklistKey(s.checklistId, s.orderId);
+        if (qzStore.checklist[oldKey] || qzStore.checklist[s.checklistId]) {
+          qzStore.checklist[qzScopedChecklistKey(s.checklistId, s.orderId, l.id)] = true;
+        }
+      });
+    });
+    qzStore.checklistLessonScoped = true;
+  }
+  if (!qzStore.itemsLessonScoped) {
+    QZ_LESSONS.forEach(l => {
+      if (!qzStore.lessonsDone[l.id]) return;
+      l.steps.forEach(s => {
+        if (s.type === 'verify' && qzStore.reviews[s.reviewId]) {
+          qzStore.reviews[`${s.reviewId}#${l.id}`] = Object.assign({}, qzStore.reviews[s.reviewId]);
+        } else if (s.type === 'reconcile' && qzStore.reconciles[s.reconcileId]) {
+          qzStore.reconciles[`${s.reconcileId}#${l.id}`] = Object.assign({}, qzStore.reconciles[s.reconcileId]);
+        } else if (s.type === 'decide' && qzStore.scenarios[s.scenarioId]) {
+          qzStore.scenarios[`${s.scenarioId}#${l.id}`] = Object.assign({}, qzStore.scenarios[s.scenarioId]);
+        } else if (s.type === 'compose' && qzStore.composes[s.composeId]) {
+          qzStore.composes[`${s.composeId}#${l.id}`] = Object.assign({}, qzStore.composes[s.composeId]);
+        }
+      });
+    });
+    qzStore.itemsLessonScoped = true;
+  }
   qzSave();
 }
 
-function qzScopedChecklistKey(id, orderId) { return orderId ? id + '@' + orderId : id; }
+function qzScopedChecklistKey(id, orderId, lessonId) {
+  var key = id;
+  if (orderId) key += '@' + orderId;
+  if (lessonId) key += '#' + lessonId;
+  return key;
+}
+
+function qzScopedItemKey(id, lessonId) {
+  if (!id) return id;
+  const lid = lessonId || qzState.lessonId;
+  return lid ? `${id}#${lid}` : id;
+}
 
 /* Text-entry dialog, sibling of qzConfirm below.
 
@@ -2452,44 +2598,77 @@ function qzPrompt(opts) {
 
 /* Modal confirmation dialog (Type B) */
 function qzConfirm(opts) {
+  const existing = document.getElementById('qzConfirmModalWrap');
+  if (existing) existing.remove();
+
   const modal = document.createElement('div');
   modal.id = 'qzConfirmModalWrap';
   modal.className = 'qz-modal-backdrop';
+  modal.style.zIndex = '99999';
   modal.innerHTML = `
-    <div class="qz-modal-card">
-      <div class="qz-modal-head">
-        <h3>${esc(opts.title || 'Confirm Action')}</h3>
-        <button type="button" class="qz-modal-close" onclick="document.getElementById('qzConfirmModalWrap').remove()">&times;</button>
+    <div class="qz-modal-card" style="max-width:440px">
+      <div class="ph">
+        <h4>${esc(opts.title || 'Confirm Action')}</h4>
+        <button type="button" class="qz-btn sm close-btn">&times;</button>
       </div>
-      <div class="qz-modal-body">
-        <p>${esc(opts.body || 'Are you sure you want to proceed?')}</p>
-        ${opts.list ? `<ul>${opts.list.map(it => `<li>${esc(it)}</li>`).join('')}</ul>` : ''}
+      <div style="padding:16px 18px;font-size:13.5px;line-height:1.5;color:var(--qz-ink)">
+        <p style="margin:0">${esc(opts.body || 'Are you sure you want to proceed?')}</p>
+        ${opts.list ? `<ul style="margin:10px 0 0 18px">${opts.list.map(it => `<li>${esc(it)}</li>`).join('')}</ul>` : ''}
       </div>
-      <div class="qz-modal-foot">
-        <button type="button" class="qz-btn" onclick="document.getElementById('qzConfirmModalWrap').remove()">${esc(opts.cancelLabel || 'Cancel')}</button>
-        <button type="button" class="qz-btn ${opts.danger ? 'danger' : 'primary'}" id="qzBtnConfirmModal">${esc(opts.confirmLabel || 'Confirm')}</button>
+      <div style="text-align:right;padding:12px 18px;border-top:1px solid var(--qz-line);display:flex;justify-content:flex-end;gap:8px">
+        <button type="button" class="qz-btn cancel-btn">${esc(opts.cancelLabel || 'Cancel')}</button>
+        <button type="button" class="qz-btn ${opts.danger ? 'danger' : 'primary'} confirm-btn">${esc(opts.confirmLabel || 'Confirm')}</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
-  document.getElementById('qzBtnConfirmModal').onclick = () => {
-    modal.remove();
-    if (opts.onConfirm) opts.onConfirm();
-  };
+
+  const closeBtn = modal.querySelector('.close-btn');
+  const cancelBtn = modal.querySelector('.cancel-btn');
+  const confirmBtn = modal.querySelector('.confirm-btn');
+
+  if (closeBtn) closeBtn.onclick = () => modal.remove();
+  if (cancelBtn) cancelBtn.onclick = () => modal.remove();
+  if (confirmBtn) {
+    confirmBtn.onclick = () => {
+      modal.remove();
+      if (typeof opts.onConfirm === 'function') opts.onConfirm();
+    };
+  }
 }
 
-/* Reset sandbox to factory state without touching course progress */
+/* Reset EVERYTHING: coursework, orders, modified documents, and world state to factory clean state. */
 function qzResetSandbox() {
   qzConfirm({
-    title: 'Reset Sandbox',
-    body: 'Are you sure you want to reset the Sandbox environment? All custom orders, modified documents, and temporary edits will be discarded. Your coursework and academic progress will remain completely untouched.',
-    confirmLabel: 'Reset Sandbox',
+    title: 'Reiniciar Sandbox',
+    body: '¿Deseas reiniciar el Sandbox? Se restablecerán todos los expedientes, documentos y el progreso del curso al estado inicial.',
+    confirmLabel: 'Reiniciar Sandbox',
     danger: true,
     onConfirm: () => {
+      if (window.SimEngine && SimEngine.walkActive && SimEngine.walkActive()) {
+        if (window.simWalkExit) simWalkExit(true);
+      }
+      try { localStorage.removeItem(QZ_LS_KEY); } catch (e) {}
+      try { sessionStorage.removeItem(QZ_NAV_KEY); } catch (e) {}
+      qzStore = qzDefaultStore();
       qzHydrate();
-      simToast('Sandbox reset to factory defaults. Academic progress preserved.', { tone: 'good' });
+      qzState.lessonId = null;
+      qzState.openOrders = [];
+      qzState.orderId = null;
+      qzState.threadId = null;
+      qzState.composeId = null;
+      qzAsk = null;
+      qzAskLast = null;
+      qzState.view = 'orders';
+      qzSave();
+      simToast('Sandbox y progreso del curso restablecidos al estado inicial.', { tone: 'good' });
+      qzSyncTopTabs();
       qzRenderRoot();
     }
   });
+}
+
+function qzResetCourse() {
+  qzResetSandbox();
 }
 
 function qzSetMode(mode) {
@@ -2506,14 +2685,18 @@ function qzSyncModeSwitch() {
 }
 
 function qzMark(id) {
-  // Without an active lesson open, NEVER mark any step or grade anything
   if (!qzState.lessonId) return;
 
-  const scopedKey = qzScopedChecklistKey(id, qzState.orderId);
-  const alreadyDone = !!qzStore.checklist[scopedKey];
-  if (!alreadyDone || !qzStore.checklist[id]) {
+  const l = typeof QZ_LESSONS !== 'undefined' && QZ_LESSONS.find(x => x.id === qzState.lessonId);
+  const matchStep = l && l.steps.find(s => s.type === 'do' && s.checklistId === id &&
+    (!s.orderId || s.orderId === qzState.orderId));
+  const keyOrderId = matchStep ? matchStep.orderId : qzState.orderId;
+
+  const lessonKey = qzScopedChecklistKey(id, keyOrderId, qzState.lessonId);
+  const alreadyDone = !!qzStore.checklist[lessonKey];
+  if (!alreadyDone) {
     qzStore.checklist[id] = true;
-    qzStore.checklist[scopedKey] = true;
+    qzStore.checklist[lessonKey] = true;
     qzSave();
   }
 
@@ -2793,12 +2976,56 @@ function qzResetItemState(bag, id) {
   else delete bag[id];
 }
 
+/* Restores seeded rows from QZ_SEED rather than re-asserting a literal. Re-asserting is how
+   the Lesson 5 undo came to set task 7 to 'In Progress' - a status that task never had: it
+   is 'Open' in the seed, so "restart the lesson" left the file in a state the first run
+   never started from. */
+function qzRestoreSeedRows(coll, match) {
+  const seed = (QZ_SEED && QZ_SEED[coll]) || [];
+  seed.filter(match).forEach(function (row) {
+    const live = qzFind(coll, row.id);
+    if (live) Object.assign(live, JSON.parse(JSON.stringify(row)));
+  });
+}
+
+/* A reply the trainee sends is an INSERTED row, not a mutated one, so restoring cannot
+   reach it - it has to be dropped and the seeded mirror put back. */
+function qzRestoreSeedMessages(orderId) {
+  const seed = (QZ_SEED && QZ_SEED.messages) || [];
+  const ids = qzList('threads', t => t.orderId === orderId).map(t => String(t.id));
+  const mine = m => ids.indexOf(String(m.threadId)) > -1;
+  qzDB.messages = (qzDB.messages || []).filter(m => !mine(m))
+    .concat(seed.filter(mine).map(m => JSON.parse(JSON.stringify(m))));
+}
+
 /* Undoes the world-state changes a lesson makes, so a replay starts where the first run did. */
 const QZ_LESSON_UNDO = {
-  'l02-data-entry': () => qzClearPartyOverride('ORD-2026-1483', 'Buyer', 'phone'),
-  'l04-documents': () => { const d = qzFind('documents', 3); if (d) d.status = 'Pending'; },
-  'l05-communication': () => {},
-  'l06-tasks': () => { const t = qzFind('tasks', 7); if (t) t.status = 'In Progress'; }
+  // Keyed by lesson id, so it has to move whenever lessons merge. The data-entry steps now
+  // live in Orientation and the task steps in the tasks/closing lesson; the world-state each
+  // one dirties has not changed, only the lesson that owns it.
+  'l01-orientation': () => qzClearPartyOverride('ORD-2026-1483', 'Buyer', 'phone'),
+  'l03-documents': () => qzRestoreSeedRows('documents', d => String(d.id) === '3'),
+  // Lesson 4 leaves the trainee's own reply on thread 3; this used to be a no-op, so a
+  // restart replayed the lesson with the previous run's reply still in the thread.
+  'l04-communication': () => qzRestoreSeedMessages('ORD-2026-1398'),
+  // Lesson 5 completes task 7 AND ticks documents off the Disclosures checklist, which
+  // writes status:'Reviewed' through qzReviewDoc. Only the task was ever being undone, so
+  // a replay met a checklist reading "Every document on this file has been reviewed" while
+  // the closing-docs-outstanding scenario insisted two were still Pending.
+  'l05-tasks-closing': () => {
+    qzRestoreSeedRows('tasks', t => t.relatedOrderId === 'ORD-2026-1398');
+    qzRestoreSeedRows('documents', d => d.orderId === 'ORD-2026-1398');
+  },
+  'l07-conflicting-sources': () => {
+    qzRestoreSeedRows('documents', d => String(d.id) === '7');
+    const o = qzFind('orders', 'ORD-2026-1512');
+    if (o) { o.flag = 'missing-document'; o.stageIndex = 2; o.statusNote = 'Closing prep is on hold until the HOA Resale Certificate is received.'; }
+  },
+  'l10-capstone': () => {
+    qzRestoreSeedRows('documents', d => String(d.id) === '7');
+    const o = qzFind('orders', 'ORD-2026-1512');
+    if (o) { o.flag = 'missing-document'; o.stageIndex = 2; o.statusNote = 'Closing prep is on hold until the HOA Resale Certificate is received.'; }
+  }
 };
 
 /* Auto-repair helper to detect and restore orders referenced in lessons */
@@ -2840,6 +3067,8 @@ function qzRestoreOrder(orderId) {
   const seedThreads = QZ_SEED.threads.filter(m => m.orderId === orderId);
   seedThreads.forEach(m => qzDB.threads.push(JSON.parse(JSON.stringify(m))));
 
+  qzRestoreSeedMessages(orderId);
+
   qzDB.notes = qzDB.notes.filter(n => n.orderId !== orderId);
 }
 
@@ -2852,6 +3081,10 @@ function qzOpenLesson(lessonId) {
     if (s.orderId && orders.indexOf(s.orderId) === -1) orders.push(s.orderId);
     if (s.reviewId) {
       const r = qzReviewLookup(s.reviewId);
+      if (r && r.orderId && orders.indexOf(r.orderId) === -1) orders.push(r.orderId);
+    }
+    if (s.reconcileId) {
+      const r = qzRecLookup(s.reconcileId);
       if (r && r.orderId && orders.indexOf(r.orderId) === -1) orders.push(r.orderId);
     }
   });
@@ -2898,23 +3131,30 @@ function qzUndoItemWrite(item) {
   else if (item.field) qzClearScalarOverride(item.orderId, item.field);
 }
 
-/* Clears one lesson so it can be run again. Note the deliberate consequence for the five items
-   shared between lessons (rev-1483-legal, comm-followup, rec-1483-price-conflict,
-   rec-1512-commitment, cmp-1398-delay, mostly the capstone reusing earlier work): clearing them
-   also drops them from the other lesson's progress bar. That is honest — the item really was
-   cleared — and it is safe, because unlocking reads lessonsDone, not live progress. */
+/* Clears one lesson so it can be run again. Deletes only keys scoped to this lessonId so
+   shared items in other lessons are never affected. */
 function qzResetLesson(lessonId) {
   const l = QZ_LESSONS.find(x => x.id === lessonId);
   if (!l) return;
   l.steps.forEach(step => {
-    if (step.type === 'do') delete qzStore.checklist[step.checklistId];
-    else if (step.type === 'decide') qzResetItemState(qzStore.scenarios, step.scenarioId);
+    if (step.type === 'do') {
+      delete qzStore.checklist[step.checklistId];
+      delete qzStore.checklist[qzScopedChecklistKey(step.checklistId, step.orderId)];
+      delete qzStore.checklist[qzScopedChecklistKey(step.checklistId, step.orderId, lessonId)];
+    }
+    else if (step.type === 'decide') {
+      delete qzStore.scenarios[`${step.scenarioId}#${lessonId}`];
+    }
     else if (step.type === 'verify') {
       qzUndoItemWrite(qzReviewLookup(step.reviewId));
-      qzResetItemState(qzStore.reviews, step.reviewId);
-    } else if (step.type === 'reconcile') qzResetItemState(qzStore.reconciles, step.reconcileId);
-    else if (step.type === 'compose') qzResetItemState(qzStore.composes, step.composeId);
+      delete qzStore.reviews[`${step.reviewId}#${lessonId}`];
+    } else if (step.type === 'reconcile') {
+      delete qzStore.reconciles[`${step.reconcileId}#${lessonId}`];
+    } else if (step.type === 'compose') {
+      delete qzStore.composes[`${step.composeId}#${lessonId}`];
+    }
   });
+  delete qzStore.lessonsDone[lessonId];
   const undo = QZ_LESSON_UNDO[lessonId];
   if (undo) undo();
   qzSave();
@@ -2942,18 +3182,43 @@ function qzEnter() {
   const su = window.SCApp && SCApp.currentUser && SCApp.currentUser();
   const label = document.getElementById('qzUserLabel');
   const av = document.getElementById('qzUserAvatar');
-  if (su) {
+  if (su && su.name) {
     if (label) label.textContent = su.name.split(' ')[0];
     if (av) av.textContent = (su.avatar || su.name.charAt(0)).toUpperCase();
+  } else {
+    if (label) label.textContent = 'Alex';
+    if (av) av.textContent = 'A';
   }
   document.getElementById('qzTopbar').style.display = 'flex';
   document.getElementById('qzLoginWrap').style.display = 'none';
   document.getElementById('qzRoot').style.display = '';
   qzSyncModeSwitch();
   qzRenderCoreSections();
-  qzGoto('orders');
+  const resumed = qzRestoreNav();
+  if (resumed) {
+    qzSyncTopTabs();
+    qzRenderRoot();
+    if (qzState.pendingWalk) { const w = qzState.pendingWalk; qzState.pendingWalk = null; qzResumeWalk(w); }
+  } else {
+    qzGoto('orders');
+  }
   qzUpdateBellBadge();
-  if (!qzStore.tourSeen && window.qzTourStart) setTimeout(qzTourStart, 350);
+  /* First login only, unless ?tour=1 forces it. On normal page reload (F5), the tour must NOT pop up. */
+  let isReload = false;
+  try {
+    const navEntries = performance.getEntriesByType('navigation');
+    if (navEntries && navEntries.length > 0) {
+      isReload = navEntries[0].type === 'reload';
+    } else if (window.performance && window.performance.navigation) {
+      isReload = window.performance.navigation.type === 1;
+    }
+  } catch (e) { isReload = false; }
+
+  let forceTour = false;
+  try { forceTour = new URLSearchParams(location.search).get('tour') === '1'; } catch (e) { forceTour = false; }
+
+  const wanted = forceTour || (!qzStore.tourSeen && !resumed && !isReload);
+  if (wanted && !qzStore.tourOptOut && window.qzTourStart) setTimeout(qzTourStart, 350);
 }
 
 /* ---------- notification bell & personal tasks (D1) ----------
@@ -2975,55 +3240,752 @@ function qzEnter() {
 function qzOpenTasks() {
   return qzList('tasks', t => qzTaskStatus(t) !== 'Complete' && /you/i.test(t.assignedTo || ''));
 }
+/* ---------- Qualia Core Topbar Interactive Dropdowns & Drawers ---------- */
+let qzDocTab = 'templates'; // 'templates' | 'recent'
+let qzDocSearchQuery = '';
+let qzBellTab = 'activity'; // 'activity' | 'tasks'
+let qzMsgFilter = 'all'; // 'all' | 'unread'
+let qzMsgSearchQuery = '';
+
+function qzCloseAllTopbarDropdowns() {
+  document.querySelectorAll('.qz-topbar-dropdown, .qz-bell-dropdown').forEach(el => {
+    el.classList.remove('open');
+  });
+}
+document.addEventListener('click', () => qzCloseAllTopbarDropdowns());
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') qzCloseAllTopbarDropdowns();
+});
+
+let qzUnreadAlertsCount = 8;
+let qzUnreadThreadsCount = 3;
+
 function qzUpdateBellBadge() {
-  const badge = document.querySelector('#qzBell .n');
-  if (badge) badge.textContent = qzOpenTasks().length;
+  const openTasks = qzList('tasks', t => qzTaskStatus(t) !== 'Complete' && /you/i.test(t.assignedTo || ''));
+  const totalNotifications = qzUnreadAlertsCount + openTasks.length;
+  const badge = document.querySelector('#qzBell .n') || document.getElementById('qzBellBadge');
+  if (badge) {
+    badge.textContent = totalNotifications;
+    badge.style.display = totalNotifications > 0 ? 'flex' : 'none';
+  }
+  const threads = qzList('threads') || [];
+  const activeUnreadThreads = Math.min(qzUnreadThreadsCount, threads.length);
   const mail = document.getElementById('qzMailBadge');
   if (mail) {
-    const threads = qzList('threads').length;
-    mail.textContent = threads;
-    mail.style.display = threads ? 'flex' : 'none';
+    mail.textContent = activeUnreadThreads;
+    mail.style.display = activeUnreadThreads > 0 ? 'flex' : 'none';
   }
 }
+
+/* ---------- 1. Document Center (📄) ---------- */
+function qzToggleDocDropdown(e) {
+  if (e) e.stopPropagation();
+  const dd = document.getElementById('qzDocDropdown');
+  if (!dd) return;
+  const opening = !dd.classList.contains('open');
+  qzCloseAllTopbarDropdowns();
+  if (opening) {
+    qzRenderDocDropdown();
+    dd.classList.add('open');
+  }
+}
+
+function qzSetDocTab(tab) {
+  qzDocTab = tab;
+  qzRenderDocDropdown();
+}
+
+function qzFilterDocSearch(val) {
+  qzDocSearchQuery = (val || '').toLowerCase().trim();
+  qzRenderDocDropdown();
+}
+
+function qzQuickGenTemplate(tplName) {
+  const curOrderId = qzState.orderId || (qzDB.orders && qzDB.orders[0] && qzDB.orders[0].id) || '2021-1470';
+  const o = qzGetOrder(curOrderId);
+  if (!o) return;
+
+  const fn = QZ_DOC_TEMPLATES[tplName];
+  if (fn) {
+    const html = qzRenderTemplatedDoc({ name: tplName, template: tplName, orderId: o.id }, o);
+    if (html) {
+      qzMark('docs-download');
+      try {
+        const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+        simViewDoc(url, tplName + ' — Order #' + o.id);
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+        qzCloseAllTopbarDropdowns();
+        return;
+      } catch (err) {}
+    }
+  }
+
+  const matchDocs = qzList('documents', doc => doc.orderId === o.id && (doc.name.includes(tplName) || (doc.template && doc.template.includes(tplName))));
+  if (matchDocs.length > 0 && matchDocs[0].file) {
+    qzOpenDocFile(matchDocs[0].file, matchDocs[0].name);
+    qzCloseAllTopbarDropdowns();
+    return;
+  }
+
+  simToast('Generated ' + tplName + ' for Order #' + curOrderId);
+  qzCloseAllTopbarDropdowns();
+}
+
+function qzRenderDocDropdown() {
+  const dd = document.getElementById('qzDocDropdown');
+  if (!dd) return;
+
+  const activeOrder = qzState.orderId ? qzGetOrder(qzState.orderId) : (qzDB.orders && qzDB.orders[0]);
+  const activeOrderLabel = activeOrder ? `#${activeOrder.id} · ${activeOrder.propertyAddress}` : 'No order open';
+
+  const templates = [
+    { name: 'ALTA Settlement Statement (Combined)', desc: 'Combined buyer & seller settlement closing statement' },
+    { name: 'Closing Disclosure', desc: 'Standard CFPB TILA-RESPA Closing Disclosure (CD)' },
+    { name: 'Title Commitment', desc: 'Schedules A, B-I Requirements and B-II Exceptions' },
+    { name: 'Source Deed', desc: 'Warranty Deed / Transfer Deed for title conveyance' },
+    { name: 'Wiring Instructions', desc: 'Escrow account wire instructions with fraud notice' },
+    { name: 'Escrow Agreement', desc: 'Standard escrow closing agreement and instructions' },
+    { name: 'Payoff Statement', desc: 'Mortgage & lien payoff statement with daily per diem' },
+    { name: 'Notice of Availability of Title Insurance', desc: 'Owner and loan policy notification' }
+  ];
+
+  let bodyHTML = '';
+  if (qzDocTab === 'templates') {
+    const tplCards = templates.map(t => `
+      <div class="qz-doc-tpl-card">
+        <div>
+          <div class="qz-doc-tpl-name">${esc(t.name)}</div>
+          <div class="qz-doc-tpl-desc">${esc(t.desc)}</div>
+        </div>
+        <button type="button" class="qz-doc-tpl-btn" onclick="qzQuickGenTemplate('${escAttr(t.name)}')">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v5h5M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/></svg>
+          Generate &amp; Preview
+        </button>
+      </div>`).join('');
+
+    bodyHTML = `
+      <div class="qz-dd-order-context">
+        <span><b>Active Order Target:</b> ${esc(activeOrderLabel)}</span>
+        <span style="font-size:10.5px;color:#059669;">Pre-filled from ledger &amp; parties</span>
+      </div>
+      <div class="qz-dd-body" style="max-height:460px;overflow-y:auto;padding:0">
+        <div class="qz-doc-template-grid">${tplCards}</div>
+      </div>`;
+  } else {
+    const allDocs = qzList('documents');
+    const filtered = qzDocSearchQuery
+      ? allDocs.filter(d => (d.name || '').toLowerCase().includes(qzDocSearchQuery) || (d.orderId || '').toLowerCase().includes(qzDocSearchQuery) || (d.type || '').toLowerCase().includes(qzDocSearchQuery))
+      : allDocs.slice(0, 20);
+
+    const docRows = filtered.map(d => {
+      const glyph = QZ_DOC_GLYPH[d.type] || '&#128196;';
+      return `
+        <div class="qz-doc-row-item" onclick="qzOpenDocRow('${escAttr(String(d.id))}'); qzCloseAllTopbarDropdowns();">
+          <div class="qz-doc-row-ic">${glyph}</div>
+          <div class="qz-doc-row-info">
+            <div class="qz-doc-row-title">${esc(d.name)}</div>
+            <div class="qz-doc-row-meta">
+              <span>Order #${esc(d.orderId)}</span>
+              <span>&bull;</span>
+              <span>${esc(d.type || 'General')}</span>
+              <span>&bull;</span>
+              <span>${fmtDate(d.date)}</span>
+            </div>
+          </div>
+          <span class="qz-badge ${d.status === 'Reviewed' ? 'reviewed' : d.status === 'Received' ? 'received' : 'pending'}" style="font-size:10px;padding:2px 6px;">${esc(d.status || 'Received')}</span>
+        </div>`;
+    }).join('');
+
+    bodyHTML = `
+      <div class="qz-dd-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" placeholder="Filter ${allDocs.length} documents by name or order..." value="${escAttr(qzDocSearchQuery)}" oninput="qzFilterDocSearch(this.value)">
+      </div>
+      <div class="qz-dd-body">${docRows || '<div class="qz-dd-empty">No matching documents found.</div>'}</div>`;
+  }
+
+  dd.innerHTML = `
+    <div class="qz-dd-header">
+      <div>
+        <div class="qz-dd-title">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+          Document Center
+        </div>
+        <div class="qz-dd-sub">Title, escrow &amp; closing document generation</div>
+      </div>
+      <div class="qz-dd-actions">
+        <button type="button" class="qz-dd-link-btn" onclick="qzGoto('global-docs'); qzCloseAllTopbarDropdowns();">All Documents (2,479) &raquo;</button>
+      </div>
+    </div>
+    <div class="qz-dd-tabs">
+      <button type="button" class="qz-dd-tab ${qzDocTab === 'templates' ? 'active' : ''}" onclick="qzSetDocTab('templates')">Quick Generate / Templates</button>
+      <button type="button" class="qz-dd-tab ${qzDocTab === 'recent' ? 'active' : ''}" onclick="qzSetDocTab('recent')">Recent Files &amp; Search</button>
+    </div>
+    ${bodyHTML}`;
+}
+
+/* ---------- 2. Connect Messages Drawer (✉ 109) ---------- */
+function qzToggleMessagesDropdown(e) {
+  if (e) e.stopPropagation();
+  const dd = document.getElementById('qzMessagesDropdown');
+  if (!dd) return;
+  const opening = !dd.classList.contains('open');
+  qzCloseAllTopbarDropdowns();
+  if (opening) {
+    qzRenderMessagesDropdown();
+    dd.classList.add('open');
+  }
+}
+
+function qzSetMsgFilter(filter) {
+  qzMsgFilter = filter;
+  qzRenderMessagesDropdown();
+}
+
+function qzFilterMsgSearch(val) {
+  qzMsgSearchQuery = (val || '').toLowerCase().trim();
+  qzRenderMessagesDropdown();
+}
+
+function qzOpenThreadFromDropdown(threadId) {
+  const t = qzFind('threads', threadId);
+  if (!t) return;
+  qzCloseAllTopbarDropdowns();
+  if (t.orderId) {
+    qzOpenOrder(t.orderId, 'connect');
+    qzState.threadId = t.id;
+    qzRenderRoot();
+  } else {
+    qzGoto('global-messages');
+  }
+}
+
+function qzQuickComposeModal() {
+  qzCloseAllTopbarDropdowns();
+  const orders = qzDB.orders || [];
+  const orderOptions = orders.map(o => `<option value="${escAttr(o.id)}">#${esc(o.id)} - ${esc(o.propertyAddress)}</option>`).join('');
+
+  const modal = document.createElement('div');
+  modal.className = 'qz-modal-wrap';
+  modal.id = 'qzQuickComposeModal';
+  modal.innerHTML = `
+    <div class="qz-modal-backdrop" onclick="this.parentElement.remove()"></div>
+    <div class="qz-modal" style="max-width:540px;">
+      <div class="qz-modal-head">
+        <div class="qz-modal-title">New Connect Message</div>
+        <button type="button" class="qz-modal-close" onclick="document.getElementById('qzQuickComposeModal').remove()">&times;</button>
+      </div>
+      <div class="qz-modal-body" style="padding:18px;">
+        <div class="qz-fld" style="margin-bottom:12px;">
+          <label style="font-size:11.5px;font-weight:700;color:#475569;">Target Order / File</label>
+          <select id="qzComposeOrderId" class="qz-input" style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;">${orderOptions}</select>
+        </div>
+        <div class="qz-fld" style="margin-bottom:12px;">
+          <label style="font-size:11.5px;font-weight:700;color:#475569;">Recipient Party</label>
+          <select id="qzComposeRecipient" class="qz-input" style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;">
+            <option value="Buyer">Buyer (Borrower)</option>
+            <option value="Seller">Seller</option>
+            <option value="Lender">Lender / Loan Officer</option>
+            <option value="Agent">Real Estate Agent (Buyer / Seller)</option>
+            <option value="Title Underwriter">Title Underwriter</option>
+          </select>
+        </div>
+        <div class="qz-fld" style="margin-bottom:12px;">
+          <label style="font-size:11.5px;font-weight:700;color:#475569;">Subject</label>
+          <input type="text" id="qzComposeSubject" placeholder="e.g. Escrow Deposit Confirmation &amp; Wiring Instructions" class="qz-input" style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;">
+        </div>
+        <div class="qz-fld" style="margin-bottom:12px;">
+          <label style="font-size:11.5px;font-weight:700;color:#475569;">Message</label>
+          <textarea id="qzComposeBody" rows="4" placeholder="Write your message to the party..." class="qz-input" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;font-family:inherit;"></textarea>
+        </div>
+      </div>
+      <div class="qz-modal-foot" style="display:flex;justify-content:flex-end;gap:10px;padding:12px 18px;background:#f8fafc;border-top:1px solid var(--qz-line);">
+        <button type="button" class="qz-btn" onclick="document.getElementById('qzQuickComposeModal').remove()">Cancel</button>
+        <button type="button" class="qz-btn primary" onclick="qzSubmitQuickCompose()">Send via Connect &raquo;</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function qzSubmitQuickCompose() {
+  const orderId = document.getElementById('qzComposeOrderId').value;
+  const recipient = document.getElementById('qzComposeRecipient').value;
+  const subject = document.getElementById('qzComposeSubject').value.trim() || 'Notice Regarding File #' + orderId;
+  const body = document.getElementById('qzComposeBody').value.trim() || 'Attached documents and updates regarding the upcoming closing.';
+
+  const newThread = qzInsert('threads', {
+    orderId: orderId,
+    subject: subject,
+    thread: [
+      { sender: 'Alex (Escrow Officer)', text: body, date: QZ_TODAY }
+    ]
+  });
+
+  qzLogAudit('Connect thread initiated for Order #' + orderId + ' with ' + recipient + ': ' + subject);
+  simToast('Connect message dispatched to ' + recipient + '.');
+  const m = document.getElementById('qzQuickComposeModal');
+  if (m) m.remove();
+  qzUpdateBellBadge();
+  if (qzState.orderId === orderId) qzRenderRoot();
+}
+
+function qzRenderMessagesDropdown() {
+  const dd = document.getElementById('qzMessagesDropdown');
+  if (!dd) return;
+
+  const allThreads = qzList('threads');
+  let filtered = allThreads;
+
+  if (qzMsgSearchQuery) {
+    filtered = filtered.filter(t => (t.subject || '').toLowerCase().includes(qzMsgSearchQuery) || (t.orderId || '').toLowerCase().includes(qzMsgSearchQuery) || (t.thread && t.thread.some(m => (m.text || '').toLowerCase().includes(qzMsgSearchQuery) || (m.sender || '').toLowerCase().includes(qzMsgSearchQuery))));
+  }
+
+  const threadRows = filtered.slice(0, 15).map((t, idx) => {
+    const lastMsg = t.thread && t.thread[t.thread.length - 1];
+    const sender = lastMsg ? lastMsg.sender : 'Participant';
+    const text = lastMsg ? lastMsg.text : 'No message content';
+    const isBuyer = /buyer|borrower/i.test(sender);
+    const isSeller = /seller/i.test(sender);
+    const isLender = /lender|loan|bank/i.test(sender);
+    const roleClass = isBuyer ? 'buyer' : isSeller ? 'seller' : isLender ? 'lender' : 'agent';
+    const initial = sender.charAt(0).toUpperCase();
+
+    return `
+      <div class="qz-msg-item ${idx < 4 ? 'unread' : ''}" onclick="qzOpenThreadFromDropdown('${escAttr(String(t.id))}')">
+        <div class="qz-msg-avatar ${roleClass}">${esc(initial)}</div>
+        <div class="qz-msg-content">
+          <div class="qz-msg-top">
+            <span class="qz-msg-sender">${esc(sender)}</span>
+            <span class="qz-msg-time">${fmtDate(lastMsg ? lastMsg.date : QZ_TODAY)}</span>
+          </div>
+          <div class="qz-msg-subject">#${esc(t.orderId)} &middot; ${esc(t.subject)}</div>
+          <div class="qz-msg-snippet">${esc(text)}</div>
+        </div>
+        ${idx < 4 ? '<div class="qz-msg-unread-dot"></div>' : ''}
+      </div>`;
+  }).join('');
+
+  dd.innerHTML = `
+    <div class="qz-dd-header">
+      <div>
+        <div class="qz-dd-title">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+          Connect Messages (${allThreads.length})
+        </div>
+        <div class="qz-dd-sub">Agency client &amp; lender communication hub</div>
+      </div>
+      <div class="qz-dd-actions">
+        <button type="button" class="qz-btn sm primary" style="font-size:11px;padding:3px 8px;" onclick="qzQuickComposeModal()">+ New</button>
+        <button type="button" class="qz-dd-link-btn" onclick="qzGoto('global-messages'); qzCloseAllTopbarDropdowns();">View All &raquo;</button>
+      </div>
+    </div>
+    <div class="qz-dd-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" placeholder="Search conversations by subject or order..." value="${escAttr(qzMsgSearchQuery)}" oninput="qzFilterMsgSearch(this.value)">
+    </div>
+    <div class="qz-dd-body">
+      ${threadRows || '<div class="qz-dd-empty">No message threads found.</div>'}
+    </div>`;
+}
+
+/* ---------- 3. Notification Center (🔔 294) ---------- */
 function qzToggleBellDropdown(e) {
   if (e) e.stopPropagation();
   const dd = document.getElementById('qzBellDropdown');
   if (!dd) return;
   const opening = !dd.classList.contains('open');
-  if (opening) qzRenderBellDropdown();
-  dd.classList.toggle('open', opening);
+  qzCloseAllTopbarDropdowns();
+  if (opening) {
+    qzRenderBellDropdown();
+    dd.classList.add('open');
+  }
 }
-function qzCloseBellDropdown() {
-  const dd = document.getElementById('qzBellDropdown');
-  if (dd) dd.classList.remove('open');
+
+function qzSetBellTab(tab) {
+  qzBellTab = tab;
+  qzRenderBellDropdown();
 }
-document.addEventListener('click', () => qzCloseBellDropdown());
+
+function qzMarkAllAlertsRead() {
+  simToast('All notifications marked as read.');
+  qzUnreadAlertsCount = 0;
+  qzUpdateBellBadge();
+  qzRenderBellDropdown();
+}
+
+function qzToggleTaskFromBell(taskId, checked, e) {
+  if (e) e.stopPropagation();
+  qzToggleTaskStatus(taskId, checked);
+  simToast(checked ? 'Task marked as complete.' : 'Task reopened.', { tone: 'good' });
+  qzUpdateBellBadge();
+  qzRenderBellDropdown();
+}
 
 function qzRenderBellDropdown() {
   const dd = document.getElementById('qzBellDropdown');
   if (!dd) return;
-  const open = qzList('tasks', t => qzTaskStatus(t) !== 'Complete' && /you/i.test(t.assignedTo || ''));
-  if (!open.length) {
-    dd.innerHTML = '<div class="qz-bell-empty">No open tasks assigned to you</div>';
-    return;
+
+  const allMyOpenTasks = qzList('tasks', t => qzTaskStatus(t) !== 'Complete' && /you/i.test(t.assignedTo || ''));
+  const sortedTasks = allMyOpenTasks.slice().sort((a, b) => {
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return a.dueDate.localeCompare(b.dueDate);
+  });
+  const openTasks = sortedTasks.slice(0, 15);
+  const totalNotifications = qzUnreadAlertsCount + allMyOpenTasks.length;
+
+  let contentHTML = '';
+  if (qzBellTab === 'activity') {
+    const sampleAlerts = [
+      { type: 'doc', icon: '📄', title: 'Buyer signed Closing Disclosure received', orderId: '2021-1470', time: '12m ago', address: '213 Lake Street' },
+      { type: 'wire', icon: '💰', title: 'Earnest money wire ($15,000.00) verified in Escrow Trust', orderId: '2021-1398', time: '45m ago', address: '839 Oak Street' },
+      { type: 'doc', icon: '🛡', title: 'Title commitment Schedule B approved by Old Republic Underwriter', orderId: '2021-1512', time: '2h ago', address: '484 Third Street' },
+      { type: 'warn', icon: '⚠️', title: 'Mortgage payoff good-through statement expires in 48 hours', orderId: '2021-1483', time: '3h ago', address: '358 Pine Street' },
+      { type: 'task', icon: '📅', title: 'Mobile notary signing appointment confirmed for 2:30 PM', orderId: '2021-1405', time: 'Today', address: '999 Second Street' },
+      { type: 'doc', icon: '📬', title: 'Lender final closing package uploaded via Connect', orderId: '2021-1490', time: 'Today', address: '181 Pine Street' },
+      { type: 'wire', icon: '✍️', title: 'Warranty Deed e-recording package accepted by Collin County Clerk', orderId: '2021-1375', time: 'Yesterday', address: '159 Elm Street' },
+      { type: 'warn', icon: '📋', title: 'CPL re-issuance requested for closing file #2021-1460', orderId: '2021-1460', time: 'Yesterday', address: '215 West Lake' }
+    ];
+
+    const alertRows = sampleAlerts.map((a, idx) => `
+      <div class="qz-alert-item ${idx < qzUnreadAlertsCount ? 'unread' : ''}" onclick="qzOpenOrder('${escAttr(a.orderId)}'); qzCloseAllTopbarDropdowns();">
+        <div class="qz-alert-icon ${a.type}">${a.icon}</div>
+        <div class="qz-alert-content">
+          <div class="qz-alert-text"><b>Order #${esc(a.orderId)}:</b> ${esc(a.title)}</div>
+          <div class="qz-alert-meta">
+            <span>${esc(a.address)}</span>
+            <span>&bull;</span>
+            <span>${esc(a.time)}</span>
+          </div>
+        </div>
+      </div>`).join('');
+
+    contentHTML = `<div class="qz-dd-body">${alertRows}</div>`;
+  } else {
+    if (!allMyOpenTasks.length) {
+      contentHTML = '<div class="qz-dd-empty">No open tasks assigned to you</div>';
+    } else {
+      const groups = {};
+      openTasks.forEach(t => { (groups[t.relatedOrderId] = groups[t.relatedOrderId] || []).push(t); });
+      const taskRows = Object.keys(groups).map(orderId => {
+        const o = qzGetOrder(orderId);
+        const label = o ? o.propertyAddress : orderId;
+        const items = groups[orderId].map(t => {
+          const isOverdue = t.dueDate && t.dueDate < QZ_TODAY;
+          const isDueToday = t.dueDate && t.dueDate === QZ_TODAY;
+          const badgeClass = isOverdue ? 'bad' : isDueToday ? 'pending' : 'progress';
+          const dueLabel = isOverdue ? `Overdue &bull; ${fmtDate(t.dueDate)}` : isDueToday ? 'Today' : fmtDate(t.dueDate);
+
+          return `
+            <div class="qz-bell-task-item">
+              <label class="qz-bell-chk-label" onclick="event.stopPropagation()">
+                <input type="checkbox" onchange="qzToggleTaskFromBell('${escAttr(String(t.id))}', this.checked, event)">
+              </label>
+              <div class="qz-bell-task-info" onclick="qzGotoOrderTasks('${escAttr(orderId)}'); qzCloseAllTopbarDropdowns();">
+                <div class="qz-bell-task-title">${esc(t.title)}</div>
+                <div class="qz-bell-task-meta">${esc(t.group || 'Milestone Task')}</div>
+              </div>
+              <span class="qz-badge ${badgeClass}" style="font-size:10px;padding:2px 7px;flex:none">${dueLabel}</span>
+            </div>`;
+        }).join('');
+
+        return `
+          <div class="qz-bell-group-block">
+            <div class="qz-bell-group-header" onclick="qzGotoOrderTasks('${escAttr(orderId)}'); qzCloseAllTopbarDropdowns();">
+              <span class="qz-bell-order-pill">#${esc(orderId)}</span>
+              <span class="qz-bell-order-title">${esc(label)}</span>
+              <span class="qz-bell-order-count">${groups[orderId].length} tasks</span>
+            </div>
+            <div>${items}</div>
+          </div>`;
+      }).join('');
+      contentHTML = `<div class="qz-dd-body">${taskRows}</div>`;
+    }
   }
-  const groups = {};
-  open.forEach(t => { (groups[t.relatedOrderId] = groups[t.relatedOrderId] || []).push(t); });
-  const itemsHTML = Object.keys(groups).map(orderId => {
-    const o = qzGetOrder(orderId);
-    const label = o ? o.propertyAddress : orderId;
-    const items = groups[orderId].map(t =>
-      `<div class="qz-bell-item" onclick="qzGotoOrderTasks('${escAttr(orderId)}')"><span class="t">${esc(t.title)}</span><span class="d">${fmtDate(t.dueDate)}</span></div>`
-    ).join('');
-    return `<div class="qz-bell-group"><div class="qz-bell-group-h">${esc(label)}</div>${items}</div>`;
-  }).join('');
 
   dd.innerHTML = `
-    <div class="qz-bell-header" style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
-      <b style="font-size:12px;color:#1e293b;">My Assigned Tasks (${open.length})</b>
-      <button type="button" class="qz-btn sm" style="padding:2px 8px;font-size:11px;" onclick="qzGotoMyTasks()">View All &raquo;</button>
+    <div class="qz-dd-header">
+      <div>
+        <div class="qz-dd-title">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Notifications &amp; Activity (${totalNotifications})
+        </div>
+        <div class="qz-dd-sub">Real-time alerts, uploads &amp; closing milestones</div>
+      </div>
+      <div class="qz-dd-actions">
+        <button type="button" class="qz-dd-link-btn" onclick="qzMarkAllAlertsRead()">Mark All Read</button>
+        <button type="button" class="qz-dd-link-btn" onclick="qzGotoMyTasks(); qzCloseAllTopbarDropdowns();">All Tasks &raquo;</button>
+      </div>
     </div>
-    ${itemsHTML}`;
+    <div class="qz-dd-tabs">
+      <button type="button" class="qz-dd-tab ${qzBellTab === 'activity' ? 'active' : ''}" onclick="qzSetBellTab('activity')">Activity Feed (${qzUnreadAlertsCount})</button>
+      <button type="button" class="qz-dd-tab ${qzBellTab === 'tasks' ? 'active' : ''}" onclick="qzSetBellTab('tasks')">My Tasks (${allMyOpenTasks.length})</button>
+    </div>
+    ${contentHTML}`;
+}
+
+function qzGotoMyTasks() {
+  qzGotoHome('tasks');
+}
+
+/* ---------- 4. User Profile Menu (🟢 [A] Alex ▾) ---------- */
+function qzToggleUserDropdown(e) {
+  if (e) e.stopPropagation();
+  const dd = document.getElementById('qzUserDropdown');
+  if (!dd) return;
+  const opening = !dd.classList.contains('open');
+  qzCloseAllTopbarDropdowns();
+  if (opening) {
+    qzRenderUserDropdown();
+    dd.classList.add('open');
+  }
+}
+
+function qzRenderUserDropdown() {
+  const dd = document.getElementById('qzUserDropdown');
+  if (!dd) return;
+  const su = window.SCApp && SCApp.currentUser && SCApp.currentUser();
+  const userName = su ? su.name : 'Alex Rivera';
+  const userInitial = (su ? (su.avatar || su.name.charAt(0)) : 'A').toUpperCase();
+  const userEmail = su ? (su.email || 'alex.rivera@bestclosing.com') : 'alex.rivera@bestclosing.com';
+
+  dd.innerHTML = `
+    <div class="qz-user-card">
+      <div class="qz-user-card-av">${esc(userInitial)}</div>
+      <div>
+        <div class="qz-user-card-name">${esc(userName)}</div>
+        <div class="qz-user-card-role">${esc(userEmail)}</div>
+        <div class="qz-user-card-branch">Plano HQ &middot; Best Closing Inc.</div>
+      </div>
+    </div>
+    <div class="qz-user-menu">
+      <div class="qz-user-menu-item" onclick="qzOpenUserSettings('profile'); qzCloseAllTopbarDropdowns();">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>User Settings &amp; Preferences</span>
+      </div>
+      <div class="qz-user-menu-item" onclick="qzOpenUserSettings('notifications'); qzCloseAllTopbarDropdowns();">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span>Notification Preferences</span>
+      </div>
+      <div class="qz-user-menu-item" onclick="qzGoto('admin'); qzCloseAllTopbarDropdowns();">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Company Settings (Admin)</span>
+      </div>
+      <div class="qz-user-menu-item" onclick="qzCoreStub('Help Center'); qzCloseAllTopbarDropdowns();">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>Help &amp; Support Center</span>
+      </div>
+      <div class="qz-user-menu-divider"></div>
+      <div class="qz-user-menu-item danger" onclick="qzLogout();">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        <span>Sign Out</span>
+      </div>
+    </div>`;
+}
+
+/* ---------- Qualia Native User Settings View ---------- */
+let qzUserSettingsTab = 'profile'; // 'profile' | 'notifications' | 'signature' | 'security'
+
+function qzOpenUserSettings(tab) {
+  qzUserSettingsTab = tab || 'profile';
+  qzCloseAllTopbarDropdowns();
+  qzGoto('user-settings');
+}
+
+function qzSetUserSettingsTab(tab) {
+  qzUserSettingsTab = tab;
+  qzRenderRoot();
+}
+
+function qzUserSettingsHTML() {
+  const su = window.SCApp && SCApp.currentUser && SCApp.currentUser();
+  const userName = su ? su.name : 'Alex Rivera';
+  const userInitial = (su ? (su.avatar || su.name.charAt(0)) : 'A').toUpperCase();
+  const userEmail = su ? (su.email || 'alex.rivera@bestclosing.com') : 'alex.rivera@bestclosing.com';
+
+  const tabs = [
+    { id: 'profile', label: 'Personal Profile', icon: '👤' },
+    { id: 'notifications', label: 'Notification Preferences', icon: '🔔' },
+    { id: 'signature', label: 'Closing Signature & Credentials', icon: '✍️' },
+    { id: 'security', label: 'Security & Two-Factor Auth', icon: '🔒' }
+  ];
+
+  const tabNav = tabs.map(t => `
+    <button type="button" class="qz-settings-nav-item ${qzUserSettingsTab === t.id ? 'active' : ''}" onclick="qzSetUserSettingsTab('${t.id}')">
+      <span class="ic">${t.icon}</span>
+      <span>${esc(t.label)}</span>
+    </button>`).join('');
+
+  let paneHTML = '';
+
+  if (qzUserSettingsTab === 'profile') {
+    paneHTML = `
+      <div class="qz-settings-card">
+        <div class="qz-settings-card-h">
+          <h3>User Profile &amp; Contact Information</h3>
+          <p>Personal credentials and agency closing assignment details</p>
+        </div>
+        <div class="qz-settings-profile-head">
+          <div class="qz-user-card-av lg">${esc(userInitial)}</div>
+          <div>
+            <h2 style="font-size:17px;font-weight:700;color:#0f172a;margin:0 0 4px;">${esc(userName)}</h2>
+            <div style="font-size:12.5px;color:#64748b;">Title &amp; Escrow Officer / Closing Specialist</div>
+            <div style="font-size:11px;color:#166534;background:#dcfce7;display:inline-block;padding:2px 8px;border-radius:4px;margin-top:6px;font-weight:600;">Active Employee &middot; Best Closing Inc.</div>
+          </div>
+        </div>
+        <div class="qz-settings-grid">
+          <div class="qz-fld">
+            <label style="display:block;font-size:11.5px;font-weight:700;color:#475569;margin-bottom:4px;">Full Name</label>
+            <input type="text" value="${esc(userName)}" class="qz-input" id="qzSetFullName" style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;">
+          </div>
+          <div class="qz-fld">
+            <label style="display:block;font-size:11.5px;font-weight:700;color:#475569;margin-bottom:4px;">Email Address</label>
+            <input type="text" value="${esc(userEmail)}" class="qz-input" id="qzSetEmail" style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;background:#f8fafc;" readonly>
+          </div>
+          <div class="qz-fld">
+            <label style="display:block;font-size:11.5px;font-weight:700;color:#475569;margin-bottom:4px;">Direct Phone Number</label>
+            <input type="text" value="(214) 555-0128" class="qz-input" id="qzSetPhone" style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;">
+          </div>
+          <div class="qz-fld">
+            <label style="display:block;font-size:11.5px;font-weight:700;color:#475569;margin-bottom:4px;">Primary Office / Branch</label>
+            <input type="text" value="Plano HQ (900 E Park Blvd, Suite 300)" class="qz-input" style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;background:#f8fafc;" readonly>
+          </div>
+          <div class="qz-fld">
+            <label style="display:block;font-size:11.5px;font-weight:700;color:#475569;margin-bottom:4px;">Default Settlement State</label>
+            <input type="text" value="Texas (TX)" class="qz-input" style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;background:#f8fafc;" readonly>
+          </div>
+          <div class="qz-fld">
+            <label style="display:block;font-size:11.5px;font-weight:700;color:#475569;margin-bottom:4px;">Assigned Underwriter Portal</label>
+            <input type="text" value="Old Republic National Title" class="qz-input" style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;background:#f8fafc;" readonly>
+          </div>
+        </div>
+        <div class="qz-settings-actions">
+          <button type="button" class="qz-btn primary" onclick="simToast('Profile details updated successfully.', { tone: 'good' })">Save Changes</button>
+        </div>
+      </div>`;
+  } else if (qzUserSettingsTab === 'notifications') {
+    paneHTML = `
+      <div class="qz-settings-card">
+        <div class="qz-settings-card-h">
+          <h3>Notification Preferences</h3>
+          <p>Control browser alerts, email digests, and transaction event notifications</p>
+        </div>
+        <div class="qz-settings-notif-list">
+          <div class="qz-settings-notif-item">
+            <div>
+              <b>Connect Client Messages &amp; Chat</b>
+              <p>Receive real-time notifications when buyers, sellers, or lenders send messages on your orders</p>
+            </div>
+            <label class="qz-switch"><input type="checkbox" checked onchange="simToast('Preference saved')"><span class="slider"></span></label>
+          </div>
+          <div class="qz-settings-notif-item">
+            <div>
+              <b>Document Uploads &amp; Package Deliveries</b>
+              <p>Notify immediately when loan packages, deeds, or addenda are uploaded to active files</p>
+            </div>
+            <label class="qz-switch"><input type="checkbox" checked onchange="simToast('Preference saved')"><span class="slider"></span></label>
+          </div>
+          <div class="qz-settings-notif-item">
+            <div>
+              <b>Escrow Wire Confirmations &amp; Receipts</b>
+              <p>Alert upon verification of incoming earnest money or payoff funds in the trust ledger</p>
+            </div>
+            <label class="qz-switch"><input type="checkbox" checked onchange="simToast('Preference saved')"><span class="slider"></span></label>
+          </div>
+          <div class="qz-settings-notif-item">
+            <div>
+              <b>Task Due Date &amp; Milestone Reminders</b>
+              <p>Daily morning summary of tasks due within 24–48 hours across your closing queue</p>
+            </div>
+            <label class="qz-switch"><input type="checkbox" checked onchange="simToast('Preference saved')"><span class="slider"></span></label>
+          </div>
+          <div class="qz-settings-notif-item">
+            <div>
+              <b>Underwriter Approvals &amp; CPL Notifications</b>
+              <p>Instant alert when title search exams or CPL requests are approved by the underwriter</p>
+            </div>
+            <label class="qz-switch"><input type="checkbox" checked onchange="simToast('Preference saved')"><span class="slider"></span></label>
+          </div>
+        </div>
+        <div class="qz-settings-actions">
+          <button type="button" class="qz-btn primary" onclick="simToast('Notification preferences saved.', { tone: 'good' })">Save Notification Settings</button>
+        </div>
+      </div>`;
+  } else if (qzUserSettingsTab === 'signature') {
+    paneHTML = `
+      <div class="qz-settings-card">
+        <div class="qz-settings-card-h">
+          <h3>Digital Closing Signature &amp; Title Credentials</h3>
+          <p>Official e-signature used on settlement statements, escrow disbursements, and deeds</p>
+        </div>
+        <div style="margin:20px 0;">
+          <label style="font-size:12px;font-weight:700;color:#475569;display:block;margin-bottom:8px;">Electronic Signature Preview</label>
+          <div class="qz-settings-sig-box">
+            <span class="sig-name">${esc(userName)}</span>
+            <span class="sig-title">Title &amp; Escrow Officer &middot; Best Closing Inc.</span>
+          </div>
+        </div>
+        <div class="qz-settings-grid">
+          <div class="qz-fld">
+            <label style="display:block;font-size:11.5px;font-weight:700;color:#475569;margin-bottom:4px;">Escrow Officer License #</label>
+            <input type="text" value="TX-ESC-849201" class="qz-input" style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;background:#f8fafc;" readonly>
+          </div>
+          <div class="qz-fld">
+            <label style="display:block;font-size:11.5px;font-weight:700;color:#475569;margin-bottom:4px;">Notary Public Commission Exp.</label>
+            <input type="text" value="11/24/2028" class="qz-input" style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12.5px;background:#f8fafc;" readonly>
+          </div>
+        </div>
+        <div class="qz-settings-actions">
+          <button type="button" class="qz-btn primary" onclick="simToast('Signature credentials verified.', { tone: 'good' })">Update Signature</button>
+        </div>
+      </div>`;
+  } else if (qzUserSettingsTab === 'security') {
+    paneHTML = `
+      <div class="qz-settings-card">
+        <div class="qz-settings-card-h">
+          <h3>Security &amp; Multi-Factor Authentication</h3>
+          <p>Manage login credentials and account access protection</p>
+        </div>
+        <div class="qz-settings-notif-list">
+          <div class="qz-settings-notif-item">
+            <div>
+              <b>Two-Factor Authentication (2FA)</b>
+              <p>Authenticator app (TOTP) verification required on all new device logins</p>
+            </div>
+            <span class="qz-badge complete" style="padding:4px 8px;font-size:11px;">Active &middot; Enabled</span>
+          </div>
+          <div class="qz-settings-notif-item">
+            <div>
+              <b>Session Timeout</b>
+              <p>Automatically lock idle session after 30 minutes of inactivity</p>
+            </div>
+            <span class="qz-badge complete" style="padding:4px 8px;font-size:11px;">Enforced</span>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  return `
+    <div class="qz-settings-layout">
+      <div class="qz-settings-sidebar">
+        <div class="qz-settings-sidebar-h">
+          <span class="lbl">Account Settings</span>
+          <button type="button" class="qz-btn sm" onclick="qzGoto('orders')">&larr; Back to Orders</button>
+        </div>
+        <div class="qz-settings-nav">${tabNav}</div>
+      </div>
+      <div class="qz-settings-content">
+        ${paneHTML}
+      </div>
+    </div>`;
+}
+
+function qzLogout() {
+  if (window.SCApp && SCApp.logout) {
+    SCApp.logout();
+  } else {
+    location.href = '../login.html';
+  }
 }
 
 function qzGotoMyTasks() {
@@ -3042,20 +4004,21 @@ const QZ_HOME_CHIPS = [
 ];
 
 function qzGotoHome(tab) {
-  /* Same guard the facade sections get in qzGoto(): Home is browsing, not coursework, and
-     the logo is now clickable from inside a running walkthrough. Refusing beats leaving the
-     overlay pointing at elements that are no longer on screen. */
   if (SimEngine.walkActive()) {
     simToast('Finish or exit the current lesson step before browsing other sections.');
     return;
   }
+  qzCloseAllTopbarDropdowns();
   qzState.view = 'home';
   qzState.orderId = null;
   if (tab) qzState.homeTab = tab;
   if (!qzState.homeTab) qzState.homeTab = 'orders';
-  qzCloseBellDropdown();
   qzSyncTopTabs();
   qzRenderRoot();
+}
+
+function qzCloseBellDropdown() {
+  qzCloseAllTopbarDropdowns();
 }
 
 function qzSetHomeTab(tab) {
@@ -3402,11 +4365,7 @@ function qzGotoLessons() {
    waiting without opening it. Blank when everything is done — a zero badge is noise. */
 function qzSyncLessonsBadge() {
   const badge = document.getElementById('qzLessonsBadge');
-  if (!badge) return;
-  const all = (typeof QZ_LESSONS !== 'undefined') ? QZ_LESSONS.flatMap(l => l.steps) : [];
-  const left = all.filter(s => !qzLessonStepDone(s)).length;
-  badge.textContent = left ? String(left) : '';
-  badge.style.display = left ? '' : 'none';
+  if (badge) badge.style.display = 'none';
 }
 
 function qzRenderCoreSections() {
@@ -3438,6 +4397,14 @@ function qzGoto(view) {
   }
   qzState.view = view;
   qzState.orderId = null;
+  // Leaving the order abandons any correction that was handed off to a product screen, so the
+  // strip must not keep offering a way back to an exercise the trainee has walked out of.
+  qzState.pendingRevFix = null;
+  qzState.pendingRevDoc = null;
+  qzState.pendingRecDoc = null;
+  qzState.pendingRecFix = null;
+  // Same for a question floating over that screen (qzAskRender enforces this too).
+  qzAsk = null;
   if (!isBackStep) {
     qzState.lessonId = null;
     if (SimEngine.walkActive()) SimEngine.exit(true);
@@ -3569,6 +4536,56 @@ function qzRenderOrderTabs() {
    step fires mid-keystroke (the Orders search box patches its own row list in place and
    skips qzRenderRoot to avoid losing input focus). */
 function qzLessonBreadcrumbHTML() {
+  /* A hand-off in progress outranks the lesson breadcrumb: the trainee is standing on a
+     product screen because an exercise sent them there, and needs to know why and how back.
+     It rides the strip rather than the page so the product screen itself stays untouched. */
+  if (qzState.pendingRevFix && qzState.view === 'order') {
+    const r = qzReviewLookup(qzState.pendingRevFix);
+    if (r && r.fieldAt) return `<div class="qz-lesson-banner" onclick="qzRevBackToExercise()">Correct ${esc(r.label)} here, then save &middot; Back to the question &rarr;</div>`;
+    if (r) return `<div class="qz-lesson-banner" onclick="qzRevBackToExercise()">Document Review &middot; correct ${esc(r.label)} here, then save &middot; Back to the exercise &rarr;</div>`;
+  }
+  /* A question the trainee dismissed with the dialog's close button. The strip is already
+     the thing that says "an exercise put you on this screen", so it also says how to get
+     the question back rather than leaving the step unreachable. */
+  if (qzState.pendingRecFix && qzState.view === 'order') {
+    const prf = qzState.pendingRecFix;
+    const rr = qzRecLookup(prf.recId);
+    const fixRow = rr && rr.rows.find(x => x.id === prf.rowId);
+    if (fixRow) {
+      if (fixRow.fixAt && fixRow.fixAt.action === 'upload') {
+        return `<div class="qz-lesson-banner" onclick="qzReconcileDrive('${escAttr(prf.recId)}')">📎 In Qualia, click "Upload" on the document to register it and mark it Received &middot; Back to question &rarr;</div>`;
+      }
+      return `<div class="qz-lesson-banner" onclick="qzReconcileDrive('${escAttr(prf.recId)}')">Make the correction on this screen &middot; Back to the exercise &rarr;</div>`;
+    }
+  }
+  if (qzState.pendingRecDoc && qzState.view === 'order') {
+    const prd = qzState.pendingRecDoc;
+    const rr = qzRecLookup(prd.recId);
+    const dd = rr && rr.docs.find(d => d.id === prd.docId);
+    if (dd) return `<div class="qz-lesson-banner" onclick="qzReconcileDrive('${escAttr(prd.recId)}')">Open the ${esc(dd.title)} from this file's Documents &middot; Back to the exercise &rarr;</div>`;
+  }
+  if (qzState.pendingRevDoc && qzState.view === 'order') {
+    const rd = qzReviewLookup(qzState.pendingRevDoc);
+    if (rd) return `<div class="qz-lesson-banner" onclick="qzAskReopen()">Open the ${esc(rd.docTitle)} from this file's Documents &middot; Back to the question &rarr;</div>`;
+  }
+  if (!qzAsk && !qzState.pendingRevFix && !qzState.pendingRevDoc && !qzState.pendingRecDoc && !qzState.pendingRecFix && qzAskLast && qzState.view === 'order' && SimEngine.walkActive()) {
+    const cur = SimEngine.currentStep();
+    const mine = !!cur && ((qzAskLast.kind === 'verify' && cur.reviewId === qzAskLast.id) ||
+                           (qzAskLast.kind === 'reconcile' && cur.reconcileId === qzAskLast.id) ||
+                           (qzAskLast.kind === 'scenario' && cur.scenarioId === qzAskLast.id));
+    if (mine) return `<div class="qz-lesson-banner" onclick="qzAskReopen()">Question closed &middot; Reopen it &rarr;</div>`;
+  }
+  if (qzState.view === 'orders' && qzState.lessonId) {
+    const l = QZ_LESSONS.find(x => x.id === qzState.lessonId);
+    if (l) {
+      const targetOid = qzActiveLessonOrderId() || 'ORD-2026-1483';
+      const orderNum = targetOid.replace('ORD-', '');
+      return `<div class="qz-lesson-banner guide">
+        <span>📚 <b>Lesson ${l.number}</b>: Open Order <b>#${esc(orderNum)}</b> to continue the exercise</span>
+        <button type="button" class="qz-resume-btn" onclick="qzOpenOrder('${escAttr(targetOid)}')">Resume Order &rarr;</button>
+      </div>`;
+    }
+  }
   if (!qzState.lessonId || qzState.view === 'lesson' || qzState.view === 'dashboard' || qzState.view === 'exam') return '';
   const l = QZ_LESSONS.find(x => x.id === qzState.lessonId);
   if (!l) return '';
@@ -3582,28 +4599,35 @@ function qzRenderLessonBanner() {
   qzSyncTopStrip();
 }
 function qzRenderRoot() {
+  qzSaveNav();
   const root = document.getElementById('qzRoot');
-  // The order view brings its own full-height Core chrome (dark rail + right panel), so the
-  // scrolling page padding that every other view wants has to come off for it.
   const body = document.querySelector('.qz-body');
-  if (body) body.classList.toggle('core', qzState.view === 'order');
+  const stayingInOrder = qzState.view === 'order';
+  const mainEl = stayingInOrder ? root.querySelector('.qz-order-main') : null;
+  const savedScroll = mainEl ? mainEl.scrollTop : 0;
+  if (body) body.classList.toggle('core', stayingInOrder);
   let html = '';
   if (qzState.view === 'dashboard') html = qzDashboardHTML();
   else if (qzState.view === 'orders') html = qzOrdersHTML();
   else if (qzState.view === 'order') html = qzOrderHTML();
   else if (qzState.view === 'home') html = qzHomeHTML();
   else if (qzState.view === 'my-tasks' || qzState.view === 'tasks') html = qzMyTasksHTML();
+  else if (qzState.view === 'user-settings' || qzState.view === 'settings') html = qzUserSettingsHTML();
   else if (qzState.view === 'scenario') html = qzScenarioDetailHTML();
   else if (qzState.view === 'lesson') html = qzLessonDetailHTML();
   else if (qzState.view === 'exam') html = qzExamHTML();
-  /* Core facade sections (Contacts, Calendar, Accounting, Reports, Compliance, Admin).
-     Guarded on the registry existing so qualia-app.js still runs if qualia-shell.js is
-     not loaded, and placed last so it can never shadow a training view. */
+  else if (qzState.view === 'review') html = qzReviewViewHTML();
   else if (typeof QZ_SHELL_VIEWS !== 'undefined' && QZ_SHELL_VIEWS[qzState.view]) {
     html = QZ_SHELL_VIEWS[qzState.view]();
   }
   root.innerHTML = qzExamActiveBannerHTML() + html;
+  if (stayingInOrder && savedScroll) {
+    const restored = root.querySelector('.qz-order-main');
+    if (restored) restored.scrollTop = savedScroll;
+  }
   qzRenderLessonBanner();
+  qzAskRender();
+  qzUpdateBellBadge();
 }
 
 /* ---------- lessons: gating (always derived, never stored) ---------- */
@@ -3614,11 +4638,25 @@ function qzRenderRoot() {
    use this: the exam is single-answer, and the score reported to SCApp uses first attempts
    (see qzScenarioFirstAttemptCorrect). */
 function qzLessonStepDone(step) {
-  if (step.type === 'do') return !!qzStore.checklist[qzScopedChecklistKey(step.checklistId, step.orderId)];
-  if (step.type === 'verify') { const s = qzStore.reviews[step.reviewId]; return !!(s && (s.everCorrect || s.correct)); }
-  if (step.type === 'decide') { const s = qzStore.scenarios[step.scenarioId]; return !!(s && (s.everCorrect || s.correct)); }
-  if (step.type === 'reconcile') { const s = qzStore.reconciles[step.reconcileId]; return !!(s && (s.everCorrect || s.correct)); }
-  if (step.type === 'compose') { const s = qzStore.composes[step.composeId]; return !!(s && (s.everCorrect || s.correct)); }
+  const lid = step._lessonId;
+  if (lid && qzStore.lessonsDone[lid]) return true;
+  if (step.type === 'do') return !!qzStore.checklist[qzScopedChecklistKey(step.checklistId, step.orderId, lid)];
+  if (step.type === 'verify') {
+    const s = lid ? qzStore.reviews[`${step.reviewId}#${lid}`] : qzStore.reviews[step.reviewId];
+    return !!(s && (s.everCorrect || s.correct));
+  }
+  if (step.type === 'decide') {
+    const s = lid ? qzStore.scenarios[`${step.scenarioId}#${lid}`] : qzStore.scenarios[step.scenarioId];
+    return !!(s && (s.everCorrect || s.correct));
+  }
+  if (step.type === 'reconcile') {
+    const s = lid ? qzStore.reconciles[`${step.reconcileId}#${lid}`] : qzStore.reconciles[step.reconcileId];
+    return !!(s && (s.everCorrect || s.correct));
+  }
+  if (step.type === 'compose') {
+    const s = lid ? qzStore.composes[`${step.composeId}#${lid}`] : qzStore.composes[step.composeId];
+    return !!(s && (s.everCorrect || s.correct));
+  }
   return false;
 }
 /* What the trainee got RIGHT ON THE FIRST TRY, independent of how many retries followed.
@@ -3653,6 +4691,7 @@ const QZ_CHECKLIST_TAB = {
   'accounting-open': { tab: 'accounting' }
 };
 function qzLessonStepNavigate(step) {
+  qzAsk = null;
   if (step.type === 'do') {
     if (step.checklistId.indexOf('orders-') === 0) {
       qzState.view = 'orders';
@@ -3674,6 +4713,8 @@ function qzLessonStepNavigate(step) {
   } else if (step.type === 'verify') {
     const r = qzReviewLookup(step.reviewId);
     if (!r) return;
+    // Ask-layer items go to the Core screen that owns the value, not to a course page.
+    if (r.fieldAt) { qzVerifyDrive(step.reviewId); return; }
     qzState.view = 'order';
     qzState.orderId = r.orderId;
     qzState.orderTab = 'review';
@@ -3681,10 +4722,17 @@ function qzLessonStepNavigate(step) {
     qzSyncTopTabs();
     qzRenderRoot();
   } else if (step.type === 'decide') {
+    // A step that declares its own context (qzAskScenario) owns where it opens; the
+    // rest still get the standalone scenario page.
+    if (step.walk && step.walk.setup) { step.walk.setup(); return; }
     qzOpenScenario(step.scenarioId);
   } else if (step.type === 'reconcile') {
     const r = qzRecLookup(step.reconcileId);
     if (!r) return;
+    if (typeof QZ_REC_AT !== 'undefined' && QZ_REC_AT[step.reconcileId]) {
+      qzReconcileDrive(step.reconcileId);
+      return;
+    }
     qzOpenOrderTab(r.orderId);
     qzState.view = 'order';
     qzState.orderId = r.orderId;
@@ -3718,11 +4766,12 @@ function qzLessonStepLabel(step) {
   return '';
 }
 function qzLessonStepStatus(step) {
+  const lid = step._lessonId;
   if (step.type === 'do') return qzLessonStepDone(step) ? 'good' : 'pending';
-  if (step.type === 'verify') { const s = qzStore.reviews[step.reviewId]; if (!s || !s.resolvedAt) return 'pending'; return s.correct ? 'good' : 'bad'; }
-  if (step.type === 'decide') { const s = qzStore.scenarios[step.scenarioId]; if (!s || s.answered == null) return 'pending'; return s.correct ? 'good' : 'bad'; }
-  if (step.type === 'reconcile') { const s = qzStore.reconciles[step.reconcileId]; if (!s || !s.resolvedAt) return 'pending'; return s.correct ? 'good' : 'bad'; }
-  if (step.type === 'compose') { const s = qzStore.composes[step.composeId]; if (!s || !s.resolvedAt) return 'pending'; return s.correct ? 'good' : 'bad'; }
+  if (step.type === 'verify') { const s = lid ? qzStore.reviews[`${step.reviewId}#${lid}`] : qzStore.reviews[step.reviewId]; if (!s || !s.resolvedAt) return 'pending'; return s.correct ? 'good' : 'bad'; }
+  if (step.type === 'decide') { const s = lid ? qzStore.scenarios[`${step.scenarioId}#${lid}`] : qzStore.scenarios[step.scenarioId]; if (!s || s.answered == null) return 'pending'; return s.correct ? 'good' : 'bad'; }
+  if (step.type === 'reconcile') { const s = lid ? qzStore.reconciles[`${step.reconcileId}#${lid}`] : qzStore.reconciles[step.reconcileId]; if (!s || !s.resolvedAt) return 'pending'; return s.correct ? 'good' : 'bad'; }
+  if (step.type === 'compose') { const s = lid ? qzStore.composes[`${step.composeId}#${lid}`] : qzStore.composes[step.composeId]; if (!s || !s.resolvedAt) return 'pending'; return s.correct ? 'good' : 'bad'; }
   return 'pending';
 }
 /* The step list, "Try It" button and completion notice are all generic — the engine
@@ -3808,20 +4857,39 @@ function qzSyncComposeStep(composeId) {
 function qzReconcileTarget(recId) {
   const st = qzRecGet(recId);
   if (SimEngine.docOpen()) return null;
+  if (qzState.pendingRecDoc && qzState.pendingRecDoc.recId === recId) {
+    const r = qzRecLookup(recId);
+    const rowId = r ? qzRecDocRowId(r, qzState.pendingRecDoc.docId) : null;
+    return rowId != null ? `tr[data-doc-id="${rowId}"] [data-doc-action="view"]` : null;
+  }
+  if (qzState.pendingRecFix && qzState.pendingRecFix.recId === recId) {
+    const r = qzRecLookup(recId);
+    const row = r && r.rows.find(x => x.id === qzState.pendingRecFix.rowId);
+    return row && row.fixAt ? row.fixAt.sel : null;
+  }
   const scope = `.qz-rec-item[data-rec-id="${recId}"]`;
   if (st.resolvedAt) return st.correct ? null : scope + ' .qz-rv-feedback button';
   if (!qzRecAllDocsOpened(recId)) return scope + ' [data-rec-phase="1"]';
   const r = qzRecLookup(recId);
   const unfilled = r.rows.find(row => !qzRecRowCellsDone(recId, row.id));
-  if (unfilled) return scope + ` [data-rec-phase="2"] tr[data-rec-row="${unfilled.id}"]`;
+  if (unfilled) return scope + ` .qz-rec-card[data-rec-row="${unfilled.id}"]`;
   const undecided = r.rows.find(row => !qzRecRowSettled(recId, row.id));
-  if (undecided) return scope + ` [data-rec-phase="3"][data-rec-row="${undecided.id}"]`;
+  if (undecided) return scope + ` .qz-rec-card[data-rec-row="${undecided.id}"] .qz-rec-decide`;
   return scope + ' .qz-rec-actions button';
 }
 function qzReconcileText(recId) {
   const r = qzRecLookup(recId);
   const st = qzRecGet(recId);
   if (SimEngine.docOpen()) return 'Read it, then close it and come back to the grid.';
+  if (qzState.pendingRecDoc && qzState.pendingRecDoc.recId === recId) {
+    const doc = r.docs.find(d => d.id === qzState.pendingRecDoc.docId);
+    return `Find the ${doc ? doc.title : 'document'} in this order's Documents list and click View.`;
+  }
+  if (qzState.pendingRecFix && qzState.pendingRecFix.recId === recId) {
+    const fixRow = r.rows.find(x => x.id === qzState.pendingRecFix.rowId);
+    if (fixRow && fixRow.fixAt && fixRow.fixAt.action === 'upload') return 'The certificate is in hand. Click Upload to update the status on this order.';
+    return 'Make the correction on this screen, the way you would on the real product.';
+  }
   if (st.resolvedAt) return st.correct ? 'Reconciled.' : 'Read the breakdown below, then click "Redo" to work it again.';
   if (!qzRecAllDocsOpened(recId)) {
     const left = r.docs.filter(d => !st.opened[d.id]).length;
@@ -3875,6 +4943,9 @@ function qzComposeText(composeId) {
    highlight is suppressed and the tip just floats with a "close it to continue" nudge. */
 function qzVerifyTarget(reviewId) {
   const st = qzRevGet(reviewId);
+  const r0 = qzReviewLookup(reviewId);
+  // Items that declare where their value lives are walked on the product (ask layer).
+  if (r0 && r0.fieldAt) return qzVerifyFieldTarget(r0);
   if (SimEngine.docOpen()) return null;
   const scope = `.qz-rv-item[data-rev-id="${reviewId}"]`;
   if (st.resolvedAt) return st.correct ? null : scope + ' .qz-rv-feedback button';
@@ -3895,6 +4966,7 @@ function qzVerifyTarget(reviewId) {
 function qzVerifyText(reviewId) {
   const r = qzReviewLookup(reviewId);
   const st = qzRevGet(reviewId);
+  if (r && r.fieldAt) return qzVerifyFieldText(r);
   if (SimEngine.docOpen()) return `Read the ${r.docTitle}, then close it to come back and report what you found.`;
   if (st.resolvedAt) return 'Read the explanation below, then click "Redo" to try again.';
   if (!st.docOpened) return `Open the ${r.docTitle} to compare it against "${r.label}."`;
@@ -3933,9 +5005,440 @@ function qzUnlockSearchInput() {
   const input = document.getElementById('qzTopSearchInput');
   if (input) { input.disabled = false; input.title = ''; input.value = ''; }
   qzState.orderFilter = '';
+  qzState.ordersFilterStatus = 'all';
+  qzState.ordersFilterStage = 'all';
+  qzState.ordersFilterType = 'all';
+  qzState.ordersPage = 1;
 }
 
 
+
+
+/* ============================================================================
+   ASK LAYER — a question asked ON TOP of the product, never instead of it
+   ----------------------------------------------------------------------------
+   Two of the three step types used to answer "where does a question live?" by
+   replacing Core with a screen Core does not have:
+
+     `decide`  ->  qzOpenScenario()  ->  view 'scenario', a blank page with four
+                   options and a "back to Dashboard" link. The app is simply gone.
+     `verify`  ->  qzGotoReview()    ->  view 'review', "Document Review", whose
+                   own subtitle had to say "A course exercise, not a Qualia
+                   screen" — a label that describes the problem rather than
+                   fixing it. Worse, it REPRINTED the value under examination on
+                   an "On the order" card, so the trainee compared a document
+                   against the exercise and never once stood on the screen where
+                   the value actually lives.
+
+   This layer does the opposite. The question is a dialog; behind it is the real
+   order, opened on the real tab that owns the value, with the real field ringed
+   (.qz-ask-mark). Nothing is reprinted — to read the current value you read Core.
+   And when the answer implies an edit, the dialog steps aside and the walkthrough
+   drives the trainee to the Core form that owns the field, which is what
+   qzRevGoFix already did for step 4 alone and what the rest now does too.
+
+   OPT-IN, DELIBERATELY. A review takes this path only if it declares `fieldAt`
+   (which Core screen owns the value, and the selector for the field itself); a
+   scenario only if its lesson step's setup() calls qzAskScenario. Everything that
+   does not — the other lessons, the reconcile/compose mechanics, and the whole
+   exam — keeps the old screens and the old code paths untouched.
+
+   The grading engine is NOT duplicated here. qzAskVerifyHTML renders the very
+   same qzRevItemHTML the Document Review page renders, so every sub-answer is
+   scored by exactly the code that scored it before; the dialog only supplies the
+   chrome and hides the blocks that the chrome has made redundant (see
+   .qz-ask-rev in qualia.css).
+   ============================================================================ */
+
+/* Module-level rather than on qzState: qzState is the product's view state, and a
+   pending question is course chrome. Both qzGoto and qzAskRender's own invariant
+   clear it, so it cannot outlive the screen it was floating over. */
+let qzAsk = null; // { kind: 'scenario' | 'verify', id, ctx }
+/* The last question opened, kept after it is closed. Dismissing a question is not
+   leaving the step — the walkthrough is still on it and the dialog is where its
+   options live — so the strip needs something concrete to reopen. */
+let qzAskLast = null;
+
+function qzAskLayerEl() {
+  let el = document.getElementById('qzAskLayer');
+  if (!el) {
+    /* Outside #qzRoot on purpose, same reasoning as #qzLessonBanner: qzRenderRoot
+       replaces the whole of #qzRoot, and a dialog destroyed and rebuilt by every
+       render loses focus and scroll position mid-question. */
+    el = document.createElement('div');
+    el.id = 'qzAskLayer';
+    el.className = 'qz-ask';
+    document.body.appendChild(el);
+  }
+  return el;
+}
+
+function qzAskingVerify(reviewId) {
+  return !!(qzAsk && qzAsk.kind === 'verify' && qzAsk.id === reviewId);
+}
+
+/* Puts the product on the screen the question is about. Deliberately not
+   qzOpenOrder (that marks 'orders-open', a Lesson 1 checklist item, and re-marking
+   it every time a later lesson asks something is noise) and not qzGoto (that kills
+   the running walkthrough) — the same two exclusions qzRevGoFix makes, for the
+   same two reasons. */
+function qzAskGoto(loc) {
+  if (!loc || !loc.orderId) return;
+  qzOpenOrderTab(loc.orderId);
+  qzState.view = 'order';
+  qzState.orderId = loc.orderId;
+  qzState.orderTab = loc.tab || 'overview';
+  qzState.deTab = loc.deTab || 'property';
+  qzState.composeId = null;
+  qzSyncTopTabs();
+}
+
+/* Entry point for a `decide` step: ctx says which order and tab the situation
+   would actually be read on, and optionally which field to ring. */
+function qzAskScenario(scenarioId, ctx) {
+  qzAskGoto(ctx);
+  qzAsk = { kind: 'scenario', id: scenarioId, ctx: ctx || null };
+  qzAskLast = qzAsk;
+  qzRenderRoot();
+}
+
+/* Entry point for a `verify` step, and the step's setup(). Dispatches on the phase
+   the item is already in, so re-entering a half-finished item (Back to Lesson, a
+   replay of the step, "Redo") lands where the trainee left off rather than at the
+   top. */
+function qzVerifyDrive(reviewId) {
+  const r = qzReviewLookup(reviewId);
+  if (!r) return;
+  if (!r.fieldAt) { qzGotoReview(r.orderId); return; }
+  /* A correction handed off to a Core form owns the screen until it is saved —
+     re-opening the dialog over it would cover the field the trainee was sent to. */
+  if (qzState.pendingRevFix === reviewId) { qzRenderRoot(); return; }
+  qzState.pendingRevDoc = null;
+  qzAskGoto({ orderId: r.orderId, tab: r.fieldAt.tab, deTab: r.fieldAt.deTab });
+  qzAsk = { kind: 'verify', id: reviewId };
+  qzAskLast = qzAsk;
+  qzRenderRoot();
+  /* No-op unless the walkthrough is parked on this exact item, which is what makes it
+     safe to call from the mid-step entry points (qzAskNoteDocOpened) as well as setup(). */
+  qzSyncVerifyStep(reviewId);
+}
+
+function qzAskClose() { qzAsk = null; qzRenderRoot(); }
+
+function qzAskReopen() {
+  if (!qzAskLast) return;
+  qzState.pendingRevDoc = null;
+  qzState.pendingRecFix = null;
+  if (qzAskLast.kind === 'verify') qzVerifyDrive(qzAskLast.id);
+  else if (qzAskLast.kind === 'reconcile') qzReconcileDrive(qzAskLast.id);
+  else qzAskScenario(qzAskLast.id, qzAskLast.ctx);
+}
+
+/* Rings the field the question is about, on the screen behind the dialog. Re-applied
+   on every render because qzRenderRoot rebuilds the element it was on. */
+function qzAskMarkSelector() {
+  if (!qzAsk) return null;
+  if (qzAsk.kind === 'scenario') return (qzAsk.ctx && qzAsk.ctx.sel) || null;
+  const r = qzReviewLookup(qzAsk.id);
+  return (r && r.fieldAt && r.fieldAt.sel) || null;
+}
+
+function qzAskMarkField(justOpened) {
+  document.querySelectorAll('.qz-ask-mark').forEach(e => e.classList.remove('qz-ask-mark'));
+  const sel = qzAskMarkSelector();
+  if (!sel) { qzAskDock(null, false); return; }
+  const el = document.querySelector(sel);
+  if (el) el.classList.add('qz-ask-mark');
+  qzAskDock(el, !!justOpened);
+}
+
+function qzAskDock(el, justOpened) {
+  const layer = document.getElementById('qzAskLayer');
+  if (!layer) return;
+  /* Card width plus the layer's 22px gutter. A reconcile uses the wide variant, so the
+     overlap test has to measure the card that is actually on screen. */
+  const CARD = (layer.classList.contains('wide') ? 720 : 460) + 22;
+  const clear = () => { layer.classList.remove('dock-left'); };
+  if (!el || window.innerWidth < CARD * 2) { clear(); return; }
+  if (justOpened && el.scrollIntoView) {
+    try { el.scrollIntoView({ block: 'center', inline: 'nearest' }); } catch (e) { el.scrollIntoView(); }
+  }
+  const r = el.getBoundingClientRect();
+  if (!r.width && !r.height) { clear(); return; }
+  const overlapsRight = r.right > window.innerWidth - CARD;
+  const fitsLeft = r.left > CARD;
+  layer.classList.toggle('dock-left', overlapsRight && fitsLeft);
+}
+
+/* The step counter, the dots and the exit link all move into the dialog while it is
+   up, because the walkthrough tip is hidden then (body.qz-asking) — two floating
+   cards saying the same thing, fighting for the same corner, is worse than one. */
+function qzAskStepMeta() {
+  if (!SimEngine.walkActive()) return null;
+  const l = SimEngine.currentLesson();
+  const w = SimEngine.walkState();
+  return (l && w) ? { lesson: l, index: w.stepIndex } : null;
+}
+
+function qzAskChromeHTML(title, whereHTML) {
+  const meta = qzAskStepMeta();
+  const kicker = meta
+    ? `Lesson ${meta.lesson.number} - Step ${meta.index + 1} of ${meta.lesson.steps.length}`
+    : 'Practice question';
+  return `<div class="qz-ask-head">
+    <button type="button" class="qz-ask-close" onclick="qzAskClose()" title="Close. You can reopen it from the strip at the top.">&times;</button>
+    <div class="qz-ask-kicker"><span class="qz-ask-badge">?</span>${esc(kicker)}</div>
+    <h3>${esc(title)}</h3>
+    ${whereHTML || ''}
+  </div>`;
+}
+
+/* The one line that keeps the dialog honest: it names the Core screen underneath,
+   which is also the screen carrying the ringed field. */
+function qzAskWhereHTML(loc, orderId) {
+  if (!loc || !loc.label) return '';
+  const o = qzGetOrder(orderId || qzState.orderId);
+  const where = o ? `Order ${esc(o.id.replace('ORD-', ''))} &middot; ` : '';
+  const ring = loc.sel ? ' The field itself is ringed on it.' : '';
+  return `<div class="qz-ask-where">${where}<b>${esc(loc.label)}</b> is open behind this box.${esc(ring)}</div>`;
+}
+
+function qzAskFootHTML() {
+  const meta = qzAskStepMeta();
+  if (!meta) return '<div class="qz-ask-foot"></div>';
+  const dots = meta.lesson.steps.map((s, i) => {
+    const cls = i === meta.index ? 'current' : (SimEngine.stepDone(s) ? 'done' : '');
+    return `<span class="qz-ask-dot ${cls}"></span>`;
+  }).join('');
+  return `<div class="qz-ask-foot">
+    <div class="qz-ask-dots">${dots}</div>
+    <span class="qz-ask-exit" onclick="simWalkExit()">Exit walkthrough</span>
+  </div>`;
+}
+
+/* Same grading, same shuffle seed, same store as the full-page version — only the
+   page chrome around it is gone. */
+function qzAskScenarioHTML(id) {
+  const s = QZ_SCENARIOS.find(x => x.id === id);
+  if (!s) return '';
+  const r = qzStore.scenarios[s.id];
+  const answered = !!(r && r.answered != null);
+  const opts = qzOptionOrder('scenario:' + s.id, s.options.length).map((idx, pos) => {
+    const opt = s.options[idx];
+    let cls = '';
+    if (answered) { if (idx === s.correct) cls = 'correct'; else if (idx === r.answered && !r.correct) cls = 'incorrect'; }
+    return `<button type="button" class="qz-option ${cls}" ${answered ? 'disabled' : ''} onclick="qzAnswerScenario('${s.id}',${idx})">${String.fromCharCode(65 + pos)}. ${esc(opt)}</button>`;
+  }).join('');
+  const lessonStep = qzState.lessonId && typeof QZ_LESSONS !== 'undefined'
+    ? (QZ_LESSONS.find(x => x.id === qzState.lessonId) || { steps: [] }).steps.find(s2 => s2.type === 'decide' && s2.scenarioId === s.id)
+    : null;
+  const continueBtn = (answered && r.correct && lessonStep) ? qzContinueHTML(lessonStep) : '';
+  const retakeBtn = answered
+    ? ((r.correct && continueBtn) ? '' : `<button class="qz-btn sm" onclick="qzRetakeScenario('${s.id}')">${r.correct ? 'Retake' : 'Try Again'}</button>`)
+    : '';
+  const firstAttemptLine = (answered && r.firstAttempt)
+    ? `<div class="qz-feedback-first">First attempt: ${r.firstAttempt.correct ? '&#10003; correct' : '&#10007; incorrect'}</div>` : '';
+  const feedback = answered ? `<div class="qz-feedback ${r.correct ? 'correct' : 'incorrect'}">
+      <b>${r.correct ? 'Correct.' : 'Not quite.'}</b>${esc(s.explanation)}
+      ${firstAttemptLine}
+      <div class="qz-feedback-actions">${continueBtn}${retakeBtn}</div>
+    </div>` : '';
+  return qzAskChromeHTML(s.title, qzAskWhereHTML(qzAsk && qzAsk.ctx, qzAsk && qzAsk.ctx && qzAsk.ctx.orderId)) +
+    `<div class="qz-ask-body"><p class="situation">${esc(qzSituationText(s))}</p>${opts}${feedback}</div>` +
+    qzAskFootHTML();
+}
+
+function qzAskVerifyHTML(id) {
+  const r = qzReviewLookup(id);
+  if (!r) return '';
+  return qzAskChromeHTML(r.label, qzAskWhereHTML(r.fieldAt, r.orderId)) +
+    `<div class="qz-ask-body">
+       <p class="situation">${esc(r.instruction)}</p>
+       <div class="qz-ask-rev">${qzRevItemHTML(id)}</div>
+     </div>` +
+    qzAskFootHTML();
+}
+
+/* The reconcile grid is a table with a column per source document, so it needs more room
+   than a scenario's four options: the card widens for this kind (see .qz-ask.wide). */
+function qzAskReconcileHTML(id) {
+  const r = qzRecLookup(id);
+  if (!r) return '';
+  return qzAskChromeHTML(r.label, qzAskWhereHTML(QZ_REC_AT[id], (QZ_REC_AT[id] || {}).orderId || r.orderId)) +
+    `<div class="qz-ask-body">
+       <p class="situation">${esc(r.instruction)}</p>
+       <div class="qz-ask-rev">${qzRecItemHTML(id, true)}</div>
+     </div>` +
+    qzAskFootHTML();
+}
+
+function qzAskRender() {
+  const el = qzAskLayerEl();
+  const wasOpen = el.classList.contains('open');
+  /* Invariant: a question only ever floats over an open file. Every path that leaves
+     the order view — exiting the walkthrough, Back to Lessons, the top nav, the
+     dashboard — therefore dismisses it without any of them needing to know this
+     layer exists. */
+  if (qzAsk && qzState.view !== 'order') qzAsk = null;
+  /* Second invariant: a question belongs to the step being walked. Without this, moving
+     on to a step that does NOT use this layer — the next lesson's verify items render on
+     the Document Review page — left the previous item's dialog floating over it, since
+     that page is still view 'order'. */
+  if (qzAsk && SimEngine.walkActive()) {
+    const cur = SimEngine.currentStep();
+    const mine = !!cur && ((qzAsk.kind === 'verify' && cur.reviewId === qzAsk.id) ||
+                           (qzAsk.kind === 'reconcile' && cur.reconcileId === qzAsk.id) ||
+                           (qzAsk.kind === 'scenario' && cur.scenarioId === qzAsk.id));
+    if (!mine) qzAsk = null;
+  }
+  let html = '';
+  if (qzAsk && qzAsk.kind === 'scenario') html = qzAskScenarioHTML(qzAsk.id);
+  else if (qzAsk && qzAsk.kind === 'verify') html = qzAskVerifyHTML(qzAsk.id);
+  else if (qzAsk && qzAsk.kind === 'reconcile') html = qzAskReconcileHTML(qzAsk.id);
+  const open = !!html;
+  el.classList.toggle('wide', !!(qzAsk && qzAsk.kind === 'reconcile'));
+  el.innerHTML = open ? `<div class="qz-ask-scrim"></div><div class="qz-ask-card">${html}</div>` : '';
+  el.classList.toggle('open', open);
+  /* The entrance animation belongs to the dialog APPEARING, not to its contents
+     changing. Every answer repaints this node, and with the animation on the card
+     itself the whole box faded and slid again on each one — during which it is
+     half-transparent and reads as broken. */
+  if (open && !wasOpen) {
+    const card = el.querySelector('.qz-ask-card');
+    if (card) card.classList.add('qz-ask-enter');
+  }
+  document.body.classList.toggle('qz-asking', open);
+  qzAskMarkField(open && !wasOpen);
+}
+
+/* Opening the source document from the real Documents list counts for the verify item
+   that asked for it, exactly as the dialog's own button does. The point of this layer
+   is that the product's own path is never the wrong one. */
+function qzAskNoteDocOpened(file) {
+  if (!qzState.lessonId) return;
+  if (qzState.pendingRecDoc) {
+    const prd = qzState.pendingRecDoc;
+    const r = qzRecLookup(prd.recId);
+    const doc = r && r.docs.find(d => d.id === prd.docId);
+    if (r && doc && doc.file === file) {
+      qzRecGet(prd.recId).opened[prd.docId] = true;
+      qzState.pendingRecDoc = null;
+      qzSave();
+      qzReconcileDrive(prd.recId);
+      return;
+    }
+  }
+  let id = qzState.pendingRevDoc;
+  if (!id && SimEngine.walkActive()) {
+    const step = SimEngine.currentStep();
+    if (step && step.type === 'verify') id = step.reviewId;
+  }
+  if (!id) return;
+  const r = qzReviewLookup(id);
+  if (!r || !r.fieldAt || r.doc !== file) return;
+  const st = qzRevGet(id);
+  qzState.pendingRevDoc = null;
+  if (!st.docOpened) { st.docOpened = true; qzSave(); }
+  qzVerifyDrive(id);
+}
+
+/* The Documents row that carries this review's source document, so Step 1 can point at the
+   product's own "View" button instead of at a shortcut the exercise invented. Null when the
+   file is not on the order's list, and the item then keeps the direct-open button. */
+function qzRevDocRowId(r) {
+  const d = qzList('documents').find(x => x.orderId === r.orderId && x.file === r.doc);
+  return d ? d.id : null;
+}
+
+/* Step 1's hand-off, the reading counterpart of qzRevGoFix: a VA does not summon a contract
+   out of a dialog, they go to the file's Documents list and open it. So the dialog says where
+   the document is and steps aside, and the walkthrough points at the real row's View button.
+   qzAskNoteDocOpened picks it up from there. */
+function qzRevGoDoc(id) {
+  const r = qzReviewLookup(id);
+  if (!r) return;
+  qzState.pendingRevDoc = id;
+  qzAsk = null;
+  /* The row has to be on screen for the walkthrough to point at it, so any folder or search
+     the trainee left on the Documents list is cleared first. */
+  qzDocActiveFolder = 'All Documents';
+  qzDocQuery = '';
+  qzOpenOrderTab(r.orderId);
+  qzState.view = 'order';
+  qzState.orderId = r.orderId;
+  qzState.orderTab = 'documents';
+  qzState.composeId = null;
+  qzSyncTopTabs();
+  qzRenderRoot();
+  qzSyncVerifyStep(id);
+}
+
+/* ---------- verify walk resolvers, fieldAt variant ----------
+   The fieldAt half of qzVerifyTarget / qzVerifyText. A review without fieldAt never
+   reaches these and behaves exactly as it did. */
+function qzVerifyFieldTarget(r) {
+  /* Both the source document (z 200) and the question (z 190) sit under the walk
+     overlay so the tip can float over them — which means a highlight anywhere else
+     would darken them through its own cutout shadow. Suppressed while either is up,
+     the same rule simWalkPosition already applies to the document modal. */
+  if (SimEngine.docOpen() || qzAskingVerify(r.id)) return null;
+  if (qzState.pendingRevDoc === r.id) {
+    const rowId = qzRevDocRowId(r);
+    return rowId != null ? `tr[data-doc-id="${rowId}"] [data-doc-action="view"]` : null;
+  }
+  if (qzState.pendingRevFix === r.id && r.fixAt && r.fixAt.sel) {
+    const inp = document.querySelector(r.fixAt.sel);
+    if (inp && qzNormalizeValue(inp.value) === qzNormalizeValue(r.correctedValue)) {
+      const saveBtn = r.fixAt.acctDesc ? '#qzAcctSaveBtn' : '#qzDeSaveBtn';
+      return saveBtn;
+    }
+    return r.fixAt.sel;
+  }
+  return r.fieldAt.sel;
+}
+
+function qzVerifyFieldText(r) {
+  const st = qzRevGet(r.id);
+  if (SimEngine.docOpen()) return `Read the ${r.docTitle}, then close it — the question is waiting behind it.`;
+  if (qzState.pendingRevDoc === r.id) {
+    return `This is the file's Documents list, where every document on this order lives. Find the ${r.docTitle} and click View.`;
+  }
+  if (qzAskingVerify(r.id)) {
+    return st.docOpened
+      ? `Compare "${r.label}" on this screen against what you read in the ${r.docTitle}, then complete the question on the right.`
+      : `Step 1: Open the ${r.docTitle} to check it against "${r.label}" on this screen.`;
+  }
+  if (qzState.pendingRevFix === r.id && r.fixAt) {
+    if (st.correctedValueSaved && !st.step4ValueCorrect)
+      return `That is not what the ${r.docTitle} says. Reopen it if you need to, then correct this field and save again.`;
+    const inp = r.fixAt.sel ? document.querySelector(r.fixAt.sel) : null;
+    if (inp && qzNormalizeValue(inp.value) === qzNormalizeValue(r.correctedValue))
+      return `Good — now click Save Changes to commit the correction.`;
+    return `Correct "${r.label}" right here, in the form that owns it, so it matches the ${r.docTitle}, then save. This is where a VA fixes it on the job.`;
+  }
+  if (st.resolvedAt) return 'Read the explanation, then use "Redo" if you want to work it again.';
+  return `This is "${r.label}" on ${r.fieldAt.label}, the value you are about to check against the ${r.docTitle}.`;
+}
+
+/* Saves the one cell the Lesson-mode settlement grid opens up while a correction is
+   being applied to it (see qzAccountingHTML). The value reaches the order first and is
+   graded after, the same convention qzRevGradeFix and the Data Entry form follow. */
+function qzAcctMarkDirty() {
+  const btn = document.getElementById('qzAcctSaveBtn');
+  if (btn) btn.style.display = '';
+  if (qzState.pendingRevFix) qzSyncVerifyStep(qzState.pendingRevFix);
+}
+
+function qzAcctSaveFix() {
+  const id = qzState.pendingRevFix;
+  const r = id ? qzReviewLookup(id) : null;
+  if (!r || !r.fixAt) return;
+  const el = document.getElementById('qzAcctFixInput');
+  const val = el ? el.value.trim() : '';
+  if (!val) { simToast('Enter the corrected amount.'); return; }
+  if (r.field) qzSetScalarOverride(r.orderId, r.field, val);
+  qzRevGradeFix(id, val);
+}
 
 /* ---------- final exam card (full exam logic lives further down) ---------- */
 function qzExamDashboardCardHTML(unlocked) {
@@ -3967,7 +5470,7 @@ function qzDashboardHTML() {
     const state = SimEngine.lessonState(i);
     const prog = SimEngine.progress(l);
     const locked = state === 'locked';
-    const pct = prog.total ? Math.round(prog.done / prog.total * 100) : 0;
+    const pct = locked ? 0 : (prog.total ? Math.round(prog.done / prog.total * 100) : 0);
     const fracLabel = locked ? 'Locked' : (state === 'done' ? 'Complete' : prog.done + ' of ' + prog.total + ' done');
     return `<div class="qz-lesson-card ${state}" ${locked ? '' : `onclick="SimEngine.openLesson('${l.id}')"`}>
       <div class="eyebrow">MODULE ${String(l.number).padStart(2, '0')}</div>
@@ -3977,7 +5480,7 @@ function qzDashboardHTML() {
       <div class="frac">${esc(fracLabel)}</div>
     </div>`;
   }).join('');
-  const allDone = QZ_LESSONS.every((l, i) => SimEngine.lessonState(i) === 'done');
+  const allDone = QZ_LESSONS.every((l, i) => SimEngine.lessonState(i) === 'done' || qzLessonEverComplete(l.id));
   const examCard = qzExamDashboardCardHTML(allDone);
 
   const allSteps = QZ_LESSONS.flatMap(l => l.steps);
@@ -4010,7 +5513,11 @@ function qzDashboardHTML() {
 /* ---------- orders list ---------- */
 function qzOrderParty(o, role) {
   if (!o || !o.parties || !Array.isArray(o.parties)) return 'Not set';
-  const p = o.parties.find(x => x.role === role);
+  if (role === 'Borrower' || role === 'Buyer') {
+    const p = o.parties.find(x => x && (x.role === 'Borrower' || x.role === 'Buyer'));
+    return p ? p.name : 'Not set';
+  }
+  const p = o.parties.find(x => x && x.role === role);
   return p ? p.name : 'Not set';
 }
 function qzOrderMatchesFilter(o, filter) {
@@ -4022,8 +5529,30 @@ function qzOrderMatchesFilter(o, filter) {
   if (!f) return true;
   const addr = (o.propertyAddress || '').toLowerCase();
   const id = (o.id || '').toLowerCase();
-  const partyMatch = o.parties && Array.isArray(o.parties) && o.parties.some(p => p && (p.name || '').toLowerCase().includes(f));
-  return addr.includes(f) || id.includes(f) || partyMatch;
+  const rawId = (o.id || '').replace('ord-', '').toLowerCase();
+  const titleNo = (o.titleNumber || '').toLowerCase();
+  const type = (o.type || '').toLowerCase();
+  const status = (o.status || '').toLowerCase();
+  const stage = (QZ_STAGES[o.stageIndex] || '').toLowerCase();
+  const agency = (o.settlementAgency || '').toLowerCase();
+  const partyMatch = o.parties && Array.isArray(o.parties) && o.parties.some(p => p && (
+    (p.name || '').toLowerCase().includes(f) ||
+    (p.role || '').toLowerCase().includes(f) ||
+    (p.email || '').toLowerCase().includes(f)
+  ));
+  return addr.includes(f) || id.includes(f) || rawId.includes(f) || titleNo.includes(f) || type.includes(f) || status.includes(f) || stage.includes(f) || agency.includes(f) || partyMatch;
+}
+function qzClearAllOrdersFilters() {
+  qzState.orderFilter = '';
+  qzState.ordersFilterStatus = 'all';
+  qzState.ordersFilterStage = 'all';
+  qzState.ordersFilterType = 'all';
+  qzState.ordersPage = 1;
+  const input = document.getElementById('qzTopSearchInput');
+  if (input) input.value = '';
+  if (qzState.view === 'orders') {
+    qzRenderRoot();
+  }
 }
 function qzSetOrdersFilter(key, val) {
   qzState[key] = val;
@@ -4042,7 +5571,13 @@ function qzSetOrdersPage(p) {
 }
 function qzOrdersFilteredList() {
   const filter = qzState.orderFilter;
-  return qzAllOrders().filter(o => qzOrderMatchesFilter(o, filter));
+  return qzAllOrders().filter(o => qzOrderMatchesFilter(o, filter))
+    .sort((a, b) => {
+      const aOpen = a.status === 'Open' ? 0 : 1;
+      const bOpen = b.status === 'Open' ? 0 : 1;
+      if (aOpen !== bOpen) return aOpen - bOpen;
+      return (a.stageIndex || 0) - (b.stageIndex || 0);
+    });
 }
 function qzOrdersPaginationHTML() {
   const total = qzOrdersFilteredList().length;
@@ -4050,11 +5585,37 @@ function qzOrdersPaginationHTML() {
   const totalPages = Math.max(1, Math.ceil(total / perPage));
   const curPage = Math.min(totalPages, Math.max(1, qzState.ordersPage || 1));
   return `
-    <span style="color:var(--qz-muted)">Showing ${Math.min(total, (curPage - 1) * perPage + 1)}&ndash;${Math.min(total, curPage * perPage)} of ${total} orders</span>
+    <span style="color:var(--qz-muted)">Showing ${total === 0 ? 0 : Math.min(total, (curPage - 1) * perPage + 1)}&ndash;${Math.min(total, curPage * perPage)} of ${total} orders</span>
     <button class="qz-pag-btn" ${curPage <= 1 ? 'disabled' : ''} onclick="qzSetOrdersPage(${curPage - 1})">&larr; Prev</button>
     <span style="font-weight:600;color:var(--qz-navy)">Page ${curPage} of ${totalPages}</span>
     <button class="qz-pag-btn" ${curPage >= totalPages ? 'disabled' : ''} onclick="qzSetOrdersPage(${curPage + 1})">Next &rarr;</button>
   `;
+}
+function qzActiveLessonOrderId() {
+  if (!qzState.lessonId) return null;
+  const l = (typeof QZ_LESSONS !== 'undefined') ? QZ_LESSONS.find(x => x.id === qzState.lessonId) : null;
+  if (!l) return null;
+  const curStep = SimEngine.walkActive() ? SimEngine.currentStep() : null;
+  if (curStep && curStep.orderId) return curStep.orderId;
+  if (curStep && curStep.reviewId) {
+    const r = qzReviewLookup(curStep.reviewId);
+    if (r && r.orderId) return r.orderId;
+  }
+  if (curStep && curStep.reconcileId) {
+    const r = qzRecLookup(curStep.reconcileId);
+    if (r && r.orderId) return r.orderId;
+  }
+  if (curStep && curStep.composeId) {
+    const c = qzComposeLookup(curStep.composeId);
+    if (c && c.orderId) return c.orderId;
+  }
+  for (let s of l.steps) {
+    if (s.orderId) return s.orderId;
+    if (s.reviewId) { const r = qzReviewLookup(s.reviewId); if (r && r.orderId) return r.orderId; }
+    if (s.reconcileId) { const r = qzRecLookup(s.reconcileId); if (r && r.orderId) return r.orderId; }
+    if (s.composeId) { const c = qzComposeLookup(s.composeId); if (c && c.orderId) return c.orderId; }
+  }
+  return 'ORD-2026-1483';
 }
 function qzOrdersRowsHTML() {
   const filtered = qzOrdersFilteredList();
@@ -4062,12 +5623,21 @@ function qzOrdersRowsHTML() {
   const curPage = Math.min(Math.max(1, Math.ceil(filtered.length / perPage)), Math.max(1, qzState.ordersPage || 1));
   const start = (curPage - 1) * perPage;
   const rows = filtered.slice(start, start + perPage);
-  if (!rows.length) return '<tr><td colspan="10" style="text-align:center;color:var(--qz-muted);padding:26px">No orders match that search.</td></tr>';
-  return rows.map(o => `<tr class="link" data-order-id="${escAttr(o.id)}" onclick="qzOpenOrder('${o.id}')">
+  if (!rows.length) {
+    const hasActiveFilters = (qzState.orderFilter || (qzState.ordersFilterStatus && qzState.ordersFilterStatus !== 'all') || (qzState.ordersFilterStage && qzState.ordersFilterStage !== 'all') || (qzState.ordersFilterType && qzState.ordersFilterType !== 'all'));
+    return `<tr><td colspan="10" style="text-align:center;color:var(--qz-muted);padding:26px">
+      No orders match that search.
+      ${hasActiveFilters ? '<div style="margin-top:8px"><button type="button" class="qz-btn sm" onclick="qzClearAllOrdersFilters()">Clear filters</button></div>' : ''}
+    </td></tr>`;
+  }
+  const targetOid = qzActiveLessonOrderId();
+  return rows.map(o => {
+    const isTarget = targetOid && o.id === targetOid && qzState.lessonId;
+    return `<tr class="link ${isTarget ? 'qz-order-pulse' : ''}" data-order-id="${escAttr(o.id)}" onclick="qzOpenOrder('${o.id}')">
       <td>${esc(o.status)}</td>
       <td>${esc(QZ_STAGES[o.stageIndex])}</td>
       <td class="addr">${esc(o.id.replace('ORD-', ''))}</td>
-      <td>${esc(qzOrderParty(o, 'Buyer'))}</td>
+      <td>${esc(qzOrderParty(o, 'Borrower'))}</td>
       <td>${esc(qzOrderParty(o, 'Seller'))}</td>
       <td>${esc(o.propertyAddress)}</td>
       <td>${esc(o.type)}</td>
@@ -4079,7 +5649,8 @@ function qzOrdersRowsHTML() {
           <button type="button" class="qz-btn xs danger" onclick="qzDeleteOrderModal('${o.id}')" title="Delete Order">&times;</button>
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 function qzOrdersStatsHTML() {
   return QZ_STAGES.filter(stage => stage !== 'Closed').map(stage => {
@@ -4134,6 +5705,7 @@ function qzOrdersHTML() {
 }
 function qzTopSearch(v) {
   qzState.orderFilter = v;
+  qzState.ordersPage = 1;
   // Outside the walkthrough, any non-empty search counts (organic exploration shouldn't be
   // graded against a specific order). But while the walkthrough is actively showing this
   // exact step, only mark it done once the typed text actually surfaces Order ORD-2026-1483,
@@ -4152,6 +5724,8 @@ function qzTopSearch(v) {
   } else {
     const body = document.getElementById('qzOrdersBody');
     if (body) body.innerHTML = qzOrdersRowsHTML();
+    const pag = document.getElementById('qzOrdersPagination');
+    if (pag) pag.innerHTML = qzOrdersPaginationHTML();
   }
   qzSyncSearchStep();
 }
@@ -4264,9 +5838,9 @@ const QZ_CORE_NAV = [
 ];
 /* The rail used to end with a 'Training' section holding Document Review. An open order is
    product, not coursework, and that entry put an exercise two clicks from Basic Info in the
-   same rail — which is why trainees reported finding lesson questions "inside" a file. The
-   `review` tab still exists and still renders; the lessons reach it directly with
-   qzOrderTab('review') (qualia-data.js), so nothing in the course depends on this item. */
+   same rail — which is why trainees reported finding lesson questions "inside" a file.
+   Document Review is no longer an order tab at all: it is a course screen reached with
+   qzGotoReview() (see its comment), so this rail holds only Qualia Core pages. */
 const QZ_NAV_ICONS = {
   doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>',
   acct: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h4"/></svg>',
@@ -4336,7 +5910,7 @@ function qzOrderSidebarHTML(o) {
 /* ---------- Core: right-hand panel ----------
    Chat is presence only (decorative, as in the real product for our purposes), Tasks and
    Help are contextual to the open order, Notes is the one that actually persists — that's
-   where a VA writes down what they did, and Lesson 14 expects it to still be there. */
+   where a VA writes down what they did, and the capstone expects it to still be there. */
 const QZ_CORE_PRESENCE = [
   { name: 'Lucas Adminton', role: 'Settlement Agent', online: true },
   { name: 'Dana Reyes', role: 'Escrow Officer', online: true },
@@ -4349,7 +5923,6 @@ const QZ_PANEL_HELP = {
   dataentry: 'Properties, Contacts and Loan hold the data entered at intake. Every field here should be traceable to a document in the file.',
   loan: 'Loan Information configures amortization, interest schedules, underwriter identifiers, and document generation.',
   documents: 'Documents tracks each file\'s paperwork through Pending, Received and Reviewed. A status is a statement of fact other people rely on.',
-  review: 'Document Review is a training instrument, not a Qualia Core screen. It walks the comparison a VA does by eye: open the source, report what it says, decide what to do.',
   tasks: 'Order Tasks lists what is outstanding on this file. Prioritise by closing impact and by whether the next step belongs to someone else.',
   workflow: 'Workflow shows the file\'s stage progression. Stage rules are configured by admins, not by a VA.',
   communication: 'Connect is where correspondence with agents, lenders and clients lives. Everything written here is part of the file record.',
@@ -4412,7 +5985,7 @@ function qzOrderPanelHTML(o) {
    house glyph the way Core titles each section of an order. */
 const QZ_TAB_TITLE = {
   overview: 'Basic Info', dataentry: 'Properties & Contacts', loan: 'Loan Information',
-  documents: 'Documents', review: 'Document Review', tasks: 'Order Tasks', workflow: 'Workflow',
+  documents: 'Documents', tasks: 'Order Tasks', workflow: 'Workflow',
   communication: 'Connect', vendors: 'Marketplace', closing: 'Disclosures',
   accounting: 'Services Borrower Did Not Shop For (Section B)',
   earnest: 'Earnest Money & Brokerage Commissions',
@@ -4457,7 +6030,6 @@ function qzOrderHTML() {
   let body = '';
   if (qzState.orderTab === 'overview') body = qzOverviewHTML(o);
   else if (qzState.orderTab === 'loan') body = qzLoanHTML(o);
-  else if (qzState.orderTab === 'review') body = qzReviewHTML(o);
   else if (qzState.orderTab === 'dataentry') body = qzDataEntryHTML(o);
   else if (qzState.orderTab === 'documents') body = qzDocumentsHTML(o);
   else if (qzState.orderTab === 'tasks') body = qzTasksHTML(o);
@@ -4493,9 +6065,6 @@ function qzOrderHTML() {
     'cd-g': 'G', 'cd-h': 'H', 'cd-j': 'J', 'cd-km': 'K/M', 'cd-ln': 'L/N'
   };
   const badge = badges[qzState.orderTab] ? `<span class="qz-sec-badge">${badges[qzState.orderTab]}</span>` : '';
-  const trainingTag = qzState.orderTab === 'review'
-    ? '<span class="qz-training-tag">Training tool &mdash; not a Qualia Core screen</span>' : '';
-
   return `<div class="qz-core${qzState.railOpen ? ' rail-open' : ''}">
     <div class="qz-rail-scrim" onclick="qzToggleRail(false)"></div>
     ${qzOrderSidebarHTML(o)}
@@ -4505,7 +6074,7 @@ function qzOrderHTML() {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
         </button>
         <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v9.5a1 1 0 0 0 1 1H17.5a1 1 0 0 0 1-1V10"/></svg></span>
-        <h2>${esc(title)}</h2>${badge}${trainingTag}
+        <h2>${esc(title)}</h2>${badge}
         <span class="qz-sec-addr">${esc(o.propertyAddress)}</span>
       </div>
       ${flagHtml}
@@ -4574,6 +6143,7 @@ function qzKvInput(o, label, field, opts) {
   const v = o[field];
   return '<div class="qz-kv"><b>' + label + '</b>' +
     '<input class="qz-kv-in' + (opts.strong ? ' strong' : '') + '"' +
+    ' data-field="' + escAttr(field) + '"' +
     (opts.type ? ' type="' + opts.type + '"' : '') +
     ' value="' + escAttr(v == null ? '' : v) + '"' +
     (opts.placeholder ? ' placeholder="' + escAttr(opts.placeholder) + '"' : '') +
@@ -4794,8 +6364,8 @@ function qzOverviewHTML(o) {
           ${(o.parties || []).map(p => `<tr>
             <td class="role"><b>${esc(p.role)}</b></td>
             <td class="name">${esc(p.name)}</td>
-            <td><a href="mailto:${escAttr(p.email || '')}" style="color:var(--qz-ocean)">${esc(p.email || '&mdash;')}</a></td>
-            <td>${esc(p.phone || '&mdash;')}</td>
+            <td>${p.email ? `<a href="mailto:${escAttr(p.email)}" style="color:var(--qz-ocean)">${esc(p.email)}</a>` : '<span class="qzs-dim">None</span>'}</td>
+            <td>${p.phone ? esc(p.phone) : '<span class="qzs-dim">None</span>'}</td>
             <td class="ic">
               <div class="qz-row-actions">
                 <button type="button" class="qz-btn sm" title="Edit Party" onclick="qzEditPartyModal('${o.id}', '${escAttr(p.role)}')">Edit</button>
@@ -4826,7 +6396,10 @@ function qzReviewScore(orderId) {
   items.forEach(r => { const s = qzStore.reviews[r.id]; if (s && s.resolvedAt) { resolved++; if (s.correct) correct++; } });
   return { resolved, correct, total: items.length };
 }
-function qzRevGet(id) { return qzStore.reviews[id] || (qzStore.reviews[id] = { docOpened: false }); }
+function qzRevGet(id) {
+  const key = qzScopedItemKey(id);
+  return qzStore.reviews[key] || (qzStore.reviews[key] = { docOpened: false });
+}
 /* Exam mode is derived from the item's own id rather than threaded through every call site,
    because the same engine functions are wired to onclick handlers in both contexts and an
    extra argument would have to be plumbed through ~12 render/handler pairs.
@@ -4842,7 +6415,8 @@ function qzRevExamMode(id) {
 function qzRevOpenDoc(id) {
   const r = qzReviewLookup(id);
   if (!r) return;
-  qzOpenDocFile(r.doc, r.docTitle);
+  const hint = `📖 Review the ${r.docTitle} to verify "${r.label}". When finished, click "Done Reading · Return to Exercise" to proceed.`;
+  qzOpenDocFile(r.doc, r.docTitle, hint);
   qzRevGet(id).docOpened = true;
   qzSave();
   qzRenderRoot();
@@ -4895,6 +6469,68 @@ function qzRevAnswerAction(id, action) {
    r.correctedValue, so clicking "Save correction" without touching the field scored the item
    correct and wrote the typo back onto the order. Now the typed value is graded like any
    other sub-answer, and in a lesson a wrong one is refused the same way steps 2/3 are. */
+/* Sends the trainee to the real screen that owns the field under correction, and remembers
+   which review is waiting on it. Deliberately does not go through qzOpenOrder: that marks
+   'orders-open', a Lesson 1 checklist item, and re-marking it every time a later lesson opens
+   a correction is noise. Nor through qzGoto, which kills the running walkthrough. */
+function qzRevGoFix(id) {
+  const r = qzReviewLookup(id);
+  if (!r || !r.fixAt) return;
+  qzState.pendingRevFix = id;
+  /* The dialog steps aside for the edit: the trainee is being sent to a Core form to
+     type in it, and a question floating over that form is in the way. It comes back on
+     its own once the save is graded (qzRevFinalize). */
+  if (qzAskingVerify(id)) qzAsk = null;
+  qzOpenOrderTab(r.orderId);
+  qzState.view = 'order';
+  qzState.orderId = r.orderId;
+  qzState.orderTab = r.fixAt.tab;
+  qzState.deTab = r.fixAt.deTab || 'property';
+  qzState.composeId = null;
+  qzSyncTopTabs();
+  qzRenderRoot();
+  /* The hand-off changes the screen AND the phase, so the walkthrough has to re-resolve:
+     without this the tip kept the sentence it was showing while the dialog was up, and
+     the highlight was never placed on the field the trainee had just been sent to. */
+  qzSyncVerifyStep(id);
+}
+
+/* Back to the exercise without saving anything — the escape hatch for a trainee who followed
+   the hand-off and then wanted to re-read the question. */
+function qzRevBackToExercise() {
+  const r = qzState.pendingRevFix ? qzReviewLookup(qzState.pendingRevFix) : null;
+  /* A fieldAt item has no exercise page to go back TO: the question is a dialog over
+     this very screen, so bringing it back is the whole of "back". */
+  if (r && r.fieldAt) { qzAsk = { kind: 'verify', id: r.id }; qzRenderRoot(); qzSyncVerifyStep(r.id); return; }
+  qzGotoReview(r ? r.orderId : qzState.reviewOrderId);
+}
+
+/* Grades a correction typed into the real form. Unlike the inline step 4, the wrong value is
+   written to the order first and flagged afterwards: that is what the product would do, and it
+   is the same convention the de-edit exercise already follows in this file. */
+function qzRevGradeFix(id, value) {
+  const r = qzReviewLookup(id);
+  const st = qzRevGet(id);
+  st.correctedValueSaved = value;
+  st.step4ValueCorrect = qzNormalizeValue(value) === qzNormalizeValue(r.correctedValue);
+  if (!st.step4ValueCorrect) {
+    qzSave();
+    // The wrong value did reach the order, so the form has to repaint around it: the Save
+    // button goes back to hidden and the field shows what is actually stored now.
+    qzRenderRoot();
+    simToast(`Saved, but that does not match ${r.docTitle} — read it again and correct the field.`);
+    qzSyncVerifyStep(id);
+    return false;
+  }
+  qzState.pendingRevFix = null;
+  qzRevFinalize(id);
+  simToast('Correction saved on the order.', { tone: 'good' });
+  // fieldAt items stay on the screen the correction was made on; qzRevFinalize brings
+  // the dialog back over it carrying the explanation and the Continue button.
+  if (!r.fieldAt) qzGotoReview(r.orderId);
+  return true;
+}
+
 function qzRevSaveCorrection(id) {
   const r = qzReviewLookup(id);
   const input = document.getElementById('qzRevInput-' + id);
@@ -4927,6 +6563,10 @@ function qzRevSaveEscalation(id) {
   if (!cat) { simToast('Choose an escalation category.'); return; }
   const noteEl = document.getElementById('qzRevNote-' + id);
   const note = noteEl ? noteEl.value.trim() : '';
+  if (!qzRevExamMode(id) && (!note || note.length < 10)) {
+    simToast('Please write a brief note explaining why this is escalated (at least 10 characters).');
+    return;
+  }
   const st = qzRevGet(id);
   st.step4Category = cat;
   st.step4CategoryCorrect = cat === r.rightCategory;
@@ -4958,6 +6598,11 @@ function qzRevFinalize(id) {
   if (st.correct) st.everCorrect = true;
   st.resolvedAt = Date.now();
   qzSave();
+  /* A fieldAt item is worked on product screens, so its explanation and its "Continue
+     to next step" button have nowhere to land unless the dialog comes back for them.
+     Lessons only: the exam renders its own paper. */
+  const rr = qzReviewLookup(id);
+  if (rr && rr.fieldAt && qzState.lessonId && !qzRevExamMode(id)) qzAsk = { kind: 'verify', id: id };
   qzRenderRoot();
   qzNotifyReviewResolved(id);
 }
@@ -5022,9 +6667,18 @@ function qzRevItemHTML(id) {
     ? `<span class="qz-rv-chip ${st.correct ? 'good' : 'bad'}">${st.correct ? 'Correct' : 'Needs another look'}</span>`
     : '<span class="qz-rv-chip pending">Pending</span>';
 
+  /* On an ask-layer item the source document is fetched the way a VA fetches one: from the
+     file's own Documents list. The dialog says where it is and hands over to that screen
+     (qzRevGoDoc), which makes the View button on the real row the thing that satisfies this
+     step. Once it has been read once the button reopens it directly — re-reading is not the
+     skill, finding it was. Items with no row on the list keep the direct-open button. */
+  const docRowId = r.fieldAt ? qzRevDocRowId(r) : null;
   const step1 = `<div class="qz-rv-step ${st.docOpened ? 'done' : 'active'}" data-rev-phase="1">
     <div class="qz-rv-step-h">Step 1 &middot; Open the source document</div>
-    <button class="qz-btn sm" onclick="qzRevOpenDoc('${id}')">${st.docOpened ? 'Reopen' : 'Open'} ${esc(r.docTitle)}</button>
+    ${(docRowId != null && !st.docOpened)
+      ? `<p class="qz-rv-handoff">The ${esc(r.docTitle)} is filed under this order's Documents, with everything else on the file. Go and open it from there.</p>
+         <div class="qz-rv-actions"><button class="qz-btn sm primary" onclick="qzRevGoDoc('${id}')">Take me to Documents &rarr;</button></div>`
+      : `<button class="qz-btn sm" onclick="qzRevOpenDoc('${id}')">${st.docOpened ? 'Reopen' : 'Open'} ${esc(r.docTitle)}</button>`}
   </div>`;
 
   let step2 = '';
@@ -5079,7 +6733,26 @@ function qzRevItemHTML(id) {
 
   let step4 = '';
   const step4Kind = done ? null : qzRevStep4Kind(id);
-  if (step4Kind === 'correct') {
+  if (step4Kind === 'correct' && r.fixAt) {
+    /* The correction is made in the product, on the screen that owns the field, because that
+       is where a VA makes it on the job — typing it into the exercise taught the answer but
+       never the action. The value is graded when the real form is saved (qzDeSaveChanges),
+       so a wrong entry is caught there rather than here. */
+    /* On an ask-layer item the fix screen is usually the one already open behind the
+       dialog, so "Open Data Entry -> Parties" would be telling the trainee to go somewhere
+       they are standing. Say what is actually true instead. */
+    const sameScreen = !!(r.fieldAt && r.fieldAt.tab === r.fixAt.tab
+      && (r.fieldAt.deTab || null) === (r.fixAt.deTab || null));
+    step4 = `<div class="qz-rv-step active" data-rev-phase="4">
+      <div class="qz-rv-step-h">Step 4 &middot; Correct it where it lives</div>
+      <p class="qz-rv-handoff">${sameScreen
+        ? `This value is wrong on the order. ${esc(r.fixAt.label)} is already open behind this box: correct <b>${esc(r.label)}</b> there to match ${esc(r.docTitle)}, and save it.`
+        : `This value is wrong on the order. Open ${esc(r.fixAt.label)}, correct <b>${esc(r.label)}</b> to match ${esc(r.docTitle)}, and save it there.`}</p>
+      <div class="qz-rv-actions"><button class="qz-btn sm primary" onclick="qzRevGoFix('${id}')">${sameScreen ? 'Take me to the field' : 'Open ' + esc(r.fixAt.label)} &rarr;</button></div>
+    </div>`;
+  } else if (step4Kind === 'correct') {
+    // No fixAt: the field has no screen a VA may edit (the charges grid is read-only in
+    // Lesson mode), so the correction is still typed here.
     // Starts EMPTY on purpose. Prefilling it with r.systemValue (the value under suspicion)
     // meant the trainee could "correct" the record by clicking Save without reading the
     // document at all, which is the exact skill this step exists to test.
@@ -5170,6 +6843,43 @@ function qzRevItemHTML(id) {
 function qzReconcilesForOrder(orderId) {
   return typeof QZ_RECONCILES !== 'undefined' ? QZ_RECONCILES.filter(r => r.orderId === orderId) : [];
 }
+/* Document Review is coursework, so it renders on the course's own chrome — no dark rail, no
+   property header, no order tab strip — instead of inside an open file. It used to be an order
+   tab wearing full Core chrome with an amber "not a Qualia Core screen" badge stapled on, which
+   is the shape of the problem rather than a fix for it: a screen that needs a label explaining
+   it is not the product is a screen in the wrong place. Removing it from the order rail (see
+   QZ_CORE_NAV) was the first half of this; this is the second.
+
+   The order stays open in the tab strip, so stepping into the exercise does not close the file
+   the trainee was working. */
+function qzGotoReview(orderId) {
+  qzState.pendingRevFix = null;
+  qzState.pendingRecDoc = null;
+  qzState.pendingRecFix = null;
+  qzOpenOrderTab(orderId);
+  qzState.view = 'review';
+  qzState.reviewOrderId = orderId;
+  /* Cleared so no order tab reads as active while a course screen is showing. Safe for the
+     walkthrough: verify and reconcile steps carry no orderId, so the current-step matcher
+     accepts them whatever this holds. */
+  qzState.orderId = null;
+  qzSyncTopTabs();
+  qzRenderRoot();
+}
+
+function qzReviewViewHTML() {
+  const o = qzGetOrder(qzState.reviewOrderId);
+  if (!o) return `<div class="qz-panel"><div class="ph"><h4>Document Review</h4></div>
+    <p style="font-size:13px;color:var(--qz-muted)">Open this exercise from a lesson.</p></div>`;
+  return `
+    <div class="qz-listhead">
+      <div><h2>Document Review</h2><div class="sub">A course exercise, not a Qualia screen. Open the source document, report what it says, then decide what to do about it.</div></div>
+      <span class="qz-rv-file">Order ${esc(o.id.replace('ORD-', ''))} &middot; ${esc(o.propertyAddress)}</span>
+    </div>
+    ${qzReviewHTML(o)}
+  `;
+}
+
 function qzReviewHTML(o) {
   const items = qzReviewsForOrder(o.id);
   const recs = qzReconcilesForOrder(o.id);
@@ -5225,6 +6935,7 @@ function qzDeTab(tab) {
 function qzDeMarkDirty() {
   const btn = document.getElementById('qzDeSaveBtn');
   if (btn) btn.style.display = '';
+  if (qzState.pendingRevFix) qzSyncVerifyStep(qzState.pendingRevFix);
   qzSyncEditStep();
 }
 /* Keeps the de-edit step's tip text live as the trainee types the buyer's phone number, same
@@ -5252,6 +6963,11 @@ function qzDeSaveChanges(orderId) {
     if (legal) qzSetScalarOverride(orderId, 'legalDescription', legal);
   } else if (sub === 'parties') {
     let buyerPhoneMatchesTarget = false;
+    /* A Document Review correction that was handed off to this form (qzRevGoFix) is graded
+       against the source document once the trainee saves, so the exercise resolves from the
+       real edit rather than from a value typed into the exercise. */
+    const fix = qzState.pendingRevFix ? qzReviewLookup(qzState.pendingRevFix) : null;
+    let fixValue = null;
     document.querySelectorAll('.qz-party-card').forEach(card => {
       const role = card.dataset.role;
       const nameEl = card.querySelector('input[data-field="name"]');
@@ -5263,7 +6979,15 @@ function qzDeSaveChanges(orderId) {
       if (phoneEl && phoneEl.value.trim()) patch.phone = phoneEl.value.trim();
       if (Object.keys(patch).length) qzSetPartyOverride(orderId, role, patch);
       if (role === 'Buyer' && phoneEl && phoneEl.value.trim() === QZ_DE_EDIT_TARGET_PHONE) buyerPhoneMatchesTarget = true;
+      if (fix && fix.orderId === orderId && fix.partyRole === role && nameEl) fixValue = nameEl.value.trim();
     });
+    if (fixValue !== null) {
+      /* Graded here and nowhere else: qzRevGradeFix owns the toast and the navigation back.
+         Returning early also skips the de-edit marking below on purpose — that is Lesson 1's
+         "first tracked edit" step, and a correction handed off by a later lesson is not it. */
+      qzRevGradeFix(qzState.pendingRevFix, fixValue);
+      return;
+    }
     // Outside the walkthrough, Data Entry is a general tool, any edit is a valid edit. But
     // while the walkthrough is actively on this exact step, it's a specific exercise: type
     // the number the trainee was just told, don't just accept whatever got typed.
@@ -5296,7 +7020,7 @@ function qzDataEntryHTML(o) {
   const sub = qzState.deTab || 'property';
   const subtabs = [['property', 'Property'], ['parties', 'Parties'], ['transaction', 'Transaction Information']]
     .map(([k, label]) => `<span class="${sub === k ? 'active' : ''}" data-detab="${k}" onclick="qzDeTab('${k}')">${label}</span>`).join('');
-  const saveBtn = `<button class="qz-btn primary" id="qzDeSaveBtn" style="display:none" onclick="qzDeSaveChanges('${o.id}')">Save</button>`;
+  const saveBtn = `<button class="qz-btn primary" id="qzDeSaveBtn" style="display:none" onclick="qzDeSaveChanges('${o.id}')">Save Changes</button>`;
 
   let body = '';
   if (sub === 'property') {
@@ -5483,6 +7207,15 @@ function qzUploadDoc(id) {
       });
     }
   }
+  if (qzState.pendingRecFix) {
+    const prf = qzState.pendingRecFix;
+    const r = qzRecLookup(prf.recId);
+    const row = r && r.rows.find(x => x.id === prf.rowId);
+    if (row && row.fixAt && String(row.fixAt.docId) === String(id)) {
+      qzRecGradeFix(prf.recId, prf.rowId, 'Received');
+      return;
+    }
+  }
   qzRenderRoot();
 }
 
@@ -5499,9 +7232,9 @@ function qzUploadDoc(id) {
    the shift cannot change inside one session. */
 const _qzShiftedDocs = {};
 
-function qzOpenDocFile(file, title) {
-  if (!QZ_SHIFT_DAYS) { simViewDoc(file, title); return; }
-  if (_qzShiftedDocs[file]) { simViewDoc(_qzShiftedDocs[file], title); return; }
+function qzOpenDocFile(file, title, hint) {
+  if (!QZ_SHIFT_DAYS) { simViewDoc(file, title, hint); return; }
+  if (_qzShiftedDocs[file]) { simViewDoc(_qzShiftedDocs[file], title, hint); return; }
   let base = file;
   try { base = new URL(file, location.href).href; } catch (e) {}
   fetch(file)
@@ -5511,19 +7244,31 @@ function qzOpenDocFile(file, title) {
         .replace(/<head(\s[^>]*)?>/i, function (m) { return m + '<base href="' + base + '">'; });
       const url = URL.createObjectURL(new Blob([shifted], { type: 'text/html' }));
       _qzShiftedDocs[file] = url;
-      simViewDoc(url, title);
+      simViewDoc(url, title, hint);
     })
-    /* Showing the document with its original dates beats showing nothing: the trainee can
-       still read it, and the console says why it looks out of step. */
     .catch(function (e) {
       console.warn('Could not shift dates in ' + file + ' (' + e.message + '); serving as-is.');
       simViewDoc(file, title);
     });
 }
 
-function qzViewDoc(file, title) {
+/* Opens a row by id and resolves file-vs-template itself. The previous inline handler
+   interpolated the document NAME into a JS string literal inside an onclick attribute,
+   which breaks the moment a name contains an apostrophe - the same class of bug the
+   PROMPT records as "Id sin comillas en handler inline". Nothing but the id crosses
+   the attribute boundary now. */
+function qzOpenDocRow(id) {
+  const d = qzFind('documents', id);
+  if (!d) return;
+  const hint = `📖 Review ${d.name}. When finished, click "Done Reading · Return to Exercise" to continue.`;
+  if (d.file) { qzViewDoc(d.file, d.name, hint); return; }
+  qzViewGeneratedDoc(d.id);
+}
+
+function qzViewDoc(file, title, hint) {
   qzMark('docs-download');
-  qzOpenDocFile(file, title);
+  qzOpenDocFile(file, title, hint);
+  qzAskNoteDocOpened(file);
 }
 function qzDownloadDoc() { qzMark('docs-download'); simToast('Downloaded (training only, no real file was transferred).'); }
 function qzReviewDoc(id) { qzUpdate('documents', id, { status: 'Reviewed' }); qzMark('docs-review'); qzRenderRoot(); }
@@ -5531,6 +7276,13 @@ function qzReviewDoc(id) { qzUpdate('documents', id, { status: 'Reviewed' }); qz
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') simCloseDoc();
 });
+
+/* Leading row glyph, as in the product. Keyed off the document's own type so a title
+   document and a lender package are not the same shape. */
+const QZ_DOC_GLYPH = {
+  Contract: '&#128196;', Title: '&#128209;', Lender: '&#127974;', HOA: '&#127968;',
+  Property: '&#128506;', Payoff: '&#128176;', Invoice: '&#129534;'
+};
 
 function qzDocumentsHTML(o) {
   const o2 = qzGetOrder(o.id);
@@ -5543,7 +7295,7 @@ function qzDocumentsHTML(o) {
     const on = (qzDocActiveFolder === f);
     return `<div class="qz-doc-folder ${on ? 'active' : ''}" onclick="qzSelectDocFolder('${escAttr(f)}')">
       <span>&#128193; ${esc(f)}</span>
-      <span class="qz-badge ${count ? '' : 'open'}">${count}</span>
+      <span class="qz-badge ${count ? 'neutral' : 'open'}">${count}</span>
     </div>`;
   }).join('');
 
@@ -5559,28 +7311,29 @@ function qzDocumentsHTML(o) {
       ? ` <span class="qz-due ${daysToClosing < 0 ? 'overdue' : daysToClosing <= 7 ? 'soon' : 'far'}">closing in ${daysToClosing}d</span>`
       : '';
     let actions = '';
-    if (st === 'Pending') actions = `<button class="qz-btn sm primary" data-doc-action="upload" onclick="qzUploadDoc('${escAttr(String(d.id))}')">Upload</button>`;
-    else {
-      /* A document is openable when it has a file on disk OR a template that
-         can be rendered from the order. Only a row with neither falls back to
-         the download button. */
-      actions = d.file
-        ? `<button class="qz-btn sm" data-doc-action="view" onclick="qzViewDoc('${d.file}','${esc(d.name)}')">View</button>`
-        : (qzDocIsOpenable(d)
-          ? `<button class="qz-btn sm" data-doc-action="view" onclick="qzViewGeneratedDoc('${escAttr(d.id)}')">View</button>`
-          : `<button class="qz-btn sm" data-doc-action="download" onclick="qzDownloadDoc()">Download</button>`);
+    if (st === 'Pending') {
+      actions = `<button class="qz-btn sm primary" data-doc-action="upload" onclick="qzUploadDoc('${escAttr(String(d.id))}')">Upload</button>`;
+      if (d.file || qzDocIsOpenable(d)) actions += ` <button class="qz-btn sm" data-doc-action="view" onclick="qzOpenDocRow('${escAttr(String(d.id))}')">View</button>`;
+    } else {
+      if (d.file || qzDocIsOpenable(d)) {
+        actions = `<button class="qz-btn sm" data-doc-action="view" onclick="qzOpenDocRow('${escAttr(String(d.id))}')">View</button>`;
+      } else {
+        actions = `<button class="qz-btn sm" data-doc-action="download" onclick="qzDownloadDoc()">Download</button>`;
+      }
       if (st === 'Received') actions += ` <button class="qz-btn sm" data-doc-action="review" onclick="qzReviewDoc('${escAttr(String(d.id))}')">Mark Reviewed</button>`;
     }
     actions += ` <button class="qz-btn sm" title="Edit Document" onclick="qzEditDocModal('${escAttr(String(d.id))}')">&#9998;</button>`;
     actions += ` <button class="qz-btn sm danger" title="Delete Document" onclick="qzDeleteDocModal('${escAttr(String(d.id))}')">&times;</button>`;
 
+    const nameCell = (d.file || qzDocIsOpenable(d))
+      ? `<button type="button" class="qz-doc-name" data-doc-action="view" onclick="qzOpenDocRow('${escAttr(String(d.id))}')">${esc(d.name)}</button>`
+      : `<b>${esc(d.name)}</b>`;
+
     return `<tr data-doc-id="${d.id}">
-      <td><input type="checkbox" class="qz-doc-chk" data-id="${d.id}"></td>
-      <td><b>${esc(d.name)}</b></td>
+      <td class="qz-doc-glyph">${QZ_DOC_GLYPH[d.type] || '&#128196;'}</td>
+      <td>${nameCell}</td>
       <td>${esc(d.type)}</td>
-      <td class="qzs-dim">${esc(d.folder || 'Title & Escrow')}</td>
       <td><span class="qz-badge ${badgeClass}">${st}</span>${pressure}</td>
-      <td>${esc(d.uploadedBy)}</td>
       <td>${fmtDate(d.date)}</td>
       <td><div class="qz-row-actions">${actions}</div></td>
     </tr>`;
@@ -5596,19 +7349,19 @@ function qzDocumentsHTML(o) {
         <div class="qz-doc-folder-list">${folderList}</div>
       </aside>
       <main class="qz-doc-content">
-        <div class="qz-panel" style="margin-bottom:0">
-          <div class="ph">
-            <h4>Documents &mdash; ${esc(qzDocActiveFolder)}</h4>
-            <div style="display:flex;gap:8px">
-              <input type="text" placeholder="Search documents..." class="qz-input sm" style="max-width:200px" value="${escAttr(qzDocQuery)}" oninput="qzDocQuery=this.value;qzRenderRoot()">
-              <button class="qz-btn sm" type="button" onclick="qzTemplateLibraryModal('${o.id}')">Template Library</button>
-              <button class="qz-btn sm primary" type="button" onclick="qzAddDocumentModal('${o.id}')">+ Add Document</button>
-            </div>
+        <div class="qz-doc-bar">
+          <div class="qz-doc-crumb">&#128190; ${esc(qzDocActiveFolder)}</div>
+          <div class="qz-doc-bar-actions">
+            <input type="text" placeholder="Search documents..." class="qz-input sm" value="${escAttr(qzDocQuery)}" oninput="qzDocQuery=this.value;qzRenderRoot()">
+            <button class="qz-btn sm" type="button" onclick="qzTemplateLibraryModal('${o.id}')">Template Library</button>
+            <button class="qz-btn sm primary" type="button" onclick="qzAddDocumentModal('${o.id}')">+ Add Document</button>
           </div>
+        </div>
+        <div class="qz-panel" style="margin-bottom:0">
           <div class="qz-tbl-scroll">
             <table class="qz-tbl">
-              <thead><tr><th style="width:30px"><input type="checkbox" onchange="document.querySelectorAll('.qz-doc-chk').forEach(c=>c.checked=this.checked)"></th><th>Name</th><th>Type</th><th>Folder</th><th>Status</th><th>Uploaded By</th><th>Date</th><th>Actions</th></tr></thead>
-              <tbody>${rows || '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--qz-muted)">No documents in this folder.</td></tr>'}</tbody>
+              <thead><tr><th></th><th>Name</th><th>Type</th><th>Status</th><th>Modified</th><th>Actions</th></tr></thead>
+              <tbody>${rows || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--qz-muted)">No documents in this folder.</td></tr>'}</tbody>
             </table>
           </div>
         </div>
@@ -5955,7 +7708,9 @@ function qzClosingHTML(o) {
   return '<div class="qz-grid2">' +
     '<div class="qz-panel">' +
       '<div class="ph"><h4>Closing Checklist</h4>' +
-        '<span class="qz-chg-note">' + (docs.length - outstanding.length) + ' of ' + docs.length + ' reviewed</span></div>' +
+        '<span class="qz-chg-note">' + (docs.length - outstanding.length) + ' of ' + docs.length + ' reviewed</span>' +
+        '<button class="qz-btn sm primary" type="button" data-closing-action="review" ' +
+          'onclick="qzReviewClosing()">Mark Checklist Reviewed</button></div>' +
       '<div class="qz-checklist">' + items + '</div>' +
       '<p class="qz-note">Ticking an item marks that document reviewed on the Documents tab. ' +
         'It is the same record, not a second copy of it.</p>' +
@@ -6016,14 +7771,24 @@ function qzMarketplaceHTML(o) {
     '</div></div>';
 }
 
+/* status -> pill colour. A map rather than a ternary chain so adding a status to
+   QZ_VENDOR_STATUS and forgetting the colour is a visible grey, not a wrong colour. */
+const QZ_VENDOR_CLS = {
+  'Ordered': 'scheduled',
+  'Pending Confirmation': 'pending',
+  'Scheduled': 'scheduled',
+  'In Progress': 'progress',
+  'Delayed': 'pending',
+  'Complete': 'completed',
+  'Cancelled': 'cancelled'
+};
+
 function qzVendorsHTML(o) {
   const list = qzList('vendors', function (v) { return v.orderId === o.id; });
-  const statuses = ['Ordered', 'In Progress', 'Delayed', 'Complete', 'Cancelled'];
+  const statuses = QZ_VENDOR_STATUS;
   const rows = list.map(function (v) {
-    const cls = v.status === 'Complete' ? 'completed'
-      : v.status === 'Delayed' ? 'pending'
-      : v.status === 'In Progress' ? 'progress' : 'scheduled';
-    return '<tr>' +
+    const cls = QZ_VENDOR_CLS[v.status] || 'scheduled';
+    return '<tr data-vendor-id="' + escAttr(String(v.id)) + '">' +
       '<td><b>' + esc(v.name) + '</b></td>' +
       '<td>' + esc(v.service) + '</td>' +
       '<td>' + (v.ordered ? fmtDate(v.ordered) : '&mdash;') + '</td>' +
@@ -6034,7 +7799,6 @@ function qzVendorsHTML(o) {
           return '<option value="' + s + '"' + (v.status === s ? ' selected' : '') + '>' + s + '</option>';
         }).join('') + '</select></td>' +
       '<td><div class="qz-row-actions">' +
-        '<button class="qz-btn sm" onclick="qzCheckVendor(&#39;' + escAttr(String(v.id)) + '&#39;)">Check Status</button>' +
         '<button class="qz-btn sm" onclick="qzEditVendorModal(&#39;' + escAttr(String(v.id)) + '&#39;)">&#9998;</button>' +
         '<button class="qz-btn sm danger" onclick="qzDeleteVendorModal(&#39;' + escAttr(String(v.id)) + '&#39;)">&times;</button>' +
       '</div></td></tr>';
@@ -6055,6 +7819,7 @@ function qzVendorsHTML(o) {
 function qzSetVendorStatus(id, status) {
   qzUpdate('vendors', id, { status: status });
   const v = qzFind('vendors', id);
+  qzMark('vendors-check');
   simToast((v ? v.name : 'Vendor') + ' set to ' + status + '.', { tone: 'good' });
   qzRenderRoot();
 }
@@ -6240,38 +8005,31 @@ function qzTasksHTML(o) {
       const due = isDone ? fmtDate(t.dueDate) : `${fmtDate(t.dueDate)} ${qzDueChipHTML(t.dueDate)}`;
       return `
         <tr data-task-id="${t.id}" class="${isDone ? 'qz-task-done' : ''} ${stripClass}">
-          <td style="width:36px"><input type="checkbox" ${isDone ? 'checked' : ''} onchange="qzToggleTaskStatus('${escAttr(String(t.id))}', this.checked)"></td>
+          <td class="qz-task-tick"><input type="checkbox" ${isDone ? 'checked' : ''} onchange="qzToggleTaskStatus('${escAttr(String(t.id))}', this.checked)"></td>
           <td><b>${esc(t.title)}</b></td>
           <td>${esc(t.assignedTo)}</td>
           <td>${due}</td>
-          <td><span class="qz-badge ${badgeClass}">${esc(t.status || 'Open')}</span></td>
-          <td>
-            <div class="qz-row-actions">
-              <button class="qz-btn sm" title="Edit Task" onclick="qzEditTaskModal('${escAttr(String(t.id))}')">&#9998;</button>
-              <button class="qz-btn sm danger" title="Delete Task" onclick="qzDeleteTaskModal('${escAttr(String(t.id))}')">&times;</button>
-            </div>
-          </td>
+          <td class="qz-status-cell"><span class="qz-badge ${badgeClass}">${esc(t.status || 'Open')}</span></td>
+          <td class="qz-task-act">${isDone
+            ? `<button type="button" class="qz-task-ico" title="Task details" onclick="qzEditTaskModal('${escAttr(String(t.id))}')">&#9432;</button>`
+            : `<button type="button" class="qz-task-ico off" title="Remove task" onclick="qzDeleteTaskModal('${escAttr(String(t.id))}')">&times;</button>`}</td>
         </tr>`;
     }).join('');
 
     return `
       <div class="qz-task-group-card ${isActive ? 'active-group' : ''} ${isHidden ? 'collapsed' : ''}">
         <div class="qz-tg-head">
-          <div style="display:flex;align-items:center;gap:10px">
-            <span class="qz-tg-star" style="color:${isActive ? '#10b981' : '#94a3b8'}">${isActive ? '&#9733;' : '&#9734;'}</span>
+          <div class="qz-tg-side">
             <b class="qz-tg-title">${esc(g.name)}</b>
-            <span class="qz-tg-count">${doneCount}/${totalCount} (${pct}%)</span>
+            <span class="qz-tg-count">${totalCount ? `${doneCount}/${totalCount} (${pct}%)` : 'No tasks'}</span>
           </div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <div class="qz-tg-bar"><i style="width:${pct}%"></i></div>
-            <button type="button" class="qz-tg-eye" title="${isHidden ? 'Show task group' : 'Hide task group'}" onclick="qzToggleTaskGroupHidden('${escAttr(gKey)}')">${isHidden ? '&#128064;' : '&#128065;'}</button>
-            <button type="button" class="qz-btn sm danger" title="Delete task group" onclick="qzDeleteTaskGroupModal('${escAttr(String(g.id || g.name))}')">&times;</button>
-            <button class="qz-btn sm" onclick="qzAddTaskModal('${o.id}', '${escAttr(g.name)}')">+ Add Task</button>
+          <div class="qz-tg-side">
+            ${totalCount ? `<div class="qz-tg-bar"><i style="width:${pct}%"></i></div>` : ''}
+            <button type="button" class="qz-tg-btn ${isActive ? 'on' : ''}" title="${isHidden ? 'Show task group' : 'Hide task group'}" onclick="qzToggleTaskGroupHidden('${escAttr(gKey)}')">${isHidden ? QZ_ICONS.eyeOff : (isActive ? '&#9733;' : '&#9734;')}</button>
           </div>
         </div>
         ${!isHidden ? (gTasks.length ? `
-        <table class="qz-tbl" style="margin-top:8px">
-          <thead><tr><th></th><th>Task Title</th><th>Assigned To</th><th>Due Date</th><th>Status</th><th>Actions</th></tr></thead>
+        <table class="qz-tbl qz-task-tbl">
           <tbody>${taskRows}</tbody>
         </table>` : '<div class="qz-tg-empty">No tasks in this milestone group.</div>') : ''}
       </div>`;
@@ -6281,13 +8039,13 @@ function qzTasksHTML(o) {
     <div class="qz-panel">
       <div class="ph">
         <div>
-          <h4>Order Tasks &mdash; ${workflowTitle}</h4>
+          <h4>${workflowTitle}</h4>
           <span class="sub">Workflow automated rules active &middot; Assigned to ${esc(teamLabel)}</span>
         </div>
         <div style="display:flex;gap:8px">
           <button class="qz-btn sm ghost" onclick="qzModifyWorkflowModal('${o.id}')">Modify</button>
-          <button class="qz-btn sm" onclick="qzAddTaskModal('${o.id}')">Add Task</button>
-          <button class="qz-btn sm primary" onclick="qzAddTaskGroupModal('${o.id}')">+ Add Task Group</button>
+          <button class="qz-btn sm charcoal" onclick="qzAddTaskModal('${o.id}')">Add Task</button>
+          <button class="qz-btn sm primary" onclick="qzAddTaskGroupModal('${o.id}')">Add Task Group</button>
         </div>
       </div>
       <div class="qz-task-groups">${groupBlocks}</div>
@@ -6298,14 +8056,23 @@ function qzTasksHTML(o) {
 
 
 /* ---------- Communication ---------- */
-function qzOpenThread(id) { qzState.threadId = id; qzMark('comm-open'); qzRenderRoot(); }
+function qzOpenThread(id) { qzState.threadId = Number(id) || id; qzMark('comm-open'); qzRenderRoot(); }
 function qzThreadMessages(threadId) {
   const t = qzFind('threads', threadId);
   if (!t) return [];
-  const stored = qzList('messages', m => m.threadId === threadId);
-  return (t.thread || []).concat(stored);
+  const inline = t.thread || [];
+  /* qzBuildMessages mirrors every seeded thread's inline messages into qzDB.messages, so a
+     plain concat rendered each seeded message twice and pushed the trainee's own reply below
+     the fold. The inline array can't just be dropped either: threads created at runtime by
+     qzSaveNewThread are never mirrored. So key the mirrors out and keep everything once.
+     String() on both sides because thread ids arrive from HTML onclick as strings. */
+  const key = m => `${m.sender}|${m.date}|${m.body}`;
+  const seen = new Set(inline.map(key));
+  const stored = qzList('messages', m => String(m.threadId) === String(threadId) && !seen.has(key(m)));
+  return inline.concat(stored);
 }
 function qzSendReply(threadId) {
+  threadId = Number(threadId) || threadId;
   const box = document.getElementById('qzReplyBox');
   const text = box ? box.value.trim() : '';
   if (!text) { simToast('Write a reply before sending.'); return; }
@@ -6350,7 +8117,7 @@ function qzCommunicationHTML(o) {
   const active = threads.find(t => t.id === qzState.threadId);
   let detail = '<div class="qz-panel">Select a thread.</div>';
   if (active) {
-    const msgs = qzThreadMessages(active.id).map(m => `<div class="qz-msg ${m.sender === 'You (VA)' ? 'mine' : ''}"><div class="meta">${esc(m.sender)} &rarr; ${esc(m.recipient)} &middot; ${fmtDate(m.date)}</div>${esc(m.body)}</div>`).join('');
+    const msgs = qzThreadMessages(active.id).map((m, i) => `<div class="qz-msg ${m.sender === 'You (VA)' ? 'mine' : ''}" data-msg-index="${i + 1}"><div class="meta">${esc(m.sender)} &rarr; ${esc(m.recipient)} &middot; ${fmtDate(m.date)}</div>${esc(m.body)}</div>`).join('');
     detail = `<div class="qz-panel"><div class="ph"><h4>${esc(active.subject)}</h4><button class="qz-btn sm danger" onclick="qzDeleteThreadModal('${escAttr(String(active.id))}')">Delete Thread</button></div>
       ${msgs}
       <div class="qz-reply"><textarea id="qzReplyBox" placeholder="Write a reply..." oninput="qzSyncReplyStep()"></textarea>
@@ -6383,13 +8150,6 @@ function qzOpenCompose(id) { qzState.composeId = id; qzRenderRoot(); }
 function qzCloseCompose() { qzState.composeId = null; qzRenderRoot(); }
 
 /* ---------- Vendors (Universal CRUD) ---------- */
-function qzCheckVendor(id) {
-  const v = qzFind('vendors', id);
-  if (!v) return;
-  qzMark('vendors-check');
-  simToast(`${v.name}: ${v.status}`, { tone: 'good' });
-}
-
 
 
 /* ---------- Closing ---------- */
@@ -6427,11 +8187,32 @@ function qzAccountingHTML(o) {
     const totals = { borrowerAt: 0, borrowerBefore: 0, sellerAt: 0, sellerBefore: 0, byOthers: 0 };
     lines.forEach(l => { if (totals[l.col] != null) totals[l.col] += l.amount; });
 
+    /* Exactly one cell of this otherwise read-only grid opens up, and only while a
+       Document Review correction has been handed off to it: qzRevGoFix set
+       pendingRevFix, and that review names this line in fixAt.acctDesc. Everything
+       else stays read-only, which is what the note above the grid says. The point is
+       that the figure gets corrected on the settlement statement that carries it,
+       rather than typed into a box belonging to the exercise. */
+    const fixRev = qzState.pendingRevFix ? qzReviewLookup(qzState.pendingRevFix) : null;
+    const fixDesc = (fixRev && fixRev.orderId === o.id && fixRev.fixAt) ? fixRev.fixAt.acctDesc : null;
+    const fixSt = fixDesc ? qzRevGet(fixRev.id) : null;
+    /* Empty on a first attempt, on purpose (same rule as the inline Step 4): prefilled
+       with the figure under suspicion, "correcting" it would be a click. After a wrong
+       save it keeps what was typed, so the trainee edits rather than retypes. */
+    const fixPrefill = (fixSt && fixSt.correctedValueSaved && !fixSt.step4ValueCorrect) ? fixSt.correctedValueSaved : '';
+
     const rowHTML = (l, i) => {
-      const cells = QZ_ACCT_COLS.map(c =>
-        `<td class="num ${l && l.col === c ? 'has' : ''}">${l && l.col === c ? fmtMoney(l.amount) : ''}</td>`
-      ).join('');
-      return `<tr class="${l ? '' : 'empty'}">
+      const editing = !!(l && fixDesc && l.desc === fixDesc);
+      const cells = QZ_ACCT_COLS.map(c => {
+        const own = !!(l && l.col === c);
+        if (own && editing) {
+          return `<td class="num has"><span class="qz-acct-fix">
+            <input id="qzAcctFixInput" value="${escAttr(fixPrefill)}" placeholder="0.00" aria-label="Corrected ${escAttr(l.desc)}" oninput="qzAcctMarkDirty()">
+          </span></td>`;
+        }
+        return `<td class="num ${own ? 'has' : ''}">${own ? fmtMoney(l.amount) : ''}</td>`;
+      }).join('');
+      return `<tr class="${l ? '' : 'empty'}"${l ? ` data-acct-desc="${escAttr(l.desc)}"` : ''}>
         <td class="ln">${String(i + 1).padStart(2, '0')}</td>
         <td class="desc">${l ? esc(l.desc) : ''}</td>
         <td class="payee">${l ? 'to ' + esc(l.payee) : ''}</td>
@@ -6442,8 +8223,14 @@ function qzAccountingHTML(o) {
     for (let i = 0; i < Math.max(MIN_ROWS, lines.length); i++) body.push(rowHTML(lines[i] || null, i));
     const totalCells = QZ_ACCT_COLS.map(c => `<td class="num">${fmtMoney(totals[c])}</td>`).join('');
 
+    const acctSaveBtn = fixDesc
+      ? `<div class="qz-de-actions"><button class="qz-btn primary" id="qzAcctSaveBtn" style="display:none" onclick="qzAcctSaveFix()">Save Changes</button></div>`
+      : '';
+
     return `<div class="qz-panel">
-      <div class="qz-readonly-note">This grid is read-only for a VA in Lesson mode. Review figures and verify calculations.</div>
+      <div class="qz-readonly-note">${fixDesc
+        ? `Correcting <b>${esc(fixDesc)}</b>. Enter what the source document actually billed, then save. The rest of the grid stays read-only.`
+        : 'This grid is read-only for a VA in Lesson mode. Review figures and verify calculations.'}</div>
       <div class="qz-tbl-scroll">
         <table class="qz-acct-grid">
           <thead>
@@ -6463,6 +8250,7 @@ function qzAccountingHTML(o) {
           <tfoot><tr><td colspan="3" class="tl">TOTALS</td>${totalCells}</tr></tfoot>
         </table>
       </div>
+      ${acctSaveBtn}
     </div>`;
   }
 
@@ -7179,37 +8967,42 @@ function qzCalcQuote() {
 
 /* Modals for live in-file operations */
 function qzAddPartyModal(orderId) {
+  const existing = document.getElementById('qzAddPartyModal');
+  if (existing) existing.remove();
+
   const wrap = document.createElement('div');
   wrap.id = 'qzAddPartyModal';
   wrap.className = 'qz-modal-backdrop';
+  wrap.style.zIndex = '99999';
   wrap.innerHTML = `
     <div class="qz-modal-card" style="max-width:440px">
       <div class="ph"><h4>Add Party to File</h4><button class="qz-btn sm" onclick="document.getElementById('qzAddPartyModal').remove()">&times;</button></div>
-      <div class="qz-form-grid" style="padding:14px 0">
+      <div class="qz-form-grid" style="padding:14px 18px">
         <div class="qz-field"><label>Role</label>
           <select id="qzNewPartyRole">
             <option value="Buyer">Buyer</option><option value="Seller">Seller</option><option value="Selling Agent">Selling Agent</option>
             <option value="Listing Agent">Listing Agent</option><option value="Lender">Lender</option><option value="Attorney">Attorney</option>
-            <option value="HOA">HOA Representative</option>
+            <option value="HOA">HOA Representative</option><option value="Other">Other</option>
           </select>
         </div>
-        <div class="qz-field"><label>Full Name</label><input id="qzNewPartyName" placeholder="e.g. Bennett Ashcroft"></div>
+        <div class="qz-field"><label>Full Name <span style="color:var(--qz-bad)">*</span></label><input id="qzNewPartyName" placeholder="e.g. Bennett Ashcroft" autofocus></div>
         <div class="qz-field"><label>Email</label><input id="qzNewPartyEmail" placeholder="e.g. bennett@ashcroftlaw.example"></div>
         <div class="qz-field"><label>Phone</label><input id="qzNewPartyPhone" placeholder="e.g. (972) 555-0144"></div>
       </div>
-      <div style="text-align:right;padding-top:10px;display:flex;justify-content:flex-end;gap:8px">
-        <button class="qz-btn" onclick="document.getElementById('qzAddPartyModal').remove()">Cancel</button>
-        <button class="qz-btn primary" onclick="qzSaveNewParty('${orderId}')">Add Party</button>
+      <div style="text-align:right;padding:12px 18px;border-top:1px solid var(--qz-line);display:flex;justify-content:flex-end;gap:8px">
+        <button class="qz-btn" type="button" onclick="document.getElementById('qzAddPartyModal').remove()">Cancel</button>
+        <button class="qz-btn primary" type="button" onclick="qzSaveNewParty('${orderId}')">Add Party</button>
       </div>
     </div>`;
   document.body.appendChild(wrap);
+  setTimeout(() => document.getElementById('qzNewPartyName')?.focus(), 50);
 }
 
 function qzSaveNewParty(orderId) {
-  const role = document.getElementById('qzNewPartyRole').value;
-  const name = (document.getElementById('qzNewPartyName').value || '').trim();
-  const email = (document.getElementById('qzNewPartyEmail').value || '').trim();
-  const phone = (document.getElementById('qzNewPartyPhone').value || '').trim();
+  const role = document.getElementById('qzNewPartyRole')?.value || 'Other';
+  const name = (document.getElementById('qzNewPartyName')?.value || '').trim();
+  const email = (document.getElementById('qzNewPartyEmail')?.value || '').trim();
+  const phone = (document.getElementById('qzNewPartyPhone')?.value || '').trim();
   if (!name) { simToast('Please enter a party name.'); return; }
   
   const o = qzFind('orders', orderId);
@@ -7218,6 +9011,25 @@ function qzSaveNewParty(orderId) {
     o.parties.push({ role, name, email, phone });
     qzLogAudit('CREATE', `Party ${role} (${name}) on ${orderId}`);
   }
+
+  // Also insert into central contacts directory
+  if (!qzDB.contacts) qzDB.contacts = [];
+  qzDB.contacts.unshift({
+    id: 'c-' + Date.now(),
+    name: name,
+    type: QZ_SHELL_ROLE_TYPE[role] || role,
+    role: role,
+    company: role.includes('Agent') ? 'Real Estate Agency' : (role === 'Lender' ? name : '—'),
+    email: email || '—',
+    phone: phone || '—',
+    mobile: '—',
+    address: o ? o.propertyAddress : '—',
+    created: QZ_TODAY,
+    createdBy: 'Order intake',
+    lastActivity: QZ_TODAY,
+    orders: [orderId],
+    derived: false
+  });
   
   document.getElementById('qzAddPartyModal')?.remove();
   simToast(`Added ${name} (${role}) to file.`, { tone: 'good' });
@@ -7746,10 +9558,7 @@ function qzEditVendorModal(vendorId) {
         <div class="qz-field"><label>Service</label><input id="qzEditVendorService" value="${escAttr(v.service)}"></div>
         <div class="qz-field"><label>Status</label>
           <select id="qzEditVendorStatus">
-            <option value="Pending" ${v.status==='Pending'?'selected':''}>Pending</option>
-            <option value="Scheduled" ${v.status==='Scheduled'?'selected':''}>Scheduled</option>
-            <option value="In Progress" ${v.status==='In Progress'?'selected':''}>In Progress</option>
-            <option value="Completed" ${v.status==='Completed'?'selected':''}>Completed</option>
+            ${QZ_VENDOR_STATUS.map(st => `<option value="${escAttr(st)}" ${v.status === st ? 'selected' : ''}>${esc(st)}</option>`).join('')}
           </select>
         </div>
       </div>
@@ -8081,6 +9890,33 @@ function qzGlobalMessagesHTML() {
    graded part is. Same everCorrect stickiness, same exam-mode rules (one shot,
    no colouring, no retry) as `verify`.
    ============================================================================ */
+const QZ_REC_AT = {
+  'rec-1483-price-conflict': { orderId: 'ORD-2026-1483', tab: 'dataentry', deTab: 'transaction', label: 'Transaction Information' },
+  'rec-1512-commitment':     { orderId: 'ORD-2026-1512', tab: 'documents', label: 'Documents' },
+  'rec-1398-payoff':         { orderId: 'ORD-2026-1398', tab: 'payoffs',   label: 'Existing Loan Payoffs' },
+  'rec-1398-wire':           { orderId: 'ORD-2026-1398', tab: 'communication', label: 'Connect' }
+};
+
+/* Entry point for a `reconcile` step, and the step's setup(). The twin of qzVerifyDrive:
+   put the real Core page the exercise is about on screen, then float the exercise over it,
+   instead of navigating away to a course screen that reprints a file the product already
+   shows. Items with no QZ_REC_AT entry keep the old standalone page. */
+function qzReconcileDrive(recId) {
+  const r = qzRecLookup(recId);
+  if (!r) return;
+  const at = QZ_REC_AT[recId];
+  if (!at) { qzGotoReview(r.orderId); return; }
+  /* The trainee is away fetching a source from the real Documents list; re-opening the
+     dialog now would cover the row they were sent to find. */
+  if (qzState.pendingRecDoc && qzState.pendingRecDoc.recId === recId) { qzRenderRoot(); return; }
+  if (qzState.pendingRecFix && qzState.pendingRecFix.recId === recId) { qzRenderRoot(); return; }
+  qzAskGoto({ orderId: at.orderId || r.orderId, tab: at.tab, deTab: at.deTab });
+  qzAsk = { kind: 'reconcile', id: recId, ctx: at };
+  qzAskLast = qzAsk;
+  qzRenderRoot();
+  qzSyncReconcileStep(recId);
+}
+
 function qzRecLookup(id) {
   return (typeof QZ_RECONCILES !== 'undefined' ? QZ_RECONCILES.find(r => r.id === id) : null) ||
     (typeof QZ_EXAM_BANK !== 'undefined' ? QZ_EXAM_BANK.find(i => i.type === 'reconcile' && i.id === id) : null);
@@ -8089,12 +9925,36 @@ function qzRecExamMode(id) {
   return typeof QZ_EXAM_BANK !== 'undefined' && QZ_EXAM_BANK.some(i => i.type === 'reconcile' && i.id === id);
 }
 function qzRecGet(id) {
-  if (!qzStore.reconciles[id]) qzStore.reconciles[id] = { opened: {}, cells: {}, decisions: {}, notes: {} };
-  return qzStore.reconciles[id];
+  const key = qzScopedItemKey(id);
+  if (!qzStore.reconciles[key]) qzStore.reconciles[key] = { opened: {}, cells: {}, decisions: {}, notes: {} };
+  return qzStore.reconciles[key];
 }
 function qzRecAllDocsOpened(id) {
   const r = qzRecLookup(id), st = qzRecGet(id);
   return !!r && r.docs.every(d => st.opened[d.id]);
+}
+function qzRecDocRowId(r, docId) {
+  const doc = r.docs.find(d => d.id === docId);
+  if (!doc) return null;
+  const d = qzList('documents').find(x => x.orderId === r.orderId && x.file === doc.file);
+  return d ? d.id : null;
+}
+function qzRecGoDoc(recId, docId) {
+  const r = qzRecLookup(recId);
+  if (!r) return;
+  qzState.pendingRecDoc = { recId: recId, docId: docId };
+  /* Same reason as qzRevGoDoc: the card would sit on top of the row they were just
+     sent to find. */
+  qzAsk = null;
+  qzDocActiveFolder = 'All Documents';
+  qzDocQuery = '';
+  qzState.view = 'order';
+  qzState.orderId = r.orderId;
+  qzState.orderTab = 'documents';
+  qzState.composeId = null;
+  qzSyncTopTabs();
+  qzRenderRoot();
+  qzSyncReconcileStep(recId);
 }
 function qzRecOpenDoc(id, docId) {
   const r = qzRecLookup(id);
@@ -8176,12 +10036,17 @@ function qzRecSaveCategory(id, rowId) {
   if (!row || !sel) return;
   const cat = sel.value;
   if (!cat) { simToast('Choose an escalation category.'); return; }
+  const noteEl = document.getElementById('qzRecNote-' + id + '-' + rowId);
+  const noteVal = noteEl ? noteEl.value.trim() : '';
+  if (!qzRecExamMode(id) && row.noteExample && (!noteVal || noteVal.length < 10)) {
+    simToast('Please write an escalation note explaining the discrepancy (at least 10 characters).');
+    return;
+  }
   const st = qzRecGet(id);
   const d = st.decisions[rowId] || {};
   d.category = cat;
   d.categoryCorrect = cat === row.rightCategory;
-  const noteEl = document.getElementById('qzRecNote-' + id + '-' + rowId);
-  if (noteEl) st.notes[rowId] = noteEl.value.trim();
+  if (noteEl) st.notes[rowId] = noteVal;
   st.decisions[rowId] = d;
   qzSave();
   if (!qzRecExamMode(id) && !d.categoryCorrect) {
@@ -8220,6 +10085,51 @@ function qzRecSaveRowValue(id, rowId) {
   qzRenderRoot();
   qzSyncReconcileStep(id);
 }
+function qzRecGoFix(recId, rowId) {
+  const r = qzRecLookup(recId);
+  if (!r) return;
+  const row = r.rows.find(x => x.id === rowId);
+  if (!row || !row.fixAt) return;
+  qzState.pendingRecFix = { recId: recId, rowId: rowId };
+  qzAsk = null;
+  const at = QZ_REC_AT[recId];
+  qzOpenOrderTab(at ? at.orderId || r.orderId : r.orderId);
+  qzState.view = 'order';
+  qzState.orderId = r.orderId;
+  qzState.orderTab = row.fixAt.tab;
+  qzState.composeId = null;
+  qzSyncTopTabs();
+  qzRenderRoot();
+  qzSyncReconcileStep(recId);
+}
+function qzRecGradeFix(recId, rowId, newValue) {
+  const r = qzRecLookup(recId);
+  const row = r && r.rows.find(x => x.id === rowId);
+  if (!row) return;
+  const st = qzRecGet(recId);
+  const d = st.decisions[rowId] || {};
+  d.value = newValue;
+  d.valueCorrect = qzNormalizeValue(newValue) === qzNormalizeValue(row.correctedValue);
+  st.decisions[rowId] = d;
+  qzState.pendingRecFix = null;
+  qzSave();
+  if (d.valueCorrect) {
+    simToast('Status updated on the order.', { tone: 'good' });
+  } else {
+    simToast("That does not match what the source shows.", { tone: 'bad' });
+    qzRenderRoot();
+    qzSyncReconcileStep(recId);
+    return;
+  }
+  const at = QZ_REC_AT[recId];
+  if (at) {
+    qzAsk = { kind: 'reconcile', id: recId, ctx: at };
+    qzAskLast = qzAsk;
+  }
+  qzRenderRoot();
+  qzSyncReconcileStep(recId);
+}
+
 /* A row is settled once its decision is complete: 'none' needs nothing more,
    'correct' needs a value, an escalation needs a category. */
 function qzRecRowSettled(id, rowId) {
@@ -8322,14 +10232,14 @@ function qzRecCellHTML(r, row, cell, examMode) {
     ${locked ? '' : `<button type="button" class="qz-btn sm" onclick="qzRecSaveTypedCell('${r.id}','${row.id}','${cell.docId}')">Set</button>`}
   </div>`;
 }
-function qzRecRowDecisionHTML(r, row, examMode) {
+function qzRecRowDecisionHTML(r, row, examMode, popup) {
   const st = qzRecGet(r.id);
   if (!qzRecRowCellsDone(r.id, row.id)) {
     return `<div class="qz-rec-locked">Fill in every source for this row first.</div>`;
   }
   const d = st.decisions[row.id] || {};
   const answered = !!d.action;
-  const actions = qzOptionOrder('rec3:' + r.id + ':' + row.id, QZ_ACTION_CHOICES.length).map(i => {
+  const actions = (popup && answered) ? '' : qzOptionOrder('rec3:' + r.id + ':' + row.id, QZ_ACTION_CHOICES.length).map(i => {
     const a = QZ_ACTION_CHOICES[i];
     let cls = '';
     if (answered && !examMode) {
@@ -8344,14 +10254,21 @@ function qzRecRowDecisionHTML(r, row, examMode) {
     if (d.action === 'correct') {
       const done = d.value != null && (examMode || d.valueCorrect);
       const wrong = d.value != null && !d.valueCorrect && !examMode;
-      follow = done && !wrong
-        ? `<div class="qz-rv-subfeedback good">&#10003; Value recorded${examMode ? '' : ': ' + esc(d.value)}</div>`
-        : `<div class="qz-rec-follow">
+      if (done && !wrong) {
+        follow = `<div class="qz-rv-subfeedback good">&#10003; Value recorded${examMode ? '' : ': ' + esc(d.value)}</div>`;
+      } else if (row.fixAt && !examMode) {
+        follow = `<div class="qz-rec-follow">
+             <p class="qz-rv-handoff">Go to this file's ${esc(row.fixAt.tab === 'documents' ? 'Documents' : row.fixAt.tab)} and make the correction there.</p>
+             <button type="button" class="qz-btn sm primary" onclick="qzRecGoFix('${r.id}','${row.id}')">Take me there &rarr;</button>
+           </div>`;
+      } else {
+        follow = `<div class="qz-rec-follow">
              <label>Corrected value</label>
              <input type="text" id="qzRecFix-${r.id}-${row.id}" value="${escAttr(d.value || '')}" placeholder="Type it exactly as the governing source shows it">
              ${wrong ? '<div class="qz-rv-subfeedback bad">&#10007; That does not match the governing source.</div>' : ''}
              <button type="button" class="qz-btn sm primary" onclick="qzRecSaveRowValue('${r.id}','${row.id}')">Save</button>
            </div>`;
+      }
     } else if (d.action.indexOf('escalate') === 0) {
       const done = d.category != null && (examMode || d.categoryCorrect);
       const wrong = d.category != null && !d.categoryCorrect && !examMode;
@@ -8371,7 +10288,8 @@ function qzRecRowDecisionHTML(r, row, examMode) {
     follow = `<div class="qz-rv-subfeedback bad">&#10007; That is not the right call for this row.</div>
       <button type="button" class="qz-btn sm" onclick="qzRecClearDecision('${r.id}','${row.id}')">Try again</button>`;
   }
-  return `<div class="qz-rec-decide"><div class="qz-rec-decide-h">What should happen with this field?</div>${actions}${follow}</div>`;
+  const heading = popup && answered ? '' : `<div class="qz-rec-decide-h">What should happen with this field?</div>`;
+  return `<div class="qz-rec-decide">${heading}${actions}${follow}</div>`;
 }
 function qzRecClearDecision(id, rowId) {
   if (qzRecExamMode(id)) return;
@@ -8380,49 +10298,76 @@ function qzRecClearDecision(id, rowId) {
   qzRenderRoot();
   qzSyncReconcileStep(id);
 }
-function qzRecItemHTML(id) {
+function qzRecItemHTML(id, popup) {
   const r = qzRecLookup(id);
   if (!r) return '';
   const st = qzRecGet(id);
   const examMode = qzRecExamMode(id);
   const done = !!st.resolvedAt;
 
-  const docBtns = r.docs.map(d =>
-    `<button type="button" class="qz-btn sm ${st.opened[d.id] ? 'opened' : ''}" data-rec-doc="${escAttr(d.id)}" onclick="qzRecOpenDoc('${id}','${d.id}')">${st.opened[d.id] ? '&#10003; ' : ''}${esc(d.title)}</button>`
-  ).join('');
+  const docBtns = r.docs.map(d => {
+    if (st.opened[d.id]) {
+      return `<button type="button" class="qz-btn sm opened" data-rec-doc="${escAttr(d.id)}" onclick="qzRecOpenDoc('${id}','${d.id}')">&#10003; ${esc(d.title)}</button>`;
+    }
+    const rowId = examMode ? null : qzRecDocRowId(r, d.id);
+    if (rowId != null) {
+      return `<button type="button" class="qz-btn sm primary" data-rec-doc="${escAttr(d.id)}" onclick="qzRecGoDoc('${id}','${d.id}')">Find ${esc(d.title)} in Documents &rarr;</button>`;
+    }
+    return `<button type="button" class="qz-btn sm" data-rec-doc="${escAttr(d.id)}" onclick="qzRecOpenDoc('${id}','${d.id}')">${esc(d.title)}</button>`;
+  }).join('');
   const allOpen = qzRecAllDocsOpened(id);
 
-  const head = `<div class="qz-rec-step ${allOpen ? 'done' : 'active'}" data-rec-phase="1">
-    <div class="qz-rv-step-h">Step 1 &middot; Open every source</div>
-    <div class="qz-rec-docs">${docBtns}</div>
-    ${allOpen ? '' : '<div class="qz-rec-locked">All of them. You cannot reconcile sources you have not read.</div>'}
-  </div>`;
-
-  let grid = '';
-  if (allOpen && !done) {
-    const headCells = r.docs.map(d => `<th>${esc(d.short || d.title)}</th>`).join('');
-    const bodyRows = r.rows.map(row => {
-      const cells = r.docs.map(d => {
-        const cell = row.cells.find(c => c.docId === d.id);
-        return `<td>${cell ? qzRecCellHTML(r, row, cell, examMode) : '<span class="qz-rec-na">n/a</span>'}</td>`;
-      }).join('');
-      return `<tr data-rec-row="${escAttr(row.id)}">
-        <td class="fld"><b>${esc(row.label)}</b>${row.onOrder ? `<span class="on-order">On the order: ${esc(row.onOrder)}</span>` : ''}</td>
-        ${cells}
-      </tr>`;
-    }).join('');
-    grid = `<div class="qz-rec-step active" data-rec-phase="2">
-      <div class="qz-rv-step-h">Step 2 &middot; What does each source say?</div>
-      <div class="qz-tbl-scroll"><table class="qz-rec-grid"><thead><tr><th class="fld">Field</th>${headCells}</tr></thead><tbody>${bodyRows}</tbody></table></div>
+  let head;
+  if (popup && allOpen) {
+    head = `<div class="qz-rec-step done" data-rec-phase="1">
+      <div class="qz-rv-step-h">Step 1 &middot; Sources opened &#10003;</div>
+    </div>`;
+  } else {
+    head = `<div class="qz-rec-step ${allOpen ? 'done' : 'active'}" data-rec-phase="1">
+      <div class="qz-rv-step-h">Step 1 &middot; Open every source</div>
+      <div class="qz-rec-docs">${docBtns}</div>
+      ${allOpen ? '' : '<div class="qz-rec-locked">All of them. You cannot reconcile sources you have not read.</div>'}
     </div>`;
   }
 
-  let decisions = '';
+  let cards = '';
   if (allOpen && !done) {
-    decisions = r.rows.map(row => `<div class="qz-rec-step active" data-rec-phase="3" data-rec-row="${escAttr(row.id)}">
-      <div class="qz-rv-step-h">Step 3 &middot; ${esc(row.label)}</div>
-      ${qzRecRowDecisionHTML(r, row, examMode)}
-    </div>`).join('');
+    let foundActive = false;
+    let doneCount = 0;
+    const total = r.rows.length;
+    cards = r.rows.map(row => {
+      const settled = qzRecRowSettled(id, row.id);
+      if (settled) { doneCount++; }
+      let cls = '';
+      if (settled) { cls = 'done'; }
+      else if (!foundActive) { cls = 'active'; foundActive = true; }
+      if (popup && cls !== 'active') return '';
+      const cellsDone = qzRecRowCellsDone(id, row.id);
+      const progress = popup && total > 1 ? `<span class="qz-rec-progress">${doneCount + 1} of ${total}</span>` : '';
+      let cellLines, decideHTML;
+      if (popup && cellsDone) {
+        cellLines = '';
+        decideHTML = `<div class="qz-rec-card-decide">${qzRecRowDecisionHTML(r, row, examMode, true)}</div>`;
+      } else {
+        cellLines = r.docs.map(d => {
+          const cell = row.cells.find(c => c.docId === d.id);
+          if (!cell) return '';
+          return `<div class="qz-rec-field-row">
+            <div class="qz-rec-field-label">${esc(d.short || d.title)}</div>
+            <div class="qz-rec-field-input">${qzRecCellHTML(r, row, cell, examMode)}</div>
+          </div>`;
+        }).join('');
+        decideHTML = popup ? '' : `<div class="qz-rec-card-decide">${qzRecRowDecisionHTML(r, row, examMode)}</div>`;
+      }
+      return `<div class="qz-rec-card ${cls}" data-rec-row="${escAttr(row.id)}">
+        <div class="qz-rec-card-head">
+          <b>${esc(row.label)}</b>${progress}
+          ${row.onOrder ? `<span class="on-order">On the order: ${esc(row.onOrder)}</span>` : ''}
+        </div>
+        ${cellLines}
+        ${decideHTML}
+      </div>`;
+    }).join('');
   }
 
   let submit = '';
@@ -8465,14 +10410,14 @@ function qzRecItemHTML(id) {
     <div class="qz-rv-head"><b>${esc(r.label)}</b>${chip}</div>
     <div class="qz-rv-where">${esc(r.where)}</div>
     <p class="qz-rv-instr">${esc(r.instruction)}</p>
-    ${head}${grid}${decisions}${submit}${feedback}
+    ${head}${cards}${submit}${feedback}
   </div>`;
 }
 
 /* ============================================================================
    MECHANIC: `compose` — a written reply graded against a rubric
    ----------------------------------------------------------------------------
-   qzSendReply used to accept any 20 characters, which made Lesson 5 decorative:
+   qzSendReply used to accept any 20 characters, which made the communication lesson decorative:
    the trainee could type "aaaaaaaaaaaaaaaaaaaaaa" and be told they had
    communicated professionally. A rubric replaces that. Each criterion is a
    named check the trainee does NOT see until they submit, evaluated with plain
@@ -8551,8 +10496,9 @@ function qzComposeGrade(item, text, ctx) {
   };
 }
 function qzComposeGet(id) {
-  if (!qzStore.composes[id]) qzStore.composes[id] = {};
-  return qzStore.composes[id];
+  const key = qzScopedItemKey(id);
+  if (!qzStore.composes[key]) qzStore.composes[key] = {};
+  return qzStore.composes[key];
 }
 function qzComposeExamMode(id) {
   return typeof QZ_EXAM_BANK !== 'undefined' && QZ_EXAM_BANK.some(i => i.type === 'compose' && i.id === id);
@@ -8581,8 +10527,10 @@ function qzComposeSubmit(id) {
 }
 function qzComposeRetry(id) {
   if (qzComposeExamMode(id)) return;
-  const prev = qzStore.composes[id] || {};
-  qzStore.composes[id] = { text: prev.text, everCorrect: !!prev.everCorrect };
+  const key = qzScopedItemKey(id);
+  const prev = qzStore.composes[key] || qzStore.composes[id] || {};
+  qzStore.composes[key] = { text: prev.text, everCorrect: !!prev.everCorrect };
+  if (key !== id) qzStore.composes[id] = qzStore.composes[key];
   qzSave();
   qzRenderRoot();
   qzSyncComposeStep(id);
@@ -8656,26 +10604,30 @@ function qzOpenScenario(id) { qzState.scenarioId = id; qzState.view = 'scenario'
 function qzAnswerScenario(id, idx) {
   const s = QZ_SCENARIOS.find(x => x.id === id);
   const correct = idx === s.correct;
-  const prev = qzStore.scenarios[id] || {};
+  const key = qzScopedItemKey(id);
+  const prev = qzStore.scenarios[key] || qzStore.scenarios[id] || {};
   const firstAttempt = prev.firstAttempt || { answered: idx, correct, ts: Date.now() };
-  qzStore.scenarios[id] = {
+  const rec = {
     answered: idx, correct, firstAttempt,
     everCorrect: !!prev.everCorrect || correct,
     practiced: prev.practiced || false
   };
+  qzStore.scenarios[key] = rec;
+  if (key !== id) qzStore.scenarios[id] = rec;
   qzSave();
   qzRenderRoot();
   qzNotifyScenarioAnswered(id, correct);
 }
 function qzRetakeScenario(id) {
-  const prev = qzStore.scenarios[id] || {};
-  // firstAttempt (what's scored) and everCorrect (what gates the next lesson) both survive a
-  // retake — clearing everCorrect used to let a retake re-lock lessons already unlocked.
-  qzStore.scenarios[id] = {
+  const key = qzScopedItemKey(id);
+  const prev = qzStore.scenarios[key] || qzStore.scenarios[id] || {};
+  const rec = {
     firstAttempt: prev.firstAttempt,
     everCorrect: !!prev.everCorrect,
     practiced: !!prev.practiced
   };
+  qzStore.scenarios[key] = rec;
+  if (key !== id) qzStore.scenarios[id] = rec;
   qzSave();
   qzRenderRoot();
   if (SimEngine.walkActive()) {
@@ -8739,7 +10691,7 @@ function qzPracticeAction(id) {
 /* A scenario's `situation` may be a function so it can quote live state — days to closing,
    the charge currently on the order, the number of outstanding documents. Scenarios that
    hardcoded those numbers in prose drifted out of sync with the data the moment a lesson
-   corrected a figure (the accounting scenario still said "$450.00" long after Lesson 3 had
+   corrected a figure (the accounting scenario still said "$450.00" long after the verification lesson had
    corrected it to $425.00, describing something the trainee could no longer see). */
 function qzSituationText(s) {
   return typeof s.situation === 'function' ? s.situation() : s.situation;
@@ -9117,6 +11069,7 @@ function qzExamVerifyItemHTML(item, answered) {
    curriculum changes, and `store` is a getter rather than the object itself because
    qzLoad() REPLACES qzStore wholesale on load. */
 function qzInitEngine() {
+  QZ_LESSONS.forEach(function (l) { l.steps.forEach(function (s) { s._lessonId = l.id; }); });
   SimEngine.init({
     lessons: QZ_LESSONS,
     store: () => qzStore,
