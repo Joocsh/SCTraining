@@ -1,0 +1,109 @@
+/* ==========================================================================
+   SkillCloud top bar
+   The one piece of Academy chrome that sits above every training and every
+   test drive. It has to read as "our wrapper" and never be confused with the
+   product being simulated underneath it, so it stays dark while the simulated
+   apps are light.
+
+   Markup:
+   <header class="scbar">
+     <a class="scbar-back" href="...">{arrow svg}<span>Test Drive</span></a>
+     <span class="scbar-id">{cloud svg}<span class="scbar-name">SkillCloud</span></span>
+     <span class="scbar-sep">/</span>
+     <span class="scbar-ctx">TurboTenant<em>Test drive</em></span>
+     <div class="scbar-right"> ...actions... {safe pill} </div>
+   </header>
+   ========================================================================== */
+
+.scbar{
+  --scbar-h:48px;
+  flex:none;
+  position:relative;
+  /* Above the simulated app's own chrome, below its modals and drawers, so a
+     full screen overlay still covers everything the way it used to. */
+  z-index:90;
+  height:var(--scbar-h);
+  display:flex;
+  align-items:center;
+  gap:13px;
+  padding:0 16px 0 12px;
+  background:linear-gradient(90deg,#0a2647 0%,#0f3460 62%,#123c6e 100%);
+  color:#dbe8f4;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:13px;
+  line-height:1;
+  box-shadow:0 1px 0 rgba(255,255,255,.07) inset, 0 1px 3px rgba(4,18,36,.28);
+  box-sizing:border-box;
+}
+.scbar *{box-sizing:border-box}
+
+/* back */
+.scbar-back{
+  display:inline-flex;align-items:center;gap:7px;flex:none;
+  height:32px;padding:0 13px 0 10px;border-radius:9px;
+  color:#cfe0f0;font-weight:700;font-size:13px;text-decoration:none;
+  border:1px solid rgba(255,255,255,.16);
+  transition:background .15s,color .15s,border-color .15s;
+}
+.scbar-back:hover{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.32);text-decoration:none}
+.scbar-back svg{width:13px;height:13px;flex:none}
+
+/* identity */
+.scbar-id{display:inline-flex;align-items:center;gap:9px;flex:none}
+.scbar-id svg{width:26px;height:26px;flex:none;color:#17c3d4}
+.scbar-name{font-weight:800;font-size:14px;letter-spacing:-.2px;color:#fff;white-space:nowrap}
+.scbar-sep{flex:none;color:rgba(255,255,255,.26);font-size:15px;font-weight:400}
+
+/* where you are */
+.scbar-ctx{
+  display:inline-flex;align-items:baseline;gap:9px;min-width:0;
+  font-weight:800;font-size:14px;letter-spacing:-.2px;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.scbar-ctx em{
+  font-style:normal;font-weight:700;font-size:12px;color:#7fd8e4;
+  letter-spacing:.4px;text-transform:uppercase;flex:none;
+}
+
+/* right cluster */
+.scbar-right{margin-left:auto;display:flex;align-items:center;gap:9px;min-width:0}
+
+.scbar-act{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:none;
+  height:32px;padding:0 13px;border-radius:9px;
+  border:1px solid rgba(255,255,255,.16);background:transparent;
+  color:#cfe0f0;font-family:inherit;font-weight:700;font-size:12.5px;
+  white-space:nowrap;cursor:pointer;text-decoration:none;
+  transition:background .15s,color .15s,border-color .15s;
+}
+.scbar-act:hover{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.32);text-decoration:none}
+.scbar-act.icon{width:32px;padding:0;font-size:15px}
+.scbar-act.cyan{background:rgba(23,195,212,.16);border-color:rgba(23,195,212,.4);color:#9ceaf3}
+.scbar-act.cyan:hover{background:rgba(23,195,212,.28);color:#fff;border-color:rgba(23,195,212,.6)}
+
+/* live counter, e.g. lessons done */
+.scbar-count{flex:none;color:rgba(255,255,255,.62);font-size:12.5px;font-weight:600;white-space:nowrap}
+.scbar-count b{color:#fff;font-weight:800}
+
+/* the sandbox reassurance, as a status not a paragraph */
+.scbar-safe{
+  display:inline-flex;align-items:center;gap:8px;flex:none;
+  height:30px;padding:0 13px;border-radius:999px;
+  background:rgba(23,195,212,.13);border:1px solid rgba(23,195,212,.32);
+  color:#8fe3ec;font-size:12px;font-weight:700;white-space:nowrap;
+}
+.scbar-safe i{
+  width:6px;height:6px;border-radius:50%;background:#17c3d4;flex:none;
+  box-shadow:0 0 0 3px rgba(23,195,212,.2);
+}
+.scbar-safe span{font-weight:600;color:rgba(255,255,255,.55)}
+
+/* progress hairline, sits directly under the bar */
+.scbar-prog{flex:none;height:3px;background:rgba(10,38,71,.14);position:relative;z-index:89}
+.scbar-prog i{display:block;height:100%;width:0;background:#17c3d4;transition:width .4s cubic-bezier(.4,0,.2,1)}
+
+/* shed detail before anything wraps */
+@media(max-width:1180px){.scbar-safe span{display:none}}
+@media(max-width:940px){.scbar-id .scbar-name{display:none}.scbar-count{display:none}}
+@media(max-width:760px){.scbar-safe{display:none}.scbar-ctx em{display:none}}
+@media(max-width:520px){.scbar-back span{display:none}.scbar-back{padding:0 10px}.scbar{gap:10px;padding:0 10px}}

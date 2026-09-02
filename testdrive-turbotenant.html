@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/topbar.css">
 <style>
 :root{
   --navy:#12395E; --navy-d:#0C2B49; --navy-btn:#14406B;
@@ -494,12 +495,15 @@ h1,h2,h3,.pop{font-family:'Poppins','Open Sans',sans-serif;color:var(--ink)}
 <body>
 
 <!-- SkillCloud Test Drive back strip -->
-<div class="sc-strip">
-  <a href="index.html#test-drive">&larr; Test Drive</a>
-  <span class="dot"></span>
-  <b>TurboTenant <i>Test Drive</i></b>
-  <span class="note">Practice copy only. Nothing here is saved or connected to a real account.</span>
-</div>
+<header class="scbar">
+  <a class="scbar-back" href="index.html#test-drive"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 3.5 5 8l4.5 4.5"/></svg><span>Test Drive</span></a>
+  <span class="scbar-id"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg><span class="scbar-name">SkillCloud</span></span>
+  <span class="scbar-sep">/</span>
+  <span class="scbar-ctx">TurboTenant<em>Test drive</em></span>
+  <div class="scbar-right">
+    <span class="scbar-safe"><i></i>Practice sandbox<span>&middot; nothing is saved</span></span>
+  </div>
+</header>
 
 <div class="app">
   <aside class="sidebar">
