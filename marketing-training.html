@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marketing Training · Sotheby's Ecosystem · SkillCloud Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --sir:#002349; --sir-2:#0d3560; --sir-3:#123f6e;
+  --offwhite:#EDECE6; --paper:#F7F6F1; --card:#FFFFFF;
+  --gold:#B99145; --gold-soft:#E9DFC8;
+  --ink:#13253a; --body:#33465e; --muted:#5f6f83; --faint:#93a1b2;
+  --line:#e2e0d8; --line-2:#cfcdc2;
+  --good:#1f9e5a; --good-bg:#e2f4ea; --bad:#d2452f; --bad-bg:#fae5e1; --warn:#a86e10; --warn-bg:#faf0da;
+  --cyan:#17c3d4; --cyan-d:#0fa6b6;
+  --shadow:0 2px 10px rgba(0,35,73,.07); --shadow-l:0 10px 34px rgba(0,35,73,.13);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Libre Franklin',Arial,sans-serif;background:var(--paper);color:var(--body);font-size:15.5px;line-height:1.62;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+a{color:var(--cyan-d);text-decoration:none}
+h1,h2,h3,.serif{font-family:'Cormorant Garamond',Georgia,serif;color:var(--sir);font-weight:600}
+.mono{font-family:'IBM Plex Mono',monospace}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:500}
+
+/* SkillCloud strip */
+.sc-strip{background:#0a2647;color:#fff;display:flex;align-items:center;gap:12px;padding:0 22px;height:38px;font-size:12.5px;position:relative;z-index:120}
+.sc-strip a{color:#d3e2f0;font-weight:600}
+.sc-strip .dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.35)}
+.sc-strip b i{color:#17c3d4;font-style:normal}
+.sc-strip .note{color:#9fb4c9;margin-left:auto;font-size:12px}
+
+/* hero */
+.hero{background:linear-gradient(160deg,var(--sir) 0%,var(--sir-2) 70%,var(--sir-3) 100%);color:#fff;padding:74px 26px 66px;position:relative;overflow:hidden}
+.hero::after{content:'1 of 1';position:absolute;right:-30px;bottom:-70px;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:260px;color:rgba(255,255,255,.045);line-height:1;pointer-events:none}
+.hero-in{max-width:1060px;margin:0 auto;position:relative;z-index:2}
+.hero .eyebrow{color:#7ED9E6}
+.hero h1{color:#fff;font-size:clamp(38px,5.4vw,60px);line-height:1.06;font-weight:500;margin:14px 0 6px;max-width:820px}
+.hero h1 em{font-style:italic;color:var(--gold-soft)}
+.hero p.lead{color:#b9cbdc;font-size:17px;max-width:640px;margin-top:14px}
+.hero-stats{display:flex;gap:34px;margin-top:34px;flex-wrap:wrap}
+.hstat b{font-family:'Cormorant Garamond',serif;font-size:34px;color:#fff;font-weight:600;display:block;line-height:1.1}
+.hstat span{font-size:12px;color:#8ba3bd;letter-spacing:.06em;text-transform:uppercase;font-family:'IBM Plex Mono',monospace}
+
+/* module nav */
+.mnav{position:sticky;top:0;z-index:100;background:rgba(247,246,241,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:10px 20px}
+.mnav-in{max-width:1060px;margin:0 auto;display:flex;gap:6px;align-items:center;overflow-x:auto;scrollbar-width:none}
+.mnav-in::-webkit-scrollbar{display:none}
+.mchip{flex:none;display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:20px;font-size:12.5px;font-weight:600;color:var(--muted);border:1px solid transparent;white-space:nowrap}
+.mchip:hover{color:var(--sir)}
+.mchip.on{background:var(--sir);color:#fff}
+.mchip .tick{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--line-2);display:grid;place-items:center;font-size:8.5px;color:transparent;flex:none;background:#fff}
+.mchip.done .tick{background:var(--good);border-color:var(--good);color:#fff}
+.mprog{flex:none;margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);padding-left:12px}
+
+/* layout */
+.wrap{max-width:1060px;margin:0 auto;padding:0 26px}
+section.module{padding:64px 0 26px;scroll-margin-top:70px}
+.m-head{margin-bottom:26px}
+.m-head h2{font-size:clamp(30px,3.6vw,40px);font-weight:600;line-height:1.12;margin-top:8px}
+.m-head p.sub{font-size:16px;color:var(--muted);max-width:720px;margin-top:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:860px){.grid2,.grid3{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:24px 26px;box-shadow:var(--shadow)}
+.card h3{font-size:22px;margin-bottom:8px}
+.card p{margin-bottom:8px}
+.card ul,.card ol{margin:6px 0 8px 20px}
+.card li{margin-bottom:5px}
+.card li b{color:var(--ink)}
+.navycard{background:var(--sir);border:none;color:#c9d8e6}
+.navycard h3{color:#fff}
+.navycard li b{color:#fff}
+.navycard .eyebrow{color:#7ED9E6}
+.callout{border-left:3px solid var(--gold);background:var(--card);border-radius:0 10px 10px 0;padding:14px 18px;font-size:14px;color:var(--body);margin:16px 0;box-shadow:var(--shadow)}
+.callout b{color:var(--sir)}
+.tag{display:inline-block;background:var(--gold-soft);color:#7a5f22;border-radius:5px;padding:2px 10px;font-size:11.5px;font-weight:700;letter-spacing:.04em}
+
+/* timeline */
+.tline{position:relative;margin:26px 0;padding-left:26px;border-left:2px solid var(--line-2)}
+.tl-item{position:relative;padding:0 0 22px}
+.tl-item::before{content:'';position:absolute;left:-33px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--gold);border:2.5px solid var(--paper)}
+.tl-item .yr{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--gold);letter-spacing:.1em}
+.tl-item h4{font-size:17px;color:var(--sir);margin:2px 0 4px}
+.tl-item p{font-size:14.5px}
+
+/* workflow stepper */
+.steps{counter-reset:st;margin:22px 0;display:grid;gap:12px}
+.step{display:flex;gap:16px;background:#fff;border:1px solid var(--line);border-radius:11px;padding:16px 20px;box-shadow:var(--shadow);align-items:flex-start}
+.step::before{counter-increment:st;content:counter(st);font-family:'Cormorant Garamond',serif;font-size:30px;color:var(--gold);font-weight:600;line-height:1;min-width:26px}
+.step h4{font-size:16px;color:var(--sir);margin-bottom:3px}
+.step h4 i{font-style:normal;color:var(--gold);font-family:'Cormorant Garamond',serif}
+.step p{font-size:14px}
+
+/* tool cards */
+.toolgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin:20px 0}
+.tool{background:#fff;border:1px solid var(--line);border-radius:11px;padding:18px;box-shadow:var(--shadow);cursor:pointer;transition:.18s;text-align:left}
+.tool:hover{transform:translateY(-2px);box-shadow:var(--shadow-l);border-color:var(--sir)}
+.tool .tname{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--sir);font-weight:600}
+.tool .trole{font-size:12.5px;color:var(--muted);margin-top:3px;min-height:36px}
+.tool .tgo{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:var(--gold);text-transform:uppercase;margin-top:10px;display:block}
+
+/* accordions */
+.acc{border:1px solid var(--line);border-radius:11px;background:#fff;box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden}
+.acc-h{width:100%;display:flex;align-items:center;gap:12px;padding:15px 20px;font-size:15px;font-weight:600;color:var(--sir);text-align:left}
+.acc-h:hover{background:#fbfaf6}
+.acc-h .ic{color:var(--gold);font-size:17px;flex:none}
+.acc-h .chev{margin-left:auto;color:var(--faint);transition:transform .2s}
+.acc.open .chev{transform:rotate(90deg)}
+.acc-b{display:none;padding:2px 20px 18px 49px;font-size:14.5px}
+.acc.open .acc-b{display:block}
+.acc-b ul{margin:4px 0 6px 18px}
+.acc-b li{margin-bottom:5px}
+
+/* palette swatches */
+.swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}
+@media(max-width:700px){.swatches{grid-template-columns:1fr}}
+.sw{border-radius:11px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow);cursor:pointer;background:#fff}
+.sw .chip{height:120px}
+.sw .info{padding:12px 15px}
+.sw .nm{font-weight:700;color:var(--ink);font-size:14px}
+.sw .vals{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.6}
+.sw .copy{font-size:11px;color:var(--cyan-d);font-weight:600}
+
+/* type specimen */
+.spec{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:26px 28px;margin:18px 0}
+.spec .row{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:18px;align-items:baseline;border-bottom:1px dashed var(--line);padding:12px 0}
+.spec .row:last-child{border-bottom:none}
+.spec .demo-h1{font-family:'Cormorant Garamond',serif;font-size:42px;color:var(--sir);font-weight:500}
+.spec .demo-h2{font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--sir);font-weight:600}
+.spec .demo-sub{font-size:16px;font-weight:600;color:var(--ink)}
+.spec .demo-body{font-size:15px}
+.spec .who{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);text-align:right;line-height:1.7}
+
+/* headline system table */
+.htable{width:100%;border-collapse:collapse;background:#fff;border-radius:12px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line)}
+.htable th{background:var(--sir);color:#fff;font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:11px 14px;text-align:left;font-weight:600}
+.htable td{padding:12px 14px;border-top:1px solid var(--line);font-size:14px;vertical-align:top}
+.htable td.k{font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--sir);font-style:italic;white-space:nowrap}
+
+/* quiz */
+.quiz{background:linear-gradient(160deg,var(--sir),var(--sir-3));border-radius:14px;color:#fff;padding:26px 30px;margin:30px 0 10px}
+.quiz .eyebrow{color:#7ED9E6}
+.quiz h3{color:#fff;font-size:22px;margin:6px 0 14px}
+.qopt{display:block;width:100%;text-align:left;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:12px 16px;font-size:14.5px;color:#e8eff6;margin-bottom:9px;transition:.15s}
+.qopt:hover{border-color:#7ED9E6}
+.qopt.ok{background:rgba(31,158,90,.28);border-color:#4ad286}
+.qopt.no{background:rgba(210,69,47,.25);border-color:#e8907f}
+.qfb{font-size:13.5px;margin-top:10px;color:#c9d8e6;display:none}
+.qfb.show{display:block}
+
+/* prompt library */
+.plib-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}
+.ptab{border:1.5px solid var(--line-2);border-radius:20px;padding:8px 18px;font-size:13px;font-weight:600;color:var(--muted);background:#fff}
+.ptab.on{background:var(--sir);border-color:var(--sir);color:#fff}
+.pcard{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.pcard-h{width:100%;display:flex;align-items:center;gap:12px;padding:16px 20px;text-align:left}
+.pcard-h:hover{background:#fbfaf6}
+.pcard-h .t{font-weight:700;color:var(--sir);font-size:15px}
+.pcard-h .s{font-size:12.5px;color:var(--muted);margin-top:2px}
+.pcard-h .chev{margin-left:auto;color:var(--faint);transition:transform .2s}
+.pcard.open .chev{transform:rotate(90deg)}
+.pcard-b{display:none;padding:0 20px 18px}
+.pcard.open .pcard-b{display:block}
+.ing{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.ing span{font-size:10.5px;font-weight:700;letter-spacing:.05em;border-radius:4px;padding:3px 9px;text-transform:uppercase;font-family:'IBM Plex Mono',monospace}
+.ing .i-role{background:#e3edf9;color:#1c5290}
+.ing .i-ctx{background:#efe9fb;color:#5b3ea8}
+.ing .i-task{background:#fbe9e2;color:#a0452c}
+.ing .i-fmt{background:#e2f4ea;color:#1f7a4a}
+.pre{background:#0d2136;color:#d7e5f2;border-radius:10px;padding:16px 18px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.75;white-space:pre-wrap;position:relative}
+.pre .role{color:#8ec3f0}.pre .ctx{color:#c4b1ef}.pre .task{color:#f0b096}.pre .fmt{color:#93dcb2}
+.pcopy{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.12);border-radius:6px;padding:5px 11px;font-size:11px;color:#cfe2f2;font-family:'Libre Franklin',sans-serif;font-weight:600}
+.pcopy:hover{background:rgba(255,255,255,.22)}
+.pwhy{font-size:13px;color:var(--muted);margin-top:10px;border-left:2px solid var(--gold);padding-left:12px}
+
+/* completion + misc */
+.donecard{background:linear-gradient(160deg,var(--sir),var(--sir-3));border-radius:16px;color:#fff;padding:44px;text-align:center;margin:50px 0 70px}
+.donecard h2{color:#fff;font-size:34px;margin-bottom:8px}
+.donecard p{color:#b9cbdc;max-width:520px;margin:0 auto 18px}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--cyan);color:#03282c;border-radius:10px;padding:12px 26px;font-size:14px;font-weight:800}
+.btn:hover{background:var(--cyan-d);color:#fff;text-decoration:none}
+.btn.ghost{background:transparent;border:1.5px solid rgba(255,255,255,.4);color:#fff}
+.btn.ghost:hover{border-color:#fff;background:rgba(255,255,255,.08)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(90px);background:var(--sir);color:#fff;padding:12px 22px;border-radius:10px;font-size:13.5px;box-shadow:var(--shadow-l);opacity:0;transition:.25s;z-index:500;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.divider{border:none;border-top:1px solid var(--line);margin:44px 0 0}
+.shape-row{display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap;margin:16px 0}
+.shape{background:var(--offwhite);width:86px}
+.shp-rect{height:110px}
+.shp-oval{height:110px;border-radius:50%/44%}
+.shp-arch{height:110px;border-radius:44px 44px 0 0}
+.shp-curve{height:110px;border-radius:26px 4px 26px 4px}
+.shp-step{height:110px;clip-path:polygon(0 12%,12% 12%,12% 0,88% 0,88% 12%,100% 12%,100% 88%,88% 88%,88% 100%,12% 100%,12% 88%,0 88%)}
+.shape-lbl{font-size:11.5px;color:var(--muted);text-align:center;margin-top:8px;font-family:'IBM Plex Mono',monospace}
+</style>
+</head>
+<body>
+
+<div class="sc-strip">
+  <a href="index.html">&larr; Home</a>
+  <span class="dot"></span>
+  <b>Marketing <i>Training</i></b>
+  <span class="note">The Sotheby&rsquo;s International Realty ecosystem &middot; internal training for SkillCloud marketing associates</span>
+</div>
+
+<header class="hero">
+  <div class="hero-in">
+    <span class="eyebrow">Marketing team training &middot; based on the internal tools deck</span>
+    <h1>The Sotheby&rsquo;s International Real Estate <em>Ecosystem.</em></h1>
+    <p class="lead">A roadmap so you always know which tool to use for each task and where to go when you are stuck. Nine modules, from brand history to AI prompting, with quick checks along the way.</p>
+    <div class="hero-stats">
+      <div class="hstat"><b>1976</b><span>Founded</span></div>
+      <div class="hstat"><b>1,100+</b><span>Offices</span></div>
+      <div class="hstat"><b>84</b><span>Countries</span></div>
+      <div class="hstat"><b>5</b><span>Core tools</span></div>
+      <div class="hstat"><b>9</b><span>Modules</span></div>
+    </div>
+  </div>
+</header>
+
+<nav class="mnav"><div class="mnav-in" id="mnav"></div></nav>
+
+<div class="wrap">
+
+<!-- ============ MODULE 1: THE BRAND ============ -->
+<section class="module" id="m1">
+  <div class="m-head">
+    <span class="eyebrow">Module 1 &middot; The brand</span>
+    <h2>What is Sotheby&rsquo;s International Realty?</h2>
+    <p class="sub">A premier luxury real estate brokerage founded in 1976, operating a global network of more than 1,100 offices across 84 countries.</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>The Art of Living: how the brand evolved</h3>
+      <div class="tline">
+        <div class="tl-item"><div class="yr">MID 1970s</div><h4>A pattern at the auction house</h4><p>Sotheby&rsquo;s wealthiest clients were not only buying rare art and antiques. They were also buying and selling the grand estates required to house those collections.</p></div>
+        <div class="tl-item"><div class="yr">1976</div><h4>SIR is born as a subsidiary</h4><p>The auction house launched Sotheby&rsquo;s International Realty to serve its existing clientele, creating a seamless pipeline between fine art and luxury property backed by the trust of the Sotheby&rsquo;s name.</p></div>
+        <div class="tl-item"><div class="yr">~30 YEARS</div><h4>A brokerage with limits</h4><p>SIR operated primarily as a brokerage that owned its own offices, but opening physical locations everywhere required capital that limited its global potential.</p></div>
+        <div class="tl-item"><div class="yr">2004</div><h4>The franchise turn</h4><p>Realogy (later Anywhere Real Estate) paid $100 million to license the SIR name for 50 years, with options to renew. Independent luxury brokerages worldwide could now rebrand as Sotheby&rsquo;s International Realty: instant prestige of a 280 year old name, while staying locally owned.</p></div>
+        <div class="tl-item"><div class="yr">EARLY 2026</div><h4>Compass International Holdings</h4><p>A landmark merger between Anywhere and Compass was announced, creating Compass International Holdings. Despite the consolidation, SIR keeps its distinct identity and operates as the ultra luxury crown jewel of the portfolio.</p></div>
+      </div>
+    </div>
+    <div>
+      <div class="card navycard">
+        <span class="eyebrow">The current global standard</span>
+        <h3>&ldquo;1 of 1&rdquo;</h3>
+        <p>For several years SIR has used the <b>1 of 1</b> campaign as its global brand identity. It is not a temporary promotion: it is the permanent standard applied to everything, from local yard signs and social posts to high end print features in The New York Times and Architectural Digest.</p>
+        <p>The result: every property, at any price point or location, is positioned not as a listing but as a singular, irreplaceable piece within a curated global collection.</p>
+      </div>
+      <div class="card" style="margin-top:18px">
+        <h3>Your gate: SIR Access</h3>
+        <p>Accessing the SIR platform is one of the first steps of the day. It is a gated environment where <b>your role defines your toolkit</b>: listing data, high end marketing, or global analytics, everything is available the moment you log in.</p>
+        <ul>
+          <li>Secure login with <b>two factor authentication</b>.</li>
+          <li>Two main entry points: the <b>SIR platform</b> and <b>Propel</b>, the central hubs for communication and resources.</li>
+          <li>Links and resources inside Propel vary by client and account configuration.</li>
+        </ul>
+        <div class="callout" style="margin:12px 0 0"><b>Client permissions matter.</b> The permissions your client grants may affect your access to these tools. Discuss access levels with them up front so your workflow never stalls.</div>
+      </div>
+    </div>
+  </div>
+  <div class="quiz" data-m="m1">
+    <span class="eyebrow">Quick check</span>
+    <h3>Since when is the brand curating homes?</h3>
+    <button class="qopt" data-ok="0">Since 2004, when the franchise system started</button>
+    <button class="qopt" data-ok="1">Since 1976, born from the Sotheby&rsquo;s auction house, now 1,100+ offices in 84 countries</button>
+    <button class="qopt" data-ok="0">Since 2026, when Compass International Holdings was created</button>
+    <p class="qfb"></p>
+  </div>
+</section>
+
+<!-- ============ MODULE 2: THE TOOLBOX ============ -->
+<section class="module" id="m2">
+  <div class="m-head">
+    <span class="eyebrow">Module 2 &middot; The toolbox</span>
+    <h2>The five assets you will use the most</h2>
+    <p class="sub">Every task in your day maps to one of these platforms. Learn what each one is for and you will never wonder where to go.</p>
+  </div>
+  <div class="toolgrid">
+    <button class="tool" onclick="goTo('m4')"><span class="tname">Propel</span><p class="trole">Daily all in one hub: forums, calendar, resources, quick links.</p><span class="tgo">Module 4 &rarr;</span></button>
+    <button class="tool" onclick="goTo('m5')"><span class="tname">ActivePipe</span><p class="trole">Email marketing and database manager for the after launch phase.</p><span class="tgo">Module 5 &rarr;</span></button>
+    <button class="tool" onclick="goTo('m6')"><span class="tname">Design Vault</span><p class="trole">Brand safe design studio for print and digital marketing.</p><span class="tgo">Module 6 &rarr;</span></button>
+    <button class="tool" onclick="goTo('m7')"><span class="tname">ListTrac</span><p class="trole">Analytics and automated seller reports across syndicated sites.</p><span class="tgo">Module 7 &rarr;</span></button>
+    <button class="tool" onclick="goTo('m8')"><span class="tname">MoxiWorks</span><p class="trole">CMAs and data driven listing presentations from live MLS data.</p><span class="tgo">Module 8 &rarr;</span></button>
+  </div>
+  <div class="card">
+    <h3>The admin workflow: five steps, five tools</h3>
+    <p>The whole operation connects into one repeatable flow:</p>
+    <div class="steps">
+      <div class="step"><div><h4>Listing setup &middot; <i>Dash</i></h4><p>Enter and manage property data, upload media, and ensure listing accuracy for global distribution.</p></div></div>
+      <div class="step"><div><h4>Marketing creation &middot; <i>Design Vault &amp; ActivePipe</i></h4><p>Create branded marketing materials and launch email campaigns to promote the property.</p></div></div>
+      <div class="step"><div><h4>Agent presentation support &middot; <i>MoxiWorks</i></h4><p>Build CMAs and listing presentations using live market data and comps.</p></div></div>
+      <div class="step"><div><h4>Internal communication &middot; <i>Propel</i></h4><p>Centralized hub for SIR.com resources, forum collaboration, and exclusive off market listings.</p></div></div>
+      <div class="step"><div><h4>Performance reporting &middot; <i>ListTrac</i></h4><p>Generate seller reports and track listing visibility across global platforms.</p></div></div>
+    </div>
+    <p>SIR operates through a connected ecosystem supporting every stage of the real estate process. For admins, understanding how the platforms work together is the key to accuracy, efficiency, and consistency. Used correctly, these tools streamline daily operations and help agents deliver a higher level of service.</p>
+  </div>
+  <div class="quiz" data-m="m2">
+    <span class="eyebrow">Quick check</span>
+    <h3>A home just went live and the agent wants an email blast to the database. Where do you go?</h3>
+    <button class="qopt" data-ok="0">MoxiWorks, it handles client presentations</button>
+    <button class="qopt" data-ok="1">ActivePipe, the email marketing platform for the after launch phase</button>
+    <button class="qopt" data-ok="0">ListTrac, it reports listing traffic</button>
+    <p class="qfb"></p>
+  </div>
+</section>
+
+<!-- ============ MODULE 3: 1 OF 1 PLAYBOOK ============ -->
+<section class="module" id="m3">
+  <div class="m-head">
+    <span class="eyebrow">Module 3 &middot; Campaign playbook</span>
+    <h2>&ldquo;1 of 1&rdquo;: the rules of the brand</h2>
+    <p class="sub">The proposition: <em class="serif" style="font-size:1.2em">Curators of the unique.</em> SIR connects the world&rsquo;s most unique homes with the buyers who appreciate their potential, an authority for a new era of luxury defined by an eye for what makes each home, experience, and lifestyle special.</p>
+  </div>
+
+  <div class="card" style="margin-bottom:18px">
+    <h3>Messaging system</h3>
+    <p>The lead campaign headline is always <b>&ldquo;1 of 1&rdquo;</b>. Around it, the system gives you four types of alternative headlines plus audience specific variants:</p>
+    <table class="htable" style="margin-top:12px">
+      <tr><th style="width:170px">Headline type</th><th>What it references</th><th>Example directions</th></tr>
+      <tr><td class="k">Universal</td><td>Works with any property shown.</td><td>&ldquo;The one for you&rdquo;, &ldquo;One of a kind&rdquo;, &ldquo;Your one awaits&rdquo;, &ldquo;Find your one&rdquo;.</td></tr>
+      <tr><td class="k">Property</td><td>Specific features of the property shown.</td><td>&ldquo;The [style of home] one&rdquo;: the midcentury one, the contemporary one, the townhouse one.</td></tr>
+      <tr><td class="k">Location</td><td>The locations shown.</td><td>Anchor the headline in the neighborhood or city.</td></tr>
+      <tr><td class="k">Lifestyle</td><td>The lifestyle the property implies.</td><td>Speak to the way of living the home unlocks.</td></tr>
+    </table>
+    <p style="margin-top:14px">Uniqueness copy reinforces the idea everywhere: <i>curators of the unique, character as unique as yours, homes as unique as you, live unique, a genuine original, exquisite detail, uncommon beauty, true original, living masterpiece.</i></p>
+    <p><b>Audience specific angles:</b> Buyers get <i>unique access</i>, sellers get <i>unique appreciation</i>, agents get <i>unique advantage</i>, and renters get their own variants. Each pairs with <i>unique leadership</i> plus a call to action.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Layout system</h3>
+      <ul>
+        <li>Layouts are a <b>flexible system</b>: visuals can reflect the era of each property and adapt to different amounts of information.</li>
+        <li>A <b>centered, simple, classic layout</b> appeals to the established core audience, clean and classical.</li>
+        <li>These are two ends of a spectrum, and you can <b>blend elements of both</b>.</li>
+        <li><b>Image scale:</b> hero images take half the canvas width or more so they stay the most prominent element. Supporting images stay clearly smaller to build hierarchy.</li>
+        <li><b>Spacing:</b> every element needs room to breathe, especially text in complex layouts.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Logo rules</h3>
+      <ul>
+        <li><b>Positioning:</b> classic layouts center the logo at the bottom. Modern layouts place it in a corner.</li>
+        <li><b>Minimum distance:</b> keep clear space equal to the height of the &ldquo;S&rdquo; around every edge of the logo.</li>
+        <li><b>On color:</b> on SIR blue backgrounds the logo is <b>pure white</b>. On off white or pure white backgrounds the logo is <b>SIR blue</b>.</li>
+        <li><b>Affiliates:</b> affiliate logos follow the same rules. Pick the lockup that best complements the application size, scale, and surrounding elements.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="serif" style="font-size:24px;margin:26px 0 4px">Colors <span style="font-size:14px;font-family:'Libre Franklin',sans-serif;color:var(--muted);font-weight:400">(click a swatch to copy the hex)</span></h3>
+  <div class="swatches">
+    <div class="sw" onclick="copyHex('#002349')"><div class="chip" style="background:#002349"></div><div class="info"><div class="nm">SIR Blue</div><div class="vals">HEX #002349 &middot; RGB 0 35 73<br>CMYK 100 &middot; 64 &middot; 0 &middot; 60</div><span class="copy">Copy hex</span></div></div>
+    <div class="sw" onclick="copyHex('#FFFFFF')"><div class="chip" style="background:#fff;border-bottom:1px solid var(--line)"></div><div class="info"><div class="nm">Pure White</div><div class="vals">HEX #FFFFFF &middot; RGB 255 255 255<br>CMYK 0 &middot; 0 &middot; 0 &middot; 0</div><span class="copy">Copy hex</span></div></div>
+    <div class="sw" onclick="copyHex('#EDECE6')"><div class="chip" style="background:#EDECE6"></div><div class="info"><div class="nm">Off White <span class="tag" style="margin-left:6px">Special use</span></div><div class="vals">HEX #EDECE6 &middot; RGB 237 236 230<br>CMYK 9 &middot; 5 &middot; 10 &middot; 0</div><span class="copy">Copy hex</span></div></div>
+  </div>
+  <div class="grid2">
+    <div class="callout"><b>Why off white exists.</b> It brings a warm, distinctive, modern background to the campaign and lets the brand stand out subtly on predominantly white spaces, like a banner on a mostly white website.</div>
+    <div class="callout"><b>Print rule.</b> On newsprint or lower quality printing use pure white for light backgrounds and avoid off white, which can look muddy. Off white is reserved for high quality lithographic and digital print.</div>
+  </div>
+
+  <h3 class="serif" style="font-size:24px;margin:26px 0 4px">Typography</h3>
+  <div class="spec">
+    <div class="row"><div class="demo-h1">Headline in Freight Display Pro</div><div class="who">FREIGHT DISP PRO<br>Light &middot; large, expressive headlines</div></div>
+    <div class="row"><div class="demo-h2">Smaller, detailed headline</div><div class="who">FREIGHT DISP PRO<br>Book &middot; smaller or detailed layouts</div></div>
+    <div class="row"><div class="demo-sub">Subheader in Benton Sans</div><div class="who">BENTON SANS<br>Medium &middot; subheaders</div></div>
+    <div class="row"><div class="demo-body">Body copy and calls to action in Benton Sans, built for a clear, readable hierarchy across every application.</div><div class="who">BENTON SANS<br>Regular &middot; body &amp; CTAs</div></div>
+  </div>
+  <p style="font-size:14px;color:var(--muted)">The two families come from the SIR masterbrand: Freight Display Pro is the primary typeface for headlines, titles, and short statements; Benton Sans covers body text and subheaders. On this page we preview them with visually similar substitutes.</p>
+
+  <div class="grid2" style="margin-top:22px">
+    <div class="card">
+      <h3>Shape language</h3>
+      <div class="shape-row">
+        <div><div class="shape shp-rect"></div><div class="shape-lbl">Rectangle</div></div>
+        <div><div class="shape shp-oval"></div><div class="shape-lbl">Oval</div></div>
+        <div><div class="shape shp-arch"></div><div class="shape-lbl">Arch</div></div>
+        <div><div class="shape shp-curve"></div><div class="shape-lbl">Curve</div></div>
+        <div><div class="shape shp-step"></div><div class="shape-lbl">Step</div></div>
+      </div>
+      <ul>
+        <li><b>Rectangle:</b> the most functional shape. Holds any image at any size, usually a secondary asset.</li>
+        <li><b>Oval &amp; Arch:</b> the most unique forms. Brilliant for portrait imagery, and they can hold landscape too.</li>
+        <li><b>Curve, Step &amp; Double step:</b> as flexible as a rectangle but with distinctive corner cutouts. They work whole or cropped and hold almost any image.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Photography: selecting images</h3>
+      <p>Keep the proposition in front of mind when choosing photos: we are curators of the unique, so <b>showcase and celebrate the unique features of every property</b>.</p>
+      <ul>
+        <li>Breathtaking views and amazing ceiling details.</li>
+        <li>Unique features and beautiful rooms.</li>
+        <li>Stunning gardens and incredible approaches.</li>
+        <li>Distinct windows, and every singular detail worth celebrating, in every instance possible.</li>
+      </ul>
+      <p style="font-size:14px;color:var(--muted)">Sample assets exist for print advertising, web banners, social media, and a brand film, with static templates created for all of them.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-m="m3">
+    <span class="eyebrow">Quick check</span>
+    <h3>You are placing the logo on a SIR blue flyer. Which version do you use?</h3>
+    <button class="qopt" data-ok="0">SIR blue logo, brand color always wins</button>
+    <button class="qopt" data-ok="0">Gold logo, it is the accent color</button>
+    <button class="qopt" data-ok="1">Pure white logo, with clear space equal to the height of the &ldquo;S&rdquo; on every side</button>
+    <p class="qfb"></p>
+  </div>
+</section>
+
+<!-- ============ MODULE 4: PROPEL ============ -->
+<section class="module" id="m4">
+  <div class="m-head">
+    <span class="eyebrow">Module 4 &middot; Tool deep dive</span>
+    <h2>Propel: your daily hub</h2>
+    <p class="sub">The primary hub where SIR agents collaborate, access marketing assets, and stay on top of local market trends. Everything from &ldquo;Haves/Wants&rdquo; forums to listing templates lives in one place so you spend less time hunting for tools.</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>How you use it</h3>
+      <ul>
+        <li>Navigate to the platform URL and log in with your <b>company Gmail via Single Sign On</b>. No new password required.</li>
+        <li>Use the <b>Quick Links dashboard</b> to jump straight into Design Vault, the training video library, SIR Access login, helpdesk tickets, referrals, one to one training, property journey videos, and the holiday schedule.</li>
+        <li>Join <b>regional Community Forums</b> to share off market listings and collaborate with colleagues by client location.</li>
+        <li>Manage meetings through the <b>integrated calendar</b>: upcoming meetings, company holidays, and professional development training.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Its two primary functions</h3>
+      <ul>
+        <li><b>Posting updates:</b> agents share new listings, price adjustments, back on market notices, and open house details. Updates are organized by region (Vermont, New Hampshire, New York and so on) and are automatically emailed to the other agents in the office.</li>
+        <li><b>Training and resources:</b> a hub for webinars, training videos, marketing materials such as flyers and postcards, and legal or accounting forms.</li>
+      </ul>
+      <p>The <b>Launch Pad</b> gives one stop access to the rest of the stack: ActivePipe, MoxiWorks, Testimonial Tree, and Design Vault, plus a resource library with seller and buyer guides, the SIR Style Guide, and market reports.</p>
+    </div>
+  </div>
+  <div class="callout"><b>Login note.</b> Many tools inside Propel require two step verification. Keep your client&rsquo;s or your own login credentials handy before you start a task.</div>
+  <div class="quiz" data-m="m4">
+    <span class="eyebrow">Quick check</span>
+    <h3>An agent posts a price adjustment in Propel. What happens next?</h3>
+    <button class="qopt" data-ok="0">Nothing until each agent opens the platform</button>
+    <button class="qopt" data-ok="1">It is organized by region and automatically emailed to the other agents in the office</button>
+    <button class="qopt" data-ok="0">It publishes straight to Zillow</button>
+    <p class="qfb"></p>
+  </div>
+</section>
+
+<!-- ============ MODULE 5: ACTIVEPIPE ============ -->
+<section class="module" id="m5">
+  <div class="m-head">
+    <span class="eyebrow">Module 5 &middot; Tool deep dive</span>
+    <h2>ActivePipe: email that sells the listing</h2>
+    <p class="sub">An enterprise grade email marketing platform. SIR uses it to provide branded templates that promote properties and programs to local markets, typically in the <b>after launch</b> phase, once a home is active on the market: listings, open houses, price adjustments, and events.</p>
+  </div>
+  <div class="acc open"><button class="acc-h" onclick="tAcc(this)"><span class="ic">&#9632;</span> The workspace <span class="chev">&#8250;</span></button>
+    <div class="acc-b"><ul>
+      <li><b>Dashboard:</b> statistics on recent emails, campaign activity, contacts, and property notifications the moment you log in.</li>
+      <li><b>Email builder:</b> drag and drop editor for titles, text, images, buttons, videos, and property listings.</li>
+      <li><b>Smart campaigns:</b> automate follow up with drip campaigns and engagement triggers.</li>
+      <li><b>Contacts and audiences:</b> add manually or import CSV files, then organize the database with tags and audience groups for targeted sends. It doubles as a database manager: distribution lists, categorized contacts, automated monthly newsletters.</li>
+      <li><b>Insight:</b> by tracking which properties clients click, ActivePipe shows you the most active leads so agents focus their effort where it counts.</li>
+    </ul></div>
+  </div>
+  <div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">&#9632;</span> Building and sending <span class="chev">&#8250;</span></button>
+    <div class="acc-b"><ul>
+      <li><b>Listing integration:</b> auto populate live listings with the property integration tools, cutting manual entry.</li>
+      <li><b>Preview and testing:</b> always run &ldquo;View Preview&rdquo; for formatting, links, and mobile responsiveness, and use &ldquo;Send Preview&rdquo; to test internally before distribution.</li>
+    </ul></div>
+  </div>
+  <div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">&#9650;</span> Troubleshooting &amp; best practices <span class="chev">&#8250;</span></button>
+    <div class="acc-b"><ul>
+      <li><b>Images:</b> if uploads fail, resize and optimize files to platform requirements without losing quality.</li>
+      <li><b>Videos:</b> linked videos must be public to display. Vimeo is often recommended for cleaner presentation.</li>
+      <li><b>Listing availability:</b> new listings can take 1 to 2 days to sync. After that, add content manually or contact the office administrator.</li>
+      <li><b>Mobile formatting:</b> review the mobile preview before sending. Side by side layouts may stack vertically on small screens.</li>
+    </ul></div>
+  </div>
+  <div class="grid2">
+    <div class="callout"><b>Subscription.</b> ActivePipe requires a paid subscription.</div>
+    <div class="callout"><b>Login note.</b> Marketing and admin accounts can manage most features without the agent&rsquo;s login, depending on assigned permission levels.</div>
+  </div>
+  <div class="quiz" data-m="m5">
+    <span class="eyebrow">Quick check</span>
+    <h3>Your new listing does not appear in ActivePipe. First move?</h3>
+    <button class="qopt" data-ok="0">Escalate to Sotheby&rsquo;s corporate support immediately</button>
+    <button class="qopt" data-ok="1">Wait for the 1 to 2 day sync, then add manually or contact the office administrator</button>
+    <button class="qopt" data-ok="0">Rebuild the whole campaign from zero</button>
+    <p class="qfb"></p>
+  </div>
+</section>
+
+<!-- ============ MODULE 6: DESIGN VAULT ============ -->
+<section class="module" id="m6">
+  <div class="m-head">
+    <span class="eyebrow">Module 6 &middot; Tool deep dive</span>
+    <h2>Design Vault: agency quality, zero cost</h2>
+    <p class="sub">A complimentary design tool for creating agency quality marketing campaigns in print and digital. Templates come preset to the brand&rsquo;s aesthetics, so fonts, colors, and logo standards stay consistent while you personalize with listing photos, details, and contact info.</p>
+  </div>
+  <div class="acc open"><button class="acc-h" onclick="tAcc(this)"><span class="ic">&#9632;</span> The workspace <span class="chev">&#8250;</span></button>
+    <div class="acc-b"><ul>
+      <li><b>Dashboard:</b> recent projects, featured templates, and starred items on login.</li>
+      <li><b>My Projects:</b> everything you have edited or created.</li>
+      <li><b>Template library:</b> browse by category, social media, postcards, property marketing, presentations, flyers, luxury flyers, lookbooks.</li>
+      <li><b>Asset management:</b> stores images you upload or share through integrations.</li>
+      <li><b>Analytics:</b> reports on projects, QR code usage, and template categories.</li>
+    </ul></div>
+  </div>
+  <div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">&#9632;</span> Creating and editing materials <span class="chev">&#8250;</span></button>
+    <div class="acc-b"><ul>
+      <li><b>Workflow:</b> prepare materials before a listing goes live, or update them after launch on client request.</li>
+      <li><b>Duplicating:</b> new projects start by duplicating an existing template and renaming it.</li>
+      <li><b>Editing limits:</b> some sections, such as branded elements, are locked on purpose.</li>
+      <li><b>Property listings tool:</b> for active listings it pulls home information and photos into the template automatically. If the listing is not live, adjust images and text manually.</li>
+      <li>The editor connects to the SIR listings database with drag and drop, can send items directly to a professional printer, and shares graphics to social media with optimized integration.</li>
+    </ul></div>
+  </div>
+  <div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">&#9632;</span> Printing and exporting <span class="chev">&#8250;</span></button>
+    <div class="acc-b"><ul>
+      <li><b>Ordering prints:</b> through the integrated print portal linked to a third party service.</li>
+      <li><b>Local printing:</b> download assets as PDFs for an external printing company.</li>
+      <li><b>Standard PDF:</b> best for digital reference and email distribution.</li>
+      <li><b>Print PDF:</b> required for professional printing, using the advanced settings for crop and bleed marks.</li>
+    </ul></div>
+  </div>
+  <div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">&#9650;</span> Best practices <span class="chev">&#8250;</span></button>
+    <div class="acc-b"><ul>
+      <li><b>Reload before editing</b> so changes save automatically and technical issues stay away.</li>
+      <li><b>Preview everything:</b> check for typos, layout errors, and missing information before finalizing.</li>
+      <li><b>QR codes:</b> scan and verify the destination of every QR code before printing. Always.</li>
+    </ul></div>
+  </div>
+  <div class="callout"><b>Login note.</b> Access goes through SIR Access. Design Vault supports both client and admin logins, each with permission based access.</div>
+  <div class="quiz" data-m="m6">
+    <span class="eyebrow">Quick check</span>
+    <h3>The flyer goes to a professional printer. Which export do you choose?</h3>
+    <button class="qopt" data-ok="0">Standard PDF, it is the default</button>
+    <button class="qopt" data-ok="1">Print PDF with crop and bleed marks from the advanced settings</button>
+    <button class="qopt" data-ok="0">A screenshot in high resolution</button>
+    <p class="qfb"></p>
+  </div>
+</section>
+
+<!-- ============ MODULE 7: LISTTRAC ============ -->
+<section class="module" id="m7">
+  <div class="m-head">
+    <span class="eyebrow">Module 7 &middot; Tool deep dive</span>
+    <h2>ListTrac: proof the marketing works</h2>
+    <p class="sub">The reporting and analytics platform of the network. It aggregates online traffic from thousands of websites to show how many potential buyers are viewing listings globally, and turns that into automatic seller reports.</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>What you can see</h3>
+      <ul>
+        <li><b>Dashboard:</b> listing activity, website performance, visitor traffic, and engagement analytics in one place.</li>
+        <li><b>Listing statistics:</b> views, inquiries, favorites, shares, and traffic across affiliated sites, including The Wall Street Journal, Zillow, and SIR.com, so you can spot which sites generate the most engagement.</li>
+        <li><b>Report history:</b> confirms when reports were sent, delivered, and opened by sellers, keeping communication consistent and verifiable.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Seller reports</h3>
+      <ul>
+        <li>Create automated reports by selecting the listing, adding contact information, and customizing settings.</li>
+        <li>Schedule them <b>weekly, bi weekly, or monthly</b> with performance summaries, website traffic, and engagement statistics.</li>
+        <li>They prove the value of global syndication with concrete data on the home&rsquo;s digital exposure, helping agents justify strategy and keep sellers informed with transparent, data backed updates.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="acc" style="margin-top:16px"><button class="acc-h" onclick="tAcc(this)"><span class="ic">&#9650;</span> Best practices &amp; troubleshooting <span class="chev">&#8250;</span></button>
+    <div class="acc-b"><ul>
+      <li>Before activating reports: verify seller contact info, review scheduling, and preview the formatting.</li>
+      <li>Listings may take <b>3 to 5 days</b> to appear after going live, and analytics may not update immediately.</li>
+      <li>Seller reports can land in spam or junk folders, and an incorrect seller email blocks delivery entirely.</li>
+      <li>Early listing activity shows limited statistics until data fully syncs.</li>
+    </ul></div>
+  </div>
+  <div class="callout"><b>Login note.</b> Access via SIR Access. Admin and marketing users may have the same reporting and listing features as agents, depending on brokerage assigned permissions.</div>
+  <div class="quiz" data-m="m7">
+    <span class="eyebrow">Quick check</span>
+    <h3>A seller says they never got their report. What do you check first?</h3>
+    <button class="qopt" data-ok="1">Report history for delivery status, the seller&rsquo;s email address, and their spam folder</button>
+    <button class="qopt" data-ok="0">Nothing, reports always deliver</button>
+    <button class="qopt" data-ok="0">Delete and recreate the listing</button>
+    <p class="qfb"></p>
+  </div>
+</section>
+
+<!-- ============ MODULE 8: MOXIWORKS ============ -->
+<section class="module" id="m8">
+  <div class="m-head">
+    <span class="eyebrow">Module 8 &middot; Tool deep dive</span>
+    <h2>MoxiWorks: win the listing before it exists</h2>
+    <p class="sub">The premier presentation and business suite of the network. Visually stunning, data driven presentations that showcase market expertise and the power of the global brand in a digital first format, plus integrations with RealScout and Testimonial Tree for lead engagement and marketing support.</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>Building a presentation</h3>
+      <ul>
+        <li><b>Dashboard:</b> CMA presentations, templates, property data, client marketing tools, and your saved drafts, always editable.</li>
+        <li>Start with <b>Create New</b>, choose a CMA or listing presentation template, and let MLS data streamline the setup.</li>
+        <li>Enter an <b>MLS number</b> for a previously listed property and photos, descriptions, and tax information can populate automatically.</li>
+        <li>Decks are interactive and web based, looking exceptional on any device from tablets to large screens.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Market comparisons &amp; output</h3>
+      <ul>
+        <li>Add comparable properties from <b>active, pending, withdrawn, or sold</b> listings to frame an accurate price range.</li>
+        <li>Side by side comparisons make pricing strategy and market trends clear to clients.</li>
+        <li>Customize by removing pages or adjusting sections, then <b>preview before sending</b>: formatting, property summaries, comparisons, preparation checklists.</li>
+        <li>Share the finished deck with clients. Drafts save automatically for future edits.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="acc" style="margin-top:16px"><button class="acc-h" onclick="tAcc(this)"><span class="ic">&#9650;</span> Best practices &amp; troubleshooting <span class="chev">&#8250;</span></button>
+    <div class="acc-b"><ul>
+      <li>Verify MLS information, review comps carefully, and confirm pricing recommendations before finalizing a CMA.</li>
+      <li>Outdated MLS or tax information may need manual updates, and an incorrect MLS number blocks property data.</li>
+      <li>Missing photos usually mean MLS syncing is delayed.</li>
+      <li>Customizing pages creates a cleaner, more personal client experience. Review formatting before sending, every time.</li>
+    </ul></div>
+  </div>
+  <div class="callout"><b>Login note.</b> Access via SIR Access. MoxiWorks may require two step verification, and sign in works with username or email, Google, or a Microsoft account.</div>
+  <div class="quiz" data-m="m8">
+    <span class="eyebrow">Quick check</span>
+    <h3>Fastest way to pre fill photos, description, and tax data in a CMA?</h3>
+    <button class="qopt" data-ok="0">Type everything manually to be safe</button>
+    <button class="qopt" data-ok="1">Enter the property&rsquo;s MLS number and let the system populate it</button>
+    <button class="qopt" data-ok="0">Import a CSV from ActivePipe</button>
+    <p class="qfb"></p>
+  </div>
+</section>
+
+<!-- ============ MODULE 9: CLAUDE ============ -->
+<section class="module" id="m9">
+  <div class="m-head">
+    <span class="eyebrow">Module 9 &middot; AI copilot</span>
+    <h2>Claude: prompting that earns its keep</h2>
+    <p class="sub">Claude is a highly capable AI assistant and large language model by Anthropic, built for advanced reasoning, coding, and natural language work: drafting content, analyzing complex datasets, and building automated agents.</p>
+  </div>
+  <div class="grid3">
+    <div class="card"><h3 style="font-size:19px">Opus</h3><p style="font-size:14px">The flagship. The most advanced model, built for highly complex reasoning and enterprise tasks.</p></div>
+    <div class="card"><h3 style="font-size:19px">Sonnet</h3><p style="font-size:14px">The standard. Balances high speed performance and intelligence, the usual pick for everyday workflows.</p></div>
+    <div class="card"><h3 style="font-size:19px">Haiku</h3><p style="font-size:14px">The fastest and most efficient model, for high speed, light duty tasks.</p></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>How to structure a prompt: five ingredients</h3>
+    <p>Five ingredients turn a vague request into a great response. The key insight: Claude works best when it understands <b>who it is talking to, what the situation is, and what success looks like</b>. Most people skip those details and then wonder why the output feels generic.</p>
+    <div class="ing" style="margin-top:12px">
+      <span class="i-role">1 &middot; Role</span><span class="i-ctx">2 &middot; Context</span><span class="i-task">3 &middot; Task</span><span class="i-fmt">4 &middot; Format</span><span style="background:#faf0da;color:#8a6a14">5 &middot; Example</span>
+    </div>
+    <ul style="margin-top:10px">
+      <li><b>Role:</b> tell Claude who to be, its expertise, tone, and perspective.</li>
+      <li><b>Context:</b> share the background, who the audience is, what the situation is.</li>
+      <li><b>Task:</b> state clearly what you want done, with active verbs.</li>
+      <li><b>Format:</b> specify length, structure, and style: bullet list, paragraphs, table.</li>
+      <li><b>Example:</b> optional but powerful, show Claude a sample of what good looks like.</li>
+    </ul>
+    <p style="font-size:14px;color:var(--muted)">There is a full &ldquo;Prompting 101 with Claude&rdquo; session in video inside the original deck, plus complete example outputs stored as course material in Google Classroom.</p>
+  </div>
+
+  <h3 class="serif" style="font-size:26px;margin:30px 0 4px">The prompt library, by role</h3>
+  <p style="max-width:720px">Each template below follows the five ingredient structure, color coded. Copy the skeleton, replace the bracketed fields, and adjust to your case. The &ldquo;key move&rdquo; explains why each one works.</p>
+  <div class="plib-tabs">
+    <button class="ptab on" data-g="all" onclick="pFilter(this)">All</button>
+    <button class="ptab" data-g="gd" onclick="pFilter(this)">Graphic design</button>
+    <button class="ptab" data-g="sm" onclick="pFilter(this)">Social media</button>
+    <button class="ptab" data-g="tc" onclick="pFilter(this)">Transaction coordinator</button>
+    <button class="ptab" data-g="ops" onclick="pFilter(this)">Operations</button>
+  </div>
+
+  <div class="pcard" data-g="gd"><button class="pcard-h" onclick="tCard(this)"><div><div class="t">Brand alignment review &middot; social post</div><div class="s">Audit a designed piece against brand guidelines and get concrete fixes</div></div><span class="chev">&#8250;</span></button>
+    <div class="pcard-b"><div class="ing"><span class="i-role">Role</span><span class="i-ctx">Context</span><span class="i-task">Task</span><span class="i-fmt">Format</span></div>
+      <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button><span class="role">Act as a senior graphic designer specializing in real estate brand identity.</span>
+
+<span class="ctx">I am attaching a post I designed for a new listing. Our brand guidelines specify: primary colors [HEX + HEX], typography [DISPLAY FONT] for headlines and [BODY FONT] for body, a clean aspirational tone, and logo placement [POSITION].</span>
+
+<span class="task">Review the post and tell me specifically what is aligned with our guidelines and what is not. For each issue, explain why it breaks the guideline and give me a concrete fix.</span>
+
+<span class="fmt">Structure the response in two sections: "What works" and "What needs fixing", each as a short bullet list. Keep the language direct, I need to action this quickly.</span></div>
+      <p class="pwhy"><b>Key move:</b> giving the exact brand values (hex codes, fonts, rules) makes the review specific instead of generic, and the two section format forces actionable output, not a wall of commentary.</p>
+    </div>
+  </div>
+
+  <div class="pcard" data-g="gd"><button class="pcard-h" onclick="tCard(this)"><div><div class="t">Email layout &middot; campaign visual</div><div class="s">Generate a full rendered email design for a launch campaign</div></div><span class="chev">&#8250;</span></button>
+    <div class="pcard-b"><div class="ing"><span class="i-role">Role</span><span class="i-ctx">Context</span><span class="i-task">Task</span><span class="i-fmt">Format</span></div>
+      <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button><span class="role">Act as a graphic designer and digital marketing strategist for a luxury real estate agency.</span>
+
+<span class="ctx">We are launching [DEVELOPMENT NAME], a [PROPERTY TYPE] targeting [AUDIENCE]. The campaign theme is "[THEME]". The email goes to our database of [N] contacts.</span>
+
+<span class="task">Render the entire email as an interactive inline widget, the actual visual, not a brief or a description. Exactly [WIDTH]px wide, including every section I list below, in order.</span>
+
+<span class="fmt">Render it inline for preview and also provide a downloadable .html file I can hand to a developer.</span></div>
+      <p class="pwhy"><b>Key move:</b> opening with the double role sets tone and expertise before any instruction, so Claude calibrates vocabulary, design decisions, and priorities to that professional context.</p>
+    </div>
+  </div>
+
+  <div class="pcard" data-g="gd"><button class="pcard-h" onclick="tCard(this)"><div><div class="t">Property brochure &middot; print mockup</div><div class="s">A4 tri fold brochure rendered as a visual, ready for a printer</div></div><span class="chev">&#8250;</span></button>
+    <div class="pcard-b"><div class="ing"><span class="i-role">Role</span><span class="i-ctx">Context</span><span class="i-task">Task</span><span class="i-fmt">Format</span></div>
+      <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button><span class="role">Act as a brand identity designer with experience in luxury real estate print materials.</span>
+
+<span class="ctx">Our agency is [NAME] with a core palette of [COLORS], headline font [FONT], body font [FONT]. The brochure is A4, double sided, folded into three panels, a standard tri fold.</span>
+
+<span class="task">Create a fully rendered visual mockup of the complete tri fold brochure, not a guidelines document, not a brief, not a description.</span>
+
+<span class="fmt">Present it as the actual brochure layout, rendered directly in chat as an interactive inline widget.</span></div>
+      <p class="pwhy"><b>Key move:</b> naming the exact format (A4 tri fold) and asking for panel by panel rules gives enough structure to hand the result directly to a printer or junior designer.</p>
+    </div>
+  </div>
+
+  <div class="pcard" data-g="gd"><button class="pcard-h" onclick="tCard(this)"><div><div class="t">&ldquo;For Sale&rdquo; yard sign &middot; design direction</div><div class="s">Outdoor signage with hard legibility constraints</div></div><span class="chev">&#8250;</span></button>
+    <div class="pcard-b"><div class="ing"><span class="i-role">Role</span><span class="i-ctx">Context</span><span class="i-task">Task</span><span class="i-fmt">Format</span></div>
+      <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button><span class="role">Act as a graphic designer specializing in real estate outdoor and signage materials.</span>
+
+<span class="ctx">New standard design for our "For Sale" yard signs: [SIZE], single sided, corrugated plastic. Must read at 5 to 15 meters in direct sunlight. It carries agency name, agent name, phone, and a QR code to the listing.</span>
+
+<span class="task">Provide a full design direction document: recommended layout with element hierarchy, font sizes and weights for outdoor legibility, what should be most prominent and why, color contrast ratios for outdoor visibility, and minimum QR size for reliable scanning at 1.5 meters.</span>
+
+<span class="fmt">Clear headings per element, with a short rationale under each recommendation so I can explain the choices to the client.</span></div>
+      <p class="pwhy"><b>Key move:</b> outdoor signage has hard constraints, legibility, sunlight, distance. Providing them upfront grounds the output in real print requirements instead of generic design advice.</p>
+    </div>
+  </div>
+
+  <div class="pcard" data-g="sm"><button class="pcard-h" onclick="tCard(this)"><div><div class="t">Monthly content calendar &middot; 30 day plan</div><div class="s">A full month of posts organized by content pillars</div></div><span class="chev">&#8250;</span></button>
+    <div class="pcard-b"><div class="ing"><span class="i-role">Role</span><span class="i-ctx">Context</span><span class="i-task">Task</span><span class="i-fmt">Format</span></div>
+      <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button><span class="role">Act as a social media strategist specializing in real estate, with deep knowledge of Instagram, Facebook, and LinkedIn planning.</span>
+
+<span class="ctx">I work for [AGENCY], audience of [SEGMENTS]. We post [N] times per week on [PLATFORMS]. Our content pillars are: new listings, market insights, neighborhood spotlights, agent lifestyle, and client testimonials. The plan is for [MONTH] with [N] active listings.</span>
+
+<span class="task">Build a complete 30 day calendar. Per post: date, platform, pillar, one sentence concept, caption direction with tone and key message, recommended content type (Reel, carousel, static, Story), and best posting time for real estate audience behavior.</span>
+
+<span class="fmt">Week by week table, five rows per week. Close with "Monthly content themes", the narrative arc of the month in 3 or 4 sentences.</span></div>
+      <p class="pwhy"><b>Key move:</b> defining the pillars upfront stops Claude from inventing random post ideas, and the weekly table drops straight into a planning meeting or a scheduler like Later or Buffer.</p>
+    </div>
+  </div>
+
+  <div class="pcard" data-g="sm"><button class="pcard-h" onclick="tCard(this)"><div><div class="t">Instagram audit &middot; gaps, trends, quick wins</div><div class="s">Benchmark your account against competitors with real data</div></div><span class="chev">&#8250;</span></button>
+    <div class="pcard-b"><div class="ing"><span class="i-role">Role</span><span class="i-ctx">Context</span><span class="i-task">Task</span><span class="i-fmt">Format</span></div>
+      <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button><span class="role">Act as a social media auditor and trend analyst for real estate brands on Instagram.</span>
+
+<span class="ctx">Sharing our profile and the last 30 days of performance data. Handle [@HANDLE], [X] followers, average engagement [X]%, top performing post type [TYPE]. Main competitors: [@COMP1] and [@COMP2].</span>
+
+<span class="task">Audit our presence: what formats and topics are trending in real estate right now, where our account falls behind, which 3 changes would have the highest immediate impact, and what competitors do that we do not. Direct and specific, actionable gaps, not general advice.</span>
+
+<span class="fmt">Four labeled sections: current trends, where your account lags, top 3 quick wins, what competitors do better. Short bullets, then one priority paragraph: what to tackle first and why.</span></div>
+      <p class="pwhy"><b>Key move:</b> real performance data makes the audit specific to your account, and the competitor comparison forces a benchmarked perspective. The four section structure is a ready made slide for a team meeting.</p>
+    </div>
+  </div>
+
+  <div class="pcard" data-g="sm"><button class="pcard-h" onclick="tCard(this)"><div><div class="t">Carousel &middot; brand aligned educational post</div><div class="s">A rendered Instagram carousel, slide by slide</div></div><span class="chev">&#8250;</span></button>
+    <div class="pcard-b"><div class="ing"><span class="i-role">Role</span><span class="i-ctx">Context</span><span class="i-task">Task</span><span class="i-fmt">Format</span></div>
+      <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button><span class="role">Act as a social media content designer and copywriter for a luxury real estate agency.</span>
+
+<span class="ctx">Brand guidelines: colors [HEX + HEX] on white, headline font [FONT], body font [FONT], tone confident and aspirational but approachable.</span>
+
+<span class="task">Create a fully rendered, pixel accurate mockup of a complete Instagram carousel as an interactive inline widget, the actual visual, not a brief, not a code block. Topic: "[EDUCATIONAL TOPIC]" for [AUDIENCE].</span>
+
+<span class="fmt">Exactly [N] slides in 1:1 square ratio, stacked vertically so all slides are visible at once.</span></div>
+      <p class="pwhy"><b>Key move:</b> breaking content into individual slides with per slide limits means the copy actually fits on a carousel tile.</p>
+    </div>
+  </div>
+
+  <div class="pcard" data-g="sm"><button class="pcard-h" onclick="tCard(this)"><div><div class="t">Just Listed / Just Sold &middot; reusable templates</div><div class="s">A fill in the blank system any agent can use in 5 minutes</div></div><span class="chev">&#8250;</span></button>
+    <div class="pcard-b"><div class="ing"><span class="i-role">Role</span><span class="i-ctx">Context</span><span class="i-task">Task</span><span class="i-fmt">Format</span></div>
+      <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button><span class="role">Act as a real estate social media copywriter who creates high converting listing announcement templates.</span>
+
+<span class="ctx">Our agency posts every new listing and sale on Instagram, Facebook, and LinkedIn. Celebratory but professional, warm, confident, community focused. We never use aggressive sales language like "act fast".</span>
+
+<span class="task">Create two master templates, one "Just Listed" and one "Just Sold". Each includes: the Instagram/Facebook caption with [BRACKETED] fill in fields, a shorter LinkedIn version, a Story overlay script (headline plus two line subtext), the 15 best hashtags to rotate, and a 2 to 3 sentence style note on tone.</span>
+
+<span class="fmt">"Just Listed" first, then "Just Sold", each in a labeled block with the same structure: caption, LinkedIn, Story overlay, hashtags, style note. Make every fill in field obvious with [CAPS IN BRACKETS].</span></div>
+      <p class="pwhy"><b>Key move:</b> the bracket system makes templates usable by any agent without training, and asking for the three versions per post type builds the full system in one conversation instead of three.</p>
+    </div>
+  </div>
+
+  <div class="pcard" data-g="tc"><button class="pcard-h" onclick="tCard(this)"><div><div class="t">Document checklist &middot; list to close</div><div class="s">Location specific master checklist across the three phases</div></div><span class="chev">&#8250;</span></button>
+    <div class="pcard-b"><div class="ing"><span class="i-role">Role</span><span class="i-ctx">Context</span><span class="i-task">Task</span><span class="i-fmt">Format</span></div>
+      <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button><span class="role">Act as an expert transaction coordinator with deep knowledge of documentation requirements, disclosure laws, and compliance standards.</span>
+
+<span class="ctx">Coordinating a residential listing in [CITY, STATE]. [PROPERTY TYPE], listed at [$PRICE], seller [NAME], brokerage [NAME], listing agent [NAME].</span>
+
+<span class="task">Based on this location's legal and MLS requirements, give me the complete master document checklist in three phases: (1) pre listing, (2) active listing, (3) under contract to close. Flag what is legally mandatory here versus recommended best practice, and note typical deadlines.</span>
+
+<span class="fmt">Three numbered checklists, one per phase, a short note under each item explaining what it is and why it is needed, and a closing "common mistakes" section with the top 5 documentation errors in this market.</span></div>
+      <p class="pwhy"><b>Key move:</b> the exact city and state unlocks location specific disclosure laws and MLS rules that generic checklists miss, and the three phase structure mirrors the real transaction lifecycle so it works as a live tracker.</p>
+    </div>
+  </div>
+
+  <div class="pcard" data-g="tc"><button class="pcard-h" onclick="tCard(this)"><div><div class="t">Follow up system &middot; contract to close</div><div class="s">A dated action plan with escalations and ready to send messages</div></div><span class="chev">&#8250;</span></button>
+    <div class="pcard-b"><div class="ing"><span class="i-role">Role</span><span class="i-ctx">Context</span><span class="i-task">Task</span><span class="i-fmt">Format</span></div>
+      <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button><span class="role">Act as a senior transaction coordinator managing high volume pipelines, specialized in deadline management and multi party communication.</span>
+
+<span class="ctx">Transaction just went pending. Address [ADDRESS], offer accepted [DATE], closing [DATE]. Buyer's agent [NAME], lender [NAME], escrow [COMPANY]. Contingency deadlines: inspection [DATE], appraisal [DATE], loan [DATE]. Known complications: [LIST or "none"].</span>
+
+<span class="task">Build the full follow up plan from accepted offer to closing day. Per step: the action, who is responsible (TC, listing agent, buyer's agent, lender, escrow), deadline, what to do if there is no response in 24 hours, and a ready to send follow up message for email or text. Cover every milestone: earnest money, inspections, contingency removals, appraisal, loan approval, final walkthrough, closing day.</span>
+
+<span class="fmt">Chronological numbered list grouped by week, consistent per step: Action, Responsible, Deadline, Escalation, Message template. End with "red flags": 5 signs a transaction is at risk and the immediate response to each.</span></div>
+      <p class="pwhy"><b>Key move:</b> plugging in the real dates calculates every deadline for your actual transaction instead of generic "day 10" advice, and the built in message templates mean you never start an email from scratch.</p>
+    </div>
+  </div>
+
+  <div class="pcard" data-g="tc"><button class="pcard-h" onclick="tCard(this)"><div><div class="t">Public remarks &middot; MLS listing description</div><div class="s">Three strategic versions inside the character limit</div></div><span class="chev">&#8250;</span></button>
+    <div class="pcard-b"><div class="ing"><span class="i-role">Role</span><span class="i-ctx">Context</span><span class="i-task">Task</span><span class="i-fmt">Format</span></div>
+      <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button><span class="role">Act as a real estate copywriter specializing in MLS public remarks that attract qualified buyers and rank well in searches.</span>
+
+<span class="ctx">[BEDS/BATHS] [PROPERTY TYPE] at [ADDRESS]. Key features: [5 TO 8 HIGHLIGHTS]. Target buyer: [PROFILE]. MLS character limit: [N].</span>
+
+<span class="task">Write three versions of the public remarks: one leading with lifestyle, one with property features, one with location and neighborhood. Each within the limit, free of fair housing violations, ending with a clear call to action.</span>
+
+<span class="fmt">Each version as a labeled block, with one sentence underneath explaining the strategic angle it uses.</span></div>
+      <p class="pwhy"><b>Key move:</b> asking for three versions with different lead angles is the move. Most people write one version and wonder why it feels flat; framing each around a different buyer psychology gives you options to match the buyer most likely to walk through that door.</p>
+    </div>
+  </div>
+
+  <div class="pcard" data-g="tc"><button class="pcard-h" onclick="tCard(this)"><div><div class="t">Photography review &middot; MLS ready check</div><div class="s">Compliance check and final photo order before going live</div></div><span class="chev">&#8250;</span></button>
+    <div class="pcard-b"><div class="ing"><span class="i-role">Role</span><span class="i-ctx">Context</span><span class="i-task">Task</span><span class="i-fmt">Format</span></div>
+      <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button><span class="role">Act as a real estate marketing director and MLS compliance reviewer, experienced in listing photography quality, order, and platform requirements.</span>
+
+<span class="ctx">Attaching the photo set for [ADDRESS], [N] photos. Board rules: min [X], max [X], no text overlays, no agent branding on the primary photo, exterior front as lead image. Agency standard: always show exterior front, kitchen, primary bedroom, primary bath, living area, and at least one outdoor space.</span>
+
+<span class="task">Review the full set: which images meet MLS compliance and which do not and why, whether all required rooms are represented, the recommended final photo order for maximum buyer impact with the reason for the sequence, photos to cut and why, and any retouching or reshoot suggestions before going live.</span>
+
+<span class="fmt">Numbered final photo order first, then a two column compliance check, pass and fail, then retouch or reshoot notes. Direct feedback, I need to brief the photographer quickly.</span></div>
+      <p class="pwhy"><b>Key move:</b> uploading the actual photos next to the board&rsquo;s exact rules lets Claude cross reference every image and flag violations before submission.</p>
+    </div>
+  </div>
+
+  <div class="pcard" data-g="ops"><button class="pcard-h" onclick="tCard(this)"><div><div class="t">Build a complete SOP &middot; any process</div><div class="s">A professional procedure document new hires actually read</div></div><span class="chev">&#8250;</span></button>
+    <div class="pcard-b"><div class="ing"><span class="i-role">Role</span><span class="i-ctx">Context</span><span class="i-task">Task</span><span class="i-fmt">Format</span></div>
+      <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button><span class="role">Act as a senior operations manager, expert in writing standard operating procedures for residential brokerages.</span>
+
+<span class="ctx">Company [NAME], a [SIZE] agency in [LOCATION], [N] agents, [N] support staff, running on [CRM / PLATFORM]. Process to document: [PROCESS NAME]. Used by [WHO], and it must work for experienced staff and new hires.</span>
+
+<span class="task">Write the complete SOP: purpose statement, scope (who and when), roles and responsibilities table, numbered step by step procedure with decision points and conditional branches clearly marked ("if X then Y, if not then Z"), tools and systems per step, a quality control checklist signable at key milestones, and a version control footer.</span>
+
+<span class="fmt">Professional document with clear headings, numbered steps, tables for roles and tools. Direct and instructional, written for someone doing the task for the first time. End with the top 3 mistakes people make in this process and how to avoid them.</span></div>
+      <p class="pwhy"><b>Key move:</b> naming the platform and team structure means the SOP references your actual tools. The common errors section is the highest value part, it captures institutional knowledge that normally lives only in a senior employee&rsquo;s head.</p>
+    </div>
+  </div>
+
+  <div class="pcard" data-g="ops"><button class="pcard-h" onclick="tCard(this)"><div><div class="t">SOP adherence review &middot; audit a submission</div><div class="s">Side by side compliance audit with a score</div></div><span class="chev">&#8250;</span></button>
+    <div class="pcard-b"><div class="ing"><span class="i-role">Role</span><span class="i-ctx">Context</span><span class="i-task">Task</span><span class="i-fmt">Format</span></div>
+      <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button><span class="role">Act as a real estate operations compliance reviewer, expert at auditing submissions, transaction files, and internal documents against company SOPs.</span>
+
+<span class="ctx">I will paste two things: (1) the relevant SOP section for [PROCESS], and (2) the actual document or record submitted by [NAME] for [CASE]. Our standard requires 100% completion of mandatory fields before a file is active; deviations are flagged, logged, and returned for correction within 24 hours.</span>
+
+<span class="task">Compare the submission against the SOP step by step. For each required step: completed correctly, completed with errors, or missing. Where something fails, quote the exact SOP requirement it violates and write a brief correction note I can send to the agent as is. Close with a compliance score as a percentage and a recommendation: approve, return for minor corrections, or escalate.</span>
+
+<span class="fmt">Three sections: "Passed", "Needs correction" (numbered, with SOP clause, finding, correction note), and "Recommendation" (one paragraph with the score and suggested action). Professional but direct tone.</span></div>
+      <p class="pwhy"><b>Key move:</b> pasting both the SOP and the submission gives Claude a clear benchmark, so the output is a side by side gap analysis, not a guess, and the score becomes a trackable metric across the team.</p>
+    </div>
+  </div>
+
+  <div class="pcard" data-g="ops"><button class="pcard-h" onclick="tCard(this)"><div><div class="t">Raw data &rarr; executive operations summary</div><div class="s">Monthly performance report leadership actually reads</div></div><span class="chev">&#8250;</span></button>
+    <div class="pcard-b"><div class="ing"><span class="i-role">Role</span><span class="i-ctx">Context</span><span class="i-task">Task</span><span class="i-fmt">Format</span></div>
+      <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button><span class="role">Act as a real estate operations manager preparing the monthly performance report for company leadership.</span>
+
+<span class="ctx">Pasting operational data for [PERIOD]: agent activity metrics, transaction pipeline summary, SOP compliance rates by team, and open escalations. Leadership reviews this every [FREQUENCY] for staffing, process, and training decisions. Facts and recommendations, no filler.</span>
+
+<span class="task">Analyze the data and produce the full report: one paragraph executive summary, key metrics by team, what improved versus last period and why, what declined and the likely root cause, process bottlenecks or recurring compliance failures, a staffing or workload observation if the data supports one, and three specific recommendations with rationale.</span>
+
+<span class="fmt">Structured report, labeled sections, plain direct language, no corporate jargon. Recommendations must be concrete ("add a mandatory 48 hour follow up step to the buyer inquiry SOP", not "improve follow up"). End with a one line status: Green, Amber, or Red, with a one sentence justification.</span></div>
+      <p class="pwhy"><b>Key move:</b> asking for root cause analysis, not just a summary, gets you an operations perspective instead of a spreadsheet recap, and the Green/Amber/Red line gives leadership an instant read, which is how senior decision makers actually consume information.</p>
+    </div>
+  </div>
+
+  <div class="pcard" data-g="ops"><button class="pcard-h" onclick="tCard(this)"><div><div class="t">30 day onboarding roadmap &middot; any role</div><div class="s">Week by week plan with daily tasks and checkpoints</div></div><span class="chev">&#8250;</span></button>
+    <div class="pcard-b"><div class="ing"><span class="i-role">Role</span><span class="i-ctx">Context</span><span class="i-task">Task</span><span class="i-fmt">Format</span></div>
+      <div class="pre"><button class="pcopy" onclick="copyPre(this)">Copy</button><span class="role">Act as a real estate operations manager and HR specialist who designs structured onboarding programs for brokerage staff.</span>
+
+<span class="ctx">New hire: [ROLE], start date [DATE], experience [LEVEL]. Company tools: [CRM, TRANSACTION PLATFORM, COMMUNICATION]. Key SOPs for the first 30 days: [3 TO 5 PROCESSES]. Direct manager [NAME], supported by [BUDDY, if any].</span>
+
+<span class="task">Build the complete 30 day plan organized by week, each with a theme and focus. Per week: learning objectives, specific daily tasks, which SOPs to read and when, system access and training milestones, manager check ins, and an end of week competency checkpoint with passing criteria. Include the pre Day 1 system access checklist and a welcome message template for the evening before they start.</span>
+
+<span class="fmt">Week by week labeled blocks with a consistent structure: Theme, Objectives, Daily breakdown Monday to Friday, SOP reading list, End of week checkpoint. Keep daily tasks concrete ("review the listing intake SOP and shadow one listing call", not "learn the listing process"). Welcome message in its own labeled block, warm and professional.</span></div>
+      <p class="pwhy"><b>Key move:</b> daily level specificity is the difference between a plan someone follows and one that sits in a folder. Anchoring each week to a theme and closing with a checkpoint builds a feedback loop into the onboarding itself: you know if the hire is on track before the 90 day review, not after. The deck walks a complete example for a transaction coordinator: Week 1 orientation and foundation, Week 2 hands on systems training, Week 3 practical application, Week 4 independent execution with a 30 day review, wiring in Propel, ActivePipe, Design Vault, and ListTrac from the pre Day 1 access checklist onward.</p>
+    </div>
+  </div>
+
+  <div class="quiz" data-m="m9">
+    <span class="eyebrow">Quick check</span>
+    <h3>Name the five ingredients of a great prompt.</h3>
+    <button class="qopt" data-ok="0">Subject, verb, adjectives, emojis, hashtags</button>
+    <button class="qopt" data-ok="1">Role, Context, Task, Format, and an optional Example</button>
+    <button class="qopt" data-ok="0">Model, temperature, tokens, system, user</button>
+    <p class="qfb"></p>
+  </div>
+</section>
+
+<div class="donecard" id="doneCard">
+  <span class="eyebrow" style="color:#7ED9E6">Training complete</span>
+  <h2 id="doneTitle">Nine modules, one ecosystem</h2>
+  <p id="doneText">Complete the quick check in every module to finish the training. Your progress saves in this browser.</p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <a class="btn" href="index.html">Back to Home</a>
+    <button class="btn ghost" onclick="resetProgress()">Reset my progress</button>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<button id="topBtn" title="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})"
+  style="position:fixed;right:22px;bottom:22px;width:44px;height:44px;border-radius:50%;background:var(--sir);color:#fff;font-size:17px;box-shadow:var(--shadow-l);opacity:0;pointer-events:none;transition:.25s;z-index:200">&#8593;</button>
+<div id="toast" class="toast"></div>
+
+<style>
+.rv{opacity:0;transform:translateY(16px);transition:opacity .55s ease,transform .55s ease}
+.rv.in{opacity:1;transform:none}
+@media (prefers-reduced-motion: reduce){.rv{opacity:1;transform:none;transition:none}}
+</style>
+
+<script>
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(window._t);window._t=setTimeout(()=>t.classList.remove('show'),2200);}
+
+/* ---- module nav + progress ---- */
+const MODULES=[
+  ['m1','The brand'],['m2','Toolbox'],['m3','1 of 1 playbook'],['m4','Propel'],
+  ['m5','ActivePipe'],['m6','Design Vault'],['m7','ListTrac'],['m8','MoxiWorks'],['m9','Claude']
+];
+let done=JSON.parse(localStorage.getItem('mt_done')||'[]');
+
+function renderNav(active){
+  $('#mnav').innerHTML=MODULES.map(([id,nm],i)=>
+    `<button class="mchip ${done.includes(id)?'done':''} ${active===id?'on':''}" onclick="goTo('${id}')">
+      <span class="tick">&#10003;</span> ${i+1}. ${nm}</button>`).join('')
+    +`<span class="mprog">${done.length}/9 done</span>`;
+  updateDone();
+}
+function goTo(id){document.getElementById(id).scrollIntoView({behavior:'smooth'});}
+
+function updateDone(){
+  if(done.length===MODULES.length){
+    $('#doneTitle').textContent='You know the ecosystem.';
+    $('#doneText').textContent='All nine quick checks passed: brand, playbook, the five tools, and prompting. Welcome to the marketing team.';
+  }
+}
+function markDone(id){
+  if(!done.includes(id)){done.push(id);localStorage.setItem('mt_done',JSON.stringify(done));renderNav(currentActive);
+    toast(done.length===9?'Training complete!':'Module complete: '+done.length+'/9');}
+}
+function resetProgress(){done=[];localStorage.setItem('mt_done','[]');renderNav(currentActive);
+  $$('.quiz').forEach(q=>{q.querySelectorAll('.qopt').forEach(b=>{b.classList.remove('ok','no');b.disabled=false;});q.querySelector('.qfb').classList.remove('show');});
+  $('#doneTitle').textContent='Nine modules, one ecosystem';
+  $('#doneText').textContent='Complete the quick check in every module to finish the training. Your progress saves in this browser.';
+  toast('Progress reset.');}
+
+/* ---- quizzes ---- */
+$$('.quiz').forEach(q=>{
+  const m=q.dataset.m, fb=q.querySelector('.qfb');
+  q.querySelectorAll('.qopt').forEach(btn=>btn.addEventListener('click',()=>{
+    const ok=btn.dataset.ok==='1';
+    q.querySelectorAll('.qopt').forEach(b=>{if(b.dataset.ok==='1')b.classList.add('ok');});
+    if(ok){fb.textContent='Correct. Module marked as complete.';fb.classList.add('show');
+      q.querySelectorAll('.qopt').forEach(b=>b.disabled=true);markDone(m);}
+    else{btn.classList.add('no');fb.textContent='Not quite. The highlighted answer is the one to remember, give it one more read and try again on the next module.';fb.classList.add('show');
+      q.querySelectorAll('.qopt').forEach(b=>b.disabled=true);markDone(m);}
+  }));
+});
+
+/* ---- accordions & prompt cards ---- */
+function tAcc(h){h.parentNode.classList.toggle('open');}
+function tCard(h){h.parentNode.classList.toggle('open');}
+
+/* ---- prompt filter ---- */
+function pFilter(btn){
+  $$('.ptab').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
+  const g=btn.dataset.g;
+  $$('.pcard').forEach(c=>{c.style.display=(g==='all'||c.dataset.g===g)?'':'none';});
+}
+
+/* ---- copy helpers ---- */
+function copyHex(hex){navigator.clipboard.writeText(hex).then(()=>toast(hex+' copied'));}
+function copyPre(btn){
+  const pre=btn.parentNode.cloneNode(true);pre.querySelector('.pcopy').remove();
+  navigator.clipboard.writeText(pre.textContent.trim()).then(()=>toast('Prompt skeleton copied'));
+}
+
+/* ---- scrollspy + reveal + top button ---- */
+let currentActive='m1';
+const spy=new IntersectionObserver(es=>{
+  es.forEach(e=>{if(e.isIntersecting){currentActive=e.target.id;renderNav(currentActive);}});
+},{rootMargin:'-30% 0px -60% 0px'});
+$$('.module').forEach(s=>spy.observe(s));
+
+$$('.card,.quiz,.acc,.pcard,.step,.sw,.spec,.tool,.callout').forEach(el=>el.classList.add('rv'));
+const rev=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');rev.unobserve(e.target);}});},{threshold:.08});
+$$('.rv').forEach(el=>rev.observe(el));
+
+window.addEventListener('scroll',()=>{
+  const b=$('#topBtn'),s=window.scrollY>900;
+  b.style.opacity=s?'1':'0';b.style.pointerEvents=s?'auto':'none';
+});
+
+renderNav('m1');
+</script>
+</body>
+</html>
