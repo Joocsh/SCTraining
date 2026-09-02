@@ -174,7 +174,11 @@
     .mod-header.manus { background:linear-gradient(165deg,#0f0c2e 0%,#1c1a5e 100%); }
     .mod-header.manus::before { background:radial-gradient(circle,rgba(74,108,247,.34),transparent 70%); }
     .mod-header-inner { position:relative; z-index:1; }
-    .mod-logo { height:48px; width:auto; display:block; margin-bottom:20px; filter:brightness(0) invert(1); opacity:.92; }
+    .mod-mark { width:54px; height:54px; border-radius:16px; background:#fff; display:grid; place-items:center; margin-bottom:20px; box-shadow:0 6px 18px rgba(0,0,0,.22); }
+    .mod-mark svg { width:26px; height:26px; display:block; }
+    .mod-header.claude .mod-mark { color:#a83a10; }
+    .mod-header.chatgpt .mod-mark { color:#0d7f63; }
+    .mod-header.manus .mod-mark { color:#3f52d9; }
     .mod-badge {
       display:inline-flex; align-items:center; gap:8px;
       padding:6px 14px; border-radius:999px; font-size:11.5px; font-weight:800;
@@ -539,7 +543,7 @@
 
     <div class="mod-header claude">
       <div class="mod-header-inner">
-        <img class="mod-logo" src="https://upload.wikimedia.org/wikipedia/commons/8/8a/Claude_AI_logo.svg" alt="Claude logo">
+        <span class="mod-mark" role="img" aria-label="Claude"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M16.4 13h7.6M15.94 14.7l6.59 3.8M14.7 15.94l3.8 6.59M13 16.4V24M11.3 15.94l-3.8 6.59M10.06 14.7l-6.59 3.8M9.6 13H2M10.06 11.3 3.47 7.5M11.3 10.06 7.5 3.47M13 9.6V2M14.7 10.06l3.8-6.59M15.94 11.3l6.59-3.8"/></svg></span>
         <div class="mod-badge claude">Anthropic · Constitutional AI</div>
         <h2 class="mod-title disp">Claude</h2>
         <p class="mod-by">Made by Anthropic &mdash; founded 2021, San Francisco</p>
@@ -782,7 +786,7 @@
 
     <div class="mod-header chatgpt">
       <div class="mod-header-inner">
-        <img class="mod-logo" src="https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg" alt="OpenAI logo">
+        <span class="mod-mark" role="img" aria-label="ChatGPT"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"><path d="M13 2.5 22.09 7.75V18.25L13 23.5 3.91 18.25V7.75Z"/><circle cx="13" cy="13" r="2.6" fill="currentColor" stroke="none"/></svg></span>
         <div class="mod-badge chatgpt">OpenAI · GPT Architecture</div>
         <h2 class="mod-title disp">ChatGPT</h2>
         <p class="mod-by">Made by OpenAI &mdash; founded 2015, launched publicly November 2022</p>
@@ -972,7 +976,7 @@
 
     <div class="mod-header manus">
       <div class="mod-header-inner">
-        <img class="mod-logo" src="https://upload.wikimedia.org/wikipedia/en/f/f7/Manus_logo.svg" alt="Manus logo">
+        <span class="mod-mark" role="img" aria-label="Manus"><svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V7l9 9 9-9v14"/></svg></span>
         <div class="mod-badge manus">Autonomous Agent · Action Layer</div>
         <h2 class="mod-title disp">Manus</h2>
         <p class="mod-by">Built for executing multi-step tasks across systems, files, and integrations</p>
@@ -1358,6 +1362,20 @@
 
   window.addEventListener('scroll', updateActiveSideLink, {passive: true});
   updateActiveSideLink();
+
+  // The first hash jump fires before web fonts settle, so it lands on the wrong
+  // section. Re-apply it once layout is final.
+  function reapplyHash() {
+    if (!location.hash) return;
+    const el = document.querySelector(location.hash);
+    if (!el) return;
+    // scroll-behavior is smooth globally, so a long jump would animate and can be
+    // interrupted. Land on the section immediately instead.
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 96, behavior: 'instant' });
+    updateActiveSideLink();
+  }
+  window.addEventListener('load', () => setTimeout(reapplyHash, 80));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => setTimeout(reapplyHash, 80));
 </script>
 </body>
 </html>

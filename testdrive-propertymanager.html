@@ -307,6 +307,10 @@ h4{color:var(--ink)}
 /* ===== quiz modal ===== */
 .q-veil{position:fixed;inset:0;background:rgba(26,30,36,.45);z-index:400;display:none;align-items:center;justify-content:center;padding:20px}
 .q-veil.on{display:flex}
+/* When the lead drawer is open the question is about what it shows, so keep the
+   drawer readable and centre the question in the space beside it. */
+body.drawer-open .q-veil{right:min(680px,94vw)}
+@media(max-width:1180px){body.drawer-open .q-veil{right:0}}
 .q-box{background:var(--panel);border-radius:14px;max-width:560px;width:100%;padding:30px 34px;box-shadow:var(--shadow-lg);max-height:90vh;overflow-y:auto}
 .q-box .q-ey{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.14em;color:var(--accent);text-transform:uppercase;margin-bottom:10px}
 .q-box h3{font-size:20px;margin-bottom:8px}
@@ -416,15 +420,15 @@ h4{color:var(--ink)}
       <div class="bcard">
         <h3><span class="bnum">3</span> The screening bar</h3>
         <ul>
-          <li>Verified income of at least <span class="hl">3&times; the rent</span>.</li>
-          <li>Credit score of at least <span class="hl">620</span>.</li>
+          <li>Verified income of at least <span class="hl">3&times; the rent</span> before you advance a lead.</li>
+          <li>Credit score of at least <span class="hl">620</span> on the TransUnion pull.</li>
           <li>Clean eviction history and solid references.</li>
           <li>Apply the same written rules to every applicant. That consistency is what keeps IRP safe under fair housing law.</li>
           <li>Self reported numbers are a story; the report is the truth. People round up, so you verify instead of trusting or punishing.</li>
           <li>An <b>ESA is not a pet</b>: no pet fee and no pet rent, but the letter must be on file.</li>
         </ul>
       </div>
-      <div class="bcard">
+      <div class="bcard full">
         <h3><span class="bnum">4</span> Maintenance, the IRP way</h3>
         <ul>
           <li>Triage every request with the <b>4 tier urgency system</b>: <b>Emergency</b> (danger to life or property, act now), <b>Urgent</b> (active damage, same day response, vendor within 24h), <b>Standard</b> (2 to 5 business days), <b>Low</b> (schedule when efficient).</li>
@@ -437,8 +441,8 @@ h4{color:var(--ink)}
         <h3><span class="bnum">5</span> Authority levels: who decides what</h3>
         <ul>
           <li><b>Level 1, you:</b> routine communication, triage, vendor dispatch under $500, notices, inspections, closing work orders.</li>
-          <li><b>Level 2, Esteban:</b> approves repair estimates <span class="hl">under $500</span>, borderline screening calls, lease enforcement beyond the standard timeline.</li>
-          <li><b>Level 3, the Owner:</b> <span class="hl">ALL tenant application approvals</span>, <span class="hl">every repair of $500 or more</span>, evictions, lease terminations. You recommend; you never approve.</li>
+          <li><b>Level 2, Esteban:</b> approves repair estimates <span class="hl">under $500</span> plus borderline screening calls and lease enforcement beyond the standard timeline.</li>
+          <li><b>Level 3, the Owner:</b> evictions and lease terminations, <span class="hl">ALL tenant application approvals</span> and <span class="hl">every repair of $500 or more</span> without exception. You recommend; you never approve.</li>
           <li>Golden rule: when in doubt, document and escalate. Never commit money or make policy exceptions outside your level.</li>
         </ul>
       </div>
@@ -731,6 +735,7 @@ function openDrawer(id){
     </div>
     <div class="drawer-cta">${drawerCta(c)}</div>`;
   $('drawer').classList.add('on'); $('drawerVeil').classList.add('on');
+  document.body.classList.add('drawer-open');
   if(c.id==='tanya' && S.mission===1){ setTimeout(()=>quizM1(), 700); }
 }
 function drawerCta(c){
@@ -739,7 +744,7 @@ function drawerCta(c){
   }
   return `<button class="b ghost" onclick="closeDrawer()">Close</button>`;
 }
-function closeDrawer(){ $('drawer').classList.remove('on'); $('drawerVeil').classList.remove('on'); }
+function closeDrawer(){ $('drawer').classList.remove('on'); $('drawerVeil').classList.remove('on'); document.body.classList.remove('drawer-open'); }
 
 /* ================= QUIZ HELPERS ================= */
 function quiz(ey, title, lead, opts, correctIdx, fbOk, fbNo, onDone, pts){

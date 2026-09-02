@@ -126,9 +126,12 @@ h1,h2,h3,.pop{font-family:'Poppins','Open Sans',sans-serif;color:var(--ink)}
 .pay-box .amt{font-size:22px;font-weight:700;font-family:'Poppins',sans-serif}
 .pay-box .amt.g{color:var(--green)}
 .pay-box .amt.r{color:#D32F2F}
-.pay-box::after{content:'';position:absolute;right:-24px;top:-10px;width:90px;height:90px;border-radius:50%;background:radial-gradient(circle,transparent 55%,currentColor 56%,transparent 57%,transparent 62%,currentColor 63%,transparent 64%,transparent 69%,currentColor 70%,transparent 71%);opacity:.18}
-.pay-box.g::after{color:var(--green)}
-.pay-box.r::after{color:#D32F2F}
+.pay-box::after{content:'';position:absolute;right:14px;top:50%;transform:translateY(-50%);width:62px;height:62px;border-radius:50%;
+  background:conic-gradient(currentColor 0 var(--pct,90%),#E8EAEE var(--pct,90%) 100%);
+  -webkit-mask:radial-gradient(circle at center,transparent 56%,#000 57%);
+  mask:radial-gradient(circle at center,transparent 56%,#000 57%)}
+.pay-box.g::after{color:var(--green);--pct:91%}
+.pay-box.r::after{color:#D32F2F;--pct:9%}
 .pc-foot{border-top:1px solid var(--line);text-align:center;padding:11px}
 .stat-strip{display:grid;grid-template-columns:repeat(4,1fr);margin-top:18px}
 .stat-strip .st{background:#fff;border:1px solid var(--line);margin-left:-1px;padding:20px 10px;text-align:center}

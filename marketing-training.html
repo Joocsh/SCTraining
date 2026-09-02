@@ -102,8 +102,11 @@ b,strong{color:var(--v-ink);font-weight:700}
 /* ============ STAGE + LESSON LAYOUT ============ */
 .stage{position:fixed;top:calc(var(--top) + 3px);left:var(--side);right:0;bottom:0;overflow-y:auto}
 @media(max-width:960px){.stage{left:0}}
-.lesson{max-width:1180px;margin:0 auto;padding:26px 40px 100px;animation:fade .3s ease}
-@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.lesson{max-width:1160px;margin:0 auto;padding:30px 52px 104px;min-height:100%;display:flex;flex-direction:column}
+.lesson.vcenter{justify-content:safe center}
+.lesson.anim{animation:fade .28s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(max-width:1240px){.lesson{padding:28px 36px 104px}}
 @media(max-width:700px){.lesson{padding:20px 18px 100px}}
 
 .crumb{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;color:var(--v-muted);margin-bottom:14px;flex-wrap:wrap}
@@ -370,7 +373,8 @@ b,strong{color:var(--v-ink);font-weight:700}
 .ba-c em{font-style:normal;color:var(--v-ink);font-weight:600}
 
 /* quiz — one question per screen, light card */
-.quizwrap{max-width:700px;margin-inline:auto}
+.quizwrap{max-width:720px;margin-inline:auto;width:100%}
+.quizwrap .head{max-width:none;margin-bottom:20px}
 .qbar{display:flex;align-items:center;gap:14px;margin-bottom:16px}
 .qdots{display:flex;gap:5px}
 .qdot{width:30px;height:4px;border-radius:2px;background:var(--v-line);transition:.25s}
@@ -378,7 +382,7 @@ b,strong{color:var(--v-ink);font-weight:700}
 .qdot.ok{background:var(--good)}
 .qdot.bad{background:#e8a99c}
 .qbar .lbl{font-size:12px;font-weight:700;color:var(--v-muted)}
-.qcard{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);padding:26px 28px;box-shadow:var(--shadow-m)}
+.qcard{background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);padding:26px 28px;box-shadow:var(--shadow-m);min-height:352px;display:flex;flex-direction:column}
 .qnum{font-size:11px;font-weight:800;letter-spacing:1.2px;color:var(--v-cyan-d);text-transform:uppercase}
 .qtext{font-family:var(--display);font-size:20px;font-weight:800;color:var(--v-navy);letter-spacing:-.4px;margin:7px 0 18px;line-height:1.32}
 .qopt{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:#fff;border:1.5px solid var(--v-line);border-radius:var(--r-sm);padding:13px 15px;font-size:14.5px;color:var(--v-ink);margin-bottom:9px;transition:.15s;line-height:1.45}
@@ -394,7 +398,7 @@ b,strong{color:var(--v-ink);font-weight:700}
 .qfb.good{background:#eefaf3;border-color:var(--good);color:#1c5c3c}
 .qfb.bad{background:#fdf2ef;border-color:var(--bad);color:#8a3324}
 .qfb b{color:inherit}
-.qnextwrap{display:none;margin-top:16px;justify-content:flex-end}
+.qnextwrap{display:none;margin-top:auto;padding-top:18px;justify-content:flex-end}
 .qnextwrap.show{display:flex}
 .qnext{background:var(--v-navy);color:#fff;border-radius:var(--r-sm);padding:10px 20px;font-size:13.5px;font-weight:800}
 .qnext:hover{background:var(--v-navy2)}
@@ -464,7 +468,7 @@ b,strong{color:var(--v-ink);font-weight:700}
 </aside>
 <div class="side-veil" id="sideVeil" onclick="toggleSide()"></div>
 
-<main class="stage" id="stage"><div id="lesson"></div></main>
+<main class="stage" id="stage"><div class="lesson" id="lesson"></div></main>
 
 <nav class="fnav" aria-label="Lesson navigation">
   <button class="fbtn prev" id="btnPrev" onclick="go(-1)">&larr; Previous</button>
@@ -1545,8 +1549,11 @@ function render(){
         ${split?`<div class="med">${l.med}</div>`:''}
       </div>`;
   }
-  $('#lesson').innerHTML=
+  const box=$('#lesson');
+  box.innerHTML=
     `<div class="crumb"><span class="pill">Module ${modNum(l.m)}</span><span>${mo.n}</span><span class="sep">&rsaquo;</span><span>${l.k}</span></div>${body}`;
+  box.className='lesson vcenter';
+  void box.offsetWidth; box.classList.add('anim');
   $('#stage').scrollTop=0;
 
   $('#btnPrev').disabled=idx===0;
@@ -1572,9 +1579,10 @@ const LETTERS='ABCDEFG';
 function quizHtml(mid){
   const Q=QUIZ[mid], mo=modOf(mid);
   if(!qs||qs.mid!==mid)qs={mid,i:0,marks:new Array(Q.q.length).fill(null)};
-  return `<div class="head"><h1>${mo.n}: <em>knowledge check</em></h1>
+  return `<div class="quizwrap">
+    <div class="head"><h1>${mo.n}: <em>knowledge check</em></h1>
     <p class="lead">${Q.q.length} question${Q.q.length>1?'s':''}, one at a time. Miss one and the correct answer appears with an explanation, so it still counts as learning.</p></div>
-    <div class="lay"><div class="txt quizwrap" id="quizArea">${qBody()}</div></div>`;
+    <div id="quizArea">${qBody()}</div></div>`;
 }
 
 function qBody(){
@@ -1662,6 +1670,7 @@ function copyHex(h){navigator.clipboard.writeText(h).then(()=>toast('&#10003; '+
 /* ============ COMPLETION ============ */
 function showDone(){
   const tot=Object.values(scores).reduce((a,s)=>a+s.t,0), got=Object.values(scores).reduce((a,s)=>a+s.c,0);
+  $('#lesson').className='lesson vcenter';
   $('#lesson').innerHTML=`<div class="finish">
     <div class="seal">&#10003;</div>
     <span class="eyebrow">Training complete</span>
