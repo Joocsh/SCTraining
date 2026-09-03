@@ -119,6 +119,21 @@ b,strong{color:var(--v-ink);font-weight:700}
 .crumb{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;color:var(--v-muted);margin-bottom:14px;flex-wrap:wrap}
 .crumb .pill{background:var(--v-navy);color:#fff;border-radius:999px;padding:4px 12px;font-size:11px;letter-spacing:.5px}
 .crumb .sep{color:var(--line-2)}
+/* original deck slide: button in the breadcrumb, image in a lightbox */
+.crumb-slide{margin-left:auto;display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--line-2);background:#fff;border-radius:999px;padding:5px 13px 5px 10px;font-size:11.5px;font-weight:700;color:var(--v-muted);letter-spacing:0;transition:.15s;white-space:nowrap}
+.crumb-slide:hover{border-color:var(--v-cyan-d);color:var(--v-navy)}
+.crumb-slide svg{width:13px;height:13px;flex:none}
+.lb{position:fixed;inset:0;z-index:600;background:rgba(6,20,38,.9);display:none;align-items:center;justify-content:center;padding:34px 26px 74px}
+.lb.on{display:flex}
+.lb img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5);background:#fff}
+.lb-x{position:absolute;top:16px;right:20px;width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font-size:19px;display:grid;place-items:center;transition:.15s}
+.lb-x:hover{background:rgba(255,255,255,.28)}
+.lb-nav{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.12);border-radius:999px;padding:7px 9px;backdrop-filter:blur(6px)}
+.lb-nav button{width:30px;height:30px;border-radius:50%;color:#fff;font-size:14px;display:grid;place-items:center;transition:.15s}
+.lb-nav button:hover:not(:disabled){background:rgba(255,255,255,.24)}
+.lb-nav button:disabled{opacity:.3;cursor:default}
+.lb-nav .n{font-size:12px;color:#dbe8f4;font-weight:700;min-width:74px;text-align:center}
+@media(max-width:700px){.crumb-slide span{display:none}.lb{padding:20px 12px 68px}}
 .head{max-width:880px;margin-bottom:22px}
 .head h1{margin-bottom:9px}
 .head h1 em{font-style:normal;color:var(--v-cyan-d)}
@@ -512,6 +527,15 @@ b,strong{color:var(--v-ink);font-weight:700}
   <span class="pos" id="posLbl"></span>
   <button class="fbtn next" id="btnNext" onclick="go(1)">Next &rarr;</button>
 </nav>
+<div class="lb" id="lb" onclick="if(event.target===this)closeSlide()" role="dialog" aria-label="Original deck slide">
+  <button class="lb-x" onclick="closeSlide()" aria-label="Close">&#10005;</button>
+  <img id="lbImg" alt="Original slide from the Sotheby's International Realty deck">
+  <div class="lb-nav" id="lbNav">
+    <button id="lbP" onclick="slideStep(-1)" aria-label="Previous slide">&#10094;</button>
+    <span class="n" id="lbN"></span>
+    <button id="lbNx" onclick="slideStep(1)" aria-label="Next slide">&#10095;</button>
+  </div>
+</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -604,7 +628,7 @@ fig(`<div style="display:grid;gap:9px">
     <div style="font-weight:700;color:var(--v-ink);font-size:14px;margin-top:2px">Compass International Holdings</div>
     <div style="font-size:12.5px;margin-top:3px">Anywhere + Compass merge. SIR keeps its own identity.</div>
   </div>
-</div>`,'rebuilt as a two step flow.'));
+</div>`,'The franchise deal, rebuilt as a two step flow.'));
 
 add('m1','The global standard: 1 of 1','Lesson',
 `<h1>Not a promotion. <em>A permanent standard.</em></h1>`,
@@ -1733,6 +1757,84 @@ function jump(mid){const i=L.findIndex(l=>l.m===mid);if(i>=0)jumpTo(i);}
 function toggleSide(){$('#side').classList.toggle('open');$('#sideVeil').classList.toggle('on');}
 function closeSide(){$('#side').classList.remove('open');$('#sideVeil').classList.remove('on');}
 
+/* ============ ORIGINAL DECK SLIDES ============ */
+/* The exported Canva pages, keyed by lesson. The lesson itself uses the
+   rebuilt visual; this is the source page, one click away. */
+const SLIDES = {
+  'What is Sotheby&rsquo;s International Realty?':['m1-what-is-sir'],
+  'Where the brand came from':['m1-art-of-living'],
+  'The deal that made SIR global':['m1-franchise-compass'],
+  'The global standard: 1 of 1':['m1-global-standard'],
+  'The five tools you will live in':['m2-most-utilized-assets'],
+  'The admin workflow':['m2-admin-workflow'],
+  'How they connect':['m2-bringing-together'],
+  'The campaign proposition':['m3-curators-unique'],
+  'The messaging system':['m3-messaging-system'],
+  'Headlines by audience':['m3-headlines-for-all'],
+  'The copy bank':['m3-headlines-for-all'],
+  'Layout: the spectrum':['m3-layout'],
+  'Layout: scale and spacing':['m3-layout-considerations'],
+  'Logo: placement and clear space':['m3-logo-masterbrand'],
+  'Logo: color and affiliates':['m3-logo-affiliates'],
+  'The three brand colors':['m3-colors-rgb'],
+  'Colors in print':['m3-colors-cmyk'],
+  'Typography':['m3-typography','m3-typography-hierarchy'],
+  'Shape types':['m3-shape-types'],
+  'Photography':['m3-photography','m3-sample-assets'],
+  'What Propel is':['m4-propel-dashboard'],
+  'Its two primary functions':['m4-propel-functions'],
+  'The Launch Pad':['m4-propel-launchpad'],
+  'What ActivePipe is':['m5-activepipe-email'],
+  'Inside the platform':['m5-activepipe-platform'],
+  'Building and sending':['m5-activepipe-building'],
+  'When something breaks':['m5-activepipe-troubleshooting'],
+  'What Design Vault is':['m6-designvault-platform'],
+  'Inside Design Vault':['m6-designvault-workspace'],
+  'Creating and editing':['m6-designvault-creating'],
+  'Printing and exporting':['m6-designvault-printing'],
+  'What ListTrac is':['m7-listtrac-reports'],
+  'Inside ListTrac':['m7-listtrac-dashboard'],
+  'Reading the statistics':['m7-listtrac-statistics'],
+  'Before you activate reports':['m7-listtrac-practices'],
+  'What MoxiWorks is':['m8-moxi-platform'],
+  'Building a presentation':['m8-moxi-client-ready'],
+  'Market comparisons':['m8-moxi-comparisons'],
+  'Common pitfalls':['m8-moxi-practices'],
+  'Before and after':['m9-prompt-structure'],
+  'What a good prompt returns':['m9-example-email','m9-example-carousel'],
+  'A prompt that built an onboarding plan':['m9-onboarding-example','m9-onboarding-week1','m9-onboarding-week4']
+};
+
+/* ============ SLIDE LIGHTBOX ============ */
+let lb = {list:[], i:0};
+function slideBtn(t){
+  const s = SLIDES[t];
+  if(!s) return '';
+  return '<button class="crumb-slide" onclick="openSlide()" title="See the original deck page">'
+    + '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="2.2" y="3.6" width="15.6" height="11" rx="1.6"/><path d="M10 14.6v2.2M7 16.8h6"/></svg>'
+    + '<span>Original slide' + (s.length>1 ? ' ('+s.length+')' : '') + '</span></button>';
+}
+function openSlide(){
+  const t = L[idx] && L[idx].t;
+  lb = {list:(SLIDES[t]||[]).slice(), i:0};
+  if(!lb.list.length) return;
+  paintSlide();
+  $('#lb').classList.add('on');
+}
+function paintSlide(){
+  $('#lbImg').src = 'assets/img/marketing/' + lb.list[lb.i] + '.jpg';
+  $('#lbN').textContent = lb.list.length > 1 ? (lb.i+1) + ' of ' + lb.list.length : 'Deck page';
+  $('#lbP').disabled = lb.i === 0;
+  $('#lbNx').disabled = lb.i === lb.list.length - 1;
+  $('#lbNav').style.display = lb.list.length > 1 ? '' : 'none';
+}
+function slideStep(d){
+  const n = lb.i + d;
+  if(n < 0 || n >= lb.list.length) return;
+  lb.i = n; paintSlide();
+}
+function closeSlide(){ $('#lb').classList.remove('on'); }
+
 /* ============ RENDER ============ */
 function render(){
   const l=L[idx], mo=modOf(l.m);
@@ -1749,7 +1851,7 @@ function render(){
   }
   const box=$('#lesson');
   box.innerHTML=
-    `<div class="crumb"><span class="pill">Module ${modNum(l.m)}</span><span>${mo.n}</span><span class="sep">&rsaquo;</span><span>${l.k}</span></div>${body}`;
+    `<div class="crumb"><span class="pill">Module ${modNum(l.m)}</span><span>${mo.n}</span><span class="sep">&rsaquo;</span><span>${l.k}</span>${slideBtn(l.t)}</div>${body}`;
   box.className='lesson vcenter';
   void box.offsetWidth; box.classList.add('anim');
   $('#stage').scrollTop=0;
@@ -1894,6 +1996,13 @@ function resetAll(){
 /* ============ KEYS + BOOT ============ */
 document.addEventListener('keydown',e=>{
   if(/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))return;
+  const lbOpen=$('#lb').classList.contains('on');
+  if(lbOpen){
+    if(e.key==='Escape'){e.preventDefault();closeSlide();}
+    if(e.key==='ArrowLeft'){e.preventDefault();slideStep(-1);}
+    if(e.key==='ArrowRight'){e.preventDefault();slideStep(1);}
+    return;
+  }
   if(e.key==='ArrowLeft'){e.preventDefault();go(-1);}
   if(e.key==='ArrowRight'){e.preventDefault();go(1);}
 });
