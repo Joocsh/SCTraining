@@ -741,7 +741,16 @@ add('m3','Headlines by audience','Lesson',
   <div class="card"><h4>Sellers</h4><ul><li>Unique appreciation</li><li>Unique leadership</li><li>Call to action</li></ul></div>
   <div class="card"><h4>Agents</h4><ul><li>Unique advantage</li><li>Unique leadership</li><li>Call to action</li></ul></div>
 </div>
-<div class="note tip"><b>Every angle pairs with the same two things:</b> unique leadership, then a call to action. Only the first line changes.</div>`,'');
+<div class="note tip"><b>Every angle pairs with the same two things:</b> unique leadership, then a call to action. Only the first line changes.</div>`,
+fig(`<div>
+  <div style="font-size:11px;color:var(--v-muted);margin-bottom:9px;text-align:center">One lockup, three angles</div>
+  ${[['Buyers &amp; renters','Unique access','The one for you'],['Sellers','Unique appreciation','A genuine original'],['Agents','Unique advantage','Curators of the unique']].map(([a,m,c])=>
+   `<div style="background:#fff;border:1px solid var(--line-2);border-radius:8px;padding:12px 15px;margin-bottom:9px">
+      <div style="display:flex;justify-content:space-between;gap:8px;font-size:9.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase"><span style="color:var(--v-cyan-d)">${a}</span><span style="color:var(--faint)">${m}</span></div>
+      <div style="font-family:var(--serif);font-size:21px;color:var(--sir);margin-top:5px;line-height:1.2">${c}</div>
+    </div>`).join('')}
+  <div style="font-size:10.5px;color:var(--faint);text-align:center">then unique leadership, then the call to action</div>
+</div>`,'Audience angles, rebuilt.','sir'));
 
 add('m3','The copy bank','Lesson',
 `<h1>Approved phrases, ready to use.</h1>`,
@@ -1037,7 +1046,32 @@ add('m5','When something breaks','Lesson',
 <div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">2</span> Video does not display <span class="chev">&#9656;</span></button><div class="acc-b"><p>Linked videos must be set to <b>public</b>. Vimeo is often recommended for cleaner visual presentation and formatting.</p></div></div>
 <div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">3</span> The listing is missing <span class="chev">&#9656;</span></button><div class="acc-b"><p>New listings take <b>1 to 2 days</b> to sync. After that, add the content manually or contact your office administrator.</p></div></div>
 <div class="acc"><button class="acc-h" onclick="tAcc(this)"><span class="ic">4</span> It looks wrong on phones <span class="chev">&#9656;</span></button><div class="acc-b"><p>Always review the mobile preview. Side by side images or columns may stack vertically on smaller screens.</p></div></div>
-<div class="note"><b>Login.</b> Marketing and admin accounts can manage most features without the agent&rsquo;s login, depending on assigned permission levels.</div>`,'');
+<div class="note"><b>Login.</b> Marketing and admin accounts can manage most features without the agent&rsquo;s login, depending on assigned permission levels.</div>`,
+fig(`<div style="display:flex;gap:20px;align-items:center;justify-content:center">
+  <div>
+    <div style="font-size:9.5px;font-weight:800;color:var(--good);letter-spacing:.5px;text-align:center;margin-bottom:7px">DESKTOP</div>
+    <div style="width:152px;border:1px solid var(--line-2);border-radius:7px;background:#fff;padding:9px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div style="height:34px;border-radius:4px;background:linear-gradient(135deg,#d9e5f0,#bed0e0)"></div>
+        <div style="height:34px;border-radius:4px;background:linear-gradient(135deg,#d6ebe2,#b6d9c9)"></div>
+      </div>
+      <div style="height:4px;background:#dde5ec;border-radius:2px;margin-top:8px"></div>
+      <div style="height:4px;background:#e9eff5;border-radius:2px;margin-top:4px;width:66%"></div>
+    </div>
+  </div>
+  <div>
+    <div style="font-size:9.5px;font-weight:800;color:var(--warn);letter-spacing:.5px;text-align:center;margin-bottom:7px">MOBILE</div>
+    <div class="phone" style="width:106px">
+      <div class="top"></div>
+      <div style="padding:8px">
+        <div style="height:30px;border-radius:4px;background:linear-gradient(135deg,#d9e5f0,#bed0e0)"></div>
+        <div style="height:30px;border-radius:4px;background:linear-gradient(135deg,#d6ebe2,#b6d9c9);margin-top:6px"></div>
+        <div style="height:4px;background:#dde5ec;border-radius:2px;margin-top:8px"></div>
+        <div style="height:4px;background:#e9eff5;border-radius:2px;margin-top:4px;width:70%"></div>
+      </div>
+    </div>
+  </div>
+</div>`,'Side by side columns stack vertically on a phone. This is why the mobile preview matters.'));
 
 add('m5','Module 5 check','Quiz','__Q__m5','','');
 
@@ -1135,7 +1169,19 @@ add('m6','Three habits that prevent reprints','Lesson',
   <div class="step"><div><h4>Use the preview tool</h4><p>Check for typos, layout errors and missing information before finalizing.</p></div></div>
   <div class="step"><div><h4>Scan every QR code</h4><p>Verify the destination of all QR codes before printing. Always.</p></div></div>
 </div>
-<div class="note warn"><b>Login.</b> Access via SIR Access. Design Vault supports both client and admin logins, each with permission based access.</div>`,'');
+<div class="note warn"><b>Login.</b> Access via SIR Access. Design Vault supports both client and admin logins, each with permission based access.</div>`,
+fig(`<div style="text-align:center">
+  <div style="display:inline-grid;grid-template-columns:repeat(11,9px);gap:2px;padding:11px;background:#fff;border:1px solid var(--line-2);border-radius:8px">
+    ${'1110001110110101110001111000101110001110101010110001110011101011011100111001110101011100011100011011101110001010001110111'.slice(0,121).split('').map(b=>
+      `<i style="display:block;width:9px;height:9px;background:${b==='1'?'var(--sir)':'transparent'};border-radius:1px"></i>`).join('')}
+  </div>
+  <div style="font-size:10.5px;color:var(--faint);margin-top:9px">scan it before it goes to print</div>
+  <div style="margin-top:14px;text-align:left;max-width:236px;margin-inline:auto">
+    <div class="mock-row"><span class="dot"></span><span class="grow"></span><b style="color:var(--good)">Reloaded</b></div>
+    <div class="mock-row"><span class="dot"></span><span class="grow"></span><b style="color:var(--good)">Previewed</b></div>
+    <div class="mock-row"><span class="dot"></span><span class="grow"></span><b style="color:var(--good)">QR scanned</b></div>
+  </div>
+</div>`,'The pre flight check, rebuilt.','sir'));
 
 add('m6','Module 6 check','Quiz','__Q__m6','','');
 
@@ -1203,7 +1249,23 @@ add('m7','Before you activate reports','Lesson',
   <div class="step"><div><h4>Review the scheduling settings</h4><p>Weekly, bi weekly or monthly, matched to what the seller expects.</p></div></div>
   <div class="step"><div><h4>Preview the report formatting</h4><p>Catch layout issues before the client sees them.</p></div></div>
 </div>
-<div class="note warn"><b>Give it time.</b> Listings may take <b>3 to 5 days</b> to appear after going live, analytics may not update immediately, and reports can land in spam or junk folders.</div>`,'');
+<div class="note warn"><b>Give it time.</b> Listings may take <b>3 to 5 days</b> to appear after going live, analytics may not update immediately, and reports can land in spam or junk folders.</div>`,
+fig(`<div>
+  <div style="font-size:10px;font-weight:800;color:var(--v-muted);letter-spacing:.6px;margin-bottom:12px">WHEN THE DATA ARRIVES</div>
+  <div style="display:flex;align-items:flex-start;gap:0">
+    ${[['Listing live','var(--v-navy)'],['Syncing','#c3d2e0'],['Syncing','#c3d2e0'],['Analytics on','var(--good)']].map(([l,c])=>
+     `<div style="flex:1;text-align:center">
+        <div style="height:8px;background:${c};border-radius:4px;margin:0 2px"></div>
+        <div style="font-size:9.5px;color:var(--v-muted);margin-top:7px">${l}</div>
+      </div>`).join('')}
+  </div>
+  <div style="font-size:11.5px;color:var(--v-cyan-d);font-weight:800;text-align:center;margin-top:12px">3 to 5 days</div>
+  <div style="margin-top:16px;background:#fff;border:1px solid var(--line-2);border-radius:8px;padding:12px 14px">
+    <div style="font-size:9.5px;font-weight:800;color:var(--bad);letter-spacing:.5px;margin-bottom:7px">DELIVERY FAILED</div>
+    <div style="font-family:var(--mono);font-size:12.5px;color:var(--v-ink)">seller@exmaple.com</div>
+    <div style="font-size:11px;color:var(--v-muted);margin-top:6px">One wrong character and the report never arrives.</div>
+  </div>
+</div>`,'The sync window and a failed delivery, rebuilt.'));
 
 add('m7','Module 7 check','Quiz','__Q__m7','','');
 
@@ -1277,7 +1339,27 @@ add('m8','Common pitfalls','Lesson',
     <li>Presentation formatting should always be reviewed before sending.</li>
   </ul>
 </div>
-<div class="note"><b>Before finalizing a CMA</b>, verify MLS information, review comparable properties carefully, and confirm the pricing recommendation is accurate and current.</div>`,'');
+<div class="note"><b>Before finalizing a CMA</b>, verify MLS information, review comparable properties carefully, and confirm the pricing recommendation is accurate and current.</div>`,
+fig(`<div>
+  <div style="background:#fff;border:1px solid var(--line-2);border-radius:8px;padding:13px 15px">
+    <div style="font-size:9.5px;font-weight:800;color:var(--v-muted);letter-spacing:.6px;margin-bottom:8px">MLS NUMBER</div>
+    <div style="display:flex;gap:9px;align-items:center">
+      <div style="flex:1;border:1.5px solid var(--bad);border-radius:6px;padding:8px 11px;font-family:var(--mono);font-size:13px;color:var(--v-ink);background:#fdf2ef">4417732</div>
+      <div style="font-size:11px;font-weight:800;color:var(--bad)">Not found</div>
+    </div>
+    <div style="font-size:11px;color:var(--v-muted);margin-top:8px">No photos, no description, no tax record. Everything downstream stays empty.</div>
+  </div>
+  <div style="margin-top:12px;background:#fff;border:1px solid var(--line-2);border-radius:8px;padding:13px 15px">
+    <div style="font-size:9.5px;font-weight:800;color:var(--v-muted);letter-spacing:.6px;margin-bottom:8px">MLS NUMBER</div>
+    <div style="display:flex;gap:9px;align-items:center">
+      <div style="flex:1;border:1.5px solid var(--good);border-radius:6px;padding:8px 11px;font-family:var(--mono);font-size:13px;color:var(--v-ink);background:#eefaf3">4417723</div>
+      <div style="font-size:11px;font-weight:800;color:var(--good)">Loaded</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:10px">
+      ${[0,1,2,3].map(i=>`<div style="height:26px;border-radius:4px;background:linear-gradient(135deg,${i%2?'#d6ebe2,#b6d9c9':'#d9e5f0,#bed0e0'})"></div>`).join('')}
+    </div>
+  </div>
+</div>`,'Two digits transposed, rebuilt.'));
 
 add('m8','Module 8 check','Quiz','__Q__m8','','');
 
@@ -1289,7 +1371,21 @@ add('m9','What Claude is','Lesson',
   <div class="card"><h4>Opus</h4><p style="font-size:13.5px;margin:0">The flagship. Highly complex reasoning and enterprise tasks.</p></div>
   <div class="card"><h4>Sonnet</h4><p style="font-size:13.5px;margin:0">The standard. Balances speed and intelligence for everyday workflows.</p></div>
   <div class="card"><h4>Haiku</h4><p style="font-size:13.5px;margin:0">The fastest. High speed, light duty tasks.</p></div>
-</div>`,'');
+</div>`,
+fig(`<div>
+  ${[['Opus','Flagship',96,58],['Sonnet','Standard',78,82],['Haiku','Fastest',52,98]].map(([n,r,cap,spd])=>
+   `<div style="background:#fff;border:1px solid var(--line-2);border-radius:8px;padding:11px 15px;margin-bottom:7px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-family:var(--display);font-size:16px;font-weight:800;color:var(--v-navy);letter-spacing:-.3px">${n}</span>
+        <span style="font-size:9.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--v-cyan-d)">${r}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:62px 1fr;gap:9px;align-items:center;margin-top:8px;font-size:10px;color:var(--v-muted)">
+        <span>Reasoning</span><div style="height:7px;background:var(--v-line);border-radius:4px;overflow:hidden"><i style="display:block;height:100%;width:${cap}%;background:var(--v-navy);border-radius:4px"></i></div>
+        <span>Speed</span><div style="height:7px;background:var(--v-line);border-radius:4px;overflow:hidden"><i style="display:block;height:100%;width:${spd}%;background:var(--v-cyan);border-radius:4px"></i></div>
+      </div>
+    </div>`).join('')}
+  <div style="font-size:10.5px;color:var(--faint);text-align:center">Pick the smallest model that still does the job well.</div>
+</div>`,'The model family, rebuilt.'));
 
 add('m9','What is in the library','Lesson',
 `<h1>Sixteen prompts, <em>four jobs.</em></h1>
