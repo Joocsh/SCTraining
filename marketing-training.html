@@ -133,6 +133,38 @@ b,strong{color:var(--v-ink);font-weight:700}
 .fig.shot img{width:100%;height:auto;display:block}
 .fig.shot .shot-z{position:absolute;right:11px;bottom:11px;width:32px;height:32px;border-radius:9px;background:rgba(10,38,71,.74);color:#fff;display:grid;place-items:center;font-size:14px;line-height:1;opacity:0;transition:opacity .15s;backdrop-filter:blur(3px)}
 .fig.shot .shot-b:hover .shot-z,.fig.shot .shot-b:focus-visible .shot-z{opacity:1}
+
+/* ---- deck page at full size, with the summary as a side panel ----
+   fitShot() sets the exact pixel size of .shot-b after every render, because a
+   pure CSS solution here means aspect-ratio fighting flex sizing and the box
+   collapses. */
+.lay.big{display:block;position:relative;flex:1;min-height:0}
+.lay.big .med{height:100%;display:flex;justify-content:center;align-items:flex-start;min-height:0}
+.lay.big .fig{max-width:100%;margin:0}
+.lay.big .fig.shot .shot-b{border-radius:var(--radius) var(--radius) 0 0}
+.lay.big .fig.shot img{width:100%;height:100%;object-fit:contain;background:#fff}
+
+.sumdock{position:absolute;inset:0;z-index:20;pointer-events:none}
+.sumtab{pointer-events:auto;position:absolute;left:0;top:50%;transform:translateY(-50%);
+  display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--v-line);border-left:none;
+  border-radius:0 11px 11px 0;box-shadow:var(--shadow-m);padding:16px 9px;
+  font-size:11.5px;font-weight:800;letter-spacing:.8px;color:var(--v-navy);text-transform:uppercase;
+  writing-mode:vertical-rl;transition:padding .15s,color .15s}
+.sumtab:hover{color:var(--v-cyan-d);padding-right:12px}
+.sumpanel{pointer-events:auto;position:absolute;left:0;top:0;bottom:0;width:min(420px,62%);
+  background:rgba(255,255,255,.975);backdrop-filter:blur(10px);
+  border:1px solid var(--v-line);border-left:none;border-radius:0 var(--radius) var(--radius) 0;
+  box-shadow:26px 0 44px -22px rgba(10,38,71,.3);padding:20px 22px 18px;overflow-y:auto;
+  transform:translateX(-102%);opacity:0;transition:transform .26s cubic-bezier(.4,0,.2,1),opacity .2s}
+.sumdock.open .sumpanel{transform:none;opacity:1}
+.sumdock.open .sumtab{opacity:0;pointer-events:none}
+.sumhd{display:flex;align-items:center;gap:9px;margin-bottom:12px;padding-bottom:11px;border-bottom:1px solid var(--v-line)}
+.sumhd .t{font-size:11px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;color:var(--v-cyan-d)}
+.sumhd .pin{margin-left:auto;display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line-2);border-radius:999px;padding:4px 11px;font-size:11px;font-weight:700;color:var(--v-muted);transition:.15s}
+.sumhd .pin:hover{border-color:var(--v-navy);color:var(--v-navy)}
+.sumdock.pinned .sumhd .pin{background:var(--v-navy);border-color:var(--v-navy);color:#fff}
+.sumpanel > :last-child{margin-bottom:0}
+@media(max-width:900px){.sumpanel{width:86%}}
 .lb{position:fixed;inset:0;z-index:600;background:rgba(6,20,38,.9);display:none;align-items:center;justify-content:center;padding:34px 26px 74px}
 .lb.on{display:flex}
 .lb img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5);background:#fff}
@@ -1818,6 +1850,34 @@ function slideBtn(t){
     + '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="2.2" y="3.6" width="15.6" height="11" rx="1.6"/><path d="M10 14.6v2.2M7 16.8h6"/></svg>'
     + '<span>Original slide' + (s.length>1 ? ' ('+s.length+')' : '') + '</span></button>';
 }
+/* Size the deck page to fill whatever height the lesson has left. */
+function fitShot(){
+  const lay=$('.lay.big'); if(!lay)return;
+  const btn=lay.querySelector('.shot-b'), cap=lay.querySelector('.fig-cap');
+  if(!btn)return;
+  const avail=lay.clientHeight-(cap?cap.offsetHeight:0)-2;
+  let h=Math.max(160,avail), w=h*16/9;
+  const maxW=lay.clientWidth;
+  if(w>maxW){ w=maxW; h=w*9/16; }
+  btn.style.width=Math.round(w)+'px';
+  btn.style.height=Math.round(h)+'px';
+}
+addEventListener('resize',()=>{clearTimeout(window._fs);window._fs=setTimeout(fitShot,120);});
+
+let sumPinned=false;
+try{ sumPinned = localStorage.getItem('mt3_sum')==='1'; }catch(e){}
+function sumPeek(on){
+  const d=$('#sumdock'); if(!d||sumPinned)return;
+  d.classList.toggle('open',!!on);
+}
+function sumPin(){
+  sumPinned=!sumPinned;
+  try{ localStorage.setItem('mt3_sum', sumPinned?'1':'0'); }catch(e){}
+  const d=$('#sumdock'); if(!d)return;
+  d.classList.toggle('pinned',sumPinned);
+  d.classList.toggle('open',sumPinned);
+  const b=d.querySelector('.pin'); if(b)b.innerHTML=sumPinned?'&#9679; Pinned':'Keep open';
+}
 function shotFig(s){
   return '<figure class="fig shot"><button class="shot-b" onclick="openSlide()" aria-label="Enlarge the deck page">'
     + '<img src="assets/img/marketing/' + s[0] + '.jpg" alt="Deck page" loading="lazy">'
@@ -1856,19 +1916,37 @@ function render(){
     // Freight and Benton faces cannot be embedded, so a rebuild can never be
     // an exact match. l.med is the fallback for lessons with no exported page.
     const shot=SLIDES[l.t];
-    const med=shot?shotFig(shot):l.med;
-    const split=!!med;
-    body=`<div class="head">${l.head}</div>
-      <div class="lay ${split?'split':''}">
-        <div class="txt">${l.txt}</div>
-        ${split?`<div class="med">${med}</div>`:''}
-      </div>`;
+    if(shot){
+      // The page gets the whole stage so its own text is readable, and the
+      // summary lives in a panel that peeks on hover and pins on click.
+      body=`<div class="head">${l.head}</div>
+        <div class="lay big">
+          <div class="med">${shotFig(shot)}</div>
+          <div class="sumdock ${sumPinned?'open pinned':''}" id="sumdock"
+               onmouseenter="sumPeek(1)" onmouseleave="sumPeek(0)">
+            <button class="sumtab" onclick="sumPin()" aria-label="Show the summary">Summary</button>
+            <div class="sumpanel">
+              <div class="sumhd"><span class="t">Summary</span>
+                <button class="pin" onclick="sumPin()">${sumPinned?'&#9679; Pinned':'Keep open'}</button></div>
+              ${l.txt}
+            </div>
+          </div>
+        </div>`;
+    }else{
+      const split=!!l.med;
+      body=`<div class="head">${l.head}</div>
+        <div class="lay ${split?'split':''}">
+          <div class="txt">${l.txt}</div>
+          ${split?`<div class="med">${l.med}</div>`:''}
+        </div>`;
+    }
   }
   const box=$('#lesson');
   box.innerHTML=
     `<div class="crumb"><span class="pill">Module ${modNum(l.m)}</span><span>${mo.n}</span><span class="sep">&rsaquo;</span><span>${l.k}</span>${slideBtn(l.t)}</div>${body}`;
-  box.className='lesson vcenter';
+  box.className='lesson'+(SLIDES[l.t]?'':' vcenter');
   void box.offsetWidth; box.classList.add('anim');
+  fitShot();
   $('#stage').scrollTop=0;
 
   $('#btnPrev').disabled=idx===0;
