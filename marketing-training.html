@@ -128,6 +128,11 @@ b,strong{color:var(--v-ink);font-weight:700}
 .crumb-slide{margin-left:auto;display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--line-2);background:#fff;border-radius:999px;padding:5px 13px 5px 10px;font-size:11.5px;font-weight:700;color:var(--v-muted);letter-spacing:0;transition:.15s;white-space:nowrap}
 .crumb-slide:hover{border-color:var(--v-cyan-d);color:var(--v-navy)}
 .crumb-slide svg{width:13px;height:13px;flex:none}
+/* the deck page used as the lesson visual */
+.fig.shot .shot-b{display:block;width:100%;padding:0;background:#fff;line-height:0;position:relative;border-radius:var(--radius) var(--radius) 0 0;overflow:hidden}
+.fig.shot img{width:100%;height:auto;display:block}
+.fig.shot .shot-z{position:absolute;right:11px;bottom:11px;width:32px;height:32px;border-radius:9px;background:rgba(10,38,71,.74);color:#fff;display:grid;place-items:center;font-size:14px;line-height:1;opacity:0;transition:opacity .15s;backdrop-filter:blur(3px)}
+.fig.shot .shot-b:hover .shot-z,.fig.shot .shot-b:focus-visible .shot-z{opacity:1}
 .lb{position:fixed;inset:0;z-index:600;background:rgba(6,20,38,.9);display:none;align-items:center;justify-content:center;padding:34px 26px 74px}
 .lb.on{display:flex}
 .lb img{max-width:100%;max-height:100%;object-fit:contain;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5);background:#fff}
@@ -902,7 +907,7 @@ add('m3','Typography','Lesson',
 `<h1>Two families, one hierarchy.</h1>
 <p class="lead"><b>Freight Display Pro</b> is the primary typeface for headlines, titles and short statements. <b>Benton Sans</b> covers subheaders, body copy and calls to action.</p>`,
 `<div class="note"><b>Weights available.</b> Freight Disp Pro ships Light, Book, Medium, Semibold, Bold and Black, each with an italic. Benton Sans ships Thin through Black, plus Extra Condensed, Condensed and Compressed widths.</div>
-<p style="font-size:13px;color:var(--faint)">Freight Display Pro and Benton Sans are licensed families, so this page substitutes <b>Newsreader</b> and <b>Libre Franklin</b>, the closest free faces to the specimen above. Anything that ships to a client uses the real two.</p>`,
+<p style="font-size:13px;color:var(--faint)">The specimen is the deck page itself, so those are the real letterforms. Both families are licensed: pull them from the SIR asset library rather than substituting a lookalike.</p>`,
 fig(`<div class="spec">
   <div class="r"><div class="d-h1">Large expressive headline</div><div class="who">FREIGHTDISP<br>LIGHT</div></div>
   <div class="r"><div class="d-h2">Smaller detailed headline</div><div class="who">FREIGHTDISP<br>BOOK</div></div>
@@ -1421,14 +1426,14 @@ add('m9','What is in the library','Lesson',
 `<h1>Sixteen prompts, <em>four jobs.</em></h1>
 <p class="lead">The library is grouped by the role doing the work, so you can go straight to yours instead of reading all of it.</p>`,
 `<div class="grid2">
-  <div class="card"><h4>Graphic design</h4><p>Brand alignment review, email layout, tri fold brochure, yard sign direction.</p></div>
-  <div class="card"><h4>Social media</h4><p>30 day calendar, Instagram audit, educational carousel, just listed and just sold templates.</p></div>
-  <div class="card"><h4>Transaction coordination</h4><p>Document checklist, contract to close follow up, MLS public remarks, photography review.</p></div>
-  <div class="card"><h4>Operations</h4><p>Write an SOP, audit against an SOP, executive summary, 30 day onboarding roadmap.</p></div>
+  <div class="card" style="padding:15px 17px"><h4>Graphic design</h4><p style="margin:0;font-size:13.5px">Brand alignment review, email layout, tri fold brochure, yard sign direction.</p></div>
+  <div class="card" style="padding:15px 17px"><h4>Social media</h4><p style="margin:0;font-size:13.5px">30 day calendar, Instagram audit, educational carousel, just listed and just sold templates.</p></div>
+  <div class="card" style="padding:15px 17px"><h4>Transaction coordination</h4><p style="margin:0;font-size:13.5px">Document checklist, contract to close follow up, MLS public remarks, photography review.</p></div>
+  <div class="card" style="padding:15px 17px"><h4>Operations</h4><p style="margin:0;font-size:13.5px">Write an SOP, audit against an SOP, executive summary, 30 day onboarding roadmap.</p></div>
 </div>
 <div class="note"><b>Start with the video.</b> The deck opens this section with <i>Prompting 101 with Claude</i>. Watch it once before you use a template, so the five ingredients in the next lesson make sense.</div>`,
 fig(`<div style="text-align:center">
-  <div style="font-family:var(--serif);font-size:26px;color:var(--sir);margin-bottom:14px">Index</div>
+  <div style="font-family:var(--serif);font-size:23px;color:var(--sir);margin-bottom:10px">Index</div>
   <div style="text-align:left;max-width:320px;margin:0 auto;font-size:13.5px;color:var(--v-ink)">
     <div class="mock-row"><span>Prompting 101 with Claude</span><b>Video</b></div>
     <div class="mock-row"><span>How to structure a prompt</span><b>2</b></div>
@@ -1820,6 +1825,12 @@ function slideBtn(t){
     + '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="2.2" y="3.6" width="15.6" height="11" rx="1.6"/><path d="M10 14.6v2.2M7 16.8h6"/></svg>'
     + '<span>Original slide' + (s.length>1 ? ' ('+s.length+')' : '') + '</span></button>';
 }
+function shotFig(s){
+  return '<figure class="fig shot"><button class="shot-b" onclick="openSlide()" aria-label="Enlarge the deck page">'
+    + '<img src="assets/img/marketing/' + s[0] + '.jpg" alt="Deck page" loading="lazy">'
+    + '<span class="shot-z">&#10530;</span></button>'
+    + '<figcaption class="fig-cap">The deck page' + (s.length>1 ? ', 1 of ' + s.length : '') + '. Click to enlarge.</figcaption></figure>';
+}
 function openSlide(){
   const t = L[idx] && L[idx].t;
   lb = {list:(SLIDES[t]||[]).slice(), i:0};
@@ -1848,11 +1859,16 @@ function render(){
   if(l.head.startsWith('__Q__')){
     body=quizHtml(l.head.slice(5));
   }else{
-    const split=!!l.med;
+    // The deck page itself is the visual wherever we have it: the licensed
+    // Freight and Benton faces cannot be embedded, so a rebuild can never be
+    // an exact match. l.med is the fallback for lessons with no exported page.
+    const shot=SLIDES[l.t];
+    const med=shot?shotFig(shot):l.med;
+    const split=!!med;
     body=`<div class="head">${l.head}</div>
       <div class="lay ${split?'split':''}">
         <div class="txt">${l.txt}</div>
-        ${split?`<div class="med">${l.med}</div>`:''}
+        ${split?`<div class="med">${med}</div>`:''}
       </div>`;
   }
   const box=$('#lesson');
