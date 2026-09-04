@@ -368,12 +368,16 @@ body.drawer-open .q-veil{right:min(680px,94vw)}
 @media(max-width:900px){.brief-grid{grid-template-columns:1fr}}
 .guide-btn{border:1.5px solid var(--line2);border-radius:20px;padding:7px 16px;font-size:13px;font-weight:700;color:var(--navy);background:#fff;white-space:nowrap}
 .guide-btn:hover{border-color:var(--navy)}
+/* embedded inside a role page: the shell already provides the chrome */
+body.embed .scbar{display:none}
 .screen{display:none}
 .screen.on{display:block}
 .hidden{display:none !important}
 </style>
+<script>if (new URLSearchParams(location.search).has('embed')) document.documentElement.classList.add('embed-pending');</script>
 </head>
 <body>
+<script>if (document.documentElement.classList.contains('embed-pending')) document.body.classList.add('embed');</script>
 
 <header class="scbar">
   <a class="scbar-back" href="index.html#roles"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 3.5 5 8l4.5 4.5"/></svg><span>Roles</span></a>

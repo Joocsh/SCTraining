@@ -101,10 +101,31 @@
       if (panel) main.appendChild(panel);
     });
 
-    function show(id) {
+    var frame = null;
+    function ensureFrame() {
+      if (!frame) {
+        frame = document.createElement('iframe');
+        frame.className = 'rs-frame';
+        frame.setAttribute('title', 'Section');
+        main.appendChild(frame);
+      }
+      return frame;
+    }
+
+    function show(id, href) {
       main.querySelectorAll('.lc-panel, .rd-resources-panel').forEach(function (p) { p.classList.remove('open'); });
+      if (frame) frame.classList.remove('open');
+      main.classList.remove('framed');
       home.style.display = id ? 'none' : '';
-      if (id) {
+
+      if (href) {
+        /* its own page, shown inside the column so the section list stays */
+        var f = ensureFrame();
+        var url = href + (href.indexOf('?') > -1 ? '&' : '?') + 'embed=1';
+        if (f.getAttribute('src') !== url) f.setAttribute('src', url);
+        f.classList.add('open');
+        main.classList.add('framed');
+      } else if (id) {
         var panel = document.getElementById(id === 'resources' ? 'resources-panel' : 'panel-' + id);
         if (panel) {
           panel.classList.add('open');
@@ -127,12 +148,13 @@
     var ov = navButton(null, 'Overview');
     ov.innerHTML = svg(ICONS.home) + '<span>Overview</span>';
 
-    sections.forEach(function (s) {
+    sections.forEach(function (s, i) {
       if (s.href) {
+        s.id = 'ext' + i;
         var a = document.createElement('button');
-        a.dataset.sec = 'link';
+        a.dataset.sec = s.id;
         a.innerHTML = svg(iconFor(null, s.name)) + '<span>' + s.name + '</span>';
-        a.addEventListener('click', function () { location.href = s.href; });
+        a.addEventListener('click', function () { show(s.id, s.href); });
         nav.appendChild(a);
       } else {
         navButton(s.id, s.name);
@@ -143,7 +165,7 @@
       c.innerHTML = '<span class="nm">' + s.name + '</span>' +
                     '<span class="ds">' + s.desc + '</span>' +
                     '<span class="go">Open &rarr;</span>';
-      c.addEventListener('click', function () { s.href ? (location.href = s.href) : show(s.id); });
+      c.addEventListener('click', function () { show(s.id, s.href); });
       cards.appendChild(c);
     });
 
