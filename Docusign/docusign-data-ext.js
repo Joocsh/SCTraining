@@ -103,8 +103,8 @@ const DS_EXAM_BANK_EXT = [
   {
     id: 'ex-tri-ext-3', category: 'triage', type: 'triage',
     label: 'Triage: Expiring listing agreement (3 days left)',
-    /* The envelope and the mailbox reminder both say 504 Westwood Blvd, 3 days. This
-       item said 48 hours and named no property, so the three disagreed. */
+    /* The envelope says 504 Westwood Blvd, 3 days. This item originally said
+       48 hours and named no property, so they disagreed. */
     situation: 'ENV-2026-9008 (Exclusive Listing Agreement — 504 Westwood Blvd): expires in 3 days; Sarah Johnson has been sent the envelope and has not opened it.',
     rightAction: 'resend', points: 5,
     explain: 'Send an immediate reminder to prompt the pending signer before the expiration window closes.'

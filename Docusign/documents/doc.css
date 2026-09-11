@@ -220,6 +220,7 @@ body.ds-cert .paper { font-family: Arial, Helvetica, sans-serif; padding: 46px 5
   font-size: 9.5px; font-weight: 700; padding: 4px 6px; margin: 14px 0 0;
 }
 .cert-sec span { font-weight: 700; }
+.cert-sec span:first-child, .cert-sec .c1 { flex: 1; font-weight: 700; }
 .cert-sec .c2 { width: 200px; flex: none; }
 .cert-sec .c3 { width: 190px; flex: none; }
 

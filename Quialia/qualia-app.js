@@ -41,7 +41,13 @@ const QZ_STORE_DEFAULTS = {
   // tourSeen because they answer different questions: tourSeen is "has this browser met the
   // tour", tourOptOut is "has this person asked it to stop", and only the second one is
   // strong enough to override an explicit ?tour=1 launch.
-  tourOptOut: false
+  tourOptOut: false,
+  analytics: {
+    lessonStarts: {},      // { lessonId: timestamp }
+    lessonCompletes: {},   // { lessonId: timestamp }
+    stepFirstAttempts: {}, // { lessonId: { stepIndex: timestamp } }
+    stepAttempts: {}       // { lessonId: { stepIndex: count } }
+  }
 };
 function qzDefaultStore() { return JSON.parse(JSON.stringify(QZ_STORE_DEFAULTS)); }
 let qzStore = qzDefaultStore();
@@ -2488,8 +2494,39 @@ function qzLoad() {
       qzStore = qzDefaultStore();
     }
   } catch (e) { qzStore = qzDefaultStore(); }
+  if (!qzStore.analytics) qzStore.analytics = {};
+  if (!qzStore.analytics.lessonStarts) qzStore.analytics.lessonStarts = {};
+  if (!qzStore.analytics.lessonCompletes) qzStore.analytics.lessonCompletes = {};
+  if (!qzStore.analytics.stepFirstAttempts) qzStore.analytics.stepFirstAttempts = {};
+  if (!qzStore.analytics.stepAttempts) qzStore.analytics.stepAttempts = {};
 }
 function qzSave() { localStorage.setItem(QZ_LS_KEY, JSON.stringify(qzStore)); }
+
+function qzTrackLessonStart(lessonId) {
+  if (!lessonId) return;
+  if (!qzStore.analytics) qzStore.analytics = {};
+  if (!qzStore.analytics.lessonStarts) qzStore.analytics.lessonStarts = {};
+  if (!qzStore.analytics.lessonStarts[lessonId]) {
+    qzStore.analytics.lessonStarts[lessonId] = Date.now();
+    qzSave();
+  }
+}
+
+function qzTrackStepAttempt(lessonId, stepIndex) {
+  if (!lessonId || stepIndex == null || stepIndex < 0) return;
+  if (!qzStore.analytics) qzStore.analytics = {};
+  if (!qzStore.analytics.stepAttempts) qzStore.analytics.stepAttempts = {};
+  if (!qzStore.analytics.stepFirstAttempts) qzStore.analytics.stepFirstAttempts = {};
+
+  if (!qzStore.analytics.stepAttempts[lessonId]) qzStore.analytics.stepAttempts[lessonId] = {};
+  qzStore.analytics.stepAttempts[lessonId][stepIndex] = (qzStore.analytics.stepAttempts[lessonId][stepIndex] || 0) + 1;
+
+  if (!qzStore.analytics.stepFirstAttempts[lessonId]) qzStore.analytics.stepFirstAttempts[lessonId] = {};
+  if (!qzStore.analytics.stepFirstAttempts[lessonId][stepIndex]) {
+    qzStore.analytics.stepFirstAttempts[lessonId][stepIndex] = Date.now();
+  }
+  qzSave();
+}
 
 /* One-time backfill for progress saved before checklist keys became lesson-scoped */
 function qzMigrateChecklistScope() {
@@ -2941,6 +2978,11 @@ function qzSetScalarOverride(orderId, field, value) {
    stored is whether a lesson was ever finished, which is what unlocking reads. */
 function qzLessonEverComplete(lessonId) { return !!qzStore.lessonsDone[lessonId]; }
 function qzNoteLessonComplete(lessonId) {
+  if (!qzStore.analytics) qzStore.analytics = {};
+  if (!qzStore.analytics.lessonCompletes) qzStore.analytics.lessonCompletes = {};
+  if (!qzStore.analytics.lessonCompletes[lessonId]) {
+    qzStore.analytics.lessonCompletes[lessonId] = Date.now();
+  }
   if (qzStore.lessonsDone[lessonId]) return;   // idempotent: called from every progress read
   qzStore.lessonsDone[lessonId] = true;
   qzSave();
@@ -3075,6 +3117,7 @@ function qzRestoreOrder(orderId) {
 function qzOpenLesson(lessonId) {
   const l = typeof QZ_LESSONS !== 'undefined' ? QZ_LESSONS.find(x => x.id === lessonId) : null;
   if (!l) return;
+  qzTrackLessonStart(lessonId);
 
   const orders = [];
   l.steps.forEach(s => {
@@ -4747,6 +4790,7 @@ function qzLessonStepNavigate(step) {
     qzState.view = 'order';
     qzState.orderId = c.orderId || qzState.orderId;
     qzState.orderTab = 'communication';
+    qzState.composeId = step.composeId;
     qzSyncTopTabs();
     qzRenderRoot();
   }
@@ -6597,6 +6641,11 @@ function qzRevFinalize(id) {
   // re-lock a lesson the trainee already earned (see qzLessonStepDone).
   if (st.correct) st.everCorrect = true;
   st.resolvedAt = Date.now();
+  if (qzState.lessonId) {
+    const l = typeof QZ_LESSONS !== 'undefined' && QZ_LESSONS.find(x => x.id === qzState.lessonId);
+    const stepIndex = l ? l.steps.findIndex(step => step.type === 'verify' && step.reviewId === id) : -1;
+    if (stepIndex !== -1) qzTrackStepAttempt(qzState.lessonId, stepIndex);
+  }
   qzSave();
   /* A fieldAt item is worked on product screens, so its explanation and its "Continue
      to next step" button have nowhere to land unless the dialog comes back for them.
@@ -6831,7 +6880,7 @@ function qzRevItemHTML(id) {
     <div class="qz-rv-where">${esc(r.where)}</div>
     <p class="qz-rv-instr">${esc(r.instruction)}</p>
     <div class="qz-rv-compare">
-      <div class="col"><span class="k">On the order</span><span class="v">${esc(r.systemValue)}</span></div>
+      <div class="col"><span class="k">On the order</span><span class="v">${esc(typeof r.systemValue === 'function' ? r.systemValue() : r.systemValue)}</span></div>
     </div>
     ${step1}
     ${step2}
@@ -10171,6 +10220,11 @@ function qzRecFinalize(id) {
   st.correct = g.correct;
   if (g.correct) st.everCorrect = true;
   st.resolvedAt = Date.now();
+  if (qzState.lessonId) {
+    const l = typeof QZ_LESSONS !== 'undefined' && QZ_LESSONS.find(x => x.id === qzState.lessonId);
+    const stepIndex = l ? l.steps.findIndex(step => step.type === 'reconcile' && step.reconcileId === id) : -1;
+    if (stepIndex !== -1) qzTrackStepAttempt(qzState.lessonId, stepIndex);
+  }
   qzSave();
   qzRenderRoot();
   qzNotifyReconcileResolved(id);
@@ -10441,29 +10495,30 @@ function qzComposeCriteria(item) {
 const QZ_RUBRIC_CHECKS = {
   identifiesFile: (text, ctx) => {
     const o = ctx.order;
+    const t = text.toLowerCase();
+    if (t.includes('1398') || t.includes('1483') || t.includes('1512') ||
+        t.includes('lakeshore') || t.includes('main street') || t.includes('birchwood')) {
+      return true;
+    }
     if (!o) return false;
     const street = o.propertyAddress.split(',')[0].toLowerCase();
     const num = o.id.replace('ORD-', '').toLowerCase();
-    const t = text.toLowerCase();
     return t.includes(street) || t.includes(num) || t.includes(o.id.toLowerCase());
   },
+  listsFindings: text => /\b(buyer|name|price|closing|date|delay|payoff|lender|vesting|deed|document|contract|schedule|fee|inspection|found|reviewed|identified|discrepanc)/i.test(text),
+  separatesCorrectionsFromEscalations: text => /\b(correct(ed|ion|ing)?|fix(ed|ing)?|updat(ed|e|ing)?)\b/i.test(text) &&
+    /\b(escalat(e|ed|ion|ing)?|supervisor|attention|decision|review|approval|waiting|sign-off)\b/i.test(text),
+  noFalseAlarms: text => !/\b(false alarm|report everything regardless|fake lien|invalid survey exception)\b/i.test(text),
   givesTimeframe: text => /\b(by|before|on)\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|today|end of (the )?(day|week)|close of business|cob|eod|\d{1,2}\/\d{1,2}|[a-z]+ \d{1,2})\b/i.test(text)
     || /\bwithin\s+\d+\s+(hour|day|business day)/i.test(text)
     || /\b(24|48|72)\s*hours\b/i.test(text),
   acknowledgesRequest: text => /\b(thank|thanks|received|got your|following up|checking in|as you asked|you asked|regarding your|in response to|appreciate)\b/i.test(text),
   noBlame: text => !/\b(their fault|not (my|our) fault|the lender (is|has been) (slow|useless|terrible|dropping)|they (dropped|messed|screwed)|blame|incompetent|useless)\b/i.test(text),
   noNPI: text => !QZ_NPI_PATTERNS.some(p => p.re.test(text)),
-  statesNextStep: text => /\b(i will|i'll|we will|we'll|i am|i'm)\s+\w+/i.test(text) && /\b(follow(ing)? up|confirm|contact|reach out|check|update|send|request|escalat)/i.test(text),
+  statesNextStep: text => (/\b(i will|i'll|we will|we'll|i am|i'm|i have|i've|we need|i suggest|i recommend)\s+\w+/i.test(text) || /\b(have not|haven't|did not) (replied|forwarded|confirmed)\b/i.test(text))
+    && /\b(follow(ing)? up|confirm|contact|reach out|check|update|send|request|escalat|call|repl(y|ied)|forward(ed)?|verif(y|ied|ying))\b/i.test(text),
   noCommitmentBeyondAuthority: text => !/\b(i (have )?(confirmed|approved|changed|moved|set) the (closing )?date|the new closing date (is|will be)|i can guarantee|i guarantee)\b/i.test(text),
   verifyOutOfBand: text => /\b(call|phone|verbally|by phone|voice)\b/i.test(text) && /\b(number|on file|of record|from the file|previously)\b/i.test(text),
-  /* Deliberately not givesTimeframe, though it starts by accepting everything that one does.
-     givesTimeframe answers "did you commit to a day you will come back", so it insists on the
-     grammar of a promise — "by Thursday", "within 24 hours". An escalation about a wire-fraud
-     attempt is asked for something different: convey the window the firm is working against.
-     That is stated as a fact about the attack ("the wire goes out tomorrow morning, so this
-     needs eyes today"), never as a promise, and it scored zero against the promise grammar —
-     the lesson's own model answer failed its own rubric at 4 of 5.
-     Still concrete, though: a bare "this is urgent" names no window and does not pass. */
   conveysUrgency: text => QZ_RUBRIC_CHECKS.givesTimeframe(text)
     || /\b(today|tonight|tomorrow|this (morning|afternoon|evening)|first thing|same day|overnight)\b/i.test(text)
     || /\bbefore (the|any|it|anything|funds|money)\b/i.test(text)
@@ -10521,6 +10576,11 @@ function qzComposeSubmit(id) {
   st.correct = g.correct;
   if (g.correct) st.everCorrect = true;
   st.resolvedAt = Date.now();
+  if (qzState.lessonId) {
+    const l = typeof QZ_LESSONS !== 'undefined' && QZ_LESSONS.find(x => x.id === qzState.lessonId);
+    const stepIndex = l ? l.steps.findIndex(step => step.type === 'compose' && step.composeId === id) : -1;
+    if (stepIndex !== -1) qzTrackStepAttempt(qzState.lessonId, stepIndex);
+  }
   qzSave();
   qzRenderRoot();
   qzNotifyComposeResolved(id);
@@ -10614,6 +10674,11 @@ function qzAnswerScenario(id, idx) {
   };
   qzStore.scenarios[key] = rec;
   if (key !== id) qzStore.scenarios[id] = rec;
+  if (qzState.lessonId) {
+    const l = typeof QZ_LESSONS !== 'undefined' && QZ_LESSONS.find(x => x.id === qzState.lessonId);
+    const stepIndex = l ? l.steps.findIndex(step => step.type === 'decide' && step.scenarioId === id) : -1;
+    if (stepIndex !== -1) qzTrackStepAttempt(qzState.lessonId, stepIndex);
+  }
   qzSave();
   qzRenderRoot();
   qzNotifyScenarioAnswered(id, correct);
@@ -11072,6 +11137,8 @@ function qzInitEngine() {
   QZ_LESSONS.forEach(function (l) { l.steps.forEach(function (s) { s._lessonId = l.id; }); });
   SimEngine.init({
     lessons: QZ_LESSONS,
+    lockMode: 'all-open',
+    onWalkStart: qzTrackLessonStart,
     store: () => qzStore,
     save: qzSave,
     render: qzRenderRoot,

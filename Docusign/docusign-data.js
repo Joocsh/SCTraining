@@ -207,15 +207,15 @@ const DS_CHECKLISTS = {
     label: 'Module 5: Envelope Management & Follow-up',
     items: [
       { id: 'ds_c5_1', title: 'Check Envelope Status', hint: 'View envelope progress in Manage tab' },
-      /* Lesson 1 step 2 referenced this id before it existed, which meant the step could
-         never be satisfied and Lesson 1 never completed — locking the whole curriculum
-         behind it. Marked by dsOpenEnvelope(), i.e. by actually opening a file, not by
-         rendering the list. */
+      { id: 'ds_sent_return', title: 'Return to Sent Envelopes', hint: 'Click Sent in sidebar to review dispatched agreements' },
       { id: 'ds_env_open', title: 'Open an Envelope', hint: 'Click a row in the envelope list to open its detail view' },
+      { id: 'ds_l02_open_9041', title: 'Inspect Sequential Waiting Envelope', hint: 'Open ENV-2026-9041 to examine recipient statuses' },
+      { id: 'ds_l02_open_6620', title: 'Inspect Voided Envelope', hint: 'Open ENV-2026-6620 to examine cancellation and audit state' },
+      { id: 'ds_l02_remind_sarah', title: 'Send Targeted Reminder to Sarah', hint: 'Send reminder notification to the active blocker' },
+      { id: 'ds_l02_open_8812', title: 'Inspect Delivery Failed Envelope', hint: 'Open ENV-2026-8812 to examine bounce/typo state' },
       { id: 'ds_c5_2', title: 'Send Manual Reminder', hint: 'Click "Resend / Reminder" on an awaiting envelope' },
       { id: 'ds_c5_3', title: 'Correct Envelope', hint: 'Edit a recipient email or document on an in-flight envelope' },
       { id: 'ds_c5_4', title: 'Void In-flight Envelope', hint: 'Void an envelope with a mandatory explanation reason' },
-      { id: 'ds_mail_open', title: 'Open VA Mailbox', hint: 'Click VA Mailbox in the sidebar to review incoming communications' },
       { id: 'ds_cert_open', title: 'Open Certificate of Completion', hint: 'View the legal audit trail and cryptographic timestamps' },
       { id: 'ds_action_open', title: 'Review Action Required Queue', hint: 'Inspect envelopes requiring immediate follow-up' }
     ]
@@ -404,6 +404,32 @@ const DS_SCENARIOS = [
     ],
     correct: 1,
     explanation: 'Optional fields allow the signer to skip information that does not apply to them. Making it required would block a sole proprietor from completing the signing process. Pre-filling "N/A" removes the signer\'s agency and may not be accurate. The field should exist but not block completion.'
+  },
+  {
+    id: 'ds_scen_l01_correct',
+    title: 'Why Correct instead of Void?',
+    situation: 'You just fixed a bounced envelope using the Correct feature. Your coworker says she always voids and recreates envelopes when they bounce. Why is Correct the better approach?',
+    options: [
+      'Correct preserves the envelope ID, audit trail, and any existing signatures — voiding discards all of that and creates unnecessary duplicates.',
+      'There is no real difference — both methods achieve the same result.',
+      'Voiding is actually better because it gives you a fresh start with no history.',
+      'Correct only works if the envelope was sent less than 24 hours ago.'
+    ],
+    correct: 0,
+    explanation: 'The Correct feature lets you fix recipient details on an in-flight envelope without losing its chain of custody. Voiding destroys the envelope and forces you to rebuild from scratch — wasting time and losing any signatures already collected.'
+  },
+  {
+    id: 'ds_scen_l03_send',
+    title: 'Pre-Flight Verification Before Sending an Envelope',
+    situation: 'You have just assembled documents, added signers, and placed signature tabs for a Purchase Agreement. Before clicking "Send Envelope", what critical pre-flight audit must you perform as a real estate VA?',
+    options: [
+      'Confirm all required documents are attached, each recipient has the proper action ("Needs to Sign" vs "Receives a Copy"), signature fields are assigned to the right parties, and the subject line clearly identifies the property.',
+      'Only check that the document has at least one page; DocuSign automatically assigns signature tabs to whoever opens the link first.',
+      'Send immediately without checking, because document text, attached exhibits, and recipient email addresses can be edited on the live document at any time without voiding.',
+      'Delete all signature tabs and allow the parties to sign anywhere using freeform signing to save time.'
+    ],
+    correct: 0,
+    explanation: 'Before launching an envelope, a professional real estate VA always executes a pre-flight audit: verify attached documents, ensure recipient roles and signing sequence are correct, confirm signature/date tabs are assigned to the proper signers, and write a clear, descriptive subject line (e.g., "Purchase Agreement — 123 Main Street"). Once sent, contract documents cannot be altered without voiding and restarting.'
   }
 ];
 
@@ -657,68 +683,293 @@ const DS_COMPOSE_ITEMS = [
    ============================================================================ */
 const DS_LESSONS = [
   {
-    id: 'l01-workspace', number: 1, title: 'Workspace Navigation',
-    summary: 'Learn the DocuSign layout: sidebar sections, envelope list, mailbox, and templates — everything a VA needs to locate before handling real transactions.',
+    id: 'l01-workspace', number: 1, title: 'Your First Shift',
+    summary: 'Your supervising agent left you five tasks for your first shift. Complete each one to learn where things live in DocuSign — and what to do when you find them.',
     steps: [
-      { type: 'do', checklistId: 'ds_c5_1', view: 'envelopes', walk: {
-          target: '#sb-sent',
-          text: 'The Sent section shows every envelope you have dispatched. Click "Sent" now to see the agreements your office has in flight.',
-          setup: () => dsGotoAllEnvelopes(),
-          pauseText: 'Good — this is your Sent queue. Every envelope you dispatch appears here with its current status.'
+      { type: 'do', checklistId: 'ds_l02_open_8812', view: 'envelope-detail', viewArg: 'ENV-2026-8812', walk: {
+          target: () => {
+            if (dsState.view === 'envelope-detail' && dsState.activeEnvId === 'ENV-2026-8812') {
+              return '.ds-detail-head, .ds-recipients-list';
+            }
+            if (dsState.view === 'envelopes') {
+              return 'tr[data-env-id="ENV-2026-8812"]';
+            }
+            return '.ds-topnav-item[data-view="envelopes"], #sb-sent';
+          },
+          text: () => {
+            if (dsState.view === 'envelope-detail' && dsState.activeEnvId === 'ENV-2026-8812') {
+              return "This envelope bounced because the recipient email was typed as 'gmial.com' instead of 'gmail.com'. In DocuSign, you don't void a bounced envelope — you use the 'Correct' feature to fix the email in-flight.";
+            }
+            if (dsState.view === 'envelopes') {
+              return "Your Sent queue holds every envelope your office has dispatched. Each row reports its current status. One of these envelopes has a problem — a delivery failure. Find it and click on it.";
+            }
+            return "Click 'Sent' in the sidebar (or 'Agreements' in top navigation) to view your sent envelopes.";
+          },
+          setup: () => dsOpenSent(),
+          pauseText: "Good eye. This envelope bounced because the recipient email was typed as 'gmial.com' instead of 'gmail.com'. In DocuSign, you don't void a bounced envelope — you use the in-flight 'Correct' feature to fix the email address, preserving the envelope ID and audit trail."
         } },
-      { type: 'do', checklistId: 'ds_mail_open', view: 'mailbox', walk: {
-          target: '#sb-mailbox',
-          text: 'The VA Mailbox collects signer notifications, bounce alerts, and completion confirmations. Click "VA Mailbox" in the sidebar to review what has arrived.',
-          pauseText: 'This is your Mailbox. Signer replies, delivery bounces, and completion alerts arrive here. Now click "Sent" in the sidebar to go back to your sent envelopes.'
+      { type: 'do', checklistId: 'ds_c5_3', view: 'envelope-detail', viewArg: 'ENV-2026-8812', walk: {
+          setup: () => dsGoto('envelope-detail', 'ENV-2026-8812'),
+          pauseTarget: '#dsCorrectedBanner, #dsDetailRecipientsPanel, .ds-recipients-list',
+          target: () => {
+            const modal = document.getElementById('dsDispatchModalWrap');
+            if (modal) {
+              return '#dsDispatchModalWrap .ds-btn.primary';
+            }
+            const env = typeof dsGetEnvelope === 'function' ? dsGetEnvelope('ENV-2026-8812') : null;
+            const isAlreadyCorrected = env && (env.correctedAt || (env.recipients && env.recipients[0] && env.recipients[0].correctedSent));
+            if (isAlreadyCorrected) {
+              return '#dsCorrectedBanner, #dsDetailRecipientsPanel, .ds-recipients-list';
+            }
+            const form = document.getElementById('dsCorrectForm-ENV-2026-8812');
+            if (form) {
+              const emailInput = document.getElementById('dsCorrectEmail-0');
+              const val = emailInput ? (emailInput.value || '').trim().toLowerCase() : '';
+              const isRepaired = val.endsWith('@gmail.com') && !val.includes('gmial');
+              return isRepaired ? '#dsCorrectForm-ENV-2026-8812 .ds-btn.primary' : '#dsCorrectEmail-0';
+            }
+            if (dsState.view === 'envelope-detail' && dsState.activeEnvId === 'ENV-2026-8812') {
+              return '#dsBtnCorrectEnv';
+            }
+            if (dsState.view === 'envelope-detail') {
+              return '.ds-detail-back, .ds-topnav-item[data-view="envelopes"]';
+            }
+            if (dsState.view === 'envelopes' || dsState.view === 'dashboard') {
+              return 'tr[data-env-id="ENV-2026-8812"]';
+            }
+            return '.ds-topnav-item[data-view="envelopes"], #sb-sent';
+          },
+          text: () => {
+            const modal = document.getElementById('dsDispatchModalWrap');
+            if (modal) {
+              return 'Review the invitation receipt showing the fresh email dispatched to david.m.freelance@gmail.com, then click "View Updated Envelope".';
+            }
+            const env = typeof dsGetEnvelope === 'function' ? dsGetEnvelope('ENV-2026-8812') : null;
+            const isAlreadyCorrected = env && (env.correctedAt || (env.recipients && env.recipients[0] && env.recipients[0].correctedSent));
+            if (isAlreadyCorrected) {
+              return '✓ Envelope corrected! Review David Miller\'s updated recipient status and dispatched invitation below, or use &rarr; to advance.';
+            }
+            const form = document.getElementById('dsCorrectForm-ENV-2026-8812');
+            if (form) {
+              const emailInput = document.getElementById('dsCorrectEmail-0');
+              const val = emailInput ? (emailInput.value || '').trim().toLowerCase() : '';
+              const isRepaired = val.endsWith('@gmail.com') && !val.includes('gmial');
+              if (!isRepaired) {
+                if (val.includes('gmial')) {
+                  return 'Fix the recipient typo in David Miller\'s email: change "gmial.com" to "gmail.com" in the highlighted field.';
+                }
+                return 'Type the correct domain: make sure David Miller\'s email ends in "@gmail.com" (e.g. david.m.freelance@gmail.com).';
+              }
+              return '✓ Typo repaired! Now click "Save & Resend" to dispatch the corrected envelope in-flight.';
+            }
+            if (dsState.view === 'envelope-detail' && dsState.activeEnvId === 'ENV-2026-8812') {
+              return 'Click "Correct Envelope" in the action bar to repair the bounced recipient address in-flight.';
+            }
+            if (dsState.view === 'envelope-detail') {
+              return 'Click "← Back to Agreements" to return to your list, then select ENV-2026-8812.';
+            }
+            if (dsState.view === 'envelopes' || dsState.view === 'dashboard') {
+              return 'Locate and click on ENV-2026-8812 (Contractor Agreement) with status "Delivery Failed".';
+            }
+            return 'Click "Manage" (or "Sent" in the sidebar) to view your envelopes.';
+          },
+          pauseText: "Envelope repaired! You corrected David Miller's email typo from gmial.com to gmail.com in-flight, preserving the envelope ID and audit trail without having to void."
         } },
-      { type: 'do', checklistId: 'ds_c5_1', view: 'envelopes', walk: {
-          target: '#sb-sent',
-          text: 'Click "Sent" to go back to your sent envelopes. We need to inspect one of them.',
-          pauseText: 'Good — now find the 123 Main Street Purchase Agreement in the list.'
-        } },
-      { type: 'do', checklistId: 'ds_env_open', view: 'envelope-detail', viewArg: 'ENV-2026-9041', walk: {
-          target: 'tr[data-env-id="ENV-2026-9041"]',
-          text: 'Click on ENV-2026-9041 (123 Main Street Purchase Agreement) to inspect its status, recipients, and history.',
-          pauseText: 'This is the envelope detail view. You can see the recipients, their signing status, the document history, and available actions like Send Reminder or Void.'
-        } },
-      { type: 'do', checklistId: 'ds_c4_1', view: 'templates', walk: {
-          target: '.ds-topnav-item[data-view="templates"]',
-          text: 'Templates let you send standard agreements without rebuilding them from scratch. Click "Templates" in the top navigation.'
-        } },
-      { type: 'decide', scenarioId: 'ds_scen_1', walk: {
+      { type: 'decide', scenarioId: 'ds_scen_l01_correct', walk: {
           target: null,
-          text: 'You just explored the workspace. Now a real situation: the buyer on that 123 Main Street envelope says he never received his DocuSign email. What do you do?',
-          setup: () => dsAskScenario('ds_scen_1')
+          text: "You just fixed a bounced envelope without voiding it. Your coworker says she always voids and recreates envelopes when they bounce. Why is Correct the better approach?",
+          setup: () => dsAskScenario('ds_scen_l01_correct')
+        } },
+      { type: 'do', checklistId: 'ds_l02_open_9041', view: 'envelope-detail', viewArg: 'ENV-2026-9041', walk: {
+          setup: () => dsGotoAllEnvelopes(),
+          target: () => {
+            if (dsState.view === 'envelope-detail' && dsState.activeEnvId === 'ENV-2026-9041') {
+              return '.ds-detail-head, .ds-recipients-list';
+            }
+            if (dsState.view === 'envelope-detail') {
+              return '.ds-detail-back, .ds-topnav-item[data-view="envelopes"]';
+            }
+            if (dsState.view === 'envelopes' || dsState.view === 'dashboard') {
+              return 'tr[data-env-id="ENV-2026-9041"]';
+            }
+            return '.ds-topnav-item[data-view="envelopes"], #sb-sent';
+          },
+          text: () => {
+            if (dsState.view === 'envelope-detail' && dsState.activeEnvId === 'ENV-2026-9041') {
+              return "Task 2: Study the Recipient Timeline. John Smith (Order 1, Buyer) has signed. Sarah Johnson (Order 2, Seller) is 'Waiting' — in sequential order she was only notified after John signed. Notice Sarah is currently blocking the deal. Review the timeline, then click Next Step.";
+            }
+            if (dsState.view === 'envelope-detail') {
+              return 'Task 1 complete! Now for Task 2 of your shift: click "← Back to Agreements" to return to your queue and inspect a stalled purchase agreement.';
+            }
+            if (dsState.view === 'envelopes' || dsState.view === 'dashboard') {
+              return "Task 2: Locate and open the Purchase Agreement for 123 Main Street (ENV-2026-9041). Your supervisor needs you to inspect why this transaction is stalled.";
+            }
+            return 'Click "Manage" (or "Sent" in the sidebar) to view your envelopes.';
+          },
+          pauseText: "This screen shows exactly where a deal stands: who signed, who is blocking, and what actions you can take. Notice how sequential signing order works: Sarah could only receive the invitation after John completed his signature. In the next step, you will send Sarah an urgent reminder."
+        } },
+      { type: 'do', checklistId: 'ds_l02_remind_sarah', view: 'envelope-detail', viewArg: 'ENV-2026-9041', walk: {
+          pauseTarget: '#dsReminderBanner, #dsDetailAuditPanel, .ds-recipients-list',
+          target: () => {
+            const env = typeof dsGetEnvelope === 'function' ? dsGetEnvelope('ENV-2026-9041') : null;
+            const sarah = env && env.recipients && env.recipients.find(r => r.name === 'Sarah Johnson');
+            if (sarah && sarah.reminderSent) {
+              return '#dsReminderBanner, #dsDetailAuditPanel, .ds-recipients-list';
+            }
+            if (document.getElementById('dsResendModalWrap')) {
+              return '#dsResendModalWrap .ds-btn.primary';
+            }
+            if (dsState.view === 'envelope-detail' && dsState.activeEnvId === 'ENV-2026-9041') {
+              return '#dsBtnSendReminder';
+            }
+            if (dsState.view === 'envelope-detail') {
+              return '.ds-detail-back, .ds-topnav-item[data-view="envelopes"]';
+            }
+            if (dsState.view === 'envelopes' || dsState.view === 'dashboard') {
+              return 'tr[data-env-id="ENV-2026-9041"]';
+            }
+            return '.ds-topnav-item[data-view="envelopes"], #sb-sent';
+          },
+          text: () => {
+            const env = typeof dsGetEnvelope === 'function' ? dsGetEnvelope('ENV-2026-9041') : null;
+            const sarah = env && env.recipients && env.recipients.find(r => r.name === 'Sarah Johnson');
+            if (sarah && sarah.reminderSent) {
+              return '✓ Reminder dispatched! Notice the live update in Sarah\'s recipient status and the new entry in the Envelope Activity & Audit Trail below.';
+            }
+            if (document.getElementById('dsResendModalWrap')) {
+              return 'Sarah Johnson is the active blocker. Ensure her checkbox is checked and click "Send Reminder Now »" to dispatch the reminder.';
+            }
+            if (dsState.view === 'envelope-detail' && dsState.activeEnvId === 'ENV-2026-9041') {
+              return 'Sarah is the active blocker. Click "Send Reminder" in the action bar to open the reminder panel.';
+            }
+            if (dsState.view === 'envelope-detail') {
+              return 'Click "← Back to Agreements" to return to your list, then select ENV-2026-9041.';
+            }
+            if (dsState.view === 'envelopes' || dsState.view === 'dashboard') {
+              return 'Click on ENV-2026-9041 to open its detail view.';
+            }
+            return 'Click "Manage" (or "Sent" in the sidebar) to view your envelopes.';
+          },
+          pauseText: "Reminder sent! Notice the live update in Sarah's status and the new event logged in the Envelope Activity & Audit Trail below — this is your verifiable audit proof of follow-up."
+        } },
+      { type: 'decide', scenarioId: 'ds_scen_4', walk: {
+          target: null,
+          text: "Sarah Johnson calls your office and says she never received a DocuSign email. Knowing what you just saw about sequential signing order, what is the most likely explanation?",
+          setup: () => dsAskScenario('ds_scen_4')
+        } },
+      { type: 'do', checklistId: 'ds_c4_2', view: 'new-envelope', walk: {
+          target: '.ds-tpl-use-btn',
+          setup: () => dsGoto('templates'),
+          text: "Your supervising agent asks you to send a standard Mutual NDA — 'use the template, don't build from scratch.' Find the NDA template and click 'Use' to see what it pre-configures for you.",
+          pauseText: "Notice what the template pre-populated: the document is attached, the recipient role is defined, and the signature fields are pre-placed on the correct pages. All you need is the recipient's name and email. Templates eliminate setup errors and save 5-10 minutes per envelope."
+        } },
+      { type: 'decide', scenarioId: 'ds_scen_7', walk: {
+          target: null,
+          text: "Your agent asks you to send a standard Exclusive Listing Agreement. The office has a pre-built template. What is the most efficient approach?",
+          setup: () => dsAskScenario('ds_scen_7')
+        } },
+      { type: 'do', checklistId: 'ds_action_open', view: 'envelopes', walk: {
+          target: '#sb-action',
+          setup: () => dsGotoAllEnvelopes(),
+          text: "Last task: check the Action Required queue before you end your shift. If Sent is your full inventory, Action Required is your priority list — it filters down to envelopes that need immediate attention.",
+          pauseText: "You completed your first shift: you found and corrected a bounced envelope, analyzed a live multi-party transaction and reminded the stalled signer, used a template to prepare a new envelope, and learned where urgent items surface. These four areas — Sent, Envelope Detail, Templates, and Action Required — are where you'll spend 90% of your time as a DocuSign VA."
         } }
     ]
   },
   {
     id: 'l02-envelope-state', number: 2, title: 'Reading Envelope State',
-    summary: 'Understand envelope statuses (Waiting, Completed, Voided, Declined, Expired), recipient timelines, and what each status means for your next action.',
+    summary: 'Understand envelope statuses (Waiting, Completed, Voided), recipient signing order, and how to verify execution using the Certificate of Completion.',
     steps: [
-      { type: 'do', checklistId: 'ds_env_open', view: 'envelope-detail', viewArg: 'ENV-2026-9041', walk: {
-          target: 'tr[data-env-id="ENV-2026-9041"]',
-          text: 'Open ENV-2026-9041. Notice the status "Waiting" — John Smith signed, Sarah Johnson has not.',
-          setup: () => dsGotoAllEnvelopes()
+      { type: 'do', checklistId: 'ds_l02_open_9041', view: 'envelope-detail', viewArg: 'ENV-2026-9041', walk: {
+          setup: () => dsGotoAllEnvelopes(),
+          target: () => {
+            if (dsState.view === 'envelope-detail' && dsState.activeEnvId === 'ENV-2026-9041') {
+              return '.ds-detail-head, #dsDetailRecipientsPanel, .ds-recipients-list';
+            }
+            if (dsState.view === 'envelopes' || dsState.view === 'dashboard') {
+              return 'tr[data-env-id="ENV-2026-9041"]';
+            }
+            return '.ds-topnav-item[data-view="envelopes"], #sb-sent';
+          },
+          text: () => {
+            if (dsState.view === 'envelope-detail' && dsState.activeEnvId === 'ENV-2026-9041') {
+              return 'Notice the "Waiting" status and the signing timeline: John Smith (Order 1) has signed, while Sarah Johnson (Order 2) is waiting because sequential signing routes to her only after John completes. Review the timeline, then click Next Step.';
+            }
+            if (dsState.view === 'envelopes' || dsState.view === 'dashboard') {
+              return 'Task 1: Locate and click on ENV-2026-9041 (Purchase Agreement — 123 Main Street) to inspect its recipients and sequential status timeline.';
+            }
+            return 'Click "Manage" (or "Sent" in the sidebar) to view your envelopes.';
+          },
+          pauseText: 'Notice how sequential signing works: John Smith (Order 1) is ✓ Completed, and Sarah Johnson (Order 2) is Waiting. In sequential order, DocuSign only delivers the notification to Sarah once John finishes. Next, let\'s examine a completed agreement and its legal proof: the Certificate of Completion.'
         } },
-      { type: 'do', checklistId: 'ds_c5_2', view: 'envelope-detail', viewArg: 'ENV-2026-9041', walk: {
-          target: '#dsBtnSendReminder',
-          text: 'Sarah is the active blocker. Click "Send Reminder" to prompt her.',
-          setup: () => dsGoto('envelope-detail', 'ENV-2026-9041')
+      { type: 'do', checklistId: 'ds_cert_open', view: 'envelope-detail', viewArg: 'ENV-2026-7734', walk: {
+          setup: () => dsGotoAllEnvelopes(),
+          pauseTarget: '#dsCertModalWrap, .ds-cert-card',
+          target: () => {
+            if (document.getElementById('dsCertModalWrap')) {
+              return '#dsCertModalWrap, .ds-cert-card';
+            }
+            if (dsState.view === 'envelope-detail' && dsState.activeEnvId === 'ENV-2026-7734') {
+              return '#dsBtnViewCertificate';
+            }
+            if (dsState.view === 'envelopes' || dsState.view === 'dashboard') {
+              return 'tr[data-env-id="ENV-2026-7734"]';
+            }
+            return '.ds-topnav-item[data-view="envelopes"], #sb-sent';
+          },
+          text: () => {
+            if (document.getElementById('dsCertModalWrap')) {
+              return '✓ Certificate of Completion open! Inspect the cryptographic Envelope ID, recipient authentication status, and exact Sent/Viewed/Signed timestamps, then click Next Step.';
+            }
+            if (dsState.view === 'envelope-detail' && dsState.activeEnvId === 'ENV-2026-7734') {
+              return 'Notice the green "Completed" badge. Click "Certificate of Completion" in the action bar to review the official legal audit trail.';
+            }
+            if (dsState.view === 'envelopes' || dsState.view === 'dashboard') {
+              return 'Task 2: Locate and click on ENV-2026-7734 (Standard NDA — Elena Rostova) to examine a completed transaction.';
+            }
+            return 'Click "Manage" (or "Sent" in the sidebar) to view your envelopes.';
+          },
+          pauseText: 'The Certificate of Completion is the legal backbone of DocuSign: it documents recipient identity, IP addresses, tamper-evident seals, and exact timestamp events. Next, let\'s look at what happens when a contract is cancelled and voided.'
         } },
-      { type: 'do', checklistId: 'ds_env_open', view: 'envelope-detail', viewArg: 'ENV-2026-8812', walk: {
-          target: 'tr[data-env-id="ENV-2026-8812"]',
-          text: 'Now open ENV-2026-8812. Notice "Delivery Failed" — the email address has a typo.',
-          setup: () => dsGotoAllEnvelopes()
+      { type: 'do', checklistId: 'ds_l02_open_6620', view: 'envelope-detail', viewArg: 'ENV-2026-6620', walk: {
+          setup: () => {
+            if (typeof dsCloseCertificateModal === 'function') dsCloseCertificateModal();
+            dsGotoAllEnvelopes();
+          },
+          target: () => {
+            if (document.getElementById('dsCertModalWrap')) {
+              return '.ds-cert-close-btn, #dsCertModalWrap .ds-btn.primary';
+            }
+            if (dsState.view === 'envelope-detail' && dsState.activeEnvId === 'ENV-2026-6620') {
+              return '.ds-detail-head, .ds-badge.voided, .ds-action-bar';
+            }
+            if (dsState.view === 'envelopes' || dsState.view === 'dashboard') {
+              return 'tr[data-env-id="ENV-2026-6620"]';
+            }
+            return '.ds-topnav-item[data-view="envelopes"], #sb-sent';
+          },
+          text: () => {
+            if (document.getElementById('dsCertModalWrap')) {
+              return 'Close the Certificate of Completion modal to return to agreements.';
+            }
+            if (dsState.view === 'envelope-detail' && dsState.activeEnvId === 'ENV-2026-6620') {
+              return 'Notice the red "Voided" badge and the cancelled status. All signing links for this agreement have been permanently revoked and cannot be signed. Review the voided state, then click Next Step.';
+            }
+            if (dsState.view === 'envelopes' || dsState.view === 'dashboard') {
+              return 'Task 3: Locate and click on ENV-2026-6620 (Outdated Listing Agreement — CANCELLED) to inspect a voided envelope.';
+            }
+            return 'Click "Manage" to view your sent envelopes.';
+          },
+          pauseText: 'When an envelope is voided, DocuSign revokes all signing tokens permanently. The signer cannot sign, and the transaction cannot be resumed. If terms must change, you duplicate or resend as a new envelope.'
         } },
-      { type: 'decide', scenarioId: 'ds_scen_4', walk: {
+      { type: 'decide', scenarioId: 'ds_scen_8', walk: {
           target: null,
-          text: 'Sarah (Order 2) says she never got an email. Why, and what do you do?',
-          setup: () => dsAskScenario('ds_scen_4')
+          text: 'You just voided an envelope because contract terms changed. The client calls 10 minutes later saying their signing link states "Document Voided." How should you respond?',
+          setup: () => dsAskScenario('ds_scen_8')
         } },
       { type: 'decide', scenarioId: 'ds_scen_9', walk: {
           target: null,
-          text: 'The closing attorney (CC) asks why he cannot sign. What do you tell him?',
+          text: 'The closing attorney (set as "Receives a Copy" / CC) asks why there is no "Sign" button on his document. What do you explain?',
           setup: () => dsAskScenario('ds_scen_9')
         } }
     ]
@@ -729,36 +980,38 @@ const DS_LESSONS = [
     steps: [
       { type: 'do', checklistId: 'ds_c1_1', view: 'new-envelope', walk: {
           target: '.ds-new-btn',
-          text: 'Click the yellow "Start Now" button to open the Send an Envelope wizard.',
+          text: 'Click the "Start Now" button in the sidebar to open the Send an Envelope wizard.',
           setup: () => dsGotoAllEnvelopes()
         } },
       { type: 'do', checklistId: 'ds_c1_2', view: 'new-envelope', walk: {
-          target: '#dsBtnSampleDocs',
-          text: 'Click "Sample documents" to attach the practice Purchase Agreement.',
-          setup: () => { dsResetWizard(); dsGoto('new-envelope'); }
-        } },
-      { type: 'do', checklistId: 'ds_c1_3', view: 'new-envelope', walk: {
-          target: '#dsBtnNextRecipients',
-          text: 'Verify the email subject and click "Next: Add Recipients".',
+          target: () => {
+            if (document.getElementById('dsSampleDocsWrap')) {
+              return '#dsAttachSampleDocBtn, .ds-sampledoc-actions .ds-btn.primary';
+            }
+            if (dsState.wizardData && dsState.wizardData.documents && dsState.wizardData.documents.length > 0) {
+              return '#dsBtnNextRecipients';
+            }
+            return '#dsBtnSampleDocs';
+          },
+          text: () => {
+            if (document.getElementById('dsSampleDocsWrap')) {
+              return 'Click "+ Attach" next to the Purchase Agreement to add it to your envelope.';
+            }
+            if (dsState.wizardData && dsState.wizardData.documents && dsState.wizardData.documents.length > 0) {
+              return 'Document attached! Click "Next: Add Recipients →" to proceed.';
+            }
+            return 'Click "Sample documents" to attach the practice Purchase Agreement.';
+          },
           setup: () => {
-            if (dsState.view !== 'new-envelope' || dsState.wizardStep !== 1) {
+            if (dsState.view !== 'new-envelope') {
               dsResetWizard();
-              dsState.wizardData.documents.push({ name: 'Purchase_Agreement_123_Main.pdf', pages: 6 });
               dsGoto('new-envelope');
             }
           }
         } },
-      { type: 'do', checklistId: 'ds_c2_1', view: 'new-envelope', walk: {
-          target: '#dsBtnNextFields',
-          text: 'Review recipients. Buyer has "Needs to Sign". Click "Next: Place Fields".',
-          setup: () => {
-            dsState.wizardStep = 2;
-            dsGoto('new-envelope');
-          }
-        } },
-      { type: 'do', checklistId: 'ds_c1_4', view: 'new-envelope', walk: {
-          target: '#dsBtnSendFinal',
-          text: 'Final review. Click "Send Envelope" to launch the agreement.',
+      { type: 'do', checklistId: 'ds_c1_3', view: 'new-envelope', walk: {
+          target: '#dsBtnNextRecipients',
+          text: 'Verify the email subject and click "Next: Add Recipients →".',
           setup: () => {
             if (!dsState.wizardData) dsResetWizard();
             if (!dsState.wizardData.documents || !dsState.wizardData.documents.length) {
@@ -767,14 +1020,59 @@ const DS_LESSONS = [
             if (!dsState.wizardData.subject) {
               dsState.wizardData.subject = 'Purchase Agreement — 123 Main Street';
             }
-            dsState.wizardStep = 4;
+            dsState.wizardStep = 1;
             dsGoto('new-envelope');
           }
         } },
-      { type: 'decide', scenarioId: 'ds_scen_7', walk: {
+      { type: 'do', checklistId: 'ds_c2_1', view: 'new-envelope', walk: {
+          target: '#dsBtnNextFields',
+          text: 'Review recipients. John Smith (Buyer) and Sarah Johnson (Seller) are set to "Needs to Sign". Click "Next: Place Fields →".',
+          setup: () => {
+            if (!dsState.wizardData) dsResetWizard();
+            if (!dsState.wizardData.documents || !dsState.wizardData.documents.length) {
+              dsState.wizardData.documents = [{ name: 'Purchase_Agreement_123_Main.pdf', pages: 6 }];
+            }
+            if (!dsState.wizardData.subject) {
+              dsState.wizardData.subject = 'Purchase Agreement — 123 Main Street';
+            }
+            dsSeedLessonEnvelope();
+            dsState.wizardStep = 2;
+            dsGoto('new-envelope');
+          }
+        } },
+      { type: 'do', checklistId: 'ds_c1_4', view: 'new-envelope', walk: {
+          target: () => {
+            if (dsState.wizardStep === 3) {
+              return '#dsBtnReviewAndSend, .ds-wiz-foot .ds-btn.primary';
+            }
+            return '#dsBtnSendFinal';
+          },
+          text: () => {
+            if (dsState.wizardStep === 3) {
+              return 'Signature and date fields are positioned on the execution page. Click "Review & Send →" to preview the envelope.';
+            }
+            return 'Final review: verify attached documents, recipients, and subject line, then click "Send Envelope" to launch.';
+          },
+          pauseText: 'Envelope sent successfully! The agreement is now in flight, notification emails have been dispatched to the signers, and the envelope appears in your "Waiting for Others" queue.',
+          setup: () => {
+            if (!dsState.wizardData) dsResetWizard();
+            if (!dsState.wizardData.documents || !dsState.wizardData.documents.length) {
+              dsState.wizardData.documents = [{ name: 'Purchase_Agreement_123_Main.pdf', pages: 6 }];
+            }
+            if (!dsState.wizardData.subject) {
+              dsState.wizardData.subject = 'Purchase Agreement — 123 Main Street';
+            }
+            dsSeedLessonEnvelope();
+            if (dsState.wizardStep !== 3 && dsState.wizardStep !== 4) {
+              dsState.wizardStep = 4;
+            }
+            dsGoto('new-envelope');
+          }
+        } },
+      { type: 'decide', scenarioId: 'ds_scen_l03_send', walk: {
           target: null,
-          text: 'Your agent asks you to send a standard listing. Should you build from scratch or use a template?',
-          setup: () => dsAskScenario('ds_scen_7')
+          text: 'You are preparing to send a critical purchase agreement. What pre-flight verification checklist must you perform before clicking "Send Envelope"?',
+          setup: () => dsAskScenario('ds_scen_l03_send')
         } }
     ]
   },
@@ -886,8 +1184,40 @@ const DS_LESSONS = [
           setup: () => dsGoto('templates')
         } },
       { type: 'do', checklistId: 'ds_c5_3', view: 'envelope-detail', viewArg: 'ENV-2026-8812', walk: {
-          target: '#dsBtnCorrectEnv',
-          text: 'ENV-2026-8812 bounced due to a typo. Click "Correct Envelope" to fix the email address.',
+          pauseTarget: '#dsCorrectedBanner, #dsDetailRecipientsPanel, .ds-recipients-list',
+          target: () => {
+            const modal = document.getElementById('dsDispatchModalWrap');
+            if (modal) return '#dsDispatchModalWrap .ds-btn.primary';
+            const env = typeof dsGetEnvelope === 'function' ? dsGetEnvelope('ENV-2026-8812') : null;
+            const isAlreadyCorrected = env && (env.correctedAt || (env.recipients && env.recipients[0] && env.recipients[0].correctedSent));
+            if (isAlreadyCorrected) return '#dsCorrectedBanner, #dsDetailRecipientsPanel, .ds-recipients-list';
+            const form = document.getElementById('dsCorrectForm-ENV-2026-8812');
+            if (form) {
+              const emailInput = document.getElementById('dsCorrectEmail-0');
+              const val = emailInput ? (emailInput.value || '').trim().toLowerCase() : '';
+              const isRepaired = val.endsWith('@gmail.com') && !val.includes('gmial');
+              return isRepaired ? '#dsCorrectForm-ENV-2026-8812 .ds-btn.primary' : '#dsCorrectEmail-0';
+            }
+            return '#dsBtnCorrectEnv';
+          },
+          text: () => {
+            const modal = document.getElementById('dsDispatchModalWrap');
+            if (modal) return 'Review the dispatched invitation receipt, then click "View Updated Envelope".';
+            const env = typeof dsGetEnvelope === 'function' ? dsGetEnvelope('ENV-2026-8812') : null;
+            const isAlreadyCorrected = env && (env.correctedAt || (env.recipients && env.recipients[0] && env.recipients[0].correctedSent));
+            if (isAlreadyCorrected) return '✓ Envelope corrected! Review David Miller\'s updated recipient status and dispatched invitation below, then click "Next →" to proceed.';
+            const form = document.getElementById('dsCorrectForm-ENV-2026-8812');
+            if (form) {
+              const emailInput = document.getElementById('dsCorrectEmail-0');
+              const val = emailInput ? (emailInput.value || '').trim().toLowerCase() : '';
+              const isRepaired = val.endsWith('@gmail.com') && !val.includes('gmial');
+              if (!isRepaired) {
+                return 'Fix the typo from @gmial.com to @gmail.com in David Miller\'s email field.';
+              }
+              return 'Typo repaired! Click "Save & Resend" to dispatch the corrected envelope.';
+            }
+            return 'ENV-2026-8812 bounced due to a typo. Click "Correct Envelope" to fix the email address.';
+          },
           setup: () => dsGoto('envelope-detail', 'ENV-2026-8812')
         } },
       { type: 'decide', scenarioId: 'ds_scen_3', walk: {
@@ -895,46 +1225,15 @@ const DS_LESSONS = [
           text: 'Outdated price on a sent contract — void or correct?',
           setup: () => dsAskScenario('ds_scen_3')
         } },
-      { type: 'decide', scenarioId: 'ds_scen_8', walk: {
+      { type: 'decide', scenarioId: 'ds_scen_1', walk: {
           target: null,
-          text: 'You voided an envelope. The seller calls confused. How do you handle this?',
-          setup: () => dsAskScenario('ds_scen_8')
+          text: 'The client says they never received their DocuSign email. What is your first action?',
+          setup: () => dsAskScenario('ds_scen_1')
         } },
       { type: 'decide', scenarioId: 'ds_scen_10', walk: {
           target: null,
           text: 'A tenant declined a lease citing wrong terms. Correct, void, or escalate?',
           setup: () => dsAskScenario('ds_scen_10')
-        } }
-    ]
-  },
-  {
-    id: 'l07-phishing', number: 7, title: 'Email Security & Phishing Detection',
-    summary: 'Identify deceptive look-alike domains, credential harvesters, and malicious signing links. Distinguish phishing from legitimate DocuSign notifications.',
-    steps: [
-      { type: 'do', checklistId: 'ds_mail_open', view: 'mailbox', walk: {
-          target: '#sb-mailbox',
-          text: 'Open the VA Mailbox to review incoming email notifications.',
-          setup: () => dsGotoAllEnvelopes()
-        } },
-      { type: 'triage', triageId: 'tri-mail-phish1', label: 'Urgent wire transfer email', walk: {
-          target: null,
-          text: 'Inspect this urgent wire transfer email. Check the sender domain and the link destination.',
-          setup: () => dsAskTriage('tri-mail-phish1')
-        } },
-      { type: 'triage', triageId: 'tri-mail-phish2', label: 'Escrow approval notice', walk: {
-          target: null,
-          text: 'This escrow notice looks right at first glance. Read where the button actually points.',
-          setup: () => dsAskTriage('tri-mail-phish2')
-        } },
-      { type: 'triage', triageId: 'tri-mail-real', label: 'Standard signing request', walk: {
-          target: null,
-          text: 'Not every notification is an attack. Treating a real one as phishing has its own cost.',
-          setup: () => dsAskTriage('tri-mail-real')
-        } },
-      { type: 'decide', scenarioId: 'ds_scen_12', walk: {
-          target: null,
-          text: 'A borrower failed the access code challenge 3 times. What should you do?',
-          setup: () => dsAskScenario('ds_scen_12')
         } }
     ]
   },
