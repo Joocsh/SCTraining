@@ -18,7 +18,7 @@
   var DOCS = {
     contract:   ['ratified-contract.pdf', 'Ratified purchase agreement', 'REIN, ratified 02/22/2026 · 29 pages'],
     convey:     ['items-to-convey.pdf', 'Items to convey', 'Contract ¶15'],
-    add1:       ['addendum-1-emd-form-of-payment.pdf', 'Addendum #1: EMD form of payment', 'Signed by buyers 02/23/2026'],
+    add1:       ['addendum-1-emd-form-of-payment.pdf', 'Addendum #1: EMD form of payment', 'Buyers 02/23 · seller 02/24/2026'],
     check:      ['emd-check-redacted.pdf', 'EMD check #0001', '$500 · dated 02/23/2026 · bank line redacted'],
     hoa:        ['hoa-resale-certificate.pdf', 'HOA resale certificate', 'PMA-A08775 · prepared 01/20/2026'],
     cic2:       ['cic-2-resale-certificate-receipt.pdf', 'CIC-2 receipt acknowledgement', 'Received 02/23/2026'],
@@ -29,11 +29,13 @@
     invoice:    ['wdi-moisture-invoice.pdf', 'WDI and moisture invoice', '$90.00'],
     picra:      ['picra-buyer-request.pdf', "Buyers' PICRA request", 'PAA-7A · 02/25/2026'],
     counter:    ['picra-seller-counter.pdf', 'Seller counter', 'Signed 02/28 and 03/01/2026'],
-    add2:       ['addendum-2-negotiation-extension.pdf', 'Addendum #2: negotiation period', 'Signed 03/02/2026'],
+    add2:       ['addendum-2-negotiation-extension.pdf', 'Addendum #2: negotiation period', 'Buyers 03/02 · seller 03/03/2026'],
     picraok:    ['picra-ratified.pdf', 'Ratified PICRA', 'Removal Acceptance 03/06/2026'],
+    paa1u:      ['paa-1-before-buyer-signatures.pdf', 'PAA-1 before the buyers signed', 'Seller 03/01 · no buyer signatures'],
     paa1:       ['paa-1-price-and-credit.pdf', 'PAA-1: $290,000 and $5,000 credit', 'Buyers signed 03/06/2026'],
-    fha:        ['fha-amendatory-clause.pdf', 'FHA Amendatory Clause', '$290,000 · Archer Mortgage'],
+    fha:        ['fha-amendatory-clause.pdf', 'FHA Amendatory Clause', 'Loan 202602916 · $290,000'],
     hoaupdate:  ['hoa-financial-update-order.pdf', 'HOA financial update order', 'PMA-A08954 · 03/20/2026'],
+    hoaupd:     ['hoa-financial-update.pdf', 'HOA financial update', 'PMA-A08954 · prepared 04/02/2026'],
     extend:     ['addendum-closing-date-extension.pdf', 'Addendum: closing date extension', 'Mar 17 to Mar 30 · signed 03/27'],
     walk:       ['walk-through-report.pdf', 'Walk through report', 'Buyers signed 03/30/2026'],
     alta:       ['alta-settlement-statement.pdf', 'ALTA settlement statement', 'RW Towne Title · 03/30/2026'],
@@ -291,17 +293,13 @@
   /* ════════════════ Step 1: Ratified contract ════════════════ */
   function vaStep0() {
     var main =
-      '<div class="wf-email">' +
-        '<div class="wf-email-header"><div class="wf-email-subject">Ratified! 4232 Maplehurst Road</div>' +
-          '<div class="wf-email-meta">' +
-            '<div class="wf-email-row"><span class="wf-email-row-lbl">From:</span> Shannon Paschall &lt;Shannon@shannonsellsva.com&gt;</div>' +
-            '<div class="wf-email-row"><span class="wf-email-row-lbl">To:</span> Transaction Coordinator</div>' +
-            '<div class="wf-email-row"><span class="wf-email-row-lbl">Date:</span> Sunday, February 22, 2026</div>' +
-          '</div></div>' +
-        '<div class="wf-email-body"><p>Maplehurst is ratified! The buyers are Sergio and Jasmin Malonzo with Karen Archbell at BHHS RW Towne Realty, FHA loan through Archer Mortgage.</p>' +
-          '<p>The fully signed contract is in the file. Please set up the deal, get the dates on the calendar and send everything out.</p>' +
-          '<div class="wf-sig">Shannon Paschall · AtCoastal Realty</div></div>' +
-      '</div>' +
+      card('The file you just received', 'Shannon Paschall (AtCoastal Realty) hands you the ratified contract package for 4232 Maplehurst Road.',
+        '<ul style="margin:0;padding-left:18px;font-size:13.5px;line-height:1.7;color:var(--v-ink)">' +
+          '<li>PDF page 1: Archer Mortgage pre approval letter, dated February 21, 2026</li>' +
+          '<li>PDF pages 2 to 17: REIN Standard Purchase Agreement, signed by the buyers and Karen Archbell on 02/21 and by the seller on 02/22</li>' +
+          '<li>PDF pages 18 to 25: disclosures, the resale certificate request (CIC-1) and the Property Inspection Contingency Addendum</li>' +
+          '<li>PDF pages 26 to 29: a moisture report and a WDI report from Pest Heroes</li>' +
+        '</ul>') +
       form('va-sheet', 'Build the file sheet', 'Open the ratified purchase agreement on the right and copy each term from the signed pages. The agreement starts on PDF page 2.', [
         { label: 'Ratification date', hint: 'PDF p.2', kind: 'date', ans: '2026-02-22', ph: 'mm/dd/yyyy', show: '02/22/2026 (ratification box, line 41)' },
         { label: 'Buyers', hint: 'line 2', kind: 'text', ans: ['malonzo'], ph: 'Full names', show: 'Sergio P Malonzo, Jr. and Jasmin Malonzo' },
@@ -312,6 +310,14 @@
         { label: 'Settlement date', hint: '¶8, PDF p.5', kind: 'date', ans: '2026-03-17', ph: 'mm/dd/yyyy', show: 'On or before 03/17/2026' },
         { label: 'Repair cap', hint: '¶13, PDF p.8', kind: 'text', ans: ['1%', '2850'], ph: '% or $', show: '1% of the price, $2,850' }
       ]) +
+      decision('va-d-jasmin',
+        'The pre approval letter is addressed only to Jasmin Malonzo. The contract names two buyers, Sergio P Malonzo, Jr. and Jasmin Malonzo. What do you do?',
+        [
+          { t: 'Ask Brad Watts at Archer Mortgage to confirm who is on the loan application, since ¶6A gives the buyers 7 days to apply. Note the answer in the file.', ok: true },
+          { t: 'Nothing. A pre approval for one buyer covers both.', ok: false },
+          { t: 'Ask Karen to take Sergio off the contract so it matches the letter.', ok: false }
+        ],
+        'A pre approval is not a loan commitment, and a missing borrower can change the approval. In this file the FHA Amendatory Clause signed Mar 11 lists both Jasmin Malonzo and Sergio P Malonzo Jr as borrowers, and so does the ALTA. Until you see that, confirm it with the lender instead of assuming.') +
       decision('va-d-preapproval',
         'The pre approval letter on PDF page 1 shows a $272,181 loan, but ¶3 of the contract finances $267,500. What do you do with that difference?',
         [
@@ -366,7 +372,7 @@
           '<li>Utilities stay on through the walk through (¶13D)</li>' +
         '</ul>') +
       compose({ key: 'seller', scenario: 'tc-va-seller-detail', prompt: 'Seller detail email, 4232 Maplehurst Road VA (ratified 02/22/2026)',
-        to: 'Jemal O Tamem (seller)', cc: 'Shannon Paschall <Shannon@shannonsellsva.com>', subj: 'You are under contract: 4232 Maplehurst Road',
+        to: 'Jemal O Tamem <ojemal69@yahoo.com>', cc: 'Shannon Paschall <Shannon@shannonsellsva.com>', subj: 'You are under contract: 4232 Maplehurst Road',
         attach: ['Ratified contract', 'Items to convey', 'Utility form', 'Walk through form'],
         ph: 'Write the seller email here. Cover the price and settlement date, the deposit, access for inspections, what conveys and keeping utilities on.' });
     return step(3, 'Seller Email', 'Mon, Feb 23, 2026',
@@ -382,19 +388,19 @@
         { t: 'Karen Archbell', sub: 'Selling agent, BHHS RW Towne Realty', ok: true },
         { t: 'Joel C. Gueli', sub: 'RW Towne Title LLC, settlement agent', ok: true },
         { t: 'Brad Watts', sub: "Archer Mortgage, the buyers' lender", ok: true },
-        { t: 'AtCoastal Realty compliance', sub: 'Ratified file intake', ok: true },
-        { t: 'Caplan Law Group', sub: "Seller's deed preparation", ok: true },
+        { t: 'Caplan Law Group', sub: "Seller's deed preparation and attorney", ok: true },
+        { t: 'Diana Martinez', sub: "Shannon's operations manager", ok: true },
         { t: 'Sergio and Jasmin Malonzo', sub: 'The buyers, directly', ok: false },
-        { t: 'Bobbi Wood', sub: "Buyer's agent on the January contract", ok: false },
-        { t: 'Pest Heroes', sub: 'Inspector hired under the January contract', ok: false }
-      ], 'Anything for the buyers goes through their agent (¶23). The January names belong to an earlier contract on this home that did not close; sending them this one shares a new buyer\'s terms with people who have no role in the file.') +
+        { t: 'Keff/Spec LLC', sub: "The buyers' home inspector", ok: false },
+        { t: 'Eliminator Termite Pest & Moisture Control', sub: 'WDI and moisture inspector', ok: false }
+      ], 'Notices for the buyers go through the Selling Firm (¶23), so Karen gets their copy. Inspectors work for the buyers and only need access, not the price and terms of the sale.') +
       compose({ key: 'dist', scenario: 'tc-va-distribute-contract', prompt: 'Distribute ratified contract email, 4232 Maplehurst Road VA',
-        to: 'Karen Archbell <karen@karenarchbell.com>, Joel Gueli <Joel.Gueli@rwtownetitle.com>, Brad Watts <brad@archermortgagellc.com>, AtCoastal compliance, Caplan Law Group',
-        cc: 'Shannon Paschall <Shannon@shannonsellsva.com>', subj: 'Ratified contract: 4232 Maplehurst Road (02/22/2026)',
+        to: 'Karen Archbell <karen@karenarchbell.com>, Joel Gueli <Joel.Gueli@rwtownetitle.com>, Brad Watts <brad@archermortgagellc.com>, Caplan Law Group',
+        cc: 'Shannon Paschall <Shannon@shannonsellsva.com>, Diana Martinez <Diana@shannonsellsva.com>', subj: 'Ratified contract: 4232 Maplehurst Road (02/22/2026)',
         attach: ['Ratified contract'],
         ph: 'Attach the contract, give each party the dates that matter to them (loan application and reports by Mar 1, settlement Mar 17) and ask everyone to confirm receipt.' });
     return step(4, 'Distribute to Parties', 'Mon, Feb 23, 2026',
-      'Send the contract to everyone who needs it to do their part, and only to them. This home had a contract in January that did not close, so old names are still in the file.',
+      'Send the contract to everyone who needs it to do their part, and only to them.',
       main,
       side([['Title', 'RW Towne Title LLC'], ['Escrow officer', 'Joel C. Gueli'], ['Lender', 'Brad Watts'], ['Selling agent', 'Karen Archbell']], ['contract']));
   }
@@ -409,7 +415,7 @@
           { t: 'Accept it. The amount is right, so the form of payment does not matter.', ok: false },
           { t: 'Reject the check and tell the buyers they are in breach.', ok: false }
         ],
-        'A deposit paid differently than the contract says invites a breach argument later. In this file Addendum #1, dated 02/23/2026, changed the form of payment from Other Earnest to personal check, and both buyers signed it that day.') +
+        'A deposit paid differently than the contract says invites a breach argument later. In this file Addendum #1 changed the form of payment from Other Earnest to personal check. The buyers and Karen signed it on 02/23, Shannon and the seller on 02/24.') +
       form('va-emd', 'Log the deposit', 'Use the check and Addendum #1.', [
         { label: 'Amount', kind: 'money', ans: 500, ph: '$', show: '$500.00' },
         { label: 'Payable to', kind: 'text', ans: ['rwtowne', 'bhhs', 'berkshire'], ph: 'Escrow agent', show: 'BHHS RW Towne Realty' },
@@ -435,7 +441,8 @@
       card('What happened', '',
         timeline([
           ['Jan 20', 'PMA prepares resale certificate <b>PMA-A08775</b> for Timberlake Community Association on behalf of the seller.'],
-          ['Feb 23', "The buyer's agent receives the certificate. The buyers acknowledge it on the <b>CIC-2</b>, signed Mar 3."],
+          ['Feb 22', 'The <b>CIC-1</b> in the contract tells PMA to email the certificate to the buyers, to Karen Archbell and to Joel Gueli at RW Towne Title.'],
+          ['Feb 23', "The buyers' side receives the certificate. The buyers and Karen sign the <b>CIC-2</b> on Mar 3."],
           ['Mar 3', "Diana Martinez, Shannon's operations manager, writes to PMA about Appendix 15."],
           ['Mar 4', 'David Lukus, association manager, replies in writing.']
         ])) +
@@ -444,7 +451,7 @@
         { label: 'Buyers can cancel until 11:59 PM on', hint: '3 days', kind: 'select', ans: '2026-02-26', show: 'Thu, Feb 26',
           options: [['2026-02-25', 'Wed, Feb 25'], ['2026-02-26', 'Thu, Feb 26'], ['2026-02-27', 'Fri, Feb 27'], ['2026-03-02', 'Mon, Mar 2']] },
         { label: 'Monthly assessment', hint: 'Appendix 4', kind: 'money', ans: 53.80, ph: '$', show: '$53.80, due the 1st of each month' },
-        { label: "Seller's balance as of 01/20/2026", hint: 'Appendix 5', kind: 'money', ans: 56.36, ph: '$', show: '$56.36, paid at closing' }
+        { label: "Seller's balance as of 01/20/2026", hint: 'Appendix 4', kind: 'money', ans: 56.36, ph: '$', show: '$56.36 total balance' }
       ]) +
       decision('va-d-app15',
         "Appendix 15 says: 'At this time, it is unknown whether or not there are any alterations to the unit that violate the association.' What do you do?",
@@ -466,8 +473,8 @@
     var main =
       card('What came back', '',
         timeline([
-          ['Feb 22', '<b>Home inspection</b>, Keff/Spec LLC (John Keffer). Townhome built in 1977, 60 page report.'],
-          ['Feb 24', '<b>WDI and moisture</b>, Eliminator Termite Pest &amp; Moisture Control (Eric Trotter). No visible wood destroying insects, no treatment recommended. Slab foundation, so the moisture findings are N/A. Invoice $90, paid by the buyers.'],
+          ['Feb 22', '<b>Home inspection</b>, Keff/Spec LLC (John Keffer), 10:00 AM with the buyers and their agent. Townhome built in 1977, 60 page report.'],
+          ['Feb 24', '<b>WDI and moisture</b>, Eliminator Termite Pest &amp; Moisture Control (Eric Trotter). No visible wood destroying insects, no treatment recommended. Moisture report marked N/A: foundation slab. One $90 invoice for both, paid by the buyers at closing.'],
           ['Feb 25', "<b>Buyers' PICRA</b> (PAA-7A): 15 repairs, each assigned to a licensed roofing, plumbing, electrical or HVAC contractor."]
         ]) +
         '<details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700;font-size:13px;color:var(--v-cyan-d)">See the 15 requested repairs</summary>' +
@@ -486,13 +493,13 @@
         { t: 'Agreed PICRA repairs count against the 1% repair cap.', ok: false }
       ], 'A PICRA is only a request until both sides sign it. Agreed PICRA repairs sit outside the 1% cap, and the clean WDI report means nothing is owed under ¶13B.') +
       decision('va-d-oldreports',
-        'Pages 26 to 29 of the ratified contract PDF hold moisture and WDI reports from Pest Heroes (the WDI is dated Jan 19, 2026), left over from the January contract. Karen asks if those count for this sale. What do you say?',
+        'Pages 26 to 29 of the ratified contract PDF hold a moisture report and a WDI report from Pest Heroes, both dated Jan 19, 2026, a month before this offer was written. Karen asks if those count for this sale. What do you say?',
         [
           { t: 'No. ¶13B requires the buyers to obtain reports within 7 days of this ratification. Make sure the Eliminator reports from Feb 24 reach the settlement agent by Mar 1.', ok: true },
           { t: 'Yes, a clean report is a clean report.', ok: false },
           { t: 'Yes, as long as they are less than 90 days old.', ok: false }
         ],
-        'Those reports were ordered for a different buyer under a different contract. The buyers here ordered their own on Feb 24, which is what ¶13B asks for.');
+        '¶13B has BUYER checked to obtain the reports after ratification. The Pest Heroes reports predate this contract and their buyer signature lines are blank. The buyers ordered their own from Eliminator on Feb 24, which is what the contract asks for.');
     return step(7, 'Inspections', 'Feb 22 to Feb 25, 2026',
       'The buyers moved fast: the home inspection happened the day of ratification and the WDI and moisture inspection two days later. On Feb 25 Karen delivers the buyers\' repair request.',
       main,
@@ -506,7 +513,7 @@
         timeline([
           ['Feb 25', 'Buyers deliver the PICRA. The 5 day negotiation period runs through <b>Mon, Mar 2</b>.'],
           ['Mar 1', 'Seller counter, signed by Shannon (Feb 28) and the seller (Mar 1): <b>no repairs</b>, sold as is; price raised to <b>$290,000</b>; seller credit of <b>$5,000</b> toward closing costs, prepaids and lender approved expenses; subject to an appraisal of at least $290,000.'],
-          ['Mar 2', '<b>Addendum #2</b> extends the negotiation period until March 6, 2026.'],
+          ['Mar 2', '<b>Addendum #2</b> extends the negotiation period five days, until March 6, 2026. The buyers, Karen and Shannon sign on Mar 2. The seller signs on <b>Mar 3</b>.'],
           ['Mar 6', 'Buyers initial the counter. <b>Removal Acceptance Date 03/06/2026</b>, verified by Karen Archbell. Buyers sign the PAA-1 for the new price and credit.']
         ])) +
       decision('va-d-extend',
@@ -516,7 +523,15 @@
           { t: 'Nothing. While the parties are still talking, the deadline pauses.', ok: false },
           { t: 'Tell Karen on the phone that the seller will wait a few more days.', ok: false }
         ],
-        'When the period ends the buyers get one additional day to terminate, and after that either side may terminate (PAA-7 ¶2B). Only a signed extension keeps the deal safe, and Addendum #2 did exactly that.') +
+        'When the period ends the buyers get one Additional Day to terminate, and after that either side may terminate (PAA-7 ¶2B). In this file the seller signed Addendum #2 on Mar 3, the Additional Day, so for one day the extension was not fully signed. Chase every signature before 11:59 PM.') +
+      decision('va-d-paa1',
+        'Open the first PAA-1 on the right: it has the seller and Shannon signatures but no buyer signatures. Brad Watts asks for the price addendum on Mar 2. What do you send?',
+        [
+          { t: 'Nothing yet. Tell Brad the buyers have not signed, and send the fully signed PAA-1 and ratified PICRA once they do.', ok: true },
+          { t: 'The copy you have. The seller agreed, so the new price is final.', ok: false },
+          { t: 'The copy you have, and ask the lender to order the appraisal at $290,000 right away.', ok: false }
+        ],
+        'An addendum binds the parties only once buyer and seller both sign. The buyers signed the PAA-1 and initialed the counter on Mar 6. Check the header too: the buyer line reads "Sergio and Jasmin Malonzo" and "Jasmin Molonzo", a typo worth flagging to Karen.') +
       form('va-picra', 'Update the file sheet', 'Use the ratified PICRA and the PAA-1.', [
         { label: 'New purchase price', kind: 'money', ans: 290000, ph: '$', show: '$290,000' },
         { label: 'Seller credit', kind: 'money', ans: 5000, ph: '$', show: '$5,000 toward closing costs and prepaids' },
@@ -529,7 +544,7 @@
     return step(8, 'PICRA Negotiation', 'Feb 25 to Mar 6, 2026',
       'The seller will not do repairs. Instead of a flat no, the seller counters with a different price. Follow the paper and keep the negotiation period alive.',
       main,
-      side([['PICRA delivered', 'Wed, Feb 25'], ['Period ends', 'Mon, Mar 2'], ['Selling agent', 'Karen Archbell'], ['Listing agent', 'Shannon Paschall']], ['counter', 'add2', 'picraok', 'paa1']));
+      side([['PICRA delivered', 'Wed, Feb 25'], ['Period ends', 'Mon, Mar 2'], ['Selling agent', 'Karen Archbell'], ['Listing agent', 'Shannon Paschall']], ['counter', 'add2', 'paa1u', 'picraok', 'paa1']));
   }
 
   /* ════════════════ Step 9: Financing and closing date ════════════════ */
@@ -538,10 +553,10 @@
       card('What happened', '',
         timeline([
           ['Mar 6', 'Send Archer Mortgage the ratified PICRA and the PAA-1 so the loan and appraisal run at $290,000.'],
-          ['Mar 11', 'Buyers sign the <b>FHA Amendatory Clause</b> at $290,000 on Mar 11 and 12 (loan originator Brad Watts). The seller signs on Mar 26.'],
+          ['Mar 11', 'Buyers sign the <b>FHA Amendatory Clause</b> at $290,000 (loan 202602916, FHA case 544-4490289-703). The seller, Shannon and Karen sign the certification on Mar 26.'],
           ['Mar 17', 'The original settlement date passes without a closing.'],
-          ['Mar 20', "Shannon's team orders a <b>financial update</b> of the resale package from PMA (order PMA-A08954)."],
-          ['Mar 27', '<b>Addendum</b> moves closing from March 17 to <b>March 30, 2026</b>. Buyers and Shannon sign.']
+          ['Mar 20', 'Shannon orders a <b>financial update</b> of the resale package from PMA (order PMA-A08954), balance due $70.66.'],
+          ['Mar 27', '<b>Addendum</b> moves closing from March 17 to <b>March 30, 2026</b>. Buyers, Karen, Shannon and the seller all sign that day.']
         ])) +
       form('va-fin', 'Keep the dates straight', '', [
         { label: 'Buyers authorize the appraisal by', hint: '3 days after PICRA removal, ¶6A', kind: 'select', ans: '2026-03-09', show: 'Mon, Mar 9',
@@ -551,6 +566,14 @@
           options: [['2026-03-20', 'Fri, Mar 20'], ['2026-03-24', 'Tue, Mar 24'], ['2026-03-27', 'Fri, Mar 27'], ['2026-03-31', 'Tue, Mar 31']] },
         { label: 'New settlement date', kind: 'date', ans: '2026-03-30', ph: 'mm/dd/yyyy', show: '03/30/2026' }
       ]) +
+      decision('va-d-pmadate',
+        'The PMA order confirmation lists the settlement date as 3/20/2026. What do you do?',
+        [
+          { t: 'Write to PMA with the real settlement date so the financial update and closing figures are dated correctly.', ok: true },
+          { t: 'Nothing. PMA only needs the address.', ok: false },
+          { t: 'Move the closing to Mar 20 to match PMA.', ok: false }
+        ],
+        'The contract said Mar 17 and the addendum moved it to Mar 30. Neither is Mar 20. A wrong date on a third party order is how dues end up prorated to the wrong day.') +
       decision('va-d-closing',
         'It is Monday, Mar 16, and settlement is not going to happen on Mar 17. What is the right move?',
         [
@@ -562,18 +585,20 @@
     return step(9, 'Financing & Closing Date', 'Mar 6 to Mar 27, 2026',
       'A higher price means the lender, the appraisal and the FHA paperwork all have to catch up, and the Mar 17 settlement date starts to look tight.',
       main,
-      side([['Lender', 'Archer Mortgage'], ['Loan officer', 'Brad Watts'], ['PICRA removed', 'Fri, Mar 6'], ['Settlement', 'Tue, Mar 17']], ['fha', 'hoaupdate', 'extend']));
+      side([['Lender', 'Archer Mortgage'], ['Loan officer', 'Brad Watts'], ['PICRA removed', 'Fri, Mar 6'], ['Settlement', 'Tue, Mar 17']], ['fha', 'hoaupdate', 'hoaupd', 'extend']));
   }
 
   /* ════════════════ Step 10: Closing day ════════════════ */
   function vaStep9() {
     var main =
-      '<div class="wf-signed-banner">&#10003; Walk through signed by the buyers at 11:22 AM: property in substantially the same condition, no repairs necessary.</div>' +
+      '<div class="wf-signed-banner">&#10003; Walk through signed by both buyers at 11:22 AM: stove, refrigerator, plumbing and water heater checked; property in substantially the same condition, no repairs necessary.</div>' +
       form('va-alta', 'Audit the ALTA settlement statement', 'Find each figure on the statement and confirm it matches what you papered.', [
         { label: 'Sale price', kind: 'money', ans: 290000, ph: '$', show: '$290,000.00' },
         { label: 'Seller credit to the buyers', kind: 'money', ans: 5000, ph: '$', show: '$5,000.00' },
         { label: 'Deposit credited to the buyers', kind: 'money', ans: 500, ph: '$', show: '$500.00' },
         { label: 'Compensation to AtCoastal Realty', kind: 'money', ans: 5800, ph: '$', show: '$5,800.00' },
+        { label: 'Seller paid compensation to BHHS RW Towne', hint: '2.5%, ¶17', kind: 'money', ans: 7250, ph: '$', show: '$7,250.00' },
+        { label: 'Who funded the $17,500 down payment credit', kind: 'text', ans: ['fhlbank', 'fhlb', 'atlanta'], ph: 'Name on the ALTA', show: 'FHLBank Atlanta, $17,500.00' },
         { label: "Seller's net proceeds", hint: 'Balance Due TO', kind: 'money', ans: 171729.53, ph: '$', show: '$171,729.53' },
         { label: "Buyers' cash due at closing", hint: 'Balance Due FROM', kind: 'money', ans: 500, ph: '$', show: '$500.00' }
       ]) +
@@ -601,21 +626,21 @@
         { label: 'Net pay due to the agent', kind: 'money', ans: 6261.63, ph: '$', show: '$6,261.63 to Shannon Paschall, Inc.' }
       ]) +
       compose({ key: 'close', scenario: 'tc-va-post-closing', prompt: 'Post closing confirmation email, 4232 Maplehurst Road VA (settled 03/30/2026)',
-        to: 'Shannon Paschall <Shannon@shannonsellsva.com>', cc: 'AtCoastal Realty compliance', subj: 'Closed: 4232 Maplehurst Road (03/30/2026)',
+        to: 'Shannon Paschall <Shannon@shannonsellsva.com>', cc: 'Diana Martinez <Diana@shannonsellsva.com>', subj: 'Closed: 4232 Maplehurst Road (03/30/2026)',
         attach: ['ALTA settlement statement', 'CDA'],
         ph: 'Confirm settlement on 03/30/2026 at $290,000, the CDA amounts, and that the full file is archived.' }) +
       '<div class="wf-score-card">' +
         '<div class="wf-score-header">Workflow Validation: 4232 Maplehurst Road</div>' +
         [
-          'Built the file sheet from the signed contract and explained the FHA loan difference',
+          'Built the file sheet from the signed contract and confirmed both borrowers with the lender',
           'Calendared every deadline from the 02/22/2026 ratification',
           'Sent the seller a plain language summary',
-          'Distributed the contract to the right parties and left out the January names',
+          'Distributed the contract to the right parties only',
           'Papered the change to a personal check and logged the $500 deposit',
           'Checked the HOA certificate, the cancellation window and Appendix 15',
           "Reviewed the reports and the buyers' PICRA",
-          'Kept the negotiation alive with Addendum #2 and logged $290,000 with a $5,000 credit',
-          'Handled the appraisal, FHA clause and the move to Mar 30',
+          'Kept the negotiation alive, held the unsigned PAA-1 and logged $290,000 with a $5,000 credit',
+          'Handled the appraisal, the FHA clause, the PMA date and the move to Mar 30',
           'Audited the ALTA before signing',
           'Matched the CDA and archived the file'
         ].map(function (t) { return '<div class="wf-score-row"><div class="wf-score-dot done"></div><span>' + t + '</span></div>'; }).join('') +
