@@ -348,13 +348,13 @@
           options: [['2026-03-24', 'Tue, Mar 24'], ['2026-03-27', 'Fri, Mar 27'], ['2026-03-31', 'Tue, Mar 31'], ['2026-04-01', 'Wed, Apr 1']] }
       ]) +
       decision('va-d-ratdate',
-        'The first line of the agreement is dated 02/19/2026, the day the buyers wrote the offer. The ratification box says 02/22/2026. Which date do the deadlines count from?',
+        'Line 1 of the agreement says it is made 02/19/2026, the buyers signed on 02/21 and the ratification box says 02/22/2026. Which date do the deadlines count from?',
         [
           { t: '02/22/2026. ¶2 defines ratification as the final written acceptance by buyer and seller, and every timeframe runs from it.', ok: true },
           { t: '02/19/2026, because that is the date the agreement was made.', ok: false },
           { t: 'Whichever date gives the buyers more time.', ok: false }
         ],
-        'Counting from 02/19 would put every deadline three days early, and you could end up telling the seller a contingency had expired when it had not.');
+        'Counting from 02/19 or 02/21 would put every deadline early, and you could end up telling the seller a contingency had expired when it had not.');
     return step(2, 'Deadlines', 'Sun, Feb 22, 2026',
       'In REIN contracts a <strong>day</strong> is any calendar day, a <strong>business day</strong> is Monday to Friday except federal holidays, and a timeframe starts at 12:00 a.m. after the event that triggers it.',
       main,
@@ -387,23 +387,21 @@
     var main =
       picker('va-p-dist', 'Who gets the ratified contract?', 'Select every party that should receive it today.', [
         { t: 'Karen Archbell', sub: 'Selling agent, BHHS RW Towne Realty', ok: true },
-        { t: 'Joel C. Gueli', sub: 'RW Towne Title LLC, settlement agent', ok: true },
-        { t: 'Brad Watts', sub: "Archer Mortgage, the buyers' lender", ok: true },
-        { t: 'Caplan Law Group', sub: "Seller's deed preparation and attorney", ok: true },
-        { t: 'Diana Martinez', sub: "Shannon's operations manager", ok: true },
+        { t: 'Joel Gueli', sub: 'RW Towne Title, copied on the CIC-1 (PDF page 19)', ok: true },
+        { t: 'Brad Watts', sub: "Archer Mortgage, the lender named in ¶6A", ok: true },
+        { t: 'Shannon Paschall', sub: 'Listing agent, AtCoastal Realty (copy)', ok: true },
         { t: 'Sergio and Jasmin Malonzo', sub: 'The buyers, directly', ok: false },
-        { t: 'Keff/Spec LLC', sub: "The buyers' home inspector", ok: false },
-        { t: 'Eliminator Termite Pest & Moisture Control', sub: 'WDI and moisture inspector', ok: false }
-      ], 'Notices for the buyers go through the Selling Firm (¶23), so Karen gets their copy. Inspectors work for the buyers and only need access, not the price and terms of the sale.') +
+        { t: 'Pest Heroes', sub: 'Reports on PDF pages 26 to 29', ok: false }
+      ], 'Notices for the buyers go through the Selling Firm (¶23), so Karen gets their copy. The Pest Heroes reports are dated Jan 19, 2026, before this contract, and Pest Heroes has no role in this sale.') +
       compose({ key: 'dist', scenario: 'tc-va-distribute-contract', prompt: 'Distribute ratified contract email, 4232 Maplehurst Road VA',
-        to: 'Karen Archbell <karen@karenarchbell.com>, Joel Gueli <Joel.Gueli@rwtownetitle.com>, Brad Watts <brad@archermortgagellc.com>, Caplan Law Group',
-        cc: 'Shannon Paschall <Shannon@shannonsellsva.com>, Diana Martinez <Diana@shannonsellsva.com>', subj: 'Ratified contract: 4232 Maplehurst Road (02/22/2026)',
+        to: 'Karen Archbell <karen@karenarchbell.com>, Joel Gueli <joel.gueli@rwtownetitle.com>, Brad Watts <brad@archermortgagellc.com>',
+        cc: 'Shannon Paschall <Shannon@shannonsellsva.com>', subj: 'Ratified contract: 4232 Maplehurst Road (02/22/2026)',
         attach: ['Ratified contract'],
         ph: 'Attach the contract, give each party the dates that matter to them (loan application and reports by Mar 1, settlement Mar 17) and ask everyone to confirm receipt.' });
     return step(4, 'Distribute to Parties', 'Mon, Feb 23, 2026',
       'Send the contract to everyone who needs it to do their part, and only to them.',
       main,
-      side([['Title', 'RW Towne Title LLC'], ['Escrow officer', 'Joel C. Gueli'], ['Lender', 'Brad Watts'], ['Selling agent', 'Karen Archbell']], ['contract']));
+      side([['Selling agent', 'Karen Archbell'], ['Title copy', 'Joel Gueli'], ['Lender', 'Brad Watts'], ['Listing agent', 'Shannon Paschall']], ['contract']));
   }
 
   /* ════════════════ Step 5: EMD ════════════════ */
@@ -466,7 +464,7 @@
     return step(6, 'HOA Resale Certificate', 'Feb 23 to Mar 4, 2026',
       '4232 Maplehurst is in <strong>Timberlake Community Association</strong>, managed by Property Management Associates (PMA). Virginia gives the buyers 3 days to cancel after they receive the resale certificate, so the delivery date matters.',
       main,
-      side([['Association', 'Timberlake Community Assn'], ['Manager', 'PMA · David Lukus'], ['Phone', '757-646-6247'], ['Order', 'PMA-A08775']], ['hoa', 'cic2', 'hoamail']));
+      side([['Association', 'Timberlake Community Assn'], ['Manager', 'PMA · David Lukus'], ['Phone', '757-646-6247'], ['Order', 'PMA-A08775']], ['hoa', 'cic2', 'hoamail', 'contract']));
   }
 
   /* ════════════════ Step 7: Inspections ════════════════ */
@@ -475,7 +473,7 @@
       card('What came back', '',
         timeline([
           ['Feb 22', '<b>Home inspection</b>, Keff/Spec LLC (John Keffer), 10:00 AM with the buyers and their agent. Townhome built in 1977, 60 page report.'],
-          ['Feb 24', '<b>WDI and moisture</b>, Eliminator Termite Pest &amp; Moisture Control (Eric Trotter). No visible wood destroying insects, no treatment recommended. Moisture report marked N/A: foundation slab. One $90 invoice for both, paid by the buyers at closing.'],
+          ['Feb 24', '<b>WDI and moisture</b>, Eliminator Termite Pest &amp; Moisture Control (Eric Trotter). No visible wood destroying insects, no treatment recommended. Moisture report marked N/A: foundation slab. One $90.00 invoice for both.'],
           ['Feb 25', "<b>Buyers' PICRA</b> (PAA-7A): 15 repairs, each assigned to a licensed roofing, plumbing, electrical or HVAC contractor."]
         ]) +
         '<details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700;font-size:13px;color:var(--v-cyan-d)">See the 15 requested repairs</summary>' +
@@ -504,7 +502,7 @@
     return step(7, 'Inspections', 'Feb 22 to Feb 25, 2026',
       'The buyers moved fast: the home inspection happened the day of ratification and the WDI and moisture inspection two days later. On Feb 25 Karen delivers the buyers\' repair request.',
       main,
-      side([['Home inspector', 'Keff/Spec LLC'], ['WDI and moisture', 'Eliminator'], ['PICRA delivered', 'Wed, Feb 25'], ['Negotiation ends', 'Mon, Mar 2']], ['inspection', 'wdi', 'moisture', 'invoice', 'picra']));
+      side([['Home inspector', 'Keff/Spec LLC'], ['WDI and moisture', 'Eliminator'], ['PICRA delivered', 'Wed, Feb 25'], ['Negotiation ends', 'Mon, Mar 2']], ['inspection', 'wdi', 'moisture', 'invoice', 'picra', 'contract']));
   }
 
   /* ════════════════ Step 8: PICRA negotiation ════════════════ */
@@ -541,11 +539,11 @@
         { label: 'Removal Acceptance Date', kind: 'date', ans: '2026-03-06', ph: 'mm/dd/yyyy', show: '03/06/2026' },
         { label: 'Appraisal must come in at least at', kind: 'money', ans: 290000, ph: '$', show: '$290,000' }
       ]) +
-      '<div class="lc-callout-info">Why this works for the seller: the $5,000 price increase and the $5,000 credit cancel out on the seller\'s side, while the buyers finance their closing costs instead of paying them in cash. It only holds if the appraisal supports $290,000.</div>';
+      '<div class="lc-callout-info">Read the counter closely: the price goes up $5,000 and the seller credits $5,000 back toward the buyers\' closing costs, prepaids and lender approved expenses, instead of making any of the 15 repairs. If the property does not appraise at or above $290,000, the appraisal contingency still applies.</div>';
     return step(8, 'PICRA Negotiation', 'Feb 25 to Mar 6, 2026',
       'The seller will not do repairs. Instead of a flat no, the seller counters with a different price. Follow the paper and keep the negotiation period alive.',
       main,
-      side([['PICRA delivered', 'Wed, Feb 25'], ['Period ends', 'Mon, Mar 2'], ['Selling agent', 'Karen Archbell'], ['Listing agent', 'Shannon Paschall']], ['counter', 'add2', 'paa1u', 'picraok', 'paa1']));
+      side([['PICRA delivered', 'Wed, Feb 25'], ['Period ends', 'Mon, Mar 2'], ['Selling agent', 'Karen Archbell'], ['Listing agent', 'Shannon Paschall']], ['counter', 'add2', 'paa1u', 'picraok', 'paa1', 'contract']));
   }
 
   /* ════════════════ Step 9: Financing and closing date ════════════════ */
@@ -583,7 +581,7 @@
           { t: 'Nothing. PMA will send it when it is ready.', ok: false },
           { t: 'Cancel the order, since title already has the January certificate.', ok: false }
         ],
-        'An order on hold is not being worked. In this file the fee was only paid on Mar 30 at 8:11 AM ($72.77 with the card surcharge), the delivery estimate moved to 04/02 and the update is dated 4/2/26, three days after closing. Shannon was reimbursed the $72.77 on the ALTA.') +
+        'An order on hold is not being worked. In this file the fee was only paid on Mar 30 at 8:11 AM ($72.77 with the card surcharge), the delivery estimate moved to 04/02 and the update is dated 4/2/26, three days after closing.') +
       decision('va-d-closing',
         'It is Monday, Mar 16, and settlement is not going to happen on Mar 17. What is the right move?',
         [
@@ -595,7 +593,7 @@
     return step(9, 'Financing & Closing Date', 'Mar 6 to Mar 27, 2026',
       'A higher price means the lender, the appraisal and the FHA paperwork all have to catch up, and the Mar 17 settlement date starts to look tight.',
       main,
-      side([['Lender', 'Archer Mortgage'], ['Loan officer', 'Brad Watts'], ['PICRA removed', 'Fri, Mar 6'], ['Settlement', 'Tue, Mar 17']], ['fha', 'hoaupdate', 'hoapaid', 'hoaupd', 'extend']));
+      side([['Lender', 'Archer Mortgage'], ['Loan officer', 'Brad Watts'], ['PICRA removed', 'Fri, Mar 6'], ['Settlement', 'Tue, Mar 17']], ['fha', 'hoaupdate', 'hoapaid', 'hoaupd', 'extend', 'contract']));
   }
 
   /* ════════════════ Step 10: Closing day ════════════════ */
@@ -607,7 +605,7 @@
         { label: 'Seller credit to the buyers', kind: 'money', ans: 5000, ph: '$', show: '$5,000.00' },
         { label: 'Deposit credited to the buyers', kind: 'money', ans: 500, ph: '$', show: '$500.00' },
         { label: 'Compensation to AtCoastal Realty', kind: 'money', ans: 5800, ph: '$', show: '$5,800.00' },
-        { label: 'Seller paid compensation to BHHS RW Towne', hint: '2.5%, ¶17', kind: 'money', ans: 7250, ph: '$', show: '$7,250.00' },
+        { label: 'Seller paid compensation to BHHS RW Towne', hint: 'Commission section', kind: 'money', ans: 7250, ph: '$', show: '$7,250.00' },
         { label: 'Who funded the $17,500 down payment credit', kind: 'text', ans: ['fhlbank', 'fhlb', 'atlanta'], ph: 'Name on the ALTA', show: 'FHLBank Atlanta, $17,500.00' },
         { label: "Seller's net proceeds", hint: 'Balance Due TO', kind: 'money', ans: 171729.53, ph: '$', show: '$171,729.53' },
         { label: "Buyers' cash due at closing", hint: 'Balance Due FROM', kind: 'money', ans: 500, ph: '$', show: '$500.00' }
@@ -623,7 +621,7 @@
     return step(10, 'Closing Day', 'Mon, Mar 30, 2026',
       'Walk through signed at 11:22 AM and settlement at <strong>RW Towne Title LLC</strong> (file 22026-67041, escrow officer Joel C. Gueli). Before anyone signs, check the numbers against the file.',
       main,
-      side([['Loan', '$283,970 FHA'], ['VHDA payoffs', '$97,149.98'], ['Home warranty', '$700, buyer'], ['WDI invoice', '$90, buyer']], ['walk', 'alta', 'paa1']));
+      side([['Loan', '$283,970 FHA'], ['VHDA payoffs', '$97,149.98'], ['Home warranty', '$700, buyer'], ['WDI invoice', '$90, buyer']], ['walk', 'alta', 'paa1', 'hoa']));
   }
 
   /* ════════════════ Step 11: After closing ════════════════ */
