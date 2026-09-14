@@ -34,7 +34,8 @@
     paa1u:      ['paa-1-before-buyer-signatures.pdf', 'PAA-1 before the buyers signed', 'Seller 03/01 · no buyer signatures'],
     paa1:       ['paa-1-price-and-credit.pdf', 'PAA-1: $290,000 and $5,000 credit', 'Buyers signed 03/06/2026'],
     fha:        ['fha-amendatory-clause.pdf', 'FHA Amendatory Clause', 'Loan 202602916 · $290,000'],
-    hoaupdate:  ['hoa-financial-update-order.pdf', 'HOA financial update order', 'PMA-A08954 · 03/20/2026'],
+    hoaupdate:  ['hoa-financial-update-order.pdf', 'HOA financial update order', 'PMA-A08954 · 03/20 · payment hold'],
+    hoapaid:    ['hoa-financial-update-paid.pdf', 'HOA financial update order, paid', 'PMA-A08954 · 03/30 · $72.77'],
     hoaupd:     ['hoa-financial-update.pdf', 'HOA financial update', 'PMA-A08954 · prepared 04/02/2026'],
     extend:     ['addendum-closing-date-extension.pdf', 'Addendum: closing date extension', 'Mar 17 to Mar 30 · signed 03/27'],
     walk:       ['walk-through-report.pdf', 'Walk through report', 'Buyers signed 03/30/2026'],
@@ -367,13 +368,13 @@
         '<ul style="margin:0;padding-left:18px;font-size:13.5px;line-height:1.7;color:var(--v-ink)">' +
           '<li>$285,000 with FHA financing, settlement on or before <b>Tue, Mar 17</b></li>' +
           '<li>$500 deposit held by BHHS RW Towne Realty</li>' +
-          '<li>Buyer inspections happen this week, so the home must be accessible</li>' +
+          '<li>The buyers have until Sun, Mar 1 to deliver inspection reports and any repair request, so keep the home accessible</li>' +
           '<li>What conveys: electric range, 1 refrigerator, dishwasher, 1 disposal, blinds and hardware, all smoke alarms and ceiling fans, 1 trash and 1 recycling container</li>' +
           '<li>Utilities stay on through the walk through (¶13D)</li>' +
         '</ul>') +
       compose({ key: 'seller', scenario: 'tc-va-seller-detail', prompt: 'Seller detail email, 4232 Maplehurst Road VA (ratified 02/22/2026)',
         to: 'Jemal O Tamem <ojemal69@yahoo.com>', cc: 'Shannon Paschall <Shannon@shannonsellsva.com>', subj: 'You are under contract: 4232 Maplehurst Road',
-        attach: ['Ratified contract', 'Items to convey', 'Utility form', 'Walk through form'],
+        attach: ['Ratified contract', 'Items to convey'],
         ph: 'Write the seller email here. Cover the price and settlement date, the deposit, access for inspections, what conveys and keeping utilities on.' });
     return step(3, 'Seller Email', 'Mon, Feb 23, 2026',
       'The seller gets a clear summary on day one: what was agreed, what happens next and what the seller has to do.',
@@ -420,7 +421,7 @@
         { label: 'Amount', kind: 'money', ans: 500, ph: '$', show: '$500.00' },
         { label: 'Payable to', kind: 'text', ans: ['rwtowne', 'bhhs', 'berkshire'], ph: 'Escrow agent', show: 'BHHS RW Towne Realty' },
         { label: 'Check date', kind: 'date', ans: '2026-02-23', ph: 'mm/dd/yyyy', show: '02/23/2026' },
-        { label: 'On time?', hint: 'due Tue, Feb 24', kind: 'select', ans: 'yes', show: 'Yes, a day early', options: [['yes', 'Yes'], ['no', 'No']] },
+        { label: 'On time?', hint: 'due Tue, Feb 24', kind: 'select', ans: 'yes', show: 'Yes, the check is dated Mon, Feb 23', options: [['yes', 'Yes'], ['no', 'No']] },
         { label: 'Escrow agent deposits it by', hint: '¶5A', kind: 'select', ans: '5', show: '5 business banking days after receipt',
           options: [['0', 'The same day'], ['5', '5 business banking days after receipt'], ['s', 'At settlement']] }
       ]) +
@@ -491,7 +492,7 @@
         { t: 'The seller now has to make all 15 repairs.', ok: false },
         { t: 'The WDI report requires termite treatment before closing.', ok: false },
         { t: 'Agreed PICRA repairs count against the 1% repair cap.', ok: false }
-      ], 'A PICRA is only a request until both sides sign it. Agreed PICRA repairs sit outside the 1% cap, and the clean WDI report means nothing is owed under ¶13B.') +
+      ], 'A PICRA is only a request until both sides sign it. The PICRA form itself says agreed repair items are not included in the ¶13 cap, and the clean WDI report means no treatment is owed under ¶13B.') +
       decision('va-d-oldreports',
         'Pages 26 to 29 of the ratified contract PDF hold a moisture report and a WDI report from Pest Heroes, both dated Jan 19, 2026, a month before this offer was written. Karen asks if those count for this sale. What do you say?',
         [
@@ -553,9 +554,10 @@
       card('What happened', '',
         timeline([
           ['Mar 6', 'Send Archer Mortgage the ratified PICRA and the PAA-1 so the loan and appraisal run at $290,000.'],
-          ['Mar 11', 'Buyers sign the <b>FHA Amendatory Clause</b> at $290,000 (loan 202602916, FHA case 544-4490289-703). The seller, Shannon and Karen sign the certification on Mar 26.'],
+          ['Mar 11', 'Buyers sign the <b>FHA Amendatory Clause</b> at $290,000 (loan 202602916, FHA case 544-4490289-703).'],
+          ['Mar 26', 'The seller signs the clause, and buyers, seller, Shannon and Karen sign the Real Estate Certification.'],
           ['Mar 17', 'The original settlement date passes without a closing.'],
-          ['Mar 20', 'Shannon orders a <b>financial update</b> of the resale package from PMA (order PMA-A08954), balance due $70.66.'],
+          ['Mar 20', 'Shannon orders a <b>financial update</b> of the resale package from PMA (order PMA-A08954). Status: <b>Payment Hold</b>, balance due $70.66, estimated delivery 03/25.'],
           ['Mar 27', '<b>Addendum</b> moves closing from March 17 to <b>March 30, 2026</b>. Buyers, Karen, Shannon and the seller all sign that day.']
         ])) +
       form('va-fin', 'Keep the dates straight', '', [
@@ -574,6 +576,14 @@
           { t: 'Move the closing to Mar 20 to match PMA.', ok: false }
         ],
         'The contract said Mar 17 and the addendum moved it to Mar 30. Neither is Mar 20. A wrong date on a third party order is how dues end up prorated to the wrong day.') +
+      decision('va-d-payhold',
+        'The Mar 20 PMA order still shows Payment Hold on Mar 27, and closing is Mar 30. What do you do?',
+        [
+          { t: 'Get the $70.66 paid now and confirm the new delivery date with PMA, so the updated figures reach title before closing.', ok: true },
+          { t: 'Nothing. PMA will send it when it is ready.', ok: false },
+          { t: 'Cancel the order, since title already has the January certificate.', ok: false }
+        ],
+        'An order on hold is not being worked. In this file the fee was only paid on Mar 30 at 8:11 AM ($72.77 with the card surcharge), the delivery estimate moved to 04/02 and the update is dated 4/2/26, three days after closing. Shannon was reimbursed the $72.77 on the ALTA.') +
       decision('va-d-closing',
         'It is Monday, Mar 16, and settlement is not going to happen on Mar 17. What is the right move?',
         [
@@ -581,11 +591,11 @@
           { t: 'Nothing. The contract extends itself for as long as the loan needs.', ok: false },
           { t: 'Ask title to move the closing on their calendar. That is enough.', ok: false }
         ],
-        'In this file the extension was signed on Mar 27, the last day the automatic extension reached. It worked, but push for the signature days earlier: if the date had slipped past Mar 27 without an addendum, either side could have terminated (¶8).');
+        'In this file the extension was signed on Mar 27, the last day the automatic extension reached. It worked, but push for the signature days earlier: if the date had slipped past Mar 27 without an addendum, the party not at fault could have terminated (¶8).');
     return step(9, 'Financing & Closing Date', 'Mar 6 to Mar 27, 2026',
       'A higher price means the lender, the appraisal and the FHA paperwork all have to catch up, and the Mar 17 settlement date starts to look tight.',
       main,
-      side([['Lender', 'Archer Mortgage'], ['Loan officer', 'Brad Watts'], ['PICRA removed', 'Fri, Mar 6'], ['Settlement', 'Tue, Mar 17']], ['fha', 'hoaupdate', 'hoaupd', 'extend']));
+      side([['Lender', 'Archer Mortgage'], ['Loan officer', 'Brad Watts'], ['PICRA removed', 'Fri, Mar 6'], ['Settlement', 'Tue, Mar 17']], ['fha', 'hoaupdate', 'hoapaid', 'hoaupd', 'extend']));
   }
 
   /* ════════════════ Step 10: Closing day ════════════════ */
@@ -611,7 +621,7 @@
         ],
         'Title charges what the association actually bills. $53.80 matches Appendix 4 of the certificate and the March dues line, which is why you flagged the difference back in step 6.');
     return step(10, 'Closing Day', 'Mon, Mar 30, 2026',
-      'Walk through in the morning, then settlement at <strong>RW Towne Title LLC</strong> (file 22026-67041, escrow officer Joel C. Gueli). Before anyone signs, check the numbers against the file.',
+      'Walk through signed at 11:22 AM and settlement at <strong>RW Towne Title LLC</strong> (file 22026-67041, escrow officer Joel C. Gueli). Before anyone signs, check the numbers against the file.',
       main,
       side([['Loan', '$283,970 FHA'], ['VHDA payoffs', '$97,149.98'], ['Home warranty', '$700, buyer'], ['WDI invoice', '$90, buyer']], ['walk', 'alta', 'paa1']));
   }
