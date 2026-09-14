@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link rel="stylesheet" href="../assets/css/role-dash.css">
   <link rel="stylesheet" href="../assets/css/workflow.css">
+  <link rel="stylesheet" href="../assets/css/tc-case.css">
   <link rel="stylesheet" href="../assets/css/role-shell.css">
 
   <style>
@@ -2004,13 +2005,12 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
 
 <script src="../assets/js/app-core.js"></script>
 <script src="../assets/js/workflow.js"></script>
+<script src="../assets/js/tc-va-case.js"></script>
 <script>
   /* ══════════════════════════════════════════════════════════
      CASE SIMULATOR CONTENT: Transaction Coordinator
-     Real case: 4232 Maplehurst Road, Virginia Beach, VA
-     Sourced from the actual ratified contract, PICRA negotiation
-     chain, and inspection reports on file, plus the real AtCoastal
-     Post-Ratification Responsibilities checklist.
+     Virginia: 4232 Maplehurst Road, Virginia Beach, VA, built from the
+     signed Maplehurst file in assets/js/tc-va-case.js.
      ══════════════════════════════════════════════════════════ */
   window.SIM_STATES = [
     { key: 'va', label: 'Virginia' },
@@ -2019,14 +2019,7 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
     { key: 'ny', label: 'New York' }
   ];
   window.SIM_DATA = {
-    va: [
-      { type: 'workflow', tag: 'Virginia · Real Case', title: '4232 Maplehurst Road: Full Transaction Workflow',
-        desc: 'A real Virginia Beach purchase from ratified contract through closing: distributing the file, coordinating inspections, negotiating a real repair addendum, and closing day.',
-        stepCount: 8,
-        wfLabels: ['Ratified Contract', 'Seller Email', 'Distribute to Parties', 'EMD Confirmation', 'Inspections', 'PICRA Negotiation', 'Closing Prep', 'Post-Closing'],
-        wfSteps: [ vaStep0, vaStep1, vaStep2, vaStep3, vaStep4, vaStep5, vaStep6, vaStep7 ],
-        wfAfterRender: { 0: function () { vaPriceDecision(); }, 4: function () { vaInspectionDecision(); }, 5: function () { vaPicraDecision(); }, 7: function () { wfRenderFinalScore('wf-eval-container', 'tc', 'va', 4); } } }
-    ],
+    va: [ window.TC_VA_CASE ],
     tx: [
       { type: 'workflow', tag: 'Texas · Real Case', title: '2931 McDonough Way: Full Transaction Workflow',
         desc: 'A real Katy, TX purchase from executed contract through closing: the Option Period, a seller rent-back, and closing day.',
@@ -2087,7 +2080,7 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
         { id: 'Agent_Name', label: 'Listing Agent Name', type: 'text', default: 'Shannon Paschall' },
         { id: 'Property', label: 'Property Address', type: 'text', default: '4232 Maplehurst Road' },
         { id: 'Approval_Status', label: 'Loan Status', type: 'text', default: 'conditionally approved' },
-        { id: 'Closing_Date', label: 'Closing Date', type: 'text', default: 'February 11' },
+        { id: 'Closing_Date', label: 'Closing Date', type: 'text', default: 'March 30' },
         { id: 'Action_Item', label: 'Action Needed', type: 'text', default: "the seller's signature on the amendment by end of day tomorrow" }
       ] },
     { title: 'Title Company Status Request', badge: 'Email', category: 'Communications',
@@ -2095,9 +2088,9 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
       tip: "Give the title officer the two facts they need to pull the file fast: property address and ratification date. A vague follow-up just costs both sides another round trip.",
       template: 'Write a follow-up email to [Title_Company] asking for a status update on the title commitment for [Property]. The contract ratification date was [Ratification_Date]. Ask specifically whether there are any exceptions that need to be cleared before closing.',
       vars: [
-        { id: 'Title_Company', label: 'Title Company', type: 'text', default: 'Caplan Law' },
+        { id: 'Title_Company', label: 'Title Company', type: 'text', default: 'RW Towne Title LLC' },
         { id: 'Property', label: 'Property Address', type: 'text', default: '4232 Maplehurst Road, Virginia Beach, VA' },
-        { id: 'Ratification_Date', label: 'Ratification Date', type: 'text', default: 'January 14, 2026' }
+        { id: 'Ratification_Date', label: 'Ratification Date', type: 'text', default: 'February 22, 2026' }
       ] },
     { title: 'Seller Welcome & Deadlines Email', badge: 'Email', category: 'Communications',
       desc: 'Send the seller a welcome email at ratification covering key dates and required forms.',
@@ -2106,8 +2099,8 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
       vars: [
         { id: 'Seller_Name', label: 'Seller Name', type: 'text', default: 'Jemal Tamem' },
         { id: 'Property', label: 'Property Address', type: 'text', default: '4232 Maplehurst Road' },
-        { id: 'Closing_Date', label: 'Closing Date', type: 'text', default: 'February 11, 2026' },
-        { id: 'EMD_Amount', label: 'EMD Amount', type: 'text', default: '$1,000' }
+        { id: 'Closing_Date', label: 'Closing Date', type: 'text', default: 'March 30, 2026' },
+        { id: 'EMD_Amount', label: 'EMD Amount', type: 'text', default: '$500' }
       ] },
     { title: 'Weekly Status Update to Agent', badge: 'Update', category: 'Communications',
       desc: "Summarize a file's progress for the listing or buyer's agent mid-escrow.",
@@ -2149,8 +2142,8 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
       tip: "Buyers who are new to the process don't know that missing an EMD deadline can put the whole contract at risk. State the deadline and the reason together, so it reads as informative, not threatening.",
       template: 'Write an email to the buyer, [Buyer_Name], explaining that their earnest money deposit of [EMD_Amount] is due within [Deadline_Days] days of contract execution, and that missing this deadline could put the contract at risk. Keep the tone helpful, not alarming.',
       vars: [
-        { id: 'Buyer_Name', label: 'Buyer Name', type: 'text', default: 'Diane Nwaonicha' },
-        { id: 'EMD_Amount', label: 'EMD Amount', type: 'text', default: '$1,000' },
+        { id: 'Buyer_Name', label: 'Buyer Name', type: 'text', default: 'Sergio and Jasmin Malonzo' },
+        { id: 'EMD_Amount', label: 'EMD Amount', type: 'text', default: '$500' },
         { id: 'Deadline_Days', label: 'Deadline (days)', type: 'text', default: '2' }
       ] },
     { title: 'Closing Disclosure (3-Day Rule) Explainer', badge: 'Email', category: 'Contracts & Deadlines',
@@ -2170,330 +2163,6 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
         { id: 'Title_Company_Phone', label: 'Title Company Verified Phone', type: 'text', default: '(585) 719-3500' }
       ] }
   ];
-
-  /* Step 1: Inbox, ratified contract email from the listing agent */
-  function vaStep0() {
-    return `<div class="wf-step-wrap">
-      <div class="wf-step-label-row">Step 1: Ratified Contract</div>
-      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
-        An email has just landed from the listing agent. Read it carefully. Every fact you need for the rest of this file (parties, price, dates, deposit) is in here, but the agent's summary isn't the source of truth. Open the actual contract below before you take any number at face value.
-      </p>
-      <div class="wf-email">
-        <div class="wf-email-header">
-          <div class="wf-email-subject">Ratified! 4232 Maplehurst Road, Virginia Beach</div>
-          <div class="wf-email-meta">
-            <div class="wf-email-row"><span class="wf-email-row-lbl">From:</span> Shannon Paschall &lt;shannon@atcoastalrealty.com&gt;</div>
-            <div class="wf-email-row"><span class="wf-email-row-lbl">To:</span> Transaction Coordinator</div>
-            <div class="wf-email-row"><span class="wf-email-row-lbl">Date:</span> January 14, 2026 &mdash; 1:39 PM</div>
-          </div>
-        </div>
-        <div class="wf-email-body">
-          <p>Hi,</p>
-          <p>We just ratified on Maplehurst! Here's everything for the file:</p>
-          <ul>
-            <li><strong>Property:</strong> 4232 Maplehurst Road, Virginia Beach, VA 23462 (Timberlake Sec 5, Block A, Lot 15)</li>
-            <li><strong>Seller:</strong> Jemal Tamem</li>
-            <li><strong>Buyer:</strong> Diane Nwaonicha</li>
-            <li><strong>Purchase Price:</strong> $285,000 ($14,250 down, $269,750 FHA loan)</li>
-            <li><strong>Earnest Money Deposit:</strong> $1,000, held by BHHS RW Towne Realty</li>
-            <li><strong>Ratification Date:</strong> January 14, 2026, 1:39 PM</li>
-            <li><strong>Settlement Date:</strong> February 11, 2026</li>
-            <li><strong>Selling Firm:</strong> Berkshire Hathaway HomeServices RW Towne Realty (Agent: Bobbi Wood)</li>
-            <li><strong>Listing Firm:</strong> AtCoastal Realty (Agent: Shannon Paschall)</li>
-          </ul>
-          <p>Can you get the seller detail email out and distribute the ratified contract to everyone who needs it? Let's get this one moving.</p>
-          <div class="wf-sig">
-            Shannon Paschall | AtCoastal Realty<br>
-            (757) 418-1495 | shannon@atcoastalrealty.com
-          </div>
-        </div>
-      </div>
-      <div class="wf-doc-list">
-        ${wfDocBtn('../assets/docs/tc-va/ratified-contract.pdf', 'View the actual ratified contract')}
-      </div>
-      <div id="wf-price-decision"></div>
-      ${wfNav(false)}
-    </div>`;
-  }
-
-  function vaPriceDecision() {
-    wfDecision('wf-price-decision',
-      "Open the actual ratified contract above and check the Purchase Price clause on page 1 and the FHA financing clause on page 6. The agent's email says $285,000. Does the signed contract agree?",
-      [
-        { t: "No. Both figures were struck through and hand-corrected to $290,000 at ratification, with the down payment and FHA loan amounts corrected to match ($14,500 down, $275,500 loan). The file has to reflect $290,000, not the agent's email.", ok: true },
-        { t: "Yes, $285,000 is correct, the agent's email is the fastest way to confirm the price and there's no need to re-check the contract itself.", ok: false },
-        { t: "It doesn't matter which figure is used since both numbers are visible somewhere in the file.", ok: false }
-      ],
-      "A struck-through, hand-corrected figure on a signed contract is not a typo to shrug off, it's an amendment the parties initialed. The agent's summary email is a convenience, not the source of truth. Every downstream document in this file, the EMD math, the net sheet, MLS entry, appraisal contingency, has to be built on the actual $290,000 ratified price, not whatever number happens to be fastest to read off an email."
-    );
-  }
-
-  /* Step 2: Compose, seller detail email */
-  function vaStep1() {
-    return `<div class="wf-step-wrap">
-      <div class="wf-step-label-row">Step 2: Seller Detail Email</div>
-      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
-        Per the standard playbook, the seller gets a detailed email at ratification: the deadlines, and the utility form, walkthrough form, and items-to-convey attached. Draft it below.
-      </p>
-      <div class="wf-compose">
-        <div class="wf-compose-header">
-          <div class="wf-compose-field">
-            <span class="wf-compose-lbl">To:</span>
-            <input type="text" value="Jemal Tamem &lt;jtamem@email.com&gt;" readonly>
-          </div>
-          <div class="wf-compose-field">
-            <span class="wf-compose-lbl">CC:</span>
-            <input type="text" value="Shannon Paschall &lt;shannon@atcoastalrealty.com&gt;" readonly>
-          </div>
-          <div class="wf-compose-field">
-            <span class="wf-compose-lbl">Subject:</span>
-            <input type="text" id="wf-seller-subj" value="Your Home is Under Contract: 4232 Maplehurst Road">
-          </div>
-        </div>
-        <div class="wf-compose-body">
-          <textarea id="wf-seller-body" data-role="tc" data-scenario="tc-va-seller-detail" placeholder="Compose the seller detail email here...&#10;&#10;Include: settlement date (Feb 11), earnest money amount ($1,000), and a note that the utility form, walkthrough form, and items-to-convey form are attached for the seller to complete."></textarea>
-          <div style="margin-top:10px"><button class="btn sm" id="wf-seller-body-btn" onclick="SCApp.submitEmailStep({textareaId:'wf-seller-body', statusElId:'wf-seller-body-status', btnId:'wf-seller-body-btn', role:'tc', scenarioId:'tc-va-seller-detail', scenarioPrompt:'Seller detail email, 4232 Maplehurst Road VA', maxScore:5})">Submit for grading</button></div>
-          <div id="wf-seller-body-status" class="small" style="margin-top:6px"></div>
-        </div>
-      </div>
-      <div class="lc-callout-info">Real checklist item: "Send a detailed email to the seller with important details, deadlines, and information. Attach ratified contract, utility form, walkthrough form (seller), and items to convey (seller)."</div>
-      ${wfNav(true)}
-    </div>`;
-  }
-
-  /* ── Step 3: Distribute the ratified contract to all parties ── */
-  function vaStep2() {
-    return `<div class="wf-step-wrap">
-      <div class="wf-step-label-row">Step 3: Distribute to All Parties</div>
-      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
-        The ratified contract needs to reach everyone involved in this file today. Confirm each recipient below.
-      </p>
-      <div class="wf-form-section">
-        <h4>Distribution List</h4>
-        ${wfField('wf-p1', 'AtCoastal Compliance', 'text', '', 'McKenzi, ratified@atcoastal.com', true)}
-        ${wfField('wf-p2', 'Title Company (Paralegal)', 'text', '', 'Valerie Brooks, Caplan Law, vbrooks@caplanlegal.com', true)}
-        ${wfField('wf-p3', 'Selling Agent', 'text', '', 'Bobbi Wood, BHHS RW Towne Realty', true)}
-        ${wfField('wf-p4', 'Listing Agent', 'text', '', 'Shannon Paschall, AtCoastal Realty', true)}
-        ${wfField('wf-p5', 'Lender', 'text', 'Enter the lender contact', '', false)}
-      </div>
-      <div class="lc-callout-info">Real checklist item: "Distribute ratified contract to all relevant parties including AtCoastal Realty, title companies, selling agent, compliance, etc."</div>
-      <div class="wf-compose">
-        <div class="wf-compose-header">
-          <div class="wf-compose-field">
-            <span class="wf-compose-lbl">To:</span>
-            <input type="text" value="McKenzi <ratified@atcoastal.com>, Valerie Brooks <vbrooks@caplanlegal.com>, Bobbi Wood, Shannon Paschall" readonly>
-          </div>
-          <div class="wf-compose-field">
-            <span class="wf-compose-lbl">Subject:</span>
-            <input type="text" id="wf-dist-subj" value="Ratified Contract: 4232 Maplehurst Road">
-          </div>
-        </div>
-        <div class="wf-compose-body">
-          <textarea id="wf-dist-body" data-role="tc" data-scenario="tc-va-distribute-contract" placeholder="Attach the ratified contract and confirm receipt is needed from each party, including the buyer's lender contact once the selling agent provides it."></textarea>
-          <div style="margin-top:10px"><button class="btn sm" id="wf-dist-body-btn" onclick="SCApp.submitEmailStep({textareaId:'wf-dist-body', statusElId:'wf-dist-body-status', btnId:'wf-dist-body-btn', role:'tc', scenarioId:'tc-va-distribute-contract', scenarioPrompt:'Distribute ratified contract email, 4232 Maplehurst Road VA', maxScore:5})">Submit for grading</button></div>
-          <div id="wf-dist-body-status" class="small" style="margin-top:6px"></div>
-        </div>
-      </div>
-      ${wfNav(true)}
-    </div>`;
-  }
-
-  /* ── Step 4: EMD confirmation ── */
-  function vaStep3() {
-    return `<div class="wf-step-wrap">
-      <div class="wf-step-label-row">Step 4: EMD Confirmation</div>
-      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
-        Coordinate getting a copy of the earnest money deposit and send it to all parties, per the real checklist.
-      </p>
-      <div class="wf-signed-banner">&#10003; $1,000 EMD receipt received from BHHS RW Towne Realty</div>
-      <div class="wf-form-section">
-        <h4>EMD Record</h4>
-        ${wfField('wf-emd-amt', 'Amount', 'text', '', '$1,000.00', true)}
-        ${wfField('wf-emd-held', 'Held By', 'text', '', 'BHHS RW Towne Realty', true)}
-        ${wfField('wf-emd-date', 'Received Date', 'text', '', '', false)}
-      </div>
-      <div class="wf-doc-list">
-        ${wfDocBtn('../assets/docs/tc-va/emd-receipt.pdf', 'View the actual EMD receipt')}
-      </div>
-      <div class="wf-compose">
-        <div class="wf-compose-header">
-          <div class="wf-compose-field">
-            <span class="wf-compose-lbl">To:</span>
-            <input type="text" value="lender@example.com, McKenzi <ratified@atcoastal.com>, Bobbi Wood" readonly>
-          </div>
-          <div class="wf-compose-field">
-            <span class="wf-compose-lbl">Subject:</span>
-            <input type="text" id="wf-emd-subj" value="EMD Confirmation: 4232 Maplehurst Road">
-          </div>
-        </div>
-        <div class="wf-compose-body">
-          <textarea id="wf-emd-body" data-role="tc" data-scenario="tc-va-emd-confirmation" placeholder="Confirm the $1,000 EMD has been received and attach the receipt for all parties' files."></textarea>
-          <div style="margin-top:10px"><button class="btn sm" id="wf-emd-body-btn" onclick="SCApp.submitEmailStep({textareaId:'wf-emd-body', statusElId:'wf-emd-body-status', btnId:'wf-emd-body-btn', role:'tc', scenarioId:'tc-va-emd-confirmation', scenarioPrompt:'EMD confirmation email, 4232 Maplehurst Road VA', maxScore:5})">Submit for grading</button></div>
-          <div id="wf-emd-body-status" class="small" style="margin-top:6px"></div>
-        </div>
-      </div>
-      ${wfNav(true)}
-    </div>`;
-  }
-
-  /* ── Step 5: Inspections and findings ── */
-  function vaStep4() {
-    return `<div class="wf-step-wrap">
-      <div class="wf-step-label-row">Step 5: Inspection Coordination</div>
-      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
-        Before any of this could be scheduled, the seller was still occupying the home and access had to be worked out with the buyer's agent. Make the call below, then review the real findings that came back.
-      </p>
-      <div id="wf-inspection-decision"></div>
-      <div class="wf-form-section">
-        <h4>Inspections Ordered</h4>
-        ${wfField('wf-insp1', 'Home Inspection', 'text', '', 'Safe House Property Inspections, Ryan Foley', true)}
-        ${wfField('wf-insp2', 'Moisture &amp; WDII (Termite)', 'text', '', 'Pest Heroes, Scott Cohen, (757) 367-8342', true)}
-      </div>
-      <div class="wf-email">
-        <div class="wf-email-header">
-          <div class="wf-email-subject">Inspection Reports: 4232 Maplehurst Road</div>
-        </div>
-        <div class="wf-email-body">
-          <p><strong>Home Inspection (Safe House, 30 pages):</strong></p>
-          <ul>
-            <li>Roof: architectural shingles, early in life cycle, but installed inconsistent with standard practice on the rear side; no gutter/drainage system installed</li>
-            <li>Moisture staining on roof deck (rear left, front right, rear right); recommend licensed roofer evaluation</li>
-            <li>Multiple plumbing leaks: kitchen sink, master bath sink, tub faucets; upstairs hall toilet running continuously</li>
-            <li>Electrical panel: breakers off, rust/corrosion visible, multiple receptacle issues</li>
-            <li>Dishwasher leaking, garbage disposal inoperable</li>
-          </ul>
-          <p><strong>Moisture Inspection (Pest Heroes, $79):</strong> House is on a slab; understructure inaccessible, no findings could be rendered.</p>
-          <p><strong>WDII / Termite (Pest Heroes):</strong> No visible evidence of wood-destroying insects. Clean report, no treatment recommended.</p>
-        </div>
-      </div>
-      <div class="wf-doc-list">
-        ${wfDocBtn('../assets/docs/tc-va/home-inspection-report.pdf', 'View the actual home inspection report (30 pages)')}
-        ${wfDocBtn('../assets/docs/tc-va/moisture-report.pdf', 'View the actual moisture report')}
-        ${wfDocBtn('../assets/docs/tc-va/wdii-report.pdf', 'View the actual WDII (termite) report')}
-      </div>
-      <div class="lc-callout-warn">This is a real punch list. Expect the buyer's agent to come back with a repair request, that's the next step.</div>
-      ${wfNav(true)}
-    </div>`;
-  }
-
-  /* ── Step 6: PICRA negotiation ── */
-  function vaStep5() {
-    return `<div class="wf-step-wrap">
-      <div class="wf-step-label-row">Step 6: PICRA Negotiation</div>
-      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
-        This is the real back-and-forth from this file. Review the full negotiation chain, then make a call on the question below.
-      </p>
-      <div class="wf-form-section">
-        <h4>Negotiation Timeline</h4>
-        <p style="font-size:13px;color:var(--v-ink);line-height:1.7;margin:0">
-          <strong>1. Buyer's initial ask</strong> (based on the punch list above): repairs to roof flashing, plumbing leaks, electrical panel, dishwasher/disposal. Opening ask was roughly <strong>$7,000</strong>, reduced to <strong>$5,000</strong> after discussion.<br><br>
-          <strong>2. Seller's first counter</strong> (PICRA Counter, not yet signed): <strong>$2,000 credit</strong> toward buyer's closing costs, <strong>no repairs performed</strong>.<br><br>
-          <strong>3. Seller's second counter</strong> (signed): same $2,000 credit / no-repairs terms, now executed, with any future repairs requiring licensed contractors and a re-inspection 5 days before closing.<br><br>
-          <strong>4. Final agreement:</strong> <strong>$2,000 credit at closing, no repairs required, plus a Choice Home Warranty (up to $725)</strong> paid by the seller.
-        </p>
-      </div>
-      <div class="wf-doc-list">
-        ${wfDocBtn('../assets/docs/tc-va/picra-counter-1.pdf', "View: buyer's initial PICRA counter (unsigned)")}
-        ${wfDocBtn('../assets/docs/tc-va/picra-counter-2-signed.pdf', "View: seller's second counter (signed)")}
-        ${wfDocBtn('../assets/docs/tc-va/picra-final.pdf', 'View: the final signed PICRA')}
-      </div>
-      <div id="wf-picra-decision"></div>
-      ${wfNav(true)}
-    </div>`;
-  }
-
-  function vaPicraDecision() {
-    wfDecision('wf-picra-decision',
-      "The buyer's agent calls and asks if AtCoastal Realty can negotiate repair details directly with the seller's contractor, outside of a written addendum, to save time. What do you say?",
-      [
-        { t: "No. Every negotiated repair or credit term has to be documented in a signed PICRA addendum before it's binding.", ok: true },
-        { t: 'Sure, a verbal understanding between the parties is fine as long as everyone agrees.', ok: false },
-        { t: "Tell them AtCoastal Realty will handle the repairs directly with the contractor on the seller's behalf.", ok: false }
-      ],
-      "Contingency negotiations in Virginia (and everywhere) only bind the parties once they are in a signed addendum. A verbal \"understanding\" protects no one if something changes later, and a TC coordinating repairs directly, rather than the licensed parties agreeing in writing, blurs a line that isn't yours to cross."
-    );
-  }
-
-  function vaInspectionDecision() {
-    wfDecision('wf-inspection-decision',
-      "The home is still occupied by the seller. The buyer's agent calls asking to lock in an inspection date this week for the home, moisture, and WDII inspections. What do you do?",
-      [
-        { t: "Coordinate with the seller (or Shannon Paschall, the listing agent) to confirm a date and access window that works, then confirm that date back to the buyer's agent in writing.", ok: true },
-        { t: "Tell the buyer's agent to pick whatever day works best for their inspector, since the seller has to make it work.", ok: false },
-        { t: "Give the buyer's agent a lockbox code so their inspector can enter anytime without checking with the seller first.", ok: false }
-      ],
-      "The home is occupied, so access always runs through the seller's actual availability, not just the buyer side's schedule. Confirming a mutually agreeable date and putting it in writing avoids an access dispute or an ambushed seller later."
-    );
-  }
-
-  /* ── Step 7: Closing prep ── */
-  function vaStep6() {
-    return `<div class="wf-step-wrap">
-      <div class="wf-step-label-row">Step 7: Closing Preparation</div>
-      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
-        Settlement is February 11, 2026. Work backward from that date.
-      </p>
-      <div class="wf-form-section">
-        <h4>Closing Checklist</h4>
-        ${wfField('wf-appraisal', 'Appraisal', 'text', '', 'Ordered, confirm value supports the corrected $290,000 purchase price ($275,500 FHA loan)', false)}
-        ${wfField('wf-cd', 'Closing Disclosure Deadline', 'text', '', 'Must reach buyer by Feb 6, 2026 (3 business days before settlement)', true)}
-        ${wfField('wf-walkthrough', 'Final Walkthrough', 'text', '', 'Schedule 24 to 48 hours before Feb 11', false)}
-        ${wfField('wf-wire', 'Wire Instructions', 'text', '', 'Verify by phone on a known number before buyer sends any funds', true)}
-      </div>
-      <div class="lc-callout-warn">Reminder: wire-instruction fraud is the single biggest risk this close to closing. Never trust a changed wire instruction that arrives by email alone, confirm by phone on a number you already had on file.</div>
-      ${wfNav(true)}
-    </div>`;
-  }
-
-  /* ── Step 8: Post-closing wrap-up + validation ── */
-  function vaStep7() {
-    return `<div class="wf-step-wrap">
-      <div class="wf-step-label-row">Step 8: Post-Closing Wrap-Up</div>
-      <p style="font-size:13.5px;color:var(--v-muted);margin:0 0 16px">
-        Compose the closing wrap-up note, then review the workflow validation below.
-      </p>
-      <div class="wf-compose">
-        <div class="wf-compose-header">
-          <div class="wf-compose-field">
-            <span class="wf-compose-lbl">To:</span>
-            <input type="text" value="McKenzi <ratified@atcoastal.com>, Shannon Paschall" readonly>
-          </div>
-          <div class="wf-compose-field">
-            <span class="wf-compose-lbl">Subject:</span>
-            <input type="text" id="wf-close-subj" value="Closed: 4232 Maplehurst Road">
-          </div>
-        </div>
-        <div class="wf-compose-body">
-          <textarea id="wf-close-body" data-role="tc" data-scenario="tc-va-post-closing" placeholder="Confirm the file closed on Feb 11, 2026, and that all documents are archived to compliance for this record."></textarea>
-          <div style="margin-top:10px"><button class="btn sm" id="wf-close-body-btn" onclick="SCApp.submitEmailStep({textareaId:'wf-close-body', statusElId:'wf-close-body-status', btnId:'wf-close-body-btn', role:'tc', scenarioId:'tc-va-post-closing', scenarioPrompt:'Post-closing confirmation email, 4232 Maplehurst Road VA', maxScore:5})">Submit for grading</button></div>
-          <div id="wf-close-body-status" class="small" style="margin-top:6px"></div>
-        </div>
-      </div>
-      <div class="wf-score-card">
-        <div class="wf-score-header">Workflow Validation: 4232 Maplehurst Road</div>
-        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Reviewed the ratified contract and confirmed all key facts</span></div>
-        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Sent the seller detail email with required attachments</span></div>
-        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Distributed the ratified contract to compliance, title, and both agents</span></div>
-        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Confirmed the $1,000 EMD and circulated the receipt</span></div>
-        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Worked out access on the occupied home, then coordinated the home, moisture, and WDII inspections and reviewed findings</span></div>
-        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Reviewed the full PICRA negotiation chain and handled the follow-up call correctly</span></div>
-        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Prepared closing: appraisal, Closing Disclosure timing, walkthrough, wire verification</span></div>
-        <div class="wf-score-row"><div class="wf-score-dot done"></div><span>Sent the post-closing wrap-up and archived the file</span></div>
-      </div>
-      <div id="wf-eval-container"></div>
-      <div class="lc-result" style="margin-top:16px">
-        <div class="lc-result-pct" style="font-size:36px">&#10003;</div>
-        <p><strong>Full Transaction Workflow Complete.</strong></p>
-        <p style="font-size:13.5px;color:var(--v-muted)">
-          You guided 4232 Maplehurst Road from ratified contract through closing: distribution, EMD, inspections, a real repair negotiation, and closing day. This is the core of what a transaction coordinator does on a real file.
-        </p>
-        <div class="lc-result-actions">
-          <button class="lc-result-btn primary" onclick="wfRestart()">Restart Workflow</button>
-          <button class="lc-result-btn outline" onclick="wfReset()">Back to Scenarios</button>
-        </div>
-      </div>
-    </div>`;
-  }
 
   /* ══════════════ Texas: 2931 McDonough Way ══════════════ */
 

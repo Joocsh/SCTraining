@@ -1,0 +1,133 @@
+/* ==========================================================================
+   Transaction Coordinator real case (Virginia: 4232 Maplehurst Road)
+   Layout helpers for the step screens: a task column and a case file column.
+   ========================================================================== */
+
+.mh-top{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px}
+.mh-top .wf-step-label-row{margin:0}
+.mh-date{
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--v-navy); color:#fff; border-radius:999px;
+  padding:4px 11px; font-size:11.5px; font-weight:700; letter-spacing:.2px;
+}
+.mh-date svg{width:12px; height:12px}
+.mh-lead{font-size:14px; color:var(--v-muted); line-height:1.6; margin:0 0 16px}
+.mh-lead strong{color:var(--v-ink)}
+
+/* the case uses the full width of the content column */
+body.rshell .lc-panel-body:has(.mh-grid){max-width:1200px}
+.mh-grid{display:grid; grid-template-columns:minmax(0,1fr) 270px; gap:18px; align-items:start}
+.mh-main > *:last-child{margin-bottom:0}
+@media(max-width:900px){ .mh-grid{grid-template-columns:1fr} }
+
+/* case file column */
+.mh-side{
+  background:#fff; border:1.5px solid var(--v-line); border-radius:14px;
+  padding:14px 14px 10px; position:sticky; top:12px;
+}
+.mh-side h5{
+  font-size:10.5px; font-weight:800; letter-spacing:.6px; text-transform:uppercase;
+  color:var(--v-cyan-d); margin:0 0 8px;
+}
+.mh-side h5 + .mh-facts, .mh-side h5 + .mh-docs{margin-top:0}
+.mh-facts{list-style:none; margin:0 0 14px; padding:0}
+.mh-facts li{display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px solid var(--v-line); font-size:12.5px}
+.mh-facts li:last-child{border-bottom:none}
+.mh-facts span{color:var(--v-muted)}
+.mh-facts b{color:var(--v-ink); text-align:right; font-weight:700}
+.mh-docs{display:flex; flex-direction:column; gap:6px; margin:0 0 8px}
+.mh-doc{
+  display:flex; align-items:flex-start; gap:9px; width:100%; text-align:left;
+  background:var(--v-bg); border:1px solid var(--v-line); border-radius:10px;
+  padding:8px 10px; cursor:pointer; font-family:inherit; transition:border-color .15s, background .15s;
+}
+.mh-doc:hover{border-color:var(--v-cyan); background:#fff}
+.mh-doc svg{width:15px; height:15px; flex:none; margin-top:1px; color:var(--v-cyan-d)}
+.mh-doc b{display:block; font-size:12.5px; color:var(--v-navy); line-height:1.3}
+.mh-doc small{display:block; font-size:11px; color:var(--v-muted); margin-top:2px}
+
+/* cards inside the task column */
+.mh-card{background:#fff; border:1.5px solid var(--v-line); border-radius:14px; padding:18px 18px 16px; margin-bottom:14px}
+.mh-card h4{font-size:12px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:var(--v-cyan-d); margin:0 0 4px}
+.mh-card .mh-sub{font-size:13px; color:var(--v-muted); margin:0 0 14px; line-height:1.5}
+
+/* fill in / pick rows */
+.mh-rows{display:grid; grid-template-columns:repeat(auto-fill,minmax(215px,1fr)); gap:10px 12px}
+.mh-rows.one{grid-template-columns:1fr}
+@media(max-width:560px){ .mh-rows{grid-template-columns:1fr} }
+.mh-row{display:flex; flex-direction:column; gap:4px}
+.mh-row label{font-size:11.5px; font-weight:700; color:var(--v-muted)}
+.mh-row label em{font-style:normal; font-weight:500; color:#8a98a8}
+.mh-row input, .mh-row select{
+  background:var(--v-bg); border:1.5px solid var(--v-line); border-radius:8px;
+  padding:8px 10px; font-size:13.5px; color:var(--v-ink); font-family:inherit; width:100%; box-sizing:border-box;
+}
+.mh-row input:focus, .mh-row select:focus{outline:none; border-color:var(--v-cyan)}
+.mh-row.ok input, .mh-row.ok select{border-color:var(--good); background:#f3fbf6}
+.mh-row.no input, .mh-row.no select{border-color:var(--bad); background:#fdeeec}
+.mh-row .mh-ans{font-size:11.5px; color:var(--bad); display:none}
+.mh-row.no .mh-ans.show{display:block}
+
+.mh-actions{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:14px}
+.mh-btn{
+  background:var(--v-navy); color:#fff; border:none; border-radius:999px;
+  padding:9px 18px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit;
+}
+.mh-btn:hover{background:var(--v-navy2)}
+.mh-link{background:none; border:none; color:var(--v-cyan-d); font-weight:700; font-size:12.5px; cursor:pointer; padding:0; font-family:inherit}
+.mh-result{font-size:13px; font-weight:700}
+.mh-result.good{color:var(--good)}
+.mh-result.bad{color:var(--bad)}
+
+/* chips you toggle */
+.mh-chips{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+@media(max-width:560px){ .mh-chips{grid-template-columns:1fr} }
+.mh-chip{
+  display:flex; align-items:flex-start; gap:10px; text-align:left; width:100%;
+  background:var(--v-bg); border:1.5px solid var(--v-line); border-radius:11px;
+  padding:10px 12px; cursor:pointer; font-family:inherit; font-size:13px; color:var(--v-ink); line-height:1.4;
+}
+.mh-chip i{
+  flex:none; width:16px; height:16px; margin-top:1px; border-radius:5px;
+  border:1.5px solid #b9c6d3; background:#fff; position:relative;
+}
+.mh-chip.on{border-color:var(--v-cyan); background:#eefbfc}
+.mh-chip.on i{background:var(--v-cyan); border-color:var(--v-cyan)}
+.mh-chip.on i::after{content:""; position:absolute; left:4px; top:1px; width:4px; height:8px; border:solid #fff; border-width:0 2px 2px 0; transform:rotate(45deg)}
+.mh-chip small{display:block; color:var(--v-muted); font-size:11.5px; margin-top:2px}
+.mh-chip.ok{border-color:var(--good); background:#f3fbf6}
+.mh-chip.no{border-color:var(--bad); background:#fdeeec}
+.mh-chips.locked .mh-chip{cursor:default}
+
+/* dated timeline */
+.mh-tl{list-style:none; margin:0; padding:0; position:relative}
+.mh-tl::before{content:""; position:absolute; left:52px; top:6px; bottom:6px; width:2px; background:var(--v-line)}
+.mh-tl li{display:grid; grid-template-columns:44px 1fr; gap:22px; padding:0 0 12px; position:relative}
+.mh-tl li:last-child{padding-bottom:0}
+.mh-tl li::before{content:""; position:absolute; left:48px; top:5px; width:10px; height:10px; border-radius:50%; background:#fff; border:2px solid var(--v-cyan)}
+.mh-tl .d{font-size:11.5px; font-weight:800; color:var(--v-navy); line-height:1.25; text-align:right}
+.mh-tl .t{font-size:13px; color:var(--v-ink); line-height:1.5}
+.mh-tl .t b{color:var(--v-navy)}
+
+.mh-note{font-size:12.5px; color:var(--v-muted); line-height:1.55; margin:10px 0 0}
+.mh-quote{border-left:3px solid var(--v-cyan); padding:6px 0 6px 12px; margin:10px 0; font-size:13px; color:var(--v-ink); line-height:1.55; background:#f7fcfd}
+.mh-attach{display:flex; flex-wrap:wrap; gap:6px; padding:10px 16px; border-top:1px solid var(--v-line); background:#fafcfd}
+.mh-attach span{font-size:11.5px; font-weight:600; color:var(--v-navy); background:#fff; border:1px solid var(--v-line); border-radius:999px; padding:3px 10px}
+
+/* keep compose boxes compact on this case */
+.mh-main .wf-compose-body textarea{min-height:130px}
+.mh-main .wf-compose{margin-bottom:14px}
+.mh-main .lc-scenario-box{padding:20px 20px 16px; border-radius:14px; margin-bottom:14px}
+.mh-main .lc-scenario-box h3{font-size:15px; margin-bottom:14px}
+.mh-main .lc-choice{padding:11px 14px; font-size:13.5px}
+.mh-main .lc-callout-info, .mh-main .lc-callout-warn{margin-bottom:14px; font-size:13.5px}
+
+/* a lighter email card: one line of meta instead of three */
+.mh-main .wf-email{margin-bottom:14px}
+.mh-main .wf-email-header{padding:12px 18px}
+.mh-main .wf-email-subject{margin-bottom:4px}
+.mh-main .wf-email-meta{display:flex; flex-direction:row; flex-wrap:wrap; gap:2px 18px}
+.mh-main .wf-email-row{font-size:12px}
+.mh-main .wf-email-body{padding:12px 18px 14px}
+.mh-main .wf-email-body p{margin:0 0 8px}
+.mh-main .wf-email-body .wf-sig{margin-top:8px}
