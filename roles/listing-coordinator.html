@@ -3838,6 +3838,7 @@
     </div>
   </footer>
 
+<script src="../assets/js/rein-va-features.js"></script>
   <script src="../assets/js/app-core.js"></script>
   <script src="../assets/js/site.js"></script>
 <script src="../assets/js/role-shell.js" defer></script>
@@ -6197,8 +6198,8 @@
         html += `<div class="rein-section-anchor" id="va-sec-agent">${vaAgent()}</div>`;
         html += `<div class="rein-section-anchor" id="va-sec-location">${vaLocation()}</div>`;
         html += `<div class="rein-section-anchor" id="va-sec-property">${vaProperty()}</div>`;
-        html += `<div class="rein-section-anchor" id="va-sec-features">${vaFeatures()}</div>`;
-        html += `<div class="rein-section-anchor" id="va-sec-rooms">${vaRooms()}</div>`;
+        html += `<div class="rein-section-anchor" id="va-sec-features">${reinFeatures()}</div>`;
+        html += `<div class="rein-section-anchor" id="va-sec-rooms">${reinRooms()}</div>`;
         html += `<div class="rein-section-anchor" id="va-sec-marketing">${vaMarketing()}</div>`;
         html += `<div class="rein-section-anchor" id="va-sec-financial">${vaFinancial()}</div>`;
         html += `<div class="rein-section-anchor" id="va-sec-editor">${vaEditor()}</div>`;
@@ -7990,7 +7991,13 @@
       let missing = [];
       Object.entries(required).forEach(([id, label]) => {
         const el = document.getElementById(id);
+        if (el && el.classList.contains('rein-ms')) { if (!el.querySelector('input:checked')) missing.push(label); return; }
         if (!el || !el.value || el.value.trim() === '' || el.value === '0') missing.push(label);
+      });
+      // Required on the REIN Virginia form only
+      [['vf-roof', 'Roof'], ['vf-flooring', 'Flooring'], ['vf-style', 'Style']].forEach(([id, label]) => {
+        const el = document.getElementById(id);
+        if (el && !el.querySelector('input:checked')) missing.push(label);
       });
       // Check multiselects
       ['vf-disclosures', 'vf-appliances', 'vf-agency-approved'].forEach(id => {
