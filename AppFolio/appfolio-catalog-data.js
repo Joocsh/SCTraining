@@ -412,11 +412,11 @@ const AFC_PROPERTIES = [
     operatingCashCents: 1190000,
     status: 'active'
   },
-  /* ANCHOR: PROP-11 — Maplewood Commons (24 Units Apartment) — DO NOT CHANGE */
+  /* ANCHOR: PROP-11 — Legacy Park Apartments (24 Units Apartment) — DO NOT CHANGE */
   {
     id: 'PROP-11',
-    name: 'Maplewood Commons Apartments',
-    address: '2800 Maplewood Dr', city: 'Plano', state: 'TX', zip: '75074',
+    name: 'Legacy Park Apartments',
+    address: '2800 Legacy Dr', city: 'Plano', state: 'TX', zip: '75074',
     county: 'Collin', type: 'apartment', yearBuilt: 2014,
     unitCount: 24, ownerIds: ['OWN-14', 'OWN-15'], ownerSplit: { 'OWN-14': 60, 'OWN-15': 40 },
     managementFeePct: 600, // 6.00%
@@ -731,16 +731,16 @@ function afBuildCompletePortfolio() {
     const isPetAnchor = (u.id === 'UNIT-11-102'); // RES-PET-01
     const isRenewalAnchor = (u.id === 'UNIT-12-201'); // LEASE-REN-01
 
-    const resId = isPetAnchor ? 'RES-PET-01' : ('RES-' + String(resSeq++).padStart(4, '0'));
+    const resId = isPetAnchor ? 'RES-PET-01' : (isRenewalAnchor ? 'RES-REN-01' : ('RES-' + String(resSeq++).padStart(4, '0')));
     const leaseId = isRenewalAnchor ? 'LEASE-REN-01' : ('LEASE-' + String(leaseSeq++).padStart(4, '0'));
 
     u.currentLeaseId = leaseId;
 
     const res = {
       id: resId,
-      name: isPetAnchor ? 'Marcus Vance' : (fName + ' ' + lName),
-      email: isPetAnchor ? 'marcus.vance@example.com' : (fName.toLowerCase() + '.' + lName.toLowerCase() + '@example.com'),
-      phone: isPetAnchor ? '555-0142' : ('555-01' + String(10 + (uIdx % 89))),
+      name: isPetAnchor ? 'Marcus Vance' : (isRenewalAnchor ? 'Jordan Reed' : (fName + ' ' + lName)),
+      email: isPetAnchor ? 'marcus.vance@example.com' : (isRenewalAnchor ? 'jordan.reed@example.com' : (fName.toLowerCase() + '.' + lName.toLowerCase() + '@example.com')),
+      phone: isPetAnchor ? '555-0142' : (isRenewalAnchor ? '555-0148' : ('555-01' + String(10 + (uIdx % 89)))),
       propertyId: u.propertyId,
       unitId: u.id,
       leaseId: leaseId,
@@ -961,6 +961,25 @@ function afBuildCompletePortfolio() {
     createdDate: afcDay(-2)
   });
 
+  /* ANCHOR: WO-2026-0101 — HVAC Emergency Work Order for Lesson 10 — DO NOT CHANGE */
+  workOrders.push({
+    id: 'WO-2026-0101',
+    propertyId: 'PROP-12',
+    unitId: 'UNIT-12-104',
+    vendorId: 'VEND-01', // Lone Star HVAC Services (active COI through 2027)
+    reportedBy: 'Alex Rivera',
+    category: 'hvac',
+    priority: 'emergency',
+    status: 'assigned',
+    title: 'AC Compressor Failure in Unit 12-104 during summer heatwave',
+    description: 'Emergency HVAC call: central AC compressor in Unit 12-104 failed. Indoor temperature exceeding 88°F. Lone Star HVAC assigned; dispatch required.',
+    entryNoticeSent: true,
+    scheduledDate: afcDay(0),
+    estimateCents: 42000,
+    actualCents: 0,
+    createdDate: afcDay(0)
+  });
+
   // Bulk Work Orders across properties (Expanded to 22 realistic titles per D8)
   const WO_TITLES = [
     { cat: 'hvac', p: 'emergency', t: 'HVAC AC Unit Blowing Warm Air (Compressor Overheat)', v: 'VEND-01', est: 42000, s: 'in-progress' },
@@ -987,7 +1006,7 @@ function afBuildCompletePortfolio() {
     { cat: 'painting', p: 'low', t: 'Drywall Patch and Texture from Previous Wall Mount', v: 'VEND-10', est: 18000, s: 'new' }
   ];
 
-  for (let w = 1; w <= 38; w++) {
+  for (let w = 2; w <= 38; w++) {
     const template = WO_TITLES[w % WO_TITLES.length];
     const targetUnit = units[(w * 2) % units.length];
     workOrders.push({

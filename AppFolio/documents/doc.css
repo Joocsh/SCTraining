@@ -210,25 +210,65 @@ table.line-items tfoot td {
   font-weight: 600;
 }
 
-.sigrow { display: flex; gap: 40px; margin-top: 28px; }
-.sig { flex: 1; }
-.sig .line {
-  border-bottom: 1px solid var(--ink);
-  height: 34px;
-  font-style: italic;
-  font-family: 'Brush Script MT', cursive, sans-serif;
-  font-size: 20px;
-  color: var(--brand);
-  padding-top: 6px;
+.sigrow {
+  display: flex;
+  gap: 36px;
+  margin-top: 32px;
+  align-items: flex-end;
 }
-.sig label {
+.sig {
+  flex: 1;
+  min-width: 0;
+}
+.sig .line {
+  border-bottom: 1.5px solid var(--ink);
+  min-height: 38px;
+  height: auto;
+  font-style: italic;
+  font-family: 'Brush Script MT', 'Dancing Script', 'Segoe Script', cursive, sans-serif;
+  font-size: 22px;
+  color: var(--brand);
+  padding: 0 4px 6px 4px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sig .line.date,
+.sig .line.print {
+  font-style: normal;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  padding-bottom: 6px;
+  line-height: 1.4;
+}
+.sig label,
+.sig .label {
   display: block;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 10.5px;
+  font-size: 11px;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: .4px;
+  letter-spacing: .5px;
   color: var(--muted);
-  margin-top: 6px;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+.sig .label b,
+.sig label b {
+  color: var(--ink);
+  font-weight: 700;
+}
+.sig .sub-label {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 10.5px;
+  color: #64748b;
+  text-transform: none;
+  letter-spacing: normal;
+  margin-top: 3px;
+  line-height: 1.35;
 }
 
 .foot {

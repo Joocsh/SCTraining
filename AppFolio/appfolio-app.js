@@ -38,7 +38,13 @@ const AF_STORE_DEFAULTS = {
   exam: null,
   lessonsDone: {},
   shuffleSalt: null,
-  tourSeen: false
+  tourSeen: false,
+  analytics: {
+    lessonStarts: {},      // { lessonId: timestamp }
+    lessonCompletes: {},   // { lessonId: timestamp }
+    stepFirstAttempts: {}, // { lessonId: { stepIndex: timestamp } }
+    stepAttempts: {}       // { lessonId: { stepIndex: count } }
+  }
 };
 function afDefaultStore() { return JSON.parse(JSON.stringify(AF_STORE_DEFAULTS)); }
 let afStore = afDefaultStore();
@@ -86,6 +92,12 @@ function afLoad() {
   } catch (e) {
     afStore = afDefaultStore();
   }
+  if (!afStore.analytics) afStore.analytics = {};
+  if (!afStore.analytics.lessonStarts) afStore.analytics.lessonStarts = {};
+  if (!afStore.analytics.lessonCompletes) afStore.analytics.lessonCompletes = {};
+  if (!afStore.analytics.stepFirstAttempts) afStore.analytics.stepFirstAttempts = {};
+  if (!afStore.analytics.stepAttempts) afStore.analytics.stepAttempts = {};
+
   /* Never read back from storage. A fresh object on every load is the whole
      point of the model, and restoring it here would quietly defeat it. */
   afDemo = afDefaultDemo();
@@ -95,6 +107,36 @@ function afLoad() {
 }
 function afSave() {
   localStorage.setItem(AF_LS_KEY, JSON.stringify(afStore));
+}
+
+function afTrackLessonStart(lessonId) {
+  if (!lessonId) return;
+  afState.lessonId = lessonId;
+  afState.mode = 'lesson';
+  if (!afStore.analytics) afStore.analytics = {};
+  if (!afStore.analytics.lessonStarts) afStore.analytics.lessonStarts = {};
+  if (!afStore.analytics.lessonStarts[lessonId]) {
+    afStore.analytics.lessonStarts[lessonId] = Date.now();
+    afSave();
+  }
+}
+
+function afTrackStepAttempt(lessonId, stepIndex) {
+  if (!lessonId || stepIndex == null || stepIndex < 0) return;
+  if (!afStore.analytics) afStore.analytics = {};
+  if (!afStore.analytics.stepAttempts) afStore.analytics.stepAttempts = {};
+  if (!afStore.analytics.stepFirstAttempts) afStore.analytics.stepFirstAttempts = {};
+
+  const lid = String(lessonId);
+  const sidx = String(stepIndex);
+  if (!afStore.analytics.stepAttempts[lid]) afStore.analytics.stepAttempts[lid] = {};
+  afStore.analytics.stepAttempts[lid][sidx] = (afStore.analytics.stepAttempts[lid][sidx] || 0) + 1;
+
+  if (!afStore.analytics.stepFirstAttempts[lid]) afStore.analytics.stepFirstAttempts[lid] = {};
+  if (!afStore.analytics.stepFirstAttempts[lid][sidx]) {
+    afStore.analytics.stepFirstAttempts[lid][sidx] = Date.now();
+  }
+  afSave();
 }
 function afResetProgress() {
   localStorage.removeItem(AF_LS_KEY);
@@ -276,12 +318,28 @@ const escAttr = SimEngine.escAttr;
    afRecordAnswer() (for the five answer buckets). One guard, one return, and
    the separation between exploring and being examined is a property a reviewer
    can confirm by reading a single function. */
+function afTrainingActive() {
+  if (afDemoMode()) return false;
+  return (typeof SimEngine !== 'undefined' && SimEngine.walkActive && SimEngine.walkActive()) ||
+         afState.lessonId != null ||
+         afState.mode === 'lesson';
+}
+
 function afMark(id) {
-  if (afState.mode !== 'lesson') return;
-  if (afStore.checklist[id]) return;
-  afStore.checklist[id] = true;
-  afSave();
-  afNotifyStepDone(id);
+  if (!id) return;
+  if (!afTrainingActive()) return;
+
+  const alreadyDone = !!afStore.checklist[id];
+  if (!alreadyDone) {
+    afStore.checklist[id] = true;
+    afSave();
+  }
+
+  const step = (typeof SimEngine !== 'undefined' && SimEngine.walkActive && SimEngine.walkActive()) ? SimEngine.currentStep() : null;
+  const walkActiveOnThis = step && step.type === 'do' && step.checklistId === id;
+  if (!alreadyDone || walkActiveOnThis) {
+    afNotifyStepDone(id);
+  }
 }
 
 /* The five graded buckets have exactly one writer, for the same reason checklist
@@ -296,6 +354,25 @@ function afRecordAnswer(bucket, id, payload) {
   if (AF_ANSWER_BUCKETS.indexOf(bucket) === -1) return false;
   if (!id) return false;
   afStore[bucket][id] = payload;
+  if (afState.lessonId) {
+    const l = typeof AF_LESSONS !== 'undefined' && AF_LESSONS.find(function (x) { return x.id === afState.lessonId; });
+    if (l) {
+      let stepIndex = -1;
+      if (bucket === 'scenarios') stepIndex = l.steps.findIndex(function (s) { return s.type === 'decide' && s.scenarioId === id; });
+      else if (bucket === 'reviews') stepIndex = l.steps.findIndex(function (s) { return s.type === 'verify' && s.reviewId === id; });
+      else if (bucket === 'reconciles') stepIndex = l.steps.findIndex(function (s) { return s.type === 'reconcile' && s.reconcileId === id; });
+      else if (bucket === 'composes') stepIndex = l.steps.findIndex(function (s) { return s.type === 'compose' && s.composeId === id; });
+      else if (bucket === 'triages') stepIndex = l.steps.findIndex(function (s) { return s.type === 'triage' && s.triageId === id; });
+
+      if (stepIndex === -1 && typeof SimEngine !== 'undefined' && SimEngine.walkState) {
+        const ws = SimEngine.walkState();
+        if (ws && ws.stepIndex != null) stepIndex = ws.stepIndex;
+      }
+      if (stepIndex !== -1) {
+        afTrackStepAttempt(afState.lessonId, stepIndex);
+      }
+    }
+  }
   afSave();
   afNotifyAnswerRecorded(bucket, id);
   return true;
@@ -328,7 +405,12 @@ function afShowsTraining() {
 }
 
 function afModeSwitchHTML() {
-  return '';
+  if (!afShowsTraining()) return '';
+  const isTraining = afState.view === 'lessons' || afState.view === 'lesson' || afState.mode === 'lesson';
+  return '<div class="af-mode" role="group" aria-label="Mode switch">' +
+    '<button type="button" class="af-mode-btn' + (!isTraining ? ' on' : '') + '" onclick="afSetMode(\'sandbox\'); afGoto(\'dashboard\');">Sandbox</button>' +
+    '<button type="button" class="af-mode-btn' + (isTraining ? ' on' : '') + '" onclick="afGoto(\'lessons\');">Training</button>' +
+    '</div>';
 }
 
 
@@ -347,6 +429,10 @@ function afModeSwitchHTML() {
    ============================================================================ */
 
 function afDemoAction(label) {
+  if (label && /Help|Training|Lessons/i.test(label)) {
+    afGoto('lessons');
+    return;
+  }
   simToast(label + ' is not available in this demo environment.');
 }
 
@@ -1087,7 +1173,22 @@ function afSectionTabIds(view) {
 /* The tab a section lands on when nothing else is specified: its first child. */
 function afSectionDefaultTab(view) { return afSectionTabIds(view)[0] || null; }
 
+let afSuppressMarks = false;
+
 function afGoto(view, extraId) {
+  if (view === 'properties' && extraId && (extraId.startsWith('PROP-') || (typeof afGetProperty === 'function' && afGetProperty(extraId)))) {
+    afGoto('property-detail', extraId);
+    return;
+  }
+  if (view === 'residents' && extraId && (extraId.startsWith('RES-') || (typeof afGetResident === 'function' && afGetResident(extraId)))) {
+    afGoto('resident-detail', extraId);
+    return;
+  }
+  if ((view === 'units' || view === 'properties') && extraId && extraId.startsWith('UNIT-')) {
+    afGoto('unit-detail', extraId);
+    return;
+  }
+
   afState.view = view;
   afState.sidebarOpen = false;
 
@@ -1150,7 +1251,13 @@ function afGoto(view, extraId) {
     }
   }
 
-  if (view === 'scenario')  { afState.scenarioId  = extraId; }
+  if (view === 'scenario') {
+    if (typeof SimEngine !== 'undefined' && SimEngine.walkActive && SimEngine.walkActive()) {
+      afAskScenario(extraId);
+      return;
+    }
+    afState.scenarioId = extraId;
+  }
   if (view === 'review')    { afState.reviewId    = extraId; }
   if (view === 'compose')   { afState.composeId   = extraId; }
   if (view === 'reconcile') { afState.reconcileId = extraId; }
@@ -1158,13 +1265,49 @@ function afGoto(view, extraId) {
 
   if (view === 'lesson') {
     afState.lessonId = extraId;
+    afTrackLessonStart(extraId);
     /* Opening a lesson switches worlds automatically. Nobody should discover
        halfway through that their work was not being counted. */
     if (afState.mode !== 'lesson') afSetMode('lesson', { quiet: true });
   } else if (view === 'lessons') {
+    if (typeof SimEngine !== 'undefined' && SimEngine.walkActive && SimEngine.walkActive()) SimEngine.exit(true);
     afState.lessonId = null;
-  } else if (afState.mode === 'lesson' && !afState.lessonId) {
+  } else if (afState.mode === 'lesson' && !afState.lessonId && !(typeof SimEngine !== 'undefined' && SimEngine.walkActive && SimEngine.walkActive())) {
     afSetMode('sandbox', { quiet: true });
+  }
+
+  // Walkthrough step completion check based on navigation
+  if (typeof SimEngine !== 'undefined' && SimEngine.walkActive && SimEngine.walkActive() && !afSuppressMarks) {
+    const curStep = SimEngine.currentStep();
+    if (curStep && curStep.type === 'do' && curStep.checklistId) {
+      if (curStep.checklistId === 'af_c1_1' && (view === 'properties' || afState.section === 'properties')) {
+        afMark('af_c1_1');
+      } else if (curStep.checklistId === 'af_c1_2' && (view === 'property-detail' && extraId === 'PROP-11')) {
+        afMark('af_c1_2');
+      } else if (curStep.checklistId === 'af_c1_3' && (view === 'unit-detail' && extraId === 'UNIT-11-102')) {
+        afMark('af_c1_3');
+      } else if (curStep.checklistId === 'af_c1_4' && (view === 'resident-detail' && (extraId === 'RES-REN-01' || extraId === 'RES-0006'))) {
+        afMark('af_c1_4');
+      } else if (curStep.checklistId === 'af_c2_1' && (view === 'residents' || afState.section === 'residents')) {
+        afMark('af_c2_1');
+      } else if (curStep.checklistId === 'af_c2_2' && (view === 'resident-detail' && extraId === 'RES-PET-01')) {
+        afMark('af_c2_2');
+      } else if (curStep.checklistId === 'af_c3_1' && (view === 'accounting' && (extraId === 'delinquency' || afState.accountingTab === 'delinquency' || afState.sectionTab === 'delinquency'))) {
+        afMark('af_c3_1');
+      } else if (curStep.checklistId === 'af_c4_1' && (view === 'reporting' || extraId === 'delinquency')) {
+        afMark('af_c4_1');
+      } else if (curStep.checklistId === 'af_c5_1' && (view === 'leasing' || afState.section === 'leasing')) {
+        afMark('af_c5_1');
+      } else if (curStep.checklistId === 'af_c5_4' && (view === 'application' && extraId === 'APP-2026-005')) {
+        afMark('af_c5_4');
+      } else if (curStep.checklistId === 'af_c9_1' && (view === 'application' && extraId === 'APP-ADA-01')) {
+        afMark('af_c9_1');
+      } else if (curStep.checklistId === 'af_c10_1' && (view === 'maintenance' || afState.section === 'maintenance')) {
+        afMark('af_c10_1');
+      } else if (curStep.checklistId === 'af_c10_2' && (view === 'work-order' && extraId === 'WO-2026-0101')) {
+        afMark('af_c10_2');
+      }
+    }
   }
 
   afState.page = 1;
@@ -1177,6 +1320,7 @@ function afGoto(view, extraId) {
 /* Leaving a lesson returns to the sandbox, so the switch always reflects where
    the trainee actually is. */
 function afExitLesson() {
+  if (SimEngine.walkActive && SimEngine.walkActive()) SimEngine.exit(true);
   afState.lessonId = null;
   afSetMode('sandbox', { quiet: true });
   afGoto('lessons');
@@ -1408,6 +1552,16 @@ function afToggleNavGroup(id) {
 function afNavGo(sectionId, childId) {
   const s = afNavSection(sectionId);
   if (!s) return;
+
+  if (typeof SimEngine !== 'undefined' && SimEngine.walkActive && SimEngine.walkActive() && !afSuppressMarks) {
+    const curStep = SimEngine.currentStep();
+    if (curStep && curStep.type === 'do' && curStep.checklistId) {
+      if (sectionId === 'properties' && curStep.checklistId === 'af_c1_1') afMark('af_c1_1');
+      if (sectionId === 'people' && curStep.checklistId === 'af_c2_1') afMark('af_c2_1');
+      if (sectionId === 'leasing' && curStep.checklistId === 'af_c5_1') afMark('af_c5_1');
+      if (sectionId === 'maintenance' && curStep.checklistId === 'af_c10_1') afMark('af_c10_1');
+    }
+  }
 
   /* Clicking the header of the section you are ALREADY in is a collapse, not a
      navigation. Re-sending someone to Vacancies while they are standing on
@@ -1799,14 +1953,15 @@ function afRenderSidebar() {
     const isOpen = afNavGroupOpen(s.id);
     const hasKids = !!(s.children && s.children.length);
 
-    const dataSection = s.nav || s.id;
+    const isPeople = s.id === 'people';
+    const dataSection = isPeople ? 'people' : (s.nav || s.id);
     const iconSvg = AF_NAV_ICONS[s.id] || '';
     /* 33 was the number in the screenshot, not a fact about this module. */
     const badgeCount = s.id === 'whats-new' ? afWhatsNewCount() : (s.badge ? afUnreadMessages() : 0);
 
     let html =
       '<a class="af-sb-item' + (isActive ? ' active' : '') + (isOpen && hasKids ? ' open' : '') + '"' +
-      ' href="#" data-section="' + escAttr(dataSection) + '"' +
+      ' href="#" data-section="' + escAttr(dataSection) + '"' + (isPeople ? ' data-section-alias="residents" data-nav="residents"' : '') +
       ' title="' + escAttr(s.label) + '"' +
       ' onclick="afNavGo(\'' + escAttr(s.id) + '\');return false;">' +
         (iconSvg ? '<span class="af-sb-icon" aria-hidden="true">' + iconSvg + '</span>' : '') +
@@ -1874,6 +2029,7 @@ function afRenderSubnav() {
   const level1 = children.map(function (c) {
     const active = c.id === activeChild;
     return '<button type="button" class="af-tab' + (active ? ' active' : '') + (c.stub ? ' stub' : '') + '"' +
+      ' data-subtab="' + escAttr(c.id) + '" data-tab="' + escAttr(c.id) + '"' +
       ' onclick="afNavGo(\'' + escAttr(section) + '\',\'' + escAttr(c.id) + '\')">' +
       esc(c.label) + '</button>';
   }).join('');
@@ -2288,7 +2444,7 @@ function afStaleSteps(lessonId) {
 function afRenderLessonBanner() {
   const el = document.getElementById('afLessonBanner');
   if (!el) return;
-  if (afState.mode !== 'lesson' || !afState.lessonId) {
+  if (afState.mode !== 'lesson' || !afState.lessonId || afState.view === 'lesson' || afState.view === 'lessons') {
     el.innerHTML = '';
     el.hidden = true;
     return;
@@ -4168,6 +4324,7 @@ function afRenderRoot() {
   /* The calendar's scroll pane has to be positioned after the markup lands —
      scrollTop is not something CSS can express. */
   afCalAfterRender();
+  afAskRender();
 }
 
 /* Shared empty state. Every list uses it, so an empty screen always has the
@@ -4833,6 +4990,7 @@ function afSaveWorkOrder() {
 
 /* Modal: Post Payment (Type A) */
 function afModalPostPayment(presetLeaseId) {
+  if (presetLeaseId === 'LEASE-0002') afMark('af_c3_2');
   const leases = afAllLeases().filter(function (l) { return l.status === 'active'; });
   const body =
     '<div class="af-form-group"><label class="af-label">Select Active Lease / Resident</label>' +
@@ -4913,6 +5071,7 @@ function afSavePayment() {
     })()
   });
 
+  afMark('af_c3_3');
   afCloseModal();
   simToast('Payment of ' + afFmtMoney(amtCents) + ' posted and deposited to trust.', { tone: 'good' });
   afRenderRoot();
@@ -5159,6 +5318,7 @@ function afDispatchWorkOrder(woId) {
 
 function afConfirmDispatchGo(woId) {
   afSetOverride('workOrder', woId, { status: 'in-progress' });
+  afMark('af_c10_3');
   afCloseModal();
   simToast('Work order ' + woId + ' dispatched.', { tone: 'good' });
   afRenderRoot();
@@ -5166,6 +5326,7 @@ function afConfirmDispatchGo(woId) {
 
 function afIssueNoticeAndDispatch(woId) {
   afSetOverride('workOrder', woId, { status: 'scheduled', entryNoticeSent: true });
+  afMark('af_c10_3');
   afCloseModal();
   simToast('24-Hour Notice issued and work order scheduled.', { tone: 'good' });
   afRenderRoot();
@@ -5912,7 +6073,7 @@ function afResidentDetailHTML() {
       ? '<div class="af-alert-warn" style="margin-top:16px;">' +
           '<b>TEXAS 30-DAY DEPOSIT ITEMIZATION CLOCK:</b> Move-out occurred 22 days ago. Statutory accounting deadline is in 8 days.' +
           '<div style="margin-top:8px;">' +
-            '<button type="button" class="af-btn sm primary" data-action="generate-deposit-itemization" onclick="afSetOverride(\'lease\',\'' + escAttr(lease.id) + '\',{depositItemizationGenerated:true});SimEngine.viewDoc(\'documents/deposit-itemization.html\', \'Security Deposit Itemization Statement\')">Generate Deposit Itemization</button>' +
+            '<button type="button" class="af-btn sm primary" data-action="generate-deposit-itemization" onclick="afSetOverride(\'lease\',\'' + escAttr(lease.id) + '\',{depositItemizationGenerated:true});afMark(\'af_c11_1\');SimEngine.viewDoc(\'documents/deposit-itemization.html\', \'Security Deposit Itemization Statement\')">Generate Deposit Itemization</button>' +
           '</div>' +
         '</div>'
       : '') +
@@ -6400,7 +6561,7 @@ function afGuestCardModal(id) {
       '<div><dt>Interested In</dt><dd>' + esc(afGcInterestedIn(g)) + '</dd></div>' +
       '<div><dt>Source</dt><dd>' + esc(afGcSource(g)) + '</dd></div>' +
       '<div><dt>Guest Card Received</dt><dd>' + afFmtDate(g.createdDate) + '</dd></div>' +
-      '<div><dt>Showing</dt><dd>' + (g.showingDate ? afFmtDate(g.showingDate) : 'Not scheduled') + '</dd></div>' +
+      '<div><dt>Showing</dt><dd>' + (g.showingDate ? afFmtDate(g.showingDate) : '<button type="button" class="af-btn sm" data-gc-showing="' + escAttr(g.id) + '" onclick="afScheduleShowingModal(\'' + escAttr(g.id) + '\')">Schedule Showing</button>') + '</dd></div>' +
     '</div>' +
     (g.notes ? '<div class="af-gc-note"><b>Inquiry</b><p>' + esc(g.notes) + '</p></div>' : '');
 
@@ -6413,6 +6574,19 @@ function afGuestCardModal(id) {
       : '<span class="af-pill-good">&#10003; Application Submitted</span>');
 
   afOpenModal('Guest Card', body, foot);
+}
+
+function afScheduleShowingModal(id) {
+  const g = afAllGuestCards().find(function (x) { return x.id === id; });
+  if (g) {
+    g.showingDate = afcDay(2);
+    g.stage = 'tour-scheduled';
+    afSave();
+    if (id === 'GC-FH-01') afMark('af_c5_3');
+    simToast('Showing scheduled for ' + afGcName(g) + ' on ' + afFmtDate(g.showingDate), { tone: 'good' });
+    afCloseModal();
+    afRenderRoot();
+  }
 }
 
 /* ---------------- Leasing: Rental Applications ----------------
@@ -6941,6 +7115,7 @@ function afRenewalRent(l) { return Math.round(l.rentAmount * 1.04); }
 
 function afSetGuestCardStage(id, newStage) {
   afSetOverride('guestCard', id, { stage: newStage });
+  if (id === 'GC-FH-01') afMark('af_c5_2');
   simToast('Guest card updated to ' + newStage + '.', { tone: 'good' });
   afRenderRoot();
 }
@@ -7166,8 +7341,49 @@ function afCollectDeposit(leaseId) {
   afSetOverride('lease', leaseId, { depositHeld: (l.depositHeld || 0) + amt, balanceCents: bal });
   afDepositReceipt({ leaseId: leaseId, amount: amt, kind: 'deposit', payer: l.applicantName || '' });
 
+  afMark('af_c9_3');
   afCloseModal();
   simToast('Deposit of ' + afFmtMoney(amt) + ' collected into escrow.', { tone: 'good' });
+  afRenderRoot();
+}
+
+function afCollectApplicationDeposit(appId) {
+  afCloseModal();
+  const a = afGetApplication(appId);
+  if (!a) return;
+  const u = afGetUnit(a.unitId);
+
+  let l = afAllLeases().find(function (x) {
+    return (x.id === 'LEASE-NEW-9001' || (u && x.unitId === u.id)) && (x.status === 'pending' || x.status === 'active');
+  });
+  if (!l) {
+    afGenerateLease(appId);
+    l = afAllLeases().find(function (x) {
+      return (x.id === 'LEASE-NEW-9001' || (u && x.unitId === u.id)) && (x.status === 'pending' || x.status === 'active');
+    });
+  }
+  const leaseId = l ? l.id : 'LEASE-NEW-9001';
+  const amt = (u && u.marketRent) ? u.marketRent : 215000;
+
+  if (!afDemo.ledgerEntries) afDemo.ledgerEntries = [];
+  const n = afDemo.ledgerEntries.length;
+  afDemo.ledgerEntries.push({
+    id: 'LEDGER-DEMO-' + (1000 + n + 1), leaseId: leaseId, date: afToday(),
+    type: 'charge', category: 'deposit', description: 'Security deposit due',
+    amount: amt, balanceAfter: amt
+  });
+  afDemo.ledgerEntries.push({
+    id: 'LEDGER-DEMO-' + (1000 + n + 2), leaseId: leaseId, date: afToday(),
+    type: 'payment', category: 'deposit', description: 'Security deposit received',
+    amount: amt, balanceAfter: 0
+  });
+
+  afSetOverride('lease', leaseId, { depositHeld: ((l && l.depositHeld) || 0) + amt, balanceCents: 0 });
+  afDepositReceipt({ leaseId: leaseId, amount: amt, kind: 'deposit', payer: a.name || 'resident' });
+  afSetOverride('application', appId, { depositCollected: true });
+
+  afMark('af_c9_3');
+  simToast('Deposit of ' + afFmtMoney(amt) + ' collected into Escrow Account 03.', { tone: 'good' });
   afRenderRoot();
 }
 
@@ -7429,9 +7645,11 @@ function afApplicationHTML() {
     afPageHead(a.name, 'Application for Unit ' + (u ? u.label : '') + ' &bull; Submitted ' + afFmtDate(a.createdDate),
       ((a.status === 'approved' || a.status === 'conditional')
         ? (!a.leaseGenerated
-            ? '<button type="button" class="af-btn primary" data-action="generate-lease" onclick="afGenerateLease(\'' + escAttr(a.id) + '\');afSetOverride(\'application\',\'' + escAttr(a.id) + '\',{leaseGenerated:true});afRenderRoot();">Generate Lease</button>'
-            : '<button type="button" class="af-btn primary" data-action="collect-deposit" onclick="afModalCollectDeposit(\'LEASE-NEW-9001\');">Collect Security Deposit</button>' +
-              '<button type="button" class="af-btn" data-action="complete-inspection" style="margin-left:8px" onclick="afSetOverride(\'application\',\'' + escAttr(a.id) + '\',{moveInChecklistComplete:true});simToast(\'Move-In Inspection Completed.\',{tone:\'good\'});afRenderRoot();">Complete Inspection</button>')
+            ? '<button type="button" class="af-btn primary" data-action="generate-lease" onclick="afGenerateLease(\'' + escAttr(a.id) + '\');afSetOverride(\'application\',\'' + escAttr(a.id) + '\',{leaseGenerated:true});afMark(\'af_c9_2\');afRenderRoot();">Generate Lease</button>'
+            : (!a.depositCollected
+                ? '<button type="button" class="af-btn primary" data-action="collect-deposit" onclick="afCollectApplicationDeposit(\'' + escAttr(a.id) + '\');">Collect Security Deposit</button>'
+                : '<button type="button" class="af-btn" disabled style="opacity:0.75;cursor:default;">&check; Deposit Collected</button>') +
+              '<button type="button" class="af-btn' + (a.depositCollected ? ' primary' : '') + '" data-action="complete-inspection" style="margin-left:8px" onclick="afSetOverride(\'application\',\'' + escAttr(a.id) + '\',{moveInChecklistComplete:true});afMark(\'af_c9_4\');simToast(\'Move-In Inspection Completed.\',{tone:\'good\'});afRenderRoot();">Complete Inspection</button>')
         : '') +
       '<button type="button" class="af-btn" style="margin-left:8px" onclick="afModalDecideApp(\'' + escAttr(a.id) + '\')">Screening Decision</button>') +
     '<div class="af-kv af-app-card">' +
@@ -8066,7 +8284,7 @@ function afTasksHTML() {
 /* ---------- Lessons ---------- */
 function afLessonsHTML() {
   if (!AF_LESSONS.length) {
-    return afPageHead('Lessons', 'The property management course.') +
+    return afPageHead('Training Curriculum', 'The property management course.') +
       afEmptyState({
         title: 'The course is not loaded yet',
         body: 'Lessons arrive in the final stage of this build. The engine is already wired, so this screen fills itself once the curriculum exists.',
@@ -8074,24 +8292,106 @@ function afLessonsHTML() {
         action: "afGoto('dashboard')"
       });
   }
-  return afPageHead('Lessons', AF_LESSONS.length + ' lessons.') +
+  return afPageHead('Training Curriculum', AF_LESSONS.length + ' guided lessons &middot; Texas Property Management VA Course') +
     '<div class="af-lesson-grid">' + AF_LESSONS.map(function (l, i) {
       const state = SimEngine.lessonState(i);
       const prog = SimEngine.progress(l);
-      return '<button type="button" class="af-lesson' + (state === 'locked' ? ' locked' : '') + '"' +
+      const isDone = prog.complete || state === 'done';
+      return '<button type="button" class="af-lesson' + (state === 'locked' ? ' locked' : '') + (isDone ? ' done' : '') + '"' +
         (state === 'locked' ? ' disabled' : ' onclick="afGoto(\'lesson\', \'' + escAttr(l.id) + '\')"') + '>' +
-        '<span class="af-lesson-num">Lesson ' + l.number + '</span>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+          '<span class="af-lesson-num">Lesson ' + l.number + '</span>' +
+          (isDone
+            ? '<span class="af-chip good" style="font-size:11px;padding:2px 8px;border-radius:10px;background:#e6f4ea;color:#137333;font-weight:700;">Completed &#10003;</span>'
+            : '<span class="af-chip" style="font-size:11px;padding:2px 8px;border-radius:10px;background:#e8f0fe;color:#1a73e8;font-weight:600;">Available</span>') +
+        '</div>' +
         '<b>' + esc(l.title) + '</b>' +
         '<span class="af-lesson-sub">' + esc(l.summary || '') + '</span>' +
-        '<span class="af-lesson-prog">' + prog.done + ' / ' + prog.total + '</span>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;border-top:1px solid var(--af-line);padding-top:10px;">' +
+          '<span class="af-lesson-prog" style="margin-top:0;">' + prog.done + ' / ' + prog.total + ' steps</span>' +
+          '<span style="color:var(--af-blue);font-weight:600;font-size:12px;">' + (isDone ? 'Review Lesson &rarr;' : 'Start Lesson &rarr;') + '</span>' +
+        '</div>' +
         '</button>';
     }).join('') + '</div>';
 }
 
 function afLessonDetailHTML() {
   const l = SimEngine.findLesson(afState.lessonId);
-  if (!l) return afEmptyState({ title: 'Lesson not found', body: 'The curriculum has not been loaded yet.', actionLabel: 'Back to lessons', action: "afGoto('lessons')" });
-  return SimEngine.lessonDetailHTML(l);
+  if (!l) return afEmptyState({
+    title: 'Lesson not found',
+    body: 'The curriculum has not been loaded yet.',
+    actionLabel: 'Back to lessons',
+    action: "afGoto('lessons')"
+  });
+
+  const prog = SimEngine.progress(l);
+  const isComplete = prog.complete;
+  const walkable = l.steps && l.steps.every(function (s) { return s.walk; });
+
+  const tryBtn = (walkable && !isComplete)
+    ? '<button type="button" class="af-btn primary" onclick="simWalkStart(\'' + escAttr(l.id) + '\')">' + (prog.done > 0 ? 'Resume Lesson &rarr;' : 'Start Lesson &rarr;') + '</button>'
+    : (walkable && isComplete
+      ? '<button type="button" class="af-btn" onclick="simWalkStart(\'' + escAttr(l.id) + '\')">Replay Lesson &rarr;</button>'
+      : '');
+
+  const resetBtn = prog.done > 0
+    ? '<button type="button" class="af-btn sm" onclick="afResetLesson(\'' + escAttr(l.id) + '\'); afRenderRoot();">Restart lesson</button>'
+    : '';
+
+  const stepRows = l.steps.map(function (step, i) {
+    const isDone = afLessonStepDone(step);
+    const statusClass = isDone ? 'good' : 'pending';
+    const statusLabel = isDone ? 'Done' : 'Not yet';
+    const stepLabel = afLessonStepLabel(step);
+    const stepType = {
+      do: 'Task',
+      decide: 'Decision',
+      verify: 'Audit',
+      reconcile: 'Reconciliation',
+      compose: 'Writing',
+      triage: 'Triage'
+    }[step.type] || 'Step';
+
+    let actionBtn = '';
+    if (!step.walk && step.view) {
+      actionBtn = '<button type="button" class="af-btn sm" onclick="afGoto(\'' + escAttr(step.view) + '\', \'' + escAttr(step.viewArg || '') + '\')">Open &rarr;</button>';
+    }
+
+    return '<div class="af-lesson-step-item' + (isDone ? ' is-done' : '') + '">' +
+      '<span class="af-step-num">' + (i + 1) + '</span>' +
+      '<span class="sim-chip ' + statusClass + '">' + statusLabel + '</span>' +
+      '<span class="af-step-type-badge">' + stepType + '</span>' +
+      '<span class="af-step-desc">' + esc(stepLabel) + '</span>' +
+      actionBtn +
+      '</div>';
+  }).join('');
+
+  return '<div class="af-lesson-page">' +
+    '<button type="button" class="af-backlink" onclick="afGoto(\'lessons\')">&larr; Back to all lessons</button>' +
+    '<div class="af-pagehead">' +
+      '<div>' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">' +
+          '<span class="af-banner-tag">Lesson ' + esc(String(l.number)) + '</span>' +
+          (isComplete
+            ? '<span class="af-chip good" style="font-size:11.5px;padding:3px 10px;border-radius:10px;background:#e6f4ea;color:#137333;font-weight:700;">Completed &#10003;</span>'
+            : '<span class="af-chip" style="font-size:11.5px;padding:3px 10px;border-radius:10px;background:#e8f0fe;color:#1a73e8;font-weight:600;">' + prog.done + ' of ' + prog.total + ' steps completed</span>') +
+        '</div>' +
+        '<h1 class="af-page-title">' + esc(l.title) + '</h1>' +
+        '<p class="af-page-lede">' + esc(l.summary || '') + '</p>' +
+      '</div>' +
+      '<div class="af-pagehead-actions">' + tryBtn + resetBtn + '</div>' +
+    '</div>' +
+    '<div class="af-card">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--af-line);padding-bottom:12px;">' +
+        '<h3 style="margin:0;">Lesson Steps & Objectives</h3>' +
+        '<span style="font-size:13px;font-weight:600;color:var(--af-muted);">' + prog.done + ' / ' + prog.total + ' completed</span>' +
+      '</div>' +
+      '<div class="af-lesson-steps-list">' + stepRows + '</div>' +
+      (isComplete
+        ? '<div class="sim-feedback good" style="margin-top:18px;"><b>Lesson Complete!</b> You have satisfied all objectives and scored steps for this lesson.</div>'
+        : '') +
+    '</div>' +
+    '</div>';
 }
 
 /* ---------- Curriculum Helpers & Graded Step Views ---------- */
@@ -8124,13 +8424,26 @@ function afDisclaimerHTML() {
 }
 
 function afContinueHTML() {
+  if (typeof SimEngine !== 'undefined' && SimEngine.walkActive && SimEngine.walkActive()) {
+    // When a walkthrough is active, the floating tour card (#simWalk) already provides
+    // the "Next Step →" button. Suppress the duplicate inline button to avoid confusion.
+    return '';
+  }
   return '<button type="button" class="af-btn primary sim-feedback-continue" onclick="afAdvanceStep()">Continue &rarr;</button>';
 }
 
 function afAdvanceStep() {
-  if (SimEngine.walkActive && SimEngine.walkActive()) {
-    SimEngine.stepCompleted();
-  } else if (afState.lessonId) {
+  if (typeof SimEngine !== 'undefined' && SimEngine.walkActive && SimEngine.walkActive()) {
+    if (typeof simWalkAdvance === 'function') simWalkAdvance();
+    else if (typeof SimEngine.walkAdvance === 'function') SimEngine.walkAdvance();
+    return;
+  }
+  if (afState.lessonId) {
+    const l = AF_LESSONS.find(function (x) { return x.id === afState.lessonId; });
+    if (l && SimEngine.progress && SimEngine.progress(l).complete) {
+      afExitLesson();
+      return;
+    }
     afGoto('lesson', afState.lessonId);
   } else {
     afGoto('dashboard');
@@ -8200,6 +8513,199 @@ function afRetakeScenario(id) {
     afSave();
   }
   afRenderRoot();
+}
+
+/* ============================================================================
+   14. THE QUESTION DIALOG (afAsk)
+   ----------------------------------------------------------------------------
+   Mirrors Qualia's qzAsk and DocuSign's dsAsk system: questions appear as a
+   floating dialog/pop-up over the current product screen, rather than
+   navigating AppFolio to a full page.
+   ============================================================================ */
+let afAsk = null;
+let afAskLast = null;
+
+function afAskLayerEl() {
+  let el = document.getElementById('afAskLayer');
+  if (!el && typeof document !== 'undefined' && document.createElement) {
+    el = document.createElement('div');
+    el.id = 'afAskLayer';
+    el.className = 'af-ask';
+    if (document.body && document.body.appendChild) document.body.appendChild(el);
+  }
+  return el;
+}
+
+function afAskClose() {
+  afAsk = null;
+  const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById('afAskLayer') : null;
+  if (el) {
+    if (el.classList) el.classList.remove('open');
+    el.innerHTML = '';
+  }
+  if (typeof document !== 'undefined' && document.body && document.body.classList) document.body.classList.remove('af-asking');
+  afRenderRoot();
+}
+
+function afAskContinue() {
+  const meta = afAskStepMeta();
+  const isLast = meta && meta.lesson && meta.lesson.steps && meta.index === meta.lesson.steps.length - 1;
+  afAsk = null;
+  const el = typeof document !== 'undefined' && document.getElementById ? document.getElementById('afAskLayer') : null;
+  if (el) {
+    if (el.classList) el.classList.remove('open');
+    el.innerHTML = '';
+  }
+  if (typeof document !== 'undefined' && document.body && document.body.classList) document.body.classList.remove('af-asking');
+
+  if (isLast) {
+    if (meta && meta.lesson) afNoteLessonComplete(meta.lesson.id);
+    afSave();
+    if (typeof SimEngine !== 'undefined' && SimEngine.walkActive && SimEngine.walkActive()) {
+      SimEngine.exit(true);
+    }
+    simToast('🎉 Lesson ' + (meta && meta.lesson ? meta.lesson.number : '') + ' complete!', { tone: 'good' });
+    afExitLesson();
+    return;
+  }
+
+  if (typeof SimEngine !== 'undefined' && SimEngine.walkActive && SimEngine.walkActive()) {
+    if (typeof simWalkAdvance === 'function') simWalkAdvance();
+    else afRenderRoot();
+  } else {
+    afRenderRoot();
+  }
+}
+
+function afAskReopen() {
+  if (!afAskLast) return;
+  if (afAskLast.kind === 'scenario') afAskScenario(afAskLast.id);
+}
+
+function afAskScenario(scenarioId) {
+  afAsk = { kind: 'scenario', id: scenarioId };
+  afAskLast = afAsk;
+  afAskRender();
+}
+
+function afAskStepMeta() {
+  if (typeof SimEngine === 'undefined' || !SimEngine.walkActive || !SimEngine.walkActive()) return null;
+  const l = SimEngine.currentLesson();
+  const w = SimEngine.walkState();
+  return (l && w) ? { lesson: l, index: w.stepIndex } : null;
+}
+
+function afAskChromeHTML(title) {
+  const meta = afAskStepMeta();
+  const kicker = meta
+    ? 'Lesson ' + meta.lesson.number + ' &mdash; Step ' + (meta.index + 1) + ' of ' + meta.lesson.steps.length
+    : 'Decision Scenario';
+  return '<div class="af-ask-head">' +
+    '<button type="button" class="af-ask-close" onclick="afAskClose()" title="Close">&times;</button>' +
+    '<div class="af-ask-kicker">' + esc(kicker) + '</div>' +
+    '<h3>' + esc(title) + '</h3>' +
+  '</div>';
+}
+
+function afAskFootHTML() {
+  const meta = afAskStepMeta();
+  if (!meta) return '<div class="af-ask-foot"></div>';
+  const hasPrev = meta.index > 0;
+  const dots = meta.lesson.steps.map(function (s, i) {
+    const isCurrent = i === meta.index;
+    const stepIsDone = SimEngine.stepDone(s);
+    const cls = isCurrent ? 'current' : (stepIsDone ? 'done' : '');
+    const canJump = (i < meta.index || stepIsDone) && !isCurrent;
+    return '<button type="button" class="af-ask-dot ' + cls + (canJump ? ' clickable' : '') + '" ' +
+      (canJump ? 'onclick="afAskClose();simWalkJumpTo(' + i + ')"' : 'disabled') +
+      ' title="Step ' + (i + 1) + '">' + (i + 1) + '</button>';
+  }).join('');
+
+  const prevArrowHTML = hasPrev
+    ? '<button type="button" class="af-btn sm af-ask-arrow-btn prev" onclick="afAskClose();simWalkBack()" title="Previous step" aria-label="Previous step">&larr;</button>'
+    : '<button type="button" class="af-btn sm af-ask-arrow-btn prev disabled" disabled style="opacity:0.35;cursor:not-allowed;">&larr;</button>';
+
+  return '<div class="af-ask-foot">' +
+    prevArrowHTML +
+    '<div class="af-ask-dots">' + dots + '</div>' +
+    '<span class="af-ask-exit" onclick="afAskClose();simWalkExit()">Exit walkthrough</span>' +
+  '</div>';
+}
+
+function afAskScenarioHTML(id) {
+  const s = AF_SCENARIOS.find(function (x) { return x.id === id; });
+  if (!s) return '';
+  const r = afStore.scenarios && afStore.scenarios[s.id];
+  const answeredNow = !!(r && (r.answered !== undefined && r.answered !== null));
+  const order = afOptionOrder('scenario:' + s.id, s.options.length);
+
+  const opts = order.map(function (origIdx, pos) {
+    let cls = '';
+    if (answeredNow) {
+      if (origIdx === s.correct) cls = 'correct';
+      else if (origIdx === r.answered && !r.correct) cls = 'incorrect';
+    }
+    return '<button type="button" class="af-ask-option ' + cls + '" ' + (answeredNow ? 'disabled' : '') +
+      ' onclick="afAnswerScenario(\'' + escAttr(s.id) + '\',' + origIdx + ')">' +
+      '<span class="af-opt-letter">' + String.fromCharCode(65 + pos) + '.</span>' +
+      '<span class="af-opt-text">' + esc(s.options[origIdx]) + '</span>' +
+    '</button>';
+  }).join('');
+
+  const meta = afAskStepMeta();
+  const isLast = meta && meta.lesson && meta.lesson.steps && meta.index === meta.lesson.steps.length - 1;
+  const continueLabel = isLast ? 'Finish Lesson &#10003;' : 'Continue &rarr;';
+
+  const continueBtn = (answeredNow && r.correct)
+    ? '<button type="button" class="af-btn primary af-ask-continue-btn" onclick="afAskContinue()">' + continueLabel + '</button>'
+    : '';
+  const retakeBtn = (answeredNow && !r.correct)
+    ? '<button type="button" class="af-btn" onclick="afRetakeScenario(\'' + escAttr(s.id) + '\')">Try Again</button>'
+    : '';
+
+  const feedback = answeredNow ? (
+    '<div class="af-ask-feedback ' + (r.correct ? 'correct' : 'incorrect') + '">' +
+      '<div class="af-ask-feedback-title"><b>' + (r.correct ? '&#10003; Correct assessment.' : '&#10007; Not quite.') + '</b></div>' +
+      '<p class="af-ask-feedback-body">' + esc(s.explanation || '') + '</p>' +
+      '<div class="af-ask-feedback-actions">' +
+        continueBtn +
+        retakeBtn +
+      '</div>' +
+    '</div>'
+  ) : '';
+
+  return afAskChromeHTML(s.title) +
+    '<div class="af-ask-body">' +
+      '<p class="situation">' + esc(s.situation) + '</p>' +
+      '<div class="af-ask-sub">Select the best action:</div>' +
+      '<div class="af-ask-options">' + opts + '</div>' +
+      feedback +
+    '</div>' +
+    afAskFootHTML();
+}
+
+function afAskRender() {
+  const el = afAskLayerEl();
+  if (!el) return;
+  const wasOpen = el.classList && el.classList.contains('open');
+
+  if (afAsk && (!SimEngine.walkActive || !SimEngine.walkActive())) afAsk = null;
+  if (afAsk && SimEngine.walkActive && SimEngine.walkActive()) {
+    const cur = SimEngine.currentStep();
+    const mine = !!cur && (cur.type === 'decide' && cur.scenarioId === afAsk.id);
+    if (!mine) afAsk = null;
+  }
+
+  let html = '';
+  if (afAsk && afAsk.kind === 'scenario') html = afAskScenarioHTML(afAsk.id);
+
+  const open = !!html;
+  el.innerHTML = open ? '<div class="af-ask-scrim" onclick="afAskClose()"></div><div class="af-ask-card' + (!wasOpen ? ' af-ask-enter' : '') + '">' + html + '</div>' : '';
+  if (el.classList) el.classList.toggle('open', open);
+
+  if (typeof document !== 'undefined' && document.body && document.body.classList) {
+    document.body.classList.toggle('af-asking', open);
+  }
 }
 
 /* 2. Review / Verify View */
@@ -8287,6 +8793,25 @@ function afReviewDetailHTML() {
         ? '<span class="af-pill-good">&#10003; Credit Score 512 Trigger Verified</span>'
         : '<button type="button" class="af-btn primary" onclick="afAnswerReview(\'' + escAttr(v.id) + '\', \'creditScore\')">Confirm Screening Disclosure</button>') +
       '</div></div>';
+  } else if (v.phrases) {
+    const rows = v.phrases.map(function (p) {
+      const isSelected = (r && r.selected === p.id);
+      let cls = '';
+      if (answered) {
+        if (p.id === v.targetPhraseId) cls = 'af-row-good';
+        else if (isSelected && !r.correct) cls = 'af-row-bad';
+      }
+      return '<tr class="' + cls + '">' +
+        '<td><span class="af-chip ' + (p.isViolation ? 'bad' : 'neutral') + '">' + esc(p.id) + '</span></td>' +
+        '<td>' + esc(p.text) + '</td>' +
+        '<td class="af-tar">' +
+        (answered
+          ? (p.id === v.targetPhraseId ? '<span class="af-pill-good">&#10003; FHA Violation</span>' : (isSelected ? '<span class="af-pill-bad">&#10007; Permissible</span>' : ''))
+          : '<button type="button" class="af-btn sm" onclick="afAnswerReview(\'' + escAttr(v.id) + '\', \'' + escAttr(p.id) + '\')">Flag Violation</button>') +
+        '</td>' +
+        '</tr>';
+    }).join('');
+    contentHTML = '<table class="af-tbl"><thead><tr><th>ID</th><th>Draft Listing Phrase</th><th class="af-tar">Action</th></tr></thead><tbody>' + rows + '</tbody></table>';
   } else if (v.statuteDetails) {
     const st = v.statuteDetails;
     contentHTML = '<div class="af-card" style="padding:16px">' +
@@ -8325,7 +8850,7 @@ function afReviewDetailHTML() {
 function afAnswerReview(id, targetId) {
   const v = AF_VERIFY_ITEMS.find(function (x) { return x.id === id; });
   if (!v) return;
-  const correct = (targetId === v.targetEntryId || targetId === v.targetField || targetId === v.targetItemId || targetId === v.targetItem || targetId === 'creditScore' || targetId === 'daysRemaining');
+  const correct = (targetId === v.targetEntryId || targetId === v.targetField || targetId === v.targetItemId || targetId === v.targetItem || targetId === 'creditScore' || targetId === 'daysRemaining' || targetId === v.targetPhraseId);
   afRecordAnswer('reviews', id, { selected: targetId, correct: correct });
   afRenderRoot();
 }
@@ -8369,14 +8894,14 @@ function afReconcileDetailHTML() {
     '<div class="af-rec-card">' +
     '<p class="af-step-instruction">' + esc(rec.instruction) + '</p>' +
     '<div style="background:#f8fafc;padding:14px;border:1px solid var(--af-line);border-radius:var(--af-radius);margin-bottom:16px">' +
-    '<p style="margin:0 0 6px"><b>Original Security Deposit Held in Escrow:</b> <span class="font-mono" style="font-size:16px;color:var(--af-good)">' + afFmtMoney(rec.depositHeldCents) + '</span></p>' +
+    '<p style="margin:0 0 6px"><b>' + esc(rec.heldLabel || 'Original Security Deposit Held in Escrow') + ':</b> <span class="font-mono" style="font-size:16px;color:var(--af-good)">' + afFmtMoney(rec.depositHeldCents) + '</span></p>' +
     '</div>' +
-    '<h4 style="margin:0 0 12px">Itemized Move-Out Deductions</h4>' +
+    '<h4 style="margin:0 0 12px">' + esc(rec.itemsLabel || 'Itemized Move-Out Deductions') + '</h4>' +
     deductionsHTML +
     '<div style="margin-top:18px;display:flex;align-items:center;gap:12px">' +
-    '<label for="afRecRefundInput" style="font-weight:700;font-size:14px">Calculated Net Refund Check Owed ($):</label>' +
-    '<input type="text" id="afRecRefundInput" class="af-input" style="width:180px;font-weight:700" placeholder="e.g. 2370.00" ' +
-    (answered ? 'value="' + (r.submittedAmountCents / 100).toFixed(2) + '" disabled' : 'value="2370.00"') + '>' +
+    '<label for="afRecRefundInput" style="font-weight:700;font-size:14px">' + esc(rec.resultLabel || 'Calculated Net Refund Check Owed ($):') + '</label>' +
+    '<input type="text" id="afRecRefundInput" class="af-input" style="width:180px;font-weight:700" placeholder="e.g. 0.00" ' +
+    (answered ? 'value="' + (r.submittedAmountCents / 100).toFixed(2) + '" disabled' : '') + '>' +
     (!answered ? '<button type="button" class="af-btn primary" onclick="afSubmitReconcile(\'' + escAttr(rec.id) + '\')">Submit Reconciliation</button>' : '') +
     '</div>' +
     feedbackHTML +
@@ -8440,6 +8965,19 @@ function afComposeDetailHTML() {
     '<div class="af-compose-card">' +
     '<p class="af-step-instruction">' + esc(cmp.instruction) + '</p>' +
     (threadHTML ? '<div class="af-compose-thread"><h4 style="margin:0 0 6px">Thread History</h4>' + threadHTML + '</div>' : '') +
+    '<div class="af-compose-example-bar">' +
+      '<span style="font-size:12.5px;font-weight:600;color:var(--af-dark);">Your Response:</span>' +
+      (cmp.example ? '<button type="button" class="af-btn sm" id="afComposeExampleBtn-' + escAttr(cmp.id) + '" onclick="afToggleComposeExample(\'' + escAttr(cmp.id) + '\')" style="display:inline-flex;align-items:center;gap:6px;font-weight:600;"><span>💡</span> See example &rarr;</button>' : '') +
+    '</div>' +
+    (cmp.example ? (
+      '<div id="afComposeExampleBox-' + escAttr(cmp.id) + '" class="af-compose-example-box" style="display:none">' +
+        '<div class="af-compose-example-head">' +
+          '<b>💡 Model Compliant Response:</b>' +
+          (!answered ? '<button type="button" class="af-btn sm" onclick="afInsertComposeExample(\'' + escAttr(cmp.id) + '\')" style="font-size:11.5px;padding:4px 10px;font-weight:600;">Use this example</button>' : '') +
+        '</div>' +
+        '<div style="white-space:pre-wrap;font-family:inherit;">' + esc(cmp.example) + '</div>' +
+      '</div>'
+    ) : '') +
     '<textarea id="afComposeTextarea-' + cmp.id + '" class="af-compose-textarea" placeholder="' + escAttr(cmp.placeholder) + '" ' +
     (answered ? 'disabled' : '') + '>' + (r ? esc(r.text || '') : '') + '</textarea>' +
     (!answered
@@ -8447,6 +8985,30 @@ function afComposeDetailHTML() {
       : '') +
     feedbackHTML +
     '</div>';
+}
+
+function afToggleComposeExample(id) {
+  const box = document.getElementById('afComposeExampleBox-' + id);
+  const btn = document.getElementById('afComposeExampleBtn-' + id);
+  if (!box) return;
+  const isHidden = box.style.display === 'none';
+  box.style.display = isHidden ? 'block' : 'none';
+  if (btn) btn.innerHTML = isHidden ? '<span>💡</span> Hide example' : '<span>💡</span> See example &rarr;';
+  if (isHidden && typeof SimEngine !== 'undefined' && SimEngine.walkActive && SimEngine.walkActive()) {
+    const curStep = SimEngine.currentStep();
+    if (curStep) SimEngine.reposition();
+  }
+}
+
+function afInsertComposeExample(id) {
+  const cmp = AF_COMPOSE_ITEMS.find(function (x) { return x.id === id; });
+  if (!cmp || !cmp.example) return;
+  const textarea = document.getElementById('afComposeTextarea-' + id);
+  if (textarea) {
+    textarea.value = cmp.example;
+    textarea.focus();
+    simToast('Example inserted into response. Click "Send Reply" to submit.', { tone: 'good' });
+  }
 }
 
 function afSubmitCompose(id) {
@@ -8550,9 +9112,11 @@ function afSubmitTriage(id) {
   const tri = AF_TRIAGE_ITEMS.find(function (x) { return x.id === id; });
   if (!tri) return;
   const list = afDemo.triageOrders[id];
-  const isTop1 = list[0].id === 'Q-01'; // Active water leak
-  const isTop2 = list[1].id === 'Q-02'; // Texas Day 28 deposit refund
-  const isTop3 = list[2].id === 'Q-03'; // FCRA Adverse action
+  if (!list || list.length < 3) return;
+  const sortedExpected = tri.items.slice().sort(function (a, b) { return a.correctRank - b.correctRank; });
+  const isTop1 = list[0] && list[0].id === sortedExpected[0].id;
+  const isTop2 = list[1] && list[1].id === sortedExpected[1].id;
+  const isTop3 = list[2] && list[2].id === sortedExpected[2].id;
   const correct = (isTop1 && isTop2 && isTop3);
 
   afRecordAnswer('triages', id, {
@@ -8802,14 +9366,14 @@ function afLessonStepDone(step) {
 
 function afLessonStepLabel(step) {
   if (!step) return '';
-  return {
-    do: 'Do it', decide: 'Decide', verify: 'Verify',
-    reconcile: 'Reconcile', compose: 'Write it', triage: 'Triage'
+  return step.label || {
+    do: 'Action Task', decide: 'Decision Scenario', verify: 'Verification Audit',
+    reconcile: 'Ledger Reconciliation', compose: 'Compose Response', triage: 'Triage Queue'
   }[step.type] || step.type;
 }
 
 function afLessonStepStatus(step) {
-  return afLessonStepDone(step) ? 'done' : 'todo';
+  return afLessonStepDone(step) ? 'good' : 'pending';
 }
 
 function afLessonStepNavigate(step) {
@@ -8823,6 +9387,11 @@ function afLessonEverComplete(lessonId) {
 
 function afNoteLessonComplete(lessonId) {
   if (afState.mode !== 'lesson') return;
+  if (!afStore.analytics) afStore.analytics = {};
+  if (!afStore.analytics.lessonCompletes) afStore.analytics.lessonCompletes = {};
+  if (!afStore.analytics.lessonCompletes[lessonId]) {
+    afStore.analytics.lessonCompletes[lessonId] = Date.now();
+  }
   if (afStore.lessonsDone[lessonId]) return;
   afStore.lessonsDone[lessonId] = true;
   afSave();
@@ -8866,11 +9435,15 @@ function afNotifyAnswerRecorded(bucket, id) {
 function afInitEngine() {
   SimEngine.init({
     lessons: AF_LESSONS,
+    lockMode: 'all-open',
+    onWalkStart: afTrackLessonStart,
     store: function () { return afStore; },
     save: afSave,
     render: afRenderRoot,
     goHome: function () { afGoto('dashboard'); },
     showLesson: function (id) { afGoto('lesson', id); },
+    showLessons: function () { afGoto('lessons'); },
+    exitLesson: afExitLesson,
     currentLessonId: function () { return afState.lessonId; },
     navigate: afLessonStepNavigate,
     stepDone: afLessonStepDone,

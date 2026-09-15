@@ -125,7 +125,7 @@
             </a></li>
           </ul>
 
-          <ul class="ds-sidebar-nav ds-sb-extra">
+          <ul class="ds-sidebar-nav ds-sb-extra" id="dsSbExtra">
             <li><a onclick="dsQuickView('draft')" id="sb-drafts">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
               Drafts
@@ -147,12 +147,17 @@
               Authentication Failed
             </a></li>
             <li><a onclick="dsGoto('bulk-send')" id="sb-bulk">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="22 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
               Bulk Send
             </a></li>
           </ul>
 
-          <button type="button" class="ds-sb-more" id="dsSbMore" onclick="dsToggleSidebarMore()">Show More</button>
+          <button type="button" class="ds-sb-more" id="dsSbMore" onclick="dsToggleSidebarMore()">
+            <span>Show More</span>
+            <svg class="ds-sb-more-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
         </div>
 
         <!-- Folders are demo state (dsDemo.folders), so this list is painted by
@@ -166,7 +171,7 @@
           <ul class="ds-sidebar-nav" id="dsSbFolders"></ul>
         </div>
 
-        <!-- Secondary product views (PowerForms, Templates, Mailbox) -->
+        <!-- Secondary product views (PowerForms, Templates) -->
         <ul class="ds-sidebar-nav flush">
           <li><a onclick="dsGoto('powerforms')" id="sb-powerforms">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -175,11 +180,6 @@
           <li><a onclick="dsOpenTemplates()" id="sb-templates">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
             Templates
-          </a></li>
-          <li><a onclick="dsOpenMailbox()" id="sb-mailbox">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>
-            VA Mailbox
-            <span class="ds-sidebar-badge" id="dsSbMailBadge" style="display:none;"></span>
           </a></li>
         </ul>
 
@@ -202,10 +202,6 @@
 
       <!-- Main Content Area -->
       <main class="ds-main">
-        <!-- Lesson banner: visible only while a lesson is active (dsTrainingActive).
-             Sits above the content so it never overlaps the Start button or first
-             element. Empty by default; populated/cleared by dsRenderLessonBanner(). -->
-        <div id="dsLessonBanner" class="ds-lesson-banner"></div>
         <div id="dsRoot"></div>
       </main>
 

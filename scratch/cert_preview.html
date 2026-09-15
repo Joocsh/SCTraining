@@ -1,4 +1,11 @@
-/* =====================================================================
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Certificate Preview</title>
+  <style>
+    body { background: #333; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    /* =====================================================================
    DOCUSIGN VA TRAINING SIMULATOR — docusign.css
    Chrome hand-matched against the 2024 rebrand capture in Images-resources/.
    Layout: white topbar + left sidebar + scrollable main content.
@@ -5584,3 +5591,158 @@ body.ds-demo .ds-training-entry,
 }
 
 body.ds-asking #simWalk { display: none !important; }
+
+    .ds-modal-backdrop { position: static; display: flex; justify-content: center; }
+  </style>
+</head>
+<body>
+  <div id="dsCertModalWrap" class="ds-modal-backdrop">
+    
+    <div class="ds-modal-card ds-cert-card">
+      <div class="ds-modal-head ds-cert-head">
+        <div class="ds-cert-head-left">
+          <span><svg class="ds-ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="8" r="6"/><path d="M15.48 12.89 17 22l-5-3-5 3 1.52-9.11"/></svg></span>
+          <div>
+            <h3 class="ds-cert-title">Certificate of Completion</h3>
+            <div class="ds-cert-sub">Envelope Tracking ID: ENV-2026-7734</div>
+          </div>
+        </div>
+        <button type="button" class="ds-btn ds-cert-close-btn" onclick="dsCloseCertificateModal()"><svg class="ds-ico" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="ds-modal-body ds-cert-body">
+        <div class="paper">
+
+        <h1 class="cert-title">Certificate Of Completion</h1>
+
+        <div class="cert-idline">
+          <span>Envelope Id: 64452EC44C404C34A36E0563D5FF088F</span>
+          <span><b>Status: Completed</b></span>
+        </div>
+        <div class="cert-subject">
+          Subject: Standard NDA — Mutual Confidentiality<br>
+          Customer Reference: ENV-2026-7734
+        </div>
+
+        <div style="font-size:9.5px;font-weight:700;margin-bottom:4px;">Source Envelope:</div>
+        <div class="cert-grid">
+          <div>
+            <div>Document Pages: 2</div>
+            <div>Certificate Pages: 2</div>
+            <div>AutoNav: Enabled</div>
+            <div>EnvelopeId Stamping: Enabled</div>
+            <div>Time Zone: (UTC-06:00) Central Time (US &amp; Canada)</div>
+          </div>
+          <div>
+            <div>Signatures: 1</div>
+            <div>Initials: 0</div>
+          </div>
+          <div>
+            <div>Envelope Originator:</div>
+            <div>Alex Rivera</div>
+            <div>1201 Guadalupe St, Suite 300</div>
+            <div>Austin, TX 78701</div>
+            <div>alex.rivera@agency.example.com</div>
+            <div>IP Address: 10.42.6.97</div>
+          </div>
+        </div>
+
+        <div class="cert-sec"><span>Record Tracking</span></div>
+        <div class="cert-row">
+          <div class="c1">Status: Original<br><span class="muted">8/1/2026 10:21:12 AM</span></div>
+          <div class="c2">Holder: Alex Rivera<br><span class="muted">alex.rivera@agency.example.com</span></div>
+          <div class="c3">Location: DocuSign</div>
+        </div>
+
+        <div class="cert-sec"><span>Signer Events</span><span class="c2">Signature</span><span class="c3">Timestamp</span></div>
+        
+      <div class="cert-row">
+        <div class="c1">
+          <div class="who">Elena Rostova</div>
+          <div>elena.rostova@example.com</div>
+          <div>Partner</div>
+          <div class="muted">Security Level: Email, Account Authentication (None)</div>
+          
+          
+        <div class="cert-disc">
+          <span class="k">Electronic Record and Signature Disclosure:</span><br>
+          &nbsp;&nbsp;Accepted: 8/3/2026 3:17:58 AM<br>
+          &nbsp;&nbsp;ID: be5e2e92-5184-84db-1c83-111212a77f48
+        </div>
+        </div>
+        <div class="c2">
+          
+            <div class="cert-sig">
+              <div class="name">Elena Rostova</div>
+              <div class="sid">653CFFA5F24EFFA0</div>
+            </div>
+            <div class="muted" style="margin-top:6px;">Signature Adoption: Pre-selected Style<br>Using IP Address: 10.42.3.66</div>
+          
+        </div>
+        <div class="c3">
+          Sent: 8/1/2026 10:54:44 AM<br>
+          Viewed: 8/3/2026 3:17:58 AM<br>Signed: 8/3/2026 3:29:58 AM
+        </div>
+      </div>
+
+        <div class="cert-sec"><span>In Person Signer Events</span><span class="c2">Signature</span><span class="c3">Timestamp</span></div>
+        <div class="cert-empty">&nbsp;</div>
+
+        <div class="cert-sec"><span>Editor Delivery Events</span><span class="c2">Status</span><span class="c3">Timestamp</span></div>
+        <div class="cert-empty">&nbsp;</div>
+
+        <div class="cert-sec"><span>Agent Delivery Events</span><span class="c2">Status</span><span class="c3">Timestamp</span></div>
+        <div class="cert-empty">&nbsp;</div>
+
+        <div class="cert-sec"><span>Intermediary Delivery Events</span><span class="c2">Status</span><span class="c3">Timestamp</span></div>
+        <div class="cert-empty">&nbsp;</div>
+
+        <div class="cert-sec"><span>Certified Delivery Events</span><span class="c2">Status</span><span class="c3">Timestamp</span></div>
+        <div class="cert-empty">&nbsp;</div>
+
+        <div class="cert-sec"><span>Carbon Copy Events</span><span class="c2">Status</span><span class="c3">Timestamp</span></div>
+        <div class="cert-empty">&nbsp;</div>
+
+        <div class="cert-sec"><span>Witness Events</span><span class="c2">Signature</span><span class="c3">Timestamp</span></div>
+        <div class="cert-empty">&nbsp;</div>
+
+        <div class="cert-sec"><span>Notary Events</span><span class="c2">Signature</span><span class="c3">Timestamp</span></div>
+        <div class="cert-empty">&nbsp;</div>
+
+        <div class="cert-sec"><span>Envelope Summary Events</span><span class="c2">Status</span><span class="c3">Timestamps</span></div>
+        <div class="cert-row"><div class="c1">Envelope Sent</div><div class="c2">Hashed/Encrypted</div><div class="c3">8/1/2026 10:21:12 AM</div></div><div class="cert-row"><div class="c1">Certified Delivered</div><div class="c2">Security Checked</div><div class="c3">8/4/2026 6:23:19 PM</div></div><div class="cert-row"><div class="c1">Signing Complete</div><div class="c2">Security Checked</div><div class="c3">8/4/2026 6:30:19 PM</div></div><div class="cert-row"><div class="c1">Completed</div><div class="c2">Security Checked</div><div class="c3">8/4/2026 6:30:21 PM</div></div>
+
+        <div class="cert-sec"><span>Payment Events</span><span class="c2">Status</span><span class="c3">Timestamps</span></div>
+        <div class="cert-empty">&nbsp;</div>
+
+        <div class="cert-sec"><span>Electronic Record and Signature Disclosure</span></div>
+        <div class="cert-legal">
+          <h3>Electronic Record and Signature Disclosure created on: 1/14/2024 10:02:41 AM</h3>
+          <p>From time to time, Lone Star Realty may be required by law to provide to you certain
+          written notices or disclosures. Described below are the terms and conditions for providing
+          to you such notices and disclosures electronically through the DocuSign system.</p>
+          <h3>Signer authentication</h3>
+          <p>Where the sender has applied an authentication requirement to a recipient, that recipient
+          must satisfy it before the signing session will open. An Access Code is a secret supplied by
+          the sender and shared with the recipient out of band; three consecutive failures block the
+          recipient and the envelope must be corrected before they can proceed. ID Verification
+          requires the recipient to submit a government-issued photo identity document, which is
+          checked for authenticity and matched against a live capture of the recipient.</p>
+          <h3>Getting paper copies</h3>
+          <p>At any time, you may request from us a paper copy of any record provided or made available
+          electronically to you by us.</p>
+          <h3>Required hardware and software</h3>
+          <p>Operating Systems: Windows 2000 or above, Mac OS X. Browsers: Final release versions of
+          Internet Explorer 6.0 or above, Mozilla Firefox, Safari, or Chrome. PDF Reader: Acrobat or
+          similar software may be required to view and print PDF files.</p>
+        </div>
+
+        </div>
+      </div>
+      <div class="ds-modal-foot">
+        <button type="button" class="ds-btn" onclick="dsDownloadCertificate('ENV-2026-7734')"><svg class="ds-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download Certificate</button>
+        <button type="button" class="ds-btn primary" onclick="dsCloseCertificateModal()">Close Certificate</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

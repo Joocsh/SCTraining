@@ -116,6 +116,7 @@ function afAccountingReceiptsHTML() {
 }
 
 function afAccountingDelinquencyHTML() {
+  if (typeof afMark === 'function') afMark('af_c3_1');
   const delinquentLeases = afAllLeases().filter(function (l) { return l.status === 'active' && l.balanceCents > 0; });
   const totalDue = delinquentLeases.reduce(function (s, l) { return s + l.balanceCents; }, 0);
 
@@ -838,6 +839,7 @@ function afViewReport(reportId) {
     body = '<table class="af-tbl"><thead><tr><th>Unit</th><th>Resident</th><th class="num">Base Rent</th><th class="num">Pet Rent</th><th class="num">Total Monthly</th></tr></thead><tbody>' +
       rows + '</tbody></table>';
   } else if (reportId === 'delinquency') {
+    if (typeof afMark === 'function') afMark('af_c4_1');
     title = 'Delinquency Aging Summary';
     const delinq = afAllLeases().filter(function (l) { return l.status === 'active' && l.balanceCents > 0; });
     const total = delinq.reduce(function (s, l) { return s + l.balanceCents; }, 0);
@@ -846,7 +848,7 @@ function afViewReport(reportId) {
       const u = afGetUnit(l.unitId);
       const r = l.residentIds.length ? afGetResident(l.residentIds[0]) : null;
       const dqId = l.dqAnchorId || ('DQ-0' + (idx + 1));
-      return '<tr data-dq="' + escAttr(dqId) + '">' +
+      return '<tr data-dq="' + escAttr(dqId) + '" onclick="if(typeof afMark===\'function\')afMark(\'af_c4_2\');" style="cursor:pointer;">' +
         '<td><b>' + (r ? esc(r.name) : 'Resident') + '</b> (Unit ' + (u ? esc(u.label) : '') + ')</td>' +
         '<td>' + esc(l.id) + '</td>' +
         '<td class="num" style="font-weight:700;color:var(--af-bad);">' + afFmtMoney(l.balanceCents) + '</td>' +

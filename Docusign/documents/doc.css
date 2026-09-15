@@ -22,10 +22,10 @@ table.line-items th { text-align: left; color: var(--muted); font-size: 10.5px; 
 table.line-items td { padding: 9px 6px; border-bottom: 1px solid #f0f1f1; }
 table.line-items td.num, table.line-items th.num { text-align: right; font-variant-numeric: tabular-nums; }
 table.line-items tfoot td { font-weight: 800; border-top: 2px solid var(--ink); border-bottom: none; }
-.sigrow { display: flex; gap: 40px; margin-top: 20px; }
-.sig { flex: 1; }
-.sig .line { border-bottom: 1px solid var(--ink); height: 34px; font-style: italic; font-family: 'Brush Script MT', cursive, sans-serif; font-size: 20px; color: #002738; padding-top: 6px; }
-.sig label { display: block; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); margin-top: 6px; }
+.sigrow { display: flex; gap: 40px; margin-top: 24px; align-items: flex-end; }
+.sig { flex: 1; min-width: 0; }
+.sig .line { border-bottom: 1.5px solid var(--ink); min-height: 36px; height: auto; font-style: italic; font-family: 'Brush Script MT', cursive, sans-serif; font-size: 20px; color: #002738; padding: 0 4px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sig label, .sig .label { display: block; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 10.5px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); margin-top: 8px; line-height: 1.35; }
 .timeline-entry { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 13px; border-left: 2px solid var(--blue); padding-left: 14px; margin-bottom: 14px; }
 .timeline-entry b { display: block; color: var(--ink); }
 .timeline-entry span { color: var(--muted); font-size: 12px; }
@@ -220,6 +220,7 @@ body.ds-cert .paper { font-family: Arial, Helvetica, sans-serif; padding: 46px 5
   font-size: 9.5px; font-weight: 700; padding: 4px 6px; margin: 14px 0 0;
 }
 .cert-sec span { font-weight: 700; }
+.cert-sec span:first-child, .cert-sec .c1 { flex: 1; font-weight: 700; }
 .cert-sec .c2 { width: 200px; flex: none; }
 .cert-sec .c3 { width: 190px; flex: none; }
 

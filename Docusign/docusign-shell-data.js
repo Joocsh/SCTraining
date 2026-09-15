@@ -398,24 +398,17 @@ function dsSBuildEnvelopes() {
 }
 
 /* ============================================================================
-   THE FIVE ENVELOPES THE MAILBOX TALKS ABOUT
+   HAND-WRITTEN ENVELOPES (exam and triage cross-references)
    ============================================================================
 
-   dsInitMailbox() in docusign-app.js has always cited ENV-2026-9001, 9002, 9005,
-   9008 and 9014, and three exam items in docusign-data-ext.js cite three of them.
-   None of the five existed. Every "View in DocuSign" button in the VA Mailbox
-   answered "Envelope not found.", the certificate button opened nothing, and the
-   exam asked about envelopes a trainee could not look up. This is the other half
-   of R2: a notification is only a signpost if it points at something.
+   Written by hand rather than generated because each one has to match exactly
+   what exam and triage items say about it. Cross-references:
 
-   Written by hand rather than generated because each one has to say exactly what
-   its email and its exam item already say about it. Cross-references, both ways:
-
-     ENV-2026-9001  em-1  sent TO this account, so it lands in Inbox, not Sent
-     ENV-2026-9002  em-2  completed, so the certificate button has a sealed envelope
-     ENV-2026-9005  em-5  declined  — also ex-tri-ext-4
-     ENV-2026-9008  em-6  expiring  — also ex-tri-ext-3
-     ENV-2026-9014  em-7  authfail  — also ex-tri-ext-1 and ex-cmp-ext-1 (code TX-8821)
+     ENV-2026-9001  sent TO this account (inbound, not outbound)
+     ENV-2026-9002  completed, so the certificate button has a sealed envelope
+     ENV-2026-9005  declined  — also ex-tri-ext-4
+     ENV-2026-9008  expiring  — also ex-tri-ext-3
+     ENV-2026-9014  authfail  — also ex-tri-ext-1 and ex-cmp-ext-1 (code TX-8821)
 
    All five sit at or before DS_S_MAX_OFFSET, so they cannot push ENV-2026-9041
    down the list and break Lesson 5's row target. Read the note on the generator
@@ -508,7 +501,7 @@ const DS_S_MAIL_ENVELOPES = [
 ];
 DS_S_MAIL_ENVELOPES.forEach(e => { e.fields = dsSBuildFields(e); });
 
-/* The generated catalogue plus the five hand-written mailbox envelopes, re-sorted
+/* The generated catalogue plus the five hand-written envelopes, re-sorted
    as one list so the envelope table never has to know where a row came from. */
 const DS_S_ENVELOPES = dsSBuildEnvelopes()
   .concat(DS_S_MAIL_ENVELOPES)

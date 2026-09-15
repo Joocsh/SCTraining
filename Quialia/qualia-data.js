@@ -147,12 +147,12 @@ const QZ_DOCUMENTS = [
   { id: 17, orderId: 'ORD-2026-1483', name: 'Addendum No. 1', type: 'Contract', status: 'Reviewed', uploadedBy: 'Samantha Bee', date: '2026-07-24', file: 'documents/addendum-1483.html' },
   { id: 4, orderId: 'ORD-2026-1483', name: 'Homeowners Insurance Binder', type: 'Insurance', status: 'Received', uploadedBy: 'John Smith', date: '2026-06-25' },
 
-  { id: 5, orderId: 'ORD-2026-1512', name: 'Purchase Agreement', type: 'Contract', status: 'Reviewed', uploadedBy: 'Dana Ruiz', date: '2026-05-15' },
+  { id: 5, orderId: 'ORD-2026-1512', name: 'Purchase Agreement', type: 'Contract', status: 'Reviewed', uploadedBy: 'Dana Ruiz', date: '2026-05-15', file: 'documents/purchase-agreement-1512.html' },
   { id: 6, orderId: 'ORD-2026-1512', name: 'Title Commitment', type: 'Title', status: 'Reviewed', uploadedBy: 'Lucas Adminton', date: '2026-06-02', file: 'documents/commitment-schedule-b-1512.html' },
   { id: 7, orderId: 'ORD-2026-1512', name: 'HOA Resale Certificate', type: 'HOA', status: 'Pending', uploadedBy: '—', date: '—' },
   { id: 8, orderId: 'ORD-2026-1512', name: 'Survey', type: 'Property', status: 'Received', uploadedBy: 'Marcus Webb', date: '2026-06-18' },
 
-  { id: 9, orderId: 'ORD-2026-1398', name: 'Purchase Agreement', type: 'Contract', status: 'Reviewed', uploadedBy: 'Paula Aragone', date: '2026-04-23' },
+  { id: 9, orderId: 'ORD-2026-1398', name: 'Purchase Agreement', type: 'Contract', status: 'Reviewed', uploadedBy: 'Paula Aragone', date: '2026-04-23', file: 'documents/purchase-agreement-1398.html' },
   { id: 10, orderId: 'ORD-2026-1398', name: 'Title Commitment', type: 'Title', status: 'Reviewed', uploadedBy: 'Lucas Adminton', date: '2026-05-10' },
   { id: 11, orderId: 'ORD-2026-1398', name: 'Final Loan Documents', type: 'Lender', status: 'Pending', uploadedBy: '—', date: '—' },
   { id: 12, orderId: 'ORD-2026-1398', name: 'Closing Disclosure', type: 'Lender', status: 'Pending', uploadedBy: '—', date: '—', file: 'documents/closing-disclosure-1398.html' },
@@ -837,6 +837,31 @@ const QZ_REVIEWS = [
     partyRole: null,
     field: null,
     explain: 'The loan amount matches the Loan Estimate exactly. Verification means checking every figure against its source, not just the ones that look wrong. Confirming a correct value is as much the job as catching a wrong one.'
+  },
+  {
+    id: 'rev-1512-buyer',
+    orderId: 'ORD-2026-1512',
+    label: "Buyer's legal name",
+    where: 'Data Entry → Parties',
+    instruction: "Compare the buyer's name on Order ORD-2026-1512 against the Purchase Agreement.",
+    doc: 'documents/purchase-agreement-1512.html',
+    docTitle: 'Purchase Agreement',
+    systemValue: 'Marcus Webb',
+    fieldAt: { tab: 'dataentry', deTab: 'parties', label: 'Data Entry → Parties', sel: '.qz-party-card[data-role="Buyer"] input[data-field="name"]' },
+    sourceOptions: [
+      { id: 'a', text: 'Marcus Webb — matches, no discrepancy' },
+      { id: 'b', text: 'Marcus A. Webb' },
+      { id: 'c', text: 'Marcus Webb, Jr.' },
+      { id: 'd', text: 'M. Webb' }
+    ],
+    rightSourceOptionId: 'b',
+    rightAction: 'correct',
+    rightCategory: null,
+    fixAt: { tab: 'dataentry', deTab: 'parties', label: 'Data Entry → Parties', sel: '.qz-party-card[data-role="Buyer"] input[data-field="name"]' },
+    correctedValue: 'Marcus A. Webb',
+    partyRole: 'Buyer',
+    field: null,
+    explain: 'The Purchase Agreement clearly specifies "Marcus A. Webb" including the middle initial. Updating the buyer name to match the purchase contract is a routine data entry correction within a VA\'s authority.'
   }
 ];
 
@@ -1059,6 +1084,45 @@ const QZ_RECONCILES = [
       }
     ],
     explain: 'Not every wire change is fraud, and treating them all as fraud is its own failure. What both real items have in common is that the verification never happens inside the email that asked for it, and the third row is there to check you can still say "this one is fine".'
+  },
+  {
+    id: 'rec-capstone-closing',
+    orderId: 'ORD-2026-1398',
+    label: 'Closing timeline across Purchase Agreement and Closing Disclosure',
+    where: 'Data Entry → Transaction Information',
+    instruction: 'Compare the target closing date and purchase price on Order ORD-2026-1398 between the Purchase Agreement and the Closing Disclosure. Record what each source says, then determine the appropriate next step.',
+    docs: [
+      { id: 'pa', title: 'Purchase Agreement', short: 'Purchase Agmt', file: 'documents/purchase-agreement-1398.html' },
+      { id: 'cd', title: 'Closing Disclosure', short: 'Closing Disc.', file: 'documents/closing-disclosure-1398.html' }
+    ],
+    rows: [
+      {
+        id: 'closing-date',
+        label: 'Closing date',
+        onOrder: 'August 25, 2026',
+        cells: [
+          { docId: 'pa', options: ['August 11, 2026', 'August 25, 2026', 'September 4, 2026', 'Not stated'], right: 'August 11, 2026' },
+          { docId: 'cd', options: ['August 11, 2026', 'August 25, 2026', 'September 4, 2026', 'Not stated'], right: 'August 25, 2026' }
+        ],
+        rightAction: 'escalate-supervisor',
+        rightCategory: 'conflicting-sources',
+        noteExample: 'The base Purchase Agreement specifies an August 11 closing date, while the Closing Disclosure issued by Northgate Home Loans lists August 25 due to delayed underwriting. A closing date cannot be moved on the file without an executed extension addendum signed by both buyer and seller. Escalating to supervisor to verify if an executed extension is in flight before finalizing closing figures.',
+        explain: 'The contract specifies August 11, but the lender\'s Closing Disclosure indicates August 25. A VA cannot simply adopt the lender\'s revised date without an executed contract extension signed by buyer and seller. Escalate as conflicting sources to your supervisor.'
+      },
+      {
+        id: 'price',
+        label: 'Purchase price',
+        onOrder: '$512,900.00',
+        cells: [
+          { docId: 'pa', options: ['$512,900.00', '$521,900.00', '$461,610.00', 'Not stated'], right: '$512,900.00' },
+          { docId: 'cd', options: ['$512,900.00', '$521,900.00', '$461,610.00', 'Not stated'], right: '$512,900.00' }
+        ],
+        rightAction: 'none',
+        rightCategory: null,
+        explain: 'Both the Purchase Agreement and Closing Disclosure agree on $512,900.00. The figure matches the order and requires no correction or escalation.'
+      }
+    ],
+    explain: 'Reconciling means checking each critical field independently. The closing date requires supervisor escalation due to conflicting documents, while the purchase price is verified and requires no action.'
   }
 ];
 
@@ -1102,6 +1166,40 @@ const QZ_COMPOSES = [
       { check: 'conveysUrgency', label: 'Conveys the timing pressure concretely', why: 'The message claims a wire goes out tomorrow morning. Whether that is true or not, the window matters.' },
       { check: 'verifyOutOfBand', label: 'Proposes verifying by phone using a number from the file', why: 'The only way to break the attack is to confirm through a channel the email did not supply.' },
       { check: 'noNPI', label: 'Does not repeat the account and routing numbers', why: 'Re-transmitting the fraudulent account details spreads them further into your own systems.', required: true }
+    ]
+  },
+  {
+    id: 'cmp-1398-reply',
+    orderId: 'ORD-2026-1398',
+    label: 'Reply to the selling agent',
+    instruction: 'Paula Aragone wants an update on the closing timeline. The lender has told you documents will be late. You do not have a confirmed new date. Write the reply.',
+    placeholder: 'Write your reply to Paula Aragone...',
+    thread: [
+      { sender: 'Northgate Home Loans', recipient: 'You (VA)', date: '2026-08-08', body: 'We are behind on this file. Documents will not be ready before August 11th. Recommend pushing the closing date.' },
+      { sender: 'Paula Aragone (Selling Agent)', recipient: 'You (VA)', date: '2026-08-08', body: 'Buyer and seller need to know as soon as there is a new date, please keep us posted.' }
+    ],
+    rubric: [
+      { check: 'identifiesFile', label: 'Names the file (address or order number)', why: 'A reply with no file reference makes the reader go looking.' },
+      { check: 'acknowledgesRequest', label: 'Acknowledges what Paula asked', why: 'She asked a direct question. Answering around it reads as avoidance.' },
+      { check: 'givesTimeframe', label: 'Commits to a specific follow-up day', why: '"As soon as I know" gives them nothing to plan around.' },
+      { check: 'statesNextStep', label: 'Says what you are doing about it', why: 'Name the action in flight, not just that you received the message.' },
+      { check: 'noBlame', label: 'Does not blame the lender by name', why: 'Assigning fault in writing creates a record you cannot control.' },
+      { check: 'noCommitmentBeyondAuthority', label: 'Does not promise a new closing date', why: 'The date is not confirmed and not yours to set.' }
+    ]
+  },
+  {
+    id: 'cmp-capstone-summary',
+    orderId: 'ORD-2026-1398',
+    label: 'Summary to your supervisor',
+    instruction: 'You have finished reviewing this file. Write a summary email to your supervisor listing what you found, what you corrected, and what needs their attention.',
+    placeholder: 'Write your summary email...',
+    thread: [],
+    rubric: [
+      { check: 'identifiesFile', label: 'Names the file (address or order number)', why: 'Your supervisor works many files.' },
+      { check: 'listsFindings', label: 'Lists specific findings, not vague concerns', why: 'Saying "I found some issues" gives them nothing to act on.' },
+      { check: 'separatesCorrectionsFromEscalations', label: 'Separates what you fixed from what needs their decision', why: 'They need to know what is done vs. what is waiting on them.' },
+      { check: 'noFalseAlarms', label: 'Does not list items that are correct as problems', why: 'Over-reporting trains the reader to skim.' },
+      { check: 'noNPI', label: 'No account numbers or SSNs', why: 'A summary should reference, not reproduce.' }
     ]
   }
 ];
@@ -1191,17 +1289,12 @@ const QZ_LESSONS = [
           ],
           setup: () => qzOpenOrder('ORD-2026-1483')
         } },
-      { type: 'decide', scenarioId: 'new-order', walk: {
-          target: null,
-          text: "🎯 Goal: Practice new order triage.\n👉 Action: Read the situation in the box on the right and select the correct first step.\n💡 Context: Understanding the intake sequence prevents costly delays later.",
-          setup: () => qzAskScenario('new-order', { orderId: 'ORD-2026-1483', tab: 'workflow', label: 'Workflow' })
-        } },
       { type: 'do', checklistId: 'de-property', walk: {
           target: '[data-tab="dataentry"]',
           text: "🎯 Goal: Review property data fields.\n👉 Action: Click the Data Entry tab.\n💡 Context: Data Entry is where all core order details are maintained and verified.",
           tour: [
             { target: '#qzDeStreet', text: () => { const o = qzGetOrder('ORD-2026-1483'); return `The property address: ${o.propertyAddress}. Street, city, state, and zip — each in its own field.`; } },
-            { target: '#qzDeLegal', text: 'The legal description identifies the parcel on the deed, not just by street address. You will verify this against the Title Commitment in a later lesson.' },
+            { target: '#qzDeLegal', text: 'The legal description identifies the parcel on the deed, not just by street address. It must match the Title Commitment exactly — any difference is a flag.' },
             { target: '.qz-subtabs', text: 'Data Entry has three sub-tabs: Property, Parties, and Transaction Information. Everything a VA enters on a file lives under one of these.' }
           ],
           setup: () => qzOpenOrder('ORD-2026-1483')
@@ -1211,7 +1304,7 @@ const QZ_LESSONS = [
           text: "🎯 Goal: Inspect transaction parties.\n👉 Action: Click the Parties sub-tab.\n💡 Context: Buyer and seller identities govern the entire title chain.",
           tour: [
             { target: '.qz-party-card[data-role="Buyer"]', text: () => { const o = qzGetOrder('ORD-2026-1483'); const b = o.parties.find(p => p.role === 'Buyer'); return `The buyer: ${b.name}. Name, email, and phone — all editable, and all must match the contract exactly.`; } },
-            { target: '.qz-party-card[data-role="Seller"]', text: () => { const o = qzGetOrder('ORD-2026-1483'); const s = o.parties.find(p => p.role === 'Seller'); return `The seller: ${s.name}. You will verify this name against the Source Deed in a later lesson.`; } }
+            { target: '.qz-party-card[data-role="Seller"]', text: () => { const o = qzGetOrder('ORD-2026-1483'); const s = o.parties.find(p => p.role === 'Seller'); return `The seller: ${s.name}. This name must match the deed exactly — a vesting discrepancy is not a typo, it is a legal question.`; } }
           ],
           setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('dataentry'); }
         } },
@@ -1219,7 +1312,7 @@ const QZ_LESSONS = [
           target: '[data-detab="transaction"]',
           text: "🎯 Goal: Verify transaction figures.\n👉 Action: Click Transaction Information.\n💡 Context: Key figures determine escrow balances and closing settlement dates.",
           tour: [
-            { target: '#qzDePrice', text: () => { const o = qzGetOrder('ORD-2026-1483'); return `Purchase price: ${fmtMoney(o.purchasePrice)}. This must match the Purchase Agreement — you will verify it in Lesson 2.`; } },
+            { target: '#qzDePrice', text: () => { const o = qzGetOrder('ORD-2026-1483'); return `Purchase price: ${fmtMoney(o.purchasePrice)}. This must match the Purchase Agreement — never take a figure on trust without opening the source document.`; } },
             { target: '#qzDeClosing', text: () => { const o = qzGetOrder('ORD-2026-1483'); return `Closing date: ${fmtDate(o.closingDate)}. Every deadline, proration, and payoff on the file is calculated from this date.`; } }
           ],
           setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('dataentry'); }
@@ -1244,6 +1337,11 @@ const QZ_LESSONS = [
           },
           setup: () => { qzOpenOrder('ORD-2026-1483'); qzOrderTab('dataentry'); qzDeTab('parties'); }
         } },
+      { type: 'decide', scenarioId: 'new-order', walk: {
+          target: null,
+          text: "🎯 Goal: Practice new order triage.\n👉 Action: Read the situation in the box on the right and select the correct first step.\n💡 Context: Understanding the intake sequence prevents costly delays later.",
+          setup: () => qzAskScenario('new-order', { orderId: 'ORD-2026-1483', tab: 'workflow', label: 'Workflow' })
+        } },
       { type: 'do', checklistId: 'orders-back', walk: {
           target: '#qzOrderTabs [data-order-tab="ORD-2026-1483"] .x',
           text: "🎯 Goal: Close the open file.\n👉 Action: Click the × on the '5445 Main Street' tab.\n💡 Context: Closing open tabs returns you to your main Orders list.",
@@ -1259,6 +1357,19 @@ const QZ_LESSONS = [
     // one was running half again as long as any other. What is left is the pure form of the
     // skill — a name and three figures, each checked against the paper that governs it.
     steps: [
+      { type: 'do', checklistId: 'orders-open', walk: {
+          target: () => document.querySelector('tr[data-order-id="ORD-2026-1483"]') || '#qzTopSearchInput',
+          text: () => {
+            if (document.querySelector('tr[data-order-id="ORD-2026-1483"]')) return 'This lesson works on Order ORD-2026-1483 (5445 Main Street). Click to open it.';
+            return 'Type "1483" to find Order ORD-2026-1483, then click the row to open it.';
+          },
+          setup: () => {
+            qzState.view = 'orders'; qzState.orderId = null; qzState.orderFilter = '1483';
+            const input = document.getElementById('qzTopSearchInput');
+            if (input) { input.value = '1483'; input.disabled = true; input.title = 'Order found — click the row below to open it.'; }
+            qzSyncTopTabs(); qzRenderRoot();
+          }
+        } },
       { type: 'decide', scenarioId: 'buyer-name-error', walk: {
           target: null,
           text: "Read the situation in the box on the right, then pick the option you believe is correct. This sets the rule we're about to apply for real.",
@@ -1290,6 +1401,19 @@ const QZ_LESSONS = [
     id: 'l03-documents', number: 3, title: 'Documents: Lifecycle, Vesting & Legal Description',
     summary: 'Move a document through its lifecycle, then learn to recognise what is a correction you make yourself and what is a legal matter you escalate.',
     steps: [
+      { type: 'do', checklistId: 'orders-open', walk: {
+          target: () => document.querySelector('tr[data-order-id="ORD-2026-1483"]') || '#qzTopSearchInput',
+          text: () => {
+            if (document.querySelector('tr[data-order-id="ORD-2026-1483"]')) return 'This lesson starts on Order ORD-2026-1483 (5445 Main Street). Click to open it.';
+            return 'Type "1483" to find Order ORD-2026-1483.';
+          },
+          setup: () => {
+            qzState.view = 'orders'; qzState.orderId = null; qzState.orderFilter = '1483';
+            const input = document.getElementById('qzTopSearchInput');
+            if (input) { input.value = '1483'; input.disabled = true; }
+            qzSyncTopTabs(); qzRenderRoot();
+          }
+        } },
       // --- Part 1: Document lifecycle (Upload → View → Mark Reviewed) ---
       { type: 'do', checklistId: 'docs-upload', walk: {
           target: 'tr[data-doc-id="3"] [data-doc-action="upload"]',
@@ -1311,7 +1435,7 @@ const QZ_LESSONS = [
       // --- Part 2: Not every discrepancy is yours to fix ---
       { type: 'decide', scenarioId: 'not-a-typo', walk: {
           target: null,
-          text: "In Lesson 2 you corrected typos and wrong figures. Now a different kind of discrepancy: read the situation in the box on the right.",
+          text: "Sometimes a name discrepancy is a typo you correct directly. This is a different kind — read the situation in the box on the right.",
           setup: () => qzAskScenario('not-a-typo', { orderId: 'ORD-2026-1483', tab: 'dataentry', deTab: 'parties', label: 'Data Entry → Parties', sel: '.qz-party-card[data-role="Seller"] input[data-field="name"]' })
         } },
       { type: 'verify', reviewId: 'rev-1483-vesting', walk: {
@@ -1389,23 +1513,13 @@ const QZ_LESSONS = [
           text: "Now think about what the right reply looks like. Read the situation in the box on the right.",
           setup: () => qzAskScenario('comm-tone', { orderId: 'ORD-2026-1398', tab: 'communication', label: 'Communication' })
         } },
-      { type: 'do', checklistId: 'comm-reply', orderId: 'ORD-2026-1398', walk: {
-          target: () => {
-            const box = document.getElementById('qzReplyBox');
-            if (box && box.value.trim().length >= 20) return document.querySelector('[data-comm-action="reply"]');
-            return box;
-          },
-          text: () => {
-            const box = document.getElementById('qzReplyBox');
-            const len = box ? box.value.trim().length : 0;
-            if (len >= 20) return "That's a good length. Click Send Reply when you're happy with it.";
-            return `Write a professional reply (at least 20 characters) and click Send. ${len ? `(${len} of 20)` : ''}`;
-          },
+      { type: 'compose', composeId: 'cmp-1398-reply', orderId: 'ORD-2026-1398', walk: {
+          target: () => qzComposeTarget('cmp-1398-reply'),
+          text: () => qzComposeText('cmp-1398-reply'),
           example: () => {
-            const box = document.getElementById('qzReplyBox');
-            const len = box ? box.value.trim().length : 0;
-            if (len >= 20) return null;
-            return "Thanks for flagging this, Paula. I'm following up with the lender on the revised timeline now and will share the updated closing date with you and all parties as soon as it's confirmed.";
+            const st = qzComposeGet('cmp-1398-reply');
+            if (st.resolvedAt && st.correct) return null;
+            return "Thanks for following up, Paula. I'm aware of a delay with the final loan documents on 219 Lakeshore Drive and I'm working on getting a confirmed timeline from the lender. I don't have a new closing date to share yet — that decision needs to come from my supervisor once we have firm dates. I'll follow up with you by Thursday with whatever I have, even if the only update is that we're still waiting.";
           },
           setup: () => { qzOpenOrder('ORD-2026-1398'); qzOrderTab('communication'); }
         } },
@@ -1572,6 +1686,13 @@ const QZ_LESSONS = [
     // governs. Three sources disagreeing on a price, then Schedule B saying something the
     // trainee did not expect.
     steps: [
+      { type: 'do', checklistId: 'orders-open', orderId: 'ORD-2026-1483', walk: {
+          target: () => document.querySelector('tr[data-order-id="ORD-2026-1483"]') || '#qzOrderTabs',
+          text: 'When two or more documents on a file state different values for the same field, that is a conflict. Your job is to read each source, record what it says, and then decide whether to correct it, escalate it, or leave it alone. Click Next to begin.',
+          skipClick: true,
+          nextAction: () => { qzOpenOrder('ORD-2026-1483'); qzReconcileDrive('rec-1483-price-conflict'); SimEngine.stepCompleted(); },
+          setup: () => { qzOpenOrder('ORD-2026-1483'); }
+        } },
       { type: 'reconcile', reconcileId: 'rec-1483-price-conflict', walk: {
           target: () => qzReconcileTarget('rec-1483-price-conflict'),
           text: () => qzReconcileText('rec-1483-price-conflict'),
@@ -1592,8 +1713,8 @@ const QZ_LESSONS = [
       { type: 'do', checklistId: 'orders-open', orderId: 'ORD-2026-1512', walk: {
           target: () => document.querySelector('tr[data-order-id="ORD-2026-1512"]') || '#qzTopSearchInput',
           text: () => {
-            if (document.querySelector('tr[data-order-id="ORD-2026-1512"]')) return 'The next exercise is on a different file. Click this row to open Order ORD-2026-1512 (812 Birchwood Lane).';
-            return 'The next exercise is on a different file. Type "1512" to find Order ORD-2026-1512.';
+            if (document.querySelector('tr[data-order-id="ORD-2026-1512"]')) return 'The first conflict was about a price. This next one is about identity — who the title commitment says owns the property. Click this row to open Order ORD-2026-1512 (812 Birchwood Lane).';
+            return 'The first conflict was about a price. This next one is about identity. Type "1512" to find Order ORD-2026-1512.';
           },
           setup: () => {
             qzState.view = 'orders'; qzState.orderId = null; qzState.orderFilter = '1512';
@@ -1664,7 +1785,7 @@ const QZ_LESSONS = [
     steps: [
       { type: 'do', checklistId: 'triage-open-all', walk: {
           target: '#qzOrderTabs',
-          text: 'Every order you open gets its own tab up here, and each remembers where you were. Open all three practice files so you can move between them, that is how this job is actually worked.',
+          text: "It's the start of your shift. Five things happened overnight across your files. You need to decide what to tackle first. Let's open all three practice files so you can see what you're working with — this is how the job is actually worked.",
           skipClick: true,
           nextAction: () => { ['ORD-2026-1483', 'ORD-2026-1512', 'ORD-2026-1398'].forEach(qzOpenOrderTab); qzMark('triage-open-all'); qzRenderRoot(); },
           setup: () => qzOpenOrder('ORD-2026-1483')
@@ -1702,16 +1823,11 @@ const QZ_LESSONS = [
     // Deliberately has no `walk` on any step: the walkthrough engine only offers "Start
     // walkthrough" when every step declares one, so this lesson simply never offers it.
     // Everything here has been taught; the point is whether it transfers unaided.
-    //
-    // cmp-1398-delay was removed: the triage lesson immediately before this one already
-    // grades that exact email, and re-grading it made this the longest lesson in the course
-    // at twice the average. Every remaining step is still a revisit, which is what a capstone
-    // is for — but a revisit of four different lessons, not a repeat of the previous one.
     steps: [
-      { type: 'verify', reviewId: 'rev-1483-legal' },
-      { type: 'reconcile', reconcileId: 'rec-1483-price-conflict' },
-      { type: 'reconcile', reconcileId: 'rec-1512-commitment' },
-      { type: 'decide', scenarioId: 'over-escalation' }
+      { type: 'verify', reviewId: 'rev-1512-buyer' },
+      { type: 'reconcile', reconcileId: 'rec-capstone-closing' },
+      { type: 'decide', scenarioId: 'over-escalation' },
+      { type: 'compose', composeId: 'cmp-capstone-summary' }
     ]
   }
 ];

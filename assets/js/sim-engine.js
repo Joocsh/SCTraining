@@ -32,6 +32,8 @@
   /* Defaults keep the contract small: a host that has no search box to unlock, or no
      scrolling container other than the window, simply omits those hooks. */
   var DEFAULTS = {
+    lockMode: 'sequential', // 'sequential' | 'all-open'
+    onWalkStart: function () {},
     /* Was this lesson ever finished, regardless of what its items say right now? Gating reads
        this, not live progress, so restarting a lesson to replay it can never re-lock the ones
        after it — and neither can a shared item being cleared by a different lesson's restart. */
@@ -112,7 +114,8 @@
     var h = document.getElementById('simDocModalHint');
     if (!frame) return;
     frame.removeAttribute('srcdoc');
-    frame.src = file;
+    var sep = file.indexOf('?') === -1 ? '?' : '&';
+    frame.src = file + sep + '_t=' + Date.now();
     if (t) t.textContent = title || 'Document';
     if (h) h.textContent = hint || '📖 Review the document details. When finished, click "Done Reading" to return to the exercise.';
     document.getElementById('simDocModal').classList.add('open');
@@ -162,20 +165,28 @@
      drift out of sync with the underlying answers. */
   function simLessonState(index) {
     var all = lessons();
-    // 'done' tracks live progress so a restarted lesson visibly reopens; unlocking tracks
-    // ever-complete so restarting one never takes the rest of the curriculum away.
-    if (index === 0) return (simLessonProgress(all[0]).complete || get('lessonEverComplete')(all[0].id)) ? 'done' : 'unlocked';
+    var mode = get('lockMode') || 'sequential';
+    var lesson = all[index];
+    var isComplete = simLessonProgress(lesson).complete || get('lessonEverComplete')(lesson.id);
+
+    if (mode === 'all-open') {
+      return isComplete ? 'done' : 'unlocked';
+    }
+
+    // sequential (original behavior)
+    if (index === 0) return isComplete ? 'done' : 'unlocked';
     var prev = all[index - 1];
     if (!simLessonProgress(prev).complete && !get('lessonEverComplete')(prev.id)) return 'locked';
-    return (simLessonProgress(all[index]).complete || get('lessonEverComplete')(all[index].id)) ? 'done' : 'unlocked';
+    return isComplete ? 'done' : 'unlocked';
   }
   function simFindLesson(id) {
+    if (id && typeof id === 'object') id = id.id;
     var all = lessons();
     for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i];
     return null;
   }
 
-  var STEP_STATUS_LABEL = { good: 'Done', bad: 'Try again', pending: 'Not yet' };
+  var STEP_STATUS_LABEL = { good: 'Done', bad: 'Try again', pending: 'Not yet', done: 'Done', todo: 'Not yet', complete: 'Done' };
 
   function simOpenLesson(id) {
     var all = lessons();
@@ -217,8 +228,20 @@
       var h = document.getElementById('simWalkHighlight');
       if (h) h.classList.remove('on');
       get('noteLessonComplete')(l.id);
-      simToast('🎉 Lesson ' + l.number + ' complete! Next lesson unlocked.', { tone: 'good' });
-      get('goHome')();
+      simToast('🎉 Lesson ' + l.number + ' complete!', { tone: 'good' });
+      if (typeof afExitLesson === 'function') {
+        afExitLesson();
+      } else if (typeof dsExitLesson === 'function') {
+        dsExitLesson();
+      } else if (typeof qzExitLesson === 'function') {
+        qzExitLesson();
+      } else if (get('exitLesson')) {
+        get('exitLesson')();
+      } else if (get('showLessons')) {
+        get('showLessons')();
+      } else {
+        get('goHome')();
+      }
       return;
     }
     if (walk && walk.lessonId === lessonId && walk.stepIndex === stepIndex) {
@@ -269,7 +292,7 @@
         goBtn + '</div>';
     }).join('');
     var tryBtn = (walkable && !prog.complete)
-      ? '<button class="' + btn + ' primary sim-try-btn" onclick="simWalkStart(\'' + l.id + '\')">Try It &rarr;</button>'
+      ? '<button class="' + btn + ' primary sim-try-btn" onclick="simWalkStart(\'' + l.id + '\')">' + (prog.done > 0 ? 'Resume Lesson &rarr;' : 'Start Lesson &rarr;') + '</button>'
       : '';
     /* Only offered once there is something to clear, and only if the host implements the reset.
        Progress persists across reloads by design — this is the deliberate way out, for a trainee
@@ -278,7 +301,7 @@
       ? '<button class="' + btn + ' sm sim-reset-btn" onclick="simResetLesson(\'' + l.id + '\', this)">Restart this lesson</button>'
       : '';
     var replayBtn = (prog.complete && walkable)
-      ? '<button class="' + btn + ' sm sim-try-btn" onclick="simWalkStart(\'' + l.id + '\')">Replay walkthrough &rarr;</button>'
+      ? '<button class="' + btn + ' sm sim-try-btn" onclick="simWalkStart(\'' + l.id + '\')">Replay Lesson &rarr;</button>'
       : '';
     return '<div class="sim-lesson-detail">' +
       '<h4>Lesson ' + l.number + ' &middot; ' + esc(l.title) + '</h4>' +
@@ -314,7 +337,8 @@
   function simWalkStart(lessonId) {
     var l = simFindLesson(lessonId);
     if (!l || !l.steps.every(function (s) { return s.walk; })) return;
-    walk = { lessonId: lessonId, stepIndex: 0, tourIndex: null, stepDoneFired: false };
+    if (get('onWalkStart')) get('onWalkStart')(lessonId);
+    walk = { lessonId: lessonId, stepIndex: 0, maxStepIndex: 0, tourIndex: null, stepDoneFired: false, isComplete: false };
     simWalkShowCurrent();
   }
   function simWalkCurrentLesson() { return walk ? simFindLesson(walk.lessonId) : null; }
@@ -331,6 +355,7 @@
     var step = simWalkCurrentStep();
     if (!step) { simWalkShowComplete(); return; }
     if (step.walk.setup) step.walk.setup();
+    else if (get('render')) get('render')();
     if (step.walk.skipClick) simWalkRenderSkipClick(step); else simWalkRenderTip(step, false);
     /* Double rAF: the first lets the host's re-render commit, the second lets layout
        settle, so getBoundingClientRect() measures the final position rather than an
@@ -357,17 +382,29 @@
      real would happen if clicked in a simulator: walk.nextAction runs the same underlying
      function a real click would, so any state it changes still happens and later steps
      stay consistent. The real element is still highlighted, just not required. */
+  function simWalkCanAdvance(step) {
+    if (!walk || !step) return false;
+    if (step.walk && step.walk.skipClick) return true;
+    var maxIdx = (walk.maxStepIndex != null) ? walk.maxStepIndex : walk.stepIndex;
+    if (walk.stepIndex < maxIdx) return true;
+    if (walk.stepDoneFired) return true;
+    if (simLessonStepDone(step)) return true;
+    return false;
+  }
   function simWalkRenderSkipClick(step) {
     var l = simWalkCurrentLesson();
     if (!l) return;
     var text = typeof step.walk.text === 'function' ? step.walk.text() : step.walk.text;
     var hasPrev = walk.stepIndex > 0;
     var hasNext = walk.stepIndex < l.steps.length - 1;
+    var nextBtnHTML = hasNext
+      ? '<button type="button" class="sim-walk-step-btn next" onclick="simWalkRunNextAction()" aria-label="Next step" title="Next step">Next Step &rarr;</button>'
+      : '<button type="button" class="sim-walk-step-btn next finish" onclick="simWalkRunNextAction()" aria-label="Finish lesson" title="Finish lesson">Finish Lesson &#10003;</button>';
 
     var navHTML = '<div class="sim-walk-stepper-bar">' +
-      '<button type="button" class="sim-walk-step-btn prev' + (!hasPrev ? ' disabled' : '') + '" onclick="simWalkBack()" ' + (!hasPrev ? 'disabled' : '') + '>&larr; Prev</button>' +
+      '<button type="button" class="sim-walk-step-btn prev' + (!hasPrev ? ' disabled' : '') + '" onclick="simWalkBack()" ' + (!hasPrev ? 'disabled' : '') + ' aria-label="Previous step" title="Previous step">&larr;</button>' +
       '<span class="sim-walk-step-indicator">Step ' + (walk.stepIndex + 1) + ' of ' + l.steps.length + '</span>' +
-      '<button type="button" class="sim-walk-step-btn next" onclick="simWalkRunNextAction()">' + (hasNext ? 'Next &rarr;' : 'Finish &#10003;') + '</button>' +
+      nextBtnHTML +
       '</div>' +
       '<div class="sim-walk-exit"><span onclick="simWalkExit()">Exit walkthrough</span></div>';
 
@@ -379,48 +416,74 @@
     if (step.walk.nextAction) step.walk.nextAction();
     else simWalkAdvance();
   }
-  /* Numbered pill buttons per step: clickable at any time so the user can jump to any step */
-  function simWalkDotsHTML() {
+  /* Numbered pill buttons per step: can only jump to steps already unlocked/completed */
+  function simWalkDotsHTML(isComplete) {
     var l = simWalkCurrentLesson();
     if (!l) return '';
+    var completed = isComplete || (walk && walk.isComplete);
+    var maxIdx = (walk && walk.maxStepIndex != null) ? walk.maxStepIndex : (walk ? walk.stepIndex : 0);
     var dots = l.steps.map(function (s, i) {
-      var isCurrent = i === walk.stepIndex;
-      var isDone = simLessonStepDone(s);
+      var isCurrent = !completed && (i === walk.stepIndex);
+      var isDone = completed || simLessonStepDone(s);
       var cls = isCurrent ? 'current' : (isDone ? 'done' : '');
-      return '<button type="button" class="sim-walk-dot ' + cls + ' clickable" onclick="simWalkJumpTo(' + i + ')" title="Go to Step ' + (i + 1) + '">' + (i + 1) + '</button>';
+      var canJump = !completed && ((i <= maxIdx || isDone) && !isCurrent);
+      var onclick = canJump ? ' onclick="simWalkJumpTo(' + i + ')" title="Go to Step ' + (i + 1) + '"' : ' disabled title="Step ' + (i + 1) + (isDone ? ' (Completed)' : ' (Locked until previous steps are completed)') + '"';
+      return '<button type="button" class="sim-walk-dot ' + cls + (canJump ? ' clickable' : ' locked') + '"' + onclick + '>' + (i + 1) + '</button>';
     }).join('');
     return '<div class="sim-walk-dots">' + dots + '</div>';
   }
-  function simWalkSetTipBody(html) {
-    document.getElementById('simWalkTipBody').innerHTML = simWalkDotsHTML() + html;
+  function simWalkSetTipBody(html, isComplete) {
+    document.getElementById('simWalkTipBody').innerHTML = simWalkDotsHTML(isComplete) + html;
   }
-  function simWalkRenderTip(step, done) {
+  function simWalkRenderTip(step) {
     var l = simWalkCurrentLesson();
     if (!l) return;
-    if (done) {
-      simWalkSetTipBody('<b>&#10003; Done!</b><p>Advancing to next step&hellip;</p>');
-      return;
-    }
     var text = typeof step.walk.text === 'function' ? step.walk.text() : step.walk.text;
     /* Optional, collapsed by default: a step whose target is a free-text field can carry
        its own worked example right in the tip, where the trainee is already looking,
        instead of somewhere on the page that the tip itself usually ends up covering. */
     var example = typeof step.walk.example === 'function' ? step.walk.example() : step.walk.example;
+    if (!example && step.composeId) {
+      if (typeof AF_COMPOSE_ITEMS !== 'undefined') {
+        var foundCmp = AF_COMPOSE_ITEMS.find(function (x) { return x.id === step.composeId; });
+        if (foundCmp && foundCmp.example) example = foundCmp.example;
+      } else if (typeof DS_COMPOSE_ITEMS !== 'undefined') {
+        var foundCmp = DS_COMPOSE_ITEMS.find(function (x) { return x.id === step.composeId; });
+        if (foundCmp && foundCmp.example) example = foundCmp.example;
+      }
+    }
     var exampleHTML = example
       ? '<button type="button" class="sim-walk-example-toggle" id="simWalkExampleToggle" onclick="simWalkToggleExample()">See example &rarr;</button>' +
         '<div class="sim-walk-example" id="simWalkExampleBox" style="display:none">' + esc(example) + '</div>'
       : '';
     var hasPrev = walk.stepIndex > 0;
     var hasNext = walk.stepIndex < l.steps.length - 1;
+    var canNext = simWalkCanAdvance(step);
+
+    var nextBtnHTML = '';
+    if (hasNext) {
+      if (canNext) {
+        nextBtnHTML = '<button type="button" class="sim-walk-step-btn next" onclick="simWalkAdvance()" aria-label="Next step" title="Next step">Next Step &rarr;</button>';
+      } else {
+        nextBtnHTML = '<button type="button" class="sim-walk-step-btn next disabled" disabled aria-label="Next step" title="Complete this action in DocuSign to continue">Next Step &rarr;</button>';
+      }
+    } else {
+      if (canNext) {
+        nextBtnHTML = '<button type="button" class="sim-walk-step-btn next finish" onclick="simWalkShowComplete()" aria-label="Finish lesson" title="Finish lesson">Finish Lesson &#10003;</button>';
+      } else {
+        nextBtnHTML = '<button type="button" class="sim-walk-step-btn next finish disabled" disabled aria-label="Finish lesson" title="Complete this action in DocuSign to finish the lesson">Finish Lesson &#10003;</button>';
+      }
+    }
 
     var navHTML = '<div class="sim-walk-stepper-bar">' +
-      '<button type="button" class="sim-walk-step-btn prev' + (!hasPrev ? ' disabled' : '') + '" onclick="simWalkBack()" ' + (!hasPrev ? 'disabled' : '') + '>&larr; Prev</button>' +
+      '<button type="button" class="sim-walk-step-btn prev' + (!hasPrev ? ' disabled' : '') + '" onclick="simWalkBack()" ' + (!hasPrev ? 'disabled' : '') + ' aria-label="Previous step" title="Previous step">&larr;</button>' +
       '<span class="sim-walk-step-indicator">Step ' + (walk.stepIndex + 1) + ' of ' + l.steps.length + '</span>' +
-      '<button type="button" class="sim-walk-step-btn next" onclick="' + (hasNext ? 'simWalkAdvance()' : 'simWalkShowComplete()') + '">' + (hasNext ? 'Next &rarr;' : 'Finish &#10003;') + '</button>' +
+      nextBtnHTML +
       '</div>' +
       '<div class="sim-walk-exit"><span onclick="simWalkExit()">Exit walkthrough</span></div>';
 
-    simWalkSetTipBody('<b>Lesson ' + l.number + ' &middot; Step ' + (walk.stepIndex + 1) + ' of ' + l.steps.length + '</b><p>' + esc(text) + '</p>' + exampleHTML + navHTML);
+    var statusBadge = canNext ? ' <span class="sim-step-badge done">&#10003; Done</span>' : '';
+    simWalkSetTipBody('<b>Lesson ' + l.number + ' &middot; Step ' + (walk.stepIndex + 1) + ' of ' + l.steps.length + statusBadge + '</b><p>' + esc(text) + '</p>' + exampleHTML + navHTML);
   }
   /* Expanding the example changes the tip's height. Without recomputing position the
      card's top/left stay where they were calculated for the shorter version, letting the
@@ -460,22 +523,62 @@
       simWalkPosition({ walk: { target: el } }, { scrollIntoView: true });
     });
   }
-  /* Smooth auto-advance when a step is satisfied */
+  /* Step satisfied by user action: enable Next Step button and display positive feedback without rush */
   function simWalkStepDone() {
     var step = simWalkCurrentStep();
     if (!step) return;
     if (walk.stepDoneFired) return;
     walk.stepDoneFired = true;
-    if (step.walk.tour && step.walk.tour.length) {
+    if (walk.maxStepIndex == null || walk.stepIndex + 1 > walk.maxStepIndex) {
+      walk.maxStepIndex = walk.stepIndex + 1;
+    }
+    if (walk.doneTimer) { clearTimeout(walk.doneTimer); walk.doneTimer = null; }
+
+    if (step.walk && step.walk.tour && step.walk.tour.length) {
       walk.tourIndex = 0;
       simWalkShowTourStop();
       return;
     }
-    simWalkRenderTip(step, true);
-    walk.doneTimer = setTimeout(function () {
-      walk.doneTimer = null;
-      simWalkAdvance();
-    }, 300);
+    if (step.walk && step.walk.pauseText) {
+      simWalkShowPause(step);
+      return;
+    }
+    /* Normal step: refresh tip to show Done badge and active Next Step button */
+    simWalkRenderTip(step);
+
+    /* For interactive action ('do') steps, automatically advance after a brief visual confirmation (500ms)
+       so the student isn't left wondering why the tour didn't move after clicking the requested item */
+    if (step.type === 'do' && (!step.walk || !step.walk.pauseText)) {
+      walk.doneTimer = setTimeout(function () {
+        walk.doneTimer = null;
+        simWalkAdvance();
+      }, 500);
+    }
+  }
+  function simWalkShowPause(step) {
+    var l = simWalkCurrentLesson();
+    if (!l) return;
+    var pauseText = typeof step.walk.pauseText === 'function' ? step.walk.pauseText() : step.walk.pauseText;
+    var hasPrev = walk.stepIndex > 0;
+    var hasNext = walk.stepIndex < l.steps.length - 1;
+    var nextBtnHTML = hasNext
+      ? '<button type="button" class="sim-walk-step-btn next" onclick="simWalkAdvance()" aria-label="Next step" title="Next step">Next Step &rarr;</button>'
+      : '<button type="button" class="sim-walk-step-btn next finish" onclick="simWalkShowComplete()" aria-label="Finish lesson" title="Finish lesson">Finish Lesson &#10003;</button>';
+
+    var navHTML = '<div class="sim-walk-stepper-bar">' +
+      '<button type="button" class="sim-walk-step-btn prev' + (!hasPrev ? ' disabled' : '') + '" onclick="simWalkBack()" ' + (!hasPrev ? 'disabled' : '') + ' aria-label="Previous step" title="Previous step">&larr;</button>' +
+      '<span class="sim-walk-step-indicator">Step ' + (walk.stepIndex + 1) + ' of ' + l.steps.length + '</span>' +
+      nextBtnHTML +
+      '</div>' +
+      '<div class="sim-walk-exit"><span onclick="simWalkExit()">Exit walkthrough</span></div>';
+
+    simWalkSetTipBody('<b>&#10003; Great! Lesson ' + l.number + ' &middot; Step ' + (walk.stepIndex + 1) + ' of ' + l.steps.length + '</b><p>' + esc(pauseText) + '</p>' + navHTML);
+    var pt = step.walk.pauseTarget || step.walk.target;
+    if (pt) {
+      simWalkPosition({ walk: { target: pt } });
+    }
+    // No auto-advance timer: student reads with calm and advances with Next Step when ready
+    if (walk.doneTimer) { clearTimeout(walk.doneTimer); walk.doneTimer = null; }
   }
   function simWalkShowTourStop() {
     var step = simWalkCurrentStep();
@@ -502,12 +605,19 @@
     }
   }
   function simWalkAdvance() {
-    if (!walk) return; // may have been exited during the pause
+    if (!walk) return;
+    if (walk.doneTimer) { clearTimeout(walk.doneTimer); walk.doneTimer = null; }
+    var step = simWalkCurrentStep();
+    if (!simWalkCanAdvance(step)) return;
     walk.stepIndex++;
+    if (walk.maxStepIndex == null || walk.stepIndex > walk.maxStepIndex) {
+      walk.maxStepIndex = walk.stepIndex;
+    }
     simWalkShowCurrent();
   }
   function simWalkBack() {
     if (!walk || walk.stepIndex <= 0) return;
+    if (walk.doneTimer) { clearTimeout(walk.doneTimer); walk.doneTimer = null; }
     walk.stepIndex--;
     simWalkShowCurrent();
   }
@@ -515,6 +625,9 @@
     if (!walk) return;
     var l = simWalkCurrentLesson();
     if (!l || index < 0 || index >= l.steps.length) return;
+    var maxIdx = (walk.maxStepIndex != null) ? walk.maxStepIndex : walk.stepIndex;
+    var isDone = simLessonStepDone(l.steps[index]);
+    if (index > maxIdx && !isDone) return;
     if (walk.doneTimer) { clearTimeout(walk.doneTimer); walk.doneTimer = null; }
     walk.stepIndex = index;
     simWalkShowCurrent();
@@ -534,7 +647,12 @@
     if (!step) return;
     if (predicate && !predicate(step)) return;
     simWalkRenderTip(step, false);
-    simWalkPosition(step, { scrollIntoView: true });
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        simWalkPosition(step, { scrollIntoView: true });
+        simWalkFlashActiveTab();
+      });
+    });
   }
   /* Resolves a step's target: a plain CSS selector, a function returning an
      Element/selector/null (for steps where WHAT to highlight changes as the trainee
@@ -544,7 +662,10 @@
     var t = typeof target === 'function' ? target() : target;
     if (!t) return null;
     if (typeof t === 'string') t = document.querySelector(t);
-    return (t && t.getBoundingClientRect && t.offsetParent !== null) ? t : null;
+    if (!t || !t.getBoundingClientRect) return null;
+    var rect = t.getBoundingClientRect();
+    var isVisible = (rect.width > 0 || rect.height > 0) || (t.offsetParent !== null);
+    return isVisible ? t : null;
   }
   /* Smooth unless the viewer asked for reduced motion, where an instant jump is both the
      accessible choice and the more reliable one — a smooth scroll that never animates leaves
@@ -568,18 +689,13 @@
     if (el && step.walk.skipClick && 'disabled' in el) el.disabled = true;
     /* Only on step transitions, never on resize/scroll repositions — those would fight
        the trainee's own scrolling. */
-    if (el && opts && opts.scrollIntoView) {
-      /* Smooth unless the viewer asked for reduced motion, where an instant jump is both the
-         accessible choice and the more reliable one — a smooth scroll that never animates
-         leaves the target wherever it was. */
-      el.scrollIntoView({ block: 'center', behavior: simScrollBehavior() });
-      /* getBoundingClientRect below reads the PRE-scroll position, because smooth scrolling
-         is asynchronous. Re-place the highlight as the scroll settles instead of leaving it
-         parked where the target used to be — with Core's tall sidebar that gap is hundreds of
-         pixels, and a highlight stranded off-screen dims the whole viewport through its own
-         cutout shadow (the "everything went black" failure). Polls until the rect stops
-         moving rather than using scrollend, which Safari still lacks. */
-      simWalkTrackScroll(step, el);
+    if (el && opts && opts.scrollIntoView && document.activeElement !== el) {
+      var rBox = el.getBoundingClientRect();
+      var inView = rBox.top >= 20 && rBox.bottom <= (global.innerHeight || document.documentElement.clientHeight) - 20;
+      if (!inView) {
+        el.scrollIntoView({ block: 'center', behavior: simScrollBehavior() });
+        simWalkTrackScroll(step, el);
+      }
     }
     var rect = el ? el.getBoundingClientRect() : null;
     tip.style.transform = 'none';
@@ -678,20 +794,66 @@
   }
   function simWalkShowComplete() {
     var l = simWalkCurrentLesson();
-    document.getElementById('simWalkHighlight').classList.remove('on');
+    if (!l && walk && walk.lessonId) l = simFindLesson(walk.lessonId);
+    if (!l && cfg && cfg.currentLessonId) l = simFindLesson(cfg.currentLessonId());
+
+    if (walk) {
+      walk.isComplete = true;
+      if (walk.doneTimer) { clearTimeout(walk.doneTimer); walk.doneTimer = null; }
+    }
+
+    if (l && get('noteLessonComplete')) {
+      get('noteLessonComplete')(l.id);
+    }
+    if (get('save')) {
+      get('save')();
+    }
+
+    var highlight = document.getElementById('simWalkHighlight');
+    if (highlight) highlight.classList.remove('on');
+
     var tip = document.getElementById('simWalkTip');
-    simWalkSetTipBody('<b>&#127881; Lesson ' + l.number + ' complete!</b><p>Great work, you finished every step. The next lesson is unlocked from the Dashboard.</p>' +
-      '<button class="' + get('btnClass') + ' primary sim-walk-next" onclick="simWalkBackToLessons()">Back to Lessons</button>');
-    tip.style.top = '50%';
-    tip.style.bottom = 'auto';
-    tip.style.left = '50%';
-    tip.style.transform = 'translate(-50%,-50%)';
+    if (tip) {
+      tip.classList.remove('pass-through');
+      tip.style.top = '50%';
+      tip.style.bottom = 'auto';
+      tip.style.left = '50%';
+      tip.style.right = 'auto';
+      tip.style.transform = 'translate(-50%,-50%)';
+      tip.style.zIndex = '100000';
+    }
+
+    var numStr = l ? (' ' + l.number) : '';
+    simWalkSetTipBody('<b>&#127881; Lesson' + numStr + ' complete!</b>' +
+      '<p style="margin:10px 0 16px;line-height:1.6;">Great work, you finished every step.</p>' +
+      '<button type="button" class="' + get('btnClass') + ' primary sim-walk-next" onclick="simWalkBackToLessons()" style="width:100%;font-weight:600;padding:8px 16px;">Back to Lessons &rarr;</button>', true);
   }
   function simWalkBackToLessons() {
+    var l = simWalkCurrentLesson();
+    if (!l && walk && walk.lessonId) l = simFindLesson(walk.lessonId);
     walk = null;
-    document.getElementById('simWalk').classList.remove('open');
+    var w = document.getElementById('simWalk');
+    if (w) w.classList.remove('open');
+    var h = document.getElementById('simWalkHighlight');
+    if (h) h.classList.remove('on');
     get('beforeStep')();
-    get('goHome')();
+    if (l && get('noteLessonComplete')) get('noteLessonComplete')(l.id);
+    if (get('save')) get('save')();
+    if (typeof afExitLesson === 'function') {
+      afExitLesson();
+    } else if (typeof dsExitLesson === 'function') {
+      dsExitLesson();
+    } else if (typeof qzExitLesson === 'function') {
+      qzExitLesson();
+    } else if (get('exitLesson')) {
+      get('exitLesson')();
+    } else if (get('showLessons')) {
+      get('showLessons')();
+    } else if (get('showLesson') && l) {
+      get('showLesson')(l.id);
+    } else {
+      get('goHome')();
+    }
   }
   function simWalkExit(silent) {
     var l = simWalkCurrentLesson();
@@ -731,7 +893,7 @@
     walkScrollRAF = requestAnimationFrame(tick);
   }
   function simWalkReposition() {
-    if (!walk) return;
+    if (!walk || walk.isComplete) return;
     var step = simWalkCurrentStep();
     if (!step) return;
     if (walk.tourIndex != null && step.walk.tour) {
@@ -789,6 +951,25 @@
        rail and content panel) are rebuilt by every render, so anything bound to a specific
        node at init time would be pointing at a detached element moments later. */
     document.addEventListener('scroll', simWalkReposition, { capture: true, passive: true });
+    document.addEventListener('click', function (e) {
+      requestAnimationFrame(simWalkReposition);
+      if (simWalkActive()) {
+        var step = simWalkCurrentStep();
+        if (step && step.type === 'do' && step.walk && step.walk.target) {
+          var sel = typeof step.walk.target === 'function' ? null : step.walk.target;
+          if (sel && typeof sel === 'string') {
+            try {
+              if (e.target && e.target.closest && e.target.closest(sel)) {
+                if (typeof afMark === 'function' && step.checklistId) afMark(step.checklistId);
+                else if (typeof qzMark === 'function' && step.checklistId) qzMark(step.checklistId);
+                else if (typeof dsMark === 'function' && step.checklistId) dsMark(step.checklistId);
+                else simWalkStepDone();
+              }
+            } catch (err) {}
+          }
+        }
+      }
+    }, { capture: true, passive: true });
     return SimEngine;
   }
 
@@ -824,6 +1005,7 @@
     reposition: simWalkReposition,
     exit: simWalkExit,
     scrollFeedbackIntoView: simWalkScrollFeedbackIntoView,
+    showComplete: simWalkShowComplete,
     // introspection, used by hosts that need the raw state (e.g. "is the walkthrough
     // parked on this exact step?" checks)
     walkState: function () { return walk; }
@@ -842,6 +1024,7 @@
   global.simWalkAdvance = simWalkAdvance;
   global.simWalkTourNext = simWalkTourNext;
   global.simWalkRunNextAction = simWalkRunNextAction;
+  global.simWalkShowComplete = simWalkShowComplete;
   global.simWalkToggleExample = simWalkToggleExample;
   global.simWalkBackToLessons = simWalkBackToLessons;
   global.simLessonContinue = simLessonContinue;
