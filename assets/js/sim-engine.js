@@ -114,7 +114,8 @@
     var h = document.getElementById('simDocModalHint');
     if (!frame) return;
     frame.removeAttribute('srcdoc');
-    frame.src = file;
+    var sep = file.indexOf('?') === -1 ? '?' : '&';
+    frame.src = file + sep + '_t=' + Date.now();
     if (t) t.textContent = title || 'Document';
     if (h) h.textContent = hint || '📖 Review the document details. When finished, click "Done Reading" to return to the exercise.';
     document.getElementById('simDocModal').classList.add('open');
@@ -179,12 +180,13 @@
     return isComplete ? 'done' : 'unlocked';
   }
   function simFindLesson(id) {
+    if (id && typeof id === 'object') id = id.id;
     var all = lessons();
     for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i];
     return null;
   }
 
-  var STEP_STATUS_LABEL = { good: 'Done', bad: 'Try again', pending: 'Not yet' };
+  var STEP_STATUS_LABEL = { good: 'Done', bad: 'Try again', pending: 'Not yet', done: 'Done', todo: 'Not yet', complete: 'Done' };
 
   function simOpenLesson(id) {
     var all = lessons();
@@ -227,7 +229,19 @@
       if (h) h.classList.remove('on');
       get('noteLessonComplete')(l.id);
       simToast('🎉 Lesson ' + l.number + ' complete!', { tone: 'good' });
-      get('goHome')();
+      if (typeof afExitLesson === 'function') {
+        afExitLesson();
+      } else if (typeof dsExitLesson === 'function') {
+        dsExitLesson();
+      } else if (typeof qzExitLesson === 'function') {
+        qzExitLesson();
+      } else if (get('exitLesson')) {
+        get('exitLesson')();
+      } else if (get('showLessons')) {
+        get('showLessons')();
+      } else {
+        get('goHome')();
+      }
       return;
     }
     if (walk && walk.lessonId === lessonId && walk.stepIndex === stepIndex) {
@@ -278,7 +292,7 @@
         goBtn + '</div>';
     }).join('');
     var tryBtn = (walkable && !prog.complete)
-      ? '<button class="' + btn + ' primary sim-try-btn" onclick="simWalkStart(\'' + l.id + '\')">Try It &rarr;</button>'
+      ? '<button class="' + btn + ' primary sim-try-btn" onclick="simWalkStart(\'' + l.id + '\')">' + (prog.done > 0 ? 'Resume Lesson &rarr;' : 'Start Lesson &rarr;') + '</button>'
       : '';
     /* Only offered once there is something to clear, and only if the host implements the reset.
        Progress persists across reloads by design — this is the deliberate way out, for a trainee
@@ -287,7 +301,7 @@
       ? '<button class="' + btn + ' sm sim-reset-btn" onclick="simResetLesson(\'' + l.id + '\', this)">Restart this lesson</button>'
       : '';
     var replayBtn = (prog.complete && walkable)
-      ? '<button class="' + btn + ' sm sim-try-btn" onclick="simWalkStart(\'' + l.id + '\')">Replay walkthrough &rarr;</button>'
+      ? '<button class="' + btn + ' sm sim-try-btn" onclick="simWalkStart(\'' + l.id + '\')">Replay Lesson &rarr;</button>'
       : '';
     return '<div class="sim-lesson-detail">' +
       '<h4>Lesson ' + l.number + ' &middot; ' + esc(l.title) + '</h4>' +
@@ -429,6 +443,15 @@
        its own worked example right in the tip, where the trainee is already looking,
        instead of somewhere on the page that the tip itself usually ends up covering. */
     var example = typeof step.walk.example === 'function' ? step.walk.example() : step.walk.example;
+    if (!example && step.composeId) {
+      if (typeof AF_COMPOSE_ITEMS !== 'undefined') {
+        var foundCmp = AF_COMPOSE_ITEMS.find(function (x) { return x.id === step.composeId; });
+        if (foundCmp && foundCmp.example) example = foundCmp.example;
+      } else if (typeof DS_COMPOSE_ITEMS !== 'undefined') {
+        var foundCmp = DS_COMPOSE_ITEMS.find(function (x) { return x.id === step.composeId; });
+        if (foundCmp && foundCmp.example) example = foundCmp.example;
+      }
+    }
     var exampleHTML = example
       ? '<button type="button" class="sim-walk-example-toggle" id="simWalkExampleToggle" onclick="simWalkToggleExample()">See example &rarr;</button>' +
         '<div class="sim-walk-example" id="simWalkExampleBox" style="display:none">' + esc(example) + '</div>'
@@ -522,6 +545,15 @@
     }
     /* Normal step: refresh tip to show Done badge and active Next Step button */
     simWalkRenderTip(step);
+
+    /* For interactive action ('do') steps, automatically advance after a brief visual confirmation (500ms)
+       so the student isn't left wondering why the tour didn't move after clicking the requested item */
+    if (step.type === 'do' && (!step.walk || !step.walk.pauseText)) {
+      walk.doneTimer = setTimeout(function () {
+        walk.doneTimer = null;
+        simWalkAdvance();
+      }, 500);
+    }
   }
   function simWalkShowPause(step) {
     var l = simWalkCurrentLesson();
@@ -807,8 +839,16 @@
     get('beforeStep')();
     if (l && get('noteLessonComplete')) get('noteLessonComplete')(l.id);
     if (get('save')) get('save')();
-    if (typeof dsExitLesson === 'function') {
+    if (typeof afExitLesson === 'function') {
+      afExitLesson();
+    } else if (typeof dsExitLesson === 'function') {
       dsExitLesson();
+    } else if (typeof qzExitLesson === 'function') {
+      qzExitLesson();
+    } else if (get('exitLesson')) {
+      get('exitLesson')();
+    } else if (get('showLessons')) {
+      get('showLessons')();
     } else if (get('showLesson') && l) {
       get('showLesson')(l.id);
     } else {
@@ -911,8 +951,24 @@
        rail and content panel) are rebuilt by every render, so anything bound to a specific
        node at init time would be pointing at a detached element moments later. */
     document.addEventListener('scroll', simWalkReposition, { capture: true, passive: true });
-    document.addEventListener('click', function () {
+    document.addEventListener('click', function (e) {
       requestAnimationFrame(simWalkReposition);
+      if (simWalkActive()) {
+        var step = simWalkCurrentStep();
+        if (step && step.type === 'do' && step.walk && step.walk.target) {
+          var sel = typeof step.walk.target === 'function' ? null : step.walk.target;
+          if (sel && typeof sel === 'string') {
+            try {
+              if (e.target && e.target.closest && e.target.closest(sel)) {
+                if (typeof afMark === 'function' && step.checklistId) afMark(step.checklistId);
+                else if (typeof qzMark === 'function' && step.checklistId) qzMark(step.checklistId);
+                else if (typeof dsMark === 'function' && step.checklistId) dsMark(step.checklistId);
+                else simWalkStepDone();
+              }
+            } catch (err) {}
+          }
+        }
+      }
     }, { capture: true, passive: true });
     return SimEngine;
   }

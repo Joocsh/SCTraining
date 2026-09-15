@@ -84,7 +84,7 @@
           <span class="af-caret" aria-hidden="true">&#9662;</span>
         </button>
 
-        <button type="button" class="af-topmenu" onclick="afDemoAction('Help &amp; Training')">
+        <button type="button" class="af-topmenu" onclick="afGoto('lessons')" title="Open Training &amp; Lessons">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
             <circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
@@ -127,7 +127,7 @@
           <footer class="af-footer">
             <button type="button" onclick="afDemoAction('Privacy policy')">Privacy</button>
             <span aria-hidden="true">|</span>
-            <button type="button" onclick="afDemoAction('Help &amp; Training')">Help &amp; Training</button>
+            <button type="button" onclick="afGoto('lessons')">Help &amp; Training</button>
             <span aria-hidden="true">|</span>
             <button type="button" onclick="afDemoAction('Make a Suggestion')">Make a Suggestion &raquo;</button>
           </footer>
@@ -152,6 +152,9 @@
     <div class="af-tour-ring" id="afTourRing"></div>
     <div class="af-tour-tip" id="afTourTip" role="dialog" aria-modal="true"></div>
   </div>
+
+  <!-- Question popup dialog for decide / scenario steps -->
+  <div id="afAskLayer" class="af-ask"></div>
 
   <script src="../assets/js/app-core.js"></script>
   <script src="../assets/js/sim-engine.js"></script>

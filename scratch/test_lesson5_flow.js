@@ -35,51 +35,64 @@ vm.runInThisContext(fs.readFileSync('AppFolio/appfolio-shell.js', 'utf8'));
 
 afInitEngine();
 
-console.log('--- Step 1: Start Lesson 2 ---');
-simWalkStart('l02-resident-ledger');
+console.log('--- Step 1: Start Lesson 5 ---');
+simWalkStart('l05-leasing-funnel');
 assert.strictEqual(SimEngine.walkState().stepIndex, 0);
 
-// Step 1: Click Residents / People in nav
-afNavGo('people');
-assert(afStore.checklist['af_c2_1'], 'af_c2_1 marked');
+// Step 1: Open Leasing CRM
+afNavGo('leasing');
+assert(afStore.checklist['af_c5_1'], 'af_c5_1 marked');
 simWalkAdvance();
 
-// Step 2: Open Resident Ledger
+// Step 2: Now on Step 2
 assert.strictEqual(SimEngine.walkState().stepIndex, 1);
-afGoto('resident-detail', 'RES-PET-01');
-assert(afStore.checklist['af_c2_2'], 'af_c2_2 marked');
+const step2 = SimEngine.currentStep();
+console.log('Step 2 label:', step2.label);
+
+// Verify that setup opens Brenda Miller modal
+step2.walk.setup();
+assert(afActiveModal, 'Modal must be open in Step 2');
+console.log('Step 2 modal open:', !!afActiveModal);
+
+// Advance card
+afSetGuestCardStage('GC-FH-01', 'contacted');
+assert(afStore.checklist['af_c5_2'], 'af_c5_2 marked');
 simWalkAdvance();
 
-// Step 3: Audit Ledger Running Balance Chain (Review / Verify)
+// Step 3: Now on Step 3
 assert.strictEqual(SimEngine.walkState().stepIndex, 2);
-assert.strictEqual(afState.view, 'review');
-assert.strictEqual(afState.reviewId, 'af_v2_1');
+const step3 = SimEngine.currentStep();
+console.log('Step 3 label:', step3.label);
 
-// Flag Error on row 8 (ENT-V8)
-afAnswerReview('af_v2_1', 'ENT-V8');
-assert(afStore.reviews['af_v2_1'].correct, 'Review af_v2_1 marked correct');
+step3.walk.setup();
+assert(afActiveModal, 'Modal must be open in Step 3');
 
-// Check rendered HTML
-const reviewHtml = afReviewDetailHTML();
-const hasFeedbackContinue = reviewHtml.includes('sim-feedback-continue');
-console.log('hasFeedbackContinue during walkthrough:', hasFeedbackContinue);
-assert.strictEqual(hasFeedbackContinue, false, 'Feedback box must NOT render a duplicate continue button during walkthrough');
-
-// SimEngine advance to step 4
+// Schedule showing
+afScheduleShowingModal('GC-FH-01');
+assert(afStore.checklist['af_c5_3'], 'af_c5_3 marked');
 simWalkAdvance();
 
-// Step 4: Scenario (Popup)
+// Step 4: Now on Step 4
 assert.strictEqual(SimEngine.walkState().stepIndex, 3);
-console.log('Step 4 afAsk active:', !!afAsk, 'id:', afAsk ? afAsk.id : null);
-assert(afAsk, 'afAsk must be open for step 4');
-assert.strictEqual(afAsk.id, 'af_s2_1');
+const step4 = SimEngine.currentStep();
+console.log('Step 4 label:', step4.label);
 
-// Answer Scenario
-afAnswerScenario('af_s2_1', 1);
-assert(afStore.scenarios['af_s2_1'].correct, 'Scenario answered correctly');
+step4.walk.setup();
+assert.strictEqual(afState.view, 'application');
+assert.strictEqual(afState.activeApplicationId, 'APP-2026-005');
+assert(afStore.checklist['af_c5_4'], 'af_c5_4 marked');
+simWalkAdvance();
+
+// Step 5: Decision Scenario
+assert.strictEqual(SimEngine.walkState().stepIndex, 4);
+assert(afAsk, 'afAsk active for step 5');
+assert.strictEqual(afAsk.id, 'af_s5_1');
+
+afAnswerScenario('af_s5_1', 1);
+assert(afStore.scenarios['af_s5_1'].correct, 'af_s5_1 answered correctly');
 
 afAskContinue();
 assert(!afAsk, 'afAsk closed');
-assert(afStore.lessonsDone['l02-resident-ledger'], 'Lesson 2 completed');
+assert(afStore.lessonsDone['l05-leasing-funnel'], 'Lesson 5 completed');
 
-console.log('ALL LESSON 2 FLOW TESTS PASSED!');
+console.log('ALL LESSON 5 FLOW TESTS PASSED!');

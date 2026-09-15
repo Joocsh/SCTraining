@@ -180,23 +180,47 @@ const AF_LESSONS = [
         type: 'do',
         checklistId: 'af_c1_3',
         label: 'Inspect Unit 11-102',
-        view: 'properties',
+        view: 'property-detail',
+        viewArg: 'PROP-11',
         walk: {
           target: 'button[data-unit="UNIT-11-102"]',
           text: 'Click on Unit 11-102 to view resident Marcus Vance and lease details.',
-          setup: function () { afGoto('properties', 'PROP-11'); }
+          setup: function () { afGoto('property-detail', 'PROP-11'); }
         }
       },
       {
         type: 'do',
         checklistId: 'af_c1_4',
         label: 'Locate 47-Day Renewal Milestone',
-        view: 'residents',
-        viewArg: 'RES-0006',
+        view: 'resident-detail',
+        viewArg: 'RES-REN-01',
         walk: {
           target: '.af-pill-warn',
           text: 'Inspect Jordan Reed (LEASE-REN-01). Note that the lease expires in 47 days, requiring a timely renewal offer.',
-          setup: function () { afGoto('resident-detail', 'RES-0006'); }
+          skipClick: true,
+          setup: function () {
+            afGoto('resident-detail', 'RES-REN-01');
+            if (typeof afMark === 'function') afMark('af_c1_4');
+          },
+          nextAction: function () {
+            if (typeof afMark === 'function') afMark('af_c1_4');
+            simWalkAdvance();
+          }
+        }
+      },
+      {
+        type: 'decide',
+        scenarioId: 'af_s1_1',
+        label: 'Assess Renewal Action for Expiring Lease',
+        view: 'resident-detail',
+        viewArg: 'RES-REN-01',
+        walk: {
+          target: null,
+          text: 'Based on what you observed about Jordan Reed\'s lease expiration, select the correct response in the question dialog.',
+          setup: function () {
+            afGoto('resident-detail', 'RES-REN-01');
+            afAskScenario('af_s1_1');
+          }
         }
       }
     ]
@@ -238,8 +262,20 @@ const AF_LESSONS = [
         viewArg: 'af_v2_1',
         walk: {
           target: '.af-rv-card',
-          text: 'Review the sample 12-month ledger below. Identify the single entry where the running balance chain breaks M2.',
+          text: 'Review the sample 12-month ledger below. Identify the single entry where the running balance chain breaks (where the payment or charge math is calculated incorrectly).',
           setup: function () { afGoto('review', 'af_v2_1'); }
+        }
+      },
+      {
+        type: 'decide',
+        scenarioId: 'af_s2_1',
+        label: 'Determine Response to Ledger Discrepancy',
+        view: 'scenario',
+        viewArg: 'af_s2_1',
+        walk: {
+          target: '.af-scenario-card',
+          text: 'Now that you identified the broken balance chain, determine the correct accounting response.',
+          setup: function () { afGoto('scenario', 'af_s2_1'); }
         }
       }
     ]
@@ -381,8 +417,11 @@ const AF_LESSONS = [
         effect: function () { const gc = afGetGuestCard('GC-FH-01'); return gc && gc.stage !== 'new'; },
         walk: {
           target: 'button[data-gc-advance="GC-FH-01"]',
-          text: 'Advance guest card GC-0001 (Michael Chang) from "New" to "Contacted".',
-          setup: function () { afGoto('leasing'); }
+          text: 'Inspect Brenda Miller\'s guest card (GC-FH-01) and click "Interest Received" to advance her inquiry to Contacted.',
+          setup: function () {
+            afGoto('leasing');
+            if (typeof afGuestCardModal === 'function') afGuestCardModal('GC-FH-01');
+          }
         }
       },
       {
@@ -393,8 +432,11 @@ const AF_LESSONS = [
         effect: function () { const gc = afGetGuestCard('GC-FH-01'); return gc && gc.stage === 'showing'; },
         walk: {
           target: 'button[data-gc-showing="GC-FH-01"]',
-          text: 'Schedule an on-site property tour for Michael Chang.',
-          setup: function () { afGoto('leasing'); }
+          text: 'Click "Schedule Showing" to book an on-site property tour for Brenda Miller.',
+          setup: function () {
+            afGoto('leasing');
+            if (typeof afGuestCardModal === 'function') afGuestCardModal('GC-FH-01');
+          }
         }
       },
       {
@@ -405,8 +447,31 @@ const AF_LESSONS = [
         viewArg: 'APP-2026-005',
         walk: {
           target: '.af-app-card',
-          text: 'Open the rental application submitted by Michael Chang for Unit 11-104.',
-          setup: function () { afGoto('application', 'APP-2026-005'); }
+          text: 'Review the submitted rental application (APP-2026-005) for Unit 11-208.',
+          skipClick: true,
+          setup: function () {
+            afGoto('application', 'APP-2026-005');
+            if (typeof afMark === 'function') afMark('af_c5_4');
+          },
+          nextAction: function () {
+            if (typeof afMark === 'function') afMark('af_c5_4');
+            simWalkAdvance();
+          }
+        }
+      },
+      {
+        type: 'decide',
+        scenarioId: 'af_s5_1',
+        label: 'Evaluate Fair Housing Compliance in Application Notes',
+        view: 'leasing',
+        viewArg: 'af_s5_1',
+        walk: {
+          target: null,
+          text: 'Evaluate whether a colleague\'s application note complies with Fair Housing requirements in the question dialog.',
+          setup: function () {
+            afGoto('leasing');
+            afAskScenario('af_s5_1');
+          }
         }
       }
     ]
@@ -418,6 +483,18 @@ const AF_LESSONS = [
     summary: 'Protect against discrimination claims under the Fair Housing Act (42 U.S.C. § 3604) by crafting compliant, non-discriminatory communications and advertising copy.',
     steps: [
       {
+        type: 'verify',
+        reviewId: 'af_v6_1',
+        label: 'Audit Draft Marketing Listing for FHA Violations',
+        view: 'review',
+        viewArg: 'af_v6_1',
+        walk: {
+          target: '.af-rv-card',
+          text: 'Inspect this draft property listing and identify the phrase that violates Fair Housing advertising law.',
+          setup: function () { afGoto('review', 'af_v6_1'); }
+        }
+      },
+      {
         type: 'compose',
         composeId: 'af_cmp6_1',
         label: 'Reply to Family Rental Inquiry (GC-FH-01)',
@@ -426,6 +503,10 @@ const AF_LESSONS = [
         walk: {
           target: '.af-compose-card',
           text: 'Compose a professional response to Brenda Miller (GC-FH-01) describing property specifications neutrally without familial status bias.',
+          example: function () {
+            const cmp = AF_COMPOSE_ITEMS.find(function (c) { return c.id === 'af_cmp6_1'; });
+            return cmp ? cmp.example : null;
+          },
           setup: function () { afGoto('compose', 'af_cmp6_1'); }
         }
       },
@@ -482,6 +563,10 @@ const AF_LESSONS = [
         walk: {
           target: '.af-compose-card',
           text: 'Draft the formal FCRA Adverse Action Notice for Darren Hopkins, including all statutory agency disclaimers.',
+          example: function () {
+            const cmp = AF_COMPOSE_ITEMS.find(function (c) { return c.id === 'af_cmp7_1'; });
+            return cmp ? cmp.example : null;
+          },
           setup: function () { afGoto('compose', 'af_cmp7_1'); }
         }
       },
@@ -538,6 +623,10 @@ const AF_LESSONS = [
         walk: {
           target: '.af-compose-card',
           text: 'Write the formal accommodation approval letter for Elena Rostova confirming zero pet fees while outlining standard community conduct rules.',
+          example: function () {
+            const cmp = AF_COMPOSE_ITEMS.find(function (c) { return c.id === 'af_cmp8_1'; });
+            return cmp ? cmp.example : null;
+          },
           setup: function () { afGoto('compose', 'af_cmp8_1'); }
         }
       }
@@ -580,11 +669,23 @@ const AF_LESSONS = [
         label: 'Post Move-In Security Deposit',
         view: 'application',
         viewArg: 'APP-ADA-01',
-        effect: function () { return afAllLedgerEntries().some(function (e) { return e.category === 'deposit' && e.amount === 215000; }); },
+        effect: function () {
+          const a = afGetApplication('APP-ADA-01');
+          if (a && a.depositCollected) return true;
+          return afAllLedgerEntries().some(function (e) { return e.category === 'deposit' && (e.amount === 215000 || e.amount === 275000 || e.amount > 0); });
+        },
         walk: {
           target: 'button[data-action="collect-deposit"]',
           text: 'Post the $2,150.00 security deposit to Bank Account 03 (Escrow).',
-          setup: function () { afGoto('application', 'APP-ADA-01'); }
+          setup: function () {
+            if (typeof afCloseModal === 'function') afCloseModal();
+            const a = afGetApplication('APP-ADA-01');
+            if (a && !a.leaseGenerated) {
+              afGenerateLease('APP-ADA-01');
+              afSetOverride('application', 'APP-ADA-01', { leaseGenerated: true });
+            }
+            afGoto('application', 'APP-ADA-01');
+          }
         }
       },
       {
@@ -597,7 +698,15 @@ const AF_LESSONS = [
         walk: {
           target: 'button[data-action="complete-inspection"]',
           text: 'Complete the Move-In Inventory & Condition Checklist with the new resident.',
-          setup: function () { afGoto('application', 'APP-ADA-01'); }
+          setup: function () {
+            if (typeof afCloseModal === 'function') afCloseModal();
+            const a = afGetApplication('APP-ADA-01');
+            if (a && !a.leaseGenerated) {
+              afGenerateLease('APP-ADA-01');
+              afSetOverride('application', 'APP-ADA-01', { leaseGenerated: true, depositCollected: true });
+            }
+            afGoto('application', 'APP-ADA-01');
+          }
         }
       },
       {
@@ -635,12 +744,14 @@ const AF_LESSONS = [
         type: 'do',
         checklistId: 'af_c10_2',
         label: 'Inspect HVAC Emergency Ticket',
-        view: 'work-order',
-        viewArg: 'WO-2026-0101',
+        view: 'maintenance',
         walk: {
-          target: '.af-wo-detail',
+          target: 'button[data-wo="WO-2026-0101"]',
           text: 'Open urgent work order WO-2026-0101 (AC Compressor Failure in Unit 12-104 during summer heatwave).',
-          setup: function () { afGoto('work-order', 'WO-2026-0101'); }
+          setup: function () {
+            if (typeof afCloseModal === 'function') afCloseModal();
+            afGoto('maintenance');
+          }
         }
       },
       {
@@ -649,11 +760,14 @@ const AF_LESSONS = [
         label: 'Dispatch Vendor with Active COI',
         view: 'work-order',
         viewArg: 'WO-2026-0101',
-        effect: function () { const w = afGetWorkOrder('WO-2026-0101'); return w && w.status === 'in_progress'; },
+        effect: function () { const w = afGetWorkOrder('WO-2026-0101'); return w && (w.status === 'in-progress' || w.status === 'in_progress' || w.status === 'scheduled'); },
         walk: {
           target: '#afBtnDispatchWO',
           text: 'Assign and dispatch Lone Star HVAC Services (VEND-01, verified COI active through 2027).',
-          setup: function () { afGoto('work-order', 'WO-2026-0101'); }
+          setup: function () {
+            if (typeof afCloseModal === 'function') afCloseModal();
+            afGoto('work-order', 'WO-2026-0101');
+          }
         }
       },
       {
@@ -724,6 +838,22 @@ const AF_LESSONS = [
           text: 'Generate and issue the final Security Deposit Itemization Statement (deposit-itemization.html).',
           setup: function () { afGoto('resident-detail', 'RES-MO-01'); }
         }
+      },
+      {
+        type: 'compose',
+        composeId: 'af_cmp11_1',
+        label: 'Draft Deposit Refund Cover Letter',
+        view: 'compose',
+        viewArg: 'af_cmp11_1',
+        walk: {
+          target: '.af-compose-card',
+          text: 'Write the professional cover letter that accompanies the deposit refund check to Samuel Oak.',
+          example: function () {
+            const cmp = AF_COMPOSE_ITEMS.find(function (c) { return c.id === 'af_cmp11_1'; });
+            return cmp ? cmp.example : null;
+          },
+          setup: function () { afGoto('compose', 'af_cmp11_1'); }
+        }
       }
     ]
   },
@@ -743,6 +873,18 @@ const AF_LESSONS = [
           target: '.af-rv-card',
           text: 'Review the draft July owner statement for Eleanor Vance (STMT-01) and locate the miscoded repair expense.',
           setup: function () { afGoto('review', 'af_v12_1'); }
+        }
+      },
+      {
+        type: 'reconcile',
+        reconcileId: 'af_rec12_1',
+        label: 'Reconcile Owner Monthly Distribution',
+        view: 'reconcile',
+        viewArg: 'af_rec12_1',
+        walk: {
+          target: '.af-rec-card',
+          text: 'Calculate the correct net owner distribution after properly classifying operating vs capital expenses.',
+          setup: function () { afGoto('reconcile', 'af_rec12_1'); }
         }
       },
       {
@@ -812,6 +954,46 @@ const AF_LESSONS = [
           text: 'Justify statutory compliance windows for Adverse Action notices under federal law.',
           setup: function () { afGoto('scenario', 'af_s13_2'); }
         }
+      },
+      {
+        type: 'triage',
+        triageId: 'af_tri13_2',
+        label: 'Friday Afternoon Emergency Triage',
+        view: 'triage',
+        viewArg: 'af_tri13_2',
+        walk: {
+          target: '.af-triage-card',
+          text: 'A second queue has arrived — Friday afternoon tasks before closing the office for the weekend. Rank them by urgency.',
+          setup: function () { afGoto('triage', 'af_tri13_2'); }
+        }
+      },
+      {
+        type: 'reconcile',
+        reconcileId: 'af_rec11_3',
+        label: 'Reconcile Move-Out Deposit Deductions (Marcus Vance)',
+        view: 'reconcile',
+        viewArg: 'af_rec11_3',
+        walk: {
+          target: '.af-rec-card',
+          text: 'While processing the Monday queue, reconcile the deposit deductions for Marcus Vance — watch out for the rekeying trap under Texas Property Code § 92.156.',
+          setup: function () { afGoto('reconcile', 'af_rec11_3'); }
+        }
+      },
+      {
+        type: 'compose',
+        composeId: 'af_cmp13_1',
+        label: 'Draft Emergency Repair Authorization Email',
+        view: 'compose',
+        viewArg: 'af_cmp13_1',
+        walk: {
+          target: '.af-compose-card',
+          text: 'Draft the emergency escalation email to the property owner requesting authorization for the HVAC compressor replacement.',
+          example: function () {
+            const cmp = AF_COMPOSE_ITEMS.find(function (c) { return c.id === 'af_cmp13_1'; });
+            return cmp ? cmp.example : null;
+          },
+          setup: function () { afGoto('compose', 'af_cmp13_1'); }
+        }
       }
     ]
   }
@@ -823,6 +1005,45 @@ const AF_LESSONS = [
    ============================================================================ */
 
 const AF_SCENARIOS = [
+  {
+    id: 'af_s1_1',
+    title: 'Reading Occupancy & Lease Expiration Indicators',
+    situation: 'You are reviewing the property dashboard for Legacy Park Apartments (PROP-11, 24 units). You notice Unit 11-102 resident Jordan Reed has a lease expiring in 47 days. Which action should a property manager take?',
+    options: [
+      'Immediately begin eviction proceedings because the lease is expiring.',
+      'Proactively send a lease renewal offer to ensure occupancy continuity and avoid vacancy loss.',
+      'Wait until the lease expires and then ask the resident if they want to stay.',
+      'Raise the rent by 50% on the spot without a new lease agreement.'
+    ],
+    correct: 1,
+    explanation: 'Best practice in property management is to initiate renewal offers 60-90 days before expiration to minimize vacancy turnover and maintain revenue stability. A 47-day window is already tight and requires prompt action.'
+  },
+  {
+    id: 'af_s2_1',
+    title: 'Response to Ledger Balance Chain Error',
+    situation: 'You discovered that a payment posted to a resident\'s ledger shows an incorrect running balance — a $900.00 payment against a $900.00 balance resulted in $150.00 instead of $0.00. As the property manager, what is the correct immediate response?',
+    options: [
+      'Ignore it because the ledger will automatically self-correct next month.',
+      'Create a ledger adjustment entry to correct the running balance, document the error with a note for the audit trail, and notify the accounting supervisor.',
+      'Delete the entire payment entry and ask the resident to re-submit their rent check.',
+      'Add $150.00 in late fees to the resident\'s account for the discrepancy.'
+    ],
+    correct: 1,
+    explanation: 'Ledger discrepancies must be corrected with a documented adjustment entry to maintain the integrity of the financial chain. Deleting entries destroys the audit trail. The error originated in the system, not the resident, so late fees are inappropriate.'
+  },
+  {
+    id: 'af_s5_1',
+    title: 'Fair Housing in the Leasing Process',
+    situation: 'While processing rental applications for Unit 11-104, a colleague suggests writing in the notes: "Applicant mentioned having 3 school-age children — unit may not be appropriate for family this size." Is this note permissible?',
+    options: [
+      'Yes, it provides helpful context for the leasing team to find a better fit.',
+      'No. This note constitutes illegal steering based on familial status under the Fair Housing Act (42 U.S.C. § 3604). Application notes must reference only objective screening criteria (income, credit, rental history).',
+      'Yes, but only if the applicant signs a waiver.',
+      'It depends on whether the state allows children in that building zone.'
+    ],
+    correct: 1,
+    explanation: 'The Fair Housing Act prohibits steering or discouraging tenancy based on familial status. Application notes and CRM entries must reference only lawful, objective screening criteria — never the applicant\'s family composition, race, religion, or any other protected class.'
+  },
   {
     id: 'af_s3_1',
     title: 'Late Fee Assessment & Partial Payment Policy',
@@ -1014,6 +1235,20 @@ const AF_SCENARIOS = [
 
 const AF_VERIFY_ITEMS = [
   {
+    id: 'af_v6_1',
+    title: 'Audit Draft Marketing Listing for Fair Housing Violations',
+    instruction: 'Review the following 5 phrases in a draft property listing. Click on the phrase that violates Fair Housing advertising regulations under 42 U.S.C. § 3604(c).',
+    phrases: [
+      { id: 'PH-1', text: 'Spacious 2-bedroom apartment with updated kitchen', isViolation: false },
+      { id: 'PH-2', text: 'In-unit washer/dryer and covered parking included', isViolation: false },
+      { id: 'PH-3', text: 'Perfect for young professionals — no families with rowdy kids', isViolation: true },
+      { id: 'PH-4', text: 'Minutes from downtown restaurants and public transit', isViolation: false },
+      { id: 'PH-5', text: 'Pet-friendly community with on-site dog park', isViolation: false }
+    ],
+    targetPhraseId: 'PH-3',
+    explanation: 'The phrase "no families with rowdy kids" is a direct violation of the Fair Housing Act\'s prohibition on familial status discrimination in advertising under 42 U.S.C. § 3604(c).'
+  },
+  {
     id: 'af_v2_1',
     title: 'Audit 12-Month Ledger Balance Chain',
     instruction: 'Review the 12-month ledger entries below. Click on the single row where the running balance (balanceAfter) fails to equal previous balance plus charge (or minus payment).',
@@ -1101,6 +1336,24 @@ const AF_VERIFY_ITEMS = [
 
 const AF_RECONCILE_ITEMS = [
   {
+    id: 'af_rec12_1',
+    title: 'Owner Monthly Cash Flow Reconciliation (Eleanor Vance)',
+    instruction: 'Reconcile Eleanor Vance\'s July owner distribution. Calculate the net amount owed to the owner after deducting management fees and properly classified operating expenses from gross rental income.',
+    heldLabel: 'Gross Rental Income Collected',
+    itemsLabel: 'Itemized Management & Operating Deductions',
+    resultLabel: 'Calculated Net Owner Distribution Owed ($):',
+    depositHeldCents: 265000, // Gross Income $2,650.00
+    deductionItems: [
+      { id: 'OWN-D1', label: 'Management Fee (8% of gross rent)', amountCents: 21200, valid: true },
+      { id: 'OWN-D2', label: 'HVAC Air Filter Replacement (Routine OpEx)', amountCents: 4500, valid: true },
+      { id: 'OWN-D3', label: 'Lawn & Grounds Maintenance', amountCents: 12000, valid: true },
+      { id: 'OWN-D4', label: 'New Roof Replacement (Capital — NOT Operating Expense)', amountCents: 0, valid: false }
+    ],
+    expectedTotalDeductionsCents: 37700,
+    expectedNetRefundCents: 227300, // $2,273.00 net to owner
+    explanation: 'The $8,500 roof replacement is a capital expenditure (CapEx) that should be funded from owner reserves, not deducted from monthly operating cash. Legitimate operating deductions total $377.00 (management fee + filter + grounds), yielding a net owner distribution of $2,273.00.'
+  },
+  {
     id: 'af_rec11_1',
     title: 'Security Deposit Itemization Statement Reconciliation (Samuel Oak)',
     instruction: 'Reconcile the security deposit accounting statement for Samuel Oak (LEASE-MO-01). Enter the itemized deductions and calculate the exact net refund check owed to the former tenant.',
@@ -1166,6 +1419,42 @@ const AF_RECONCILE_ITEMS = [
 
 const AF_COMPOSE_ITEMS = [
   {
+    id: 'af_cmp11_1',
+    anchorId: 'LEASE-MO-01',
+    label: 'Deposit Refund Cover Letter (Samuel Oak)',
+    instruction: 'Samuel Oak moved out on July 21, 2026. You have completed the security deposit itemization ($2,900.00 held, $530.00 deducted, $2,370.00 refunded). Write the professional cover letter accompanying the refund check, including the statutory basis for the deductions and the tenant\'s right to dispute.',
+    placeholder: 'Dear Samuel Oak, enclosed please find your Security Deposit Refund Statement for...',
+    thread: [
+      { sender: 'System', recipient: 'Property Manager', date: '2026-08-12', body: 'Deposit reconciliation complete for LEASE-MO-01. Net refund: $2,370.00. Deductions: Drywall repair $350.00, carpet cleaning $180.00. Statutory deadline: August 20, 2026 (day 30).' }
+    ],
+    rubric: [
+      { check: 'statesRefundAmount', label: 'States exact refund amount ($2,370.00)', why: 'The tenant must know the precise amount being returned.' },
+      { check: 'itemizesDeductions', label: 'Lists specific deductions with amounts', why: 'Texas Property Code § 92.104(b) requires an itemized written description of all deductions.' },
+      { check: 'excludesWearAndTear', label: 'Does NOT charge for normal wear and tear', why: 'Under Texas law, landlords may not deduct for normal wear and tear.' },
+      { check: 'mentionsDisputeRight', label: 'Informs tenant of right to dispute deductions', why: 'Best practice provides the tenant with information about how to contest deductions.' }
+    ],
+    passMark: 3,
+    example: 'Dear Samuel Oak,\n\nEnclosed please find your security deposit refund check in the exact amount of $2,370.00 following your surrender of Unit 11-102. From your original $2,900.00 deposit held, lawful itemized deductions were made: $350.00 for drywall patching and repair, and $180.00 for deep carpet cleaning to remove pet stains. No deductions were assessed for normal wear and tear. If you wish to dispute any of these itemized deductions, you have the right to submit a written notice to management.'
+  },
+  {
+    id: 'af_cmp13_1',
+    anchorId: 'WO-2026-0101',
+    label: 'Emergency Escalation Email to Property Owner',
+    instruction: 'Unit 12-104 has an active HVAC compressor failure during a Texas summer heatwave. The repair estimate is $4,800 and exceeds your spending authority of $2,500. Write a concise email to the property owner requesting emergency repair authorization, including the estimated cost, the urgency (habitability under Texas Property Code § 92.056), and the recommended vendor.',
+    placeholder: 'Dear Property Owner, I am writing to request emergency repair authorization for...',
+    thread: [
+      { sender: 'Maintenance System', recipient: 'Property Manager', date: '2026-08-12', body: 'URGENT: WO-2026-0101 AC Compressor Failure, Unit 12-104. Tenant reports no cooling for 36 hours. Inside temperature measured at 94°F. Vendor estimate from Lone Star HVAC: $4,800 (compressor replacement). Your authorization limit: $2,500.' }
+    ],
+    rubric: [
+      { check: 'statesUrgency', label: 'Conveys emergency urgency and habitability risk', why: 'Owner must understand this is a time-critical habitability issue, not routine maintenance.' },
+      { check: 'statesRepairCost', label: 'States specific repair estimate ($4,800)', why: 'Owner needs the exact cost to approve.' },
+      { check: 'namesVendor', label: 'Names the recommended vendor', why: 'Professional escalation includes the specific vendor recommended for the work.' },
+      { check: 'requestsAuthorization', label: 'Explicitly requests owner authorization to proceed', why: 'The email must include a clear call to action for the owner to approve.' }
+    ],
+    passMark: 3,
+    example: 'Dear Eleanor Vance,\n\nI am writing to request emergency authorization for an immediate HVAC compressor replacement at Unit 12-104. The unit currently has no cooling during our current 94-degree heatwave, presenting an urgent habitability and tenant health emergency under Texas Property Code § 92.056. We have received a firm estimate of $4,800.00 from Lone Star HVAC to complete the repair today. Because this exceeds my discretionary spending authority of $2,500.00, please confirm your authorization to proceed so we can restore cooling without delay.'
+  },
+  {
     id: 'af_cmp6_1',
     anchorId: 'GC-FH-01',
     label: 'Fair Housing Inquiry Response (Brenda Miller)',
@@ -1180,7 +1469,8 @@ const AF_COMPOSE_ITEMS = [
       { check: 'invitesApplicationOrTour', label: 'Invites prospective renter to schedule a tour or apply online', why: 'A helpful leasing response provides clear next steps such as booking a tour or reviewing criteria.' },
       { check: 'givesTimeframe', label: 'Includes specific office hours, tour availability, or response timeframe', why: 'Professional communication provides concrete scheduling options or response windows.' }
     ],
-    passMark: 4
+    passMark: 4,
+    example: 'Dear Brenda, thank you for your interest in Unit 11-104 at Legacy Park Apartments! This unit is a spacious 2-bedroom, 2-bathroom floorplan featuring an updated kitchen, walk-in closets, and community amenities including a swimming pool and fitness center. We welcome all qualified applicants who meet our standard screening criteria. We would love to schedule a tour for you to view the unit in person. Our leasing office is open Monday through Friday from 9:00 AM to 5:00 PM. You may also submit an online application through our resident portal at your convenience. Please let us know what day works best for your visit!'
   },
   {
     id: 'af_cmp7_1',
@@ -1197,7 +1487,8 @@ const AF_COMPOSE_ITEMS = [
       { check: 'mentionsFreeReport', label: 'Informs applicant of right to obtain a free disclosure report within 60 days', why: 'FCRA requires informing the consumer of their right to a free report within 60 days of notice.' },
       { check: 'mentionsDisputeRight', label: 'Informs applicant of right to dispute inaccurate or incomplete information', why: 'The notice must advise the consumer of their right to dispute inaccuracies with the credit bureau.' }
     ],
-    passMark: 4
+    passMark: 4,
+    example: 'Dear Darren Hopkins, thank you for applying for Unit 10-101 at Legacy Park Apartments. We regret to inform you that we are unable to approve your application at this time based on credit evaluation criteria. This decision was based in whole or in part on information provided in a consumer report from TransUnion Consumer Solutions. Please be advised that TransUnion Consumer Solutions did not make the decision to deny your application and is unable to provide specific reasons for the adverse action. Under the Fair Credit Reporting Act, you have the right to obtain a free report from TransUnion Consumer Solutions within 60 days of receiving this notice. You also have the right to dispute inaccurate or incomplete information directly with the credit bureau.'
   },
   {
     id: 'af_cmp8_1',
@@ -1214,7 +1505,8 @@ const AF_COMPOSE_ITEMS = [
       { check: 'statesConductAndDamageResponsibility', label: 'Outlines standard responsibility for noise/waste/leash rules and actual damage repair', why: 'While exempt from pet fees, the resident remains responsible for animal conduct, waste cleanup, and actual physical damages upon move-out.' },
       { check: 'noMedicalIntrusion', label: 'Does NOT demand confidential medical diagnoses or detailed medical history', why: 'Under Fair Housing guidelines, housing providers cannot demand confidential medical records or details about the applicant\'s specific disability.' }
     ],
-    passMark: 4
+    passMark: 4,
+    example: 'Dear Elena Rostova, we have reviewed your request for a Reasonable Accommodation regarding your assistance animal for Unit 12-102. We are pleased to confirm that your accommodation request is approved. Because assistance animals are not pets under Fair Housing guidelines, no pet deposit, pet fee, or monthly pet rent will be charged for your animal. As with all residents, you remain responsible for ensuring the animal adheres to community rules regarding leash and waste cleanup, and you are responsible for any physical damage to the unit beyond normal wear and tear. Thank you for providing the documentation from your healthcare provider.'
   }
 ];
 
@@ -1369,6 +1661,47 @@ const AF_RUBRIC_CHECKS = {
     const t = text.toLowerCase();
     const bad = ['medical diagnosis', 'exact medical condition', 'full medical records', 'therapy notes', 'proof of illness'];
     return !bad.some(function (p) { return t.indexOf(p) !== -1; });
+  },
+
+  statesRefundAmount: function (text) {
+    if (!text || text.trim().length < 20) return false;
+    return /\$2,?370(\.00)?\b/i.test(text) || /\b2,?370(\.00)?\b/i.test(text);
+  },
+
+  itemizesDeductions: function (text) {
+    if (!text || text.trim().length < 20) return false;
+    var t = text.toLowerCase();
+    return (/\b(drywall|wall|patch|repair)\b/i.test(t) && /\b(carpet|clean)\b/i.test(t)) ||
+           /\b(itemiz|deduction|deducted)\b/i.test(t);
+  },
+
+  excludesWearAndTear: function (text) {
+    if (!text || text.trim().length < 20) return false;
+    var t = text.toLowerCase();
+    var bad = ['charge for normal wear', 'deducting wear and tear', 'normal use fee'];
+    return !bad.some(function (p) { return t.indexOf(p) !== -1; });
+  },
+
+  statesUrgency: function (text) {
+    if (!text || text.trim().length < 20) return false;
+    var t = text.toLowerCase();
+    return /\b(urgent|emergency|immediate|critical|habitability|health|safety|heatwave|heat wave|no cooling|no air|94|compressor failure)\b/i.test(t);
+  },
+
+  statesRepairCost: function (text) {
+    if (!text || text.trim().length < 20) return false;
+    return /\$4,?800(\.00)?\b/i.test(text) || /\b4,?800(\.00)?\b/i.test(text);
+  },
+
+  namesVendor: function (text) {
+    if (!text || text.trim().length < 20) return false;
+    return /\b(lone star|lonestar|hvac services)\b/i.test(text);
+  },
+
+  requestsAuthorization: function (text) {
+    if (!text || text.trim().length < 20) return false;
+    var t = text.toLowerCase();
+    return /\b(approv|authoriz|permission|consent|green light|sign off|confirm|proceed)\b/i.test(t);
   }
 };
 
