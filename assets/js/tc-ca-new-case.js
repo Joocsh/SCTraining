@@ -96,7 +96,7 @@
     }).join('') + '</ul>';
   }
 
-  /* ---------- decisions ---------- */
+  /* ---------- decisions (popup modal) ---------- */
   var DEC = {};
   function decision(id, q, choices, fb) {
     var k = 0;
@@ -104,12 +104,30 @@
     k = k % choices.length;
     choices = choices.slice(k).concat(choices.slice(0, k));
     DEC[id] = { q: q, choices: choices, fb: fb };
-    return '<div id="' + id + '">' + decisionHtml(id) + '</div>';
+    return '<div id="' + id + '">' + triggerHtml(id) + '</div>';
   }
-  function decisionHtml(id) {
+  function triggerHtml(id) {
     var d = DEC[id], a = run()['d_' + id];
     var answered = a !== undefined;
-    var h = '<div class="lc-scenario-box"><h3>' + esc(d.q) + '</h3>';
+    var ok = answered && d.choices[a].ok;
+    var state = answered ? (ok ? 'correct' : 'wrong') : 'pending';
+    var icon = answered ? (ok ? '&#10003;' : '&#10007;') : '?';
+    var label = answered ? (ok ? 'Answered correctly' : 'Answered incorrectly') : 'Decision point';
+    var click = answered ? '' : ' onclick="caNewOpenDec(\'' + id + '\')"';
+    return '<div class="wf-dec-trigger' + (answered ? ' answered' : '') + '"' + click + '>' +
+      '<div class="wf-dec-trigger-icon ' + state + '">' + icon + '</div>' +
+      '<div class="wf-dec-trigger-text">' +
+        '<div class="wf-dec-trigger-label ' + state + '">' + label + '</div>' +
+        '<div class="wf-dec-trigger-q">' + esc(d.q) + '</div>' +
+      '</div>' +
+      (answered ? '' : '<span class="wf-dec-trigger-arrow">&#8250;</span>') +
+    '</div>';
+  }
+  function modalHtml(id) {
+    var d = DEC[id], a = run()['d_' + id];
+    var answered = a !== undefined;
+    var h = '<button class="wf-dec-modal-close" onclick="caNewCloseDec()">&times;</button>' +
+      '<h3>' + esc(d.q) + '</h3>';
     d.choices.forEach(function (c, i) {
       var cls = 'lc-choice';
       if (answered && c.ok) cls += ' correct';
@@ -120,15 +138,69 @@
       var ok = d.choices[a].ok;
       h += '<div class="lc-fb show ' + (ok ? 'good' : 'bad') + '"><strong>' + (ok ? 'Right call.' : 'Worth reconsidering.') + '</strong> ' + esc(d.fb) + '</div>';
     }
-    return h + '</div>';
+    return h;
   }
+  function ensureStyles() {
+    if (document.getElementById('wf-dec-css')) return;
+    var s = document.createElement('style');
+    s.id = 'wf-dec-css';
+    s.textContent =
+      '.wf-dec-modal{display:none;position:fixed;inset:0;z-index:410;background:rgba(10,38,71,.55);align-items:center;justify-content:center;padding:24px}' +
+      '.wf-dec-modal.open{display:flex;animation:rd-fade-up .25s both}' +
+      '.wf-dec-modal-inner{background:#fff;border-radius:18px;width:100%;max-width:580px;max-height:88vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,.35);padding:32px 28px 28px;position:relative}' +
+      '.wf-dec-modal-inner h3{font-size:17px;font-weight:800;color:var(--v-ink);margin:0 0 22px;line-height:1.45}' +
+      '.wf-dec-modal-inner .lc-choice{font-size:14px}' +
+      '.wf-dec-modal-close{position:absolute;top:16px;right:20px;background:none;border:none;font-size:24px;line-height:1;color:var(--v-muted);cursor:pointer;z-index:2}' +
+      '.wf-dec-modal-close:hover{color:var(--v-ink)}' +
+      '.wf-dec-trigger{display:flex;align-items:center;gap:14px;background:#fff;border:1.5px solid var(--v-line);border-radius:14px;padding:16px 18px;cursor:pointer;transition:border-color .2s,box-shadow .2s;margin-bottom:18px}' +
+      '.wf-dec-trigger:hover{border-color:var(--v-cyan);box-shadow:0 2px 12px rgba(23,195,212,.12)}' +
+      '.wf-dec-trigger-icon{flex-shrink:0;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}' +
+      '.wf-dec-trigger-icon.pending{background:rgba(23,195,212,.1);color:var(--v-cyan-d)}' +
+      '.wf-dec-trigger-icon.correct{background:rgba(31,158,90,.1);color:#1f9e5a}' +
+      '.wf-dec-trigger-icon.wrong{background:rgba(210,69,47,.1);color:#d2452f}' +
+      '.wf-dec-trigger-text{flex:1;min-width:0}' +
+      '.wf-dec-trigger-label{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}' +
+      '.wf-dec-trigger-label.pending{color:var(--v-cyan-d)}' +
+      '.wf-dec-trigger-label.correct{color:#1f9e5a}' +
+      '.wf-dec-trigger-label.wrong{color:#d2452f}' +
+      '.wf-dec-trigger-q{font-size:14px;font-weight:600;color:var(--v-ink);line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}' +
+      '.wf-dec-trigger-arrow{flex-shrink:0;font-size:18px;color:var(--v-muted)}' +
+      '.wf-dec-trigger.answered{cursor:default}' +
+      '.wf-dec-trigger.answered:hover{border-color:var(--v-line);box-shadow:none}';
+    document.head.appendChild(s);
+  }
+  function ensureModal() {
+    ensureStyles();
+    if (!document.getElementById('wf-dec-modal')) {
+      var m = document.createElement('div');
+      m.id = 'wf-dec-modal';
+      m.className = 'wf-dec-modal';
+      m.innerHTML = '<div class="wf-dec-modal-inner" id="wf-dec-modal-inner"></div>';
+      m.addEventListener('click', function (e) { if (e.target === m) caNewCloseDec(); });
+      document.body.appendChild(m);
+    }
+  }
+  window.caNewOpenDec = function (id) {
+    ensureModal();
+    var inner = document.getElementById('wf-dec-modal-inner');
+    inner.innerHTML = modalHtml(id);
+    inner.dataset.decId = id;
+    document.getElementById('wf-dec-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  };
+  window.caNewCloseDec = function () {
+    var m = document.getElementById('wf-dec-modal');
+    if (m) { m.classList.remove('open'); document.body.style.overflow = ''; }
+  };
   window.caNewDecide = function (id, i) {
     var st = run();
     if (st['d_' + id] !== undefined) return;
     st['d_' + id] = i;
     record(DEC[id].choices[i].ok);
+    var inner = document.getElementById('wf-dec-modal-inner');
+    if (inner) inner.innerHTML = modalHtml(id);
     var el = document.getElementById(id);
-    if (el) el.innerHTML = decisionHtml(id);
+    if (el) el.innerHTML = triggerHtml(id);
   };
 
   /* ---------- fill in forms ---------- */
