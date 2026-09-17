@@ -614,20 +614,30 @@ function wfDecisionPick(containerId, i) {
   const el = document.getElementById(containerId);
   const choices = JSON.parse(el.dataset.choices);
   if (el.dataset.answered) return;
-  el.dataset.answered = '1';
-  el.querySelectorAll('.lc-choice').forEach((b, j) => {
-    b.disabled = true;
-    if (choices[j].ok) b.classList.add('correct');
-    if (j === i && !choices[j].ok) b.classList.add('wrong');
-  });
-  const fb = document.getElementById(containerId + '-fb');
+  const buttons = el.querySelectorAll('.lc-choice');
   const ok = choices[i].ok;
-  fb.className = 'lc-fb show ' + (ok ? 'good' : 'bad');
-  fb.innerHTML = '<strong>' + (ok ? 'Right call.' : 'Worth reconsidering.') + '</strong> ' + esc(el.dataset.fb);
-  if (wfActiveScenario) {
+  const fb = document.getElementById(containerId + '-fb');
+  /* only the first pick counts for the score; a wrong pick can be retried */
+  const firstTry = !el.dataset.tried;
+  el.dataset.tried = '1';
+  if (firstTry && wfActiveScenario) {
     wfActiveScenario._decisions = wfActiveScenario._decisions || [];
     wfActiveScenario._decisions.push({ correct: ok });
   }
+  if (!ok) {
+    buttons[i].disabled = true;
+    buttons[i].classList.add('wrong');
+    fb.className = 'lc-fb show bad';
+    fb.innerHTML = '<strong>Not quite.</strong> Take another look and try a different answer.';
+    return;
+  }
+  el.dataset.answered = '1';
+  buttons.forEach((b, j) => {
+    b.disabled = true;
+    if (choices[j].ok) b.classList.add('correct');
+  });
+  fb.className = 'lc-fb show good';
+  fb.innerHTML = '<strong>' + (firstTry ? 'Right call.' : 'Got it on a second try.') + '</strong> ' + esc(el.dataset.fb);
 }
 
 /* ═══════════════════════════════════════════════════════════
