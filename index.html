@@ -1362,13 +1362,19 @@
     .td-tile-go { margin-left: auto; color: var(--v-cyan-d); font-weight: 800; font-size: 13.5px; flex: none; }
 
     /* VA: classes by role */
-    .va-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 28px; }
-    .va-card { display: flex; flex-direction: column; gap: 4px; background: #fff; border: 1px solid var(--v-line); border-radius: 16px;
-      padding: 20px 22px; text-decoration: none; box-shadow: 0 2px 10px rgba(10,38,71,.05); transition: transform .16s, box-shadow .16s, border-color .16s; }
-    .va-card:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(10,38,71,.1); border-color: rgba(23,195,212,.45); }
-    .va-kick { font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--v-cyan-d); }
-    .va-card b { font-size: 17px; color: var(--v-navy); }
-    .va-soon { font-size: 13px; color: var(--v-muted); }
+    .va-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 28px; }
+    @media (max-width: 760px) { .va-grid { grid-template-columns: 1fr; } }
+    .va-card { position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; min-height: 170px;
+      border-radius: 18px; overflow: hidden; padding: 22px 24px; text-decoration: none; color: #fff;
+      background-size: cover; background-position: 75% 35%; box-shadow: 0 8px 24px rgba(10,38,71,.1);
+      transition: transform .16s, box-shadow .16s; }
+    .va-card::before { content: ""; position: absolute; inset: 0;
+      background: linear-gradient(90deg, rgba(10,38,71,.9) 0%, rgba(10,38,71,.65) 50%, rgba(10,38,71,.12) 100%); }
+    .va-card > * { position: relative; }
+    .va-card:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(10,38,71,.18); text-decoration: none; }
+    .va-kick { font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--v-cyan); }
+    .va-card b { font-size: 20px; color: #fff; }
+    .va-soon { font-size: 13px; color: #d6e4f0; }
     .va-cta { margin-top: 24px; }
     .sim-locked-note { margin-top: 14px; display: inline-block; background: #fff8ec; border: 1.5px solid rgba(217,138,20,.35);
       color: #7a4d00; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 600; }
@@ -1683,12 +1689,12 @@
       <p class="h-lead rv">VA is where you study. Each role has its own classes, organized in modules, so you know the
         process before you step into a simulation. Open to everyone, no prerequisites.</p>
       <div class="va-grid">
-        <a class="va-card rv" href="va.html#transaction-coordinator"><span class="va-kick">Role</span><b>Transaction Coordinator</b><span class="va-soon">Classes coming soon</span></a>
-        <a class="va-card rv" href="va.html#listing-coordinator"><span class="va-kick">Role</span><b>Listing Coordinator</b><span class="va-soon">Classes coming soon</span></a>
-        <a class="va-card rv" href="va.html#property-manager"><span class="va-kick">Role</span><b>Property Manager</b><span class="va-soon">Classes coming soon</span></a>
-        <a class="va-card rv" href="va.html#lead-manager"><span class="va-kick">Role</span><b>Lead Manager</b><span class="va-soon">Classes coming soon</span></a>
-        <a class="va-card rv" href="va.html#operations-manager"><span class="va-kick">Role</span><b>Operations Manager</b><span class="va-soon">Classes coming soon</span></a>
-        <a class="va-card rv" href="va.html#cfo-bookkeeper"><span class="va-kick">Role</span><b>CFO &amp; Bookkeeper</b><span class="va-soon">Classes coming soon</span></a>
+        <a class="va-card rv" href="va.html#transaction-coordinator" style="background-image:url('assets/img/va/transaction-coordinator.jpg')"><span class="va-kick">Role</span><b>Transaction Coordinator</b><span class="va-soon">Classes coming soon</span></a>
+        <a class="va-card rv" href="va.html#listing-coordinator" style="background-image:url('assets/img/va/listing-coordinator.jpg')"><span class="va-kick">Role</span><b>Listing Coordinator</b><span class="va-soon">Classes coming soon</span></a>
+        <a class="va-card rv" href="va.html#property-manager" style="background-image:url('assets/img/va/property-manager.jpg')"><span class="va-kick">Role</span><b>Property Manager</b><span class="va-soon">Classes coming soon</span></a>
+        <a class="va-card rv" href="va.html#lead-manager" style="background-image:url('assets/img/va/lead-manager.jpg')"><span class="va-kick">Role</span><b>Lead Manager</b><span class="va-soon">Classes coming soon</span></a>
+        <a class="va-card rv" href="va.html#operations-manager" style="background-image:url('assets/img/va/operations-manager.jpg')"><span class="va-kick">Role</span><b>Operations Manager</b><span class="va-soon">Classes coming soon</span></a>
+        <a class="va-card rv" href="va.html#cfo-bookkeeper" style="background-image:url('assets/img/va/cfo-bookkeeper.jpg')"><span class="va-kick">Role</span><b>CFO &amp; Bookkeeper</b><span class="va-soon">Classes coming soon</span></a>
       </div>
       <div class="va-cta rv"><a class="btn v-cyan" href="va.html">Go to VA &rarr;</a></div>
     </div>

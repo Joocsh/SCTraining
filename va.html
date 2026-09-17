@@ -118,6 +118,25 @@
     .lab-card { scroll-margin-top: 90px; }
     .lab-card:target { border-color: var(--v-cyan); box-shadow: 0 0 0 3px rgba(23,195,212,.18); }
 
+    /* horizontal training banners */
+    .va-list { display: flex; flex-direction: column; gap: 18px; }
+    .va-row {
+      position: relative; display: flex; align-items: flex-end; min-height: 190px;
+      border-radius: 20px; overflow: hidden; padding: 28px 32px; scroll-margin-top: 90px;
+      background-size: cover; background-position: 75% 35%; color: #fff;
+      box-shadow: 0 10px 30px rgba(10,38,71,.08);
+    }
+    .va-row::before { content: ""; position: absolute; inset: 0;
+      background: linear-gradient(90deg, rgba(10,38,71,.92) 0%, rgba(10,38,71,.72) 45%, rgba(10,38,71,.15) 100%); }
+    .va-row > * { position: relative; }
+    .va-row-body { max-width: 560px; }
+    .va-row .lab-badge { position: absolute; top: 20px; right: 22px; background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.35); }
+    .va-row h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 24px; font-weight: 900; letter-spacing: -.4px; margin: 0 0 6px; color: #fff; }
+    .va-row p { font-size: 15px; line-height: 1.55; color: #d6e4f0; margin: 0 0 12px; }
+    .va-row .lab-cta { color: var(--v-cyan); }
+    .va-row:target { box-shadow: 0 0 0 3px var(--v-cyan), 0 10px 30px rgba(10,38,71,.12); }
+    @media(max-width:640px) { .va-row { min-height: 170px; padding: 22px; } .va-row h3 { font-size: 20px; } }
+
     @media(max-width:920px) {
       .lab-grid { grid-template-columns: repeat(2, 1fr); }
     }
@@ -159,56 +178,60 @@
     <p>Study the classes for your role here, then put them into practice in the Simulations once you finish the Introduction.</p>
   </div>
 
-  <div class="lab-grid">
-
-    <div class="lab-card locked" id="transaction-coordinator">
+  <div class="va-list">
+    <div class="va-row" id="transaction-coordinator" style="background-image:url('assets/img/va/transaction-coordinator.jpg')">
       <span class="lab-badge soon">Coming soon</span>
-      <div class="lab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
-      <h3>Transaction Coordinator</h3>
-      <p>Contract to close: ratification, deposits, contingencies, disclosures and closing.</p>
-      <span class="lab-cta">Classes coming soon</span>
+      <div class="va-row-body">
+        <h3>Transaction Coordinator</h3>
+        <p>Contract to close: ratification, deposits, contingencies, disclosures and closing.</p>
+        <span class="lab-cta">Classes coming soon</span>
+      </div>
     </div>
 
-    <div class="lab-card locked" id="listing-coordinator">
+    <div class="va-row" id="listing-coordinator" style="background-image:url('assets/img/va/listing-coordinator.jpg')">
       <span class="lab-badge soon">Coming soon</span>
-      <div class="lab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
-      <h3>Listing Coordinator</h3>
-      <p>Listing agreements, MLS data input, showings and seller updates.</p>
-      <span class="lab-cta">Classes coming soon</span>
+      <div class="va-row-body">
+        <h3>Listing Coordinator</h3>
+        <p>Listing agreements, MLS data input, showings and seller updates.</p>
+        <span class="lab-cta">Classes coming soon</span>
+      </div>
     </div>
 
-    <div class="lab-card locked" id="property-manager">
+    <div class="va-row" id="property-manager" style="background-image:url('assets/img/va/property-manager.jpg')">
       <span class="lab-badge soon">Coming soon</span>
-      <div class="lab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
-      <h3>Property Manager</h3>
-      <p>Tenant screening, leases, rent and maintenance coordination.</p>
-      <span class="lab-cta">Classes coming soon</span>
+      <div class="va-row-body">
+        <h3>Property Manager</h3>
+        <p>Tenant screening, leases, rent and maintenance coordination.</p>
+        <span class="lab-cta">Classes coming soon</span>
+      </div>
     </div>
 
-    <div class="lab-card locked" id="lead-manager">
+    <div class="va-row" id="lead-manager" style="background-image:url('assets/img/va/lead-manager.jpg')">
       <span class="lab-badge soon">Coming soon</span>
-      <div class="lab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
-      <h3>Lead Manager</h3>
-      <p>Lead outreach, qualification, follow up and CRM notes.</p>
-      <span class="lab-cta">Classes coming soon</span>
+      <div class="va-row-body">
+        <h3>Lead Manager</h3>
+        <p>Lead outreach, qualification, follow up and CRM notes.</p>
+        <span class="lab-cta">Classes coming soon</span>
+      </div>
     </div>
 
-    <div class="lab-card locked" id="operations-manager">
+    <div class="va-row" id="operations-manager" style="background-image:url('assets/img/va/operations-manager.jpg')">
       <span class="lab-badge soon">Coming soon</span>
-      <div class="lab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
-      <h3>Operations Manager</h3>
-      <p>Agency operations, SOPs, onboarding and reporting.</p>
-      <span class="lab-cta">Classes coming soon</span>
+      <div class="va-row-body">
+        <h3>Operations Manager</h3>
+        <p>Agency operations, SOPs, onboarding and reporting.</p>
+        <span class="lab-cta">Classes coming soon</span>
+      </div>
     </div>
 
-    <div class="lab-card locked" id="cfo-bookkeeper">
+    <div class="va-row" id="cfo-bookkeeper" style="background-image:url('assets/img/va/cfo-bookkeeper.jpg')">
       <span class="lab-badge soon">Coming soon</span>
-      <div class="lab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
-      <h3>CFO &amp; Bookkeeper</h3>
-      <p>Month end bookkeeping, reconciliations and financial reporting.</p>
-      <span class="lab-cta">Classes coming soon</span>
+      <div class="va-row-body">
+        <h3>CFO &amp; Bookkeeper</h3>
+        <p>Month end bookkeeping, reconciliations and financial reporting.</p>
+        <span class="lab-cta">Classes coming soon</span>
+      </div>
     </div>
-
   </div>
 </div>
 
