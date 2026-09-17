@@ -10,7 +10,7 @@
 :root{
   --navy:#0a2647;--navy2:#0f3460;--cyan:#17c3d4;--cyan-d:#0fa6b6;--ink:#0c1e33;--muted:#5b6b7e;
   --line:#e3eaf1;--bg:#f6f9fc;--soft:#eefbfc;--white:#fff;--good:#1f9e5a;--bad:#d2452f;
-  --top:48px;--side:300px;--foot:68px;
+  --top:48px;--side:300px;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
@@ -48,7 +48,7 @@ a{color:var(--cyan-d)}
 .ol-item small{display:block;font-size:11.5px;color:#8a99ab;font-weight:500;margin-top:1px}
 
 /* ── lesson stage ── */
-main{margin-left:var(--side);padding:calc(var(--top) + 3px) 0 var(--foot);min-height:100vh}
+main{margin-left:var(--side);padding:calc(var(--top) + 3px) 0 40px;min-height:100vh}
 .lesson{display:none;max-width:760px;margin:0 auto;padding:56px 32px 64px}
 .lesson.on{display:block;animation:rise .35s cubic-bezier(.2,.7,.2,1)}
 @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
@@ -199,11 +199,18 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
 .ordered li{counter-increment:o;display:grid;grid-template-columns:30px 1fr;gap:12px;color:#33465c}
 .ordered li::before{content:counter(o);width:26px;height:26px;border-radius:8px;background:var(--soft);color:var(--cyan-d);display:grid;place-items:center;font-size:12.5px;font-weight:800}
 
-/* ── footer player bar ── */
-.player{position:fixed;left:var(--side);right:0;bottom:0;height:var(--foot);background:rgba(255,255,255,.94);backdrop-filter:saturate(1.4) blur(10px);
-  border-top:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 28px;z-index:20}
-.player .where{font-size:13.5px;color:var(--muted);font-weight:600;margin:0 auto}
-.player .where b{color:var(--navy)}
+/* next arrow: appears once the lesson has been read to the end */
+.nextfab{position:fixed;right:32px;bottom:30px;z-index:20;width:58px;height:58px;border:0;border-radius:50%;cursor:pointer;
+  background:var(--cyan);color:var(--navy);display:grid;place-items:center;
+  box-shadow:0 10px 28px rgba(15,166,182,.35),0 2px 6px rgba(10,38,71,.12);
+  opacity:0;transform:translateY(16px) scale(.9);pointer-events:none;
+  transition:opacity .35s cubic-bezier(.2,.7,.2,1),transform .35s cubic-bezier(.2,.7,.2,1),background .15s}
+.nextfab.show{opacity:1;transform:none;pointer-events:auto}
+.nextfab:hover{background:var(--cyan-d);color:#fff;transform:translateX(3px)}
+.nextfab svg{width:22px;height:22px}
+.nextfab .tip{position:absolute;right:70px;white-space:nowrap;background:var(--navy);color:#fff;font-size:13px;font-weight:600;
+  padding:7px 12px;border-radius:10px;opacity:0;transform:translateX(6px);transition:.2s;pointer-events:none}
+.nextfab:hover .tip,.nextfab:focus-visible .tip{opacity:1;transform:none}
 
 /* ── outline toggle (small screens) ── */
 .outline-btn{display:none}
@@ -221,9 +228,7 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
   body{font-size:16px}
   .lesson{padding:36px 20px 48px}
   .grid2,.q6{grid-template-columns:1fr}
-  .player{padding:0 14px}.player .where{display:none}
-  .player .btn{padding:11px 16px;font-size:14px}
-  .player .next{margin-left:auto}
+  .nextfab{right:18px;bottom:20px;width:54px;height:54px}.nextfab .tip{display:none}
   .done-card{flex-direction:column;text-align:center}
   table{font-size:14px}th,td{padding:10px 8px}
 }
@@ -237,7 +242,7 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
   <span class="scbar-id"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg><span class="scbar-name">SkillCloud</span></span>
   <span class="scbar-sep">/</span>
   <span class="scbar-ctx">SOP Foundations<em>VA</em></span>
-  <div class="scbar-right"><span class="scbar-count" id="barCount"></span></div>
+  
 </header>
 <div class="topline"><i id="topFill"></i></div>
 
@@ -271,7 +276,7 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
       <div class="block-title">By the end of this training, you can</div>
       <ul class="checks">
         <li>Document workflows clearly using a structured SOP format.</li>
-        <li>Apply the six-question framework to any process.</li>
+        <li>Apply the six question framework to any process.</li>
         <li>Convert routine tasks into repeatable procedures anyone can follow.</li>
         <li>Identify gaps or exceptions and document troubleshooting steps.</li>
         <li>Maintain and update SOPs so they remain accurate over time.</li>
@@ -286,7 +291,7 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
     <p class="lead">Understanding the difference is the first step toward useful documentation.</p>
     <div class="block grid2 compare">
       <div class="card"><span class="label">Process</span><h3>What happens</h3><p>A process is a series of actions or steps taken to achieve a specific goal. It describes what happens and the order in which it happens.</p><p class="ex">Examples: checking and responding to client emails, onboarding a client, or preparing a weekly report.</p></div>
-      <div class="card"><span class="label">SOP</span><h3>How it happens</h3><p>A Standard Operating Procedure is a detailed, written, step-by-step guide explaining exactly how to complete a process consistently and accurately.</p><p class="ex">It documents instructions, tools, responsibilities, and troubleshooting.</p></div>
+      <div class="card"><span class="label">SOP</span><h3>How it happens</h3><p>A Standard Operating Procedure is a detailed, written, step by step guide explaining exactly how to complete a process consistently and accurately.</p><p class="ex">It documents instructions, tools, responsibilities, and troubleshooting.</p></div>
     </div>
     <details class="more block">
       <summary>Compare them side by side</summary>
@@ -312,14 +317,14 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
   <!-- 03 -->
   <section class="lesson" data-title="Why & when" id="value">
     <div class="meta"><span class="tag">The case for documentation</span></div>
-    <h2>Why SOPs matter—and when they help most.</h2>
+    <h2>Why SOPs matter, and when they help most.</h2>
     <div class="block grid2">
       <div class="card"><div class="ic">&#10003;</div><h3>Consistency &amp; quality</h3><p>Tasks are completed the same way every time, reducing errors and maintaining high standards.</p></div>
       <div class="card"><div class="ic">&#8599;</div><h3>Faster training</h3><p>New team members can learn quickly without constant guidance.</p></div>
       <div class="card"><div class="ic">&#9678;</div><h3>Accountability</h3><p>Roles are clear, so everyone knows who does what.</p></div>
       <div class="card"><div class="ic">&#8986;</div><h3>Improvement</h3><p>Documenting work reveals gaps, bottlenecks, and opportunities to improve.</p></div>
     </div>
-    <div class="callout block"><b>Where SOPs apply</b><br>Use SOPs during onboarding, daily operations, team handoffs, and process audits—whenever a process requires consistency and clarity.</div>
+    <div class="callout block"><b>Where SOPs apply</b><br>Use SOPs during onboarding, daily operations, team handoffs, and process audits, whenever a process requires consistency and clarity.</div>
     <details class="more" style="margin-top:12px">
       <summary>Why are team handoffs a strong use case?</summary>
       <div class="more-body">SOPs provide a common reference for coordination, smooth transitions, and accountability when work moves between team members.</div>
@@ -330,7 +335,7 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
   <section class="lesson" data-title="Six questions" id="framework">
     <div class="meta"><span class="tag">Core learning framework</span></div>
     <h2>Build the map before you write.</h2>
-    <p class="lead">The handbook’s six core questions turn day-to-day work into a clear, repeatable SOP. Select each question to explore it.</p>
+    <p class="lead">The handbook’s six core questions turn day to day work into a clear, repeatable SOP. Select each question to explore it.</p>
     <div class="block">
       <div class="seg" role="tablist" id="seg">
         <button role="tab" aria-selected="true" data-frame="why">WHY</button>
@@ -359,21 +364,21 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
     <p class="lead">The official template organizes documentation so another team member knows the purpose, timing, ownership, steps, resources, and exceptions.</p>
     <div class="block">
       <div class="block-title">Open each section</div>
-      <details class="more"><summary><span class="n">1</span>Purpose <span class="tagline">· WHY</span></summary><div class="more-body">WHY — purpose / objective: the goal of the process and what it is trying to accomplish.</div></details>
-      <details class="more"><summary><span class="n">2</span>Scope <span class="tagline">· WHEN</span></summary><div class="more-body">WHEN — timing, frequency, or triggers; when the SOP needs to be used.</div></details>
+      <details class="more"><summary><span class="n">1</span>Purpose <span class="tagline">· WHY</span></summary><div class="more-body">WHY: purpose / objective, the goal of the process and what it is trying to accomplish.</div></details>
+      <details class="more"><summary><span class="n">2</span>Scope <span class="tagline">· WHEN</span></summary><div class="more-body">WHEN: timing, frequency, or triggers; when the SOP needs to be used.</div></details>
       <details class="more"><summary><span class="n">3</span>Definitions</summary><div class="more-body">Explain terms needed to understand the SOP.</div></details>
-      <details class="more"><summary><span class="n">4</span>Roles and Responsibilities <span class="tagline">· WHO</span></summary><div class="more-body">WHO — who performs each part, and who reviews or approves.</div></details>
-      <details class="more"><summary><span class="n">5</span>Procedure <span class="tagline">· HOW</span></summary><div class="more-body">HOW — clear, ordered step-by-step instructions.</div></details>
-      <details class="more"><summary><span class="n">6</span>Documented Information <span class="tagline">· WITH WHAT</span></summary><div class="more-body">WITH WHAT — tools, platforms, templates, or resources used to complete the process.
+      <details class="more"><summary><span class="n">4</span>Roles and Responsibilities <span class="tagline">· WHO</span></summary><div class="more-body">WHO: who performs each part, and who reviews or approves.</div></details>
+      <details class="more"><summary><span class="n">5</span>Procedure <span class="tagline">· HOW</span></summary><div class="more-body">HOW: clear, ordered, step by step instructions.</div></details>
+      <details class="more"><summary><span class="n">6</span>Documented Information <span class="tagline">· WITH WHAT</span></summary><div class="more-body">WITH WHAT: tools, platforms, templates, or resources used to complete the process.
         <ul class="checks" style="margin-top:14px">
           <li><b>6.1 References</b> · Document/letter, form, and platform.</li>
-          <li><b>6.2 Troubleshooting</b> · WHAT IF — exceptions, errors, support, and what to do when something goes wrong.</li>
+          <li><b>6.2 Troubleshooting</b> · WHAT IF: exceptions, errors, support, and what to do when something goes wrong.</li>
           <li><b>6.3 Related SOPs</b> · Related code and documentation name.</li>
         </ul></div></details>
       <details class="more"><summary><span class="n">7</span>Flowchart</summary><div class="more-body">A visual representation of the process.</div></details>
       <details class="more"><summary><span class="n">8</span>Version Control</summary><div class="more-body">Version, date modified, description, and author.</div></details>
     </div>
-    <div class="callout block"><b>Template reminder:</b> The template is more detailed than a simple title-and-steps checklist. Keep every relevant section, including references, troubleshooting, related SOPs, flowchart, and version control.</div>
+    <div class="callout block"><b>Template reminder:</b> The template is more detailed than a simple title and steps checklist. Keep every relevant section, including references, troubleshooting, related SOPs, flowchart, and version control.</div>
   </section>
 
   <!-- 06 -->
@@ -399,7 +404,7 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
           <li>Add screenshots, links, or visual aids where useful.</li>
           <li>Use a consistent format across SOPs.</li>
           <li>Review and test the SOP; ask someone else to follow it.</li>
-          <li>Review periodically—every 6–12 months or after a system/tool update.</li>
+          <li>Review periodically, every 6 to 12 months or after a system/tool update.</li>
         </ul>
       </div>
     </details>
@@ -417,14 +422,14 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
     <div class="meta"><span class="tag">Tools &amp; reference examples</span></div>
     <h2>Choose tools that fit the documentation need.</h2>
     <div class="block grid2">
-      <div class="card tool"><div class="ic">&#9998;</div><div><h3>Text-based SOPs</h3><p>Google Docs and Microsoft Word support formatting, sharing, editing, and updates.</p></div></div>
+      <div class="card tool"><div class="ic">&#9998;</div><div><h3>Text based SOPs</h3><p>Google Docs and Microsoft Word support formatting, sharing, editing, and updates.</p></div></div>
       <div class="card tool"><div class="ic">&#9638;</div><div><h3>Tracking &amp; checklists</h3><p>Google Sheets and Excel can support step lists, responsibilities, calculations, logs, and repeated tracking.</p></div></div>
       <div class="card tool"><div class="ic">&#10551;</div><div><h3>Visual workflows</h3><p>Lucidchart, Miro, Canva, and Microsoft Visio can create flowcharts and process maps.</p></div></div>
       <div class="card tool"><div class="ic">&#9745;</div><div><h3>Work management</h3><p>Trello, Asana, Monday.com, and ClickUp help visualize work, checklists, and responsibility assignment.</p></div></div>
       <div class="card tool"><div class="ic">&#9776;</div><div><h3>Knowledge bases</h3><p>Notion, Confluence, Guru, and Tettra centralize SOP storage, access, updates, and collaboration.</p></div></div>
       <div class="card tool"><div class="ic">&#9881;</div><div><h3>Interactive SOP tools</h3><p>Checkli, Process Street, and SweetProcess support interactive checklists, automation, and task tracking.</p></div></div>
     </div>
-    <div class="callout block"><b>Learn from examples, thoughtfully.</b><br>The package includes sample learner SOP drafts. Treat them as learning examples: assess their completeness, clarity, and alignment to the template—not as official operating procedures.</div>
+    <div class="callout block"><b>Learn from examples, thoughtfully.</b><br>The package includes sample learner SOP drafts. Treat them as learning examples: assess their completeness, clarity, and alignment to the template, not as official operating procedures.</div>
   </section>
 
   <!-- 08 -->
@@ -471,10 +476,10 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
         <summary>Evaluation criteria</summary>
         <div class="more-body"><ul class="checks">
           <li>Accuracy and alignment with the handbook</li>
-          <li>Completeness—no missing sections</li>
+          <li>Completeness: no missing sections</li>
           <li>Clarity and ease of following</li>
           <li>Proper use of the SOP template</li>
-          <li>Attention to detail—no invented steps or tools</li>
+          <li>Attention to detail: no invented steps or tools</li>
           <li>Professional writing and formatting</li>
         </ul></div>
       </details>
@@ -522,11 +527,7 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
   </section>
 </main>
 
-<footer class="player">
-  <button class="btn ghost prev" data-go="prev">&larr; Previous</button>
-  <span class="where" id="where"></span>
-  <button class="btn primary next" data-go="next">Continue &rarr;</button>
-</footer>
+<button class="nextfab" id="nextFab" aria-label="Next lesson"><span class="tip" id="nextTip"></span><svg id="nextIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
 
 <script src="../assets/js/app-core.js?v=20260917"></script>
 <script>SCApp.requireAuth();</script>
@@ -562,16 +563,16 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
     document.getElementById('meterFill').style.width = pct + '%';
     document.getElementById('meterText').textContent = pct + '%';
     document.getElementById('topFill').style.width = ((cur + 1) / lessons.length * 100) + '%';
-    document.getElementById('barCount').innerHTML = '<b>' + state.done.length + '</b> of ' + lessons.length + ' done';
-    document.getElementById('where').innerHTML = '<b>' + lessons[cur].dataset.title + '</b> · ' + (cur + 1) + ' of ' + lessons.length;
     items.forEach(function (b, i) {
       b.classList.toggle('on', i === cur);
       b.classList.toggle('done', state.done.indexOf(i) > -1);
       b.querySelector('.ol-dot').innerHTML = state.done.indexOf(i) > -1 ? '&#10003;' : (i + 1);
     });
-    document.querySelector('.player .prev').disabled = cur === 0;
-    var nx = document.querySelector('.player .next');
-    nx.innerHTML = cur === lessons.length - 1 ? 'Finish course &#10003;' : 'Continue &rarr;';
+    var last = cur === lessons.length - 1;
+    document.getElementById('nextTip').textContent = last ? 'Finish course' : 'Next: ' + lessons[cur + 1].dataset.title;
+    document.getElementById('nextIcon').innerHTML = last ? '<path d="M5 12.5l4.5 4.5L19 7.5"/>' : '<path d="M5 12h14M13 6l6 6-6 6"/>';
+    document.getElementById('nextFab').setAttribute('aria-label', last ? 'Finish course' : 'Next lesson');
+    reveal();
   }
 
   function go(i) {
@@ -580,9 +581,10 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
     cur = i;
     state.at = cur;
     lessons[cur].classList.add('on');
-    window.scrollTo({ top: 0, behavior: 'auto' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
     document.body.classList.remove('nav-open');
     document.getElementById('outlineBtn').setAttribute('aria-expanded', 'false');
+    document.getElementById('nextFab').classList.remove('show');
     save(); paint();
     document.getElementById('stage').focus({ preventScroll: true });
   }
@@ -597,6 +599,23 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
     if (cur === lessons.length - 1) { paint(); return; }
     go(cur + 1);
   });
+  /* the arrow shows up once the reader reaches the end of the lesson */
+  function reveal() {
+    var fab = document.getElementById('nextFab');
+    if (cur === lessons.length - 1 && state.done.indexOf(cur) > -1) { fab.classList.remove('show'); return; }
+    var end = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 60;
+    fab.classList.toggle('show', end);
+  }
+  window.addEventListener('scroll', reveal, { passive: true });
+  window.addEventListener('resize', reveal);
+  document.addEventListener('toggle', function () { setTimeout(reveal, 50); }, true);
+  document.addEventListener('click', function () { setTimeout(reveal, 60); });
+  document.getElementById('nextFab').onclick = function () {
+    complete(cur);
+    if (cur === lessons.length - 1) { paint(); return; }
+    go(cur + 1);
+  };
+
   document.addEventListener('keydown', function (e) {
     if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
     if (e.altKey || e.ctrlKey || e.metaKey) return;
@@ -627,7 +646,7 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
         if (ok) {
           box.querySelectorAll('.choice').forEach(function (x) { x.disabled = true; });
           b.classList.add('right');
-          fb.textContent = 'Correct — this matches the SOP framework.';
+          fb.textContent = 'Correct, this matches the SOP framework.';
           fb.className = 'fb good';
         } else {
           b.classList.add('wrong'); b.disabled = true;
@@ -640,12 +659,12 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
 
   /* six questions */
   var frames = {
-    why: { title: 'WHY — Purpose / Objective', text: 'State the reason the process exists and the outcome it supports. The handbook recommends one or two sentences about why the process matters.', ex: '“What is the goal of this process? What are we trying to accomplish?”' },
-    when: { title: 'WHEN — Scope', text: 'Document when work should be done, how often it occurs, and whether an event triggers it. This establishes sequence and schedule.', ex: '“When does this need to be done? How often? Is it triggered by something?”' },
-    who: { title: 'WHO — Roles & Responsibilities', text: 'Name who is involved and clarify who does each part. Include review or approval responsibility where applicable.', ex: '“Who is responsible for doing each part? Is anyone reviewing or approving?”' },
-    how: { title: 'HOW — Procedure', text: 'Write exact steps in a clear, logical order. Numbers and bullets help someone unfamiliar with the task complete it without guessing.', ex: '“Write the steps clearly and in order. Use numbers or bullets.”' },
-    with: { title: 'WITH WHAT — Documented Information', text: 'Identify the tools, platforms, documents, templates, or resources needed to perform the process. This promotes readiness and consistency.', ex: '“What tools, templates, or platforms are used to complete this process?”' },
-    whatif: { title: 'WHAT IF — Exceptions & Troubleshooting', text: 'Anticipate deviations, errors, and support needs. Explain what can go wrong and what action is appropriate in those cases.', ex: '“What can go wrong? What should be done in those cases?”' }
+    why: { title: 'WHY: Purpose / Objective', text: 'State the reason the process exists and the outcome it supports. The handbook recommends one or two sentences about why the process matters.', ex: '“What is the goal of this process? What are we trying to accomplish?”' },
+    when: { title: 'WHEN: Scope', text: 'Document when work should be done, how often it occurs, and whether an event triggers it. This establishes sequence and schedule.', ex: '“When does this need to be done? How often? Is it triggered by something?”' },
+    who: { title: 'WHO: Roles & Responsibilities', text: 'Name who is involved and clarify who does each part. Include review or approval responsibility where applicable.', ex: '“Who is responsible for doing each part? Is anyone reviewing or approving?”' },
+    how: { title: 'HOW: Procedure', text: 'Write exact steps in a clear, logical order. Numbers and bullets help someone unfamiliar with the task complete it without guessing.', ex: '“Write the steps clearly and in order. Use numbers or bullets.”' },
+    with: { title: 'WITH WHAT: Documented Information', text: 'Identify the tools, platforms, documents, templates, or resources needed to perform the process. This promotes readiness and consistency.', ex: '“What tools, templates, or platforms are used to complete this process?”' },
+    whatif: { title: 'WHAT IF: Exceptions & Troubleshooting', text: 'Anticipate deviations, errors, and support needs. Explain what can go wrong and what action is appropriate in those cases.', ex: '“What can go wrong? What should be done in those cases?”' }
   };
   function frame(k) {
     var f = frames[k];
@@ -736,6 +755,7 @@ blockquote{margin:0 0 16px;padding:14px 18px;border-radius:12px;background:var(-
 
   lessons[cur].classList.add('on');
   paint();
+  setTimeout(reveal, 400);
 })();
 </script>
 </body>
