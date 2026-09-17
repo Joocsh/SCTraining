@@ -77,9 +77,9 @@
     shell.className = 'rs';
     shell.innerHTML =
       '<aside class="rs-side">' +
-        '<div class="rs-side-hd"><div class="kick">Role training</div><div class="nm">' + roleName + '</div></div>' +
+        '<div class="rs-side-hd"><div class="kick">Simulation</div><div class="nm">' + roleName + '</div></div>' +
         '<nav class="rs-nav" id="rsNav"></nav>' +
-        '<div class="rs-side-ft"><a href="../index.html#roles">&larr; All roles</a></div>' +
+        '<div class="rs-side-ft"><a href="../index.html#simulations">&larr; All simulations</a></div>' +
       '</aside>' +
       '<div class="rs-main" id="rsMain"><div class="rs-home" id="rsHome"></div></div>';
     document.body.insertBefore(shell, document.body.firstChild);

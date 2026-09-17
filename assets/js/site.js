@@ -12,27 +12,26 @@ window.addEventListener('DOMContentLoaded',()=>{
     if(t===here) a.classList.add('active');
   });
 });
-/* Fundamentals-first nudge: mark done on ai.html, hide the nudge banner once seen */
-const FUND_KEY='scc_fundamentals_done';
-if(document.body.dataset.page==='fundamentals'){
-  localStorage.setItem(FUND_KEY,'1');
-}
+/* Introduction first: hide the nudge once it is finished, and send anyone who
+   has not finished it to the Introduction instead of into a simulation */
+function introDone(){ return !!(window.SCApp && SCApp.isIntroDone()); }
 window.addEventListener('DOMContentLoaded',()=>{
-  if(localStorage.getItem(FUND_KEY)==='1'){
+  if(introDone()){
     document.querySelectorAll('.fund-nudge').forEach(el=>el.style.display='none');
   }
+  document.querySelectorAll('.sim-locked-note').forEach(el=>{ el.hidden = introDone(); });
+  document.body.classList.toggle('intro-done', introDone());
 });
-/* Gate "Choose Your Role" buttons: require login, then Fundamentals, before role access */
 document.addEventListener('click',e=>{
-  const btn=e.target.closest('.role-gate-btn');
+  const btn=e.target.closest('.role-gate-btn, a[href^="roles/"], a[href^="../roles/"]');
   if(!btn) return;
   if(window.SCApp && !SCApp.currentUser()){
     e.preventDefault();
-    window.location.href=SCApp.loginUrl('index.html'+(btn.getAttribute('href')||''));
+    window.location.href=SCApp.loginUrl('index.html#simulations');
     return;
   }
-  if(localStorage.getItem(FUND_KEY)!=='1'){
+  if(!introDone() && /roles\//.test(btn.getAttribute('href')||'')){
     e.preventDefault();
-    window.location.href='ai.html';
+    window.location.href=(location.pathname.indexOf('/roles/')>-1?'../':'')+'ai.html?locked=simulations';
   }
 });
