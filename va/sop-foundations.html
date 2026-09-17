@@ -132,7 +132,9 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
 /* six questions wheel */
 .wheel{display:grid;grid-template-columns:260px 1fr;gap:26px;align-items:center}
 .wheel-svg{width:260px;height:260px}
-.wheel-svg .seg{cursor:pointer}
+.wheel-svg{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.wheel-svg .seg{cursor:pointer;outline:none}
+.wheel-svg .seg:focus-visible path{stroke:var(--navy);stroke-width:3}
 .wheel-svg .seg path{fill:#eef3f8;stroke:#fff;stroke-width:4;transition:fill .2s}
 .wheel-svg .seg text{font:800 12px "Helvetica Neue",Arial,sans-serif;fill:var(--navy);text-anchor:middle;pointer-events:none}
 .wheel-svg .seg:hover path{fill:#d8f3f6}
