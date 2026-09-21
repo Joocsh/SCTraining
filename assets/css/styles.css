@@ -2,7 +2,7 @@
 :root{
   /* canonical brand palette (matches index.html) */
   --v-navy:#0a2647; --v-navy2:#0f3460; --v-blue:#1565c0; --v-sky:#5aa9e6;
-  --v-cyan:#17c3d4; --v-cyan-d:#0fa6b6; --v-ink:#0c1e33; --v-muted:#5b6b7e;
+  --v-cyan:#17c3d4; --v-cyan-d:#0fa6b6; --v-gold:#e0a93b; --v-ink:#0c1e33; --v-muted:#5b6b7e;
   --v-bg:#f6f9fc; --v-line:#e3eaf1;
 
   /* legacy names kept as aliases so existing classes stay on-brand */

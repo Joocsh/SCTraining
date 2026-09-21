@@ -10,10 +10,13 @@
      <script src="../assets/js/role-shell.js"></script>
    ========================================================================== */
 
-body.rshell{
-  margin:0; height:100vh; overflow:hidden;
-  display:flex; flex-direction:column;
-  background:var(--v-bg);
+body.rshell {
+  margin: 0;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--v-bg);
 }
 /* the old landing chrome is replaced by the shell */
 body.rshell nav.nav,
@@ -22,90 +25,448 @@ body.rshell .h-foot,
 body.rshell .rd-hero,
 body.rshell .rd-stats-section,
 body.rshell .rd-modes-section,
-body.rshell .h-foot,
-body.rshell .rd-auth-note{display:none !important}
-
-.rs{flex:1; display:flex; min-height:0}
-
-/* ---- section list ---- */
-.rs-side{
-  width:252px; flex:none; display:flex; flex-direction:column;
-  background:var(--v-navy); color:#dbe8f4;
-}
-.rs-side-hd{padding:18px 20px 16px; border-bottom:1px solid rgba(255,255,255,.08)}
-.rs-side-hd .kick{
-  font-family:var(--mono,ui-monospace,Menlo,Consolas,monospace);
-  font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--v-cyan);
-}
-.rs-side-hd .nm{
-  font-family:"Helvetica Neue",Arial,sans-serif; font-weight:800; letter-spacing:-.3px;
-  font-size:17px; line-height:1.25; color:#fff; margin-top:4px;
-}
-.rs-nav{flex:1; padding:12px; display:flex; flex-direction:column; gap:3px; overflow-y:auto}
-.rs-nav button{
-  display:flex; align-items:center; gap:11px; width:100%;
-  padding:10px 12px; border-radius:9px; border:none; background:none;
-  font-family:inherit; font-size:13.5px; font-weight:500; color:#b8cadb;
-  text-align:left; cursor:pointer; transition:background .15s,color .15s;
-}
-.rs-nav button:hover{background:rgba(255,255,255,.07); color:#fff}
-.rs-nav button.on{background:rgba(23,195,212,.18); color:#7ee3ee; font-weight:600}
-.rs-nav button svg{width:16px; height:16px; flex:none}
-.rs-side-ft{padding:14px 18px; border-top:1px solid rgba(255,255,255,.08)}
-.rs-side-ft a{
-  display:inline-flex; align-items:center; gap:7px;
-  font-size:12.5px; font-weight:600; color:#9fb4c9; text-decoration:none;
-}
-.rs-side-ft a:hover{color:#fff}
-
-/* ---- content ---- */
-.rs-main{flex:1; min-width:0; overflow-y:auto; position:relative}
-.rs-home{max-width:860px; margin:0 auto; padding:38px 34px 60px}
-.rs-home h1{
-  font-family:"Helvetica Neue",Arial,sans-serif; font-weight:900; letter-spacing:-1px;
-  font-size:30px; color:var(--v-navy); margin:0 0 10px;
-}
-.rs-home .lead{font-size:16px; color:var(--v-muted); line-height:1.6; margin:0 0 26px; max-width:640px}
-.rs-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px}
-.rs-card{
-  background:#fff; border:1px solid var(--v-line); border-radius:14px;
-  padding:20px 22px; text-align:left; cursor:pointer; font-family:inherit;
-  box-shadow:0 2px 10px rgba(10,38,71,.06);
-  transition:transform .16s, box-shadow .16s, border-color .16s;
-}
-.rs-card:hover{transform:translateY(-2px); box-shadow:0 10px 26px rgba(10,38,71,.1); border-color:rgba(23,195,212,.45)}
-.rs-card .nm{
-  font-family:"Helvetica Neue",Arial,sans-serif; font-weight:800; font-size:16px;
-  letter-spacing:-.3px; color:var(--v-navy); display:block; margin-bottom:6px;
-}
-.rs-card .ds{font-size:13.5px; color:var(--v-muted); line-height:1.55; display:block}
-.rs-card .go{
-  display:block; margin-top:12px; font-size:12.5px; font-weight:800;
-  letter-spacing:.4px; text-transform:uppercase; color:var(--v-cyan-d);
+body.rshell .rd-auth-note {
+  display: none !important;
 }
 
-/* the page's own panels now sit inside the content column */
-body.rshell .lc-panel{
-  position:static; inset:auto; z-index:auto; background:transparent;
-  overflow:visible; animation:none;
+.rs {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
 }
-body.rshell .lc-panel-header{display:none}
-body.rshell .lc-panel-body{max-width:900px; margin:0 auto; padding:34px 34px 70px}
-body.rshell .rd-resources-panel{
-  display:none; max-height:none; opacity:1; overflow:visible;
-  max-width:900px; margin:0 auto; padding:34px 34px 70px;
+
+/* ---- section list (Sidebar) ---- */
+/* Base: Collapsed by default (60px, icons only) */
+.rs-side {
+  width: 60px;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: var(--v-navy);
+  color: #dbe8f4;
+  transition: width .22s cubic-bezier(0.4, 0, 0.2, 1), box-shadow .22s ease;
+  user-select: none;
 }
-body.rshell .rd-resources-panel.open{display:block}
 
-/* a section that lives on its own page opens here instead of navigating away,
-   so the section list stays put */
-.rs-main.framed{overflow:hidden}
-.rs-frame{display:none; width:100%; height:100%; border:0}
-.rs-frame.open{display:block}
+/* Hover-expanded state (overlays content with right-edge shadow, does not push content) */
+.rs-side.expanded {
+  width: 252px;
+  box-shadow: 6px 0 24px rgba(10, 38, 71, .15);
+}
 
-@media(max-width:860px){
-  .rs-side{width:64px}
-  .rs-side-hd,.rs-side-ft,.rs-nav button span{display:none}
-  .rs-nav button{justify-content:center; padding:12px 0}
-  body.rshell .lc-panel-body,.rs-home{padding-left:18px; padding-right:18px}
+/* Pinned state (pushes content via relative positioning in flex layout) */
+.rs-side.pinned {
+  position: relative;
+  width: 252px;
+  box-shadow: none;
+  flex: none;
+}
+
+.rs-side-hd {
+  padding: 16px 14px 14px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  min-height: 66px;
+  box-sizing: border-box;
+  transition: padding .22s cubic-bezier(0.4, 0, 0.2, 1), justify-content .22s;
+}
+.rs-side.expanded .rs-side-hd {
+  padding: 16px 14px 14px 18px;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rs-side-hd-text {
+  flex: 0 0 0;
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: opacity .18s ease, width .22s ease, flex .22s ease;
+}
+.rs-side.expanded .rs-side-hd-text {
+  flex: 1;
+  width: auto;
+  opacity: 1;
+}
+
+.rs-side-hd .kick {
+  font-family: var(--mono, ui-monospace, Menlo, Consolas, monospace);
+  font-size: 10px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--v-cyan);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rs-side-hd .nm {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-weight: 800;
+  letter-spacing: -.3px;
+  font-size: 16px;
+  line-height: 1.25;
+  color: #fff;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Pin / Unpin toggle button */
+.rs-toggle-btn {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  background: rgba(255, 255, 255, .05);
+  color: #9fb4c9;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background .15s, color .15s, border-color .15s, transform .2s;
+}
+.rs-toggle-btn:hover {
+  background: rgba(23, 195, 212, .18);
+  color: #7ee3ee;
+  border-color: rgba(23, 195, 212, .4);
+}
+.rs-toggle-btn.pinned {
+  background: rgba(23, 195, 212, .22);
+  color: var(--v-cyan);
+  border-color: var(--v-cyan);
+}
+.rs-toggle-icon {
+  width: 15px;
+  height: 15px;
+  transition: transform .22s ease;
+}
+
+.rs-nav {
+  flex: 1;
+  padding: 12px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: padding .22s ease;
+}
+.rs-side.expanded .rs-nav {
+  padding: 12px;
+}
+
+.rs-nav button {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 9px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #b8cadb;
+  text-align: left;
+  cursor: pointer;
+  transition: background .15s, color .15s, padding .22s cubic-bezier(0.4, 0, 0.2, 1), gap .22s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.rs-nav button:hover {
+  background: rgba(255, 255, 255, .07);
+  color: #fff;
+}
+.rs-nav button.on {
+  background: rgba(23, 195, 212, .18);
+  color: #7ee3ee;
+  font-weight: 600;
+}
+.rs-nav button svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  margin: 0 auto;
+  transition: margin .22s ease;
+}
+.rs-side.expanded .rs-nav button {
+  padding: 10px 12px;
+  gap: 11px;
+}
+.rs-side.expanded .rs-nav button svg {
+  margin: 0;
+}
+
+.rs-nav button span {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: opacity .18s ease, width .22s ease;
+}
+.rs-side.expanded .rs-nav button span {
+  opacity: 1;
+  width: auto;
+}
+
+.rs-side-ft {
+  padding: 14px 10px;
+  border-top: 1px solid rgba(255, 255, 255, .08);
+  min-height: 48px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: padding .22s ease;
+}
+.rs-side.expanded .rs-side-ft {
+  padding: 14px 18px;
+  justify-content: flex-start;
+}
+.rs-side-ft a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #9fb4c9;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color .15s, gap .22s ease;
+}
+.rs-side.expanded .rs-side-ft a {
+  gap: 7px;
+}
+.rs-side-ft a:hover {
+  color: #fff;
+}
+.rs-back-arr {
+  font-size: 16px;
+  display: inline-block;
+  text-align: center;
+  width: 24px;
+  flex: none;
+}
+.rs-side-ft .rs-back-txt {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: opacity .18s ease, width .22s ease;
+}
+.rs-side.expanded .rs-side-ft .rs-back-txt {
+  opacity: 1;
+  width: auto;
+}
+
+/* ---- content area (Full-Width) ---- */
+.rs-main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  position: relative;
+  margin-left: 60px; /* permanent space for collapsed sidebar */
+  transition: margin-left .22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.rs-side.pinned ~ .rs-main,
+.rs-side.pinned + .rs-main {
+  margin-left: 0; /* flexbox manages layout when pinned */
+}
+
+.rs-home {
+  max-width: none;
+  margin: 0;
+  padding: 38px 48px 60px;
+}
+.rs-home h1 {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-weight: 900;
+  letter-spacing: -1px;
+  font-size: 30px;
+  color: var(--v-navy);
+  margin: 0 0 10px;
+}
+.rs-home .lead {
+  font-size: 16px;
+  color: var(--v-muted);
+  line-height: 1.6;
+  margin: 0 0 26px;
+  max-width: 720px;
+}
+.rs-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  max-width: 1400px;
+}
+.rs-card {
+  background: #fff;
+  border: 1px solid var(--v-line);
+  border-radius: 14px;
+  padding: 20px 22px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 2px 10px rgba(10, 38, 71, .06);
+  transition: transform .16s, box-shadow .16s, border-color .16s;
+}
+.rs-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(10, 38, 71, .1);
+  border-color: rgba(23, 195, 212, .45);
+}
+.rs-card .nm {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -.3px;
+  color: var(--v-navy);
+  display: block;
+  margin-bottom: 6px;
+}
+.rs-card .ds {
+  font-size: 13.5px;
+  color: var(--v-muted);
+  line-height: 1.55;
+  display: block;
+}
+.rs-card .go {
+  display: block;
+  margin-top: 12px;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--v-cyan-d);
+}
+
+/* the page's own panels now sit inside the content column — Full Width */
+body.rshell .lc-panel {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  background: transparent;
+  overflow: visible;
+  animation: none;
+}
+body.rshell .lc-panel-header {
+  display: none;
+}
+body.rshell .lc-panel-body {
+  max-width: 1340px !important;
+  margin: 0 auto !important;
+  padding: 34px 40px 70px;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+body.rshell .rd-resources-panel {
+  display: none;
+  max-height: none;
+  opacity: 1;
+  overflow: visible;
+  max-width: 1340px;
+  margin: 0 auto;
+  padding: 34px 40px 70px;
+}
+body.rshell .rd-resources-panel.open {
+  display: block;
+}
+
+/* a section that lives on its own page opens here instead of navigating away */
+.rs-main.framed {
+  overflow: hidden;
+}
+.rs-frame {
+  display: none;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.rs-frame.open {
+  display: block;
+}
+
+/* Wide screen generous padding */
+@media (min-width: 1600px) {
+  body.rshell .lc-panel-body,
+  body.rshell .rd-resources-panel {
+    padding: 38px 48px 80px;
+  }
+  .rs-home {
+    padding: 38px 64px 60px;
+  }
+}
+
+/* Medium screen padding adjustments */
+@media (max-width: 1400px) {
+  body.rshell .lc-panel-body,
+  body.rshell .rd-resources-panel {
+    padding: 34px 32px 70px;
+  }
+  .rs-home {
+    padding: 38px 34px 60px;
+  }
+}
+
+/* Mobile: Sidebar stays 60px, no hover expand, touch-friendly padding */
+@media (max-width: 860px) {
+  .rs-side {
+    width: 60px !important;
+    position: absolute !important;
+    box-shadow: none !important;
+  }
+  .rs-side-hd {
+    padding: 16px 0 !important;
+    justify-content: center !important;
+  }
+  .rs-side-hd-text,
+  .rs-nav button span,
+  .rs-side-ft .rs-back-txt {
+    display: none !important;
+  }
+  .rs-toggle-btn {
+    display: none !important;
+  }
+  .rs-nav {
+    padding: 12px 6px !important;
+  }
+  .rs-nav button {
+    justify-content: center !important;
+    padding: 11px 0 !important;
+    gap: 0 !important;
+  }
+  .rs-nav button svg {
+    margin: 0 auto !important;
+  }
+  .rs-side-ft {
+    padding: 14px 0 !important;
+    justify-content: center !important;
+  }
+  .rs-side-ft a {
+    justify-content: center !important;
+    width: 100% !important;
+  }
+  .rs-main {
+    margin-left: 60px !important;
+  }
+  body.rshell .lc-panel-body,
+  body.rshell .rd-resources-panel,
+  .rs-home {
+    padding: 24px 18px 60px !important;
+  }
 }

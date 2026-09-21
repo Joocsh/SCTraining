@@ -76,10 +76,26 @@
     var shell = document.createElement('div');
     shell.className = 'rs';
     shell.innerHTML =
-      '<aside class="rs-side">' +
-        '<div class="rs-side-hd"><div class="kick">Role training</div><div class="nm">' + roleName + '</div></div>' +
+      '<aside class="rs-side" id="rsSide">' +
+        '<div class="rs-side-hd">' +
+          '<div class="rs-side-hd-text">' +
+            '<div class="kick">Role training</div>' +
+            '<div class="nm">' + roleName + '</div>' +
+          '</div>' +
+          '<button type="button" class="rs-toggle-btn" id="rsToggleBtn" title="Pin sidebar open" aria-label="Pin sidebar open">' +
+            '<svg class="rs-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+              '<polyline points="11 17 6 12 11 7"></polyline>' +
+              '<polyline points="18 17 13 12 18 7"></polyline>' +
+            '</svg>' +
+          '</button>' +
+        '</div>' +
         '<nav class="rs-nav" id="rsNav"></nav>' +
-        '<div class="rs-side-ft"><a href="../index.html#roles">&larr; All roles</a></div>' +
+        '<div class="rs-side-ft">' +
+          '<a href="../index.html#roles" title="All roles">' +
+            '<span class="rs-back-arr">&larr;</span> ' +
+            '<span class="rs-back-txt">All roles</span>' +
+          '</a>' +
+        '</div>' +
       '</aside>' +
       '<div class="rs-main" id="rsMain"><div class="rs-home" id="rsHome"></div></div>';
     document.body.insertBefore(shell, document.body.firstChild);
@@ -87,6 +103,105 @@
     var main = shell.querySelector('#rsMain');
     var nav = shell.querySelector('#rsNav');
     var home = shell.querySelector('#rsHome');
+    var aside = shell.querySelector('#rsSide');
+    var toggleBtn = shell.querySelector('#rsToggleBtn');
+
+    var PIN_ICON_UNPINNED =
+      '<svg class="rs-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<polyline points="11 17 6 12 11 7"></polyline>' +
+        '<polyline points="18 17 13 12 18 7"></polyline>' +
+      '</svg>';
+
+    var PIN_ICON_PINNED =
+      '<svg class="rs-toggle-icon rs-pin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<line x1="12" y1="17" x2="12" y2="22"></line>' +
+        '<path d="M5 17h14v-2l-3-3V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v7l-3 3v2z"></path>' +
+      '</svg>';
+
+    // Storage migration: if old sc_role_sidebar_collapsed === '0' (was expanded), pin it.
+    try {
+      var oldCol = localStorage.getItem('sc_role_sidebar_collapsed');
+      if (oldCol !== null) {
+        if (oldCol === '0') {
+          localStorage.setItem('sc_role_sidebar_pinned', '1');
+        }
+        localStorage.removeItem('sc_role_sidebar_collapsed');
+      }
+    } catch (e) {}
+
+    var pinned = false;
+    try {
+      if (localStorage.getItem('sc_role_sidebar_pinned') === '1') {
+        pinned = true;
+      }
+    } catch (e) {}
+
+    var hoverTimeout = null;
+
+    function applyPinState() {
+      if (!aside) return;
+      if (pinned) {
+        aside.classList.add('expanded', 'pinned');
+        if (toggleBtn) {
+          toggleBtn.innerHTML = PIN_ICON_PINNED;
+          toggleBtn.setAttribute('title', 'Unpin sidebar');
+          toggleBtn.setAttribute('aria-label', 'Unpin sidebar');
+          toggleBtn.classList.add('pinned');
+        }
+      } else {
+        aside.classList.remove('pinned');
+        if (toggleBtn) {
+          toggleBtn.innerHTML = PIN_ICON_UNPINNED;
+          toggleBtn.setAttribute('title', 'Pin sidebar open');
+          toggleBtn.setAttribute('aria-label', 'Pin sidebar open');
+          toggleBtn.classList.remove('pinned');
+        }
+        try {
+          if (!aside.matches(':hover')) {
+            aside.classList.remove('expanded');
+          }
+        } catch (err) {
+          aside.classList.remove('expanded');
+        }
+      }
+    }
+
+    // Hover-to-expand (active on desktop > 860px)
+    if (aside) {
+      aside.addEventListener('mouseenter', function () {
+        clearTimeout(hoverTimeout);
+        if (!pinned && window.innerWidth > 860) {
+          aside.classList.add('expanded');
+        }
+      });
+      aside.addEventListener('mouseleave', function () {
+        clearTimeout(hoverTimeout);
+        if (!pinned && window.innerWidth > 860) {
+          hoverTimeout = setTimeout(function () {
+            aside.classList.remove('expanded');
+          }, 200);
+        }
+      });
+    }
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        pinned = !pinned;
+        try {
+          localStorage.setItem('sc_role_sidebar_pinned', pinned ? '1' : '0');
+        } catch (err) {}
+        applyPinState();
+      });
+    }
+
+    window.addEventListener('resize', function () {
+      if (window.innerWidth <= 860 && !pinned && aside) {
+        aside.classList.remove('expanded');
+      }
+    });
+
+    applyPinState();
 
     /* the overview keeps the role's own words */
     home.innerHTML = '<h1>' + roleName + '</h1>' +
@@ -112,11 +227,15 @@
       return frame;
     }
 
+    var RS_SEC_KEY = 'sc_role_active_section';
+
     function show(id, href) {
       main.querySelectorAll('.lc-panel, .rd-resources-panel').forEach(function (p) { p.classList.remove('open'); });
       if (frame) frame.classList.remove('open');
       main.classList.remove('framed');
       home.style.display = id ? 'none' : '';
+
+      try { localStorage.removeItem(RS_SEC_KEY); } catch (e) {}
 
       if (href) {
         /* its own page, shown inside the column so the section list stays */
@@ -139,6 +258,8 @@
     function navButton(id, label) {
       var b = document.createElement('button');
       b.dataset.sec = id || 'home';
+      b.setAttribute('title', label);
+      b.setAttribute('aria-label', label);
       b.innerHTML = svg(iconFor(id, label)) + '<span>' + label + '</span>';
       b.addEventListener('click', function () { show(id); });
       nav.appendChild(b);
@@ -147,12 +268,16 @@
 
     var ov = navButton(null, 'Overview');
     ov.innerHTML = svg(ICONS.home) + '<span>Overview</span>';
+    ov.setAttribute('title', 'Overview');
+    ov.setAttribute('aria-label', 'Overview');
 
     sections.forEach(function (s, i) {
       if (s.href) {
         s.id = 'ext' + i;
         var a = document.createElement('button');
         a.dataset.sec = s.id;
+        a.setAttribute('title', s.name);
+        a.setAttribute('aria-label', s.name);
         a.innerHTML = svg(iconFor(null, s.name)) + '<span>' + s.name + '</span>';
         a.addEventListener('click', function () { show(s.id, s.href); });
         nav.appendChild(a);

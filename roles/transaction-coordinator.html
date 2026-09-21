@@ -215,11 +215,13 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      min-height: calc(100vh - 160px);
+      justify-content: flex-start;
+      min-height: auto;
+      padding: 12px 0 40px;
+      width: 100%;
     }
-    .sim-pick-center .lc-state-bar { width: 100%; max-width: 1080px; margin: 0 auto 28px; }
-    .sim-pick-center #sim-pick { width: 100%; max-width: 1080px; margin: 0 auto; }
+    .sim-pick-center .lc-state-bar { width: 100%; max-width: 1080px; margin: 16px auto 28px; }
+    .sim-pick-center #sim-pick { width: 100%; max-width: 960px; margin: 0 auto; }
 
     .mls-picker-wrap {
       max-width: 1080px;
@@ -1923,7 +1925,7 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
     <button class="lc-panel-back" onclick="simPanelBack()">Back</button>
     <span class="lc-panel-title">Case Simulator &mdash; Transaction Coordinator</span>
   </div>
-  <div class="lc-panel-body" style="max-width:1120px;margin:0 auto;padding:36px 24px 80px">
+  <div class="lc-panel-body" style="max-width:1340px;margin:0 auto;padding:34px 40px 70px">
 
     <div class="sim-pick-center">
       <!-- VIEW 1: city selector -->
@@ -1933,9 +1935,22 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
       </div>
 
       <!-- VIEW 2: case picker for the chosen city -->
-      <div id="sim-pick" style="display:none">
-        <button class="lc-panel-back" onclick="simBackToCities()" style="margin-bottom:20px">&larr; Back to cities</button>
-        <p style="font-size:15px;color:var(--v-muted);margin:0 0 24px;text-align:center">Select the case to begin. Each one is a real, closed SkillCloud transaction: read the actual emails, fill the actual forms, and make the actual calls a TC made on this file.</p>
+      <div id="sim-pick" style="display:none" class="sim-pick-screen">
+        <div class="sim-pick-top-bar">
+          <button type="button" class="sim-back-nav-btn" onclick="simBackToCities()">
+            <span class="sim-back-nav-arr">&larr;</span>
+            <span>Choose another state</span>
+          </button>
+          <div class="sim-active-location-chip" id="sim-location-chip">
+            <span class="sim-loc-dot"></span>
+            <span id="sim-location-chip-text">California Market &middot; 4827 Rolando Blvd</span>
+          </div>
+        </div>
+        <div class="sim-pick-hero">
+          <div class="sim-hero-eyebrow">Real-World Case Simulation</div>
+          <h2 class="sim-hero-title" id="sim-hero-title">California Real Estate Case File</h2>
+          <p class="sim-hero-lead">Each case is a real, closed SkillCloud transaction: review authentic client emails, prepare California statutory disclosures, and coordinate critical contract milestones.</p>
+        </div>
         <div class="lc-sc-grid" id="sim-cards"></div>
       </div>
     </div>
@@ -1956,16 +1971,22 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
 
     <!-- Workflow area (full case) -->
     <div id="sim-workflow" style="display:none">
-      <div class="lc-progress-track">
-        <div class="lc-progress-fill" id="wf-prog"></div>
-      </div>
-      <div class="lc-scorebar">
+      <!-- Pipeline Stepper (rendered by wfRenderPipeline for pipeline workflows) -->
+      <div id="wf-pipeline" class="wf-pipeline" style="display:none"></div>
+      <!-- Fallback scorebar for non-pipeline workflows -->
+      <div id="wf-scorebar-fallback" class="lc-scorebar">
+        <div class="lc-progress-track"><div class="lc-progress-fill" id="wf-prog"></div></div>
         <span class="lc-chip" id="wf-step-chip">Step 1 of 8</span>
         <span class="lc-chip wf-label-chip" id="wf-label-chip">Client Email</span>
+        <button class="lc-chip-btn" onclick="wfRestartCase()" title="Reset case to beginning">&#8635; Reset Case</button>
         <button class="lc-chip-btn" onclick="wfReset()">&larr; Scenarios</button>
       </div>
+      <!-- Floating score tracker removed per user request -->
+      <div id="wf-score-float" class="wf-score-float" style="display:none !important;"></div>
       <div id="wf-body"></div>
     </div>
+
+
 
   </div>
 </div>

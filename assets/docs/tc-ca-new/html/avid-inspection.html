@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Agent Visual Inspection Disclosure (AVID)</title>
+<style>
+@page {
+  size: letter;
+  margin: 15mm 15mm 15mm 15mm;
+}
+body {
+  background: #ffffff;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px 25px;
+  color: #1a1a1a;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.header {
+  text-align: center;
+  border-bottom: 2px solid #0a2647;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+}
+.training-badge {
+  background: #0a2647;
+  color: #fff;
+  padding: 5px 14px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+.disclaimer {
+  font-size: 10.5px;
+  color: #666;
+  font-style: italic;
+  margin-bottom: 6px;
+}
+h1 {
+  font-size: 19px;
+  color: #0a2647;
+  margin: 4px 0 2px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.ref-line {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #444;
+}
+h2 {
+  font-size: 14.5px;
+  color: #0a2647;
+  border-bottom: 1.5px solid #d0d7de;
+  padding-bottom: 4px;
+  margin-top: 18px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+h3 {
+  font-size: 13.5px;
+  color: #24292f;
+  margin: 12px 0 6px;
+}
+.field-row {
+  display: flex;
+  border-bottom: 1px solid #eee;
+  padding: 5px 0;
+}
+.field-label {
+  width: 220px;
+  font-weight: 600;
+  color: #333;
+  flex-shrink: 0;
+}
+.field-value {
+  flex: 1;
+  color: #111;
+}
+.section {
+  margin-bottom: 18px;
+}
+.box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 10px 0;
+}
+.table-data {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 12.5px;
+}
+.table-data th, .table-data td {
+  border: 1px solid #cbd5e1;
+  padding: 6px 8px;
+  text-align: left;
+}
+.table-data th {
+  background: #f1f5f9;
+  font-weight: 700;
+  color: #0a2647;
+}
+.check-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 16px;
+  margin: 8px 0;
+}
+.check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+}
+.check-box {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 1.5px solid #333;
+  border-radius: 2px;
+  text-align: center;
+  line-height: 12px;
+  font-size: 11px;
+  font-weight: bold;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.check-box.checked::after {
+  content: "✓";
+}
+.initials {
+  font-size: 10.5px;
+  color: #64748b;
+  margin-top: 15px;
+  display: flex;
+  justify-content: space-between;
+}
+.sig-block {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 20px;
+}
+.sig-line {
+  border-bottom: 1.5px solid #333;
+  min-height: 28px;
+  font-family: 'Brush Script MT', cursive, sans-serif;
+  font-size: 18px;
+  color: #0b3c5d;
+  padding-left: 8px;
+}
+.sig-lbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  margin-top: 4px;
+}
+.page-break {
+  page-break-before: always;
+  margin-top: 25px;
+  padding-top: 15px;
+  border-top: 1px dashed #cbd5e1;
+}
+.page-footer {
+  margin-top: 24px;
+  border-top: 1px solid #ddd;
+  padding-top: 8px;
+  font-size: 10.5px;
+  color: #64748b;
+  text-align: center;
+}
+.highlight-warn {
+  background: #fffbeb;
+  border-left: 3px solid #f59e0b;
+  padding: 8px 12px;
+  margin: 8px 0;
+  font-size: 12px;
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="training-badge">TRAINING DOCUMENT · SKILLCLOUD ACADEMY</div>
+  <div class="disclaimer">All names, data, and circumstances are fictional. For educational use only.</div>
+  <h1>Agent Visual Inspection Disclosure (AVID)</h1>
+  <div class="ref-line">Reference: C.A.R. Form AVID · Completed by Listing Agent</div>
+</div>
+
+
+<div class="section">
+  <h2>1. General Information & Scope</h2>
+  <div class="field-row"><div class="field-label">Inspection Date:</div><div class="field-value">September 29, 2025 (10:30 AM – 11:45 AM)</div></div>
+  <div class="field-row"><div class="field-label">Property Address:</div><div class="field-value"><strong>4827 Rolando Blvd, San Diego, CA 92115</strong></div></div>
+  <div class="field-row"><div class="field-label">Inspecting Agent:</div><div class="field-value"><strong>Sofia Reyes</strong> (DRE #02156789) · Berkshire Hathaway HomeServices</div></div>
+  <div class="field-row"><div class="field-label">Weather Conditions:</div><div class="field-value">Clear, dry, ambient temperature approx. 74°F</div></div>
+</div>
+
+<div class="section">
+  <h2>2. Specific Room-by-Room Visual Observations</h2>
+  <p><em>(Visual inspection only of reasonably and normally accessible areas pursuant to CA Civil Code §2079):</em></p>
+  <table class="table-data">
+    <tr><th style="width:30%">Area Inspected</th><th>Visual Observations Noted</th></tr>
+    <tr>
+      <td><strong>Exterior / Grounds / Driveway</strong></td>
+      <td>Concrete driveway shows longitudinal surface settlement cracking. Mature front yard landscaping in good manicured condition. Exterior paint on wood fascias and eaves shows sun fading and early paint flaking on west/south exposures.</td>
+    </tr>
+    <tr>
+      <td><strong>Garage (Detached 2-Car)</strong></td>
+      <td>Detached garage interior dry. Some minor wood framing dust/frass noticed near south interior framing baseplate (recommend professional termite inspection). Automatic door operates normally.</td>
+    </tr>
+    <tr>
+      <td><strong>Living Room & Dining Area</strong></td>
+      <td>Original oak hardwood flooring in good condition with minor surface scratches near hallway entry. Chandelier hanging above dining table (noted as excluded item on RLA).</td>
+    </tr>
+    <tr>
+      <td><strong>Kitchen</strong></td>
+      <td>Updated cabinetry and quartz countertops clean and sound. Range, hood, and dishwasher clean. No active leaks observed beneath sink cabinet.</td>
+    </tr>
+    <tr>
+      <td><strong>Hallway & Guest Bath</strong></td>
+      <td>Sink basin faucet drained slowly during visual run test. Grout in shower enclosure intact.</td>
+    </tr>
+    <tr>
+      <td><strong>Bedrooms (3) & Master Bath</strong></td>
+      <td>All windows open and latch. Master bathroom shower tile intact. No visible stains on bedroom ceilings.</td>
+    </tr>
+  </table>
+</div>
+
+<div class="section">
+  <h2>3. Agent Signature</h2>
+  <div class="sig-block">
+    <div>
+      <div class="sig-line">Sofia Reyes</div>
+      <div class="sig-lbl">Sofia Reyes, Realtor® · BHHS California Properties · Date: 09/29/2025</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="page-footer">
+  4827 Rolando Blvd, San Diego, CA 92115 · Escrow #CTT-2025-07421<br>
+  TRAINING DOCUMENT · SKILLCLOUD ACADEMY
+</div>
+</body>
+</html>
