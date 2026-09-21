@@ -3036,10 +3036,11 @@
       <div class="menu">
         <a class="navlink" href="../index.html">Home</a>
         <a class="navlink" href="../ai.html">Introduction</a>
-        <a class="navlink" href="../index.html#roles">Roles</a>
+        <a class="navlink" href="../va.html">VA</a>
+        <a class="navlink" href="../index.html#simulations">Simulations</a>
       </div>
       <span class="spacer"></span>
-      <a class="pill" href="../index.html#roles">Start Practicing</a>
+      <a class="pill" href="../index.html#simulations">Start Practicing</a>
       <a class="user-chip" href="../account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
     </div>
   </nav>
@@ -3057,7 +3058,7 @@
     <div class="orb orb-4" aria-hidden="true"></div>
     <div class="orb orb-5" aria-hidden="true"></div>
     <div class="rd-hero-inner">
-      <a class="rd-back" href="../index.html#roles">All Roles</a>
+      <a class="rd-back" href="../index.html#simulations">All Roles</a>
       <h1>Listing Coordinator</h1>
       <p class="rd-hero-desc">Practice MLS entry, simulate real listing scenarios, test your deadline knowledge, and
         sharpen your prompting skills with Claude.</p>
@@ -3814,11 +3815,11 @@
         </div>
         <div>
           <h4>Practice</h4>
-          <a class="fl" href="../index.html#roles">Choose Your Role</a>
+          <a class="fl" href="../index.html#simulations">Go to Simulations</a>
           <a class="fl" href="../index.html#how-it-works">How It Works</a>
         </div>
         <div>
-          <h4>Roles</h4>
+          <h4>Simulations</h4>
           <a class="fl" href="transaction-coordinator.html">Transaction Coordinator</a>
           <a class="fl" href="property-manager.html">Property Manager</a>
           <a class="fl" href="operations-manager.html">Operations</a>
@@ -3839,9 +3840,11 @@
   </footer>
 
 <script src="../assets/js/rein-va-features.js"></script>
-  <script src="../assets/js/app-core.js"></script>
-  <script src="../assets/js/site.js"></script>
-<script src="../assets/js/role-shell.js" defer></script>
+<script src="../assets/js/rein-va-form.js"></script>
+  <script src="../assets/js/app-core.js?v=20260917"></script>
+  <script>SCApp.requireIntro();</script>
+  <script src="../assets/js/site.js?v=20260917"></script>
+<script src="../assets/js/role-shell.js?v=20260917" defer></script>
   <script>
     /* ═══════════════════════════════════════════════════════════
        DATA
@@ -5935,7 +5938,7 @@
 
     const MLS_PROPS = {
       va: [
-        { id: 'maplehurst', addr: '4232 Maplehurst Road', city: 'Virginia Beach, VA 23462', type: 'Single-Family Residential', price: '$299,900', active: true },
+        { id: 'maplehurst', addr: '4232 Maplehurst Road', city: 'Virginia Beach, VA 23462', type: 'Attached Townhouse', price: '$290,000', active: true },
         { id: 'ocean_view', addr: '1847 Shore Crest Blvd', city: 'Norfolk, VA 23518', type: 'Townhouse', price: '$275,500', active: false },
         { id: 'chesapeake', addr: '503 Willowbend Court', city: 'Chesapeake, VA 23322', type: 'Single-Family Detached', price: '$428,900', active: false },
         { id: 'sandbridge', addr: '2209 Lynnhaven Pkwy #4B', city: 'Virginia Beach, VA 23456', type: 'Condo / Attached', price: '$189,000', active: false },
@@ -6194,14 +6197,14 @@
       if (container) {
         container.className = 'lc-mls-form lc-rein-form';
         let html = '';
-        html += `<div class="rein-section-anchor" id="va-sec-status">${vaStatus()}</div>`;
-        html += `<div class="rein-section-anchor" id="va-sec-agent">${vaAgent()}</div>`;
-        html += `<div class="rein-section-anchor" id="va-sec-location">${vaLocation()}</div>`;
-        html += `<div class="rein-section-anchor" id="va-sec-property">${vaProperty()}</div>`;
+        html += `<div class="rein-section-anchor" id="va-sec-status">${reinGuide()}${vaStatus()}</div>`;
+        html += `<div class="rein-section-anchor" id="va-sec-agent">${reinAgent()}</div>`;
+        html += `<div class="rein-section-anchor" id="va-sec-location">${reinLocation()}</div>`;
+        html += `<div class="rein-section-anchor" id="va-sec-property">${reinProperty()}</div>`;
         html += `<div class="rein-section-anchor" id="va-sec-features">${reinFeatures()}</div>`;
         html += `<div class="rein-section-anchor" id="va-sec-rooms">${reinRooms()}</div>`;
-        html += `<div class="rein-section-anchor" id="va-sec-marketing">${vaMarketing()}</div>`;
-        html += `<div class="rein-section-anchor" id="va-sec-financial">${vaFinancial()}</div>`;
+        html += `<div class="rein-section-anchor" id="va-sec-marketing">${reinMarketing()}</div>`;
+        html += `<div class="rein-section-anchor" id="va-sec-financial">${reinFinancial()}</div>`;
         html += `<div class="rein-section-anchor" id="va-sec-editor">${vaEditor()}</div>`;
         html += `<div class="rein-section-anchor" id="va-sec-photos">${vaPhotos()}</div>`;
         container.innerHTML = html;
@@ -7661,39 +7664,35 @@
 
       const TAX_RECORDS = {
         maplehurst: {
-          addr: '4232 Maplehurst Road', city: 'Virginia Beach, VA 23462',
-          parcel: '1467-63-3891-0000', year: '1985', sqft: '1,540', lot: '7,500 sqft',
-          type: 'Single-Family Residential', style: 'Ranch', stories: '1',
-          exterior: 'Vinyl Siding', foundation: 'Crawl Space', roof: 'Asphalt Shingle',
-          floors: 'Hardwood / Carpet', bedrooms: '3', baths: '2', garage: '1-Car Attached',
-          lastSale: 'Oct 14 2019', lastPrice: '$258,000', assessedLand: '$72,000',
-          assessedImpr: '$184,000', assessedTotal: '$256,000', taxes: '$3,120 / yr', taxYear: '2024',
-          subdivision: 'Timberlake', zoning: 'R-7.5 Residential',
+          addr: '4232 Maplehurst Road', city: 'Virginia Beach, VA 23462-4920',
+          parcel: '147-693-53180-000', year: '1977', sqft: '1,750', lot: 'Not listed in the case file',
+          type: 'Residential, Attached', style: 'Townhouse', stories: '2.0',
+          exterior: 'Wood', foundation: 'Slab', roof: 'Composite',
+          floors: 'Carpet / Vinyl', bedrooms: '3', baths: '2 full, 1 half', garage: 'None (driveway space)',
+          lastSale: 'Not listed in the case file', lastPrice: '', assessedLand: 'Not listed in the case file',
+          assessedImpr: 'Not listed in the case file', assessedTotal: 'Not listed in the case file', taxes: '$2,368 / yr', taxYear: 'Per the Data Input',
+          subdivision: 'Timberlake', zoning: 'PDH1',
           spq: null,
           extra: {
-            legal: 'TIMBERLAKE SEC 5 BK A LOT 15, per the ratified contract legal description (not a match in the fixed Subdivision Name dropdown, use "ALL OTHERS AREA 46" and enter Timberlake in Neighborhood Name)',
-            apn: '1467-63-3891-0000', county: 'City of Virginia Beach', city: 'Virginia Beach', state: 'VA', zip: '23462',
-            sellingFirm: 'Berkshire Hathaway HomeServices RW Towne Realty (MLS Office No. 138706)', listingFirm: 'AtCoastal Realty (MLS Office No. 128700)',
-            sellingAgent: 'Bobbi Wood (per PICRA addendum signatures)', listingAgent: 'Shannon Paschall (per PICRA addendum signatures)',
-            censusTract: '4102.05', councilDistrict: 'Kempsville District', schoolDistrict: 'Virginia Beach City Public Schools',
-            elementarySchool: 'Kempsville Elementary', middleSchool: 'Kempsville Middle', highSchool: 'Kempsville High',
-            fireDistrict: 'Virginia Beach Fire Station 16 (Thalia)',
-            floodZone: 'Zone X, minimal flood hazard (per FEMA Flood Insurance Rate Map)',
-            seismicZone: 'N/A, not a designated seismic or landslide hazard zone',
-            lotDim: '75 ft × 100 ft', lotSF: '7,500', lotAcres: '0.172',
-            units: '1', pool: 'No', spa: 'No', fireplaces: '1 (wood-burning, per home inspection)',
-            ac: 'Central Air, Electric', heat: 'Forced Air, Gas', laundry: 'In Garage',
-            utilities: 'Electric: Dominion Energy · Gas: Virginia Natural Gas · Water/Sewer: City of Virginia Beach Public Utilities',
-            water: 'City of Virginia Beach Public Utilities',
-            internet: 'Cox Communications / Verizon Fios available',
-            permitHistory: [
-              { date: 'Jun 2015', type: 'Roof Replacement (Asphalt Shingle)', permit: 'VB-2015-RF-01123', status: 'Finaled' }
-            ],
-            saleHistory: [
-              { date: 'Oct 14 2019', price: '$258,000', buyer: 'Jemal Tamem', seller: 'Prior Owner of Record', docNo: '2019-0045821' }
-            ],
-            hoa: 'None', melloRoos: 'N/A, not applicable in Virginia', seniorCommunity: 'No',
-            listPrice: '$299,900', listDate: 'Not applicable, this was an off-market direct sale, not an active MLS listing', mlsNum: 'REIN MLS, Pending Entry'
+            owner: 'Jemal O Tamem',
+            legal: 'TIMBERLAKE SEC 5 BK A LOT 15',
+            apn: '147-693-53180-000', county: 'Virginia Beach VA', city: 'Virginia Beach', state: 'VA', zip: '23462-4920',
+            listingFirm: 'AtCoastal Realty (REIN ID 128700)', listingAgent: 'Shannon Paschall (REIN ID 53157)',
+            censusTract: 'Not listed', councilDistrict: 'Not listed in the case file', schoolDistrict: 'Virginia Beach',
+            elementarySchool: 'Kempsville Meadows Elementary', middleSchool: 'Larkspur Middle', highSchool: 'Green Run',
+            fireDistrict: 'Not listed in the case file',
+            floodZone: 'Not Waterfront (flood zone not listed in the case file)',
+            seismicZone: 'Not listed in the case file',
+            lotDim: 'Not listed', lotSF: 'Not listed', lotAcres: 'Not listed',
+            units: '1', pool: 'No Pool', spa: 'No', fireplaces: '0',
+            ac: 'Central Air, Heat Pump', heat: 'Electric, Heat Pump', laundry: 'Washer and dryer hookups',
+            utilities: 'Electric water heater',
+            water: 'City/County water and sewer',
+            internet: 'Not listed in the case file',
+            permitHistory: [],
+            saleHistory: [],
+            hoa: 'Timberlake Community Association, managed by PMA (757-646-6247)', melloRoos: 'N/A, not applicable in Virginia', seniorCommunity: 'No',
+            listPrice: '$290,000', listDate: '1/2/2026 to 5/2/2026', mlsNum: 'Assigned by REIN after entry'
           }
         },
         edinburgh: {
@@ -7829,7 +7828,7 @@
       /* Build the record card — enhanced for Edinburgh, standard for Maplehurst */
       const x = rec.extra || null;
 
-      const saleRows = x && x.saleHistory ? x.saleHistory.map(s =>
+      const saleRows = x && x.saleHistory && !x.saleHistory.length ? '<p style="font-size:12.5px;color:var(--v-muted)">No sale history in the case file.</p>' : x && x.saleHistory ? x.saleHistory.map(s =>
         `<div class="tax-record-row" style="flex-direction:column;gap:2px;align-items:flex-start;padding:8px 0">
           <div style="display:flex;justify-content:space-between;width:100%">
             <span class="tax-record-lbl">${s.date}</span>
@@ -7849,6 +7848,7 @@
       <div class="tax-record-section" style="grid-column:1/-1">
         <div class="tax-record-section-title">Legal Description</div>
         <div style="font-size:12.5px;color:var(--v-ink);line-height:1.6;padding:4px 0">${x.legal}</div>
+        ${x.owner ? `<div class="tax-record-row"><span class="tax-record-lbl">Owner of Record</span><span class="tax-record-val">${x.owner}</span></div>` : ''}
         ${x.sellingFirm ? `<div class="tax-record-row"><span class="tax-record-lbl">Selling Firm</span><span class="tax-record-val">${x.sellingFirm}</span></div>` : ''}
         ${x.listingFirm ? `<div class="tax-record-row"><span class="tax-record-lbl">Listing Firm</span><span class="tax-record-val">${x.listingFirm}</span></div>` : ''}
         ${x.sellingAgent ? `<div class="tax-record-row"><span class="tax-record-lbl">Selling Agent</span><span class="tax-record-val">${x.sellingAgent}</span></div>` : ''}

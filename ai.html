@@ -412,6 +412,16 @@
       .concept-grid { grid-template-columns:1fr; }
       .playbook-grid { grid-template-columns:1fr; }
     }
+    /* Introduction gate */
+    .intro-lock { max-width:1180px; margin:18px auto 0; padding:0 24px; }
+    .intro-lock-box { display:flex; gap:14px; align-items:flex-start; background:#fff8ec; border:1.5px solid rgba(217,138,20,.35); border-radius:14px; padding:14px 18px; color:#7a4d00; font-size:14.5px; line-height:1.55; }
+    .intro-lock-box b { color:#5c3a00; }
+    .intro-progress { margin:14px 0 4px; padding:12px 14px; border-radius:12px; background:rgba(23,195,212,.08); border:1px solid rgba(23,195,212,.25); }
+    .intro-progress .ip-top { display:flex; justify-content:space-between; font-size:12px; font-weight:800; color:var(--v-navy); letter-spacing:.3px; }
+    .intro-progress .ip-bar { height:6px; border-radius:99px; background:#dde7ef; margin-top:8px; overflow:hidden; }
+    .intro-progress .ip-fill { height:100%; width:0; background:var(--v-cyan); border-radius:99px; transition:width .4s; }
+    .intro-progress .ip-note { font-size:11.5px; color:var(--v-muted); margin-top:6px; line-height:1.4; }
+    .side-link.seen .side-dot { background:var(--v-cyan); border-color:var(--v-cyan); }
   </style>
 </head>
 <body data-page="fundamentals">
@@ -423,10 +433,11 @@
     <div class="menu">
       <a class="navlink" href="index.html">Home</a>
       <a class="navlink" href="ai.html">Introduction</a>
-      <a class="navlink" href="index.html#roles">Roles</a>
+      <a class="navlink" href="va.html">VA</a>
+      <a class="navlink" href="index.html#simulations">Simulations</a>
     </div>
     <span class="spacer"></span>
-    <a class="pill" href="index.html#roles">Start Practicing</a>
+    <a class="pill" href="index.html#simulations">Start Practicing</a>
     <a class="user-chip" href="account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
   </div>
 </nav>
@@ -439,6 +450,10 @@
   </div>
 </header>
 
+<div class="intro-lock" id="intro-lock" hidden>
+  <div class="intro-lock-box"><span aria-hidden="true">&#128274;</span><span><b>Simulations unlock after the Introduction.</b> Go through every section on this page, from What Is AI to Compare All Three. VA classes are open anytime.</span></div>
+</div>
+
 <div class="ai-shell">
 
   <aside class="ai-sidebar" id="ai-sidebar">
@@ -449,6 +464,11 @@
       <a class="side-link cg" href="#chatgpt"><span class="side-dot"></span>ChatGPT</a>
       <a class="side-link mn" href="#manus"><span class="side-dot"></span>Manus</a>
       <a class="side-link" href="#compare"><span class="side-dot"></span>Compare All Three</a>
+      <div class="intro-progress" id="intro-progress">
+        <div class="ip-top"><span>Your progress</span><span id="ip-count">0 of 5</span></div>
+        <div class="ip-bar"><div class="ip-fill" id="ip-fill"></div></div>
+        <div class="ip-note" id="ip-note">Read every section to unlock Simulations.</div>
+      </div>
       <div class="ai-sidebar-divider"></div>
       <a class="side-link side-cta" href="ai-lab.html">Go to AI Lab &rarr;</a>
     </nav>
@@ -1290,11 +1310,11 @@
     <div class="orb orb-1" aria-hidden="true"></div>
     <div class="orb orb-2" aria-hidden="true"></div>
     <div class="ai-complete-inner">
-      <h3 class="disp">Foundation complete. Now pick a role.</h3>
-      <p>You know what each tool is and when to use it. Choose a role and start applying these tools in real scenarios.</p>
+      <h3 class="disp" id="intro-done-title">Foundation complete. Simulations are unlocked.</h3>
+      <p id="intro-done-text">You know what each tool is and when to use it. Study your role in VA, then apply it in the Simulations.</p>
       <div class="ai-complete-btns">
-        <a class="btn v-cyan" href="index.html#roles">Choose Your Role</a>
-        <a class="btn v-ghost" href="ai-lab.html">Go to AI Lab</a>
+        <a class="btn v-cyan" href="index.html#simulations">Go to Simulations</a>
+        <a class="btn v-ghost" href="index.html#va">Study in VA</a>
       </div>
     </div>
   </div>
@@ -1312,11 +1332,11 @@
       </div>
       <div>
         <h4>Practice</h4>
-        <a class="fl" href="index.html#roles">Choose Your Role</a>
+        <a class="fl" href="index.html#simulations">Go to Simulations</a>
         <a class="fl" href="index.html#how-it-works">How It Works</a>
       </div>
       <div>
-        <h4>Roles</h4>
+        <h4>Simulations</h4>
         <a class="fl" href="roles/transaction-coordinator.html">Transaction Coordinator</a>
         <a class="fl" href="roles/property-manager.html">Property Manager</a>
         <a class="fl" href="roles/operations-manager.html">Operations</a>
@@ -1336,9 +1356,9 @@
   </div>
 </footer>
 
-<script src="assets/js/app-core.js"></script>
+<script src="assets/js/app-core.js?v=20260917"></script>
 <script>SCApp.requireAuth();</script>
-<script src="assets/js/site.js"></script>
+<script src="assets/js/site.js?v=20260917"></script>
 <script>
   // Sidebar active-link state on scroll
   const sideSections = ['what-is-ai','claude','chatgpt','manus','compare'];
@@ -1361,6 +1381,48 @@
   }
 
   window.addEventListener('scroll', updateActiveSideLink, {passive: true});
+
+  // Introduction progress: each section counts once it has been on screen.
+  // When all five have been read, Simulations unlock for this associate.
+  (function introProgress() {
+    const me = window.SCApp && SCApp.currentUser();
+    const key = me ? 'scc_intro_seen__' + me.id : null;
+    let seen = [];
+    try { seen = JSON.parse((key && localStorage.getItem(key)) || '[]'); } catch (e) { seen = []; }
+    const locked = new URLSearchParams(location.search).get('locked');
+    if (locked && !(window.SCApp && SCApp.isIntroDone())) document.getElementById('intro-lock').hidden = false;
+
+    function paint() {
+      const done = window.SCApp && SCApp.isIntroDone();
+      const n = done ? sideSections.length : seen.length;
+      document.getElementById('ip-count').textContent = n + ' of ' + sideSections.length;
+      document.getElementById('ip-fill').style.width = (n / sideSections.length * 100) + '%';
+      document.getElementById('ip-note').textContent = done ? 'Complete. Simulations are unlocked.' : 'Read every section to unlock Simulations.';
+      sideSections.forEach(id => { if (sideLinks[id]) sideLinks[id].classList.toggle('seen', done || seen.indexOf(id) > -1); });
+      document.getElementById('intro-done-title').textContent = done ? 'Foundation complete. Simulations are unlocked.' : 'Almost there.';
+      document.getElementById('intro-done-text').textContent = done
+        ? 'You know what each tool is and when to use it. Study your role in VA, then apply it in the Simulations.'
+        : 'Go back to the sections not yet marked in the sidebar. Simulations unlock once all five are read. VA classes are already open.';
+      if (done) document.getElementById('intro-lock').hidden = true;
+    }
+    function check() {
+      let added = false;
+      sideSections.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el || seen.indexOf(id) > -1) return;
+        const r = el.getBoundingClientRect();
+        if (r.top < window.innerHeight * 0.65 && r.bottom > 0) { seen.push(id); added = true; }
+      });
+      if (!added) return;
+      if (key) localStorage.setItem(key, JSON.stringify(seen));
+      if (seen.length >= sideSections.length && window.SCApp) SCApp.markIntroDone();
+      paint();
+    }
+    window.addEventListener('scroll', check, { passive: true });
+    window.addEventListener('load', check);
+    check();
+    paint();
+  })();
   updateActiveSideLink();
 
   // The first hash jump fires before web fonts settle, so it lands on the wrong

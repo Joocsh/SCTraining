@@ -116,27 +116,34 @@
     DEC[id] = { q: q, choices: choices, fb: fb };
     return '<div id="' + id + '">' + decisionHtml(id) + '</div>';
   }
+  /* the first pick is what counts for the score; a wrong pick can be retried */
   function decisionHtml(id) {
-    var d = DEC[id], a = run()['d_' + id];
-    var answered = a !== undefined;
+    var d = DEC[id], st = run();
+    var tries = st['t_' + id] || [];
+    var solved = tries.some(function (i) { return d.choices[i].ok; });
     var h = '<div class="lc-scenario-box"><h3>' + esc(d.q) + '</h3>';
     d.choices.forEach(function (c, i) {
+      var tried = tries.indexOf(i) > -1;
       var cls = 'lc-choice';
-      if (answered && c.ok) cls += ' correct';
-      if (answered && i === a && !c.ok) cls += ' wrong';
-      h += '<button class="' + cls + '"' + (answered ? ' disabled' : '') + ' onclick="mhDecide(\'' + id + '\',' + i + ')">' + esc(c.t) + '</button>';
+      if (solved && c.ok) cls += ' correct';
+      if (tried && !c.ok) cls += ' wrong';
+      var off = solved || tried;
+      h += '<button class="' + cls + '"' + (off ? ' disabled' : '') + ' onclick="mhDecide(\'' + id + '\',' + i + ')">' + esc(c.t) + '</button>';
     });
-    if (answered) {
-      var ok = d.choices[a].ok;
-      h += '<div class="lc-fb show ' + (ok ? 'good' : 'bad') + '"><strong>' + (ok ? 'Right call.' : 'Worth reconsidering.') + '</strong> ' + esc(d.fb) + '</div>';
+    if (solved) {
+      var firstOk = d.choices[tries[0]].ok;
+      h += '<div class="lc-fb show ' + (firstOk ? 'good' : 'bad') + '"><strong>' + (firstOk ? 'Right call.' : 'Got it on a second try.') + '</strong> ' + esc(d.fb) + '</div>';
+    } else if (tries.length) {
+      h += '<div class="lc-fb show bad"><strong>Not quite.</strong> Go back to the documents and try another answer.</div>';
     }
     return h + '</div>';
   }
   window.mhDecide = function (id, i) {
     var st = run();
-    if (st['d_' + id] !== undefined) return;
-    st['d_' + id] = i;
-    record(DEC[id].choices[i].ok);
+    var tries = st['t_' + id] = st['t_' + id] || [];
+    if (tries.indexOf(i) > -1 || tries.some(function (k) { return DEC[id].choices[k].ok; })) return;
+    if (!tries.length) record(DEC[id].choices[i].ok);
+    tries.push(i);
     var el = document.getElementById(id);
     if (el) el.innerHTML = decisionHtml(id);
   };
@@ -250,8 +257,12 @@
     h += '</div>';
     if (done) {
       var right = p.items.every(function (it, i) { return (on.indexOf(i) > -1) === it.ok; });
-      h += '<div class="lc-fb show ' + (right ? 'good' : 'bad') + '" style="margin-top:12px"><strong>' +
-           (right ? 'Exactly right.' : 'Green is right, red was picked wrong or missed.') + '</strong> ' + p.fb + '</div>';
+      if (right) {
+        h += '<div class="lc-fb show good" style="margin-top:12px"><strong>' + (st['pr_' + id] ? 'Got it on a second try.' : 'Exactly right.') + '</strong> ' + p.fb + '</div>';
+      } else {
+        h += '<div class="lc-fb show bad" style="margin-top:12px"><strong>Not quite.</strong> Red cards were picked wrong or missed. Review the documents and try again.</div>' +
+             '<div class="mh-actions"><button class="mh-btn" onclick="mhPickRetry(\'' + id + '\')">Try again</button></div>';
+      }
     } else {
       h += '<div class="mh-actions"><button class="mh-btn" onclick="mhPickCheck(\'' + id + '\')">Check</button></div>';
     }
@@ -265,10 +276,16 @@
     if (k > -1) on.splice(k, 1); else on.push(i);
     document.getElementById(id).innerHTML = pickerHtml(id);
   };
+  window.mhPickRetry = function (id) {
+    var st = run();
+    st['pd_' + id] = 0;
+    st['pr_' + id] = 1;
+    document.getElementById(id).innerHTML = pickerHtml(id);
+  };
   window.mhPickCheck = function (id) {
     var st = run(), p = PICKS[id], on = st['p_' + id] || [];
     st['pd_' + id] = 1;
-    record(p.items.every(function (it, i) { return (on.indexOf(i) > -1) === it.ok; }));
+    if (!st['pr_' + id]) record(p.items.every(function (it, i) { return (on.indexOf(i) > -1) === it.ok; }));
     document.getElementById(id).innerHTML = pickerHtml(id);
   };
 

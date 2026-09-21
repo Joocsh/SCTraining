@@ -136,6 +136,31 @@
     return u;
   }
 
+  // ---------- Introduction gate ----------
+  // Simulations open only after the Introduction (ai.html) is finished.
+  // Finished means the associate reached every section of it. VA classes
+  // stay open to everyone who is signed in.
+  var LS_INTRO = 'scc_intro_done__';   // + userId
+  function isIntroDone(u){
+    u = u || currentUser();
+    if(!u) return false;
+    if(u.role === 'admin') return true;
+    return localStorage.getItem(LS_INTRO + u.id) === '1';
+  }
+  function markIntroDone(){
+    var u = currentUser();
+    if(u) localStorage.setItem(LS_INTRO + u.id, '1');
+  }
+  function requireIntro(){
+    var u = requireAuth();
+    if(!u) return null;
+    if(!isIntroDone(u)){
+      window.location.replace(rootUrl('ai.html') + '?locked=simulations');
+      return null;
+    }
+    return u;
+  }
+
   // ---------- last page memory ----------
   function setLastPage(userId, path){
     localStorage.setItem(LS_LASTPAGE+userId, path);
@@ -331,6 +356,7 @@
   window.SCApp = {
     ROLE_LABELS: ROLE_LABELS, ROLE_PAGES: ROLE_PAGES, LEGACY_MODES: LEGACY_MODES,
     login: login, logout: logout, currentUser: currentUser, requireAuth: requireAuth, loginUrl: loginUrl,
+    isIntroDone: isIntroDone, markIntroDone: markIntroDone, requireIntro: requireIntro,
     findUserById: findUserById, getUsers: getUsers,
     setLastPage: setLastPage, getLastPage: getLastPage,
     getProgress: getProgress, setModeScore: setModeScore, addModeScore: addModeScore,

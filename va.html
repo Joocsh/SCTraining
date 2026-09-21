@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AI Lab · SkillCloud Academy</title>
-  <meta name="description" content="Practical, step-by-step guides for getting real work done with AI. Resources you can follow anytime, no grading required.">
+  <title>VA · SkillCloud Academy</title>
+  <meta name="description" content="VA: classes organized by role and module, to study each process before the Simulations.">
   <link rel="stylesheet" href="assets/css/styles.css">
   <style>
     :root {
@@ -115,6 +115,29 @@
       font-size: 13.5px; font-weight: 800; color: var(--v-cyan-d);
     }
     .lab-card.locked .lab-cta { color: var(--v-muted); }
+    .lab-card { scroll-margin-top: 90px; }
+    .lab-card:target { border-color: var(--v-cyan); box-shadow: 0 0 0 3px rgba(23,195,212,.18); }
+
+    /* horizontal training banners */
+    .va-list { display: flex; flex-direction: column; gap: 18px; }
+    .va-row {
+      position: relative; display: flex; align-items: flex-end; min-height: 190px;
+      border-radius: 20px; overflow: hidden; padding: 28px 32px; scroll-margin-top: 90px;
+      background-size: cover; background-position: 75% 35%; color: #fff;
+      box-shadow: 0 10px 30px rgba(10,38,71,.08);
+    }
+    .va-row::before { content: ""; position: absolute; inset: 0;
+      background: linear-gradient(90deg, rgba(10,38,71,.92) 0%, rgba(10,38,71,.72) 45%, rgba(10,38,71,.15) 100%); }
+    .va-row > * { position: relative; }
+    .va-row-body { max-width: 560px; }
+    .va-row .lab-badge { position: absolute; top: 20px; right: 22px; background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.35); }
+    a.va-row { text-decoration: none; transition: transform .16s, box-shadow .16s; }
+    a.va-row:hover { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(10,38,71,.16); text-decoration: none; }
+    .va-row h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 24px; font-weight: 900; letter-spacing: -.4px; margin: 0 0 6px; color: #fff; }
+    .va-row p { font-size: 15px; line-height: 1.55; color: #d6e4f0; margin: 0 0 12px; }
+    .va-row .lab-cta { color: var(--v-cyan); }
+    .va-row:target { box-shadow: 0 0 0 3px var(--v-cyan), 0 10px 30px rgba(10,38,71,.12); }
+    @media(max-width:640px) { .va-row { min-height: 170px; padding: 22px; } .va-row h3 { font-size: 20px; } }
 
     @media(max-width:920px) {
       .lab-grid { grid-template-columns: repeat(2, 1fr); }
@@ -145,110 +168,27 @@
 <!-- HERO -->
 <header class="ai-hero">
   <div class="ai-hero-inner">
-    <a class="ai-back" href="ai.html">Back to Introduction</a>
-    <h1 class="disp">AI <span class="cy">Lab</span></h1>
-    <p class="lead">Practical, step-by-step guides for getting real work done with AI. No grading, no login, just the how-to. Practice for your specific role still happens one on one in your role's dashboard.</p>
+    <a class="ai-back" href="index.html">Back to Home</a>
+    <h1 class="disp"><span class="cy">VA</span></h1>
+    <p class="lead">Study your role before you simulate it. Each role has its own classes, organized in modules. VA is open to everyone, no prerequisites.</p>
   </div>
 </header>
 
 <div class="lab-content">
   <div class="lab-intro">
-    <h2>Pick a task, follow the steps</h2>
-    <p>Each guide below is a short SOP: a real task, broken into steps, with an example prompt you can copy and adjust. New guides are added regularly.</p>
+    <h2>Pick your training</h2>
+    <p>Study the classes for your role here, then put them into practice in the Simulations once you finish the Introduction.</p>
   </div>
 
-  <div class="lab-grid">
-
-    <a class="lab-card" href="guides/room-to-reel-video.html">
-      <span class="lab-badge available">Available</span>
-      <div class="lab-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg>
+  <div class="va-list">
+    <a class="va-row" id="sop-foundations" href="va/sop-foundations.html" style="background-image:url('assets/img/va/sop-foundations.jpg')">
+      <span class="lab-badge soon">3 modules · 11 lessons</span>
+      <div class="va-row-body">
+        <h3>SOP Foundations</h3>
+        <p>Learn to create clear Standard Operating Procedures: the six question framework, the official SOP template, writing well, and the SOP assessment.</p>
+        <span class="lab-cta">Start the course &rarr;</span>
       </div>
-      <h3>Turning Listing Photos into Walkthrough Video</h3>
-      <p>Set up an automation that turns the photos you already have into short AI walkthrough clips, no filming required.</p>
-      <span class="lab-cta">Read the guide &rarr;</span>
     </a>
-
-    <a class="lab-card" href="guides/caption-signoff-generator.html">
-      <span class="lab-badge available">Available</span>
-      <div class="lab-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>
-      </div>
-      <h3>Building a Custom Caption Sign Off Tool</h3>
-      <p>A short interview builds you a personal AI tool that writes fresh, varied caption sign offs for every post.</p>
-      <span class="lab-cta">Read the guide &rarr;</span>
-    </a>
-
-    <a class="lab-card" href="guides/review-interview-bot.html">
-      <span class="lab-badge available">Available</span>
-      <div class="lab-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17.3l-5.7 3 1.1-6.3L2.8 9.3l6.4-.9L12 2.7l2.8 5.7 6.4.9-4.6 4.7 1.1 6.3z"/></svg>
-      </div>
-      <h3>Helping Past Clients Write Honest Reviews</h3>
-      <p>Build a tool that interviews a past client and hands back a genuine review draft in their own words.</p>
-      <span class="lab-cta">Read the guide &rarr;</span>
-    </a>
-
-    <a class="lab-card" href="guides/heygen-hook-writer.html">
-      <span class="lab-badge available">Available</span>
-      <div class="lab-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-      </div>
-      <h3>Writing HeyGen Video Hooks with AI</h3>
-      <p>Use an AI creative director to brainstorm and write production ready prompts for HeyGen avatar video hooks.</p>
-      <span class="lab-cta">Read the guide &rarr;</span>
-    </a>
-
-    <a class="lab-card" href="guides/persuasion-skill-claude.html">
-      <span class="lab-badge available">Available</span>
-      <div class="lab-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A5.5 5.5 0 0 0 4 7.5c0 1.5.6 2.5 1.5 3.5-.9 1-1.5 2-1.5 3.5A5.5 5.5 0 0 0 9.5 20"/><path d="M14.5 2A5.5 5.5 0 0 1 20 7.5c0 1.5-.6 2.5-1.5 3.5.9 1 1.5 2 1.5 3.5a5.5 5.5 0 0 1-5.5 5.5"/><path d="M9.5 2v18M14.5 2v18"/></svg>
-      </div>
-      <h3>Teaching Claude to Diagnose Before It Writes</h3>
-      <p>Install a persuasion skill so Claude reads the reader first, before it writes a single line of marketing copy.</p>
-      <span class="lab-cta">Read the guide &rarr;</span>
-    </a>
-
-    <a class="lab-card" href="guides/chatgpt-ads-agent.html">
-      <span class="lab-badge available">Available</span>
-      <div class="lab-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
-      </div>
-      <h3>Building a ChatGPT Ads Campaign with an Agent</h3>
-      <p>Set up a Claude agent that audits your site and builds a full, ready to upload ChatGPT Ads campaign in one sitting.</p>
-      <span class="lab-cta">Read the guide &rarr;</span>
-    </a>
-
-    <a class="lab-card" href="guides/hyperlocal-market-emails.html">
-      <span class="lab-badge available">Available</span>
-      <div class="lab-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 6l8 7 8-7"/></svg>
-      </div>
-      <h3>Turning CRM Data into Local Market Report Emails</h3>
-      <p>Set up an agent that reads your contacts and MLS data, then writes a branded market update for every segment.</p>
-      <span class="lab-cta">Read the guide &rarr;</span>
-    </a>
-
-    <a class="lab-card" href="guides/chatgpt-ads-targeting-playbook.html">
-      <span class="lab-badge available">Available</span>
-      <div class="lab-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-      </div>
-      <h3>Writing Targeting Hints for ChatGPT Ads</h3>
-      <p>Learn the pattern behind the plain language targeting hints ChatGPT Ads uses instead of keywords.</p>
-      <span class="lab-cta">Read the guide &rarr;</span>
-    </a>
-
-    <a class="lab-card" href="guides/crm-health-call-list.html">
-      <span class="lab-badge available">Available</span>
-      <div class="lab-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a8 3 0 0 0 16 0 8 3 0 0 0-16 0z"/><path d="M4 5v6a8 3 0 0 0 16 0V5"/><path d="M4 11v6a8 3 0 0 0 16 0v-6"/></svg>
-      </div>
-      <h3>Turning a CRM Export into a Call List</h3>
-      <p>Run a single prompt that reads a full CRM export and hands back a scorecard plus a prioritized call list.</p>
-      <span class="lab-cta">Read the guide &rarr;</span>
-    </a>
-
   </div>
 </div>
 
@@ -261,6 +201,7 @@
       </div>
       <div>
         <h4>Practice</h4>
+        <a class="fl" href="va.html">Study in VA</a>
         <a class="fl" href="index.html#simulations">Go to Simulations</a>
         <a class="fl" href="index.html#how-it-works">How It Works</a>
       </div>

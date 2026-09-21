@@ -79,6 +79,11 @@
     if (!group) return;
     var max = parseInt(group.getAttribute('data-max'), 10);
     if (!max) return;
+    if (max === 1) {
+      /* single choice fields behave like radio buttons */
+      group.querySelectorAll('input:checked').forEach(function (o) { if (o !== box) o.checked = false; });
+      return;
+    }
     if (group.querySelectorAll('input:checked').length > max) {
       box.checked = false;
       var field = group.closest('.lc-field');

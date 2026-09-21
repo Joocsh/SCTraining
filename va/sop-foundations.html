@@ -1,0 +1,1060 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOP Foundations · VA · SkillCloud Academy</title>
+<meta name="description" content="SOP Foundations: learn to create clear Standard Operating Procedures.">
+<link rel="stylesheet" href="../assets/css/topbar.css">
+<style>
+:root{
+  --navy:#0a2647;--navy2:#0f3460;--cyan:#17c3d4;--cyan-d:#0fa6b6;--ink:#0c1e33;--muted:#5b6b7e;
+  --line:#e3eaf1;--bg:#f6f9fc;--soft:#eefbfc;--good:#1f9e5a;--bad:#d2452f;
+  --top:48px;--side:300px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16.5px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:"Helvetica Neue",Arial,sans-serif;color:var(--navy);margin:0}
+p{margin:0}
+button{font:inherit;color:inherit}
+a{color:var(--cyan-d)}
+img{max-width:100%;display:block}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* frame */
+.scbar{position:fixed;top:0;left:0;right:0;z-index:40}
+.topline{position:fixed;top:var(--top);left:0;right:0;height:3px;z-index:39}
+.topline i{display:block;height:100%;width:0;background:var(--cyan);transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+/* outline */
+.outline{position:fixed;top:var(--top);bottom:0;left:0;width:var(--side);background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;z-index:30;transition:transform .28s cubic-bezier(.4,0,.2,1)}
+.outline-hd{padding:24px 24px 18px;border-bottom:1px solid var(--line)}
+.kick{font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--cyan-d)}
+.outline-hd h1{font-size:21px;font-weight:900;letter-spacing:-.4px;margin:4px 0 14px}
+.meter{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted);font-weight:600}
+.meter-bar{flex:1;height:6px;border-radius:99px;background:#e8eef4;overflow:hidden}
+.meter-bar i{display:block;height:100%;width:0;background:var(--cyan);border-radius:99px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.outline nav{flex:1;overflow-y:auto;padding:8px 12px 28px;overscroll-behavior:contain}
+.ol-mod{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#8a99ab;padding:18px 12px 6px}
+.ol-item{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;text-align:left;cursor:pointer;padding:9px 12px;border-radius:12px;color:#40526a;font-size:14.5px;line-height:1.35;transition:background .15s,color .15s}
+.ol-item:hover{background:var(--bg);color:var(--navy)}
+.ol-item.on{background:var(--soft);color:var(--navy);font-weight:700}
+.ol-dot{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;border:1.5px solid #cfd9e3;color:#7b8ba0;background:#fff;transition:.2s}
+.ol-item.on .ol-dot{border-color:var(--cyan);color:var(--cyan-d)}
+.ol-item.done .ol-dot{background:var(--cyan);border-color:var(--cyan);color:#fff}
+.ol-item small{display:block;font-size:11.5px;color:#8a99ab;font-weight:500;margin-top:1px}
+
+/* stage */
+main{margin-left:var(--side);padding:calc(var(--top) + 3px) 0 60px;min-height:100vh}
+.lesson{display:none;max-width:780px;margin:0 auto;padding:48px 32px 40px}
+.lesson.on{display:block;animation:rise .35s cubic-bezier(.2,.7,.2,1)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.cover{position:relative;height:190px;border-radius:22px;overflow:hidden;margin-bottom:34px;background-size:cover;background-position:center}
+.cover::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,38,71,.9),rgba(10,38,71,.55) 55%,rgba(10,38,71,.1))}
+.cover div{position:absolute;left:28px;bottom:24px;right:28px;color:#d6e4f0}
+.cover .kick{color:var(--cyan)}
+.cover h3{color:#fff;font-size:26px;font-weight:900;letter-spacing:-.5px;margin-top:4px}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:12px}
+.meta .kick{font-size:11.5px}
+.meta .sep{width:3px;height:3px;border-radius:50%;background:#b9c5d2}
+.lesson h2{font-size:clamp(28px,3.6vw,40px);font-weight:900;letter-spacing:-1.1px;line-height:1.12;margin-bottom:14px}
+.lead{font-size:18.5px;line-height:1.65;color:var(--muted);max-width:640px}
+.block{margin-top:34px}
+.sub{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#8a99ab;margin-bottom:14px}
+.step-h{display:flex;align-items:center;gap:12px;margin:44px 0 16px}
+.step-h b{flex:none;width:30px;height:30px;border-radius:10px;background:var(--navy);color:var(--cyan);display:grid;place-items:center;font-size:13px}
+.step-h h3{font-size:20px;letter-spacing:-.3px}
+
+/* blocks */
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 24px}
+.card h3{font-size:17.5px;font-weight:800;margin-bottom:6px}
+.card p{color:#44566c}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.ic{width:38px;height:38px;border-radius:11px;background:var(--soft);color:var(--cyan-d);display:grid;place-items:center;font-size:18px;margin-bottom:12px}
+.label{display:inline-block;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--cyan-d);margin-bottom:6px}
+.note{font-size:14.5px;color:var(--muted);margin-top:10px}
+.checks{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+.checks li{position:relative;padding-left:32px;color:#33465c}
+.checks li::before{content:"";position:absolute;left:0;top:4px;width:20px;height:20px;border-radius:50%;background:var(--soft)}
+.checks li::after{content:"";position:absolute;left:7px;top:8px;width:5px;height:9px;border:solid var(--cyan-d);border-width:0 2px 2px 0;transform:rotate(45deg)}
+.callout{border-radius:16px;background:var(--soft);padding:18px 22px;color:#23405a}
+.callout b{color:var(--navy)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chips span{background:#fff;border:1px solid #cfeff3;color:var(--navy);font-weight:700;font-size:14px;padding:7px 14px;border-radius:999px}
+.figure{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px}
+.figure svg{width:100%;height:auto;display:block}
+.figcap{font-size:13.5px;color:var(--muted);margin-top:10px;text-align:center}
+.photo{border-radius:18px;overflow:hidden;height:220px;background-size:cover;background-position:center}
+
+/* buttons */
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
+.btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:12px 22px;font-weight:700;font-size:15px;cursor:pointer;text-decoration:none;transition:background .15s,box-shadow .15s,color .15s}
+.btn.primary{background:var(--cyan);color:var(--navy)}
+.btn.primary:hover{background:var(--cyan-d);color:#fff}
+.btn.ghost{background:#fff;color:var(--navy);box-shadow:inset 0 0 0 1.5px var(--line)}
+.btn.ghost:hover{box-shadow:inset 0 0 0 1.5px var(--cyan);color:var(--cyan-d)}
+.btn:disabled{opacity:.4;cursor:default}
+
+/* welcome modules */
+.mods{display:grid;gap:12px}
+.mod{display:grid;grid-template-columns:120px 1fr;gap:18px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s}
+.mod:hover{border-color:#bfe9ee;box-shadow:0 8px 22px rgba(10,38,71,.06)}
+.mod i{height:80px;border-radius:12px;background-size:cover;background-position:center}
+.mod h3{font-size:17px;margin:2px 0}
+.mod p{font-size:14px;color:var(--muted)}
+
+/* flip cards */
+.flip{position:relative;min-height:150px;perspective:900px;cursor:pointer;border:0;background:none;padding:0;text-align:left}
+.flip-in{position:relative;width:100%;height:100%;min-height:150px;transition:transform .5s cubic-bezier(.2,.7,.2,1);transform-style:preserve-3d}
+.flip.on .flip-in{transform:rotateY(180deg)}
+.flip-f,.flip-b{position:absolute;inset:0;border-radius:18px;padding:20px 22px;backface-visibility:hidden;display:flex;flex-direction:column;justify-content:center}
+.flip-f{background:#fff;border:1px solid var(--line)}
+.flip-f h3{font-size:17px}
+.flip-f small{color:#8a99ab;font-size:12.5px;font-weight:600;margin-top:4px}
+.flip-b{background:var(--navy);color:#d6e4f0;transform:rotateY(180deg);font-size:15px}
+
+/* collapsible */
+.more{border:1px solid var(--line);border-radius:16px;background:#fff;overflow:hidden}
+.more+.more{margin-top:10px}
+.more summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:15px 20px;font-weight:700;color:var(--navy)}
+.more summary::-webkit-details-marker{display:none}
+.more summary::after{content:"";margin-left:auto;width:9px;height:9px;border:solid #8a99ab;border-width:0 2px 2px 0;transform:rotate(45deg);transition:transform .2s}
+.more[open] summary::after{transform:rotate(-135deg)}
+.more-body{padding:0 20px 18px;color:#44566c}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:#8a99ab}
+tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
+
+/* six questions wheel */
+.wheel{display:grid;grid-template-columns:260px 1fr;gap:26px;align-items:center}
+.wheel-svg{width:260px;height:260px}
+.wheel-svg{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.wheel-svg .seg{cursor:pointer;outline:none}
+.wheel-svg .seg:focus-visible path{stroke:var(--navy);stroke-width:3}
+.wheel-svg .seg path{fill:#eef3f8;stroke:#fff;stroke-width:4;transition:fill .2s}
+.wheel-svg .seg text{font:800 12px "Helvetica Neue",Arial,sans-serif;fill:var(--navy);text-anchor:middle;pointer-events:none}
+.wheel-svg .seg:hover path{fill:#d8f3f6}
+.wheel-svg .seg.on path{fill:var(--cyan)}
+.wheel-svg .seg.on text{fill:#fff}
+.wheel-svg .seg.seen:not(.on) path{fill:#e4f7f9}
+.wheel-panel h3{font-size:21px;margin-bottom:8px}
+.quote{margin-top:14px;padding:13px 16px;border-radius:12px;background:var(--soft);font-size:15px;color:#23405a}
+.wheel-hint{font-size:13px;color:#8a99ab;font-weight:600;margin-top:12px}
+
+/* template explorer */
+.tpl{display:grid;grid-template-columns:250px 1fr;gap:22px;align-items:start}
+.doc{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 16px;box-shadow:0 10px 30px rgba(10,38,71,.06)}
+.doc-h{height:10px;width:55%;background:var(--navy);border-radius:4px;margin:0 0 14px}
+.doc button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;border-radius:9px;padding:7px 8px;cursor:pointer;text-align:left;font-size:13.5px;font-weight:700;color:#40526a;transition:background .15s}
+.doc button i{flex:none;width:20px;height:20px;border-radius:6px;background:#eef3f8;display:grid;place-items:center;font-style:normal;font-size:10.5px;color:#7b8ba0}
+.doc button:hover{background:var(--bg)}
+.doc button.on{background:var(--soft);color:var(--navy)}
+.doc button.on i{background:var(--cyan);color:#fff}
+.doc button.seen:not(.on) i{background:#d8f3f6;color:var(--cyan-d)}
+.doc .subs{margin:2px 0 4px 30px;display:grid;gap:2px}
+.doc .subs span{font-size:12.5px;color:#8a99ab}
+.tpl-panel{min-height:220px}
+.tpl-panel .tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:1px;color:#fff;background:var(--navy);border-radius:999px;padding:3px 10px;margin-bottom:10px}
+.tpl-panel h3{font-size:22px;margin-bottom:8px}
+
+/* writing */
+.say{border-radius:12px;padding:12px 16px;font-size:15.5px}
+.say.bad{background:#fdf4f2;color:#8f3020}
+.say.good{background:#f1faf5;color:#1c6e41}
+.say-lbl{font-size:12px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#8a99ab;margin:14px 0 6px}
+.habits{counter-reset:h;list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.habits li{counter-increment:h;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px 14px 52px;position:relative;font-size:15px;color:#33465c}
+.habits li::before{content:counter(h);position:absolute;left:14px;top:13px;width:26px;height:26px;border-radius:8px;background:var(--soft);color:var(--cyan-d);display:grid;place-items:center;font-size:12.5px;font-weight:800}
+
+/* steps */
+.steps{list-style:none;padding:0;margin:0;position:relative}
+.steps::before{content:"";position:absolute;left:17px;top:20px;bottom:20px;width:2px;background:var(--line)}
+.steps li{position:relative;display:grid;grid-template-columns:36px 1fr;gap:18px;padding-bottom:24px}
+.steps li:last-child{padding-bottom:0}
+.steps .num{width:36px;height:36px;border-radius:50%;background:var(--navy);color:var(--cyan);display:grid;place-items:center;font-weight:800;position:relative}
+.steps h3{font-size:17px;margin:6px 0 4px}
+.steps p{color:#44566c;font-size:15.5px}
+
+/* checkpoint */
+.checkpoint{margin-top:52px;border-radius:24px;background:#fff;border:1px solid var(--line);overflow:hidden}
+.cp-head{display:flex;align-items:center;gap:14px;padding:20px 26px;background:linear-gradient(90deg,var(--navy),var(--navy2));color:#cfe0f0}
+.cp-head .badge{flex:none;width:38px;height:38px;border-radius:12px;background:rgba(23,195,212,.18);color:var(--cyan);display:grid;place-items:center;font-size:18px}
+.cp-head h3{color:#fff;font-size:18px}
+.cp-head p{font-size:13.5px}
+.cp-head .cp-state{margin-left:auto;font-size:12.5px;font-weight:800;color:var(--cyan);white-space:nowrap}
+.cp-body{padding:10px 26px 26px}
+.task{padding:22px 0;border-bottom:1px solid var(--line)}
+.task:last-child{border-bottom:0;padding-bottom:0}
+.task-q{font-size:17px;font-weight:700;color:var(--navy);line-height:1.5;margin-bottom:14px}
+.task-q small{display:block;font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#8a99ab;margin-bottom:4px}
+.choice{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:12px 16px;margin-top:8px;cursor:pointer;transition:border-color .15s,background .15s}
+.choice:hover{border-color:#bfe9ee;background:#fafdfe}
+.choice .key{flex:none;width:26px;height:26px;border-radius:8px;background:var(--bg);display:grid;place-items:center;font-size:12px;font-weight:800;color:var(--muted)}
+.choice.right{border-color:var(--good);background:#f1faf5}
+.choice.right .key{background:var(--good);color:#fff}
+.choice.wrong{border-color:#efc2ba;background:#fdf4f2}
+.choice.wrong .key{background:var(--bad);color:#fff}
+.choice:disabled{cursor:default}
+.fb{margin-top:12px;font-size:15px;font-weight:600}
+.fb:empty{display:none}
+.fb.good{color:var(--good)}.fb.bad{color:var(--bad)}
+.match{display:grid;gap:8px}
+.match-row{display:grid;grid-template-columns:1fr 220px;gap:12px;align-items:center;background:var(--bg);border:1.5px solid transparent;border-radius:14px;padding:10px 12px 10px 16px;font-size:15px}
+.match-row select{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff;font:inherit;font-size:14.5px;color:var(--navy)}
+.match-row.right{border-color:var(--good);background:#f1faf5}
+.match-row.wrong{border-color:#efc2ba;background:#fdf4f2}
+.sort{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.sort li{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:8px 8px 8px 16px}
+.sort li span{flex:1;font-size:15px}
+.sort .mv{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--bg);cursor:pointer;color:var(--navy)}
+.sort .mv:hover{border-color:var(--cyan)}
+.sort .mv:disabled{opacity:.35;cursor:default}
+.sort.right li{border-color:var(--good);background:#f1faf5}
+.task.passed .task-q::after{content:" \2713";color:var(--good)}
+blockquote{margin:0 0 14px;padding:14px 18px;border-radius:12px;background:var(--bg);border-left:3px solid var(--cyan);font-size:16px;color:#23405a}
+
+/* final quiz */
+.qz-top{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.qz-dots{display:flex;gap:6px}
+.qz-dots i{width:28px;height:5px;border-radius:99px;background:#dde6ee;transition:background .2s}
+.qz-dots i.on{background:var(--cyan)}
+.qz-count{margin-left:auto;font-size:13px;font-weight:700;color:var(--muted)}
+.qz-q{font:800 21px/1.35 "Helvetica Neue",Arial,sans-serif;color:var(--navy);margin-bottom:8px}
+.opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:14px 16px;margin-top:10px;cursor:pointer;transition:border-color .15s,background .15s}
+.opt:hover{border-color:#bfe9ee}
+.opt.sel{border-color:var(--cyan);background:var(--soft)}
+.opt i{flex:none;width:18px;height:18px;border-radius:50%;border:2px solid #c3cfdb;transition:.15s}
+.opt.sel i{border-color:var(--cyan);box-shadow:inset 0 0 0 4px #fff;background:var(--cyan)}
+.qz-nav{display:flex;justify-content:space-between;margin-top:22px}
+.score{display:flex;align-items:center;gap:22px}
+.ring{--p:0;width:96px;height:96px;border-radius:50%;flex:none;display:grid;place-items:center;background:conic-gradient(var(--cyan) calc(var(--p)*1%),#e6edf3 0)}
+.ring b{width:76px;height:76px;border-radius:50%;background:#fff;display:grid;place-items:center;font:900 22px "Helvetica Neue",Arial,sans-serif;color:var(--navy)}
+.review{list-style:none;padding:0;margin:18px 0 0;display:grid;gap:8px}
+.review li{font-size:15px;padding:10px 14px;border-radius:12px;background:var(--bg)}
+.review li.ok{color:#1c6e41}.review li.no{color:#8f3020}
+
+/* recap */
+.done-card{border-radius:22px;padding:30px;background:linear-gradient(150deg,var(--navy),var(--navy2) 60%,#123c6e);color:#d6e4f0;display:flex;gap:22px;align-items:center}
+.done-card h3{color:#fff;font-size:21px;margin-bottom:6px}
+.medal{flex:none;width:64px;height:64px;border-radius:50%;background:var(--cyan);color:var(--navy);display:grid;place-items:center;font-size:28px;font-weight:900}
+.q6{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.q6 div{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.q6 b{display:block;font-size:12px;letter-spacing:.8px;color:var(--cyan-d)}
+.q6 span{font-size:14.5px;color:#33465c}
+.ordered{counter-reset:o;list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.ordered li{counter-increment:o;display:grid;grid-template-columns:30px 1fr;gap:12px;color:#33465c}
+.ordered li::before{content:counter(o);width:26px;height:26px;border-radius:8px;background:var(--soft);color:var(--cyan-d);display:grid;place-items:center;font-size:12.5px;font-weight:800}
+
+/* next arrow */
+.nextfab{position:fixed;right:32px;bottom:30px;z-index:20;width:58px;height:58px;border:0;border-radius:50%;cursor:pointer;background:var(--cyan);color:var(--navy);display:grid;place-items:center;
+  box-shadow:0 10px 28px rgba(15,166,182,.35),0 2px 6px rgba(10,38,71,.12);opacity:0;transform:translateY(16px) scale(.9);pointer-events:none;
+  transition:opacity .35s cubic-bezier(.2,.7,.2,1),transform .35s cubic-bezier(.2,.7,.2,1),background .15s}
+.nextfab.show{opacity:1;transform:none;pointer-events:auto}
+.nextfab:hover{background:var(--cyan-d);color:#fff}
+.nextfab svg{width:22px;height:22px}
+.nextfab .tip{position:absolute;right:70px;white-space:nowrap;background:var(--navy);color:#fff;font-size:13px;font-weight:600;padding:7px 12px;border-radius:10px;opacity:0;transform:translateX(6px);transition:.2s;pointer-events:none}
+.nextfab:hover .tip,.nextfab:focus-visible .tip{opacity:1;transform:none}
+.locked-hint{position:fixed;right:32px;bottom:38px;z-index:19;background:#fff;border:1px solid var(--line);color:var(--muted);font-size:13.5px;font-weight:600;padding:9px 14px;border-radius:999px;box-shadow:0 8px 22px rgba(10,38,71,.08);opacity:0;transform:translateY(10px);transition:.3s;pointer-events:none}
+.locked-hint.show{opacity:1;transform:none}
+
+/* small screens */
+.outline-btn{display:none}
+.scrim{display:none}
+@media (max-width:980px){
+  :root{--side:0px}
+  .outline{width:300px;transform:translateX(-100%);box-shadow:0 20px 60px rgba(10,38,71,.25)}
+  body.nav-open .outline{transform:none}
+  .scrim{position:fixed;inset:var(--top) 0 0 0;background:rgba(10,38,71,.35);z-index:25}
+  body.nav-open .scrim{display:block}
+  .outline-btn{display:inline-flex}
+}
+@media (max-width:760px){
+  .wheel,.tpl{grid-template-columns:1fr}
+  .wheel-svg{margin:0 auto}
+  .grid3{grid-template-columns:1fr 1fr}
+}
+@media (max-width:640px){
+  body{font-size:16px}
+  .lesson{padding:30px 18px 36px}
+  .grid2,.grid3,.q6,.habits{grid-template-columns:1fr}
+  .match-row{grid-template-columns:1fr}
+  .mod{grid-template-columns:84px 1fr}.mod i{height:64px}
+  .cover{height:160px}
+  .cp-head,.cp-body{padding-left:18px;padding-right:18px}
+  .nextfab{right:18px;bottom:20px;width:54px;height:54px}.nextfab .tip{display:none}
+  .locked-hint{right:18px;left:18px;text-align:center}
+  .done-card{flex-direction:column;text-align:center}
+  table{font-size:14px}th,td{padding:10px 8px}
+}
+</style>
+</head>
+<body>
+
+<header class="scbar">
+  <button class="scbar-act icon outline-btn" id="outlineBtn" aria-label="Course outline" aria-expanded="false">&#9776;</button>
+  <a class="scbar-back" href="../va.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 3.5 5 8l4.5 4.5"/></svg><span>VA</span></a>
+  <span class="scbar-id"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg><span class="scbar-name">SkillCloud</span></span>
+  <span class="scbar-sep">/</span>
+  <span class="scbar-ctx">SOP Foundations<em>VA</em></span>
+</header>
+<div class="topline"><i id="topFill"></i></div>
+
+<aside class="outline" id="outline" aria-label="Course outline">
+  <div class="outline-hd">
+    <div class="kick">Course</div>
+    <h1>SOP Foundations</h1>
+    <div class="meter"><div class="meter-bar"><i id="meterFill"></i></div><span id="meterText">0%</span></div>
+  </div>
+  <nav id="ol"></nav>
+</aside>
+<div class="scrim" id="scrim"></div>
+
+<main id="stage" tabindex="-1">
+
+<!-- ═════════ START ═════════ -->
+<section class="lesson" id="welcome" data-mod="Start" data-title="Welcome">
+  <div class="meta"><span class="kick">Module I · SOP Training</span></div>
+  <h2>Turn everyday work into a reliable, repeatable system.</h2>
+  <p class="lead">Learn to create clear Standard Operating Procedures (SOPs) that help teams complete routine processes efficiently and accurately.</p>
+
+  <div class="block">
+    <div class="sub">By the end of this training, you can</div>
+    <ul class="checks">
+      <li>Document workflows clearly using a structured SOP format.</li>
+      <li>Apply the six question framework to any process.</li>
+      <li>Convert routine tasks into repeatable procedures anyone can follow.</li>
+      <li>Identify gaps or exceptions and document troubleshooting steps.</li>
+      <li>Maintain and update SOPs so they remain accurate over time.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <div class="sub">How this course works</div>
+    <div class="mods">
+      <button class="mod" data-jump="process"><i style="background-image:url('../assets/img/va/sop/m1-understand.jpg')"></i><div><span class="kick">Module 1 · 2 lessons</span><h3>Understand SOPs</h3><p>What an SOP is and why it matters.</p></div></button>
+      <button class="mod" data-jump="framework"><i style="background-image:url('../assets/img/va/sop/m2-build.jpg')"></i><div><span class="kick">Module 2 · 4 lessons</span><h3>Build an SOP</h3><p>The six questions, the official template, writing and tools.</p></div></button>
+      <button class="mod" data-jump="practice"><i style="background-image:url('../assets/img/va/sop/m3-practice.jpg')"></i><div><span class="kick">Module 3 · 4 lessons</span><h3>Practice and assessment</h3><p>Apply the framework, the assessment guide and the final check.</p></div></button>
+    </div>
+    <p class="note">Each lesson teaches first, then ends with a short checkpoint. Pass it to unlock the next lesson.</p>
+  </div>
+  <div class="actions"><button class="btn primary" data-next>Start learning &rarr;</button><button class="btn ghost" data-jump="assessment">View assessment requirements</button></div>
+</section>
+
+<!-- ═════════ MODULE 1 ═════════ -->
+<section class="lesson" id="process" data-mod="Module 1 · Understand SOPs" data-title="Process and SOP">
+  <div class="cover" style="background-image:url('../assets/img/va/sop/m1-understand.jpg')"><div><span class="kick">Module 1</span><h3>Understand SOPs</h3></div></div>
+  <div class="meta"><span class="kick">Foundation</span></div>
+  <h2>A process tells the story. An SOP makes it repeatable.</h2>
+  <p class="lead">Understanding the difference is the first step toward useful documentation.</p>
+
+  <div class="step-h"><b>1</b><h3>See the difference</h3></div>
+  <div class="figure">
+    <svg viewBox="0 0 640 210" role="img" aria-label="A process is a sequence of steps. An SOP documents how to do each step.">
+      <text x="140" y="24" text-anchor="middle" font-family="Helvetica Neue,Arial" font-weight="800" font-size="13" fill="#0fa6b6" letter-spacing="1">PROCESS · WHAT HAPPENS</text>
+      <g font-family="Helvetica Neue,Arial" font-weight="800" font-size="16" text-anchor="middle">
+        <circle cx="45" cy="105" r="30" fill="#eef3f8"/><text x="45" y="111" fill="#0a2647">1</text>
+        <circle cx="140" cy="105" r="30" fill="#eef3f8"/><text x="140" y="111" fill="#0a2647">2</text>
+        <circle cx="235" cy="105" r="30" fill="#eef3f8"/><text x="235" y="111" fill="#0a2647">3</text>
+      </g>
+      <path d="M78 105h26M173 105h26" stroke="#9fb1c3" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M99 99l6 6-6 6M194 99l6 6-6 6" fill="none" stroke="#9fb1c3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="140" y="170" text-anchor="middle" font-size="13" fill="#5b6b7e">Steps in order</text>
+      <path d="M300 105h40" stroke="#17c3d4" stroke-width="3" stroke-linecap="round"/><path d="M332 97l9 8-9 8" fill="none" stroke="#17c3d4" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="500" y="24" text-anchor="middle" font-family="Helvetica Neue,Arial" font-weight="800" font-size="13" fill="#0fa6b6" letter-spacing="1">SOP · HOW IT HAPPENS</text>
+      <rect x="390" y="40" width="220" height="150" rx="14" fill="#fff" stroke="#e3eaf1" stroke-width="2"/>
+      <rect x="408" y="56" width="110" height="9" rx="4" fill="#0a2647"/>
+      <g font-size="12.5" fill="#33465c" font-family="Arial">
+        <circle cx="416" cy="86" r="6" fill="#17c3d4"/><text x="430" y="90">Instructions for each step</text>
+        <circle cx="416" cy="112" r="6" fill="#17c3d4"/><text x="430" y="116">Tools</text>
+        <circle cx="416" cy="138" r="6" fill="#17c3d4"/><text x="430" y="142">Responsibilities</text>
+        <circle cx="416" cy="164" r="6" fill="#17c3d4"/><text x="430" y="168">Troubleshooting</text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="step-h"><b>2</b><h3>Read the definitions</h3></div>
+  <div class="grid2">
+    <div class="card"><span class="label">Process</span><h3>What happens</h3><p>A process is a series of actions or steps taken to achieve a specific goal. It describes what happens and the order in which it happens.</p><p class="note">Examples: checking and responding to client emails, onboarding a client, or preparing a weekly report.</p></div>
+    <div class="card" style="background:var(--soft);border-color:#cfeff3"><span class="label">SOP</span><h3>How it happens</h3><p>A Standard Operating Procedure is a detailed, written, step by step guide explaining exactly how to complete a process consistently and accurately.</p><p class="note">It documents instructions, tools, responsibilities, and troubleshooting.</p></div>
+  </div>
+
+  <div class="step-h"><b>3</b><h3>Compare them side by side</h3></div>
+  <div class="card" style="overflow-x:auto;padding:8px 10px">
+    <table><thead><tr><th>Aspect</th><th>Process</th><th>SOP</th></tr></thead><tbody>
+      <tr><th>Focus</th><td>What happens and in what order</td><td>How to do each step correctly and consistently</td></tr>
+      <tr><th>Format</th><td>Workflow diagram, checklist, or verbal instructions</td><td>Detailed documented guide</td></tr>
+      <tr><th>Purpose</th><td>Organizes work and shows workflow</td><td>Ensures consistent, efficient, accurate execution</td></tr>
+      <tr><th>Audience</th><td>Anyone involved in the workflow</td><td>Anyone performing it, especially new team members</td></tr>
+    </tbody></table>
+  </div>
+
+  <div class="checkpoint">
+    <div class="cp-head"><span class="badge">&#10003;</span><div><h3>Checkpoint</h3><p>Two quick tasks on Process and SOP.</p></div><span class="cp-state"></span></div>
+    <div class="cp-body">
+      <div class="task gate" data-type="choice" data-answer="b" data-ok="Correct, this matches the SOP framework.">
+        <p class="task-q"><small>Quick check</small>A colleague says, “New client onboarding has three stages.” What is still needed for this to be an SOP?</p>
+        <button class="choice" data-choice="a"><span class="key">A</span>A shorter name</button>
+        <button class="choice" data-choice="b"><span class="key">B</span>Detailed instructions for doing each stage</button>
+        <button class="choice" data-choice="c"><span class="key">C</span>Fewer people involved</button>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+      <div class="task gate" data-type="match" data-ok="Correct. The process is the what, the SOP is the how.">
+        <p class="task-q"><small>Sort it</small>Does each description belong to a Process or an SOP?</p>
+        <div class="match" data-options="Process|SOP">
+          <div class="match-row" data-answer="Process"><span>What happens and in what order</span></div>
+          <div class="match-row" data-answer="SOP"><span>How to do each step correctly and consistently</span></div>
+          <div class="match-row" data-answer="Process"><span>Workflow diagram, checklist, or verbal instructions</span></div>
+          <div class="match-row" data-answer="SOP"><span>Detailed documented guide</span></div>
+        </div>
+        <div class="actions"><button class="btn ghost" data-check>Check answers</button></div>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="lesson" id="value" data-mod="Module 1 · Understand SOPs" data-title="Why and when">
+  <div class="meta"><span class="kick">The case for documentation</span></div>
+  <h2>Why SOPs matter, and when they help most.</h2>
+
+  <div class="step-h"><b>1</b><h3>Four benefits <span style="font-weight:600;color:#8a99ab;font-size:14px">· tap each card</span></h3></div>
+  <div class="grid2">
+    <button class="flip"><div class="flip-in"><div class="flip-f"><div class="ic">&#10003;</div><h3>Consistency &amp; quality</h3><small>Tap to learn more</small></div><div class="flip-b">Tasks are completed the same way every time, reducing errors and maintaining high standards.</div></div></button>
+    <button class="flip"><div class="flip-in"><div class="flip-f"><div class="ic">&#8599;</div><h3>Faster training</h3><small>Tap to learn more</small></div><div class="flip-b">New team members can learn quickly without constant guidance.</div></div></button>
+    <button class="flip"><div class="flip-in"><div class="flip-f"><div class="ic">&#9678;</div><h3>Accountability</h3><small>Tap to learn more</small></div><div class="flip-b">Roles are clear, so everyone knows who does what.</div></div></button>
+    <button class="flip"><div class="flip-in"><div class="flip-f"><div class="ic">&#8634;</div><h3>Improvement</h3><small>Tap to learn more</small></div><div class="flip-b">Documenting work reveals gaps, bottlenecks, and opportunities to improve.</div></div></button>
+  </div>
+
+  <div class="step-h"><b>2</b><h3>Where SOPs apply</h3></div>
+  <div class="callout">Use SOPs during onboarding, daily operations, team handoffs, and process audits, whenever a process requires consistency and clarity.
+    <div class="chips"><span>Onboarding</span><span>Daily operations</span><span>Team handoffs</span><span>Process audits</span></div>
+  </div>
+  <details class="more" style="margin-top:12px">
+    <summary>Why are team handoffs a strong use case?</summary>
+    <div class="more-body">SOPs provide a common reference for coordination, smooth transitions, and accountability when work moves between team members.</div>
+  </details>
+
+  <div class="checkpoint">
+    <div class="cp-head"><span class="badge">&#10003;</span><div><h3>Checkpoint</h3><p>Two quick questions on why and when.</p></div><span class="cp-state"></span></div>
+    <div class="cp-body">
+      <div class="task gate" data-type="choice" data-answer="b" data-ok="Correct. New team members can learn quickly without constant guidance.">
+        <p class="task-q"><small>Question 1</small>A new teammate completes a task correctly on day one by following the written steps, without asking for help. Which benefit is this?</p>
+        <button class="choice" data-choice="a"><span class="key">A</span>Accountability</button>
+        <button class="choice" data-choice="b"><span class="key">B</span>Faster training</button>
+        <button class="choice" data-choice="c"><span class="key">C</span>Improvement</button>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+      <div class="task gate" data-type="choice" data-answer="c" data-ok="Correct. SOPs apply to onboarding, daily operations, team handoffs, and process audits.">
+        <p class="task-q"><small>Question 2</small>Which of these is not one of the moments the handbook lists for using SOPs?</p>
+        <button class="choice" data-choice="a"><span class="key">A</span>Team handoffs</button>
+        <button class="choice" data-choice="b"><span class="key">B</span>Process audits</button>
+        <button class="choice" data-choice="c"><span class="key">C</span>Only when a client complains</button>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ MODULE 2 ═════════ -->
+<section class="lesson" id="framework" data-mod="Module 2 · Build an SOP" data-title="The six questions">
+  <div class="cover" style="background-image:url('../assets/img/va/sop/m2-build.jpg')"><div><span class="kick">Module 2</span><h3>Build an SOP</h3></div></div>
+  <div class="meta"><span class="kick">Core learning framework</span></div>
+  <h2>Build the map before you write.</h2>
+  <p class="lead">The handbook’s six core questions turn day to day work into a clear, repeatable SOP. Select each question to explore it.</p>
+
+  <div class="step-h"><b>1</b><h3>Explore the six questions</h3></div>
+  <div class="card">
+    <div class="wheel">
+      <svg class="wheel-svg" viewBox="0 0 260 260" id="wheel" role="tablist" aria-label="Six questions"></svg>
+      <div class="wheel-panel" id="wheelPanel" aria-live="polite"></div>
+    </div>
+    <p class="wheel-hint" id="wheelHint">Explored 1 of 6</p>
+  </div>
+
+  <div class="checkpoint">
+    <div class="cp-head"><span class="badge">&#10003;</span><div><h3>Checkpoint</h3><p>Use the six questions.</p></div><span class="cp-state"></span></div>
+    <div class="cp-body">
+      <div class="task gate" data-type="choice" data-answer="c" data-ok="Correct, this matches the SOP framework.">
+        <p class="task-q"><small>Apply it</small>“Every Monday, run the report for the previous week.” Which framework question does this answer?</p>
+        <button class="choice" data-choice="a"><span class="key">A</span>WHY</button>
+        <button class="choice" data-choice="b"><span class="key">B</span>WHO</button>
+        <button class="choice" data-choice="c"><span class="key">C</span>WHEN</button>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+      <div class="task gate" data-type="match" data-ok="Correct. Each question maps to a section of the SOP.">
+        <p class="task-q"><small>Match it</small>Which SOP section answers each question?</p>
+        <div class="match" data-options="Purpose|Scope|Roles and Responsibilities|Procedure|Documented Information|Troubleshooting">
+          <div class="match-row" data-answer="Purpose"><span><b>WHY</b> is this process done?</span></div>
+          <div class="match-row" data-answer="Scope"><span><b>WHEN</b> does it happen?</span></div>
+          <div class="match-row" data-answer="Roles and Responsibilities"><span><b>WHO</b> does each part?</span></div>
+          <div class="match-row" data-answer="Procedure"><span><b>HOW</b> is it done?</span></div>
+          <div class="match-row" data-answer="Documented Information"><span><b>WITH WHAT</b> tools?</span></div>
+          <div class="match-row" data-answer="Troubleshooting"><span><b>WHAT IF</b> something goes wrong?</span></div>
+        </div>
+        <div class="actions"><button class="btn ghost" data-check>Check answers</button></div>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="lesson" id="template" data-mod="Module 2 · Build an SOP" data-title="The official template">
+  <div class="meta"><span class="kick">Official SOP template</span></div>
+  <h2>The structure your SOP must follow.</h2>
+  <p class="lead">The official template organizes documentation so another team member knows the purpose, timing, ownership, steps, resources, and exceptions.</p>
+
+  <div class="step-h"><b>1</b><h3>Open each section of the template</h3></div>
+  <div class="tpl">
+    <div class="doc" id="doc"><div class="doc-h"></div></div>
+    <div class="card tpl-panel" id="tplPanel" aria-live="polite"></div>
+  </div>
+
+  <div class="step-h"><b>2</b><h3>Keep it complete</h3></div>
+  <div class="callout"><b>Template reminder:</b> The template is more detailed than a simple title and steps checklist. Keep every relevant section, including references, troubleshooting, related SOPs, flowchart, and version control.</div>
+
+  <div class="checkpoint">
+    <div class="cp-head"><span class="badge">&#10003;</span><div><h3>Checkpoint</h3><p>Rebuild the template from memory.</p></div><span class="cp-state"></span></div>
+    <div class="cp-body">
+      <div class="task gate" data-type="sort" data-ok="Correct. That is the order of the official template.">
+        <p class="task-q"><small>Order it</small>Put the template sections in the right order.</p>
+        <ol class="sort">
+          <li data-order="5"><span>Procedure</span></li>
+          <li data-order="1"><span>Purpose</span></li>
+          <li data-order="8"><span>Version Control</span></li>
+          <li data-order="3"><span>Definitions</span></li>
+          <li data-order="6"><span>Documented Information</span></li>
+          <li data-order="2"><span>Scope</span></li>
+          <li data-order="7"><span>Flowchart</span></li>
+          <li data-order="4"><span>Roles and Responsibilities</span></li>
+        </ol>
+        <div class="actions"><button class="btn ghost" data-check>Check order</button></div>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="lesson" id="writing" data-mod="Module 2 · Build an SOP" data-title="Write well">
+  <div class="meta"><span class="kick">Quality writing</span></div>
+  <h2>Write so a new teammate can succeed without guessing.</h2>
+
+  <div class="step-h"><b>1</b><h3>Make instructions actionable</h3></div>
+  <div class="card">
+    <div class="say-lbl" style="margin-top:0">Less direct</div>
+    <p class="say bad">“It is required that the report be submitted by the VA.”</p>
+    <div class="say-lbl">Clearer</div>
+    <p class="say good">“Send the report to the team lead.”</p>
+    <p class="note">Use descriptive titles and store SOPs in an accessible, organized location.</p>
+  </div>
+
+  <div class="step-h"><b>2</b><h3>Strong SOP habits</h3></div>
+  <ol class="habits">
+    <li>Start with the end in mind: know why the SOP exists.</li>
+    <li>Use simple, direct language, short sentences, and action verbs.</li>
+    <li>Be specific and detailed without overwhelming the reader.</li>
+    <li>Use numbered steps and bullets for scanability.</li>
+    <li>Add screenshots, links, or visual aids where useful.</li>
+    <li>Use a consistent format across SOPs.</li>
+    <li>Review and test the SOP; ask someone else to follow it.</li>
+    <li>Review periodically, every 6 to 12 months or after a system or tool update.</li>
+  </ol>
+
+  <div class="checkpoint">
+    <div class="cp-head"><span class="badge">&#10003;</span><div><h3>Checkpoint</h3><p>Spot the gap and apply the habits.</p></div><span class="cp-state"></span></div>
+    <div class="cp-body">
+      <div class="task gate" data-type="choice" data-answer="b" data-ok="Documented Information (WITH WHAT). Identify the tool, platform, template, or resource needed so the associate can complete the process consistently.">
+        <p class="task-q"><small>Instructional scenario · Spot the documentation gap</small>An SOP lists “Open the tracker and update it,” but provides no tracker link, name, or platform. What should be strengthened?</p>
+        <button class="choice" data-choice="a"><span class="key">A</span>Purpose (WHY)</button>
+        <button class="choice" data-choice="b"><span class="key">B</span>Documented Information (WITH WHAT)</button>
+        <button class="choice" data-choice="c"><span class="key">C</span>Version Control</button>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+      <div class="task gate" data-type="choice" data-answer="b" data-ok="Correct. Review periodically, every 6 to 12 months or after a system or tool update.">
+        <p class="task-q"><small>Question 2</small>When should an SOP be reviewed?</p>
+        <button class="choice" data-choice="a"><span class="key">A</span>Only when it is first written</button>
+        <button class="choice" data-choice="b"><span class="key">B</span>Every 6 to 12 months or after a system or tool update</button>
+        <button class="choice" data-choice="c"><span class="key">C</span>Only when a new team member joins</button>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="lesson" id="tools" data-mod="Module 2 · Build an SOP" data-title="Tools and examples">
+  <div class="meta"><span class="kick">Tools &amp; reference examples</span></div>
+  <h2>Choose tools that fit the documentation need.</h2>
+
+  <div class="step-h"><b>1</b><h3>Six kinds of tools</h3></div>
+  <div class="grid2">
+    <div class="card"><div class="ic">&#9998;</div><h3>Text based SOPs</h3><p>Google Docs and Microsoft Word support formatting, sharing, editing, and updates.</p></div>
+    <div class="card"><div class="ic">&#9638;</div><h3>Tracking &amp; checklists</h3><p>Google Sheets and Excel can support step lists, responsibilities, calculations, logs, and repeated tracking.</p></div>
+    <div class="card"><div class="ic">&#10551;</div><h3>Visual workflows</h3><p>Lucidchart, Miro, Canva, and Microsoft Visio can create flowcharts and process maps.</p></div>
+    <div class="card"><div class="ic">&#9745;</div><h3>Work management</h3><p>Trello, Asana, Monday.com, and ClickUp help visualize work, checklists, and responsibility assignment.</p></div>
+    <div class="card"><div class="ic">&#9776;</div><h3>Knowledge bases</h3><p>Notion, Confluence, Guru, and Tettra centralize SOP storage, access, updates, and collaboration.</p></div>
+    <div class="card"><div class="ic">&#9881;</div><h3>Interactive SOP tools</h3><p>Checkli, Process Street, and SweetProcess support interactive checklists, automation, and task tracking.</p></div>
+  </div>
+
+  <div class="step-h"><b>2</b><h3>Use examples thoughtfully</h3></div>
+  <div class="callout"><b>Learn from examples, thoughtfully.</b><br>The package includes sample learner SOP drafts. Treat them as learning examples: assess their completeness, clarity, and alignment to the template, not as official operating procedures.</div>
+
+  <div class="checkpoint">
+    <div class="cp-head"><span class="badge">&#10003;</span><div><h3>Checkpoint</h3><p>Pick the right kind of tool.</p></div><span class="cp-state"></span></div>
+    <div class="cp-body">
+      <div class="task gate" data-type="match" data-ok="Correct. Choose the tool that fits the documentation need.">
+        <p class="task-q"><small>Match it</small>Which kind of tool fits each need?</p>
+        <div class="match" data-options="Text based SOPs|Tracking & checklists|Visual workflows|Knowledge bases">
+          <div class="match-row" data-answer="Visual workflows"><span>Create a flowchart or process map</span></div>
+          <div class="match-row" data-answer="Knowledge bases"><span>Centralize SOP storage, access, and updates</span></div>
+          <div class="match-row" data-answer="Tracking & checklists"><span>Keep logs and repeated tracking</span></div>
+          <div class="match-row" data-answer="Text based SOPs"><span>Write and format the SOP document</span></div>
+        </div>
+        <div class="actions"><button class="btn ghost" data-check>Check answers</button></div>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ MODULE 3 ═════════ -->
+<section class="lesson" id="practice" data-mod="Module 3 · Practice and assessment" data-title="Apply the framework">
+  <div class="cover" style="background-image:url('../assets/img/va/sop/m3-practice.jpg')"><div><span class="kick">Module 3</span><h3>Practice and assessment</h3></div></div>
+  <div class="meta"><span class="kick">Practice lab</span></div>
+  <h2>Use the framework to find what is missing.</h2>
+  <p class="lead">These are instructional scenarios, created to practice the handbook’s approach. They are not Skill Cloud procedures or policies.</p>
+
+  <div class="block photo" style="background-image:url('../assets/img/va/sop/handoff.jpg')" role="img" aria-label="Two teammates reviewing documents during a handoff"></div>
+
+  <div class="checkpoint">
+    <div class="cp-head"><span class="badge">&#9998;</span><div><h3>Practice lab</h3><p>Two exercises built on a team handoff.</p></div><span class="cp-state"></span></div>
+    <div class="cp-body">
+      <div class="task gate" data-type="choice" data-answer="b" data-ok="Correct, this matches the SOP framework.">
+        <p class="task-q"><small>Instructional scenario · Team handoff</small>A daily handoff note says:</p>
+        <blockquote>“Update the client record after the handoff. Ask the manager if there is an issue.”</blockquote>
+        <p style="color:#44566c;margin-bottom:6px">Choose the improvement that would make this guidance most usable to a new associate.</p>
+        <button class="choice" data-choice="a"><span class="key">A</span>Remove the manager reference.</button>
+        <button class="choice" data-choice="b"><span class="key">B</span>State the trigger, responsible role, ordered steps, record location, and what qualifies as an issue.</button>
+        <button class="choice" data-choice="c"><span class="key">C</span>Add more adjectives to the handoff note.</button>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+      <div class="task gate" data-type="sort" data-ok="Correct: purpose → scope → roles → procedure is a logical documentation flow." data-bad="Try again: begin with purpose, then scope, roles, and procedure.">
+        <p class="task-q"><small>Mini SOP builder</small>Put these elements in the most logical documentation sequence.</p>
+        <ol class="sort">
+          <li data-order="4"><span>Procedure: update the record using ordered steps.</span></li>
+          <li data-order="1"><span>Purpose: make the handoff information reliable.</span></li>
+          <li data-order="3"><span>Roles: associate updates; manager reviews exceptions.</span></li>
+          <li data-order="2"><span>Scope: after every completed handoff.</span></li>
+        </ol>
+        <div class="actions"><button class="btn ghost" data-check>Check sequence</button></div>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="lesson" id="assessment" data-mod="Module 3 · Practice and assessment" data-title="The SOP assessment">
+  <div class="meta"><span class="kick">Official assessment guide</span></div>
+  <h2>Your SOP assessment: follow the required order.</h2>
+
+  <div class="step-h"><b>1</b><h3>The four steps</h3></div>
+  <ol class="steps">
+    <li><span class="num">1</span><div><h3>Review the VA SOP Handbook</h3><p>Begin by carefully reading it. It contains the process explanation, context, rules, expectations, roles, tools, timing, and exceptions. Quiz answers and SOP content must be based exclusively on the handbook.</p></div></li>
+    <li><span class="num">2</span><div><h3>Complete the knowledge quiz</h3><p>This confirms comprehension. The assessment is not a memorization exercise; it evaluates process understanding, logical thinking, attention to detail, and standardized documentation.</p></div></li>
+    <li><span class="num">3</span><div><h3>Create the Executive Assistant SOP</h3><p>Copy the official SOP Template and use that copy to build the “Executive Assistant” SOP from the Executive Assistant Handbook. Reflect the handbook completely, use the official structure, write clearly and professionally, and add no assumptions or external information.</p></div></li>
+    <li><span class="num">4</span><div><h3>Export and submit</h3><p>Export the completed SOP as a PDF. Email it to <a href="mailto:ea.coaching@skillcloudstaffing.com">ea.coaching@skillcloudstaffing.com</a> with the subject line <b>SOP Assessment – [Your Name]</b>. Coaches review it and provide feedback.</p></div></li>
+  </ol>
+
+  <div class="step-h"><b>2</b><h3>How it is evaluated</h3></div>
+  <div class="grid2">
+    <div class="card"><h3>Evaluation criteria</h3><ul class="checks" style="margin-top:12px">
+      <li>Accuracy and alignment with the handbook</li>
+      <li>Completeness: no missing sections</li>
+      <li>Clarity and ease of following</li>
+      <li>Proper use of the SOP template</li>
+      <li>Attention to detail: no invented steps or tools</li>
+      <li>Professional writing and formatting</li>
+    </ul></div>
+    <div class="card"><h3>Key rules</h3><ul class="checks" style="margin-top:12px">
+      <li>Do not copy text blindly; understand and rephrase appropriately.</li>
+      <li>Do not add steps, tools, or rules not in the handbook.</li>
+      <li>Use clear, professional English.</li>
+      <li>Follow the SOP structure exactly as provided.</li>
+    </ul></div>
+  </div>
+
+  <div class="checkpoint">
+    <div class="cp-head"><span class="badge">&#10003;</span><div><h3>Checkpoint</h3><p>Know the assessment path.</p></div><span class="cp-state"></span></div>
+    <div class="cp-body">
+      <div class="task gate" data-type="sort" data-ok="Correct. That is the required order.">
+        <p class="task-q"><small>Order it</small>Put the assessment steps in the required order.</p>
+        <ol class="sort">
+          <li data-order="3"><span>Create the Executive Assistant SOP</span></li>
+          <li data-order="4"><span>Export and submit</span></li>
+          <li data-order="1"><span>Review the VA SOP Handbook</span></li>
+          <li data-order="2"><span>Complete the knowledge quiz</span></li>
+        </ol>
+        <div class="actions"><button class="btn ghost" data-check>Check order</button></div>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+      <div class="task gate" data-type="choice" data-answer="a" data-ok="Correct. Email the PDF to ea.coaching@skillcloudstaffing.com.">
+        <p class="task-q"><small>Question 2</small>Where do you send the finished SOP?</p>
+        <button class="choice" data-choice="a"><span class="key">A</span>As a PDF, by email to ea.coaching@skillcloudstaffing.com</button>
+        <button class="choice" data-choice="b"><span class="key">B</span>As an editable document shared in a chat</button>
+        <button class="choice" data-choice="c"><span class="key">C</span>Printed and handed to the team lead</button>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="lesson" id="quiz" data-mod="Module 3 · Practice and assessment" data-title="Final knowledge check">
+  <div class="meta"><span class="kick">Final knowledge check</span></div>
+  <h2>Show what you know.</h2>
+  <p class="lead">Choose an answer for each question, then submit to receive your score and feedback.</p>
+  <div class="checkpoint">
+    <div class="cp-head"><span class="badge">&#9733;</span><div><h3>Final check</h3><p>Five questions across the whole course.</p></div><span class="cp-state"></span></div>
+    <div class="cp-body"><div class="task gate" data-type="quiz" id="quizBox" style="padding-top:20px"></div></div>
+  </div>
+</section>
+
+<section class="lesson" id="recap" data-mod="Module 3 · Practice and assessment" data-title="Recap">
+  <div class="meta"><span class="kick">Course complete</span></div>
+  <h2>Clear SOPs make dependable work possible.</h2>
+  <div class="done-card block">
+    <div class="medal">&#10003;</div>
+    <div><h3>Keep the six questions close.</h3><p>WHY defines the objective. WHEN establishes timing or triggers. WHO clarifies ownership. HOW creates the procedure. WITH WHAT documents the resources. WHAT IF prepares the team for exceptions.</p></div>
+  </div>
+  <div class="block q6">
+    <div><b>WHY</b><span>Purpose</span></div><div><b>WHEN</b><span>Scope</span></div><div><b>WHO</b><span>Roles and Responsibilities</span></div>
+    <div><b>HOW</b><span>Procedure</span></div><div><b>WITH WHAT</b><span>Documented Information</span></div><div><b>WHAT IF</b><span>Troubleshooting</span></div>
+  </div>
+  <div class="block">
+    <div class="sub">Before you create an SOP</div>
+    <ol class="ordered">
+      <li>Read and understand the authoritative handbook or process source.</li>
+      <li>Use the official template and complete its relevant sections.</li>
+      <li>Write steps a new team member can follow without guessing.</li>
+      <li>Test, review, maintain, and update the SOP as processes change.</li>
+    </ol>
+  </div>
+  <div class="actions block">
+    <a class="btn primary" href="../va.html">Back to VA</a>
+    <button class="btn ghost" id="restart">Restart course</button>
+  </div>
+</section>
+</main>
+
+<div class="locked-hint" id="lockedHint">Complete the checkpoint to continue</div>
+<button class="nextfab" id="nextFab" aria-label="Next lesson"><span class="tip" id="nextTip"></span><svg id="nextIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+
+<script src="../assets/js/app-core.js?v=20260917"></script>
+<script>SCApp.requireAuth();</script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return [].slice.call((r || document).querySelectorAll(s)); };
+  var lessons = $$('.lesson');
+  var me = window.SCApp && SCApp.currentUser();
+  var KEY = 'sc_va_sop_foundations_v2__' + (me ? me.id : 'guest');
+  var state = { done: [], passed: {}, at: 0 };
+  try { state = Object.assign(state, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+  state.passed = state.passed || {};
+  var cur = Math.min(state.at || 0, lessons.length - 1);
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  function minutes(el) { return Math.max(1, Math.ceil((el.textContent || '').trim().split(/\s+/).length / 130)); }
+
+  /* ── outline grouped by module ── */
+  var ol = $('#ol'), lastMod = null;
+  lessons.forEach(function (l, i) {
+    if (l.dataset.mod !== lastMod) {
+      lastMod = l.dataset.mod;
+      ol.insertAdjacentHTML('beforeend', '<div class="ol-mod">' + lastMod + '</div>');
+    }
+    var b = document.createElement('button');
+    b.className = 'ol-item'; b.dataset.i = i;
+    var gates = $$('.gate', l).length;
+    b.innerHTML = '<span class="ol-dot">' + (i + 1) + '</span><span>' + l.dataset.title + '<small>' + minutes(l) + ' min' + (gates ? ' · checkpoint' : '') + '</small></span>';
+    b.onclick = function () { go(i); };
+    ol.appendChild(b);
+    var meta = $('.meta', l);
+    if (meta) meta.insertAdjacentHTML('beforeend', '<span class="sep"></span><span>Lesson ' + (i + 1) + ' of ' + lessons.length + '</span><span class="sep"></span><span>' + minutes(l) + ' min</span>');
+  });
+  var items = $$('.ol-item', ol);
+
+  function gatesOf(i) { return $$('.gate', lessons[i]); }
+  function passedAll(i) { return gatesOf(i).every(function (g, k) { return state.passed[lessons[i].id + ':' + k]; }); }
+
+  function paint() {
+    var pct = Math.round(state.done.length / lessons.length * 100);
+    $('#meterFill').style.width = pct + '%';
+    $('#meterText').textContent = pct + '%';
+    $('#topFill').style.width = ((cur + 1) / lessons.length * 100) + '%';
+    items.forEach(function (b, i) {
+      var d = state.done.indexOf(i) > -1;
+      b.classList.toggle('on', i === cur);
+      b.classList.toggle('done', d);
+      $('.ol-dot', b).innerHTML = d ? '&#10003;' : (i + 1);
+    });
+    $$('.checkpoint', lessons[cur]).forEach(function (cp) {
+      var g = $$('.gate', cp), n = g.filter(function (x) { return x.classList.contains('passed'); }).length;
+      $('.cp-state', cp).textContent = g.length ? n + ' of ' + g.length + ' done' : '';
+    });
+    var last = cur === lessons.length - 1;
+    $('#nextTip').textContent = last ? 'Finish course' : 'Next: ' + lessons[cur + 1].dataset.title;
+    $('#nextIcon').innerHTML = last ? '<path d="M5 12.5l4.5 4.5L19 7.5"/>' : '<path d="M5 12h14M13 6l6 6-6 6"/>';
+    $('#nextFab').setAttribute('aria-label', last ? 'Finish course' : 'Next lesson');
+    reveal();
+  }
+
+  function go(i) {
+    i = Math.max(0, Math.min(i, lessons.length - 1));
+    lessons[cur].classList.remove('on');
+    cur = i; state.at = cur;
+    lessons[cur].classList.add('on');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    document.body.classList.remove('nav-open');
+    $('#outlineBtn').setAttribute('aria-expanded', 'false');
+    $('#nextFab').classList.remove('show');
+    save(); paint();
+    $('#stage').focus({ preventScroll: true });
+  }
+  function complete(i) { if (state.done.indexOf(i) === -1) { state.done.push(i); save(); } }
+  function next() {
+    if (!passedAll(cur)) return;
+    complete(cur);
+    if (cur === lessons.length - 1) { paint(); return; }
+    go(cur + 1);
+  }
+
+  /* arrow appears at the end of the lesson once its checkpoint is passed */
+  function reveal() {
+    var fab = $('#nextFab'), hint = $('#lockedHint');
+    var end = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 60;
+    var open = passedAll(cur);
+    var finished = cur === lessons.length - 1 && state.done.indexOf(cur) > -1;
+    fab.classList.toggle('show', end && open && !finished);
+    hint.classList.toggle('show', end && !open);
+  }
+  window.addEventListener('scroll', reveal, { passive: true });
+  window.addEventListener('resize', reveal);
+  document.addEventListener('toggle', function () { setTimeout(reveal, 50); }, true);
+  document.addEventListener('click', function () { setTimeout(reveal, 60); });
+  $('#nextFab').onclick = next;
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-jump],[data-next]');
+    if (!t) return;
+    if (t.hasAttribute('data-next')) { complete(cur); return go(cur + 1); }
+    go(lessons.findIndex(function (l) { return l.id === t.dataset.jump; }));
+  });
+  document.addEventListener('keydown', function (e) {
+    if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === 'ArrowRight') next();
+    if (e.key === 'ArrowLeft') go(cur - 1);
+  });
+  $('#outlineBtn').onclick = function () {
+    var open = document.body.classList.toggle('nav-open');
+    this.setAttribute('aria-expanded', open);
+  };
+  $('#scrim').onclick = function () { document.body.classList.remove('nav-open'); };
+
+  /* ── checkpoint tasks ── */
+  function pass(task, msg) {
+    var lesson = task.closest('.lesson');
+    var k = $$('.gate', lesson).indexOf(task);
+    state.passed[lesson.id + ':' + k] = 1; save();
+    task.classList.add('passed');
+    var fb = $('.fb', task);
+    if (fb && msg) { fb.textContent = msg; fb.className = 'fb good'; }
+    paint();
+  }
+  function fail(task, msg) {
+    var fb = $('.fb', task);
+    if (fb) { fb.textContent = msg; fb.className = 'fb bad'; }
+  }
+
+  $$('.task[data-type="choice"]').forEach(function (task) {
+    $$('.choice', task).forEach(function (b) {
+      b.onclick = function () {
+        if (b.dataset.choice === task.dataset.answer) {
+          $$('.choice', task).forEach(function (x) { x.disabled = true; });
+          b.classList.add('right');
+          pass(task, task.dataset.ok);
+        } else {
+          b.classList.add('wrong'); b.disabled = true;
+          fail(task, 'Not quite. Revisit the source concept, then try again.');
+        }
+      };
+    });
+  });
+
+  $$('.task[data-type="match"]').forEach(function (task) {
+    var opts = $('.match', task).dataset.options.split('|');
+    $$('.match-row', task).forEach(function (row) {
+      row.insertAdjacentHTML('beforeend', '<select aria-label="Choose"><option value="">Choose</option>' + opts.map(function (o) { return '<option>' + o.replace(/&/g, '&amp;') + '</option>'; }).join('') + '</select>');
+      $('select', row).onchange = function () { row.classList.remove('right', 'wrong'); };
+    });
+    $('[data-check]', task).onclick = function () {
+      var rows = $$('.match-row', task), ok = 0;
+      rows.forEach(function (row) {
+        var v = $('select', row).value, good = v === row.dataset.answer;
+        row.classList.toggle('right', good);
+        row.classList.toggle('wrong', !good);
+        if (good) ok++;
+      });
+      if (ok === rows.length) { $$('select', task).forEach(function (s) { s.disabled = true; }); this.disabled = true; pass(task, task.dataset.ok); }
+      else fail(task, ok + ' of ' + rows.length + ' correct. Fix the red ones and check again.');
+    };
+  });
+
+  $$('.task[data-type="sort"]').forEach(function (task) {
+    var list = $('.sort', task);
+    $$('li', list).forEach(function (li) {
+      li.insertAdjacentHTML('beforeend', '<button class="mv" data-dir="-1" aria-label="Move up">&#8593;</button><button class="mv" data-dir="1" aria-label="Move down">&#8595;</button>');
+    });
+    function paintSort() {
+      var li = $$('li', list);
+      li.forEach(function (x, i) { $('[data-dir="-1"]', x).disabled = i === 0; $('[data-dir="1"]', x).disabled = i === li.length - 1; });
+    }
+    list.addEventListener('click', function (e) {
+      var b = e.target.closest('.mv'); if (!b || task.classList.contains('passed')) return;
+      var li = b.closest('li');
+      if (b.dataset.dir === '-1' && li.previousElementSibling) list.insertBefore(li, li.previousElementSibling);
+      if (b.dataset.dir === '1' && li.nextElementSibling) list.insertBefore(li.nextElementSibling, li);
+      $('.fb', task).textContent = '';
+      paintSort();
+    });
+    paintSort();
+    $('[data-check]', task).onclick = function () {
+      var seq = $$('li', list).map(function (x) { return x.dataset.order; });
+      var good = seq.every(function (v, i) { return +v === i + 1; });
+      if (good) { list.classList.add('right'); $$('.mv', list).forEach(function (m) { m.disabled = true; }); this.disabled = true; pass(task, task.dataset.ok); }
+      else fail(task, task.dataset.bad || 'Not yet. Move the items and check again.');
+    };
+  });
+
+  /* flip cards */
+  $$('.flip').forEach(function (f) { f.onclick = function () { f.classList.toggle('on'); }; });
+
+  /* ── six question wheel ── */
+  var Q = [
+    { k: 'WHY', t: 'WHY: Purpose / Objective', x: 'State the reason the process exists and the outcome it supports. The handbook recommends one or two sentences about why the process matters.', e: '“What is the goal of this process? What are we trying to accomplish?”' },
+    { k: 'WHEN', t: 'WHEN: Scope', x: 'Document when work should be done, how often it occurs, and whether an event triggers it. This establishes sequence and schedule.', e: '“When does this need to be done? How often? Is it triggered by something?”' },
+    { k: 'WHO', t: 'WHO: Roles & Responsibilities', x: 'Name who is involved and clarify who does each part. Include review or approval responsibility where applicable.', e: '“Who is responsible for doing each part? Is anyone reviewing or approving?”' },
+    { k: 'HOW', t: 'HOW: Procedure', x: 'Write exact steps in a clear, logical order. Numbers and bullets help someone unfamiliar with the task complete it without guessing.', e: '“Write the steps clearly and in order. Use numbers or bullets.”' },
+    { k: 'WITH WHAT', t: 'WITH WHAT: Documented Information', x: 'Identify the tools, platforms, documents, templates, or resources needed to perform the process. This promotes readiness and consistency.', e: '“What tools, templates, or platforms are used to complete this process?”' },
+    { k: 'WHAT IF', t: 'WHAT IF: Exceptions & Troubleshooting', x: 'Anticipate deviations, errors, and support needs. Explain what can go wrong and what action is appropriate in those cases.', e: '“What can go wrong? What should be done in those cases?”' }
+  ];
+  var wheel = $('#wheel'), seenQ = {};
+  var cx = 130, cy = 130, R = 124, r = 52;
+  function pt(rad, a) { return [cx + rad * Math.cos(a), cy + rad * Math.sin(a)]; }
+  Q.forEach(function (q, i) {
+    var a0 = -Math.PI / 2 - Math.PI / 6 + i * Math.PI / 3 + 0.02, a1 = a0 + Math.PI / 3 - 0.04, am = (a0 + a1) / 2;
+    var p1 = pt(R, a0), p2 = pt(R, a1), p3 = pt(r, a1), p4 = pt(r, a0), tp = pt((R + r) / 2, am);
+    var d = 'M' + p1 + 'A' + R + ',' + R + ' 0 0 1 ' + p2 + 'L' + p3 + 'A' + r + ',' + r + ' 0 0 0 ' + p4 + 'Z';
+    var lines = q.k.split(' ');
+    var txt = lines.map(function (w, j) { return '<tspan x="' + tp[0] + '" dy="' + (j === 0 ? (lines.length > 1 ? -4 : 4) : 13) + '">' + w + '</tspan>'; }).join('');
+    wheel.insertAdjacentHTML('beforeend', '<g class="seg" data-i="' + i + '" tabindex="0" role="tab"><path d="' + d + '"/><text x="' + tp[0] + '" y="' + tp[1] + '">' + txt + '</text></g>');
+  });
+  wheel.insertAdjacentHTML('beforeend', '<circle cx="130" cy="130" r="44" fill="#0a2647"/><text x="130" y="136" text-anchor="middle" font-family="Helvetica Neue,Arial" font-weight="900" font-size="17" fill="#17c3d4">SOP</text>');
+  function showQ(i) {
+    seenQ[i] = 1;
+    $$('.seg', wheel).forEach(function (g) { var n = +g.dataset.i; g.classList.toggle('on', n === i); g.classList.toggle('seen', !!seenQ[n]); });
+    var q = Q[i], p = $('#wheelPanel');
+    p.innerHTML = '<span class="label">Question ' + (i + 1) + ' of 6</span><h3>' + q.t + '</h3><p style="color:#44566c">' + q.x + '</p><p class="quote"><b>What good documentation asks:</b><br>' + q.e + '</p>';
+    p.style.animation = 'none'; void p.offsetWidth; p.style.animation = 'rise .3s ease';
+    $('#wheelHint').textContent = 'Explored ' + Object.keys(seenQ).length + ' of 6';
+  }
+  wheel.addEventListener('click', function (e) { var g = e.target.closest('.seg'); if (g) showQ(+g.dataset.i); });
+  wheel.addEventListener('keydown', function (e) { var g = e.target.closest('.seg'); if (g && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); showQ(+g.dataset.i); } });
+  showQ(0);
+
+  /* ── template explorer ── */
+  var T = [
+    { n: 'Purpose', q: 'WHY', d: 'WHY: purpose / objective, the goal of the process and what it is trying to accomplish.' },
+    { n: 'Scope', q: 'WHEN', d: 'WHEN: timing, frequency, or triggers; when the SOP needs to be used.' },
+    { n: 'Definitions', q: '', d: 'Explain terms needed to understand the SOP.' },
+    { n: 'Roles and Responsibilities', q: 'WHO', d: 'WHO: who performs each part, and who reviews or approves.' },
+    { n: 'Procedure', q: 'HOW', d: 'HOW: clear, ordered, step by step instructions.' },
+    { n: 'Documented Information', q: 'WITH WHAT', d: 'WITH WHAT: tools, platforms, templates, or resources used to complete the process.',
+      subs: [['6.1 References', 'Document/letter, form, and platform.'], ['6.2 Troubleshooting', 'WHAT IF: exceptions, errors, support, and what to do when something goes wrong.'], ['6.3 Related SOPs', 'Related code and documentation name.']] },
+    { n: 'Flowchart', q: '', d: 'A visual representation of the process.' },
+    { n: 'Version Control', q: '', d: 'Version, date modified, description, and author.' }
+  ];
+  var doc = $('#doc'), seenT = {};
+  T.forEach(function (s, i) {
+    doc.insertAdjacentHTML('beforeend', '<button data-i="' + i + '"><i>' + (i + 1) + '</i>' + s.n + '</button>' +
+      (s.subs ? '<div class="subs">' + s.subs.map(function (x) { return '<span>' + x[0] + '</span>'; }).join('') + '</div>' : ''));
+  });
+  function showT(i) {
+    seenT[i] = 1;
+    $$('button', doc).forEach(function (b) { var n = +b.dataset.i; b.classList.toggle('on', n === i); b.classList.toggle('seen', !!seenT[n]); });
+    var s = T[i], p = $('#tplPanel');
+    p.innerHTML = (s.q ? '<span class="tag">' + s.q + '</span>' : '<span class="label">Section ' + (i + 1) + '</span>') + '<h3>' + (i + 1) + '. ' + s.n + '</h3><p style="color:#44566c">' + s.d + '</p>' +
+      (s.subs ? '<ul class="checks" style="margin-top:16px">' + s.subs.map(function (x) { return '<li><b>' + x[0] + '</b><br>' + x[1] + '</li>'; }).join('') + '</ul>' : '') +
+      '<p class="note" style="margin-top:16px">Explored ' + Object.keys(seenT).length + ' of ' + T.length + ' sections</p>';
+    p.style.animation = 'none'; void p.offsetWidth; p.style.animation = 'rise .3s ease';
+  }
+  doc.addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) showT(+b.dataset.i); });
+  showT(0);
+
+  /* ── final quiz ── */
+  var QZ = [
+    { q: 'Which section answers “How often? What triggers this work?”', o: [['a', 'Purpose'], ['b', 'Scope'], ['c', 'Procedure']], a: 'b' },
+    { q: 'Where should you document the systems, templates, and platforms needed for the work?', o: [['a', 'Documented Information'], ['b', 'Definitions'], ['c', 'Version Control']], a: 'a' },
+    { q: 'What is the appropriate source for the assessment SOP content?', o: [['a', 'Prior experience and any online guidance'], ['b', 'The handbook, without external assumptions unless it explicitly allows them'], ['c', 'A sample learner draft']], a: 'b' },
+    { q: 'Which item belongs in the official template after Procedure?', o: [['a', 'Documented Information'], ['b', 'Only an approval signature'], ['c', 'A list of marketing ideas']], a: 'a' },
+    { q: 'What must happen before submitting the assessment SOP?', o: [['a', 'Export it as a PDF'], ['b', 'Delete version control'], ['c', 'Replace the template with a blank document']], a: 'a' }
+  ];
+  var qi = 0, picks = {}, box = $('#quizBox');
+  function quiz() {
+    var item = QZ[qi];
+    box.innerHTML =
+      '<div class="qz-top"><div class="qz-dots">' + QZ.map(function (_, i) { return '<i class="' + (i <= qi ? 'on' : '') + '"></i>'; }).join('') + '</div><span class="qz-count">Question ' + (qi + 1) + ' of ' + QZ.length + '</span></div>' +
+      '<p class="qz-q">' + item.q + '</p>' +
+      item.o.map(function (o) { return '<button class="opt' + (picks[qi] === o[0] ? ' sel' : '') + '" data-v="' + o[0] + '"><i></i><span>' + o[1] + '</span></button>'; }).join('') +
+      '<div class="qz-nav"><button class="btn ghost" id="qzBack"' + (qi === 0 ? ' disabled' : '') + '>&larr; Back</button>' +
+      '<button class="btn primary" id="qzNext"' + (picks[qi] ? '' : ' disabled') + '>' + (qi === QZ.length - 1 ? 'Submit answers' : 'Next &rarr;') + '</button></div>';
+    $$('.opt', box).forEach(function (b) { b.onclick = function () { picks[qi] = b.dataset.v; quiz(); }; });
+    $('#qzBack').onclick = function () { qi--; quiz(); };
+    $('#qzNext').onclick = function () { if (qi < QZ.length - 1) { qi++; quiz(); } else result(); };
+  }
+  function result() {
+    var score = QZ.filter(function (x, i) { return picks[i] === x.a; }).length;
+    box.innerHTML =
+      '<div class="score"><div class="ring" style="--p:' + (score / QZ.length * 100) + '"><b>' + score + '/' + QZ.length + '</b></div>' +
+      '<p style="color:#44566c">' + (score === QZ.length ? 'Excellent. You have a strong foundation for applying the template.' : 'Review the marked items, revisit the relevant lesson, and submit again.') + '</p></div>' +
+      '<ul class="review">' + QZ.map(function (x, i) { var ok = picks[i] === x.a; return '<li class="' + (ok ? 'ok' : 'no') + '">' + (ok ? '&#10003; ' : '&#10007; ') + (i + 1) + '. ' + (ok ? 'Correct' : 'Review this answer') + '</li>'; }).join('') + '</ul>' +
+      '<p class="note"><b>Remember:</b> the actual assessment requires handbook based content, the official template, PDF export, and email submission.</p>' +
+      (score === QZ.length ? '' : '<div class="actions"><button class="btn ghost" id="qzRetry">Try again</button></div>');
+    var r = $('#qzRetry');
+    if (r) r.onclick = function () { qi = 0; picks = {}; quiz(); };
+    if (score >= 4) pass(box); else paint();
+  }
+  quiz();
+
+  /* restore passed tasks from an earlier visit */
+  lessons.forEach(function (l) {
+    $$('.gate', l).forEach(function (g, k) {
+      if (!state.passed[l.id + ':' + k]) return;
+      g.classList.add('passed');
+      if (g.dataset.type === 'choice') { var b = $('.choice[data-choice="' + g.dataset.answer + '"]', g); if (b) b.classList.add('right'); $$('.choice', g).forEach(function (x) { x.disabled = true; }); }
+      if (g.dataset.type === 'match') { $$('.match-row', g).forEach(function (row) { $('select', row).value = row.dataset.answer; row.classList.add('right'); $('select', row).disabled = true; }); $('[data-check]', g).disabled = true; }
+      if (g.dataset.type === 'sort') { var list = $('.sort', g); $$('li', list).sort(function (a, b) { return a.dataset.order - b.dataset.order; }).forEach(function (li) { list.appendChild(li); }); list.classList.add('right'); $$('.mv', list).forEach(function (m) { m.disabled = true; }); $('[data-check]', g).disabled = true; }
+    });
+  });
+
+  $('#restart').onclick = function () { localStorage.removeItem(KEY); location.reload(); };
+
+  lessons[cur].classList.add('on');
+  paint();
+  setTimeout(reveal, 400);
+})();
+</script>
+</body>
+</html>

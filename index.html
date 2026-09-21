@@ -1360,6 +1360,26 @@
     .td-tile-copy b { display: block; font-size: 15.5px; color: var(--v-navy); margin-bottom: 2px; }
     .td-tile-copy span { display: block; font-size: 13px; color: var(--v-muted); line-height: 1.5; }
     .td-tile-go { margin-left: auto; color: var(--v-cyan-d); font-weight: 800; font-size: 13.5px; flex: none; }
+
+    /* VA: classes by role */
+    .va-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 28px; }
+    @media (max-width: 760px) { .va-grid { grid-template-columns: 1fr; } }
+    .va-card { position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; min-height: 170px;
+      border-radius: 18px; overflow: hidden; padding: 22px 24px; text-decoration: none; color: #fff;
+      background-size: cover; background-position: 75% 35%; box-shadow: 0 8px 24px rgba(10,38,71,.1);
+      transition: transform .16s, box-shadow .16s; }
+    .va-card::before { content: ""; position: absolute; inset: 0;
+      background: linear-gradient(90deg, rgba(10,38,71,.9) 0%, rgba(10,38,71,.65) 50%, rgba(10,38,71,.12) 100%); }
+    .va-card > * { position: relative; }
+    .va-card:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(10,38,71,.18); text-decoration: none; }
+    .va-kick { font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--v-cyan); }
+    .va-card b { font-size: 20px; color: #fff; }
+    .va-soon { font-size: 13px; color: #d6e4f0; }
+    .va-cta { margin-top: 24px; }
+    .sim-locked-note { margin-top: 14px; display: inline-block; background: #fff8ec; border: 1.5px solid rgba(217,138,20,.35);
+      color: #7a4d00; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 600; }
+    .sim-locked-note[hidden] { display: none; }
+    .sim-locked-note a { color: #7a4d00; text-decoration: underline; }
   </style>
 </head>
 
@@ -1372,12 +1392,13 @@
       <div class="menu">
         <a class="navlink" href="index.html">Home</a>
         <a class="navlink" href="ai.html">Introduction</a>
+        <a class="navlink" href="va.html">VA</a>
         <a class="navlink" href="marketing-training.html">Marketing</a>
-        <a class="navlink" href="#roles">Roles</a>
+        <a class="navlink" href="#simulations">Simulations</a>
         <a class="navlink" href="#test-drive">Test Drive</a>
       </div>
       <span class="spacer"></span>
-      <a class="pill" href="#roles">Start Practicing</a>
+      <a class="pill" href="#simulations">Start Practicing</a>
       <a class="user-chip" href="account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
     </div>
   </nav>
@@ -1399,7 +1420,7 @@
           the company's real scenarios and cases, and make your mistakes here, not with a real client.</p>
         <div class="h-cta-row">
           <a class="btn v-cyan" href="ai.html">Start the Introduction</a>
-          <a class="btn v-ghost role-gate-btn" href="#roles">Choose Your Role</a>
+          <a class="btn v-ghost role-gate-btn" href="#simulations">Go to Simulations</a>
         </div>
       </div>
       <div class="h-visual rv">
@@ -1565,7 +1586,7 @@
       <span class="h-eyebrow rv">Ways to practice</span>
       <h2 class="h-h2 rv">Everything you need is right here</h2>
       <div class="mode-grid">
-        <a class="mode m1 rv" href="#roles">
+        <a class="mode m1 rv" href="#simulations">
           <div class="ico"><svg viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="9.5" />
               <path d="M15.5 8.5l-2.2 5.8-5.8 2.2 2.2-5.8z" />
@@ -1573,7 +1594,7 @@
           <h4>Case Simulator</h4>
           <p>Branching contract to close scenarios across 5 states.</p>
         </a>
-        <a class="mode m2 rv" href="#roles">
+        <a class="mode m2 rv" href="#simulations">
           <div class="ico"><svg viewBox="0 0 24 24">
               <path d="M4 11.5L12 4l8 7.5" />
               <path d="M6 10v9h12v-9" />
@@ -1582,14 +1603,14 @@
           <h4>MLS Practice</h4>
           <p>Real listing entry, with data validation.</p>
         </a>
-        <a class="mode m3 rv" href="#roles">
+        <a class="mode m3 rv" href="#simulations">
           <div class="ico"><svg viewBox="0 0 24 24">
               <path d="M4 5h16v11H8l-4 4z" />
             </svg></div>
           <h4>Prompt Practice</h4>
           <p>Ready to copy Claude prompts, by role.</p>
         </a>
-        <a class="mode m4 rv" href="#roles">
+        <a class="mode m4 rv" href="#simulations">
           <div class="ico"><svg viewBox="0 0 24 24">
               <path d="M20 6L9 17l-5-5" />
             </svg></div>
@@ -1660,15 +1681,31 @@
     </div>
   </section>
 
-  <!-- ===== ROLES / POSITIONS ===== -->
-  <section class="h-sec h-roles" id="roles">
+  <!-- ===== VA: CLASSES BY ROLE ===== -->
+  <section class="h-sec h-va" id="va">
+    <div class="inner">
+      <span class="h-eyebrow rv">VA &middot; Study first</span>
+      <h2 class="h-h2 rv">Learn your role before you simulate it</h2>
+      <p class="h-lead rv">VA is where you study. Each role has its own classes, organized in modules, so you know the
+        process before you step into a simulation. Open to everyone, no prerequisites.</p>
+      <div class="va-grid">
+        <a class="va-card rv" href="va/sop-foundations.html" style="background-image:url('assets/img/va/sop-foundations.jpg')"><span class="va-kick">Course</span><b>SOP Foundations</b><span class="va-soon">Turn everyday work into a reliable, repeatable system &middot; 3 modules, 11 lessons</span></a>
+      </div>
+      <div class="va-cta rv"><a class="btn v-cyan" href="va.html">Go to VA &rarr;</a></div>
+    </div>
+  </section>
+
+  <!-- ===== SIMULATIONS ===== -->
+  <span id="roles" aria-hidden="true"></span>
+  <section class="h-sec h-roles" id="simulations">
     <div class="inner">
       <div class="roles-toolbar">
         <div class="roles-copy">
-          <span class="h-eyebrow rv">For every role</span>
-          <h2 class="h-h2 rv">Find your role and get started</h2>
-          <p class="h-lead rv">Each role trains on the scenario it actually owns day to day. Pick your seat and
+          <span class="h-eyebrow rv">Simulations</span>
+          <h2 class="h-h2 rv">Find your simulation and get started</h2>
+          <p class="h-lead rv">Each simulation trains on the scenario a role actually owns day to day. Pick your seat and
             practice what matters most.</p>
+          <div class="sim-locked-note rv" hidden>&#128274; Simulations unlock after you finish the <a href="ai.html">Introduction</a>. VA classes are open anytime.</div>
         </div>
         <div class="role-select-wrap rv">
           <label for="roleSelect">Choose your role</label>
@@ -1691,7 +1728,7 @@
             <h3>Transaction Coordinator</h3>
             <p>Practice contract to close scenarios, managing EMD, contingency periods, disclosures, and the 3 day
               Closing Disclosure across 4 markets.</p>
-            <a class="btn v-cyan" href="roles/transaction-coordinator.html">Start this role &rarr;</a>
+            <a class="btn v-cyan" href="roles/transaction-coordinator.html">Start simulation &rarr;</a>
           </div>
         </div>
         <div class="role-panel side-r" data-index="1">
@@ -1701,7 +1738,7 @@
             <h3>Property Manager</h3>
             <p>Run the full tenant lifecycle: screen leads on the pipeline board, verify applicants with TurboTenant,
               compare and close the lease, then coordinate maintenance with vendors.</p>
-            <a class="btn v-cyan" href="roles/property-manager.html">Start this role &rarr;</a>
+            <a class="btn v-cyan" href="roles/property-manager.html">Start simulation &rarr;</a>
           </div>
         </div>
         <div class="role-panel side-r" data-index="2">
@@ -1711,7 +1748,7 @@
             <h3>Listing Coordinator</h3>
             <p>Practice full listing management: MLS entry and data validation, seller showing updates, price
               conversations, and marketing content for active listings.</p>
-            <a class="btn v-cyan" href="roles/listing-coordinator.html">Start this role &rarr;</a>
+            <a class="btn v-cyan" href="roles/listing-coordinator.html">Start simulation &rarr;</a>
           </div>
         </div>
         <div class="role-panel" data-index="3">
@@ -1721,7 +1758,7 @@
             <h3>Lead Manager</h3>
             <p>Practice cold lead to booked appointment scenarios, mastering outreach scripts, qualification,
               follow up sequences, and clean CRM notes.</p>
-            <a class="btn v-cyan" href="roles/lead-manager.html">Start this role &rarr;</a>
+            <a class="btn v-cyan" href="roles/lead-manager.html">Start simulation &rarr;</a>
           </div>
         </div>
         <div class="role-panel side-r" data-index="4">
@@ -1731,7 +1768,7 @@
             <h3>Operations Manager</h3>
             <p>Practice operations scenarios to fix agency bottlenecks, creating onboarding SOPs, 90 day reviews,
               and client reporting.</p>
-            <a class="btn v-cyan" href="roles/operations-manager.html">Start this role &rarr;</a>
+            <a class="btn v-cyan" href="roles/operations-manager.html">Start simulation &rarr;</a>
           </div>
         </div>
         <div class="role-panel" data-index="5">
@@ -1741,7 +1778,7 @@
             <h3>CFO &amp; Bookkeeper</h3>
             <p>Practice month end bookkeeping and reporting, drafting variance memos, AR explanations, and vendor
               emails.</p>
-            <a class="btn v-cyan" href="roles/cfo-bookkeeper.html">Start this role &rarr;</a>
+            <a class="btn v-cyan" href="roles/cfo-bookkeeper.html">Start simulation &rarr;</a>
           </div>
         </div>
       </div>
@@ -1796,9 +1833,9 @@
   <!-- ===== FINAL CTA ===== -->
   <section class="h-final">
     <h2 class="rv">Your classroom is done. Your practice starts now.</h2>
-    <p class="rv">Choose your role and jump into the first scenario. Two minutes and you're already practicing on a real
+    <p class="rv">Choose your simulation and jump into the first scenario. Two minutes and you're already practicing on a real
       case.</p>
-    <a class="btn v-cyan rv role-gate-btn" href="#roles">Choose a Role</a>
+    <a class="btn v-cyan rv role-gate-btn" href="#simulations">Go to Simulations</a>
   </section>
 
   <!-- ===== FOOTER ===== -->
@@ -1812,11 +1849,12 @@
         </div>
         <div>
           <h4>Practice</h4>
-          <a class="fl" href="#roles">Choose Your Role</a>
+          <a class="fl" href="va.html">Study in VA</a>
+          <a class="fl" href="#simulations">Go to Simulations</a>
           <a class="fl" href="#how-it-works">How It Works</a>
         </div>
         <div>
-          <h4>Roles</h4>
+          <h4>Simulations</h4>
           <a class="fl" href="roles/transaction-coordinator.html">Transaction Coordinator</a>
           <a class="fl" href="roles/property-manager.html">Property Manager</a>
           <a class="fl" href="roles/operations-manager.html">Operations</a>
@@ -1881,8 +1919,8 @@
     </div>
   </div>
 
-  <script src="assets/js/app-core.js"></script>
-  <script src="assets/js/site.js"></script>
+  <script src="assets/js/app-core.js?v=20260917"></script>
+  <script src="assets/js/site.js?v=20260917"></script>
   <script>
     function openTestDrive(){ document.getElementById('tdOverlay').classList.add('open'); document.body.style.overflow='hidden'; }
     function closeTestDrive(){ document.getElementById('tdOverlay').classList.remove('open'); document.body.style.overflow=''; }
