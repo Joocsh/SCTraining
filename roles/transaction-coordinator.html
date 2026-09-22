@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link rel="stylesheet" href="../assets/css/role-dash.css">
   <link rel="stylesheet" href="../assets/css/workflow.css">
-  <link rel="stylesheet" href="../assets/css/tc-case.css?v=20260922e">
+  <link rel="stylesheet" href="../assets/css/tc-case.css?v=20260922f">
 
   <style>
     /* MLS Practice panel */
@@ -1921,11 +1921,56 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
      PANEL: CASE SIMULATOR
      ══════════════════════════════════════════════════════════ -->
 <div class="lc-panel" id="panel-sim">
-  <div class="lc-panel-header">
-    <button class="lc-panel-back" onclick="simPanelBack()">Back</button>
-    <span class="lc-panel-title">Case Simulator &mdash; Transaction Coordinator</span>
+  <div class="lc-panel-header tc-sim-header" id="tc-sim-header">
+    <div class="tc-header-left">
+      <button class="lc-panel-back tc-header-back-btn" onclick="simPanelBack()" title="Back to menu">
+        <svg class="tc-back-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>Back</span>
+      </button>
+      <div class="tc-header-divider"></div>
+      <a href="../index.html" class="tc-header-brand" title="SkillCloud Academy">
+        <img src="../assets/img/skillcloud-navlogo.png" alt="SkillCloud" class="tc-header-logo">
+      </a>
+      <div class="tc-header-breadcrumb">
+        <span class="tc-bc-root">Simulations</span>
+        <span class="tc-bc-sep">/</span>
+        <span class="tc-bc-role">Transaction Coordinator</span>
+        <span class="tc-bc-sep tc-bc-case-sep">/</span>
+        <span class="tc-bc-case" id="tc-header-case-name">4827 Rolando Blvd &middot; San Diego, CA</span>
+      </div>
+    </div>
+
+    <div class="tc-header-center">
+      <div class="tc-header-market-badge" id="tc-header-market-badge">
+        <span class="tc-market-dot"></span>
+        <span class="tc-market-text">California &middot; Full Escrow</span>
+      </div>
+    </div>
+
+    <div class="tc-header-right">
+      <div class="tc-header-stats-group" id="tc-header-stats-group">
+        <div class="tc-header-stat">
+          <span class="tc-stat-lbl">Price</span>
+          <span class="tc-stat-val">$889,000</span>
+        </div>
+        <div class="tc-header-stat">
+          <span class="tc-stat-lbl">Close</span>
+          <span class="tc-stat-val">Nov 3, 2025</span>
+        </div>
+      </div>
+      <button type="button" class="tc-header-reset-btn" onclick="wfRestartCase()" title="Reset case to beginning">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="1 4 1 10 7 10"></polyline>
+          <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+        </svg>
+        <span>Reset Case</span>
+      </button>
+    </div>
   </div>
-  <div class="lc-panel-body" style="max-width:1340px;margin:0 auto;padding:34px 40px 70px">
+  <div class="lc-panel-body tc-sim-panel-body">
 
     <div class="sim-pick-center">
       <!-- VIEW 1: city selector -->
@@ -2030,7 +2075,7 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
 <script src="../assets/js/rein-va-form.js"></script>
 <script src="../assets/js/workflow.js"></script>
 <script src="../assets/js/tc-va-case.js"></script>
-<script src="../assets/js/tc-ca-new-case.js?v=20260922e"></script>
+<script src="../assets/js/tc-ca-new-case.js?v=20260922f"></script>
 <script>
   /* ══════════════════════════════════════════════════════════
      CASE SIMULATOR CONTENT: Transaction Coordinator
@@ -4851,6 +4896,39 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
   /* ── Progress tracking via localStorage ─────────────────── */
   const ROLE = 'tc';
   const rpMe = SCApp.requireAuth();
+
+  /* ── Dynamic Simulation Header Sync ──────────────────────── */
+  function syncSimHeader() {
+    const wfEl = document.getElementById('sim-workflow');
+    const isWfActive = wfEl && getComputedStyle(wfEl).display !== 'none';
+    const caseName = document.getElementById('tc-header-case-name');
+    const caseSep = document.querySelector('.tc-bc-case-sep');
+    const badge = document.getElementById('tc-header-market-badge');
+    const stats = document.getElementById('tc-header-stats-group');
+    const resetBtn = document.querySelector('.tc-header-reset-btn');
+
+    if (caseName) {
+      caseName.textContent = isWfActive ? '4827 Rolando Blvd \u00B7 San Diego, CA' : 'Case Selection';
+    }
+    if (caseSep) caseSep.style.display = '';
+    if (badge) badge.style.display = isWfActive ? 'inline-flex' : 'none';
+    if (stats) stats.style.display = isWfActive ? 'flex' : 'none';
+    if (resetBtn) resetBtn.style.display = isWfActive ? 'inline-flex' : 'none';
+  }
+
+  window.PANEL_ON_OPEN = window.PANEL_ON_OPEN || {};
+  const origOnOpenSim = window.PANEL_ON_OPEN['sim'];
+  window.PANEL_ON_OPEN['sim'] = function () {
+    if (typeof origOnOpenSim === 'function') origOnOpenSim();
+    setTimeout(syncSimHeader, 40);
+  };
+
+  const wfElObserver = document.getElementById('sim-workflow');
+  if (wfElObserver && window.MutationObserver) {
+    new MutationObserver(function () {
+      syncSimHeader();
+    }).observe(wfElObserver, { attributes: true, attributeFilter: ['style'] });
+  }
 
   const MODES = [
     { id: 'sim', total: 4, active: true, label: 'Case Simulator' },

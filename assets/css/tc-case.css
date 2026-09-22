@@ -7565,5 +7565,367 @@ body:has(.wf-notes-panel.open) .wf-score-float {
   padding-bottom: 14px;
 }
 
+/* ════════════════════════════════════════════════════════════════
+   SKILLCLOUD EXECUTIVE COMMAND HEADER & FULL-SCREEN WORKSPACE
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── 1. HEADER BAR ─────────────────────────────────────────── */
+.lc-panel-header.tc-sim-header {
+  position: sticky;
+  top: 0;
+  z-index: 120;
+  height: 64px;
+  background: linear-gradient(135deg, #07192f 0%, #0a2647 55%, #0e3564 100%) !important;
+  border-bottom: 1.5px solid rgba(23, 195, 212, 0.35) !important;
+  box-shadow: 0 4px 24px rgba(7, 25, 47, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px !important;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+.tc-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.tc-header-back-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1.5px solid rgba(23, 195, 212, 0.45) !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  padding: 7px 18px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.tc-header-back-btn::before {
+  display: none !important;
+  content: "" !important;
+}
+.tc-header-back-btn:hover {
+  background: #17c3d4 !important;
+  color: #07192f !important;
+  border-color: #17c3d4 !important;
+  transform: translateX(-2px);
+  box-shadow: 0 0 16px rgba(23, 195, 212, 0.45);
+}
+.tc-back-icon {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+.tc-header-back-btn:hover .tc-back-icon {
+  transform: translateX(-2px);
+}
+
+.tc-header-divider {
+  width: 1px;
+  height: 26px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.tc-header-brand {
+  display: flex;
+  align-items: center;
+}
+.tc-header-logo {
+  height: 30px;
+  width: auto;
+  display: block;
+  filter: brightness(0) invert(1);
+  transition: opacity 0.2s;
+}
+.tc-header-logo:hover {
+  opacity: 0.85;
+}
+
+.tc-header-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+}
+.tc-bc-root {
+  color: #94a3b8;
+  font-weight: 600;
+}
+.tc-bc-sep {
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 11px;
+}
+.tc-bc-role {
+  color: #cbd5e1;
+  font-weight: 700;
+}
+.tc-bc-case {
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  font-size: 13.5px;
+}
+
+.tc-header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.tc-header-market-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(23, 195, 212, 0.14);
+  border: 1px solid rgba(23, 195, 212, 0.4);
+  border-radius: 999px;
+  padding: 5px 14px;
+  color: #17c3d4;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.tc-market-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.tc-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.tc-header-stats-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 5px 12px;
+}
+.tc-header-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+.tc-stat-lbl {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #94a3b8;
+  font-weight: 700;
+}
+.tc-stat-val {
+  font-size: 12px;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.tc-header-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(239, 68, 68, 0.14);
+  border: 1.5px solid rgba(239, 68, 68, 0.4);
+  border-radius: 999px;
+  color: #fca5a5;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.tc-header-reset-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
+}
+
+/* ── 2. FULL SCREEN WORKSPACE LAYOUT ───────────────────────── */
+.lc-panel-body.tc-sim-panel-body {
+  max-width: 1760px !important;
+  width: 96% !important;
+  margin: 0 auto !important;
+  padding: 18px 20px 80px !important;
+  box-sizing: border-box !important;
+}
+
+@media (min-width: 1900px) {
+  .lc-panel-body.tc-sim-panel-body {
+    max-width: 1880px !important;
+    width: 98% !important;
+  }
+}
+
+.tc-workspace-root {
+  max-width: 100% !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+}
+
+.tc-workspace-grid {
+  display: grid !important;
+  grid-template-columns: 260px minmax(0, 1fr) 290px !important;
+  gap: 22px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+@media (min-width: 1600px) {
+  .tc-workspace-grid {
+    grid-template-columns: 280px minmax(0, 1fr) 310px !important;
+    gap: 24px !important;
+  }
+}
+
+/* ── 3. PIPELINE STEPPER ENHANCEMENTS (SKILLCLOUD BRAND) ──── */
+.wf-pipeline {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #ffffff !important;
+  border: 1px solid var(--v-line, #e2e8f0) !important;
+  border-radius: 16px !important;
+  padding: 14px 20px 12px !important;
+  box-shadow: 0 4px 20px rgba(10, 38, 71, 0.04) !important;
+  margin-bottom: 16px !important;
+  position: relative !important;
+}
+
+.wf-pipeline-controls {
+  display: none !important; /* Replaced by executive header Reset Case button */
+}
+
+.wf-pipeline-track {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+}
+
+.wf-pipe-step {
+  flex: 1 1 0 !important;
+  min-width: 90px !important;
+  max-width: 140px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  position: relative !important;
+}
+
+.wf-pipe-node {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  transition: all 0.25s ease !important;
+  z-index: 2 !important;
+  position: relative !important;
+}
+
+.wf-pipe-step.upcoming .wf-pipe-node {
+  background: #f1f5f9 !important;
+  color: #94a3b8 !important;
+  border: 1.5px solid #cbd5e1 !important;
+}
+
+.wf-pipe-step.active .wf-pipe-node {
+  background: linear-gradient(135deg, #17c3d4 0%, #0fa6b6 100%) !important;
+  color: #07192f !important;
+  border: none !important;
+  box-shadow: 0 0 0 4px rgba(23, 195, 212, 0.25), 0 4px 12px rgba(23, 195, 212, 0.35) !important;
+  transform: scale(1.08) !important;
+}
+
+.wf-pipe-step.done .wf-pipe-node {
+  background: #0a2647 !important;
+  color: #17c3d4 !important;
+  border: 2px solid #17c3d4 !important;
+  box-shadow: 0 2px 8px rgba(10, 38, 71, 0.15) !important;
+}
+
+.wf-pipe-connector {
+  position: absolute !important;
+  top: 16px !important;
+  left: 50% !important;
+  width: 100% !important;
+  height: 2px !important;
+  background: #e2e8f0 !important;
+  z-index: 1 !important;
+}
+
+.wf-pipe-step.done .wf-pipe-connector {
+  background: #17c3d4 !important;
+}
+
+.wf-pipe-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  text-align: center !important;
+  margin-top: 8px !important;
+  line-height: 1.3 !important;
+  white-space: normal !important;
+  max-width: 110px !important;
+  min-height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.wf-pipe-step.active .wf-pipe-label {
+  color: #0a2647 !important;
+  font-weight: 800 !important;
+}
+
+.wf-pipe-step.done .wf-pipe-label {
+  color: #0f3460 !important;
+}
+
+/* ── 4. RESPONSIVE ADJUSTMENTS ─────────────────────────────── */
+@media (max-width: 1024px) {
+  .tc-header-stats-group {
+    display: none !important;
+  }
+  .tc-header-breadcrumb .tc-bc-root,
+  .tc-header-breadcrumb .tc-bc-sep:first-of-type {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .tc-header-center {
+    display: none !important;
+  }
+  .lc-panel-header.tc-sim-header {
+    padding: 0 14px !important;
+    height: 56px;
+  }
+}
+
+
 
 
