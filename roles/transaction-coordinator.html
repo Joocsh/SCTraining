@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link rel="stylesheet" href="../assets/css/role-dash.css">
   <link rel="stylesheet" href="../assets/css/workflow.css">
-  <link rel="stylesheet" href="../assets/css/tc-case.css?v=20260922f">
+  <link rel="stylesheet" href="../assets/css/tc-case.css?v=20260922g">
 
   <style>
     /* MLS Practice panel */
@@ -1934,33 +1934,14 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
       <a href="../index.html" class="tc-header-brand" title="SkillCloud Academy">
         <img src="../assets/img/skillcloud-navlogo.png" alt="SkillCloud" class="tc-header-logo">
       </a>
-      <div class="tc-header-breadcrumb">
-        <span class="tc-bc-root">Simulations</span>
-        <span class="tc-bc-sep">/</span>
-        <span class="tc-bc-role">Transaction Coordinator</span>
-        <span class="tc-bc-sep tc-bc-case-sep">/</span>
-        <span class="tc-bc-case" id="tc-header-case-name">4827 Rolando Blvd &middot; San Diego, CA</span>
-      </div>
-    </div>
-
-    <div class="tc-header-center">
-      <div class="tc-header-market-badge" id="tc-header-market-badge">
-        <span class="tc-market-dot"></span>
-        <span class="tc-market-text">California &middot; Full Escrow</span>
+      <div class="tc-header-title-wrap" id="tc-header-case-name">
+        <span class="tc-title-main">California TC Simulator</span>
+        <span class="tc-title-dot">&middot;</span>
+        <span class="tc-title-prop">4827 Rolando Blvd</span>
       </div>
     </div>
 
     <div class="tc-header-right">
-      <div class="tc-header-stats-group" id="tc-header-stats-group">
-        <div class="tc-header-stat">
-          <span class="tc-stat-lbl">Price</span>
-          <span class="tc-stat-val">$889,000</span>
-        </div>
-        <div class="tc-header-stat">
-          <span class="tc-stat-lbl">Close</span>
-          <span class="tc-stat-val">Nov 3, 2025</span>
-        </div>
-      </div>
       <button type="button" class="tc-header-reset-btn" onclick="wfRestartCase()" title="Reset case to beginning">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="1 4 1 10 7 10"></polyline>
@@ -2075,7 +2056,7 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
 <script src="../assets/js/rein-va-form.js"></script>
 <script src="../assets/js/workflow.js"></script>
 <script src="../assets/js/tc-va-case.js"></script>
-<script src="../assets/js/tc-ca-new-case.js?v=20260922f"></script>
+<script src="../assets/js/tc-ca-new-case.js?v=20260922g"></script>
 <script>
   /* ══════════════════════════════════════════════════════════
      CASE SIMULATOR CONTENT: Transaction Coordinator
@@ -4902,17 +4883,13 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
     const wfEl = document.getElementById('sim-workflow');
     const isWfActive = wfEl && getComputedStyle(wfEl).display !== 'none';
     const caseName = document.getElementById('tc-header-case-name');
-    const caseSep = document.querySelector('.tc-bc-case-sep');
-    const badge = document.getElementById('tc-header-market-badge');
-    const stats = document.getElementById('tc-header-stats-group');
     const resetBtn = document.querySelector('.tc-header-reset-btn');
 
     if (caseName) {
-      caseName.textContent = isWfActive ? '4827 Rolando Blvd \u00B7 San Diego, CA' : 'Case Selection';
+      caseName.innerHTML = isWfActive
+        ? '<span class="tc-title-main">California TC Simulator</span> <span class="tc-title-dot">&middot;</span> <span class="tc-title-prop">4827 Rolando Blvd</span>'
+        : '<span class="tc-title-main">Case Simulator</span> <span class="tc-title-dot">&middot;</span> <span class="tc-title-prop">Select Case</span>';
     }
-    if (caseSep) caseSep.style.display = '';
-    if (badge) badge.style.display = isWfActive ? 'inline-flex' : 'none';
-    if (stats) stats.style.display = isWfActive ? 'flex' : 'none';
     if (resetBtn) resetBtn.style.display = isWfActive ? 'inline-flex' : 'none';
   }
 

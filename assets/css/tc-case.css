@@ -7648,58 +7648,25 @@ body:has(.wf-notes-panel.open) .wf-score-float {
   opacity: 0.85;
 }
 
-.tc-header-breadcrumb {
+.tc-header-title-wrap {
   display: flex;
   align-items: center;
-  gap: 7px;
-  font-size: 12.5px;
-}
-.tc-bc-root {
-  color: #94a3b8;
-  font-weight: 600;
-}
-.tc-bc-sep {
-  color: rgba(255, 255, 255, 0.3);
-  font-size: 11px;
-}
-.tc-bc-role {
-  color: #cbd5e1;
-  font-weight: 700;
-}
-.tc-bc-case {
-  color: #ffffff;
-  font-weight: 800;
+  gap: 8px;
+  font-size: 14.5px;
   letter-spacing: -0.2px;
-  font-size: 13.5px;
 }
-
-.tc-header-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-}
-
-.tc-header-market-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: rgba(23, 195, 212, 0.14);
-  border: 1px solid rgba(23, 195, 212, 0.4);
-  border-radius: 999px;
-  padding: 5px 14px;
-  color: #17c3d4;
-  font-size: 11.5px;
+.tc-title-main {
   font-weight: 800;
-  letter-spacing: 0.4px;
-  text-transform: uppercase;
+  color: #ffffff;
 }
-.tc-market-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 8px #10b981;
+.tc-title-dot {
+  color: var(--v-cyan, #17c3d4);
+  font-weight: 700;
+  font-size: 14px;
+}
+.tc-title-prop {
+  font-weight: 700;
+  color: #cbd5e1;
 }
 
 .tc-header-right {
@@ -7707,34 +7674,6 @@ body:has(.wf-notes-panel.open) .wf-score-float {
   align-items: center;
   gap: 16px;
   flex-shrink: 0;
-}
-
-.tc-header-stats-group {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  padding: 5px 12px;
-}
-.tc-header-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  line-height: 1.2;
-}
-.tc-stat-lbl {
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  color: #94a3b8;
-  font-weight: 700;
-}
-.tc-stat-val {
-  font-size: 12px;
-  color: #ffffff;
-  font-weight: 800;
 }
 
 .tc-header-reset-btn {
