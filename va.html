@@ -131,20 +131,6 @@
     .va-row > * { position: relative; }
     .va-row-body { max-width: 560px; }
     .va-row .lab-badge { position: absolute; top: 20px; right: 22px; background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.35); }
-    .va-start { display: flex; align-items: center; gap: 16px; background: #fff; border: 1px solid var(--v-line); border-radius: 18px; padding: 16px 20px; margin: 0 0 40px; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
-    .va-start:hover { border-color: rgba(23,195,212,.5); box-shadow: 0 8px 22px rgba(10,38,71,.06); text-decoration: none; }
-    .va-start .n { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: #eef3f8; color: var(--v-navy); font-weight: 800; }
-    .va-start.done .n { background: #1f9e5a; color: #fff; }
-    .va-start b { display: block; color: var(--v-navy); font-size: 16px; }
-    .va-start span { font-size: 14px; color: var(--v-muted); }
-    .va-start .go { margin-left: auto; font-weight: 800; color: var(--v-cyan-d); font-size: 14px; white-space: nowrap; }
-    .va-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
-    .va-meta span { font-size: 12px; font-weight: 700; color: #cfe0f0; background: rgba(255,255,255,.12); border-radius: 999px; padding: 3px 10px; }
-    .va-prog { display: flex; align-items: center; gap: 12px; margin-top: 4px; max-width: 360px; }
-    .va-prog i { flex: 1; height: 6px; border-radius: 99px; background: rgba(255,255,255,.2); overflow: hidden; }
-    .va-prog i b { display: block; height: 100%; background: var(--v-cyan); border-radius: 99px; }
-    .va-prog span { font-size: 13px; font-weight: 700; color: #d6e4f0; white-space: nowrap; }
-    .va-row .lab-badge.done { background: #1f9e5a; border-color: #1f9e5a; color: #fff; }
     a.va-row { text-decoration: none; transition: transform .16s, box-shadow .16s; }
     a.va-row:hover { transform: translateY(-2px); box-shadow: 0 16px 36px rgba(10,38,71,.16); text-decoration: none; }
     .va-row h3 { font-family: "Helvetica Neue", Arial, sans-serif; font-size: 24px; font-weight: 900; letter-spacing: -.4px; margin: 0 0 6px; color: #fff; }
@@ -161,7 +147,7 @@
     }
   </style>
 </head>
-<body data-track="va">
+<body>
 
 <nav class="nav" id="nav">
   <div class="nav-inner">
@@ -171,7 +157,6 @@
       <a class="navlink" href="index.html">Home</a>
       <a class="navlink" href="ai.html">Introduction</a>
       <a class="navlink" href="va.html">VA</a>
-      <a class="navlink" href="marketing.html">Marketing</a>
       <a class="navlink" href="index.html#simulations">Simulations</a>
     </div>
     <span class="spacer"></span>
@@ -190,14 +175,21 @@
 </header>
 
 <div class="lab-content">
-  <a class="va-start" id="vaStart" href="ai.html"></a>
-
   <div class="lab-intro">
     <h2>Pick your training</h2>
-    <p>Each course is organized in modules and short lessons, with a checkpoint at the end of every lesson. Your progress is saved as you go.</p>
+    <p>Study the classes for your role here, then put them into practice in the Simulations once you finish the Introduction.</p>
   </div>
 
-  <div class="va-list" id="vaList"></div>
+  <div class="va-list">
+    <a class="va-row" id="sop-foundations" href="va/sop-foundations.html" style="background-image:url('assets/img/va/sop-foundations.jpg')">
+      <span class="lab-badge soon">3 modules · 11 lessons</span>
+      <div class="va-row-body">
+        <h3>SOP Foundations</h3>
+        <p>Learn to create clear Standard Operating Procedures: the six question framework, the official SOP template, writing well, and the SOP assessment.</p>
+        <span class="lab-cta">Start the course &rarr;</span>
+      </div>
+    </a>
+  </div>
 </div>
 
 <footer class="h-foot">
@@ -210,7 +202,6 @@
       <div>
         <h4>Practice</h4>
         <a class="fl" href="va.html">Study in VA</a>
-        <a class="fl" href="marketing.html">Marketing trainings</a>
         <a class="fl" href="index.html#simulations">Go to Simulations</a>
         <a class="fl" href="index.html#how-it-works">How It Works</a>
       </div>
@@ -237,32 +228,6 @@
 
 <script src="assets/js/app-core.js?v=20260917"></script>
 <script>SCApp.requireAuth();</script>
-<script src="assets/js/courses.js?v=20260922b"></script>
-<script>
-  (function () {
-    var me = SCApp.currentUser(); if (!me) return;
-    var intro = SCCourses.progress(SCCourses.get('intro'), me.id), introDone = SCApp.isIntroDone(me);
-    var st = document.getElementById('vaStart');
-    if (introDone) st.classList.add('done');
-    st.innerHTML = '<span class="n">' + (introDone ? '&#10003;' : '1') + '</span><div><b>AI Introduction</b><span>' +
-      (introDone ? 'Complete. The Simulations are unlocked.' : 'Start here. ' + intro.done + ' of ' + intro.total + ' lessons, and it unlocks the Simulations.') +
-      '</span></div><span class="go">' + (introDone ? 'Review' : (intro.done ? 'Continue' : 'Start')) + ' &rarr;</span>';
-    var list = document.getElementById('vaList');
-    SCCourses.byTrack(document.body.getAttribute('data-track')).forEach(function (c) {
-      var p = SCCourses.progress(c, me.id);
-      var label = p.complete ? 'Completed' : (p.done ? 'In progress' : 'Not started');
-      list.insertAdjacentHTML('beforeend',
-        '<a class="va-row" id="' + c.id + '" href="' + c.href + '" style="background-image:url(\'' + c.image + '\')">' +
-          '<span class="lab-badge soon' + (p.complete ? ' done' : '') + '">' + label + '</span>' +
-          '<div class="va-row-body">' +
-            '<div class="va-meta">' + (c.modules ? '<span>' + c.modules + ' modules</span>' : '') + '<span>' + c.lessons + ' lessons</span></div>' +
-            '<h3>' + c.title + '</h3><p>' + c.desc + '</p>' +
-            '<div class="va-prog"><i><b style="width:' + p.pct + '%"></b></i><span>' + p.done + ' of ' + p.total + '</span></div>' +
-            '<span class="lab-cta" style="display:inline-block;margin-top:12px">' + (p.complete ? 'Review the course' : (p.done ? 'Continue' : 'Start the course')) + ' &rarr;</span>' +
-          '</div></a>');
-    });
-  })();
-</script>
 <script src="assets/js/site.js?v=20260917"></script>
 </body>
 </html>

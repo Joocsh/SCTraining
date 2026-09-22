@@ -343,92 +343,10 @@ function wfStart(sc, restoreStep) {
   wfRender();
 }
 
-/* ── Custom Confirmation Modal ──────────────────────────── */
-function wfShowConfirmModal(options) {
-  options = options || {};
-  let modal = document.getElementById('wf-confirm-modal');
-  if (!modal) {
-    modal = document.createElement('div');
-    modal.id = 'wf-confirm-modal';
-    modal.className = 'wf-confirm-modal';
-    document.body.appendChild(modal);
+function wfRestartCase() {
+  if (!confirm('Are you sure you want to reset this case to the beginning? All your entered answers and progress will be cleared.')) {
+    return;
   }
-
-  const title = options.title || 'Reset Case Simulation?';
-  const message = options.message || 'Are you sure you want to reset this case to the beginning? All your entered answers and progress will be cleared.';
-  const alertNote = options.alertNote || 'This action cannot be undone. You will return to Step 1.';
-  const confirmText = options.confirmText || 'Yes, Reset Case';
-  const cancelText = options.cancelText || 'Cancel';
-
-  modal.innerHTML =
-    '<div class="wf-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="wf-confirm-title">' +
-      '<button type="button" class="wf-confirm-close" aria-label="Close" id="wf-confirm-btn-close">&times;</button>' +
-      '<div class="wf-confirm-icon-wrap">' +
-        '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
-          '<polyline points="1 4 1 10 7 10"></polyline>' +
-          '<path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>' +
-        '</svg>' +
-      '</div>' +
-      '<h3 class="wf-confirm-title" id="wf-confirm-title">' + esc(title) + '</h3>' +
-      '<p class="wf-confirm-desc">' + esc(message) + '</p>' +
-      (alertNote ? (
-        '<div class="wf-confirm-alert-box">' +
-          '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">' +
-            '<circle cx="12" cy="12" r="10"></circle>' +
-            '<line x1="12" y1="8" x2="12" y2="12"></line>' +
-            '<line x1="12" y1="16" x2="12.01" y2="16"></line>' +
-          '</svg>' +
-          '<span>' + esc(alertNote) + '</span>' +
-        '</div>'
-      ) : '') +
-      '<div class="wf-confirm-actions">' +
-        '<button type="button" class="wf-confirm-btn wf-confirm-btn-cancel" id="wf-confirm-cancel">' + esc(cancelText) + '</button>' +
-        '<button type="button" class="wf-confirm-btn wf-confirm-btn-danger" id="wf-confirm-proceed">' +
-          '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">' +
-            '<polyline points="1 4 1 10 7 10"></polyline>' +
-            '<path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>' +
-          '</svg>' +
-          '<span>' + esc(confirmText) + '</span>' +
-        '</button>' +
-      '</div>' +
-    '</div>';
-
-  function closeModal() {
-    modal.classList.remove('open');
-    document.removeEventListener('keydown', handleKey);
-  }
-
-  function handleKey(e) {
-    if (e.key === 'Escape') closeModal();
-  }
-
-  const btnClose = document.getElementById('wf-confirm-btn-close');
-  const btnCancel = document.getElementById('wf-confirm-cancel');
-  const btnProceed = document.getElementById('wf-confirm-proceed');
-
-  if (btnClose) btnClose.onclick = closeModal;
-  if (btnCancel) btnCancel.onclick = closeModal;
-  modal.onclick = function (e) {
-    if (e.target === modal) closeModal();
-  };
-
-  if (btnProceed) {
-    btnProceed.onclick = function () {
-      closeModal();
-      if (typeof options.onConfirm === 'function') {
-        options.onConfirm();
-      }
-    };
-  }
-
-  document.addEventListener('keydown', handleKey);
-  requestAnimationFrame(function () {
-    modal.classList.add('open');
-    if (btnProceed) btnProceed.focus();
-  });
-}
-
-function _wfExecuteRestartCase() {
   wfStep = 0;
   _wfMaxStep = 0;
   _wfClearState();
@@ -454,19 +372,6 @@ function _wfExecuteRestartCase() {
     var topEl = document.querySelector('.mh-top') || document.getElementById('sim-workflow');
     if (topEl) topEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 60);
-}
-
-function wfRestartCase() {
-  wfShowConfirmModal({
-    title: 'Reset Case Simulation?',
-    message: 'Are you sure you want to reset this case to the beginning? All your entered answers, documents, and progress will be cleared.',
-    alertNote: 'This action cannot be undone. You will restart at Step 1.',
-    confirmText: 'Yes, Reset Case',
-    cancelText: 'Cancel',
-    onConfirm: function () {
-      _wfExecuteRestartCase();
-    }
-  });
 }
 
 function wfRestart() {
@@ -570,13 +475,7 @@ function wfRenderPipeline(step, total, labels) {
   if (!pipeEl) return;
   _wfMaxStep = Math.max(_wfMaxStep, step);
   
-  let html = '<div class="wf-pipeline-controls">' +
-    '<button type="button" class="wf-pipeline-btn wf-pipeline-reset" onclick="wfRestartCase()" title="Reset case simulation to Step 1">' +
-      '<span class="wf-btn-icon">&#8635;</span>' +
-      '<span class="wf-btn-txt">Reset Case</span>' +
-    '</button>' +
-  '</div>' +
-  '<div class="wf-pipeline-track">';
+  let html = '<div class="wf-pipeline-track">';
   labels.forEach(function (lbl, i) {
     const state = i < step ? 'done' : (i === step ? 'active' : 'upcoming');
     const isClickable = i <= _wfMaxStep;

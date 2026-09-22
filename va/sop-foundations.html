@@ -6,8 +6,98 @@
 <title>SOP Foundations · VA · SkillCloud Academy</title>
 <meta name="description" content="SOP Foundations: learn to create clear Standard Operating Procedures.">
 <link rel="stylesheet" href="../assets/css/topbar.css">
-<link rel="stylesheet" href="../assets/css/course.css?v=20260922">
 <style>
+:root{
+  --navy:#0a2647;--navy2:#0f3460;--cyan:#17c3d4;--cyan-d:#0fa6b6;--ink:#0c1e33;--muted:#5b6b7e;
+  --line:#e3eaf1;--bg:#f6f9fc;--soft:#eefbfc;--good:#1f9e5a;--bad:#d2452f;
+  --top:48px;--side:300px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16.5px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:"Helvetica Neue",Arial,sans-serif;color:var(--navy);margin:0}
+p{margin:0}
+button{font:inherit;color:inherit}
+a{color:var(--cyan-d)}
+img{max-width:100%;display:block}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* frame */
+.scbar{position:fixed;top:0;left:0;right:0;z-index:40}
+.topline{position:fixed;top:var(--top);left:0;right:0;height:3px;z-index:39}
+.topline i{display:block;height:100%;width:0;background:var(--cyan);transition:width .5s cubic-bezier(.4,0,.2,1)}
+
+/* outline */
+.outline{position:fixed;top:var(--top);bottom:0;left:0;width:var(--side);background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;z-index:30;transition:transform .28s cubic-bezier(.4,0,.2,1)}
+.outline-hd{padding:24px 24px 18px;border-bottom:1px solid var(--line)}
+.kick{font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--cyan-d)}
+.outline-hd h1{font-size:21px;font-weight:900;letter-spacing:-.4px;margin:4px 0 14px}
+.meter{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted);font-weight:600}
+.meter-bar{flex:1;height:6px;border-radius:99px;background:#e8eef4;overflow:hidden}
+.meter-bar i{display:block;height:100%;width:0;background:var(--cyan);border-radius:99px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.outline nav{flex:1;overflow-y:auto;padding:8px 12px 28px;overscroll-behavior:contain}
+.ol-mod{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#8a99ab;padding:18px 12px 6px}
+.ol-item{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;text-align:left;cursor:pointer;padding:9px 12px;border-radius:12px;color:#40526a;font-size:14.5px;line-height:1.35;transition:background .15s,color .15s}
+.ol-item:hover{background:var(--bg);color:var(--navy)}
+.ol-item.on{background:var(--soft);color:var(--navy);font-weight:700}
+.ol-dot{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;border:1.5px solid #cfd9e3;color:#7b8ba0;background:#fff;transition:.2s}
+.ol-item.on .ol-dot{border-color:var(--cyan);color:var(--cyan-d)}
+.ol-item.done .ol-dot{background:var(--cyan);border-color:var(--cyan);color:#fff}
+.ol-item small{display:block;font-size:11.5px;color:#8a99ab;font-weight:500;margin-top:1px}
+
+/* stage */
+main{margin-left:var(--side);padding:calc(var(--top) + 3px) 0 60px;min-height:100vh}
+.lesson{display:none;max-width:780px;margin:0 auto;padding:48px 32px 40px}
+.lesson.on{display:block;animation:rise .35s cubic-bezier(.2,.7,.2,1)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.cover{position:relative;height:190px;border-radius:22px;overflow:hidden;margin-bottom:34px;background-size:cover;background-position:center}
+.cover::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,38,71,.9),rgba(10,38,71,.55) 55%,rgba(10,38,71,.1))}
+.cover div{position:absolute;left:28px;bottom:24px;right:28px;color:#d6e4f0}
+.cover .kick{color:var(--cyan)}
+.cover h3{color:#fff;font-size:26px;font-weight:900;letter-spacing:-.5px;margin-top:4px}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:12px}
+.meta .kick{font-size:11.5px}
+.meta .sep{width:3px;height:3px;border-radius:50%;background:#b9c5d2}
+.lesson h2{font-size:clamp(28px,3.6vw,40px);font-weight:900;letter-spacing:-1.1px;line-height:1.12;margin-bottom:14px}
+.lead{font-size:18.5px;line-height:1.65;color:var(--muted);max-width:640px}
+.block{margin-top:34px}
+.sub{font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#8a99ab;margin-bottom:14px}
+.step-h{display:flex;align-items:center;gap:12px;margin:44px 0 16px}
+.step-h b{flex:none;width:30px;height:30px;border-radius:10px;background:var(--navy);color:var(--cyan);display:grid;place-items:center;font-size:13px}
+.step-h h3{font-size:20px;letter-spacing:-.3px}
+
+/* blocks */
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 24px}
+.card h3{font-size:17.5px;font-weight:800;margin-bottom:6px}
+.card p{color:#44566c}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.ic{width:38px;height:38px;border-radius:11px;background:var(--soft);color:var(--cyan-d);display:grid;place-items:center;font-size:18px;margin-bottom:12px}
+.label{display:inline-block;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--cyan-d);margin-bottom:6px}
+.note{font-size:14.5px;color:var(--muted);margin-top:10px}
+.checks{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+.checks li{position:relative;padding-left:32px;color:#33465c}
+.checks li::before{content:"";position:absolute;left:0;top:4px;width:20px;height:20px;border-radius:50%;background:var(--soft)}
+.checks li::after{content:"";position:absolute;left:7px;top:8px;width:5px;height:9px;border:solid var(--cyan-d);border-width:0 2px 2px 0;transform:rotate(45deg)}
+.callout{border-radius:16px;background:var(--soft);padding:18px 22px;color:#23405a}
+.callout b{color:var(--navy)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chips span{background:#fff;border:1px solid #cfeff3;color:var(--navy);font-weight:700;font-size:14px;padding:7px 14px;border-radius:999px}
+.figure{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px}
+.figure svg{width:100%;height:auto;display:block}
+.figcap{font-size:13.5px;color:var(--muted);margin-top:10px;text-align:center}
+.photo{border-radius:18px;overflow:hidden;height:220px;background-size:cover;background-position:center}
+
+/* buttons */
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
+.btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;padding:12px 22px;font-weight:700;font-size:15px;cursor:pointer;text-decoration:none;transition:background .15s,box-shadow .15s,color .15s}
+.btn.primary{background:var(--cyan);color:var(--navy)}
+.btn.primary:hover{background:var(--cyan-d);color:#fff}
+.btn.ghost{background:#fff;color:var(--navy);box-shadow:inset 0 0 0 1.5px var(--line)}
+.btn.ghost:hover{box-shadow:inset 0 0 0 1.5px var(--cyan);color:var(--cyan-d)}
+.btn:disabled{opacity:.4;cursor:default}
+
 /* welcome modules */
 .mods{display:grid;gap:12px}
 .mod{display:grid;grid-template-columns:120px 1fr;gap:18px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px;cursor:pointer;text-align:left;transition:border-color .15s,box-shadow .15s}
@@ -25,6 +115,19 @@
 .flip-f h3{font-size:17px}
 .flip-f small{color:#8a99ab;font-size:12.5px;font-weight:600;margin-top:4px}
 .flip-b{background:var(--navy);color:#d6e4f0;transform:rotateY(180deg);font-size:15px}
+
+/* collapsible */
+.more{border:1px solid var(--line);border-radius:16px;background:#fff;overflow:hidden}
+.more+.more{margin-top:10px}
+.more summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:15px 20px;font-weight:700;color:var(--navy)}
+.more summary::-webkit-details-marker{display:none}
+.more summary::after{content:"";margin-left:auto;width:9px;height:9px;border:solid #8a99ab;border-width:0 2px 2px 0;transform:rotate(45deg);transition:transform .2s}
+.more[open] summary::after{transform:rotate(-135deg)}
+.more-body{padding:0 20px 18px;color:#44566c}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:#8a99ab}
+tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
 
 /* six questions wheel */
 .wheel{display:grid;grid-template-columns:260px 1fr;gap:26px;align-items:center}
@@ -76,6 +179,44 @@
 .steps h3{font-size:17px;margin:6px 0 4px}
 .steps p{color:#44566c;font-size:15.5px}
 
+/* checkpoint */
+.checkpoint{margin-top:52px;border-radius:24px;background:#fff;border:1px solid var(--line);overflow:hidden}
+.cp-head{display:flex;align-items:center;gap:14px;padding:20px 26px;background:linear-gradient(90deg,var(--navy),var(--navy2));color:#cfe0f0}
+.cp-head .badge{flex:none;width:38px;height:38px;border-radius:12px;background:rgba(23,195,212,.18);color:var(--cyan);display:grid;place-items:center;font-size:18px}
+.cp-head h3{color:#fff;font-size:18px}
+.cp-head p{font-size:13.5px}
+.cp-head .cp-state{margin-left:auto;font-size:12.5px;font-weight:800;color:var(--cyan);white-space:nowrap}
+.cp-body{padding:10px 26px 26px}
+.task{padding:22px 0;border-bottom:1px solid var(--line)}
+.task:last-child{border-bottom:0;padding-bottom:0}
+.task-q{font-size:17px;font-weight:700;color:var(--navy);line-height:1.5;margin-bottom:14px}
+.task-q small{display:block;font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#8a99ab;margin-bottom:4px}
+.choice{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:12px 16px;margin-top:8px;cursor:pointer;transition:border-color .15s,background .15s}
+.choice:hover{border-color:#bfe9ee;background:#fafdfe}
+.choice .key{flex:none;width:26px;height:26px;border-radius:8px;background:var(--bg);display:grid;place-items:center;font-size:12px;font-weight:800;color:var(--muted)}
+.choice.right{border-color:var(--good);background:#f1faf5}
+.choice.right .key{background:var(--good);color:#fff}
+.choice.wrong{border-color:#efc2ba;background:#fdf4f2}
+.choice.wrong .key{background:var(--bad);color:#fff}
+.choice:disabled{cursor:default}
+.fb{margin-top:12px;font-size:15px;font-weight:600}
+.fb:empty{display:none}
+.fb.good{color:var(--good)}.fb.bad{color:var(--bad)}
+.match{display:grid;gap:8px}
+.match-row{display:grid;grid-template-columns:1fr 220px;gap:12px;align-items:center;background:var(--bg);border:1.5px solid transparent;border-radius:14px;padding:10px 12px 10px 16px;font-size:15px}
+.match-row select{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff;font:inherit;font-size:14.5px;color:var(--navy)}
+.match-row.right{border-color:var(--good);background:#f1faf5}
+.match-row.wrong{border-color:#efc2ba;background:#fdf4f2}
+.sort{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.sort li{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:8px 8px 8px 16px}
+.sort li span{flex:1;font-size:15px}
+.sort .mv{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--bg);cursor:pointer;color:var(--navy)}
+.sort .mv:hover{border-color:var(--cyan)}
+.sort .mv:disabled{opacity:.35;cursor:default}
+.sort.right li{border-color:var(--good);background:#f1faf5}
+.task.passed .task-q::after{content:" \2713";color:var(--good)}
+blockquote{margin:0 0 14px;padding:14px 18px;border-radius:12px;background:var(--bg);border-left:3px solid var(--cyan);font-size:16px;color:#23405a}
+
 /* final quiz */
 .qz-top{display:flex;align-items:center;gap:12px;margin-bottom:18px}
 .qz-dots{display:flex;gap:6px}
@@ -108,36 +249,75 @@
 .ordered li{counter-increment:o;display:grid;grid-template-columns:30px 1fr;gap:12px;color:#33465c}
 .ordered li::before{content:counter(o);width:26px;height:26px;border-radius:8px;background:var(--soft);color:var(--cyan-d);display:grid;place-items:center;font-size:12.5px;font-weight:800}
 
-.figure{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px}
-.figure svg{width:100%;height:auto;display:block}
-.photo{border-radius:18px;overflow:hidden;height:220px;background-size:cover;background-position:center}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.chips span{background:#fff;border:1px solid #cfeff3;color:var(--navy);font-weight:700;font-size:14px;padding:7px 14px;border-radius:999px}
-blockquote{margin:0 0 14px;padding:14px 18px;border-radius:12px;background:var(--bg);border-left:3px solid var(--cyan);font-size:16px;color:#23405a}
-table{width:100%;border-collapse:collapse;font-size:15px}
-th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
-thead th{font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:#8a99ab}
-tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
-@media (max-width:760px){.wheel,.tpl{grid-template-columns:1fr}.wheel-svg{margin:0 auto}}
-@media (max-width:640px){.q6,.habits{grid-template-columns:1fr}.mod{grid-template-columns:84px 1fr}.mod i{height:64px}.done-card{flex-direction:column;text-align:center}table{font-size:14px}th,td{padding:10px 8px}}
+/* next arrow */
+.nextfab{position:fixed;right:32px;bottom:30px;z-index:20;width:58px;height:58px;border:0;border-radius:50%;cursor:pointer;background:var(--cyan);color:var(--navy);display:grid;place-items:center;
+  box-shadow:0 10px 28px rgba(15,166,182,.35),0 2px 6px rgba(10,38,71,.12);opacity:0;transform:translateY(16px) scale(.9);pointer-events:none;
+  transition:opacity .35s cubic-bezier(.2,.7,.2,1),transform .35s cubic-bezier(.2,.7,.2,1),background .15s}
+.nextfab.show{opacity:1;transform:none;pointer-events:auto}
+.nextfab:hover{background:var(--cyan-d);color:#fff}
+.nextfab svg{width:22px;height:22px}
+.nextfab .tip{position:absolute;right:70px;white-space:nowrap;background:var(--navy);color:#fff;font-size:13px;font-weight:600;padding:7px 12px;border-radius:10px;opacity:0;transform:translateX(6px);transition:.2s;pointer-events:none}
+.nextfab:hover .tip,.nextfab:focus-visible .tip{opacity:1;transform:none}
+.locked-hint{position:fixed;right:32px;bottom:38px;z-index:19;background:#fff;border:1px solid var(--line);color:var(--muted);font-size:13.5px;font-weight:600;padding:9px 14px;border-radius:999px;box-shadow:0 8px 22px rgba(10,38,71,.08);opacity:0;transform:translateY(10px);transition:.3s;pointer-events:none}
+.locked-hint.show{opacity:1;transform:none}
 
+/* small screens */
+.outline-btn{display:none}
+.scrim{display:none}
+@media (max-width:980px){
+  :root{--side:0px}
+  .outline{width:300px;transform:translateX(-100%);box-shadow:0 20px 60px rgba(10,38,71,.25)}
+  body.nav-open .outline{transform:none}
+  .scrim{position:fixed;inset:var(--top) 0 0 0;background:rgba(10,38,71,.35);z-index:25}
+  body.nav-open .scrim{display:block}
+  .outline-btn{display:inline-flex}
+}
+@media (max-width:760px){
+  .wheel,.tpl{grid-template-columns:1fr}
+  .wheel-svg{margin:0 auto}
+  .grid3{grid-template-columns:1fr 1fr}
+}
+@media (max-width:640px){
+  body{font-size:16px}
+  .lesson{padding:30px 18px 36px}
+  .grid2,.grid3,.q6,.habits{grid-template-columns:1fr}
+  .match-row{grid-template-columns:1fr}
+  .mod{grid-template-columns:84px 1fr}.mod i{height:64px}
+  .cover{height:160px}
+  .cp-head,.cp-body{padding-left:18px;padding-right:18px}
+  .nextfab{right:18px;bottom:20px;width:54px;height:54px}.nextfab .tip{display:none}
+  .locked-hint{right:18px;left:18px;text-align:center}
+  .done-card{flex-direction:column;text-align:center}
+  table{font-size:14px}th,td{padding:10px 8px}
+}
 </style>
 </head>
 <body>
 
 <header class="scbar">
+  <button class="scbar-act icon outline-btn" id="outlineBtn" aria-label="Course outline" aria-expanded="false">&#9776;</button>
   <a class="scbar-back" href="../va.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 3.5 5 8l4.5 4.5"/></svg><span>VA</span></a>
   <span class="scbar-id"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg><span class="scbar-name">SkillCloud</span></span>
   <span class="scbar-sep">/</span>
   <span class="scbar-ctx">SOP Foundations<em>VA</em></span>
 </header>
+<div class="topline"><i id="topFill"></i></div>
 
+<aside class="outline" id="outline" aria-label="Course outline">
+  <div class="outline-hd">
+    <div class="kick">Course</div>
+    <h1>SOP Foundations</h1>
+    <div class="meter"><div class="meter-bar"><i id="meterFill"></i></div><span id="meterText">0%</span></div>
+  </div>
+  <nav id="ol"></nav>
+</aside>
+<div class="scrim" id="scrim"></div>
 
-<main class="c-stage" id="stage" tabindex="-1">
+<main id="stage" tabindex="-1">
 
 <!-- ═════════ START ═════════ -->
 <section class="lesson" id="welcome" data-mod="Start" data-title="Welcome">
-  <div class="c-meta"><span class="c-kick">Module I · SOP Training</span></div>
+  <div class="meta"><span class="kick">Module I · SOP Training</span></div>
   <h2>Turn everyday work into a reliable, repeatable system.</h2>
   <p class="lead">Learn to create clear Standard Operating Procedures (SOPs) that help teams complete routine processes efficiently and accurately.</p>
 
@@ -155,19 +335,19 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
   <div class="block">
     <div class="sub">How this course works</div>
     <div class="mods">
-      <button class="mod" data-jump="process"><i style="background-image:url('../assets/img/va/sop/m1-understand.jpg')"></i><div><span class="c-kick">Module 1 · 2 lessons</span><h3>Understand SOPs</h3><p>What an SOP is and why it matters.</p></div></button>
-      <button class="mod" data-jump="framework"><i style="background-image:url('../assets/img/va/sop/m2-build.jpg')"></i><div><span class="c-kick">Module 2 · 4 lessons</span><h3>Build an SOP</h3><p>The six questions, the official template, writing and tools.</p></div></button>
-      <button class="mod" data-jump="practice"><i style="background-image:url('../assets/img/va/sop/m3-practice.jpg')"></i><div><span class="c-kick">Module 3 · 4 lessons</span><h3>Practice and assessment</h3><p>Apply the framework, the assessment guide and the final check.</p></div></button>
+      <button class="mod" data-jump="process"><i style="background-image:url('../assets/img/va/sop/m1-understand.jpg')"></i><div><span class="kick">Module 1 · 2 lessons</span><h3>Understand SOPs</h3><p>What an SOP is and why it matters.</p></div></button>
+      <button class="mod" data-jump="framework"><i style="background-image:url('../assets/img/va/sop/m2-build.jpg')"></i><div><span class="kick">Module 2 · 4 lessons</span><h3>Build an SOP</h3><p>The six questions, the official template, writing and tools.</p></div></button>
+      <button class="mod" data-jump="practice"><i style="background-image:url('../assets/img/va/sop/m3-practice.jpg')"></i><div><span class="kick">Module 3 · 4 lessons</span><h3>Practice and assessment</h3><p>Apply the framework, the assessment guide and the final check.</p></div></button>
     </div>
     <p class="note">Each lesson teaches first, then ends with a short checkpoint. Pass it to unlock the next lesson.</p>
   </div>
-  <div class="c-actions"><button class="c-btn primary" data-next>Start learning &rarr;</button><button class="c-btn ghost" data-jump="assessment">View assessment requirements</button></div>
+  <div class="actions"><button class="btn primary" data-next>Start learning &rarr;</button><button class="btn ghost" data-jump="assessment">View assessment requirements</button></div>
 </section>
 
 <!-- ═════════ MODULE 1 ═════════ -->
-<section class="lesson" id="process" data-goals="Tell a process apart from an SOP|See what an SOP documents for every step" data-mod="Module 1 · Understand SOPs" data-title="Process and SOP">
-  <div class="cover" style="background-image:url('../assets/img/va/sop/m1-understand.jpg')"><div><span class="c-kick">Module 1</span><h3>Understand SOPs</h3></div></div>
-  <div class="c-meta"><span class="c-kick">Foundation</span></div>
+<section class="lesson" id="process" data-mod="Module 1 · Understand SOPs" data-title="Process and SOP">
+  <div class="cover" style="background-image:url('../assets/img/va/sop/m1-understand.jpg')"><div><span class="kick">Module 1</span><h3>Understand SOPs</h3></div></div>
+  <div class="meta"><span class="kick">Foundation</span></div>
   <h2>A process tells the story. An SOP makes it repeatable.</h2>
   <p class="lead">Understanding the difference is the first step toward useful documentation.</p>
 
@@ -213,7 +393,7 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
   </div>
 
   <div class="checkpoint">
-    <div class="cp-head"><span class="cp-badge">&#10003;</span><div><h3>Checkpoint</h3><p>Two quick tasks on Process and SOP.</p></div><span class="cp-state"></span></div>
+    <div class="cp-head"><span class="badge">&#10003;</span><div><h3>Checkpoint</h3><p>Two quick tasks on Process and SOP.</p></div><span class="cp-state"></span></div>
     <div class="cp-body">
       <div class="task gate" data-type="choice" data-answer="b" data-ok="Correct, this matches the SOP framework.">
         <p class="task-q"><small>Quick check</small>A colleague says, “New client onboarding has three stages.” What is still needed for this to be an SOP?</p>
@@ -230,15 +410,15 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
           <div class="match-row" data-answer="Process"><span>Workflow diagram, checklist, or verbal instructions</span></div>
           <div class="match-row" data-answer="SOP"><span>Detailed documented guide</span></div>
         </div>
-        <div class="c-actions"><button class="c-btn ghost" data-check>Check answers</button></div>
+        <div class="actions"><button class="btn ghost" data-check>Check answers</button></div>
         <p class="fb" aria-live="polite"></p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="lesson" id="value" data-goals="Name the four benefits of SOPs|Know the moments when an SOP helps most" data-mod="Module 1 · Understand SOPs" data-title="Why and when">
-  <div class="c-meta"><span class="c-kick">The case for documentation</span></div>
+<section class="lesson" id="value" data-mod="Module 1 · Understand SOPs" data-title="Why and when">
+  <div class="meta"><span class="kick">The case for documentation</span></div>
   <h2>Why SOPs matter, and when they help most.</h2>
 
   <div class="step-h"><b>1</b><h3>Four benefits <span style="font-weight:600;color:#8a99ab;font-size:14px">· tap each card</span></h3></div>
@@ -259,7 +439,7 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
   </details>
 
   <div class="checkpoint">
-    <div class="cp-head"><span class="cp-badge">&#10003;</span><div><h3>Checkpoint</h3><p>Two quick questions on why and when.</p></div><span class="cp-state"></span></div>
+    <div class="cp-head"><span class="badge">&#10003;</span><div><h3>Checkpoint</h3><p>Two quick questions on why and when.</p></div><span class="cp-state"></span></div>
     <div class="cp-body">
       <div class="task gate" data-type="choice" data-answer="b" data-ok="Correct. New team members can learn quickly without constant guidance.">
         <p class="task-q"><small>Question 1</small>A new teammate completes a task correctly on day one by following the written steps, without asking for help. Which benefit is this?</p>
@@ -280,9 +460,9 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
 </section>
 
 <!-- ═════════ MODULE 2 ═════════ -->
-<section class="lesson" id="framework" data-goals="Use the six questions to map any process|Match each question to a section of the SOP" data-mod="Module 2 · Build an SOP" data-title="The six questions">
-  <div class="cover" style="background-image:url('../assets/img/va/sop/m2-build.jpg')"><div><span class="c-kick">Module 2</span><h3>Build an SOP</h3></div></div>
-  <div class="c-meta"><span class="c-kick">Core learning framework</span></div>
+<section class="lesson" id="framework" data-mod="Module 2 · Build an SOP" data-title="The six questions">
+  <div class="cover" style="background-image:url('../assets/img/va/sop/m2-build.jpg')"><div><span class="kick">Module 2</span><h3>Build an SOP</h3></div></div>
+  <div class="meta"><span class="kick">Core learning framework</span></div>
   <h2>Build the map before you write.</h2>
   <p class="lead">The handbook’s six core questions turn day to day work into a clear, repeatable SOP. Select each question to explore it.</p>
 
@@ -296,7 +476,7 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
   </div>
 
   <div class="checkpoint">
-    <div class="cp-head"><span class="cp-badge">&#10003;</span><div><h3>Checkpoint</h3><p>Use the six questions.</p></div><span class="cp-state"></span></div>
+    <div class="cp-head"><span class="badge">&#10003;</span><div><h3>Checkpoint</h3><p>Use the six questions.</p></div><span class="cp-state"></span></div>
     <div class="cp-body">
       <div class="task gate" data-type="choice" data-answer="c" data-ok="Correct, this matches the SOP framework.">
         <p class="task-q"><small>Apply it</small>“Every Monday, run the report for the previous week.” Which framework question does this answer?</p>
@@ -315,15 +495,15 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
           <div class="match-row" data-answer="Documented Information"><span><b>WITH WHAT</b> tools?</span></div>
           <div class="match-row" data-answer="Troubleshooting"><span><b>WHAT IF</b> something goes wrong?</span></div>
         </div>
-        <div class="c-actions"><button class="c-btn ghost" data-check>Check answers</button></div>
+        <div class="actions"><button class="btn ghost" data-check>Check answers</button></div>
         <p class="fb" aria-live="polite"></p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="lesson" id="template" data-goals="Know the eight sections of the official template|Recall the order the sections follow" data-mod="Module 2 · Build an SOP" data-title="The official template">
-  <div class="c-meta"><span class="c-kick">Official SOP template</span></div>
+<section class="lesson" id="template" data-mod="Module 2 · Build an SOP" data-title="The official template">
+  <div class="meta"><span class="kick">Official SOP template</span></div>
   <h2>The structure your SOP must follow.</h2>
   <p class="lead">The official template organizes documentation so another team member knows the purpose, timing, ownership, steps, resources, and exceptions.</p>
 
@@ -337,7 +517,7 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
   <div class="callout"><b>Template reminder:</b> The template is more detailed than a simple title and steps checklist. Keep every relevant section, including references, troubleshooting, related SOPs, flowchart, and version control.</div>
 
   <div class="checkpoint">
-    <div class="cp-head"><span class="cp-badge">&#10003;</span><div><h3>Checkpoint</h3><p>Rebuild the template from memory.</p></div><span class="cp-state"></span></div>
+    <div class="cp-head"><span class="badge">&#10003;</span><div><h3>Checkpoint</h3><p>Rebuild the template from memory.</p></div><span class="cp-state"></span></div>
     <div class="cp-body">
       <div class="task gate" data-type="sort" data-ok="Correct. That is the order of the official template.">
         <p class="task-q"><small>Order it</small>Put the template sections in the right order.</p>
@@ -351,15 +531,15 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
           <li data-order="7"><span>Flowchart</span></li>
           <li data-order="4"><span>Roles and Responsibilities</span></li>
         </ol>
-        <div class="c-actions"><button class="c-btn ghost" data-check>Check order</button></div>
+        <div class="actions"><button class="btn ghost" data-check>Check order</button></div>
         <p class="fb" aria-live="polite"></p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="lesson" id="writing" data-goals="Write instructions a new teammate can follow|Apply the eight habits of strong SOPs" data-mod="Module 2 · Build an SOP" data-title="Write well">
-  <div class="c-meta"><span class="c-kick">Quality writing</span></div>
+<section class="lesson" id="writing" data-mod="Module 2 · Build an SOP" data-title="Write well">
+  <div class="meta"><span class="kick">Quality writing</span></div>
   <h2>Write so a new teammate can succeed without guessing.</h2>
 
   <div class="step-h"><b>1</b><h3>Make instructions actionable</h3></div>
@@ -384,7 +564,7 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
   </ol>
 
   <div class="checkpoint">
-    <div class="cp-head"><span class="cp-badge">&#10003;</span><div><h3>Checkpoint</h3><p>Spot the gap and apply the habits.</p></div><span class="cp-state"></span></div>
+    <div class="cp-head"><span class="badge">&#10003;</span><div><h3>Checkpoint</h3><p>Spot the gap and apply the habits.</p></div><span class="cp-state"></span></div>
     <div class="cp-body">
       <div class="task gate" data-type="choice" data-answer="b" data-ok="Documented Information (WITH WHAT). Identify the tool, platform, template, or resource needed so the associate can complete the process consistently.">
         <p class="task-q"><small>Instructional scenario · Spot the documentation gap</small>An SOP lists “Open the tracker and update it,” but provides no tracker link, name, or platform. What should be strengthened?</p>
@@ -404,8 +584,8 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
   </div>
 </section>
 
-<section class="lesson" id="tools" data-goals="Pick the right kind of tool for each documentation need" data-mod="Module 2 · Build an SOP" data-title="Tools and examples">
-  <div class="c-meta"><span class="c-kick">Tools &amp; reference examples</span></div>
+<section class="lesson" id="tools" data-mod="Module 2 · Build an SOP" data-title="Tools and examples">
+  <div class="meta"><span class="kick">Tools &amp; reference examples</span></div>
   <h2>Choose tools that fit the documentation need.</h2>
 
   <div class="step-h"><b>1</b><h3>Six kinds of tools</h3></div>
@@ -422,7 +602,7 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
   <div class="callout"><b>Learn from examples, thoughtfully.</b><br>The package includes sample learner SOP drafts. Treat them as learning examples: assess their completeness, clarity, and alignment to the template, not as official operating procedures.</div>
 
   <div class="checkpoint">
-    <div class="cp-head"><span class="cp-badge">&#10003;</span><div><h3>Checkpoint</h3><p>Pick the right kind of tool.</p></div><span class="cp-state"></span></div>
+    <div class="cp-head"><span class="badge">&#10003;</span><div><h3>Checkpoint</h3><p>Pick the right kind of tool.</p></div><span class="cp-state"></span></div>
     <div class="cp-body">
       <div class="task gate" data-type="match" data-ok="Correct. Choose the tool that fits the documentation need.">
         <p class="task-q"><small>Match it</small>Which kind of tool fits each need?</p>
@@ -432,7 +612,7 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
           <div class="match-row" data-answer="Tracking & checklists"><span>Keep logs and repeated tracking</span></div>
           <div class="match-row" data-answer="Text based SOPs"><span>Write and format the SOP document</span></div>
         </div>
-        <div class="c-actions"><button class="c-btn ghost" data-check>Check answers</button></div>
+        <div class="actions"><button class="btn ghost" data-check>Check answers</button></div>
         <p class="fb" aria-live="polite"></p>
       </div>
     </div>
@@ -440,16 +620,16 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
 </section>
 
 <!-- ═════════ MODULE 3 ═════════ -->
-<section class="lesson" id="practice" data-goals="Improve a vague handoff note|Build a small SOP in a logical order" data-mod="Module 3 · Practice and assessment" data-title="Apply the framework">
-  <div class="cover" style="background-image:url('../assets/img/va/sop/m3-practice.jpg')"><div><span class="c-kick">Module 3</span><h3>Practice and assessment</h3></div></div>
-  <div class="c-meta"><span class="c-kick">Practice lab</span></div>
+<section class="lesson" id="practice" data-mod="Module 3 · Practice and assessment" data-title="Apply the framework">
+  <div class="cover" style="background-image:url('../assets/img/va/sop/m3-practice.jpg')"><div><span class="kick">Module 3</span><h3>Practice and assessment</h3></div></div>
+  <div class="meta"><span class="kick">Practice lab</span></div>
   <h2>Use the framework to find what is missing.</h2>
   <p class="lead">These are instructional scenarios, created to practice the handbook’s approach. They are not Skill Cloud procedures or policies.</p>
 
   <div class="block photo" style="background-image:url('../assets/img/va/sop/handoff.jpg')" role="img" aria-label="Two teammates reviewing documents during a handoff"></div>
 
   <div class="checkpoint">
-    <div class="cp-head"><span class="cp-badge">&#9998;</span><div><h3>Practice lab</h3><p>Two exercises built on a team handoff.</p></div><span class="cp-state"></span></div>
+    <div class="cp-head"><span class="badge">&#9998;</span><div><h3>Practice lab</h3><p>Two exercises built on a team handoff.</p></div><span class="cp-state"></span></div>
     <div class="cp-body">
       <div class="task gate" data-type="choice" data-answer="b" data-ok="Correct, this matches the SOP framework.">
         <p class="task-q"><small>Instructional scenario · Team handoff</small>A daily handoff note says:</p>
@@ -468,15 +648,15 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
           <li data-order="3"><span>Roles: associate updates; manager reviews exceptions.</span></li>
           <li data-order="2"><span>Scope: after every completed handoff.</span></li>
         </ol>
-        <div class="c-actions"><button class="c-btn ghost" data-check>Check sequence</button></div>
+        <div class="actions"><button class="btn ghost" data-check>Check sequence</button></div>
         <p class="fb" aria-live="polite"></p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="lesson" id="assessment" data-goals="Follow the four steps of the SOP assessment|Know how your SOP will be evaluated" data-mod="Module 3 · Practice and assessment" data-title="The SOP assessment">
-  <div class="c-meta"><span class="c-kick">Official assessment guide</span></div>
+<section class="lesson" id="assessment" data-mod="Module 3 · Practice and assessment" data-title="The SOP assessment">
+  <div class="meta"><span class="kick">Official assessment guide</span></div>
   <h2>Your SOP assessment: follow the required order.</h2>
 
   <div class="step-h"><b>1</b><h3>The four steps</h3></div>
@@ -506,7 +686,7 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
   </div>
 
   <div class="checkpoint">
-    <div class="cp-head"><span class="cp-badge">&#10003;</span><div><h3>Checkpoint</h3><p>Know the assessment path.</p></div><span class="cp-state"></span></div>
+    <div class="cp-head"><span class="badge">&#10003;</span><div><h3>Checkpoint</h3><p>Know the assessment path.</p></div><span class="cp-state"></span></div>
     <div class="cp-body">
       <div class="task gate" data-type="sort" data-ok="Correct. That is the required order.">
         <p class="task-q"><small>Order it</small>Put the assessment steps in the required order.</p>
@@ -516,7 +696,7 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
           <li data-order="1"><span>Review the VA SOP Handbook</span></li>
           <li data-order="2"><span>Complete the knowledge quiz</span></li>
         </ol>
-        <div class="c-actions"><button class="c-btn ghost" data-check>Check order</button></div>
+        <div class="actions"><button class="btn ghost" data-check>Check order</button></div>
         <p class="fb" aria-live="polite"></p>
       </div>
       <div class="task gate" data-type="choice" data-answer="a" data-ok="Correct. Email the PDF to ea.coaching@skillcloudstaffing.com.">
@@ -531,17 +711,17 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
 </section>
 
 <section class="lesson" id="quiz" data-mod="Module 3 · Practice and assessment" data-title="Final knowledge check">
-  <div class="c-meta"><span class="c-kick">Final knowledge check</span></div>
+  <div class="meta"><span class="kick">Final knowledge check</span></div>
   <h2>Show what you know.</h2>
   <p class="lead">Choose an answer for each question, then submit to receive your score and feedback.</p>
   <div class="checkpoint">
-    <div class="cp-head"><span class="cp-badge">&#9733;</span><div><h3>Final check</h3><p>Five questions across the whole course.</p></div><span class="cp-state"></span></div>
+    <div class="cp-head"><span class="badge">&#9733;</span><div><h3>Final check</h3><p>Five questions across the whole course.</p></div><span class="cp-state"></span></div>
     <div class="cp-body"><div class="task gate" data-type="quiz" id="quizBox" style="padding-top:20px"></div></div>
   </div>
 </section>
 
 <section class="lesson" id="recap" data-mod="Module 3 · Practice and assessment" data-title="Recap">
-  <div class="c-meta"><span class="c-kick">Course complete</span></div>
+  <div class="meta"><span class="kick">Course complete</span></div>
   <h2>Clear SOPs make dependable work possible.</h2>
   <div class="done-card block">
     <div class="medal">&#10003;</div>
@@ -560,23 +740,203 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
       <li>Test, review, maintain, and update the SOP as processes change.</li>
     </ol>
   </div>
-  <div class="c-actions block">
-    <button class="c-btn primary" data-cert>View certificate</button>
-    <a class="c-btn ghost" href="../va.html">Back to VA</a>
-    <button class="c-btn ghost" id="restart">Restart course</button>
+  <div class="actions block">
+    <a class="btn primary" href="../va.html">Back to VA</a>
+    <button class="btn ghost" id="restart">Restart course</button>
   </div>
 </section>
 </main>
 
+<div class="locked-hint" id="lockedHint">Complete the checkpoint to continue</div>
+<button class="nextfab" id="nextFab" aria-label="Next lesson"><span class="tip" id="nextTip"></span><svg id="nextIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
 
 <script src="../assets/js/app-core.js?v=20260917"></script>
 <script>SCApp.requireAuth();</script>
-<script src="../assets/js/course.js?v=20260922"></script>
 <script>
 (function () {
   'use strict';
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return [].slice.call((r || document).querySelectorAll(s)); };
+  var lessons = $$('.lesson');
+  var me = window.SCApp && SCApp.currentUser();
+  var KEY = 'sc_va_sop_foundations_v2__' + (me ? me.id : 'guest');
+  var state = { done: [], passed: {}, at: 0 };
+  try { state = Object.assign(state, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+  state.passed = state.passed || {};
+  var cur = Math.min(state.at || 0, lessons.length - 1);
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  function minutes(el) { return Math.max(1, Math.ceil((el.textContent || '').trim().split(/\s+/).length / 130)); }
+
+  /* ── outline grouped by module ── */
+  var ol = $('#ol'), lastMod = null;
+  lessons.forEach(function (l, i) {
+    if (l.dataset.mod !== lastMod) {
+      lastMod = l.dataset.mod;
+      ol.insertAdjacentHTML('beforeend', '<div class="ol-mod">' + lastMod + '</div>');
+    }
+    var b = document.createElement('button');
+    b.className = 'ol-item'; b.dataset.i = i;
+    var gates = $$('.gate', l).length;
+    b.innerHTML = '<span class="ol-dot">' + (i + 1) + '</span><span>' + l.dataset.title + '<small>' + minutes(l) + ' min' + (gates ? ' · checkpoint' : '') + '</small></span>';
+    b.onclick = function () { go(i); };
+    ol.appendChild(b);
+    var meta = $('.meta', l);
+    if (meta) meta.insertAdjacentHTML('beforeend', '<span class="sep"></span><span>Lesson ' + (i + 1) + ' of ' + lessons.length + '</span><span class="sep"></span><span>' + minutes(l) + ' min</span>');
+  });
+  var items = $$('.ol-item', ol);
+
+  function gatesOf(i) { return $$('.gate', lessons[i]); }
+  function passedAll(i) { return gatesOf(i).every(function (g, k) { return state.passed[lessons[i].id + ':' + k]; }); }
+
+  function paint() {
+    var pct = Math.round(state.done.length / lessons.length * 100);
+    $('#meterFill').style.width = pct + '%';
+    $('#meterText').textContent = pct + '%';
+    $('#topFill').style.width = ((cur + 1) / lessons.length * 100) + '%';
+    items.forEach(function (b, i) {
+      var d = state.done.indexOf(i) > -1;
+      b.classList.toggle('on', i === cur);
+      b.classList.toggle('done', d);
+      $('.ol-dot', b).innerHTML = d ? '&#10003;' : (i + 1);
+    });
+    $$('.checkpoint', lessons[cur]).forEach(function (cp) {
+      var g = $$('.gate', cp), n = g.filter(function (x) { return x.classList.contains('passed'); }).length;
+      $('.cp-state', cp).textContent = g.length ? n + ' of ' + g.length + ' done' : '';
+    });
+    var last = cur === lessons.length - 1;
+    $('#nextTip').textContent = last ? 'Finish course' : 'Next: ' + lessons[cur + 1].dataset.title;
+    $('#nextIcon').innerHTML = last ? '<path d="M5 12.5l4.5 4.5L19 7.5"/>' : '<path d="M5 12h14M13 6l6 6-6 6"/>';
+    $('#nextFab').setAttribute('aria-label', last ? 'Finish course' : 'Next lesson');
+    reveal();
+  }
+
+  function go(i) {
+    i = Math.max(0, Math.min(i, lessons.length - 1));
+    lessons[cur].classList.remove('on');
+    cur = i; state.at = cur;
+    lessons[cur].classList.add('on');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    document.body.classList.remove('nav-open');
+    $('#outlineBtn').setAttribute('aria-expanded', 'false');
+    $('#nextFab').classList.remove('show');
+    save(); paint();
+    $('#stage').focus({ preventScroll: true });
+  }
+  function complete(i) { if (state.done.indexOf(i) === -1) { state.done.push(i); save(); } }
+  function next() {
+    if (!passedAll(cur)) return;
+    complete(cur);
+    if (cur === lessons.length - 1) { paint(); return; }
+    go(cur + 1);
+  }
+
+  /* arrow appears at the end of the lesson once its checkpoint is passed */
+  function reveal() {
+    var fab = $('#nextFab'), hint = $('#lockedHint');
+    var end = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 60;
+    var open = passedAll(cur);
+    var finished = cur === lessons.length - 1 && state.done.indexOf(cur) > -1;
+    fab.classList.toggle('show', end && open && !finished);
+    hint.classList.toggle('show', end && !open);
+  }
+  window.addEventListener('scroll', reveal, { passive: true });
+  window.addEventListener('resize', reveal);
+  document.addEventListener('toggle', function () { setTimeout(reveal, 50); }, true);
+  document.addEventListener('click', function () { setTimeout(reveal, 60); });
+  $('#nextFab').onclick = next;
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-jump],[data-next]');
+    if (!t) return;
+    if (t.hasAttribute('data-next')) { complete(cur); return go(cur + 1); }
+    go(lessons.findIndex(function (l) { return l.id === t.dataset.jump; }));
+  });
+  document.addEventListener('keydown', function (e) {
+    if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === 'ArrowRight') next();
+    if (e.key === 'ArrowLeft') go(cur - 1);
+  });
+  $('#outlineBtn').onclick = function () {
+    var open = document.body.classList.toggle('nav-open');
+    this.setAttribute('aria-expanded', open);
+  };
+  $('#scrim').onclick = function () { document.body.classList.remove('nav-open'); };
+
+  /* ── checkpoint tasks ── */
+  function pass(task, msg) {
+    var lesson = task.closest('.lesson');
+    var k = $$('.gate', lesson).indexOf(task);
+    state.passed[lesson.id + ':' + k] = 1; save();
+    task.classList.add('passed');
+    var fb = $('.fb', task);
+    if (fb && msg) { fb.textContent = msg; fb.className = 'fb good'; }
+    paint();
+  }
+  function fail(task, msg) {
+    var fb = $('.fb', task);
+    if (fb) { fb.textContent = msg; fb.className = 'fb bad'; }
+  }
+
+  $$('.task[data-type="choice"]').forEach(function (task) {
+    $$('.choice', task).forEach(function (b) {
+      b.onclick = function () {
+        if (b.dataset.choice === task.dataset.answer) {
+          $$('.choice', task).forEach(function (x) { x.disabled = true; });
+          b.classList.add('right');
+          pass(task, task.dataset.ok);
+        } else {
+          b.classList.add('wrong'); b.disabled = true;
+          fail(task, 'Not quite. Revisit the source concept, then try again.');
+        }
+      };
+    });
+  });
+
+  $$('.task[data-type="match"]').forEach(function (task) {
+    var opts = $('.match', task).dataset.options.split('|');
+    $$('.match-row', task).forEach(function (row) {
+      row.insertAdjacentHTML('beforeend', '<select aria-label="Choose"><option value="">Choose</option>' + opts.map(function (o) { return '<option>' + o.replace(/&/g, '&amp;') + '</option>'; }).join('') + '</select>');
+      $('select', row).onchange = function () { row.classList.remove('right', 'wrong'); };
+    });
+    $('[data-check]', task).onclick = function () {
+      var rows = $$('.match-row', task), ok = 0;
+      rows.forEach(function (row) {
+        var v = $('select', row).value, good = v === row.dataset.answer;
+        row.classList.toggle('right', good);
+        row.classList.toggle('wrong', !good);
+        if (good) ok++;
+      });
+      if (ok === rows.length) { $$('select', task).forEach(function (s) { s.disabled = true; }); this.disabled = true; pass(task, task.dataset.ok); }
+      else fail(task, ok + ' of ' + rows.length + ' correct. Fix the red ones and check again.');
+    };
+  });
+
+  $$('.task[data-type="sort"]').forEach(function (task) {
+    var list = $('.sort', task);
+    $$('li', list).forEach(function (li) {
+      li.insertAdjacentHTML('beforeend', '<button class="mv" data-dir="-1" aria-label="Move up">&#8593;</button><button class="mv" data-dir="1" aria-label="Move down">&#8595;</button>');
+    });
+    function paintSort() {
+      var li = $$('li', list);
+      li.forEach(function (x, i) { $('[data-dir="-1"]', x).disabled = i === 0; $('[data-dir="1"]', x).disabled = i === li.length - 1; });
+    }
+    list.addEventListener('click', function (e) {
+      var b = e.target.closest('.mv'); if (!b || task.classList.contains('passed')) return;
+      var li = b.closest('li');
+      if (b.dataset.dir === '-1' && li.previousElementSibling) list.insertBefore(li, li.previousElementSibling);
+      if (b.dataset.dir === '1' && li.nextElementSibling) list.insertBefore(li.nextElementSibling, li);
+      $('.fb', task).textContent = '';
+      paintSort();
+    });
+    paintSort();
+    $('[data-check]', task).onclick = function () {
+      var seq = $$('li', list).map(function (x) { return x.dataset.order; });
+      var good = seq.every(function (v, i) { return +v === i + 1; });
+      if (good) { list.classList.add('right'); $$('.mv', list).forEach(function (m) { m.disabled = true; }); this.disabled = true; pass(task, task.dataset.ok); }
+      else fail(task, task.dataset.bad || 'Not yet. Move the items and check again.');
+    };
+  });
 
   /* flip cards */
   $$('.flip').forEach(function (f) { f.onclick = function () { f.classList.toggle('on'); }; });
@@ -658,8 +1018,8 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
       '<div class="qz-top"><div class="qz-dots">' + QZ.map(function (_, i) { return '<i class="' + (i <= qi ? 'on' : '') + '"></i>'; }).join('') + '</div><span class="qz-count">Question ' + (qi + 1) + ' of ' + QZ.length + '</span></div>' +
       '<p class="qz-q">' + item.q + '</p>' +
       item.o.map(function (o) { return '<button class="opt' + (picks[qi] === o[0] ? ' sel' : '') + '" data-v="' + o[0] + '"><i></i><span>' + o[1] + '</span></button>'; }).join('') +
-      '<div class="qz-nav"><button class="c-btn ghost" id="qzBack"' + (qi === 0 ? ' disabled' : '') + '>&larr; Back</button>' +
-      '<button class="c-btn primary" id="qzNext"' + (picks[qi] ? '' : ' disabled') + '>' + (qi === QZ.length - 1 ? 'Submit answers' : 'Next &rarr;') + '</button></div>';
+      '<div class="qz-nav"><button class="btn ghost" id="qzBack"' + (qi === 0 ? ' disabled' : '') + '>&larr; Back</button>' +
+      '<button class="btn primary" id="qzNext"' + (picks[qi] ? '' : ' disabled') + '>' + (qi === QZ.length - 1 ? 'Submit answers' : 'Next &rarr;') + '</button></div>';
     $$('.opt', box).forEach(function (b) { b.onclick = function () { picks[qi] = b.dataset.v; quiz(); }; });
     $('#qzBack').onclick = function () { qi--; quiz(); };
     $('#qzNext').onclick = function () { if (qi < QZ.length - 1) { qi++; quiz(); } else result(); };
@@ -671,16 +1031,29 @@ tbody th{color:var(--navy);font-weight:700;white-space:nowrap}
       '<p style="color:#44566c">' + (score === QZ.length ? 'Excellent. You have a strong foundation for applying the template.' : 'Review the marked items, revisit the relevant lesson, and submit again.') + '</p></div>' +
       '<ul class="review">' + QZ.map(function (x, i) { var ok = picks[i] === x.a; return '<li class="' + (ok ? 'ok' : 'no') + '">' + (ok ? '&#10003; ' : '&#10007; ') + (i + 1) + '. ' + (ok ? 'Correct' : 'Review this answer') + '</li>'; }).join('') + '</ul>' +
       '<p class="note"><b>Remember:</b> the actual assessment requires handbook based content, the official template, PDF export, and email submission.</p>' +
-      (score === QZ.length ? '' : '<div class="c-actions"><button class="c-btn ghost" id="qzRetry">Try again</button></div>');
+      (score === QZ.length ? '' : '<div class="actions"><button class="btn ghost" id="qzRetry">Try again</button></div>');
     var r = $('#qzRetry');
     if (r) r.onclick = function () { qi = 0; picks = {}; quiz(); };
-    if (score >= 4) SCCourse.pass(box); else SCCourse.paint();
+    if (score >= 4) pass(box); else paint();
   }
   quiz();
 
-  var restart = $('#restart'); if (restart) restart.onclick = function () { SCCourse.reset(); };
+  /* restore passed tasks from an earlier visit */
+  lessons.forEach(function (l) {
+    $$('.gate', l).forEach(function (g, k) {
+      if (!state.passed[l.id + ':' + k]) return;
+      g.classList.add('passed');
+      if (g.dataset.type === 'choice') { var b = $('.choice[data-choice="' + g.dataset.answer + '"]', g); if (b) b.classList.add('right'); $$('.choice', g).forEach(function (x) { x.disabled = true; }); }
+      if (g.dataset.type === 'match') { $$('.match-row', g).forEach(function (row) { $('select', row).value = row.dataset.answer; row.classList.add('right'); $('select', row).disabled = true; }); $('[data-check]', g).disabled = true; }
+      if (g.dataset.type === 'sort') { var list = $('.sort', g); $$('li', list).sort(function (a, b) { return a.dataset.order - b.dataset.order; }).forEach(function (li) { list.appendChild(li); }); list.classList.add('right'); $$('.mv', list).forEach(function (m) { m.disabled = true; }); $('[data-check]', g).disabled = true; }
+    });
+  });
 
-  SCCourse.init({ id: 'sop', title: 'SOP Foundations', kick: 'VA course', store: 'sc_va_sop_foundations_v2__' });
+  $('#restart').onclick = function () { localStorage.removeItem(KEY); location.reload(); };
+
+  lessons[cur].classList.add('on');
+  paint();
+  setTimeout(reveal, 400);
 })();
 </script>
 </body>
