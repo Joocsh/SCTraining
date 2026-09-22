@@ -31,6 +31,7 @@ function openPanel(id) {
     panel.classList.add('open');
     panel.scrollTop = 0;
     document.body.style.overflow = 'hidden';
+    try { localStorage.setItem('sc_active_panel', id); } catch (e) {}
     if (window.PANEL_ON_OPEN[id]) window.PANEL_ON_OPEN[id]();
   }
 }
@@ -38,6 +39,11 @@ function closePanel(id) {
   const panel = document.getElementById('panel-' + id);
   if (panel) panel.classList.remove('open');
   document.body.style.overflow = '';
+  try {
+    if (localStorage.getItem('sc_active_panel') === id) {
+      localStorage.removeItem('sc_active_panel');
+    }
+  } catch (e) {}
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -68,6 +74,37 @@ function _wfLoadState() {
   } catch (e) { return null; }
 }
 
+function wfRestoreSession() {
+  try {
+    var activePanel = localStorage.getItem('sc_active_panel');
+    if (activePanel === 'sim') {
+      var state = _wfLoadState();
+      if (state && state.city) {
+        simState = state.city;
+        var scenarios = simDataForState();
+        var caseIdx = typeof state.caseIdx === 'number' && state.caseIdx >= 0 ? state.caseIdx : 0;
+        var sc = scenarios && scenarios[caseIdx];
+        if (sc) {
+          var panel = document.getElementById('panel-sim');
+          if (panel) {
+            panel.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            _wfMaxStep = typeof state.maxStep === 'number' ? state.maxStep : (state.step || 0);
+            wfStart(sc, state.step || 0);
+            return true;
+          }
+        }
+      }
+      openPanel('sim');
+      return true;
+    } else if (activePanel && document.getElementById('panel-' + activePanel)) {
+      openPanel(activePanel);
+      return true;
+    }
+  } catch (e) {}
+  return false;
+}
+
 function simDataForState() {
   if (window.SIM_STATES && window.SIM_STATES.length) {
     return (window.SIM_DATA && window.SIM_DATA[simState]) || [];
@@ -91,8 +128,6 @@ function simInit() {
     });
     if (citiesView) citiesView.style.display = 'block';
     if (pick) pick.style.display = 'none';
-
-    _wfClearState();
   } else {
     if (bar) bar.style.display = 'none';
     simRenderCards();

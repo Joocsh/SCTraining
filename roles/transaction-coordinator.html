@@ -2054,7 +2054,7 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
 <script>SCApp.requireIntro();</script>
 <script src="../assets/js/rein-va-features.js"></script>
 <script src="../assets/js/rein-va-form.js"></script>
-<script src="../assets/js/workflow.js"></script>
+<script src="../assets/js/workflow.js?v=20260922g"></script>
 <script src="../assets/js/tc-va-case.js"></script>
 <script src="../assets/js/tc-ca-new-case.js?v=20260922g"></script>
 <script>
@@ -5018,8 +5018,12 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
     });
     loadProgress();
   }
-  
   loadProgress();
+
+  /* Auto-restore active simulation session on reload */
+  if (typeof wfRestoreSession === 'function') {
+    wfRestoreSession();
+  }
   function toggleResources(card) {
     var panel = document.getElementById('resources-panel');
     var isOpen = panel.classList.toggle('open');
