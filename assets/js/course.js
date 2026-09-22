@@ -72,6 +72,7 @@
       if (meta) meta.insertAdjacentHTML('beforeend', '<span class="c-sep"></span><span>Lesson ' + (i + 1) + ' of ' + C.lessons.length + '</span><span class="c-sep"></span><span>' + minutes(l) + ' min</span>');
       if (l.dataset.goals) {
         var anchor = $('.lead', l) || $('h2', l);
+        while (anchor && anchor.parentElement !== l) anchor = anchor.parentElement;
         if (anchor) anchor.insertAdjacentHTML('afterend', '<div class="c-goals"><b>In this lesson</b><ul>' + l.dataset.goals.split('|').map(function (g) { return '<li>' + g + '</li>'; }).join('') + '</ul></div>');
       }
     });
@@ -284,6 +285,7 @@
     C.lessons[C.cur].classList.add('on');
     paint();
     setTimeout(reveal, 400);
+    if (location.hash === '#certificate' && C.state.completedAt && C.opts.certificate !== false) showCert();
   }
 
   window.SCCourse = {

@@ -23,7 +23,7 @@
     {
       id: 'marketing', title: 'Marketing Training', href: 'marketing-training.html', kind: 'VA course',
       desc: 'The Sotheby’s brand, Design Vault, ListTrac and the marketing tools, lesson by lesson.',
-      image: 'assets/img/va/sop/m1-understand.jpg', lessons: 58, modules: 0,
+      image: 'assets/img/marketing/m1-global-standard.jpg', lessons: 58, modules: 9,
       /* this course keeps its own progress in the browser */
       progress: function () { return { done: read('mt3_done', []).length }; }
     }

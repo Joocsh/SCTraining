@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -6,6 +6,8 @@
   <title>AI Introduction · SkillCloud Academy</title>
   <meta name="description" content="Learn the three AI tools used at SkillCloud: Claude, ChatGPT, and Manus. What each one is, what it does best, and when to use it in real estate work.">
   <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/topbar.css">
+  <link rel="stylesheet" href="assets/css/course.css?v=20260922">
   <style>
     :root {
       --v-navy:#0a2647; --v-navy2:#0f3460; --v-cyan:#17c3d4; --v-cyan-d:#0fa6b6;
@@ -422,73 +424,32 @@
     .intro-progress .ip-fill { height:100%; width:0; background:var(--v-cyan); border-radius:99px; transition:width .4s; }
     .intro-progress .ip-note { font-size:11.5px; color:var(--v-muted); margin-top:6px; line-height:1.4; }
     .side-link.seen .side-dot { background:var(--v-cyan); border-color:var(--v-cyan); }
+    /* course player fit */
+    body.course .lesson { max-width: 820px; }
+    body.course .section-intro.lesson, body.course .ai-module.lesson { padding-top: 48px; }
+    body.course .c-stage > .ai-divider { display: none; }
+    body.course .lesson > .h-eyebrow { display: none; }
+    .intro-lock { max-width: 820px; margin: 24px auto 0; padding: 0 32px; }
   </style>
 </head>
 <body data-page="fundamentals">
 
-<nav class="nav" id="nav">
-  <div class="nav-inner">
-    <a class="brand" href="index.html"><img src="assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
-    <button class="hamb" onclick="toggleMenu()">&#9776;</button>
-    <div class="menu">
-      <a class="navlink" href="index.html">Home</a>
-      <a class="navlink" href="ai.html">Introduction</a>
-      <a class="navlink" href="va.html">VA</a>
-      <a class="navlink" href="index.html#simulations">Simulations</a>
-    </div>
-    <span class="spacer"></span>
-    <a class="pill" href="index.html#simulations">Start Practicing</a>
-    <a class="user-chip" href="account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
-  </div>
-</nav>
-
-<header class="ai-hero">
-  <div class="ai-hero-inner">
-    <a class="ai-back" href="index.html">Back to Home</a>
-    <h1 class="disp">AI <span class="cy">Introduction</span></h1>
-    <p class="lead">Three tools. One foundation. Learn what Claude, ChatGPT, and Manus are, what each one does best, and how to choose the right tool for every task.</p>
-  </div>
+<header class="scbar">
+  <a class="scbar-back" href="index.html"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 3.5 5 8l4.5 4.5"/></svg><span>Home</span></a>
+  <span class="scbar-id"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg><span class="scbar-name">SkillCloud</span></span>
+  <span class="scbar-sep">/</span>
+  <span class="scbar-ctx">AI Introduction<em>Start here</em></span>
 </header>
 
-<div class="intro-lock" id="intro-lock" hidden>
-  <div class="intro-lock-box"><span aria-hidden="true">&#128274;</span><span><b>Simulations unlock after the Introduction.</b> Go through every section on this page, from What Is AI to Compare All Three. VA classes are open anytime.</span></div>
-</div>
+<main class="c-stage" id="stage" tabindex="-1">
 
-<div class="ai-shell">
-
-  <aside class="ai-sidebar" id="ai-sidebar">
-    <nav class="ai-sidebar-inner">
-      <div class="ai-sidebar-eyebrow">On this page</div>
-      <a class="side-link" href="#what-is-ai"><span class="side-dot"></span>What Is AI</a>
-      <a class="side-link cl" href="#claude"><span class="side-dot"></span>Claude</a>
-      <a class="side-link cg" href="#chatgpt"><span class="side-dot"></span>ChatGPT</a>
-      <a class="side-link mn" href="#manus"><span class="side-dot"></span>Manus</a>
-      <a class="side-link" href="#compare"><span class="side-dot"></span>Compare All Three</a>
-      <div class="intro-progress" id="intro-progress">
-        <div class="ip-top"><span>Your progress</span><span id="ip-count">0 of 5</span></div>
-        <div class="ip-bar"><div class="ip-fill" id="ip-fill"></div></div>
-        <div class="ip-note" id="ip-note">Read every section to unlock Simulations.</div>
-      </div>
-      <div class="ai-sidebar-divider"></div>
-      <a class="side-link side-cta" href="ai-lab.html">Go to AI Lab &rarr;</a>
-    </nav>
-  </aside>
-
-  <div class="ai-main">
-
-  <a class="lab-teaser top" href="ai-lab.html">
-    <div class="lab-teaser-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6l-5 9a2 2 0 0 0 1.8 3h12.4a2 2 0 0 0 1.8-3l-5-9V2"/><path d="M9 2h6M6 15h12"/></svg>
-    </div>
-    <div class="lab-teaser-body">
-      <h4>Already know the basics? Jump to the AI Lab</h4>
-      <p>Step-by-step guides for real tasks: ads, emails, CRM audits, video hooks, and more.</p>
-    </div>
-    <span class="lab-teaser-cta">Browse guides &rarr;</span>
-  </a>
+  <div class="intro-lock" id="intro-lock" hidden>
+    <div class="intro-lock-box"><span aria-hidden="true">&#128274;</span><span><b>Simulations unlock after the Introduction.</b> Finish all five lessons and their checkpoints. VA courses are open anytime.</span></div>
+  </div>
 
   <!-- ========== WHAT IS AI ========== -->
-  <section class="section-intro" id="what-is-ai">
+  <section class="section-intro lesson" id="what-is-ai" data-mod="AI Introduction" data-title="What is AI" data-goals="How a language model works|The one rule that decides output quality">
+    <div class="c-meta"><span class="c-kick">AI Introduction</span></div>
     <span class="h-eyebrow">The Foundation <span class="rt">Start here</span></span>
     <h2 class="disp">What Is AI and How Does It Work?</h2>
 
@@ -553,12 +514,33 @@
       <p>The quality of what you get back depends almost entirely on what you put in. A vague question gets a vague answer. A specific, well-structured prompt with context, a clear goal, and the relevant details gets a response that is actually useful. Every technique in this training comes back to that principle.</p>
       <p>You do not need to master these tools before you start. You learn them by using them. The goal of this module is to give you a clear mental model of what each tool is, where it fits, and how to get results from it on day one.</p>
     </div>
+  
+  <div class="checkpoint">
+    <div class="cp-head"><span class="cp-badge">&#10003;</span><div><h3>Checkpoint</h3><p>Two quick questions on how AI works.</p></div><span class="cp-state"></span></div>
+    <div class="cp-body">
+      <div class="task gate" data-type="choice" data-answer="b" data-ok="Correct. A vague question gets a vague answer; a specific prompt gets a useful one.">
+        <p class="task-q"><small>Question 1</small>What decides the quality of what an AI tool gives back?</p>
+        <button class="choice" data-choice="a"><span class="key">A</span>Which tool you pick</button>
+        <button class="choice" data-choice="b"><span class="key">B</span>What you put in: a specific prompt with context, a clear goal and the relevant details</button>
+        <button class="choice" data-choice="c"><span class="key">C</span>How long you wait for the answer</button>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+      <div class="task gate" data-type="choice" data-answer="b" data-ok="Correct. Automation follows fixed rules; AI writes a response that fits your situation.">
+        <p class="task-q"><small>Question 2</small>An auto reply that sends the same message every time is an example of…</p>
+        <button class="choice" data-choice="a"><span class="key">A</span>AI</button>
+        <button class="choice" data-choice="b"><span class="key">B</span>Automation</button>
+        <button class="choice" data-choice="c"><span class="key">C</span>A Large Language Model</button>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
   </section>
 
   <div class="ai-divider"></div>
 
   <!-- ========== MODULE 1: CLAUDE ========== -->
-  <section class="ai-module" id="claude">
+  <section class="ai-module lesson" id="claude" data-mod="AI Introduction" data-title="Claude" data-goals="What Claude does best and its tools|Prompt with R.E.A.C.H. and know its limits">
+    <div class="c-meta"><span class="c-kick">AI Introduction</span></div>
     <span class="h-eyebrow">Module 01 <span class="rt">Claude by Anthropic</span></span>
 
     <div class="mod-header claude">
@@ -796,12 +778,38 @@
         <li>Keep your prompts specific. More detail does not always mean more words</li>
       </ul>
     </div>
+  
+  <div class="checkpoint">
+    <div class="cp-head"><span class="cp-badge">&#10003;</span><div><h3>Checkpoint</h3><p>Prompting Claude and its limits.</p></div><span class="cp-state"></span></div>
+    <div class="cp-body">
+      <div class="task gate" data-type="match" data-ok="Correct. Run through R.E.A.C.H. before you send a prompt.">
+        <p class="task-q"><small>Match it</small>What does each letter of R.E.A.C.H. stand for?</p>
+        <div class="match" data-options="Role|End goal|Audience|Context|How">
+          <div class="match-row" data-answer="Role"><span><b>R</b></span></div>
+          <div class="match-row" data-answer="End goal"><span><b>E</b></span></div>
+          <div class="match-row" data-answer="Audience"><span><b>A</b></span></div>
+          <div class="match-row" data-answer="Context"><span><b>C</b></span></div>
+          <div class="match-row" data-answer="How"><span><b>H</b></span></div>
+        </div>
+        <div class="c-actions"><button class="c-btn ghost" data-check>Check answers</button></div>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+      <div class="task gate" data-type="choice" data-answer="b" data-ok="Correct. Claude cannot access the internet or live market data.">
+        <p class="task-q"><small>Question 2</small>Which of these can Claude not do?</p>
+        <button class="choice" data-choice="a"><span class="key">A</span>Summarize a long contract</button>
+        <button class="choice" data-choice="b"><span class="key">B</span>Look up today’s mortgage rates</button>
+        <button class="choice" data-choice="c"><span class="key">C</span>Draft a client email in a natural voice</button>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
   </section>
 
   <div class="ai-divider"></div>
 
   <!-- ========== MODULE 2: CHATGPT ========== -->
-  <section class="ai-module" id="chatgpt">
+  <section class="ai-module lesson" id="chatgpt" data-mod="AI Introduction" data-title="ChatGPT" data-goals="When ChatGPT beats Claude|Custom GPTs and its other tools">
+    <div class="c-meta"><span class="c-kick">AI Introduction</span></div>
     <span class="h-eyebrow">Module 02 <span class="rt">ChatGPT by OpenAI</span></span>
 
     <div class="mod-header chatgpt">
@@ -986,12 +994,33 @@
         </div>
       </div>
     </div>
+  
+  <div class="checkpoint">
+    <div class="cp-head"><span class="cp-badge">&#10003;</span><div><h3>Checkpoint</h3><p>When ChatGPT is the right choice.</p></div><span class="cp-state"></span></div>
+    <div class="cp-body">
+      <div class="task gate" data-type="choice" data-answer="b" data-ok="Correct. ChatGPT searches the web in real time and generates images.">
+        <p class="task-q"><small>Question 1</small>You need current local market numbers and a graphic for social media. Which tool fits?</p>
+        <button class="choice" data-choice="a"><span class="key">A</span>Claude</button>
+        <button class="choice" data-choice="b"><span class="key">B</span>ChatGPT</button>
+        <button class="choice" data-choice="c"><span class="key">C</span>Manus</button>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+      <div class="task gate" data-type="choice" data-answer="a" data-ok="Correct. A team can reuse it without rebuilding the prompt every time.">
+        <p class="task-q"><small>Question 2</small>What is a Custom GPT?</p>
+        <button class="choice" data-choice="a"><span class="key">A</span>A saved configuration with fixed instructions, a tone and optional reference files</button>
+        <button class="choice" data-choice="b"><span class="key">B</span>A paid ChatGPT plan</button>
+        <button class="choice" data-choice="c"><span class="key">C</span>A browser extension for ChatGPT</button>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
   </section>
 
   <div class="ai-divider"></div>
 
   <!-- ========== MODULE 3: MANUS ========== -->
-  <section class="ai-module" id="manus">
+  <section class="ai-module lesson" id="manus" data-mod="AI Introduction" data-title="Manus" data-goals="When an agent is the right tool|Brief with B.R.A.I.N. and check with three QA gates">
+    <div class="c-meta"><span class="c-kick">AI Introduction</span></div>
     <span class="h-eyebrow">Module 03 <span class="rt">Manus, AI Agent</span></span>
 
     <div class="mod-header manus">
@@ -1203,12 +1232,36 @@
         </ul>
       </div>
     </div>
+  
+  <div class="checkpoint">
+    <div class="cp-head"><span class="cp-badge">&#10003;</span><div><h3>Checkpoint</h3><p>Working safely with Manus.</p></div><span class="cp-state"></span></div>
+    <div class="cp-body">
+      <div class="task gate" data-type="choice" data-answer="b" data-ok="Correct. Manus can do the work, but the VA is responsible for the judgment.">
+        <p class="task-q"><small>Question 1</small>Manus finishes a CRM audit spreadsheet. Who is responsible for the judgment on it?</p>
+        <button class="choice" data-choice="a"><span class="key">A</span>Manus</button>
+        <button class="choice" data-choice="b"><span class="key">B</span>The VA</button>
+        <button class="choice" data-choice="c"><span class="key">C</span>The client</button>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+      <div class="task gate" data-type="sort" data-ok="Correct. Input, then execution, then output.">
+        <p class="task-q"><small>Order it</small>Put the three quality gates in order.</p>
+        <ol class="sort">
+          <li data-order="2"><span>Execution QA: check the plan, connectors and citations</span></li>
+          <li data-order="3"><span>Output QA: check facts, math, tone and formatting</span></li>
+          <li data-order="1"><span>Input QA: confirm client, owner, files and permissions</span></li>
+        </ol>
+        <div class="c-actions"><button class="c-btn ghost" data-check>Check order</button></div>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
   </section>
 
   <div class="ai-divider"></div>
 
   <!-- ========== COMPARISON ========== -->
-  <section class="ai-module" id="compare">
+  <section class="ai-module lesson" id="compare" data-mod="AI Introduction" data-title="Compare all three" data-goals="Choose the right tool for each task">
+    <div class="c-meta"><span class="c-kick">AI Introduction</span></div>
     <span class="h-eyebrow">Quick Reference <span class="rt">All three tools</span></span>
     <h2 class="disp" style="font-size:clamp(24px,3.4vw,32px);color:var(--v-navy);margin:0 0 28px;">Side-by-Side Comparison</h2>
 
@@ -1291,22 +1344,24 @@
       <div class="lbl">Rule of thumb</div>
       <p><strong>Claude</strong> when you need to write something or analyze a document. <strong>ChatGPT</strong> when you need current information, images, or research. <strong>Manus</strong> when the task crosses more than three tools or systems and the output is a file you can hand to a client.</p>
     </div>
-  </section>
-
-  <!-- AI LAB TEASER -->
-  <a class="lab-teaser" href="ai-lab.html">
-    <div class="lab-teaser-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6l-5 9a2 2 0 0 0 1.8 3h12.4a2 2 0 0 0 1.8-3l-5-9V2"/><path d="M9 2h6M6 15h12"/></svg>
+  
+  <div class="checkpoint">
+    <div class="cp-head"><span class="cp-badge">&#10003;</span><div><h3>Final checkpoint</h3><p>Pick the right tool for the job.</p></div><span class="cp-state"></span></div>
+    <div class="cp-body">
+      <div class="task gate" data-type="match" data-ok="Correct. Claude to write or analyze, ChatGPT for current information and images, Manus when the task crosses several tools.">
+        <p class="task-q"><small>Match it</small>Which tool fits each task?</p>
+        <div class="match" data-options="Claude|ChatGPT|Manus">
+          <div class="match-row" data-answer="Claude"><span>Write an SOP from a long handbook</span></div>
+          <div class="match-row" data-answer="ChatGPT"><span>Find a competitor’s current pricing and make an ad image</span></div>
+          <div class="match-row" data-answer="Manus"><span>Audit the CRM, build a spreadsheet and a Canva deck in one workflow</span></div>
+        </div>
+        <div class="c-actions"><button class="c-btn ghost" data-check>Check answers</button></div>
+        <p class="fb" aria-live="polite"></p>
+      </div>
     </div>
-    <div class="lab-teaser-body">
-      <h4>Ready to apply this? Visit the AI Lab</h4>
-      <p>Step-by-step SOP guides for real tasks: ChatGPT Ads, hyperlocal email campaigns, CRM audits, HeyGen hook writers, and more.</p>
-    </div>
-    <span class="lab-teaser-cta">Browse guides &rarr;</span>
-  </a>
+  </div>
 
-  <!-- CTA -->
-  <div class="ai-complete">
+  <div class="block" id="introDone" hidden><div class="ai-complete">
     <div class="orb orb-1" aria-hidden="true"></div>
     <div class="orb orb-2" aria-hidden="true"></div>
     <div class="ai-complete-inner">
@@ -1317,127 +1372,28 @@
         <a class="btn v-ghost" href="index.html#va">Study in VA</a>
       </div>
     </div>
-  </div>
+  </div></div>
+  </section>
 
-  </div>
-
-</div>
-
-<footer class="h-foot">
-  <div class="inner">
-    <div class="cols">
-      <div>
-        <h4>Skill Cloud Academy</h4>
-        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
-      </div>
-      <div>
-        <h4>Practice</h4>
-        <a class="fl" href="index.html#simulations">Go to Simulations</a>
-        <a class="fl" href="index.html#how-it-works">How It Works</a>
-      </div>
-      <div>
-        <h4>Simulations</h4>
-        <a class="fl" href="roles/transaction-coordinator.html">Transaction Coordinator</a>
-        <a class="fl" href="roles/property-manager.html">Property Manager</a>
-        <a class="fl" href="roles/operations-manager.html">Operations</a>
-        <a class="fl" href="roles/cfo-bookkeeper.html">CFO / Bookkeeper</a>
-      </div>
-      <div>
-        <h4>Program</h4>
-        <a class="fl" href="#">Skill Cloud Executive Associates</a>
-        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
-        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY &middot; FL</a>
-      </div>
-    </div>
-    <div class="bottom">
-      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
-      <span>Powered by Claude AI</span>
-    </div>
-  </div>
-</footer>
+</main>
 
 <script src="assets/js/app-core.js?v=20260917"></script>
 <script>SCApp.requireAuth();</script>
-<script src="assets/js/site.js?v=20260917"></script>
+<script src="assets/js/course.js?v=20260922"></script>
 <script>
-  // Sidebar active-link state on scroll
-  const sideSections = ['what-is-ai','claude','chatgpt','manus','compare'];
-  const sideLinks = {};
-  sideSections.forEach(id => {
-    sideLinks[id] = document.querySelector(`.side-link[href="#${id}"]`);
-  });
-
-  function updateActiveSideLink() {
-    let current = sideSections[0];
-    sideSections.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        if (rect.top <= 140) current = id;
+  (function () {
+    var done = document.getElementById('introDone');
+    if (SCApp.isIntroDone()) done.hidden = false;
+    if (new URLSearchParams(location.search).get('locked') && !SCApp.isIntroDone()) document.getElementById('intro-lock').hidden = false;
+    SCCourse.init({
+      id: 'intro', title: 'AI Introduction', kick: 'Start here', certificate: false,
+      onComplete: function () {
+        SCApp.markIntroDone();
+        done.hidden = false;
+        document.getElementById('intro-lock').hidden = true;
       }
     });
-    document.querySelectorAll('.side-link').forEach(l => l.classList.remove('active'));
-    if (sideLinks[current]) sideLinks[current].classList.add('active');
-  }
-
-  window.addEventListener('scroll', updateActiveSideLink, {passive: true});
-
-  // Introduction progress: each section counts once it has been on screen.
-  // When all five have been read, Simulations unlock for this associate.
-  (function introProgress() {
-    const me = window.SCApp && SCApp.currentUser();
-    const key = me ? 'scc_intro_seen__' + me.id : null;
-    let seen = [];
-    try { seen = JSON.parse((key && localStorage.getItem(key)) || '[]'); } catch (e) { seen = []; }
-    const locked = new URLSearchParams(location.search).get('locked');
-    if (locked && !(window.SCApp && SCApp.isIntroDone())) document.getElementById('intro-lock').hidden = false;
-
-    function paint() {
-      const done = window.SCApp && SCApp.isIntroDone();
-      const n = done ? sideSections.length : seen.length;
-      document.getElementById('ip-count').textContent = n + ' of ' + sideSections.length;
-      document.getElementById('ip-fill').style.width = (n / sideSections.length * 100) + '%';
-      document.getElementById('ip-note').textContent = done ? 'Complete. Simulations are unlocked.' : 'Read every section to unlock Simulations.';
-      sideSections.forEach(id => { if (sideLinks[id]) sideLinks[id].classList.toggle('seen', done || seen.indexOf(id) > -1); });
-      document.getElementById('intro-done-title').textContent = done ? 'Foundation complete. Simulations are unlocked.' : 'Almost there.';
-      document.getElementById('intro-done-text').textContent = done
-        ? 'You know what each tool is and when to use it. Study your role in VA, then apply it in the Simulations.'
-        : 'Go back to the sections not yet marked in the sidebar. Simulations unlock once all five are read. VA classes are already open.';
-      if (done) document.getElementById('intro-lock').hidden = true;
-    }
-    function check() {
-      let added = false;
-      sideSections.forEach(id => {
-        const el = document.getElementById(id);
-        if (!el || seen.indexOf(id) > -1) return;
-        const r = el.getBoundingClientRect();
-        if (r.top < window.innerHeight * 0.65 && r.bottom > 0) { seen.push(id); added = true; }
-      });
-      if (!added) return;
-      if (key) localStorage.setItem(key, JSON.stringify(seen));
-      if (seen.length >= sideSections.length && window.SCApp) SCApp.markIntroDone();
-      paint();
-    }
-    window.addEventListener('scroll', check, { passive: true });
-    window.addEventListener('load', check);
-    check();
-    paint();
   })();
-  updateActiveSideLink();
-
-  // The first hash jump fires before web fonts settle, so it lands on the wrong
-  // section. Re-apply it once layout is final.
-  function reapplyHash() {
-    if (!location.hash) return;
-    const el = document.querySelector(location.hash);
-    if (!el) return;
-    // scroll-behavior is smooth globally, so a long jump would animate and can be
-    // interrupted. Land on the section immediately instead.
-    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 96, behavior: 'instant' });
-    updateActiveSideLink();
-  }
-  window.addEventListener('load', () => setTimeout(reapplyHash, 80));
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => setTimeout(reapplyHash, 80));
 </script>
 </body>
 </html>

@@ -75,6 +75,25 @@
   .acc-start-grid{grid-template-columns:1fr}
   .acc-continue .btn{margin-left:0}
 }
+
+.acc-courses{display:grid;gap:12px}
+.acc-course{display:grid;grid-template-columns:84px 1fr auto;gap:18px;align-items:center;background:#fff;border:1px solid var(--v-line);border-radius:18px;padding:12px 18px 12px 12px}
+.acc-course i{height:64px;border-radius:12px;background-size:cover;background-position:center}
+.acc-course b{display:block;color:var(--v-navy);font-size:16px}
+.acc-course small{font-size:13px;color:var(--v-muted)}
+.acc-course .bar{height:6px;border-radius:99px;background:#e6edf3;overflow:hidden;margin-top:8px;max-width:340px}
+.acc-course .bar span{display:block;height:100%;background:var(--v-cyan);border-radius:99px}
+.acc-course .act{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.acc-course .act a{font-size:13.5px;font-weight:800;color:var(--v-cyan-d);text-decoration:none;white-space:nowrap}
+.acc-course .act a.cert{background:#fff4d6;color:#8a5a00;border-radius:999px;padding:6px 12px}
+.acc-badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.acc-badge{background:#fff;border:1px solid var(--v-line);border-radius:18px;padding:18px 16px;text-align:center}
+.acc-badge .medal{width:52px;height:52px;border-radius:16px;margin:0 auto 10px;display:grid;place-items:center;font-size:22px;background:#eef3f8;color:#9aa8b8}
+.acc-badge.on .medal{background:linear-gradient(135deg,#ffd978,#f2b33d);color:#7a4b00}
+.acc-badge b{display:block;font-size:14px;color:var(--v-navy);line-height:1.3}
+.acc-badge small{font-size:12px;color:var(--v-muted)}
+.acc-badge:not(.on){opacity:.7}
+@media(max-width:640px){.acc-course{grid-template-columns:64px 1fr}.acc-course i{height:52px}.acc-course .act{grid-column:1/-1;justify-content:flex-start}}
 </style>
 </head>
 <body>
@@ -105,12 +124,6 @@
 </header>
 
 <div class="wrap">
-  <div class="acc-grid">
-    <div class="acc-card"><div class="n" id="statPct">0%</div><div class="l">Overall Progress</div></div>
-    <div class="acc-card"><div class="n" id="statRole">N/A</div><div class="l">Assigned Role</div></div>
-    <div class="acc-card"><div class="n" id="statCount">0</div><div class="l">Modules Recorded</div></div>
-  </div>
-
   <div class="acc-continue" id="accContinue" style="display:none">
     <div>
       <h4>Continue where you left off</h4>
@@ -120,22 +133,23 @@
   </div>
 
   <div class="section">
-    <h2>Progress by module</h2>
-    <div class="card" id="modeBreakdown"><p class="muted small">Complete a simulator, quiz, MLS drill or email practice to see it here.</p></div>
+    <h2>My courses</h2>
+    <div class="acc-courses" id="accCourses"></div>
+  </div>
+
+  <div class="section">
+    <h2>Achievements</h2>
+    <div class="acc-badges" id="accBadges"></div>
+  </div>
+
+  <div class="section">
+    <h2>Simulation scores</h2>
+    <div class="card" id="modeBreakdown"><p class="muted small">Complete a simulation, quiz, MLS drill or email practice to see it here.</p></div>
   </div>
 
   <div class="section">
     <h2>Supervisor feedback</h2>
-    <div id="feedbackList"><p class="muted small">No graded emails yet, submit one from your role's Email Practice module.</p></div>
-  </div>
-
-  <div class="section">
-    <h2>Start here</h2>
-    <div class="acc-start-grid">
-      <a class="acc-start-card" href="index.html#simulations"><h3>Choose my role</h3><p>See all roles and find yours.</p></a>
-      <a class="acc-start-card" href="simulator.html"><h3>Prompt Practice Sandbox</h3><p>A general prompt writing warm up before you pick a role.</p></a>
-      <a class="acc-start-card" href="mls.html"><h3>MLS Entry Basics</h3><p>A quick, single form MLS entry warm up.</p></a>
-    </div>
+    <div id="feedbackList"><p class="muted small">No graded emails yet. Submit one from your simulation's email steps.</p></div>
   </div>
 </div>
 
@@ -174,6 +188,7 @@
   </div>
 </footer>
 <script src="assets/js/app-core.js?v=20260917"></script>
+<script src="assets/js/courses.js?v=20260922"></script>
 <script src="assets/js/site.js?v=20260917"></script>
 <script>
 (function(){
@@ -191,19 +206,35 @@
     window.location.href = 'login.html';
   });
 
-  var pct = SCApp.getOverallPercent(me.id);
-  document.getElementById('statPct').textContent = pct+'%';
-  document.getElementById('statRole').textContent = SCApp.ROLE_LABELS[me.assignedRole] || 'N/A';
+  var C = window.SCCourses;
+  var courses = C.list.map(function (c) { return { c: c, p: C.progress(c, me.id) }; });
+  document.getElementById('accCourses').innerHTML = courses.map(function (x) {
+    var c = x.c, p = x.p, done = c.id === 'intro' ? (SCApp.isIntroDone(me) || p.complete) : p.complete;
+    return '<div class="acc-course"><i style="background-image:url(\'' + c.image + '\')"></i><div><b>' + c.title + '</b>' +
+      '<small>' + (done ? 'Completed' : p.done + ' of ' + p.total + ' lessons') + '</small><div class="bar"><span style="width:' + (done ? 100 : p.pct) + '%"></span></div></div>' +
+      '<div class="act">' + (done && c.store && c.id !== 'intro' ? '<a class="cert" href="' + c.href + '#certificate">&#9733; Certificate</a>' : '') +
+      '<a href="' + c.href + '">' + (done ? 'Review' : (p.done ? 'Continue' : 'Start')) + ' &rarr;</a></div></div>';
+  }).join('');
 
+  var badges = [];
+  badges.push({ t: 'AI Introduction', s: 'Simulations unlocked', on: SCApp.isIntroDone(me) });
+  var sop = C.get('sop'), sp = C.progress(sop, me.id);
+  ['Module 1 · Understand SOPs', 'Module 2 · Build an SOP', 'Module 3 · Practice and assessment'].forEach(function (m) {
+    badges.push({ t: m.replace(/^Module \d+ · /, ''), s: 'SOP Foundations', on: sp.modulesDone.indexOf(m) > -1 });
+  });
+  badges.push({ t: 'SOP Foundations', s: 'Course certificate', on: sp.complete });
+  var mk = C.progress(C.get('marketing'), me.id);
+  badges.push({ t: 'Marketing Training', s: 'Course complete', on: mk.complete });
   var breakdown = SCApp.getRoleBreakdown(me.id);
-  var modeCount = 0;
-  Object.keys(breakdown).forEach(function(r){ modeCount += Object.keys(breakdown[r].modes).length; });
-  document.getElementById('statCount').textContent = modeCount;
+  badges.push({ t: 'First simulation', s: 'Practiced a real case', on: Object.keys(breakdown).length > 0 });
+  document.getElementById('accBadges').innerHTML = badges.map(function (b) {
+    return '<div class="acc-badge' + (b.on ? ' on' : '') + '"><div class="medal">' + (b.on ? '&#9733;' : '&#9734;') + '</div><b>' + b.t + '</b><small>' + b.s + '</small></div>';
+  }).join('');
 
   var lastPage = SCApp.getLastPage(me.id);
   if(lastPage && lastPage !== 'account.html'){
     document.getElementById('accContinue').style.display = 'flex';
-    document.getElementById('accContinueText').textContent = 'Jump back into ' + lastPage.replace(/\.html$/,'').replace(/^roles\//,'').replace(/-/g,' ') + '.';
+    document.getElementById('accContinueText').textContent = 'Jump back into ' + lastPage.replace(/\.html$/,'').replace(/^(roles|va)\//,'').replace(/-/g,' ') + '.';
     document.getElementById('accContinueBtn').href = lastPage;
   }
 

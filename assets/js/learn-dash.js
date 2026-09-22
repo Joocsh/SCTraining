@@ -15,13 +15,18 @@
   function read(key, fb) { try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? fb : v; } catch (e) { return fb; } }
 
   /* ── progress from each area ── */
+  var C = window.SCCourses;
   var introDone = SCApp.isIntroDone(me);
-  var introSeen = read('scc_intro_seen__' + me.id, []).length;
-  var introPct = introDone ? 100 : Math.round(Math.min(introSeen, 5) / 5 * 100);
+  var introP = C ? C.progress(C.get('intro'), me.id) : { done: 0, total: 5 };
+  var introSeen = introDone ? introP.total : introP.done;
+  var introPct = introDone ? 100 : Math.round(introP.done / introP.total * 100);
 
-  var sop = read('sc_va_sop_foundations_v2__' + me.id, { done: [] });
-  var sopDone = (sop.done || []).length, SOP_TOTAL = 11;
-  var sopPct = Math.round(sopDone / SOP_TOTAL * 100);
+  var vaCourses = C ? C.list.filter(function (c) { return c.id !== 'intro'; }) : [];
+  var vaDone = 0, vaTotal = 0, vaComplete = 0;
+  vaCourses.forEach(function (c) { var p = C.progress(c, me.id); vaDone += p.done; vaTotal += p.total; if (p.complete) vaComplete++; });
+  var sopP = C ? C.progress(C.get('sop'), me.id) : { done: 0, total: 11 };
+  var sopDone = sopP.done, SOP_TOTAL = sopP.total;
+  var sopPct = vaTotal ? Math.round(vaDone / vaTotal * 100) : 0;
 
   var roles = SCApp.getRoleBreakdown ? SCApp.getRoleBreakdown(me.id) : {};
   var practiced = Object.keys(roles || {}).length;
@@ -44,7 +49,8 @@
   if (last && NAMES[last]) {
     resume = { href: last, title: NAMES[last][0], kind: NAMES[last][1], cta: 'Resume' };
     if (last === 'va/sop-foundations.html') resume.meta = sopDone + ' of ' + SOP_TOTAL + ' lessons done';
-    if (last === 'ai.html') resume.meta = (introDone ? 5 : Math.min(introSeen, 5)) + ' of 5 sections read';
+    if (last === 'ai.html') resume.meta = introSeen + ' of 5 lessons done';
+    if (last === 'marketing-training.html' && C) { var mp = C.progress(C.get('marketing'), me.id); resume.meta = mp.done + ' of ' + mp.total + ' lessons done'; }
   } else if (!introDone) {
     resume = { href: 'ai.html', title: 'Introduction', kind: 'Start here', cta: 'Start', meta: 'Unlocks the Simulations' };
   } else if (sopPct < 100) {
@@ -56,9 +62,9 @@
   /* ── path steps ── */
   var steps = [
     { n: 1, title: 'Introduction', desc: 'What Claude, ChatGPT and Manus are, and when to use each one.', pct: introPct,
-      meta: introDone ? 'Complete' : (Math.min(introSeen, 5) + ' of 5 sections'), href: 'ai.html', cta: introDone ? 'Review' : (introSeen ? 'Continue' : 'Start') },
-    { n: 2, title: 'VA courses', desc: 'Study your role before you simulate it. Start with SOP Foundations.', pct: sopPct,
-      meta: sopDone + ' of ' + SOP_TOTAL + ' lessons', href: 'va.html', cta: sopDone ? (sopPct === 100 ? 'Review' : 'Continue') : 'Start' },
+      meta: introDone ? 'Complete' : (introSeen + ' of 5 lessons'), href: 'ai.html', cta: introDone ? 'Review' : (introSeen ? 'Continue' : 'Start') },
+    { n: 2, title: 'VA courses', desc: vaCourses.length + ' courses to study your role before you simulate it: ' + vaCourses.map(function (c) { return c.title; }).join(' and ') + '.', pct: sopPct,
+      meta: vaComplete + ' of ' + vaCourses.length + ' courses done', href: 'va.html', cta: vaDone ? (sopPct === 100 ? 'Review' : 'Continue') : 'Start' },
     { n: 3, title: 'Simulations', desc: 'Practice real cases for your role with instant feedback.', pct: null, locked: !introDone,
       meta: introDone ? (practiced ? practiced + ' role' + (practiced > 1 ? 's' : '') + ' practiced' : 'Ready to start') : 'Unlocks after the Introduction',
       href: introDone ? '#simulations' : 'ai.html', cta: introDone ? 'Choose a simulation' : 'Finish the Introduction' }

@@ -1362,7 +1362,7 @@
     .td-tile-go { margin-left: auto; color: var(--v-cyan-d); font-weight: 800; font-size: 13.5px; flex: none; }
 
     /* VA: classes by role */
-    .va-grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 28px; }
+    .va-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 28px; }
     @media (max-width: 760px) { .va-grid { grid-template-columns: 1fr; } }
     .va-card { position: relative; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; min-height: 170px;
       border-radius: 18px; overflow: hidden; padding: 22px 24px; text-decoration: none; color: #fff;
@@ -1382,6 +1382,8 @@
     .sim-locked-note a { color: #7a4d00; text-decoration: underline; }
     /* ===== My learning (signed in) ===== */
     body.has-dash .h-hero { display: none; }
+    body.has-dash .h-pitch { display: none; }
+
     .ld-inner { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
     .ld-top { background: linear-gradient(165deg, var(--v-navy) 0%, var(--v-navy2) 60%, #123a63 100%); color: #d6e4f0; padding: 54px 0 70px; }
     .ld-top .ld-inner { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 40px; align-items: center; }
@@ -1439,7 +1441,6 @@
         <a class="navlink" href="index.html">Home</a>
         <a class="navlink" href="ai.html">Introduction</a>
         <a class="navlink" href="va.html">VA</a>
-        <a class="navlink" href="marketing-training.html">Marketing</a>
         <a class="navlink" href="#simulations">Simulations</a>
         <a class="navlink" href="#test-drive">Test Drive</a>
       </div>
@@ -1480,7 +1481,7 @@
   </header>
 
   <!-- ===== PROBLEM / SOLUTION ===== -->
-  <section class="h-sec">
+  <section class="h-sec h-pitch">
     <div class="inner">
       <span class="h-eyebrow rv">Why Skill Cloud Academy exists</span>
       <h2 class="h-h2 rv">The training ended. The practice didn't.</h2>
@@ -1568,7 +1569,7 @@
   </section>
 
   <!-- ===== HOW IT WORKS ===== -->
-  <section class="h-sec" id="how-it-works" style="padding-top:50px; padding-bottom:50px">
+  <section class="h-sec h-pitch" id="how-it-works" style="padding-top:50px; padding-bottom:50px">
     <div class="inner">
       <h2 class="how-title rv">This isn't just <span class="muted-title">about software.</span></h2>
 
@@ -1630,7 +1631,7 @@
   </section>
 
   <!-- ===== PRACTICE MODES ===== -->
-  <section class="h-sec" style="padding-top:20px">
+  <section class="h-sec h-pitch" style="padding-top:20px">
     <div class="inner">
       <span class="h-eyebrow rv">Ways to practice</span>
       <h2 class="h-h2 rv">Everything you need is right here</h2>
@@ -1666,66 +1667,6 @@
           <h4>Deadline Quizzes</h4>
           <p>Test your knowledge of state by state deadlines.</p>
         </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== TEST DRIVE ===== -->
-  <section class="h-sec h-testdrive" id="test-drive">
-    <div class="inner">
-      <span class="h-eyebrow rv">Before you get real access</span>
-      <h2 class="h-h2 rv">Take a Test Drive</h2>
-      <p class="h-lead rv">Get comfortable in the actual tools before we hand you the real login. Pick an app below
-        and click around a working copy, seeded with practice leads instead of real clients.</p>
-      <div class="td-launch-card rv">
-        <div class="td-launch-text">
-          <h3>Practice inside the real tools first</h3>
-          <p>Open a lead, check the Inbox, look at the Admin panel, no real account and nothing you do here ever
-            touches a live system. Once you're comfortable, we'll set up your real access.</p>
-          <button class="btn v-cyan" type="button" onclick="openTestDrive()">Launch Test Drive &rarr;</button>
-        </div>
-        <div class="td-launch-apps">
-          <div class="td-mini-row"><span class="td-mini fub" style="background:#fff;padding:2px;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="assets/img/logo-fub.svg" alt="FollowUpBoss" style="width:100%;height:100%;object-fit:contain;"></span><span>FollowUpBoss</span></div>
-          <div class="td-mini-row"><span class="td-mini zi" style="background:#fff;padding:2px;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="assets/img/logo-sierra.svg" alt="Sierra" style="width:100%;height:100%;object-fit:contain;"></span><span>Sierra</span></div>
-          <div class="td-mini-row"><span class="td-mini ku"><img src="Quialia/Images-resourses/brand/qualia-icon.svg" alt="Qualia"></span><span>Qualia</span></div>
-          <div class="td-mini-row"><span class="td-mini ds"><img src="Docusign/Images-resources/docusign-icon.svg" alt="DocuSign"></span><span>DocuSign</span></div>
-          <div class="td-mini-row"><span class="td-mini af"><img src="AppFolio/Images-resources/brand/appfolio-mark.png" alt="AppFolio"></span><span>AppFolio</span></div>
-          <div class="td-mini-row"><span class="td-mini tt" style="background:#fff;padding:3px;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="assets/img/logo-turbotenant.svg" alt="TurboTenant" style="width:100%;height:100%;object-fit:contain;"></span><span>TurboTenant</span></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== TEAM ===== -->
-  <section class="h-sec h-team">
-    <div class="ring tl" aria-hidden="true"></div>
-    <div class="ring br" aria-hidden="true"></div>
-    <div class="inner">
-      <div class="copy">
-        <span class="h-eyebrow rv" style="color:var(--v-cyan)">You're not doing this alone</span>
-        <h2 class="h-h2 rv" style="color:#fff">Real teammates, real support</h2>
-        <p class="rv" style="color:#c8d7e6;margin-bottom:24px;">Every scenario was built with the people who run these processes every day. When you practice here, you're learning the exact playbook your team already trusts, not a generic tutorial.</p>
-        <ul class="team-perks rv">
-          <li>
-            <span class="perk-icon">&#10003;</span>
-            <span>Every scenario is reviewed by a real Skill Cloud team lead before it goes live.</span>
-          </li>
-          <li>
-            <span class="perk-icon">&#10003;</span>
-            <span>Feedback is based on actual company standards, not generic best practices.</span>
-          </li>
-          <li>
-            <span class="perk-icon">&#10003;</span>
-            <span>Your team is here to support you the moment you step into a real case.</span>
-          </li>
-          <li>
-            <span class="perk-icon">&#10003;</span>
-            <span>You are never starting from zero on your first real day.</span>
-          </li>
-        </ul>
-      </div>
-      <div class="photo rv">
-        <img src="assets/img/team.webp" alt="Skill Cloud team members ready to support new associates">
       </div>
     </div>
   </section>
@@ -1784,6 +1725,7 @@
         process before you step into a simulation. Open to everyone, no prerequisites.</p>
       <div class="va-grid">
         <a class="va-card rv" href="va/sop-foundations.html" style="background-image:url('assets/img/va/sop-foundations.jpg')"><span class="va-kick">Course</span><b>SOP Foundations</b><span class="va-soon">Turn everyday work into a reliable, repeatable system &middot; 3 modules, 11 lessons</span></a>
+        <a class="va-card rv" href="marketing-training.html" style="background-image:url('assets/img/marketing/m1-global-standard.jpg')"><span class="va-kick">Course</span><b>Marketing Training</b><span class="va-soon">The brand, the tools and the playbook &middot; 9 modules, 58 lessons</span></a>
       </div>
       <div class="va-cta rv"><a class="btn v-cyan" href="va.html">Go to VA &rarr;</a></div>
     </div>
@@ -1879,6 +1821,66 @@
     </div>
   </section>
 
+  <!-- ===== TEST DRIVE ===== -->
+  <section class="h-sec h-testdrive" id="test-drive">
+    <div class="inner">
+      <span class="h-eyebrow rv">Before you get real access</span>
+      <h2 class="h-h2 rv">Take a Test Drive</h2>
+      <p class="h-lead rv">Get comfortable in the actual tools before we hand you the real login. Pick an app below
+        and click around a working copy, seeded with practice leads instead of real clients.</p>
+      <div class="td-launch-card rv">
+        <div class="td-launch-text">
+          <h3>Practice inside the real tools first</h3>
+          <p>Open a lead, check the Inbox, look at the Admin panel, no real account and nothing you do here ever
+            touches a live system. Once you're comfortable, we'll set up your real access.</p>
+          <button class="btn v-cyan" type="button" onclick="openTestDrive()">Launch Test Drive &rarr;</button>
+        </div>
+        <div class="td-launch-apps">
+          <div class="td-mini-row"><span class="td-mini fub" style="background:#fff;padding:2px;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="assets/img/logo-fub.svg" alt="FollowUpBoss" style="width:100%;height:100%;object-fit:contain;"></span><span>FollowUpBoss</span></div>
+          <div class="td-mini-row"><span class="td-mini zi" style="background:#fff;padding:2px;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="assets/img/logo-sierra.svg" alt="Sierra" style="width:100%;height:100%;object-fit:contain;"></span><span>Sierra</span></div>
+          <div class="td-mini-row"><span class="td-mini ku"><img src="Quialia/Images-resourses/brand/qualia-icon.svg" alt="Qualia"></span><span>Qualia</span></div>
+          <div class="td-mini-row"><span class="td-mini ds"><img src="Docusign/Images-resources/docusign-icon.svg" alt="DocuSign"></span><span>DocuSign</span></div>
+          <div class="td-mini-row"><span class="td-mini af"><img src="AppFolio/Images-resources/brand/appfolio-mark.png" alt="AppFolio"></span><span>AppFolio</span></div>
+          <div class="td-mini-row"><span class="td-mini tt" style="background:#fff;padding:3px;display:flex;align-items:center;justify-content:center;overflow:hidden;"><img src="assets/img/logo-turbotenant.svg" alt="TurboTenant" style="width:100%;height:100%;object-fit:contain;"></span><span>TurboTenant</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TEAM ===== -->
+  <section class="h-sec h-team">
+    <div class="ring tl" aria-hidden="true"></div>
+    <div class="ring br" aria-hidden="true"></div>
+    <div class="inner">
+      <div class="copy">
+        <span class="h-eyebrow rv" style="color:var(--v-cyan)">You're not doing this alone</span>
+        <h2 class="h-h2 rv" style="color:#fff">Real teammates, real support</h2>
+        <p class="rv" style="color:#c8d7e6;margin-bottom:24px;">Every scenario was built with the people who run these processes every day. When you practice here, you're learning the exact playbook your team already trusts, not a generic tutorial.</p>
+        <ul class="team-perks rv">
+          <li>
+            <span class="perk-icon">&#10003;</span>
+            <span>Every scenario is reviewed by a real Skill Cloud team lead before it goes live.</span>
+          </li>
+          <li>
+            <span class="perk-icon">&#10003;</span>
+            <span>Feedback is based on actual company standards, not generic best practices.</span>
+          </li>
+          <li>
+            <span class="perk-icon">&#10003;</span>
+            <span>Your team is here to support you the moment you step into a real case.</span>
+          </li>
+          <li>
+            <span class="perk-icon">&#10003;</span>
+            <span>You are never starting from zero on your first real day.</span>
+          </li>
+        </ul>
+      </div>
+      <div class="photo rv">
+        <img src="assets/img/team.webp" alt="Skill Cloud team members ready to support new associates">
+      </div>
+    </div>
+  </section>
+
   <!-- ===== FINAL CTA ===== -->
   <section class="h-final">
     <h2 class="rv">Your classroom is done. Your practice starts now.</h2>
@@ -1970,6 +1972,7 @@
 
   <script src="assets/js/app-core.js?v=20260917"></script>
   <script src="assets/js/site.js?v=20260917"></script>
+  <script src="assets/js/courses.js?v=20260922"></script>
   <script src="assets/js/learn-dash.js?v=20260922"></script>
   <script>
     function openTestDrive(){ document.getElementById('tdOverlay').classList.add('open'); document.body.style.overflow='hidden'; }
