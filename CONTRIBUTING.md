@@ -76,8 +76,11 @@ Todos los cursos usan el mismo reproductor (`assets/css/course.css` + `assets/js
    `sort`. Copia uno de `va/sop-foundations.html`.
 4. Al final: `SCCourse.init({ id: 'mi-curso', title: 'Mi curso', kick: 'VA course',
    store: 'sc_mi_curso__' })`.
-5. Regístralo en `assets/js/courses.js`. Con eso aparece solo en el Home, en VA, en
-   My Account y en el panel del supervisor.
+5. Regístralo en `assets/js/courses.js` con su área: `track: 'va'` o
+   `track: 'marketing'`. Con eso aparece solo en el catálogo de su área (`va.html` o
+   `marketing.html`), en el Home, en My Account y en el panel del supervisor.
+6. ¿Un área nueva de trainings? Agrégala a `TRACKS` en `courses.js` y crea su catálogo
+   copiando `marketing.html` y cambiando `data-track` en el `<body>` y el título.
 
 ## 5. Carpetas de trabajo
 

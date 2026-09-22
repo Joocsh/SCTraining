@@ -42,7 +42,8 @@
     'roles/lead-manager.html': ['Lead Manager', 'Simulation'],
     'roles/operations-manager.html': ['Operations Manager', 'Simulation'],
     'roles/cfo-bookkeeper.html': ['CFO & Bookkeeper', 'Simulation'],
-    'marketing-training.html': ['Marketing', 'Training']
+    'marketing-training.html': ['Marketing Training', 'Marketing course'],
+    'marketing.html': ['Marketing', 'Trainings']
   };
   var last = SCApp.getLastPage(me.id);
   var resume;
@@ -63,7 +64,7 @@
   var steps = [
     { n: 1, title: 'Introduction', desc: 'What Claude, ChatGPT and Manus are, and when to use each one.', pct: introPct,
       meta: introDone ? 'Complete' : (introSeen + ' of 5 lessons'), href: 'ai.html', cta: introDone ? 'Review' : (introSeen ? 'Continue' : 'Start') },
-    { n: 2, title: 'VA courses', desc: vaCourses.length + ' courses to study your role before you simulate it: ' + vaCourses.map(function (c) { return c.title; }).join(' and ') + '.', pct: sopPct,
+    { n: 2, title: 'Trainings', desc: 'Study your role before you simulate it: ' + (C ? C.tracks.map(function (t) { return t.title; }).join(' and ') : 'VA') + ' trainings.', pct: sopPct,
       meta: vaComplete + ' of ' + vaCourses.length + ' courses done', href: 'va.html', cta: vaDone ? (sopPct === 100 ? 'Review' : 'Continue') : 'Start' },
     { n: 3, title: 'Simulations', desc: 'Practice real cases for your role with instant feedback.', pct: null, locked: !introDone,
       meta: introDone ? (practiced ? practiced + ' role' + (practiced > 1 ? 's' : '') + ' practiced' : 'Ready to start') : 'Unlocks after the Introduction',

@@ -13,20 +13,29 @@
     {
       id: 'intro', title: 'AI Introduction', href: 'ai.html', kind: 'Start here',
       desc: 'What Claude, ChatGPT and Manus are, how each one works, and when to use which.',
-      image: 'assets/img/va/sop/m2-build.jpg', lessons: 5, modules: 1, store: 'sc_course_intro__'
+      image: 'assets/img/va/sop/m2-build.jpg', lessons: 5, modules: 1, store: 'sc_course_intro__', track: 'intro'
     },
     {
       id: 'sop', title: 'SOP Foundations', href: 'va/sop-foundations.html', kind: 'VA course',
       desc: 'Turn everyday work into a reliable, repeatable system with clear Standard Operating Procedures.',
-      image: 'assets/img/va/sop-foundations.jpg', lessons: 11, modules: 3, store: 'sc_va_sop_foundations_v2__'
+      image: 'assets/img/va/sop-foundations.jpg', lessons: 11, modules: 3, store: 'sc_va_sop_foundations_v2__', track: 'va'
     },
     {
-      id: 'marketing', title: 'Marketing Training', href: 'marketing-training.html', kind: 'VA course',
+      id: 'marketing', title: 'Marketing Training', href: 'marketing-training.html', kind: 'Marketing course', track: 'marketing',
       desc: 'The Sotheby’s brand, Design Vault, ListTrac and the marketing tools, lesson by lesson.',
       image: 'assets/img/marketing/m1-global-standard.jpg', lessons: 58, modules: 9,
       /* this course keeps its own progress in the browser */
       progress: function () { return { done: read('mt3_done', []).length }; }
     }
+  ];
+
+  /* Training areas. Each one has its own catalog page; a new course only needs
+     its track here to show up in the right place. */
+  var TRACKS = [
+    { id: 'va', title: 'VA', href: 'va.html', image: 'assets/img/va/sop-foundations.jpg',
+      desc: 'Study your role before you simulate it: processes, systems and SOPs.' },
+    { id: 'marketing', title: 'Marketing', href: 'marketing.html', image: 'assets/img/marketing/m1-global-standard.jpg',
+      desc: 'The brand, the design tools and the marketing playbook.' }
   ];
 
   function progress(course, userId) {
@@ -45,6 +54,8 @@
   window.SCCourses = {
     list: COURSES,
     get: function (id) { return COURSES.filter(function (c) { return c.id === id; })[0]; },
+    tracks: TRACKS,
+    byTrack: function (t) { return COURSES.filter(function (c) { return c.track === t; }); },
     progress: progress
   };
 })();
