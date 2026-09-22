@@ -3,9 +3,9 @@
    Fictional case: 4827 Rolando Blvd, San Diego, CA 92115
    Seller side (Sofia Reyes, Berkshire Hathaway HomeServices).
    Full TC workflow from listing assignment through close of
-   escrow: listing agreement preparation, seller disclosures,
-   pre-listing review, offer negotiation, escrow management,
-   inspections, appraisal gap, wire fraud, and post-closing.
+   escrow: listing agreement preparation, offer negotiation,
+   escrow management, inspections, appraisal gap, wire fraud,
+   and post-closing.
    Loaded before the page script; uses workflow.js helpers.
    ══════════════════════════════════════════════════════════ */
 (function () {
@@ -51,16 +51,16 @@
 
   var DIR = '../assets/docs/tc-ca-new/';
   var DOCS = {
-    rla:        ['listing-agreement.pdf', 'Residential Listing Agreement', 'C.A.R. RLA · List Price $889,000 · Sep 24, 2025'],
-    ad:         ['agency-disclosure.pdf', 'Agency Disclosure', 'C.A.R. AD · Sofia Reyes / BHHS California Properties'],
-    mlsa:       ['mls-addendum.pdf', 'MLS Addendum', 'C.A.R. MLSA · San Diego MLS Authorization'],
-    da:         ['dual-agency-disclosure.pdf', 'Dual Agency Disclosure', 'C.A.R. DA · Possible Dual Agency Consent'],
-    dia:        ['disclosure-information-advisory.pdf', 'Disclosure Information Advisory', 'C.A.R. DIA · Advisory to Sellers'],
-    bca:        ['broker-compensation-advisory.pdf', 'Broker Compensation Advisory', 'C.A.R. BCA · 5% Total / 2.5% Cooperating'],
-    fhda:       ['fair-housing-advisory.pdf', 'Fair Housing & Discrimination Advisory', 'C.A.R. FHDA · Federal & State Compliance'],
-    sa:         ['sellers-advisory.pdf', 'Sellers Advisory', 'C.A.R. SA · Statewide Seller Advisory'],
-    ccpa:       ['ccpa-advisory.pdf', 'CCPA Advisory', 'C.A.R. CCPA · California Consumer Privacy Act'],
-    wire:       ['wire-fraud-email-screenshot.pdf', 'Wire Fraud Advisory (WFA)', 'C.A.R. WFA · Signed by Daniel & Carmen Herrera'],
+    rla:        ['listing-agreement.pdf', 'Exclusive Right to Sell Agreement', 'Executed Listing Contract · 4827 Rolando Blvd'],
+    ad:         ['agency-disclosure.pdf', 'Agency Representation Disclosure', 'Broker-Client Relationship & Duties · Sep 24, 2025'],
+    mlsa:       ['mls-addendum.pdf', 'Multiple Listing Service Addendum', 'San Diego Regional MLS Marketing Authorization'],
+    da:         ['dual-agency-disclosure.pdf', 'Consent for Multiple Representation', 'Agency Representation of More Than One Buyer/Seller'],
+    dia:        ['disclosure-information-advisory.pdf', 'Statutory Disclosures Advisory', 'Property Disclosures & Information Guidelines for Sellers'],
+    bca:        ['broker-compensation-advisory.pdf', 'Broker Compensation & Fee Advisory', 'Commission Structure & Cooperating Terms'],
+    fhda:       ['fair-housing-advisory.pdf', 'Fair Housing & Equal Opportunity', 'Non-Discrimination Policy & Federal/State Compliance'],
+    sa:         ['sellers-advisory.pdf', 'Statewide Property Seller Advisory', 'Seller Duties, Tax, & Property Disclosures'],
+    ccpa:       ['ccpa-advisory.pdf', 'California Consumer Privacy Notice', 'Consumer Privacy Rights & Advisory'],
+    wire:       ['wire-fraud-email-screenshot.pdf', 'Wire Fraud Advisory & Defense Notice', 'Critical Advisory Signed by Daniel & Carmen Herrera'],
     tds:        ['tds-disclosure.pdf', 'Transfer Disclosure Statement', 'C.A.R. TDS · Completed by Daniel & Carmen Herrera'],
     spq:        ['spq-questionnaire.pdf', 'Seller Property Questionnaire', 'C.A.R. SPQ · Completed by sellers'],
     nhd:        ['nhd-report.pdf', 'Natural Hazard Disclosure', 'JCP-LGS · Seismic Hazard Zone (liquefaction)'],
@@ -68,6 +68,7 @@
     lead:       ['lead-paint-disclosure.pdf', 'Lead-Based Paint Disclosure', 'Required · Home built 1961 (pre-1978)'],
     prelim:     ['preliminary-title-report.pdf', 'Preliminary Title Report', 'Chicago Title Company · $1,200 SDG&E Lien'],
     offer:      ['buyer-offer.pdf', "Buyer's Offer (C.A.R. RPA)", 'Marcus Lee for Jason & Michelle Brooks · $840,000'],
+    offer2:     ['buyer-offer-2.pdf', "Buyer's Offer #2 (Cash)", 'Rachel Torres for Kevin & Priya Patel · $855,000 Cash'],
     sco:        ['seller-counter-offer.pdf', 'Seller Counter Offer #1', 'C.A.R. SCO · $875,000 · Firm Nov 3 closing'],
     bco:        ['buyer-counter-offer.pdf', 'Buyer Counter Offer #1', 'C.A.R. BCO · $860,000 · Accepted Oct 3, 2025'],
     rpa:        ['purchase-agreement-executed.pdf', 'Executed Purchase Agreement', 'C.A.R. RPA Ratified Package · $860,000'],
@@ -183,6 +184,7 @@
     'daniel': { name: 'Daniel Herrera', role: 'Seller', email: 'herrera.family@email.com', phone: '(619) 555-0488', initials: 'DH' },
     'carmen': { name: 'Carmen Herrera', role: 'Seller', email: 'herrera.family@email.com', phone: '(619) 555-0488', initials: 'CH' },
     'marcus': { name: 'Marcus Lee', role: 'Buyer Agent · eXp Realty', email: 'marcus.lee@exprealty.com', phone: '(619) 555-0291', initials: 'ML' },
+    'rachel': { name: 'Rachel Torres', role: 'Buyer Agent · Compass', email: 'rachel.torres@compass.com', phone: '(619) 555-0385', initials: 'RT' },
     'sarah': { name: 'Sarah Nguyen', role: 'Escrow Officer · Chicago Title', email: 'sarah.nguyen@ctt.com', phone: '(619) 555-0144', initials: 'SN' },
     'tyler': { name: 'Tyler Adams', role: 'Loan Officer · Pacific Home Lending', email: 'tyler.adams@pacificlending.com', phone: '(619) 555-0277', initials: 'TA' }
   };
@@ -339,6 +341,18 @@
     window._caNewSlide1 = 0;
     window._caNewCurSlide1 = 0;
     window._caNewDeckState1 = null;
+    window._caNewSlide2 = null;
+    window._caNewSlide3 = null;
+    window._caNewSlide4 = null;
+    window._caNewSlide5 = null;
+    window._caNewSlide6 = null;
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.style.overflow = '';
+      var m1 = document.getElementById('ca2-zf-modal');
+      if (m1) m1.style.display = 'none';
+      var m2 = document.getElementById('ca2-zf-doc-modal');
+      if (m2) m2.style.display = 'none';
+    }
   };
 
   function decision(id, q, choices, fb, opts) {
@@ -1151,6 +1165,13 @@
           targetEl.classList.add('wf-phase-enter');
           targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+        if (key === 'ca2-listing-confirm') {
+          var replyEl = document.getElementById('ca2-s1-herrera-reply');
+          if (replyEl) {
+            replyEl.style.display = 'block';
+            replyEl.classList.add('wf-phase-enter');
+          }
+        }
         var bannerEl = document.getElementById('ca2-s0-reply-banner');
         if (bannerEl) {
           bannerEl.style.display = 'flex';
@@ -1158,6 +1179,48 @@
         }
         var nextBtn = document.getElementById('ca2-s0-info-next');
         if (nextBtn) nextBtn.style.display = 'inline-flex';
+
+        if (key === 'ca2-ratification-confirm') {
+          var ratConnector = document.getElementById('ca2-s2-rat-connector');
+          if (ratConnector) {
+            ratConnector.style.display = 'flex';
+            ratConnector.classList.add('wf-phase-enter');
+          }
+          var ratReply = document.getElementById('ca2-s2-sofia-rat-reply');
+          if (ratReply) {
+            ratReply.style.display = 'block';
+            ratReply.classList.add('wf-phase-enter');
+          }
+          var ratBanner = document.getElementById('ca2-s2-reply-banner');
+          if (ratBanner) {
+            ratBanner.style.display = 'flex';
+            ratBanner.classList.add('wf-phase-enter');
+          }
+        }
+        if (key === 'ca2-escrow-open') {
+          var s3Conn = document.getElementById('ca2-s3-escrow-connector');
+          if (s3Conn) { s3Conn.style.display = 'flex'; s3Conn.classList.add('wf-phase-enter'); }
+          var s3Reply = document.getElementById('ca2-s3-sarah-reply');
+          if (s3Reply) { s3Reply.style.display = 'block'; s3Reply.classList.add('wf-phase-enter'); }
+          var s3Banner = document.getElementById('ca2-s3-reply-banner');
+          if (s3Banner) { s3Banner.style.display = 'flex'; s3Banner.classList.add('wf-phase-enter'); }
+        }
+        if (key === 'ca2-disc-delivery') {
+          var s4Conn = document.getElementById('ca2-s4-disc-connector');
+          if (s4Conn) { s4Conn.style.display = 'flex'; s4Conn.classList.add('wf-phase-enter'); }
+          var s4Reply = document.getElementById('ca2-s4-marcus-disc-reply');
+          if (s4Reply) { s4Reply.style.display = 'block'; s4Reply.classList.add('wf-phase-enter'); }
+          var s4Banner = document.getElementById('ca2-s4-reply-banner');
+          if (s4Banner) { s4Banner.style.display = 'flex'; s4Banner.classList.add('wf-phase-enter'); }
+        }
+        if (key === 'ca2-post-close') {
+          var s7Conn = document.getElementById('ca2-s7-close-connector');
+          if (s7Conn) { s7Conn.style.display = 'flex'; s7Conn.classList.add('wf-phase-enter'); }
+          var s7Reply = document.getElementById('ca2-s7-sofia-close-reply');
+          if (s7Reply) { s7Reply.style.display = 'block'; s7Reply.classList.add('wf-phase-enter'); }
+          var s7Banner = document.getElementById('ca2-s7-reply-banner');
+          if (s7Banner) { s7Banner.style.display = 'flex'; s7Banner.classList.add('wf-phase-enter'); }
+        }
       }, 1000);
     }
     if (typeof wfUpdateScore === 'function') wfUpdateScore();
@@ -1175,6 +1238,34 @@
     else if (id === 'ca2-s1-p3') { window._caNewSlide1 = 2; window._caNewCurSlide1 = 2; }
     else if (id === 'ca2-s1-p4') { window._caNewSlide1 = 3; window._caNewCurSlide1 = 3; }
 
+    if (id === 'ca2-s2-p1') { window._caNewSlide2 = 1; }
+    else if (id === 'ca2-s2-p2') { window._caNewSlide2 = 2; }
+    else if (id === 'ca2-s2-p3') { window._caNewSlide2 = 3; }
+    else if (id === 'ca2-s2-p4') { window._caNewSlide2 = 4; }
+    else if (id === 'ca2-s2-p5') { window._caNewSlide2 = 5; }
+    else if (id === 'ca2-s2-p6') { window._caNewSlide2 = 6; }
+    else if (id === 'ca2-s2-p7') { window._caNewSlide2 = 7; }
+
+    if (id === 'ca2-s3-p0') { window._caNewSlide3 = 0; }
+    else if (id === 'ca2-s3-p1') { window._caNewSlide3 = 1; }
+    else if (id === 'ca2-s3-p2') { window._caNewSlide3 = 2; }
+    else if (id === 'ca2-s3-p3') { window._caNewSlide3 = 3; }
+
+    if (id === 'ca2-s4-p0') { window._caNewSlide4 = 0; }
+    else if (id === 'ca2-s4-p1') { window._caNewSlide4 = 1; }
+    else if (id === 'ca2-s4-p2') { window._caNewSlide4 = 2; }
+    else if (id === 'ca2-s4-p3') { window._caNewSlide4 = 3; }
+
+    if (id === 'ca2-s5-p0') { window._caNewSlide5 = 0; }
+    else if (id === 'ca2-s5-p1') { window._caNewSlide5 = 1; }
+    else if (id === 'ca2-s5-p2') { window._caNewSlide5 = 2; }
+
+    if (id === 'ca2-s6-p0') { window._caNewSlide6 = 0; }
+    else if (id === 'ca2-s6-p1') { window._caNewSlide6 = 1; }
+    else if (id === 'ca2-s6-p2') { window._caNewSlide6 = 2; }
+    else if (id === 'ca2-s6-p3') { window._caNewSlide6 = 3; }
+    else if (id === 'ca2-s6-p4') { window._caNewSlide6 = 4; }
+
     // Hide ALL sibling phases (both before and after the target)
     var sibling = el.parentNode.firstElementChild;
     while (sibling) {
@@ -1189,6 +1280,11 @@
     el.style.display = '';
     el.classList.add('wf-phase-enter');
     if (typeof caNewUpdateStep1Pills === 'function') caNewUpdateStep1Pills();
+    if (typeof caNewUpdateStep2Pills === 'function') caNewUpdateStep2Pills();
+    if (typeof caNewUpdateStep3Pills === 'function') caNewUpdateStep3Pills();
+    if (typeof caNewUpdateStep4Pills === 'function') caNewUpdateStep4Pills();
+    if (typeof caNewUpdateStep5Pills === 'function') caNewUpdateStep5Pills();
+    if (typeof caNewUpdateStep6Pills === 'function') caNewUpdateStep6Pills();
     setTimeout(function () {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 150);
@@ -1475,18 +1571,32 @@
       '<div class="wf-zf-body">' +
       launchPad +
       '<div class="wf-zf-form-area" id="' + id + '-form-area"' + (lpDone ? '' : ' style="display:none"') + '>' +
-        '<div class="zf-apply-card" id="' + id + '-apply-card"' + (appliedDone ? ' style="display:none"' : '') + '>' +
+        '<div class="zf-apply-card' + (isSubmitted ? ' is-completed' : '') + '" id="' + id + '-apply-card">' +
           '<div class="zf-apply-card-inner">' +
-            '<div class="zf-apply-card-badge">ZF+</div>' +
-            '<h4 class="zf-apply-card-title">C.A.R. Form RLA &mdash; Residential Listing Agreement</h4>' +
-            '<p class="zf-apply-card-prop">4827 Rolando Blvd, San Diego, CA 92115 &middot; Prepared Sep 24, 2025</p>' +
-            '<p class="zf-apply-card-desc">Apply the brokerage listing template to auto-populate default legal terms, DRE license numbers, commission splits, and compliance clauses into the C.A.R. Form RLA.</p>' +
-            '<div class="zf-apply-card-actions">' +
-              '<button type="button" class="zf-apply-card-btn primary" onclick="caNewZfOpenDocFullscreen(\'' + id + '\', false)">&#128203; Open Template</button>' +
-            '</div>' +
+            (isSubmitted ?
+              '<div class="zf-apply-card-badge done">&#10003; RATIFIED</div>' +
+              '<h4 class="zf-apply-card-title">C.A.R. Form RLA &mdash; Residential Listing Agreement</h4>' +
+              '<p class="zf-apply-card-prop">4827 Rolando Blvd, San Diego, CA 92115 &middot; Executed Sep 24, 2025</p>' +
+              '<p class="zf-apply-card-desc" style="color:#15803d;font-weight:600;">&#10003; Listing agreement and 9 pre-listing package documents successfully signed and ratified by Daniel &amp; Carmen Herrera via DocuSign.</p>' +
+              '<div class="zf-apply-card-actions">' +
+                '<button type="button" class="zf-apply-card-btn secondary" onclick="caNewZfOpenDocFullscreen(\'' + id + '\', false)">&#128065; View Ratified Form RLA (Pop-up)</button>' +
+              '</div>' :
+              '<div class="zf-apply-card-badge">ZF+</div>' +
+              '<h4 class="zf-apply-card-title">C.A.R. Form RLA &mdash; Residential Listing Agreement</h4>' +
+              '<p class="zf-apply-card-prop">4827 Rolando Blvd, San Diego, CA 92115 &middot; Prepared Sep 24, 2025</p>' +
+              '<p class="zf-apply-card-desc">Review the brokerage listing template, verify commission splits, exclusions (antique chandelier), and execute the C.A.R. Form RLA listing agreement via DocuSign in the ZipForm&reg; pop-up.</p>' +
+              '<div class="zf-apply-card-actions">' +
+                '<button type="button" class="zf-apply-card-btn primary" onclick="caNewZfOpenDocFullscreen(\'' + id + '\', false)">&#128203; Open Template</button>' +
+                '<button type="button" class="zf-apply-card-btn secondary" onclick="caNewZfOpenDocFullscreen(\'' + id + '\', true)">&#9889; Auto-fill &amp; Open Template</button>' +
+              '</div>'
+            ) +
           '</div>' +
         '</div>' +
-        '<div id="' + id + '-doc-full"' + (!appliedDone ? ' style="display:none"' : '') + '>' +
+      '</div></div></div>' +
+      zipformsTemplateModal(id, sections) +
+      '<div class="zf-modal-overlay zf-doc-modal-overlay" id="' + id + '-doc-modal" style="display:none;" onclick="if(event.target===this) caNewZfCloseDocFullscreen(\'' + id + '\')">' +
+        '<div class="zf-doc-modal-dialog" id="' + id + '-doc-modal-body">' +
+          '<div id="' + id + '-doc-full">' +
         '<div class="wf-zf-toolbar">' +
           '<div class="wf-zf-toolbar-left">' +
             '<span class="wf-zf-logo">ZF</span>' +
@@ -1501,58 +1611,6 @@
           '</div>' +
         '</div>' +
         '<div class="zf-doc-workspace">' +
-          '<!-- Left Outline Navigator -->' +
-          '<aside class="zf-doc-outline" aria-label="RLA Clause Navigation">' +
-            '<div class="zf-outline-header">' +
-              '<span>Transaction Setup</span>' +
-              '<span class="zf-doc-stat-pill" id="' + id + '-global-stat">0/22 Done</span>' +
-            '</div>' +
-            '<ul class="zf-outline-list">' +
-              '<li class="zf-outline-item active" id="zf-nav-' + id + '-sec-0" onclick="caNewZfScrollTo(\'' + id + '-sec-0\')">' +
-                '<span class="zf-outline-dot"></span><span>1. Parties &amp; Broker</span>' +
-                '<span class="wf-zf-section-counter" id="' + id + '-cnt-0">(0/' + sections[0].fields.length + ')</span>' +
-              '</li>' +
-              '<li class="zf-outline-item" id="zf-nav-' + id + '-sec-1" onclick="caNewZfScrollTo(\'' + id + '-sec-1\')">' +
-                '<span class="zf-outline-dot"></span><span>1(A). Listing Type</span>' +
-                '<span class="wf-zf-section-counter" id="' + id + '-cnt-1">(0/' + sections[1].fields.length + ')</span>' +
-              '</li>' +
-              '<li class="zf-outline-item" id="zf-nav-' + id + '-sec-2" onclick="caNewZfScrollTo(\'' + id + '-sec-2\')">' +
-                '<span class="zf-outline-dot"></span><span>2. Listing Period</span>' +
-                '<span class="wf-zf-section-counter" id="' + id + '-cnt-2">(0/' + sections[2].fields.length + ')</span>' +
-              '</li>' +
-              '<li class="zf-outline-item" id="zf-nav-' + id + '-sec-3" onclick="caNewZfScrollTo(\'' + id + '-sec-3\')">' +
-                '<span class="zf-outline-dot"></span><span>3. List Price</span>' +
-                '<span class="wf-zf-section-counter" id="' + id + '-cnt-3">(0/' + sections[3].fields.length + ')</span>' +
-              '</li>' +
-              '<li class="zf-outline-item" id="zf-nav-' + id + '-sec-4" onclick="caNewZfScrollTo(\'' + id + '-sec-4\')">' +
-                '<span class="zf-outline-dot"></span><span>4. Compensation</span>' +
-                '<span class="wf-zf-section-counter" id="' + id + '-cnt-4">(0/' + sections[4].fields.length + ')</span>' +
-              '</li>' +
-              '<li class="zf-outline-item" id="zf-nav-' + id + '-sec-5" onclick="caNewZfScrollTo(\'' + id + '-sec-5\')">' +
-                '<span class="zf-outline-dot"></span><span>5. Ownership &amp; Vesting</span>' +
-                '<span class="wf-zf-section-counter" id="' + id + '-cnt-5">(0/' + sections[5].fields.length + ')</span>' +
-              '</li>' +
-              '<li class="zf-outline-item" id="zf-nav-' + id + '-sec-6" onclick="caNewZfScrollTo(\'' + id + '-sec-6\')">' +
-                '<span class="zf-outline-dot"></span><span>6. Inclusions &amp; Excl.</span>' +
-                '<span class="wf-zf-section-counter" id="' + id + '-cnt-6">(0/' + sections[6].fields.length + ')</span>' +
-              '</li>' +
-              '<li class="zf-outline-item" id="zf-nav-' + id + '-sec-7" onclick="caNewZfScrollTo(\'' + id + '-sec-7\')">' +
-                '<span class="zf-outline-dot"></span><span>7. MLS &amp; Marketing</span>' +
-                '<span class="wf-zf-section-counter" id="' + id + '-cnt-7">(0/' + sections[7].fields.length + ')</span>' +
-              '</li>' +
-              '<li class="zf-outline-item" id="zf-nav-' + id + '-sec-8" onclick="caNewZfScrollTo(\'' + id + '-sec-8\')">' +
-                '<span class="zf-outline-dot"></span><span>8. Security &amp; Lockbox</span>' +
-                '<span class="wf-zf-section-counter" id="' + id + '-cnt-8">(0/' + sections[8].fields.length + ')</span>' +
-              '</li>' +
-              '<li class="zf-outline-item" onclick="caNewZfScrollTo(\'' + id + '-sec-19\')">' +
-                '<span class="zf-outline-dot" style="background:#1f9e5a;"></span><span>19. Dispute Resolution</span>' +
-              '</li>' +
-              '<li class="zf-outline-item" onclick="caNewZfScrollTo(\'' + id + '-sec-21\')">' +
-                '<span class="zf-outline-dot" style="background:#1f9e5a;"></span><span>21. Signatures</span>' +
-              '</li>' +
-            '</ul>' +
-          '</aside>' +
-
           '<!-- Main Legal Document Sheet -->' +
           '<main class="zf-doc-container">' +
             '<div class="zf-doc-sheet">' +
@@ -1778,11 +1836,8 @@
           '</main>' +
         '</div>' +
       '</div>' +
-      '</div></div></div>' +
-      zipformsTemplateModal(id, sections) +
-      '<div class="zf-modal-overlay zf-doc-modal-overlay" id="' + id + '-doc-modal" style="display:none;" onclick="if(event.target===this) caNewZfCloseDocFullscreen(\'' + id + '\')">' +
-        '<div class="zf-doc-modal-dialog" id="' + id + '-doc-modal-body"></div>' +
-      '</div>';
+    '</div>' +
+  '</div>';
 
     return html;
   }
@@ -1790,13 +1845,18 @@
   window.caNewZfScrollTo = function (targetId) {
     var el = document.getElementById(targetId);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      var list = document.querySelectorAll('.zf-outline-item');
-      for (var i = 0; i < list.length; i++) {
-        list[i].classList.remove('active');
+      var ws = el.closest('.zf-doc-workspace');
+      if (ws) {
+        var wsRect = ws.getBoundingClientRect();
+        var elRect = el.getBoundingClientRect();
+        var topDiff = elRect.top - wsRect.top;
+        ws.scrollTo({
+          top: ws.scrollTop + topDiff - 10,
+          behavior: 'smooth'
+        });
+      } else {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-      var navItem = document.getElementById('zf-nav-' + targetId);
-      if (navItem) navItem.classList.add('active');
     }
   };
 
@@ -1807,7 +1867,11 @@
   window.caNewZfOpenModal = function (id, tab) {
     var modal = document.getElementById(id + '-modal');
     if (!modal) return;
+    if (modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
     modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
     caNewZfSwitchModalTab(id, tab || 'template');
 
     // Pre-fill fast-fill inputs with current document values if present
@@ -1843,6 +1907,7 @@
   window.caNewZfCloseModal = function (id) {
     var modal = document.getElementById(id + '-modal');
     if (modal) modal.style.display = 'none';
+    document.body.style.overflow = '';
   };
 
   window.caNewZfSwitchModalTab = function (id, tab) {
@@ -1915,49 +1980,41 @@
     }
 
     caNewZfCloseModal(id);
-
     run()['zf_applied_' + id] = true;
-    var applyCard = document.getElementById(id + '-apply-card');
-    if (applyCard) applyCard.style.display = 'none';
-    var docFull = document.getElementById(id + '-doc-full');
-    if (docFull) { docFull.style.display = ''; docFull.classList.add('wf-phase-enter'); }
-
-    var docArea = document.getElementById(id + '-form-area');
-    if (docArea && docArea.scrollIntoView) {
-      docArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    caNewZfOpenDocFullscreen(id, false);
   };
 
   window.caNewZfOpenDocFullscreen = function (id, autoFill) {
-    var docFull = document.getElementById(id + '-doc-full');
-    var modalBody = document.getElementById(id + '-doc-modal-body');
     var modal = document.getElementById(id + '-doc-modal');
-    if (!docFull || !modalBody || !modal) return;
-
-    docFull.style.display = '';
+    if (!modal) return;
+    if (modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
     if (autoFill) caNewZfAutoFill(id);
 
-    modalBody.appendChild(docFull);
     var closeBtn = document.getElementById(id + '-doc-close-btn');
-    if (closeBtn) closeBtn.style.display = 'flex';
+    if (closeBtn) closeBtn.style.display = 'inline-flex';
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
+
+    // Reset scroll positions across all containers so the dialog always starts at the top
+    modal.scrollTop = 0;
+    var dialog = modal.querySelector('.zf-doc-modal-dialog');
+    if (dialog) dialog.scrollTop = 0;
+    var full = document.getElementById(id + '-doc-full');
+    if (full) full.scrollTop = 0;
+    var ws = modal.querySelector('.zf-doc-workspace');
+    if (ws) ws.scrollTop = 0;
+
+    // Blur any active element to prevent browser auto-scrolling
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
   };
 
   window.caNewZfCloseDocFullscreen = function (id) {
-    var docFull = document.getElementById(id + '-doc-full');
     var modal = document.getElementById(id + '-doc-modal');
-    var formArea = document.getElementById(id + '-form-area');
-    if (!docFull || !modal) return;
-
-    if (formArea) formArea.appendChild(docFull);
-
-    var closeBtn = document.getElementById(id + '-doc-close-btn');
-    if (closeBtn) closeBtn.style.display = '';
-    if (!run()['zf_applied_' + id] && !run()['zf_submitted_' + id]) {
-      docFull.style.display = 'none';
-    }
-
+    if (!modal) return;
     modal.style.display = 'none';
     document.body.style.overflow = '';
   };
@@ -2099,7 +2156,20 @@
       run()['zf_applied_' + id] = true;
       caNewZfCloseDocFullscreen(id);
       var applyCard = document.getElementById(id + '-apply-card');
-      if (applyCard) applyCard.style.display = 'none';
+      if (applyCard) {
+        applyCard.className = 'zf-apply-card is-completed';
+        applyCard.style.display = '';
+        applyCard.innerHTML =
+          '<div class="zf-apply-card-inner">' +
+            '<div class="zf-apply-card-badge done">&#10003; RATIFIED</div>' +
+            '<h4 class="zf-apply-card-title">C.A.R. Form RLA &mdash; Residential Listing Agreement</h4>' +
+            '<p class="zf-apply-card-prop">4827 Rolando Blvd, San Diego, CA 92115 &middot; Executed Sep 24, 2025</p>' +
+            '<p class="zf-apply-card-desc" style="color:#15803d;font-weight:600;">&#10003; Listing agreement and 9 pre-listing package documents successfully signed and ratified by Daniel &amp; Carmen Herrera via DocuSign.</p>' +
+            '<div class="zf-apply-card-actions">' +
+              '<button type="button" class="zf-apply-card-btn secondary" onclick="caNewZfOpenDocFullscreen(\'' + id + '\', false)">&#128065; View Ratified Form RLA (Pop-up)</button>' +
+            '</div>' +
+          '</div>';
+      }
       if (typeof caNewRevealSideDocs === 'function') {
         caNewRevealSideDocs(['ad', 'rla', 'mlsa', 'da', 'dia', 'bca', 'fhda', 'sa', 'ccpa', 'tds', 'nhd', 'wire', 'lead']);
       }
@@ -2305,7 +2375,7 @@
       '<div id="' + id + '-err" class="wf-slide-err" style="display:none;margin-top:16px;"></div>' +
       '<div class="wf-ss-submit-area" style="margin-top:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">' +
         '<div style="display:flex;align-items:center;gap:10px;">' +
-          '<button type="button" class="wf-deck-prev" onclick="caNewSsSwitchTab(\'' + id + '\', 0)">&larr; Review Listing Details</button>' +
+          '<button type="button" class="wf-deck-prev wf-ss-prev-btn" onclick="caNewSsSwitchTab(\'' + id + '\', 0)">&larr; Review Listing Details</button>' +
           '<button type="button" class="wf-ss-autofill-btn" onclick="caNewSsAutoFillChecklist(\'' + id + '\')">&#9889; Auto-fill Checklist</button>' +
         '</div>' +
         '<button type="button" class="wf-nav-btn primary" id="' + id + '-submit-btn" ' + (isSubmitted ? 'disabled style="display:none;"' : '') + ' onclick="caNewSsSubmit(\'' + id + '\')">Submit Listing File for Review &rarr;</button>' +
@@ -3797,12 +3867,12 @@
     { key: 'fhda', title: 'Fair Housing & Discrimination Advisory (FHDA)', type: 'attach' },
     { key: 'sa', title: 'Sellers Advisory (SA)', type: 'attach' },
     { key: 'ccpa', title: 'CCPA Advisory', type: 'attach' },
-    { key: 'tds', title: 'Transfer Disclosure Statement (TDS)', type: 'pending', pendingText: 'Pending · Step 3' },
-    { key: 'spq', title: 'Seller Property Questionnaire (SPQ)', type: 'pending', pendingText: 'Pending · Step 3' },
-    { key: 'lead', title: 'Lead-Based Paint Disclosure', type: 'pending', pendingText: 'Pending · Step 3' },
-    { key: 'nhd', title: 'Natural Hazard Disclosure (NHD)', type: 'pending', pendingText: 'Pending · Step 4' },
-    { key: 'avid', title: 'Agent Visual Inspection (AVID)', type: 'pending', pendingText: 'Pending · Step 4' },
-    { key: 'prelim', title: 'Preliminary Title Report', type: 'pending', pendingText: 'Pending · Step 4' }
+    { key: 'tds', title: 'Transfer Disclosure Statement (TDS)', type: 'pending', pendingText: 'Pending · Step 5' },
+    { key: 'spq', title: 'Seller Property Questionnaire (SPQ)', type: 'pending', pendingText: 'Pending · Step 5' },
+    { key: 'lead', title: 'Lead-Based Paint Disclosure', type: 'pending', pendingText: 'Pending · Step 5' },
+    { key: 'nhd', title: 'Natural Hazard Disclosure (NHD)', type: 'pending', pendingText: 'Pending · Step 5' },
+    { key: 'avid', title: 'Agent Visual Inspection (AVID)', type: 'pending', pendingText: 'Pending · Step 5' },
+    { key: 'prelim', title: 'Preliminary Title Report', type: 'pending', pendingText: 'Pending · Step 5' }
   ];
 
   /* ---------- Sub-step Controller for Step 2 (Listing Agreement & File Setup) ---------- */
@@ -3966,6 +4036,44 @@
         '</div>' +
       '</div>';
 
+    var herreraReply =
+      '<div class="wf-email-card received" id="ca2-s1-herrera-reply" style="display:' + (confirmDone ? 'block' : 'none') + ';margin-bottom:20px;">' +
+        '<div class="wf-email-card-header received">' +
+          '<div class="wf-email-card-status">' +
+            '<div class="wf-email-badge-group">' +
+              '<span class="wf-email-type-badge received">&#128233; Inbox &middot; Client Reply</span>' +
+              '<span class="wf-email-status-pill success">&#10003; Received &middot; DocuSign Ratified</span>' +
+            '</div>' +
+            '<div class="wf-email-time-tag">Wed, Sep 24, 2025 at 4:38 PM (just now)</div>' +
+          '</div>' +
+          '<div class="wf-email-card-profile">' +
+            '<div class="wf-email-avatar-wrap">' +
+              '<div class="wf-email-avatar" style="background:#0284c7;color:#fff;font-weight:800;">DH</div>' +
+              '<span class="wf-email-avatar-status"></span>' +
+            '</div>' +
+            '<div class="wf-email-sender-info">' +
+              '<div class="wf-email-sender-name">Daniel &amp; Carmen Herrera <span class="wf-email-role-tag">Sellers &middot; Clients</span></div>' +
+              '<div class="wf-email-sender-address">&lt;herrera.family@email.com&gt; &middot; To: Transaction Coordinator, CC: Sofia Reyes</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wf-email-card-body received">' +
+          '<p>Dear Transaction Coordinator,</p>' +
+          '<p>Thank you so much for the comprehensive summary and for getting the listing paperwork handled so efficiently. Carmen and I just completed signing the Residential Listing Agreement package via DocuSign!</p>' +
+          '<div class="wf-email-content-block">' +
+            '<p>We reviewed all the points in your email:</p>' +
+            '<ul>' +
+              '<li><strong>Listing Terms:</strong> We confirmed the $889,000 price and the listing dates (Sep 24, 2025 to Mar 24, 2026).</li>' +
+              '<li><strong>Chandelier Exclusion:</strong> We are especially relieved that Carmen\'s grandmother\'s antique dining room chandelier is officially excluded and noted in writing &mdash; that heirloom means the world to our family.</li>' +
+              '<li><strong>Included Items:</strong> We understand the refrigerator, washer, and dryer remain with the home.</li>' +
+              '<li><strong>Next Steps:</strong> We received your note about the <strong>TDS</strong>, <strong>SPQ</strong>, and <strong>Lead-Based Paint Disclosure</strong>. Please send those over as soon as they are ready; we will start filling them out immediately so Sofia can launch the MLS listing by September 30.</li>' +
+            '</ul>' +
+          '</div>' +
+          '<p>Thank you for keeping us organized every step of the way!</p>' +
+          '<p style="margin-top:14px;">Warm regards,<br><strong>Daniel &amp; Carmen Herrera</strong><br><span style="font-size:12px;color:var(--v-muted);">(619) 555-0488 &middot; 4827 Rolando Blvd</span></p>' +
+        '</div>' +
+      '</div>';
+
     var main = substepper +
       '<div class="wf-phase" id="ca2-s1-p1" style="display:' + (p0Vis ? 'block' : 'none') + '">' +
         introCard +
@@ -3985,167 +4093,175 @@
         composeBox +
         '<div id="ca2-s1-confirm-nav" style="display:' + (confirmDone ? 'block' : 'none') + '">' +
           confirmBanner +
+          herreraReply +
           '<div class="wf-deck-nav" style="margin-top:24px;">' +
             '<button type="button" class="wf-deck-prev" onclick="caNewGoStep1Sub(1)">&larr; Back to SkySlope File Setup</button>' +
-            '<button type="button" class="wf-nav-btn primary" onclick="wfNext()">Continue to Step 3: Seller Disclosures &rarr;</button>' +
+            '<button type="button" class="wf-nav-btn primary" onclick="wfNext()">Continue to Step 3: Offer Review &amp; Negotiation &rarr;</button>' +
           '</div>' +
         '</div>' +
       '</div>';
 
     return step(2, 'Listing Agreement & File Setup', 'Wed, Sep 24, 2025',
       'Draft the listing package (9 C.A.R. forms) in Zipforms, upload compliance documents to SkySlope, and confirm the listing terms with the Herreras.',
-      main, side([], ['ad', 'rla', 'mlsa', 'da', 'dia', 'bca', 'fhda', 'sa', 'ccpa', 'tds', 'nhd', 'wire', 'lead'], ['sofia', 'daniel', 'carmen'], true), true);
+      main, side([], ['fhda', 'wire', 'sa', 'dia', 'ad', 'ccpa', 'mlsa', 'tds', 'bca', 'rla', 'lead', 'da', 'nhd'], ['sofia', 'daniel', 'carmen'], true), true);
   }
 
-  /* ════════════════ Step 3: Seller Disclosures Package ════════════════ */
+  /* ---------- Sub-step Controller for Step 3 (Offer Review & Negotiation) ---------- */
+  window._caNewSlide2 = null;
+
+  window.caNewGoStep2Sub = function (idx) {
+    if (idx === undefined || idx === null) idx = 0;
+    var cur = (typeof window._caNewSlide2 === 'number') ? window._caNewSlide2 : 0;
+
+    if (idx < cur) {
+      window._caNewSlide2 = idx;
+      caNewApplyStep2Sub(idx);
+      return;
+    }
+
+    var e1Res = run()['r_ca2-offer-extract-1'];
+    var e1Done = !!(e1Res && e1Res.length && e1Res.indexOf(false) === -1);
+    var e2Res = run()['r_ca2-offer-extract-2'];
+    var e2Done = !!(e2Res && e2Res.length && e2Res.indexOf(false) === -1);
+    var chatDone = !!run()['c_ca2-daniel-reply'];
+    var ctrRes = run()['r_ca2-counter'];
+    var ctrDone = !!(ctrRes && ctrRes.length && ctrRes.indexOf(false) === -1);
+
+    // Gating: pills 2-3 need e1Done, pill 4 needs e2Done,
+    // pills 5-6 need chatDone, pill 7 needs ctrDone
+    if (idx >= 2 && idx <= 3 && !e1Done) { window._caNewSlide2 = 0; caNewApplyStep2Sub(0); return; }
+    else if (idx === 4 && !e2Done) { window._caNewSlide2 = e1Done ? 2 : 0; caNewApplyStep2Sub(window._caNewSlide2); return; }
+    else if (idx >= 5 && idx <= 6 && !chatDone) { window._caNewSlide2 = e2Done ? 4 : (e1Done ? 2 : 0); caNewApplyStep2Sub(window._caNewSlide2); return; }
+    else if (idx === 7 && !ctrDone) { window._caNewSlide2 = chatDone ? 5 : (e2Done ? 4 : (e1Done ? 2 : 0)); caNewApplyStep2Sub(window._caNewSlide2); return; }
+
+    window._caNewSlide2 = idx;
+    caNewApplyStep2Sub(idx);
+  };
+
+  window.caNewApplyStep2Sub = function (idx) {
+    var phaseIds = ['ca2-s2-p0', 'ca2-s2-p1', 'ca2-s2-p2', 'ca2-s2-p3', 'ca2-s2-p4', 'ca2-s2-p5', 'ca2-s2-p6', 'ca2-s2-p7'];
+    phaseIds.forEach(function (pid, i) {
+      var el = document.getElementById(pid);
+      if (el) {
+        if (i === idx) {
+          el.style.display = 'block';
+          el.classList.add('wf-phase-enter');
+        } else {
+          el.style.display = 'none';
+          el.classList.remove('wf-phase-enter');
+        }
+      }
+    });
+
+    caNewUpdateStep2Pills();
+
+    var topEl = document.querySelector('.mh-top');
+    if (topEl) topEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  window.caNewUpdateStep2Pills = function () {
+    var cur = (typeof window._caNewSlide2 === 'number') ? window._caNewSlide2 : 0;
+
+    var e1Res = run()['r_ca2-offer-extract-1'];
+    var e1Done = !!(e1Res && e1Res.length && e1Res.indexOf(false) === -1);
+    var e2Res = run()['r_ca2-offer-extract-2'];
+    var e2Done = !!(e2Res && e2Res.length && e2Res.indexOf(false) === -1);
+    var chatDone = !!run()['c_ca2-daniel-reply'];
+    var ctrRes = run()['r_ca2-counter'];
+    var ctrDone = !!(ctrRes && ctrRes.length && ctrRes.indexOf(false) === -1);
+    var composeDone = !!run()['c_ca2-ratification-confirm'];
+
+    var states = [
+      e1Done ? 'done' : 'upcoming',
+      e1Done ? 'done' : 'upcoming',
+      e2Done ? 'done' : (!e1Done ? 'locked' : 'upcoming'),
+      e2Done ? 'done' : (!e1Done ? 'locked' : 'upcoming'),
+      chatDone ? 'done' : (!e2Done ? 'locked' : 'upcoming'),
+      ctrDone ? 'done' : (!chatDone ? 'locked' : 'upcoming'),
+      ctrDone ? 'done' : (!chatDone ? 'locked' : 'upcoming'),
+      composeDone ? 'done' : (!ctrDone ? 'locked' : 'upcoming')
+    ];
+
+    for (var i = 0; i < 8; i++) {
+      var pill = document.getElementById('ca2-s2-pill-' + i);
+      if (!pill) continue;
+      var base = 'wf-substep-pill wf-pt-item ';
+      pill.className = base + (i === cur ? 'active' : states[i]);
+    }
+  };
+
+  /* ── Step 3 slide-next validators ── */
+  window.caNewS2Extract1Next = function () {
+    caNewCheck('ca2-offer-extract-1');
+    var res = run()['r_ca2-offer-extract-1'];
+    var ok = !!(res && res.length && res.indexOf(false) === -1);
+    var errEl = document.getElementById('ca2-s2-p1-err');
+    if (ok) {
+      if (errEl) errEl.style.display = 'none';
+      caNewGoStep2Sub(2);
+    } else {
+      if (errEl) {
+        errEl.innerHTML = '<strong>&#9888; Incomplete Extraction:</strong> Please complete all fields correctly from Marcus Lee\'s offer email before proceeding. Check the red fields or use Auto-fill.';
+        errEl.style.display = 'block';
+        errEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  };
+
+  window.caNewS2Extract2Next = function () {
+    caNewCheck('ca2-offer-extract-2');
+    var res = run()['r_ca2-offer-extract-2'];
+    var ok = !!(res && res.length && res.indexOf(false) === -1);
+    var errEl = document.getElementById('ca2-s2-p3-err');
+    if (ok) {
+      if (errEl) errEl.style.display = 'none';
+      caNewGoStep2Sub(4);
+    } else {
+      if (errEl) {
+        errEl.innerHTML = '<strong>&#9888; Incomplete Extraction:</strong> Please complete all fields correctly from Rachel Torres\'s offer email before proceeding. Check the red fields or use Auto-fill.';
+        errEl.style.display = 'block';
+        errEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  };
+
+  window.caNewS2CounterNext = function () {
+    caNewCheck('ca2-counter');
+    var res = run()['r_ca2-counter'];
+    var ok = !!(res && res.length && res.indexOf(false) === -1);
+    var errEl = document.getElementById('ca2-s2-p6-err');
+    if (ok) {
+      if (errEl) errEl.style.display = 'none';
+      caNewGoStep2Sub(7);
+    } else {
+      if (errEl) {
+        errEl.innerHTML = '<strong>&#9888; Incomplete Counter Terms:</strong> Please complete all fields correctly from Sofia\'s counter instructions before proceeding. Check the red fields or use Auto-fill.';
+        errEl.style.display = 'block';
+        errEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  };
+
+  /* ════════════════ Step 3: Offer Review & Negotiation ════════════════ */
   function caNewStep2() {
-    var discDone = !!run()['pd_ca2-p-disclosures'];
-    var tdsRes = run()['r_ca2-tds-review'];
-    var tdsDone = !!(tdsRes && tdsRes.length && tdsRes.indexOf(false) === -1);
-    var decDone = run()['d_ca2-d-tds-incomplete'] !== undefined;
-    var activeIdx = decDone ? 4 : (tdsDone ? 3 : (discDone ? 2 : 0));
-
-    var introCard = card('California Disclosure Requirements',
-      'California Civil Code §1102 & Federal Lead Hazard Compliance',
-      '<p>California requires one of the most comprehensive seller disclosure packages in the nation. Under state law, sellers must disclose all known material facts affecting property value or desirability. Missing or incomplete disclosure documents give buyers statutory rights to cancel and expose sellers to post-closing litigation.</p>');
-
-    var pickerCard = picker('ca2-p-disclosures', 'Required disclosures for this property', 'Select all required disclosures for 4827 Rolando Blvd.', [
-      { t: 'Transfer Disclosure Statement (TDS)', sub: 'Sellers must complete', ok: true },
-      { t: 'Seller Property Questionnaire (SPQ)', sub: 'Sellers must complete', ok: true },
-      { t: 'Natural Hazard Disclosure (NHD)', sub: 'Order from JCP-LGS', ok: true },
-      { t: 'Agent Visual Inspection Disclosure (AVID)', sub: 'Sofia completes', ok: true },
-      { t: 'Lead-Based Paint Disclosure', sub: 'REQUIRED, home built 1961 (pre-1978)', ok: true },
-      { t: 'Strata (Geological Hazard) Report', sub: 'Not required in this area', ok: false },
-      { t: 'Mello-Roos Disclosure', sub: 'No Mello-Roos district', ok: false },
-      { t: 'HOA Documents', sub: 'No HOA', ok: false }
-    ], 'For 4827 Rolando Blvd: TDS and SPQ are mandatory for all California residential sales. NHD is ordered from a third-party vendor. AVID is completed by the listing agent. The Lead-Based Paint Disclosure is federally required for any home built before 1978 — this home was built in 1961. There\'s no HOA and the property is not in a Mello-Roos district.');
-
-    var tdsForm = form('ca2-tds-review', 'Review the TDS', 'Inspect the completed Transfer Disclosure Statement document for completeness.', [
-      { label: 'Are all sections completed?', kind: 'select', ans: 'no', show: 'No — Section III is missing the sellers\' signatures',
-        options: [['yes', 'Yes'], ['no', 'No']] },
-      { label: 'Foundation issues disclosed?', kind: 'select', ans: 'no', show: 'No — sellers didn\'t mention the foundation',
-        options: [['yes', 'Yes'], ['no', 'No']] },
-      { label: 'Known defects section complete?', kind: 'select', ans: 'yes', show: 'Yes',
-        options: [['yes', 'Yes'], ['no', 'No']] },
-      { label: 'Roof condition noted?', kind: 'select', ans: 'yes', show: 'Yes',
-        options: [['yes', 'Yes'], ['no', 'No']] },
-      { label: 'Plumbing issues?', kind: 'select', ans: 'yes', show: 'Yes — noted slow drain in guest bath',
-        options: [['yes', 'Yes'], ['no', 'No']] }
-    ]);
-
-    var dec = decision('ca2-d-tds-incomplete',
-      'You notice the TDS is missing the sellers\' signatures on Section III, and the sellers did not disclose anything about the foundation in the \'Structural\' section — even though the house is from 1961 and foundation settling is common. What do you do?',
-      [
-        { t: 'Send the TDS to the buyers as-is. The sellers filled it out, and it\'s not the TC\'s job to tell them what to disclose.', ok: false },
-        { t: 'Return the TDS to the sellers with a note that Section III needs their signatures. Flag to Sofia that the structural/foundation section may need the sellers\' attention — but do NOT advise them on what to disclose.', ok: true },
-        { t: 'Fill in the foundation section yourself based on what you know about the property\'s age.', ok: false }
-      ],
-      'The TC reviews disclosures for COMPLETENESS (missing signatures, blank sections), not for accuracy of content. You should never advise sellers on what to disclose or fill in disclosure content — that\'s legal liability. But flagging incomplete sections and missing signatures to the listing agent is exactly your job. Sofia can then follow up with the Herreras about whether the foundation section needs attention.'
-    );
-
-    var composeBox = compose({
-      key: 'ca2-nhd-order',
-      scenario: 'tc-ca-nhd-order',
-      prompt: 'Order Natural Hazard Disclosure report from JCP-LGS for 4827 Rolando Blvd',
-      to: 'orders@jcp-lgs.com',
-      cc: 'sofia.reyes@bhhscal.com',
-      subj: 'NHD Report Request: 4827 Rolando Blvd, San Diego',
-      inst: 'Order the Natural Hazard Disclosure report for this property. Include the property address, APN, seller names, and any relevant details the vendor needs.',
-      ans: 'Hi JCP-LGS Orders Team,\n\nPlease prepare a comprehensive California Natural Hazard Disclosure (NHD) statutory report for our new listing:\n\nProperty Address: 4827 Rolando Blvd, San Diego, CA 92115\nAPN: 470-362-18-00\nSellers: Daniel Herrera & Carmen Herrera\nListing Agent: Sofia Reyes, Berkshire Hathaway HomeServices California Properties\nBrokerage DRE: #01317331 | Agent DRE: #02156789\n\nPlease bill through escrow at closing and email the completed PDF report to this address and CC Sofia Reyes (sofia.reyes@bhhscal.com).\n\nThank you,\nTransaction Coordinator\nBerkshire Hathaway HomeServices California Properties'
-    });
-
-    REVEAL['ca2-p-disclosures'] = 'ca2-s2-p2';
-    REVEAL['ca2-tds-review'] = 'ca2-s2-p3';
-    REVEAL['ca2-d-tds-incomplete'] = 'ca2-s2-p4';
-
-    var main =
-      '<div class="wf-phase" style="display:' + (activeIdx === 0 ? 'block' : 'none') + '">' + introCard +
-        '<button class="wf-phase-btn" onclick="caNewReveal(\'ca2-s2-p1\')">Begin disclosure review &rarr;</button>' +
-      '</div>' +
-      '<div class="wf-phase" id="ca2-s2-p1" style="display:' + (activeIdx === 1 ? 'block' : 'none') + '">' + pickerCard + '</div>' +
-      '<div class="wf-phase" id="ca2-s2-p2" style="display:' + (activeIdx === 2 ? 'block' : 'none') + '">' + tdsForm + '</div>' +
-      '<div class="wf-phase" id="ca2-s2-p3" style="display:' + (activeIdx === 3 ? 'block' : 'none') + '">' + dec + '</div>' +
-      '<div class="wf-phase" id="ca2-s2-p4" style="display:' + (activeIdx === 4 ? 'block' : 'none') + '">' +
-        composeBox +
-        '<button class="wf-nav-btn primary" onclick="wfNext()">Continue &rarr;</button>' +
-      '</div>';
-
-    return step(3, 'Seller Disclosures Package', 'Thu, Sep 25, 2025',
-      'Audit the Herreras\' completed disclosure package for statutory compliance, identify missing signatures, and order the third-party Natural Hazard Disclosure report.',
-      main, side([], ['tds', 'spq', 'lead'], ['sofia', 'daniel', 'carmen']), true);
-  }
-
-  /* ════════════════ Step 4: Pre-Listing Review & Preliminary Title ════════════════ */
-  function caNewStep3() {
-    var lienDone = run()['d_ca2-d-lien'] !== undefined;
-    var seismicDone = run()['d_ca2-d-nhd-seismic'] !== undefined;
-    var activeIdx = seismicDone ? 3 : (lienDone ? 2 : 0);
-
-    var recCard = card('Pre-Listing Reports & Title Status',
-      'Review third-party findings prior to MLS activation.',
-      timeline([
-        ['Sep 27, 2025', 'NHD report received from JCP-LGS (Seismic liquefaction hazard reported)'],
-        ['Sep 28, 2025', 'Preliminary title report received from Chicago Title (Exception: $1,200 SDG&E lien)'],
-        ['Sep 29, 2025', 'Sofia Reyes completes Agent Visual Inspection Disclosure (AVID)']
-      ]));
-
-    var decLien = decision('ca2-d-lien',
-      'The preliminary title report shows an old utility lien of $1,200 from San Diego Gas & Electric dated 2019. The Herreras say they paid that bill years ago. What do you do?',
-      [
-        { t: 'Ignore it. If the sellers say it\'s paid, it\'s paid.', ok: false },
-        { t: 'Flag it to Sofia and recommend the sellers provide proof of payment so the title company can clear the lien before closing. An unresolved lien will delay or prevent closing.', ok: true },
-        { t: 'Contact SDG&E yourself to resolve the lien on behalf of the sellers.', ok: false }
-      ],
-      'A TC flags title issues to the listing agent, who works with the sellers to resolve them. The seller needs to provide proof of payment so the title company can issue a clear title. An unresolved lien — even a small one — will show up as an exception on the title policy and can delay closing. The TC does NOT contact third parties on behalf of the sellers without authorization.'
-    );
-
-    var decSeismic = decision('ca2-d-nhd-seismic',
-      'The NHD report shows the property is in a Seismic Hazard Zone (liquefaction). Daniel is worried this will scare off buyers and asks you: "Can we just not mention this to the buyers?" What do you tell him?',
-      [
-        { t: 'Agree to leave it out. The NHD is just a recommendation, not legally required.', ok: false },
-        { t: 'Tell Daniel that the Natural Hazard Disclosure is legally required in California. The seismic hazard zone must be disclosed. This is common in parts of San Diego and most buyers in this area expect it — it\'s not a deal-killer, but it cannot be hidden. Redirect him to Sofia for any concerns.', ok: true },
-        { t: 'Tell Daniel you\'ll highlight it in the MLS listing so buyers know upfront.', ok: false }
-      ],
-      'NHD is legally mandated in California. Concealing a known hazard zone is a violation of state disclosure law and exposes the seller and agents to serious liability. The TC\'s job is to ensure all required disclosures are complete and delivered — never to edit or suppress them. Redirect the seller\'s concerns to their listing agent.'
-    );
-
-    var composeBox = compose({
-      key: 'ca2-prelisting-ready',
-      scenario: 'tc-ca-prelisting-ready',
-      prompt: 'Confirm pre-listing package ready for Sofia Reyes',
-      to: 'Sofia Reyes <sofia.reyes@bhhscal.com>',
-      subj: 'Listing Package Complete: 4827 Rolando Blvd',
-      inst: 'Confirm to Sofia that all pre-listing documents are complete and the listing is ready to go active. Note any items that need attention (the utility lien).',
-      ans: 'Hi Sofia,\n\nOur pre-listing package for 4827 Rolando Blvd is now assembled and ready for MLS launch on September 30:\n\n1. RLA: Fully executed ($889,000 list price, 5% commission, chandelier excluded).\n2. Seller Disclosures: TDS and SPQ completed by the Herreras (Section III signatures confirmed).\n3. Lead-Based Paint Disclosure: Signed by Daniel & Carmen.\n4. NHD Report: Received from JCP-LGS (identifies Seismic Liquefaction zone, standard for the area).\n5. AVID: Completed by you on Sep 29.\n6. Preliminary Title: Received from Chicago Title. Important flag: There is an old 2019 SDG&E utility lien of $1,200 showing as Schedule B Exception #4. The Herreras stated they paid this previously; please ask them to locate the payment receipt or cancelled check so title officer Sarah Nguyen can clear the lien prior to closing.\n\nPlease let me know once the listing goes active on the MLS!\n\nBest,\nTransaction Coordinator'
-    });
-
-    REVEAL['ca2-d-lien'] = 'ca2-s3-p2';
-    REVEAL['ca2-d-nhd-seismic'] = 'ca2-s3-p3';
-
-    var main =
-      '<div class="wf-phase" style="display:' + (activeIdx === 0 ? 'block' : 'none') + '">' + recCard +
-        '<button class="wf-phase-btn" onclick="caNewReveal(\'ca2-s3-p1\')">Review title findings &rarr;</button>' +
-      '</div>' +
-      '<div class="wf-phase" id="ca2-s3-p1" style="display:' + (activeIdx === 1 ? 'block' : 'none') + '">' + decLien + '</div>' +
-      '<div class="wf-phase" id="ca2-s3-p2" style="display:' + (activeIdx === 2 ? 'block' : 'none') + '">' + decSeismic + '</div>' +
-      '<div class="wf-phase" id="ca2-s3-p3" style="display:' + (activeIdx === 3 ? 'block' : 'none') + '">' +
-        composeBox +
-        '<button class="wf-nav-btn primary" onclick="wfNext()">Continue &rarr;</button>' +
-      '</div>';
-
-    return step(4, 'Pre-Listing Review & Preliminary Title', 'Mon, Sep 29, 2025',
-      'Audit the incoming third-party NHD and preliminary title reports, address title exceptions and statutory hazard zones, and notify Sofia when the file is MLS-ready.',
-      main, side([], ['nhd', 'prelim', 'avid'], ['sofia', 'daniel', 'carmen']), true);
-  }
-
-  /* ════════════════ Step 5: Offer Received & Counter ════════════════ */
-  function caNewStep4() {
+    var extract1Res = run()['r_ca2-offer-extract-1'];
+    var extract1Done = !!(extract1Res && extract1Res.length && extract1Res.indexOf(false) === -1);
+    var extract2Res = run()['r_ca2-offer-extract-2'];
+    var extract2Done = !!(extract2Res && extract2Res.length && extract2Res.indexOf(false) === -1);
+    var chatDone = !!run()['c_ca2-daniel-reply'];
     var counterRes = run()['r_ca2-counter'];
     var counterDone = !!(counterRes && counterRes.length && counterRes.indexOf(false) === -1);
-    var multDone = run()['d_ca2-d-multiple-offers'] !== undefined;
-    var activeIdx = multDone ? 3 : (counterDone ? 2 : 0);
+    var composeDone = !!run()['c_ca2-ratification-confirm'];
 
-    var offerCard =
+    var curActiveIdx = composeDone ? 7 : (counterDone ? 7 : (chatDone ? 5 : (extract2Done ? 4 : (extract1Done ? 2 : 0))));
+
+    if (window._caNewSlide2 === null || window._caNewSlide2 === undefined) {
+      window._caNewSlide2 = curActiveIdx;
+    }
+    var curSlide = (typeof window._caNewSlide2 === 'number') ? window._caNewSlide2 : curActiveIdx;
+
+    /* ── Offer Email 1: Marcus Lee (eXp Realty) — $840,000 Conventional ── */
+    var offerCard1 =
       '<div class="wf-email-inbox-wrap">' +
         '<div class="wf-email-client-bar">' +
           '<div class="wf-email-client-left">' +
@@ -4158,7 +4274,7 @@
               '<button type="button" class="wf-email-action-btn" title="Star">&#9733;</button>' +
               '<button type="button" class="wf-email-action-btn" title="Print">&#128438;</button>' +
             '</div>' +
-            '<span class="wf-email-tool-tag" style="background:rgba(224,169,59,.18);color:#d97706;border-color:rgba(224,169,59,.4);">&#128181; New Offer Received</span>' +
+            '<span class="wf-email-tool-tag" style="background:rgba(224,169,59,.18);color:#d97706;border-color:rgba(224,169,59,.4);">&#128181; Offer #1</span>' +
             '<span class="wf-email-time">Wed, Oct 1, 2025 &middot; 11:20 AM</span>' +
           '</div>' +
         '</div>' +
@@ -4239,7 +4355,300 @@
         '</div>' +
       '</div>';
 
-    var counterForm = form('ca2-counter', 'Counter offer terms', 'Sofia instructs you to prepare Seller Counter Offer #1. Enter terms from Sofia\'s negotiation instructions.', [
+    /* ── Offer Email 2: Rachel Torres (Compass) — $855,000 Cash ── */
+    var offerCard2 =
+      '<div class="wf-email-inbox-wrap">' +
+        '<div class="wf-email-client-bar">' +
+          '<div class="wf-email-client-left">' +
+            '<div class="wf-email-window-dots"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>' +
+            '<div class="wf-email-folder"><span class="wf-folder-icon">&#128233;</span> <strong>Inbox</strong> &rsaquo; Offers &rsaquo; 4827 Rolando Blvd</div>' +
+          '</div>' +
+          '<div class="wf-email-client-right">' +
+            '<div class="wf-email-actions">' +
+              '<button type="button" class="wf-email-action-btn" title="Reply">&#8617; Reply</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Star">&#9733;</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Print">&#128438;</button>' +
+            '</div>' +
+            '<span class="wf-email-tool-tag" style="background:rgba(16,185,129,.18);color:#059669;border-color:rgba(16,185,129,.4);">&#128176; Offer #2 &middot; Cash</span>' +
+            '<span class="wf-email-time">Wed, Oct 1, 2025 &middot; 3:45 PM</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wf-email">' +
+          '<div class="wf-email-header">' +
+            '<div class="wf-email-subject-bar">' +
+              '<h3 class="wf-email-subject">Cash Offer: 4827 Rolando Blvd &mdash; Kevin &amp; Priya Patel</h3>' +
+              '<span class="wf-email-priority-badge" style="background:rgba(139,92,246,.1);color:#7c3aed;border-color:rgba(139,92,246,.3);">&#128176; All-Cash &middot; Proof of Funds Attached</span>' +
+            '</div>' +
+            '<div class="wf-email-sender-profile">' +
+              '<div class="wf-email-avatar-wrap">' +
+                '<div class="wf-email-avatar" style="background:linear-gradient(135deg, #1a1a2e 0%, #374151 100%);box-shadow:0 0 0 2.5px #6b7280, 0 4px 12px rgba(26,26,46,.25);">RT</div>' +
+                '<span class="wf-email-avatar-status" title="Active now"></span>' +
+              '</div>' +
+              '<div class="wf-email-sender-info">' +
+                '<div class="wf-email-sender-line">' +
+                  '<span class="wf-email-sender-name">Rachel Torres</span>' +
+                  '<span class="wf-email-sender-addr">&lt;rachel.torres@compass.com&gt;</span>' +
+                  '<span class="wf-badge-verified">&#10003; Verified Agent</span>' +
+                  '<span class="wf-badge-broker" style="color:#1a1a2e;border-color:#374151;">Compass</span>' +
+                '</div>' +
+                '<div class="wf-email-recipient-line">' +
+                  '<span>To: <strong>Sofia Reyes</strong> &lt;sofia.reyes@bhhscal.com&gt; &middot; CC: <strong>TC</strong> &lt;tc@bhhscal.com&gt;</span>' +
+                  '<span class="wf-badge-tls">&#128274; TLS 1.3 Encrypted</span>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="wf-email-body">' +
+            '<p>Hi Sofia,</p>' +
+            '<p>I\'m submitting an <strong>all-cash purchase offer</strong> on behalf of my buyers, <strong>Kevin and Priya Patel</strong>, for <strong>4827 Rolando Blvd</strong>:</p>' +
+            '<div class="wf-email-terms-grid">' +
+              '<div class="wf-term-item"><span>Purchase Price</span><b>$855,000 (All Cash)</b></div>' +
+              '<div class="wf-term-item"><span>Financing</span><b>None &mdash; Cash purchase, proof of funds attached</b></div>' +
+              '<div class="wf-term-item"><span>Initial EMD</span><b>$42,750 (5% deposit) to Chicago Title</b></div>' +
+              '<div class="wf-term-item"><span>Close of Escrow</span><b>21 days from acceptance</b></div>' +
+              '<div class="wf-term-item"><span>Contingencies</span><b>10-day Inspection only &mdash; No appraisal, no loan contingency</b></div>' +
+              '<div class="wf-term-item"><span>Seller Credit</span><b>$12,000 credit for deferred maintenance</b></div>' +
+              '<div class="wf-term-item"><span>Home Warranty</span><b>Not requested</b></div>' +
+              '<div class="wf-term-item"><span>Acceptance Deadline</span><b>48 hours from presentation to sellers</b></div>' +
+            '</div>' +
+            '<p style="margin-top:14px">My buyers are relocating from the Bay Area with verified proof of funds through First Republic Private Banking. They are motivated to close quickly. Please present promptly &mdash; the 48-hour acceptance window is firm.</p>' +
+            '<div class="wf-sig">' +
+              '<div class="wf-sig-valediction">Regards,</div>' +
+              '<div class="wf-sig-card" style="border-left-color:#374151;">' +
+                '<div class="wf-sig-primary">' +
+                  '<div class="wf-sig-brand-block" style="background:linear-gradient(145deg, #1a1a2e 0%, #374151 100%);border-color:rgba(107,114,128,.4);">' +
+                    '<div class="wf-sig-broker-emblem" style="border-color:#6b7280;background:rgba(107,114,128,.18);">' +
+                      '<span class="wf-sig-emblem-initials" style="color:#ffffff;">&#9678;</span>' +
+                    '</div>' +
+                    '<div class="wf-sig-brand-title" style="color:#ffffff;">COMPASS</div>' +
+                    '<div class="wf-sig-brand-sub" style="color:#9ca3af;">Real Estate</div>' +
+                    '<div class="wf-sig-brand-loc">San Diego &middot; Del Mar</div>' +
+                    '<div class="wf-sig-brand-seal" style="border-top-color:rgba(107,114,128,.3);color:#d1d5db;">LUXURY DIVISION</div>' +
+                  '</div>' +
+                  '<div class="wf-sig-divider-v" style="background:linear-gradient(180deg, #6b7280, var(--v-line));"></div>' +
+                  '<div class="wf-sig-agent-details">' +
+                    '<div class="wf-sig-name-row">' +
+                      '<span class="wf-sig-agent-name">Rachel Torres</span>' +
+                      '<span class="wf-sig-badge-realtor" style="background:rgba(55,65,81,.1);color:#374151;border-color:rgba(55,65,81,.3);">REALTOR&reg;</span>' +
+                      '<span class="wf-sig-badge-dre">CalDRE #02087654</span>' +
+                    '</div>' +
+                    '<div class="wf-sig-title" style="color:#374151;">Luxury Property Specialist &middot; The Patel Group</div>' +
+                    '<div class="wf-sig-brokerage-line">Compass California, Inc. &middot; Corporate DRE #01991628</div>' +
+                    '<div class="wf-sig-contact-grid">' +
+                      '<div class="wf-sig-contact-item"><span class="wf-sig-icon">&#128222;</span> <strong>Direct:</strong> (619) 555-0385</div>' +
+                      '<div class="wf-sig-contact-item"><span class="wf-sig-icon">&#9993;</span> <strong>Email:</strong> rachel.torres@compass.com</div>' +
+                      '<div class="wf-sig-contact-item"><span class="wf-sig-icon">&#127760;</span> <strong>Web:</strong> racheltorresrealty.com</div>' +
+                      '<div class="wf-sig-contact-item"><span class="wf-sig-icon">&#128205;</span> <strong>Office:</strong> 1250 Prospect St, Suite 100, La Jolla, CA</div>' +
+                    '</div>' +
+                    '<div class="wf-sig-badges-row">' +
+                      '<span class="wf-sig-pill">San Diego Association of REALTORS®</span>' +
+                      '<span class="wf-sig-pill">C.A.R. &amp; NAR Member</span>' +
+                    '</div>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    /* ── Context card: Sofia forwards first offer ── */
+    var contextCard1 = card('Incoming Offer',
+      'Sofia Reyes forwarded Marcus Lee\'s purchase offer package',
+      '<p>Sofia writes: <em>"TC &mdash; just received an offer from Marcus Lee at eXp Realty for 4827 Rolando Blvd. Please review his submission, pull the key terms, and organize them for me before I present to Daniel and Carmen tonight. Pay close attention to price, financing, EMD, and contingency timeframes."</em></p>');
+
+    /* ── Context card: Sofia forwards second offer ── */
+    var contextCard2 = card('Second Offer Received!',
+      'Sofia Reyes forwarded a competing cash offer &mdash; same day',
+      '<p>Sofia writes: <em>"TC &mdash; another offer just came in, this one from Rachel Torres at Compass. It\'s an all-cash offer! Please pull the key terms from this one too so I can compare both side by side when I present to the Herreras tonight. Watch for any special conditions &mdash; seller credits, deadlines, anything unusual."</em></p>');
+
+    /* ── Extract Form 1: Marcus Lee ── */
+    var extractForm1 = form('ca2-offer-extract-1', 'Extract Offer Terms: Marcus Lee &mdash; eXp Realty', 'From Marcus Lee\'s offer email (use the peek bar above to review), extract the key terms Sofia needs for her presentation to the sellers.', [
+      { label: 'Purchase price', kind: 'money', ans: 840000, ph: '$', show: '$840,000' },
+      { label: 'Down payment percentage', kind: 'text', ans: ['20', '20%'], ph: '%', show: '20%' },
+      { label: 'Financing type', kind: 'select', ans: 'conventional', show: 'Conventional',
+        options: [['conventional', 'Conventional'], ['fha', 'FHA'], ['va', 'VA'], ['cash', 'Cash']] },
+      { label: 'EMD amount', kind: 'money', ans: 16800, ph: '$', show: '$16,800' },
+      { label: 'Lender', kind: 'text', ans: ['pacific home lending', 'tyler adams'], ph: 'Lender / loan officer', show: 'Pacific Home Lending (Tyler Adams)' },
+      { label: 'Proposed close of escrow', kind: 'text', ans: ['30', '30 days', '30 days from acceptance'], ph: 'Timeline', show: '30 days from acceptance' },
+      { label: 'Inspection contingency', kind: 'text', ans: ['17', '17 days'], ph: 'Days', show: '17 days' },
+      { label: 'Appraisal contingency', kind: 'text', ans: ['17', '17 days'], ph: 'Days', show: '17 days' },
+      { label: 'Loan contingency', kind: 'text', ans: ['21', '21 days'], ph: 'Days', show: '21 days' },
+      { label: 'Home warranty', kind: 'select', ans: 'seller', show: 'Seller pays up to $600',
+        options: [['seller', 'Seller pays up to $600'], ['buyer', 'Buyer pays'], ['none', 'No warranty']] }
+    ]);
+
+    /* ── Extract Form 2: Rachel Torres ── */
+    var extractForm2 = form('ca2-offer-extract-2', 'Extract Offer Terms: Rachel Torres &mdash; Compass', 'From Rachel Torres\'s cash offer email (use the peek bar above to review), extract the key terms. Note the differences from Marcus Lee\'s conventional offer.', [
+      { label: 'Purchase price', kind: 'money', ans: 855000, ph: '$', show: '$855,000' },
+      { label: 'Financing type', kind: 'select', ans: 'cash', show: 'Cash',
+        options: [['conventional', 'Conventional'], ['fha', 'FHA'], ['va', 'VA'], ['cash', 'Cash']] },
+      { label: 'EMD amount', kind: 'money', ans: 42750, ph: '$', show: '$42,750' },
+      { label: 'Proposed close of escrow', kind: 'text', ans: ['21', '21 days', '21 days from acceptance'], ph: 'Timeline', show: '21 days from acceptance' },
+      { label: 'Inspection contingency', kind: 'text', ans: ['10', '10 days'], ph: 'Days', show: '10 days' },
+      { label: 'Appraisal contingency', kind: 'select', ans: 'waived', show: 'Waived (Cash &mdash; no lender requirement)',
+        options: [['waived', 'Waived (Cash — no lender requirement)'], ['17', '17 days'], ['21', '21 days']] },
+      { label: 'Loan contingency', kind: 'select', ans: 'na', show: 'N/A &mdash; Cash offer',
+        options: [['na', 'N/A — Cash offer'], ['17', '17 days'], ['21', '21 days']] },
+      { label: 'Seller credit requested', kind: 'money', ans: 12000, ph: '$', show: '$12,000' },
+      { label: 'Home warranty', kind: 'select', ans: 'none', show: 'Not requested',
+        options: [['seller', 'Seller pays up to $600'], ['buyer', 'Buyer pays'], ['none', 'Not requested']] },
+      { label: 'Acceptance deadline', kind: 'text', ans: ['48', '48 hours', '48 hrs'], ph: 'Hours', show: '48 hours' }
+    ]);
+
+    /* ── Daniel's email asking about the offers ── */
+    var danielEmail =
+      '<div class="wf-email-inbox-wrap">' +
+        '<div class="wf-email-client-bar">' +
+          '<div class="wf-email-client-left">' +
+            '<div class="wf-email-window-dots"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>' +
+            '<div class="wf-email-folder"><span class="wf-folder-icon">&#128233;</span> <strong>Inbox</strong> &rsaquo; Sellers &rsaquo; 4827 Rolando Blvd</div>' +
+          '</div>' +
+          '<div class="wf-email-client-right">' +
+            '<div class="wf-email-actions">' +
+              '<button type="button" class="wf-email-action-btn" title="Reply">&#8617; Reply</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Star">&#9733;</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Print">&#128438;</button>' +
+            '</div>' +
+            '<span class="wf-email-tool-tag" style="background:rgba(224,169,59,.18);color:#d97706;border-color:rgba(224,169,59,.4);">&#128172; Seller Question</span>' +
+            '<span class="wf-email-time">Wed, Oct 1, 2025 &middot; 5:12 PM</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wf-email">' +
+          '<div class="wf-email-header">' +
+            '<div class="wf-email-subject-bar">' +
+              '<h3 class="wf-email-subject">Re: Offers on 4827 Rolando &mdash; Quick question before tonight</h3>' +
+            '</div>' +
+            '<div class="wf-email-sender-profile">' +
+              '<div class="wf-email-avatar-wrap">' +
+                '<div class="wf-email-avatar" style="background:linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);box-shadow:0 0 0 2.5px #64748b, 0 4px 12px rgba(30,58,95,.2);">DH</div>' +
+              '</div>' +
+              '<div class="wf-email-sender-info">' +
+                '<div class="wf-email-sender-line">' +
+                  '<span class="wf-email-sender-name">Daniel Herrera</span>' +
+                  '<span class="wf-email-sender-addr">&lt;daniel.herrera@gmail.com&gt;</span>' +
+                  '<span class="wf-badge-broker" style="color:#1e3a5f;border-color:#2d5a87;">Seller</span>' +
+                '</div>' +
+                '<div class="wf-email-recipient-line">' +
+                  '<span>To: <strong>TC</strong> &lt;tc@bhhscal.com&gt;</span>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="wf-email-body">' +
+            '<p>Hi,</p>' +
+            '<p>Sofia told us we got <strong>two offers today</strong> and she\'s coming over tonight to present them. I\'m really excited &mdash; one is all cash and it\'s higher too!</p>' +
+            '<p>Between you and me, I think we should just <strong>go with the cash offer</strong>. It\'s more money, faster close, fewer headaches. Why would we even consider the other one? Can we just <strong>reject the conventional offer</strong> and accept the cash one before tonight so we don\'t waste time?</p>' +
+            '<p>What do you think? You\'ve seen both offers &mdash; which one is stronger?</p>' +
+            '<p>Thanks,<br>Daniel</p>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    var danielReplyCompose = compose({
+      key: 'ca2-daniel-reply',
+      scenario: 'tc-ca-daniel-boundary',
+      prompt: 'Reply to Daniel maintaining TC professional boundaries',
+      to: 'Daniel Herrera <daniel.herrera@gmail.com>',
+      subj: 'Re: Offers on 4827 Rolando — Quick question before tonight',
+      inst: 'Daniel is asking you to advise on which offer to accept. As TC, you must NOT give advice on accepting, rejecting, or comparing offers &mdash; that is Sofia\'s fiduciary duty as listing agent. Politely redirect Daniel to Sofia, confirm both offers are organized for tonight\'s presentation, and reassure him that Sofia will walk them through the pros and cons of each.',
+      ans: 'Hi Daniel,\n\nThank you for letting me know you\'re excited about the offers — it\'s great news that 4827 Rolando Blvd attracted multiple offers on the first day!\n\nI want to be transparent with you: as the Transaction Coordinator, my role is administrative — I organize documents, track deadlines, and ensure everything is filed correctly. Advising on which offer to accept, reject, or counter is Sofia\'s responsibility as your listing agent. She has the fiduciary duty to analyze each offer\'s full picture, including net-to-seller after credits, buyer reliability, contingency terms, and closing timeline alignment with your Austin move.\n\nWhat I can tell you is that both offers are fully documented and organized for Sofia\'s presentation tonight. She\'ll walk you and Carmen through the pros and cons of each so you can make an informed decision together.\n\nWould you like me to confirm with Sofia that everything is ready for this evening?\n\nBest regards,\nTransaction Coordinator\nBerkshire Hathaway HomeServices California Properties'
+    });
+
+    /* ── Sofia's email with offer analysis & counter instructions ── */
+    var sofiaEmail =
+      '<div class="wf-email-inbox-wrap">' +
+        '<div class="wf-email-client-bar">' +
+          '<div class="wf-email-client-left">' +
+            '<div class="wf-email-window-dots"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>' +
+            '<div class="wf-email-folder"><span class="wf-folder-icon">&#128233;</span> <strong>Inbox</strong> &rsaquo; Agents &rsaquo; 4827 Rolando Blvd</div>' +
+          '</div>' +
+          '<div class="wf-email-client-right">' +
+            '<div class="wf-email-actions">' +
+              '<button type="button" class="wf-email-action-btn" title="Reply">&#8617; Reply</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Star">&#9733;</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Print">&#128438;</button>' +
+            '</div>' +
+            '<span class="wf-email-tool-tag" style="background:rgba(31,158,90,.18);color:#1f9e5a;border-color:rgba(31,158,90,.4);">&#128203; Counter Instructions</span>' +
+            '<span class="wf-email-time">Wed, Oct 1, 2025 &middot; 9:48 PM</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wf-email">' +
+          '<div class="wf-email-header">' +
+            '<div class="wf-email-subject-bar">' +
+              '<h3 class="wf-email-subject">4827 Rolando Blvd &mdash; Offer Presentation Results &amp; Counter Instructions</h3>' +
+              '<span class="wf-email-priority-badge" style="background:rgba(224,169,59,.1);color:#d97706;border-color:rgba(224,169,59,.3);">&#9889; Action Required</span>' +
+            '</div>' +
+            '<div class="wf-email-sender-profile">' +
+              '<div class="wf-email-avatar-wrap">' +
+                '<div class="wf-email-avatar" style="background:linear-gradient(135deg, #6d1f3d 0%, #a03060 100%);box-shadow:0 0 0 2.5px #c4507a, 0 4px 12px rgba(109,31,61,.25);">SR</div>' +
+                '<span class="wf-email-avatar-status" title="Active now"></span>' +
+              '</div>' +
+              '<div class="wf-email-sender-info">' +
+                '<div class="wf-email-sender-line">' +
+                  '<span class="wf-email-sender-name">Sofia Reyes</span>' +
+                  '<span class="wf-email-sender-addr">&lt;sofia.reyes@bhhscal.com&gt;</span>' +
+                  '<span class="wf-badge-verified">&#10003; Verified Agent</span>' +
+                  '<span class="wf-badge-broker" style="color:#6d1f3d;border-color:#a03060;">BHHS</span>' +
+                '</div>' +
+                '<div class="wf-email-recipient-line">' +
+                  '<span>To: <strong>TC</strong> &lt;tc@bhhscal.com&gt;</span>' +
+                  '<span class="wf-badge-tls">&#128274; TLS 1.3 Encrypted</span>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="wf-email-body">' +
+            '<p>Hi TC,</p>' +
+            '<p>Just left the Herreras\' home &mdash; thanks for organizing both offers so cleanly, it made the presentation much easier. Here\'s the recap:</p>' +
+            '<div class="wf-email-terms-grid">' +
+              '<div class="wf-term-item" style="grid-column:1/-1;"><span style="font-weight:800;color:#dc2626;">&#10008; Offer #2 &mdash; Rachel Torres (Compass) &mdash; DECLINED</span><b>$855K cash, but $12K seller credit = $843K net. 48-hr deadline felt like a pressure tactic. Daniel didn\'t appreciate it.</b></div>' +
+              '<div class="wf-term-item" style="grid-column:1/-1;"><span style="font-weight:800;color:#059669;">&#10004; Offer #1 &mdash; Marcus Lee (eXp) &mdash; COUNTERING</span><b>$840K, no seller credits = $840K net. Brooks wrote a personal letter about raising kids in Rolando Village &mdash; Carmen loved it. Pre-approval with Pacific Home Lending is solid.</b></div>' +
+            '</div>' +
+            '<p style="margin-top:14px">I\'ll handle the rejection letter to Rachel Torres directly. Please prepare <strong>Seller Counter Offer #1</strong> to Marcus Lee\'s buyers with these terms:</p>' +
+            '<div class="wf-email-terms-grid">' +
+              '<div class="wf-term-item"><span>Counter Price</span><b>$875,000</b></div>' +
+              '<div class="wf-term-item"><span>EMD Amount</span><b>$17,500 (increased from $16,800)</b></div>' +
+              '<div class="wf-term-item"><span>Close of Escrow</span><b>November 3, 2025 &mdash; FIRM (non-negotiable, Austin relocation)</b></div>' +
+              '<div class="wf-term-item"><span>Inspection Contingency</span><b>Keep at 17 days</b></div>' +
+              '<div class="wf-term-item"><span>Home Warranty</span><b>Agree to seller pays up to $600</b></div>' +
+            '</div>' +
+            '<p style="margin-top:14px">The November 3 close is non-negotiable &mdash; Daniel and Carmen\'s Austin relocation deadline depends on it. Please have the SCO ready for my review first thing tomorrow morning.</p>' +
+            '<div class="wf-sig">' +
+              '<div class="wf-sig-valediction">Thanks,</div>' +
+              '<div class="wf-sig-card" style="border-left-color:#a03060;">' +
+                '<div class="wf-sig-primary">' +
+                  '<div class="wf-sig-brand-block" style="background:linear-gradient(145deg, #6d1f3d 0%, #a03060 100%);border-color:rgba(196,80,122,.4);">' +
+                    '<div class="wf-sig-broker-emblem" style="border-color:#c4507a;background:rgba(196,80,122,.18);">' +
+                      '<span class="wf-sig-emblem-initials" style="color:#ffffff;">BH</span>' +
+                    '</div>' +
+                    '<div class="wf-sig-brand-title" style="color:#ffffff;">BERKSHIRE HATHAWAY</div>' +
+                    '<div class="wf-sig-brand-sub" style="color:#e8a0b8;">HomeServices</div>' +
+                    '<div class="wf-sig-brand-loc">California Properties</div>' +
+                    '<div class="wf-sig-brand-seal" style="border-top-color:rgba(196,80,122,.3);color:#f0c0d0;">SAN DIEGO METRO</div>' +
+                  '</div>' +
+                  '<div class="wf-sig-divider-v" style="background:linear-gradient(180deg, #c4507a, var(--v-line));"></div>' +
+                  '<div class="wf-sig-agent-details">' +
+                    '<div class="wf-sig-name-row">' +
+                      '<span class="wf-sig-agent-name">Sofia Reyes</span>' +
+                      '<span class="wf-sig-badge-realtor" style="background:rgba(109,31,61,.1);color:#6d1f3d;border-color:rgba(109,31,61,.3);">REALTOR&reg;</span>' +
+                      '<span class="wf-sig-badge-dre">CalDRE #01987654</span>' +
+                    '</div>' +
+                    '<div class="wf-sig-title" style="color:#6d1f3d;">Listing Agent &middot; Luxury Properties Division</div>' +
+                    '<div class="wf-sig-brokerage-line">Berkshire Hathaway HomeServices California Properties &middot; DRE #01317331</div>' +
+                    '<div class="wf-sig-contact-grid">' +
+                      '<div class="wf-sig-contact-item"><span class="wf-sig-icon">&#128222;</span> <strong>Direct:</strong> (619) 555-0142</div>' +
+                      '<div class="wf-sig-contact-item"><span class="wf-sig-icon">&#9993;</span> <strong>Email:</strong> sofia.reyes@bhhscal.com</div>' +
+                    '</div>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    var counterForm = form('ca2-counter', 'Counter offer terms', 'From Sofia\'s counter instructions email (use the peek bar above to review), extract the terms for Seller Counter Offer #1 to Marcus Lee\'s buyers.', [
       { label: 'Counter price', kind: 'money', ans: 875000, ph: '$', show: '$875,000' },
       { label: 'EMD amount', kind: 'money', ans: 17500, ph: '$', show: '$17,500' },
       { label: 'Close of escrow date', kind: 'date', ans: '2025-11-03', ph: 'mm/dd/yyyy', show: '11/03/2025' },
@@ -4248,50 +4657,295 @@
         options: [['seller', 'Seller pays up to $600'], ['buyer', 'Buyer pays'], ['none', 'No warranty']] }
     ]);
 
+    /* ── Negotiation timeline ── */
     var negTimeline = card('Negotiation Rounds & Ratification',
       'Track contract counters through mutual agreement.',
       timeline([
-        ['Oct 1, 2025', 'Buyer submits C.A.R. RPA offer at $840,000 with 30-day close'],
-        ['Oct 2, 2025', 'Seller issues Counter Offer #1 at $875,000 with firm Nov 3, 2025 closing deadline'],
+        ['Oct 1, 2025', 'Two offers received: Marcus Lee (eXp) at $840,000 conventional &amp; Rachel Torres (Compass) at $855,000 cash'],
+        ['Oct 1, 2025', 'Sofia presents both offers to the Herreras. Sellers choose to counter Marcus Lee\'s offer; Rachel Torres\'s offer declined'],
+        ['Oct 2, 2025', 'Seller issues Counter Offer #1 to Marcus Lee at $875,000 with firm Nov 3, 2025 closing deadline'],
         ['Oct 3, 2025', 'Buyer responds with Buyer Counter Offer #1 at $860,000; Seller accepts. Contract ratified at $860,000!']
       ]));
 
-    var dec = decision('ca2-d-multiple-offers',
-      'On October 1, just hours after Marcus Lee\'s offer comes in, another buyer\'s agent calls Sofia with a verbal offer of $870,000. Sofia tells you about it. What is the TC\'s role here?',
-      [
-        { t: 'Tell Sofia to reject Marcus Lee\'s offer and wait for the higher one.', ok: false },
-        { t: 'Document both offers and present them to Sofia for the sellers\' consideration. The TC does not advise on which offer to accept — that is the agent\'s and sellers\' decision. Ensure all offers are presented in writing.', ok: true },
-        { t: 'Contact the second buyer\'s agent and negotiate directly to get them to submit a written offer.', ok: false }
-      ],
-      'In California, the listing agent has a fiduciary duty to present ALL offers to the seller. The TC\'s role is administrative: ensure offers are received, documented, and organized for the agent to present. The TC never advises on which offer is better, negotiates terms, or rejects offers. And verbal offers should always be requested in writing before any action is taken.'
-    );
+    /* ── Compose: Ratification confirmation ── */
+    var composeBox = compose({
+      key: 'ca2-ratification-confirm',
+      scenario: 'tc-ca-ratification-confirm',
+      prompt: 'Confirm contract ratification to Sofia Reyes and Marcus Lee',
+      to: 'Sofia Reyes <sofia.reyes@bhhscal.com>',
+      cc: 'Marcus Lee <marcus.lee@exprealty.com>',
+      subj: 'Contract Ratified: 4827 Rolando Blvd — $860,000 (Brooks / Herrera)',
+      inst: 'Confirm that the purchase contract has been ratified. Include the final agreed terms: purchase price, close of escrow date, EMD amount, contingency periods, and ask Sofia to confirm the escrow company and officer for opening escrow.',
+      ans: 'Hi Sofia and Marcus,\n\nI am pleased to confirm that the purchase contract for 4827 Rolando Blvd has been officially ratified following the sellers\' acceptance of Buyer Counter Offer #1 on October 3, 2025.\n\nFinal Agreed Terms Summary:\n• Property: 4827 Rolando Blvd, San Diego, CA 92115 (APN: 470-362-18-00)\n• Final Purchase Price: $860,000.00\n• Initial Earnest Money Deposit: $17,200.00 (2% deposit due within 3 business days by October 8, 2025)\n• Financing: Conventional 20% down ($172,000) with Tyler Adams at Pacific Home Lending\n• Close of Escrow: November 3, 2025 (FIRM deadline)\n• Contingency Timeframes: 17-day Inspection, 17-day Appraisal, 21-day Loan\n• Home Warranty: Seller pays up to $600.00\n\nSofia, please confirm that we are opening escrow with Sarah Nguyen at Chicago Title Company so I can forward the fully executed agreement package and wire transfer instructions.\n\nBest regards,\nTransaction Coordinator\nBerkshire Hathaway HomeServices California Properties'
+    });
 
-    REVEAL['ca2-counter'] = 'ca2-s4-p2';
-    REVEAL['ca2-d-multiple-offers'] = 'ca2-s4-nav';
-
-    var main =
-      '<div class="wf-phase" style="display:' + (activeIdx === 0 ? 'block' : 'none') + '">' + offerCard +
-        '<button class="wf-phase-btn" onclick="caNewReveal(\'ca2-s4-p1\')">Prepare counter offer &rarr;</button>' +
+    /* ── Sofia's reply after ratification email ── */
+    var sofiaRatReply =
+      '<div class="wf-email-card received" id="ca2-s2-sofia-rat-reply" style="display:' + (composeDone ? 'block' : 'none') + '">' +
+        '<div class="wf-email-card-header received">' +
+          '<div class="wf-email-card-status">' +
+            '<div class="wf-email-badge-group">' +
+              '<span class="wf-email-type-badge received">&#128233; Inbox</span>' +
+            '</div>' +
+            '<div class="wf-email-time-tag">Fri, Oct 3, 2025 at 4:22 PM (8 mins ago)</div>' +
+          '</div>' +
+          '<div class="wf-email-card-profile">' +
+            '<div class="wf-email-avatar-wrap">' +
+              '<div class="wf-email-avatar" style="background:linear-gradient(135deg, #6d1f3d 0%, #a03060 100%);">SR</div>' +
+              '<span class="wf-email-avatar-status"></span>' +
+            '</div>' +
+            '<div class="wf-email-sender-info">' +
+              '<div class="wf-email-sender-line">' +
+                '<span class="wf-email-sender-name">Sofia Reyes</span>' +
+                '<span class="wf-email-sender-addr">&lt;sofia.reyes@bhhscal.com&gt;</span>' +
+                '<span class="wf-email-role-chip agent">Listing Agent</span>' +
+              '</div>' +
+              '<div class="wf-email-meta-grid">' +
+                '<div class="wf-email-meta-row"><span class="wf-email-meta-lbl">To:</span><span class="wf-email-meta-val"><strong>You</strong> &lt;tc@bhhscal.com&gt;</span></div>' +
+                '<div class="wf-email-meta-row"><span class="wf-email-meta-lbl">Subject:</span><span class="wf-email-meta-val"><strong>Re: Contract Ratified: 4827 Rolando Blvd &mdash; $860,000 (Brooks / Herrera)</strong></span></div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wf-email-card-body received">' +
+          '<p>Great work on the ratification summary &mdash; everything looks accurate!</p>' +
+          '<p>Confirmed: please open escrow with <strong>Sarah Nguyen</strong> at <strong>Chicago Title Company</strong>. Her direct email is <strong>sarah.nguyen@ctt.com</strong>. Send her the fully executed agreement package (RPA + SCO #1 + BCO #1) and request wire transfer instructions for Marcus Lee\'s buyers to deposit the $17,200 EMD.</p>' +
+          '<p>Daniel and Carmen are thrilled. Let\'s keep the momentum going &mdash; the November 3 close is tight but very doable if we stay on top of deadlines.</p>' +
+          SOFIA_SIG +
+        '</div>' +
       '</div>' +
-      '<div class="wf-phase" id="ca2-s4-p1" style="display:' + (activeIdx === 1 ? 'block' : 'none') + '">' + counterForm + '</div>' +
-      '<div class="wf-phase" id="ca2-s4-p2" style="display:' + (activeIdx === 2 ? 'block' : 'none') + '">' + negTimeline + dec + '</div>' +
-      '<div class="wf-phase" id="ca2-s4-nav" style="display:' + (activeIdx === 3 ? 'block' : 'none') + '">' +
-        '<button class="wf-nav-btn primary" onclick="caNewGatedNext()">Continue &rarr;</button>' +
+      '<div class="wf-reply-footer-banner" id="ca2-s2-reply-banner" style="display:' + (composeDone ? 'flex' : 'none') + ';margin-top:14px;">' +
+        '<span class="wf-reply-footer-icon">&#10004;</span>' +
+        '<span><strong>Offer Negotiation Complete:</strong> Contract ratified at $860,000. Sofia confirmed escrow with Sarah Nguyen at Chicago Title &mdash; proceed to Step 4 to open escrow.</span>' +
       '</div>';
 
-    return step(5, 'Offer Received & Counter', 'Wed, Oct 1, 2025',
-      'Evaluate the incoming purchase offer, prepare Seller Counter Offer #1 to protect the Herreras\' firm November 3 closing date, and track negotiation through final ratification.',
-      main, side([], ['offer', 'sco', 'bco'], ['sofia', 'daniel', 'carmen', 'marcus']), true);
+    /* ── REVEAL mapping ── */
+    REVEAL['ca2-daniel-reply'] = 'ca2-s2-p5';
+    REVEAL['ca2-ratification-confirm'] = 'ca2-s2-nav';
+
+    /* ── Peek bars for reference ── */
+    var peekOffer1 =
+      '<div class="wf-peek-bar">' +
+        '<button type="button" class="wf-peek-btn" onclick="caNewToggleEmailPeek(this)">' +
+          '<span class="wf-peek-icon">&#9993;</span>' +
+          '<span class="wf-peek-text"><strong>Marcus Lee\'s Offer:</strong> 4827 Rolando Blvd &mdash; $840,000</span>' +
+          '<span class="wf-peek-arrow">&#9662;</span>' +
+        '</button>' +
+      '</div>' +
+      '<div class="wf-email-peek-drawer" style="display:none;margin-top:12px;">' +
+        offerCard1 +
+      '</div>';
+
+    var peekOffer2 =
+      '<div class="wf-peek-bar" style="margin-top:8px;">' +
+        '<button type="button" class="wf-peek-btn" onclick="caNewToggleEmailPeek(this)">' +
+          '<span class="wf-peek-icon">&#9993;</span>' +
+          '<span class="wf-peek-text"><strong>Rachel Torres\'s Offer:</strong> 4827 Rolando Blvd &mdash; $855,000 Cash</span>' +
+          '<span class="wf-peek-arrow">&#9662;</span>' +
+        '</button>' +
+      '</div>' +
+      '<div class="wf-email-peek-drawer" style="display:none;margin-top:12px;">' +
+        offerCard2 +
+      '</div>';
+
+    var peekDaniel =
+      '<div class="wf-peek-bar" style="margin-top:8px;">' +
+        '<button type="button" class="wf-peek-btn" onclick="caNewToggleEmailPeek(this)">' +
+          '<span class="wf-peek-icon">&#9993;</span>' +
+          '<span class="wf-peek-text"><strong>Daniel\'s Email:</strong> Which offer should we take?</span>' +
+          '<span class="wf-peek-arrow">&#9662;</span>' +
+        '</button>' +
+      '</div>' +
+      '<div class="wf-email-peek-drawer" style="display:none;margin-top:12px;">' +
+        danielEmail +
+      '</div>';
+
+    var peekSofia =
+      '<div class="wf-peek-bar" style="margin-top:8px;">' +
+        '<button type="button" class="wf-peek-btn" onclick="caNewToggleEmailPeek(this)">' +
+          '<span class="wf-peek-icon">&#9993;</span>' +
+          '<span class="wf-peek-text"><strong>Sofia\'s Counter Instructions:</strong> $875,000 counter to Marcus Lee</span>' +
+          '<span class="wf-peek-arrow">&#9662;</span>' +
+        '</button>' +
+      '</div>' +
+      '<div class="wf-email-peek-drawer" style="display:none;margin-top:12px;">' +
+        sofiaEmail +
+      '</div>';
+
+    /* ── Substep pills (8 pills) ── */
+    var pillCls = [];
+    var pillStates = [
+      extract1Done ? 'done' : 'upcoming',
+      extract1Done ? 'done' : 'upcoming',
+      extract2Done ? 'done' : (!extract1Done ? 'locked' : 'upcoming'),
+      extract2Done ? 'done' : (!extract1Done ? 'locked' : 'upcoming'),
+      chatDone ? 'done' : (!extract2Done ? 'locked' : 'upcoming'),
+      counterDone ? 'done' : (!chatDone ? 'locked' : 'upcoming'),
+      counterDone ? 'done' : (!chatDone ? 'locked' : 'upcoming'),
+      composeDone ? 'done' : (!counterDone ? 'locked' : 'upcoming')
+    ];
+    for (var pi = 0; pi < 8; pi++) {
+      pillCls.push(curSlide === pi ? 'active' : pillStates[pi]);
+    }
+
+    var pillLabels = ['Offer #1', 'Extract #1', 'Offer #2', 'Extract #2', 'Seller Reply', 'Counter Email', 'Counter Terms', 'Ratification'];
+    var substepper = '<div class="wf-substepper" id="ca2-s2-tracker">';
+    for (var pj = 0; pj < 8; pj++) {
+      substepper += '<button type="button" class="wf-substep-pill wf-pt-item ' + pillCls[pj] + '" id="ca2-s2-pill-' + pj + '" onclick="caNewGoStep2Sub(' + pj + ')">' +
+        '<span class="substep-num">' + (pj + 1) + '</span><span>' + pillLabels[pj] + '</span>' +
+      '</button>';
+    }
+    substepper += '</div>';
+
+    /* ── Phase layout (8 phases) ── */
+    var main = substepper +
+      /* p0: Offer #1 email (read) */
+      '<div class="wf-phase" id="ca2-s2-p0" style="display:' + (curSlide === 0 ? 'block' : 'none') + '">' +
+        contextCard1 + offerCard1 +
+        '<div class="wf-deck-nav" style="margin-top:18px;">' +
+          '<button type="button" class="wf-phase-btn" onclick="caNewGoStep2Sub(1)">Review &amp; extract offer terms &rarr;</button>' +
+        '</div>' +
+      '</div>' +
+      /* p1: Extract form #1 (with peek bar + nav) */
+      '<div class="wf-phase" id="ca2-s2-p1" style="display:' + (curSlide === 1 ? 'block' : 'none') + '">' +
+        peekOffer1 +
+        extractForm1 +
+        '<div id="ca2-s2-p1-err" class="wf-slide-err"></div>' +
+        '<div class="wf-deck-nav">' +
+          '<button type="button" class="wf-deck-prev" onclick="caNewGoStep2Sub(0)">&larr; Back to Email</button>' +
+          '<button type="button" class="wf-deck-next" onclick="caNewS2Extract1Next()">Next: Offer #2 &rarr;</button>' +
+        '</div>' +
+      '</div>' +
+      /* p2: Offer #2 email (read) */
+      '<div class="wf-phase" id="ca2-s2-p2" style="display:' + (curSlide === 2 ? 'block' : 'none') + '">' +
+        contextCard2 + offerCard2 +
+        '<div class="wf-deck-nav" style="margin-top:18px;">' +
+          '<button type="button" class="wf-phase-btn" onclick="caNewGoStep2Sub(3)">Review &amp; extract offer terms &rarr;</button>' +
+        '</div>' +
+      '</div>' +
+      /* p3: Extract form #2 (with peek bars + nav) */
+      '<div class="wf-phase" id="ca2-s2-p3" style="display:' + (curSlide === 3 ? 'block' : 'none') + '">' +
+        peekOffer2 + peekOffer1 +
+        extractForm2 +
+        '<div id="ca2-s2-p3-err" class="wf-slide-err"></div>' +
+        '<div class="wf-deck-nav">' +
+          '<button type="button" class="wf-deck-prev" onclick="caNewGoStep2Sub(2)">&larr; Back to Email</button>' +
+          '<button type="button" class="wf-deck-next" onclick="caNewS2Extract2Next()">Next: Seller Reply &rarr;</button>' +
+        '</div>' +
+      '</div>' +
+      /* p4: Daniel's email + compose reply */
+      '<div class="wf-phase" id="ca2-s2-p4" style="display:' + (curSlide === 4 ? 'block' : 'none') + '">' +
+        danielEmail + danielReplyCompose +
+      '</div>' +
+      /* p5: Sofia's counter email (read) */
+      '<div class="wf-phase" id="ca2-s2-p5" style="display:' + (curSlide === 5 ? 'block' : 'none') + '">' +
+        sofiaEmail +
+        '<div class="wf-deck-nav" style="margin-top:18px;">' +
+          '<button type="button" class="wf-phase-btn" onclick="caNewGoStep2Sub(6)">Extract counter offer terms &rarr;</button>' +
+        '</div>' +
+      '</div>' +
+      /* p6: Counter form (with peek bar + nav) */
+      '<div class="wf-phase" id="ca2-s2-p6" style="display:' + (curSlide === 6 ? 'block' : 'none') + '">' +
+        peekSofia +
+        counterForm +
+        '<div id="ca2-s2-p6-err" class="wf-slide-err"></div>' +
+        '<div class="wf-deck-nav">' +
+          '<button type="button" class="wf-deck-prev" onclick="caNewGoStep2Sub(5)">&larr; Back to Email</button>' +
+          '<button type="button" class="wf-deck-next" onclick="caNewS2CounterNext()">Next: Ratification &rarr;</button>' +
+        '</div>' +
+      '</div>' +
+      /* p7: Ratification (timeline + compose + Sofia reply + nav) */
+      '<div class="wf-phase" id="ca2-s2-p7" style="display:' + (curSlide === 7 ? 'block' : 'none') + '">' +
+        negTimeline +
+        '<div class="wf-email-thread-flow">' +
+          composeBox +
+          '<div class="wf-thread-gap-connector" id="ca2-s2-rat-connector" style="display:' + (composeDone ? 'flex' : 'none') + '">' +
+            '<div class="wf-thread-gap-line"></div>' +
+            '<div class="wf-thread-gap-pill">' +
+              '<span class="wf-thread-gap-icon">&#9201;</span>' +
+              '<span>Sofia Reyes replied 8 minutes later</span>' +
+            '</div>' +
+            '<div class="wf-thread-gap-line"></div>' +
+          '</div>' +
+          sofiaRatReply +
+        '</div>' +
+        '<div id="ca2-s2-nav" style="display:' + (composeDone ? 'block' : 'none') + ';margin-top:20px;">' +
+          '<button class="wf-nav-btn primary" onclick="caNewGatedNext()">Continue to Step 4: Open Escrow &rarr;</button>' +
+        '</div>' +
+      '</div>';
+
+    return step(3, 'Offer Review & Negotiation', 'Wed, Oct 1, 2025',
+      'The property went active on the MLS September 30. After a weekend of showings, two competing offers arrive within hours: Marcus Lee at eXp Realty submits a conventional offer, and Rachel Torres at Compass submits an all-cash offer. Sofia forwards both: \'TC &mdash; big day! Please review both offers and organize the terms for me before I present to Daniel and Carmen tonight.\'',
+      main, side([], ['offer', 'offer2', 'sco', 'bco'], ['sofia', 'daniel', 'carmen', 'marcus', 'rachel']), true);
   }
 
-  /* ════════════════ Step 6: Acceptance & Open Escrow ════════════════ */
-  function caNewStep5() {
+  /* ════════════════ Step 4: Open Escrow ════════════════ */
+  function caNewStep3() {
     var escrowRes = run()['r_ca2-escrow'];
     var escrowDone = !!(escrowRes && escrowRes.length && escrowRes.indexOf(false) === -1);
     var distDone = !!run()['pd_ca2-p-distribute'];
-    var activeIdx = distDone ? 2 : (escrowDone ? 1 : 0);
+    var composeDone = !!run()['c_ca2-escrow-open'];
+    var curSlide = (typeof window._caNewSlide3 === 'number') ? window._caNewSlide3 : 0;
 
-    var escrowForm = form('ca2-escrow', 'Open escrow', 'Extract key terms from the ratified contract package to open escrow.', [
+    /* ── Sofia's escrow instructions email ── */
+    var sofiaEscrowEmail =
+      '<div class="wf-email-inbox-wrap">' +
+        '<div class="wf-email-client-bar">' +
+          '<div class="wf-email-client-left">' +
+            '<div class="wf-email-window-dots"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>' +
+            '<div class="wf-email-folder"><span class="wf-folder-icon">&#128233;</span> <strong>Inbox</strong> &rsaquo; Escrow &rsaquo; 4827 Rolando Blvd</div>' +
+          '</div>' +
+          '<div class="wf-email-client-right">' +
+            '<div class="wf-email-actions">' +
+              '<button type="button" class="wf-email-action-btn" title="Reply">&#8617; Reply</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Star">&#9733;</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Print">&#128438;</button>' +
+            '</div>' +
+            '<span class="wf-email-tool-tag" style="background:rgba(16,185,129,.15);color:#059669;border-color:rgba(16,185,129,.4);">&#127881; Ratified</span>' +
+            '<span class="wf-email-time">Fri, Oct 3, 2025 &middot; 4:30 PM</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wf-email">' +
+          '<div class="wf-email-header">' +
+            '<div class="wf-email-subject-bar">' +
+              '<h3 class="wf-email-subject">Contract Ratified &mdash; Open Escrow with Chicago Title (4827 Rolando Blvd)</h3>' +
+              '<span class="wf-email-priority-badge" style="background:rgba(16,185,129,.1);color:#059669;border-color:rgba(16,185,129,.3);">&#9889; Action Required</span>' +
+            '</div>' +
+            '<div class="wf-email-sender-profile">' +
+              '<div class="wf-email-avatar-wrap">' +
+                '<div class="wf-email-avatar">SR</div>' +
+                '<span class="wf-email-avatar-status" title="Active now"></span>' +
+              '</div>' +
+              '<div class="wf-email-sender-info">' +
+                '<div class="wf-email-sender-line">' +
+                  '<span class="wf-email-sender-name">Sofia Reyes</span>' +
+                  '<span class="wf-email-sender-addr">&lt;sofia.reyes@bhhscal.com&gt;</span>' +
+                  '<span class="wf-badge-verified">&#10003; Verified Agent</span>' +
+                  '<span class="wf-badge-broker">BHHS California Properties</span>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="wf-email-body">' +
+            '<p>Hi TC,</p>' +
+            '<p>Great news &mdash; the contract is officially <strong>ratified at $860,000!</strong> Buyer Counter Offer #1 was accepted by Daniel &amp; Carmen Herrera this afternoon.</p>' +
+            '<p>Please open escrow immediately with the following details:</p>' +
+            '<div class="wf-email-terms-grid">' +
+              '<div class="wf-term-item"><span>Escrow Company</span><b>Chicago Title Company</b></div>' +
+              '<div class="wf-term-item"><span>Escrow Officer</span><b>Sarah Nguyen (sarah.nguyen@ctt.com)</b></div>' +
+              '<div class="wf-term-item"><span>Escrow Number</span><b>CTT-2025-07421</b></div>' +
+              '<div class="wf-term-item"><span>Purchase Price</span><b>$860,000</b></div>' +
+              '<div class="wf-term-item"><span>EMD Amount</span><b>$17,200 (2% &mdash; due within 3 business days by Oct 8)</b></div>' +
+              '<div class="wf-term-item"><span>Close of Escrow</span><b>November 3, 2025 (FIRM)</b></div>' +
+              '<div class="wf-term-item"><span>Buyer\'s Lender</span><b>Tyler Adams, Pacific Home Lending</b></div>' +
+            '</div>' +
+            '<p>Send the fully executed agreement package (RPA + SCO #1 + BCO #1) to Sarah and request wire instructions for the $17,200 EMD. Also, distribute copies of the ratified contract to Marcus Lee, Tyler Adams, and our file.</p>' +
+            SOFIA_SIG +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    var escrowForm = form('ca2-escrow', 'Open escrow', 'From Sofia\'s email (use the peek bar above to review), extract key terms from the ratified contract package to open escrow.', [
       { label: 'Escrow company', kind: 'text', ans: ['chicago title'], ph: 'Escrow company', show: 'Chicago Title Company' },
       { label: 'Escrow officer', kind: 'text', ans: ['sarah nguyen', 'nguyen'], ph: 'Escrow officer', show: 'Sarah Nguyen' },
       { label: 'Purchase price', kind: 'money', ans: 860000, ph: '$', show: '$860,000' },
@@ -4321,41 +4975,222 @@
       ans: 'Hi Sarah,\n\nWe are pleased to open escrow on behalf of Sofia Reyes and Berkshire Hathaway HomeServices California Properties for:\n\nProperty: 4827 Rolando Blvd, San Diego, CA 92115 (APN: 470-362-18-00)\nSellers: Daniel Herrera and Carmen Herrera\nBuyers: Jason Brooks and Michelle Brooks\nAgreed Purchase Price: $860,000.00\nInitial Earnest Money Deposit: $17,200.00 (Due within 3 business days, by October 8, 2025)\nClose of Escrow: November 3, 2025 (FIRM)\nBuyer\'s Agent: Marcus Lee, eXp Realty (marcus.lee@exprealty.com)\nBuyer\'s Lender: Tyler Adams, Pacific Home Lending\n\nAttached please find the fully executed Purchase Agreement package, including C.A.R. RPA, Seller Counter Offer #1, and Buyer Counter Offer #1. Please issue escrow instructions and wire transfer routing details to buyer\'s agent Marcus Lee.\n\nThank you,\nTransaction Coordinator\nBerkshire Hathaway HomeServices California Properties'
     });
 
-    REVEAL['ca2-escrow'] = 'ca2-s5-p1';
-    REVEAL['ca2-p-distribute'] = 'ca2-s5-p2';
-
-    var main =
-      '<div class="wf-phase" style="display:' + (activeIdx === 0 ? 'block' : 'none') + '">' + escrowForm + '</div>' +
-      '<div class="wf-phase" id="ca2-s5-p1" style="display:' + (activeIdx === 1 ? 'block' : 'none') + '">' + pickerCard + '</div>' +
-      '<div class="wf-phase" id="ca2-s5-p2" style="display:' + (activeIdx === 2 ? 'block' : 'none') + '">' +
-        composeBox +
-        '<button class="wf-nav-btn primary" onclick="caNewGatedNext()">Continue &rarr;</button>' +
+    /* ── Sarah's reply after escrow opening ── */
+    var sarahReply =
+      '<div class="wf-email-card received" id="ca2-s3-sarah-reply" style="display:' + (composeDone ? 'block' : 'none') + '">' +
+        '<div class="wf-email-card-header received">' +
+          '<div class="wf-email-card-status">' +
+            '<div class="wf-email-badge-group"><span class="wf-email-type-badge received">&#128233; Inbox</span></div>' +
+            '<div class="wf-email-time-tag">Fri, Oct 3, 2025 at 5:15 PM (22 mins later)</div>' +
+          '</div>' +
+          '<div class="wf-email-card-profile">' +
+            '<div class="wf-email-avatar-wrap">' +
+              '<div class="wf-email-avatar" style="background:linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);">SN</div>' +
+              '<span class="wf-email-avatar-status"></span>' +
+            '</div>' +
+            '<div class="wf-email-sender-info">' +
+              '<div class="wf-email-sender-line">' +
+                '<span class="wf-email-sender-name">Sarah Nguyen</span>' +
+                '<span class="wf-email-sender-addr">&lt;sarah.nguyen@ctt.com&gt;</span>' +
+                '<span class="wf-email-role-chip agent" style="background:rgba(30,64,175,.1);color:#1e40af;">Escrow Officer</span>' +
+              '</div>' +
+              '<div class="wf-email-meta-grid">' +
+                '<div class="wf-email-meta-row"><span class="wf-email-meta-lbl">To:</span><span class="wf-email-meta-val"><strong>You</strong> &lt;tc@bhhscal.com&gt;</span></div>' +
+                '<div class="wf-email-meta-row"><span class="wf-email-meta-lbl">Subject:</span><span class="wf-email-meta-val"><strong>Re: Escrow Opening: 4827 Rolando Blvd</strong></span></div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wf-email-card-body received">' +
+          '<p>Thank you for the escrow opening package! Escrow <strong>#CTT-2025-07421</strong> is now officially open.</p>' +
+          '<p>I\'ve sent wire transfer instructions directly to buyer\'s agent Marcus Lee for the $17,200 EMD. The deposit is due by <strong>October 8, 2025</strong> (3 business days from ratification).</p>' +
+          '<p>I\'ll confirm receipt of the EMD as soon as it clears. Please keep me posted on any contingency deadlines.</p>' +
+          '<p>Best,<br>Sarah Nguyen<br>Escrow Officer &middot; Chicago Title Company</p>' +
+        '</div>' +
+      '</div>' +
+      '<div class="wf-reply-footer-banner" id="ca2-s3-reply-banner" style="display:' + (composeDone ? 'flex' : 'none') + ';margin-top:14px;">' +
+        '<span class="wf-reply-footer-icon">&#10004;</span>' +
+        '<span><strong>Escrow Opened:</strong> Chicago Title #CTT-2025-07421 is active. Wire instructions sent to Marcus Lee for $17,200 EMD due by Oct 8.</span>' +
       '</div>';
 
-    return step(6, 'Acceptance & Open Escrow', 'Fri, Oct 3, 2025',
+    var peekSofiaEscrow =
+      '<div class="wf-peek-bar">' +
+        '<button type="button" class="wf-peek-btn" onclick="caNewToggleEmailPeek(this)">' +
+          '<span class="wf-peek-icon">&#9993;</span>' +
+          '<span class="wf-peek-text"><strong>Sofia\'s Email:</strong> Contract Ratified &mdash; Open Escrow</span>' +
+          '<span class="wf-peek-arrow">&#9662;</span>' +
+        '</button>' +
+      '</div>' +
+      '<div class="wf-email-peek-drawer" style="display:none;margin-top:12px;">' + sofiaEscrowEmail + '</div>';
+
+    REVEAL['ca2-p-distribute'] = 'ca2-s3-p3';
+    REVEAL['ca2-escrow-open'] = 'ca2-s3-nav';
+
+    var s3PillLabels = ['Escrow Email', 'Extract Terms', 'Distribution', 'Open Escrow'];
+    var s3PillStates = [
+      escrowDone ? 'done' : 'upcoming',
+      escrowDone ? 'done' : 'upcoming',
+      distDone ? 'done' : (!escrowDone ? 'locked' : 'upcoming'),
+      composeDone ? 'done' : (!distDone ? 'locked' : 'upcoming')
+    ];
+    var substepper3 = '<div class="wf-substepper" id="ca2-s3-tracker">';
+    for (var s3i = 0; s3i < 4; s3i++) {
+      substepper3 += '<button type="button" class="wf-substep-pill wf-pt-item ' + (curSlide === s3i ? 'active' : s3PillStates[s3i]) + '" id="ca2-s3-pill-' + s3i + '" onclick="caNewGoStep3Sub(' + s3i + ')">' +
+        '<span class="substep-num">' + (s3i + 1) + '</span><span>' + s3PillLabels[s3i] + '</span></button>';
+    }
+    substepper3 += '</div>';
+
+    var main = substepper3 +
+      '<div class="wf-phase" id="ca2-s3-p0" style="display:' + (curSlide === 0 ? 'block' : 'none') + '">' +
+        sofiaEscrowEmail +
+        '<div class="wf-deck-nav" style="margin-top:18px;"><button type="button" class="wf-phase-btn" onclick="caNewGoStep3Sub(1)">Extract escrow terms &rarr;</button></div>' +
+      '</div>' +
+      '<div class="wf-phase" id="ca2-s3-p1" style="display:' + (curSlide === 1 ? 'block' : 'none') + '">' +
+        peekSofiaEscrow + escrowForm +
+        '<div id="ca2-s3-p1-err" class="wf-slide-err"></div>' +
+        '<div class="wf-deck-nav">' +
+          '<button type="button" class="wf-deck-prev" onclick="caNewGoStep3Sub(0)">&larr; Back to Email</button>' +
+          '<button type="button" class="wf-deck-next" onclick="caNewS3EscrowNext()">Next: Distribution &rarr;</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="wf-phase" id="ca2-s3-p2" style="display:' + (curSlide === 2 ? 'block' : 'none') + '">' + pickerCard + '</div>' +
+      '<div class="wf-phase" id="ca2-s3-p3" style="display:' + (curSlide === 3 ? 'block' : 'none') + '">' +
+        '<div class="wf-email-thread-flow">' +
+          composeBox +
+          '<div class="wf-thread-gap-connector" id="ca2-s3-escrow-connector" style="display:' + (composeDone ? 'flex' : 'none') + '">' +
+            '<div class="wf-thread-gap-line"></div>' +
+            '<div class="wf-thread-gap-pill"><span class="wf-thread-gap-icon">&#9201;</span><span>Sarah Nguyen replied 22 minutes later</span></div>' +
+            '<div class="wf-thread-gap-line"></div>' +
+          '</div>' +
+          sarahReply +
+        '</div>' +
+        '<div id="ca2-s3-nav" style="display:' + (composeDone ? 'block' : 'none') + ';margin-top:20px;">' +
+          '<button class="wf-nav-btn primary" onclick="caNewGatedNext()">Continue to Step 5 &rarr;</button>' +
+        '</div>' +
+      '</div>';
+
+    return step(4, 'Open Escrow', 'Fri, Oct 3, 2025',
       'Contract ratified at $860,000! Open escrow with Chicago Title, calculate deposit deadlines, and distribute the executed contract to the transaction principals.',
       main, side([['Escrow #', 'CTT-2025-07421']], ['rpa', 'offer', 'sco', 'bco', 'wire'], ['sofia', 'daniel', 'carmen', 'marcus', 'sarah', 'tyler']), true);
   }
 
-  /* ════════════════ Step 7: EMD & Disclosure Delivery to Buyers ════════════════ */
-  function caNewStep6() {
+  /* ---------- Sub-step Controller for Step 4 (Open Escrow) ---------- */
+  window._caNewSlide3 = null;
+
+  window.caNewGoStep3Sub = function (idx) {
+    if (idx === undefined || idx === null) idx = 0;
+    var cur = (typeof window._caNewSlide3 === 'number') ? window._caNewSlide3 : 0;
+    if (idx < cur) { window._caNewSlide3 = idx; caNewApplyStep3Sub(idx); return; }
+    var escrowRes = run()['r_ca2-escrow'];
+    var escrowDone = !!(escrowRes && escrowRes.length && escrowRes.indexOf(false) === -1);
+    var distDone = !!run()['pd_ca2-p-distribute'];
+    if (idx >= 2 && !escrowDone) { window._caNewSlide3 = 0; caNewApplyStep3Sub(0); return; }
+    if (idx >= 3 && !distDone) { window._caNewSlide3 = escrowDone ? 2 : 0; caNewApplyStep3Sub(window._caNewSlide3); return; }
+    window._caNewSlide3 = idx;
+    caNewApplyStep3Sub(idx);
+  };
+
+  window.caNewApplyStep3Sub = function (idx) {
+    var phaseIds = ['ca2-s3-p0', 'ca2-s3-p1', 'ca2-s3-p2', 'ca2-s3-p3'];
+    phaseIds.forEach(function (pid, i) {
+      var el = document.getElementById(pid);
+      if (el) { if (i === idx) { el.style.display = 'block'; el.classList.add('wf-phase-enter'); } else { el.style.display = 'none'; el.classList.remove('wf-phase-enter'); } }
+    });
+    caNewUpdateStep3Pills();
+    var topEl = document.querySelector('.mh-top');
+    if (topEl) topEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  window.caNewUpdateStep3Pills = function () {
+    var cur = (typeof window._caNewSlide3 === 'number') ? window._caNewSlide3 : 0;
+    var escrowRes = run()['r_ca2-escrow'];
+    var escrowDone = !!(escrowRes && escrowRes.length && escrowRes.indexOf(false) === -1);
+    var distDone = !!run()['pd_ca2-p-distribute'];
+    var composeDone = !!run()['c_ca2-escrow-open'];
+    var states = [
+      escrowDone ? 'done' : 'upcoming',
+      escrowDone ? 'done' : 'upcoming',
+      distDone ? 'done' : (!escrowDone ? 'locked' : 'upcoming'),
+      composeDone ? 'done' : (!distDone ? 'locked' : 'upcoming')
+    ];
+    for (var i = 0; i < 4; i++) {
+      var pill = document.getElementById('ca2-s3-pill-' + i);
+      if (pill) pill.className = 'wf-substep-pill wf-pt-item ' + (i === cur ? 'active' : states[i]);
+    }
+  };
+
+  window.caNewS3EscrowNext = function () {
+    caNewCheck('ca2-escrow');
+    var res = run()['r_ca2-escrow'];
+    var ok = !!(res && res.length && res.indexOf(false) === -1);
+    var errEl = document.getElementById('ca2-s3-p1-err');
+    if (ok) { if (errEl) errEl.style.display = 'none'; caNewGoStep3Sub(2); }
+    else { if (errEl) { errEl.innerHTML = '<strong>&#9888; Incomplete:</strong> Please complete all fields correctly from Sofia\'s email before proceeding.'; errEl.style.display = 'block'; errEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } }
+  };
+
+  /* ════════════════ Step 5: EMD & Disclosure Delivery to Buyers ════════════════ */
+  function caNewStep4() {
     var emdRes = run()['r_ca2-emd'];
     var emdDone = !!(emdRes && emdRes.length && emdRes.indexOf(false) === -1);
-    var decDone = run()['d_ca2-d-emd-late'] !== undefined;
-    var activeIdx = decDone ? 2 : (emdDone ? 1 : 0);
+    var marcusDone = !!run()['c_ca2-marcus-emd-reply'];
+    var composeDone = !!run()['c_ca2-disc-delivery'];
+    var curSlide = (typeof window._caNewSlide4 === 'number') ? window._caNewSlide4 : 0;
 
-    var banner =
-      '<div class="box" style="background:#ecfdf5;border:1.5px solid #10b981;border-radius:12px;padding:16px;margin-bottom:18px;">' +
-        '<div style="display:flex;align-items:center;gap:12px;">' +
-          '<div style="font-size:24px;">&#10004;</div>' +
-          '<div>' +
-            '<div style="font-size:15px;font-weight:800;color:#065f46;">Deposit Confirmed Received in Escrow</div>' +
-            '<div style="font-size:13px;color:#047857;">Good faith earnest money deposit of <strong>$17,200.00</strong> confirmed received by Chicago Title Company (Escrow #CTT-2025-07421) on <strong>October 7, 2025</strong> via wire transfer.</div>' +
+    /* ── Sarah's EMD confirmation email ── */
+    var sarahEmdEmail =
+      '<div class="wf-email-inbox-wrap">' +
+        '<div class="wf-email-client-bar">' +
+          '<div class="wf-email-client-left">' +
+            '<div class="wf-email-window-dots"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>' +
+            '<div class="wf-email-folder"><span class="wf-folder-icon">&#128233;</span> <strong>Inbox</strong> &rsaquo; Escrow &rsaquo; 4827 Rolando Blvd</div>' +
+          '</div>' +
+          '<div class="wf-email-client-right">' +
+            '<div class="wf-email-actions">' +
+              '<button type="button" class="wf-email-action-btn" title="Reply">&#8617; Reply</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Star">&#9733;</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Print">&#128438;</button>' +
+            '</div>' +
+            '<span class="wf-email-tool-tag" style="background:rgba(16,185,129,.15);color:#059669;border-color:rgba(16,185,129,.4);">&#10004; EMD Received</span>' +
+            '<span class="wf-email-time">Tue, Oct 7, 2025 &middot; 2:14 PM</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wf-email">' +
+          '<div class="wf-email-header">' +
+            '<div class="wf-email-subject-bar">' +
+              '<h3 class="wf-email-subject">EMD Wire Confirmed &mdash; 4827 Rolando Blvd (Escrow #CTT-2025-07421)</h3>' +
+            '</div>' +
+            '<div class="wf-email-sender-profile">' +
+              '<div class="wf-email-avatar-wrap">' +
+                '<div class="wf-email-avatar" style="background:linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);">SN</div>' +
+                '<span class="wf-email-avatar-status" title="Active now"></span>' +
+              '</div>' +
+              '<div class="wf-email-sender-info">' +
+                '<div class="wf-email-sender-line">' +
+                  '<span class="wf-email-sender-name">Sarah Nguyen</span>' +
+                  '<span class="wf-email-sender-addr">&lt;sarah.nguyen@ctt.com&gt;</span>' +
+                  '<span class="wf-badge-verified">&#10003; Verified</span>' +
+                  '<span class="wf-badge-broker" style="color:#1e40af;border-color:#3b82f6;">Chicago Title Company</span>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="wf-email-body">' +
+            '<p>Hi TC,</p>' +
+            '<p>Good news &mdash; the earnest money deposit for 4827 Rolando Blvd has been confirmed received in escrow.</p>' +
+            '<div class="wf-email-terms-grid">' +
+              '<div class="wf-term-item"><span>EMD Amount</span><b>$17,200.00</b></div>' +
+              '<div class="wf-term-item"><span>Method</span><b>Wire transfer</b></div>' +
+              '<div class="wf-term-item"><span>Held By</span><b>Chicago Title Company</b></div>' +
+              '<div class="wf-term-item"><span>Received Date</span><b>October 7, 2025</b></div>' +
+              '<div class="wf-term-item"><span>On Time?</span><b>Yes &mdash; Oct 7 is within 3 business days of Oct 3 acceptance</b></div>' +
+            '</div>' +
+            '<p>The deposit is now held in our trust account pending close of escrow on November 3, 2025. Please log this in your transaction file.</p>' +
+            '<p>Best,<br>Sarah Nguyen<br>Escrow Officer &middot; Chicago Title Company</p>' +
           '</div>' +
         '</div>' +
       '</div>';
 
-    var emdForm = form('ca2-emd', 'Log the deposit', 'Record the verified earnest money deposit details in the case file.', [
+    var emdForm = form('ca2-emd', 'Log the deposit', 'From Sarah\'s email (use the peek bar above to review), record the verified earnest money deposit details in the case file.', [
       { label: 'EMD amount', kind: 'money', ans: 17200, ph: '$', show: '$17,200' },
       { label: 'Method', kind: 'text', ans: ['wire'], ph: 'Payment method', show: 'Wire transfer' },
       { label: 'Held by', kind: 'text', ans: ['chicago title'], ph: 'Escrow company', show: 'Chicago Title Company' },
@@ -4364,17 +5199,65 @@
         options: [['yes', 'Yes'], ['no', 'No']] }
     ]);
 
-    var dec = decision('ca2-d-emd-late',
-      'It\'s October 8 (day 5 after acceptance) and the EMD still hasn\'t arrived. Marcus Lee says the buyers "forgot" and will wire it next week. What do you do?',
-      [
-        { t: 'That\'s fine. Tell Marcus there\'s no rush.', ok: false },
-        { t: 'Flag it immediately to Sofia. Under the C.A.R. RPA, the EMD is due within 3 business days of acceptance (by October 8). Missing this deadline gives the seller grounds to cancel. The wire needs to go out today.', ok: true },
-        { t: 'Contact the buyers directly and tell them to wire the money immediately.', ok: false }
-      ],
-      'The EMD deadline is one of the most critical in the transaction. Under the C.A.R. RPA, the deposit must be delivered within 3 business days of acceptance. A missed EMD deadline is a material breach. The TC flags this to the listing agent immediately — the agent decides whether to issue a Notice to Buyer to Perform or give more time. The TC never contacts the buyers directly.'
-    );
+    /* ── Marcus email about late EMD (decision converted to email + compose) ── */
+    var marcusEmdEmail =
+      '<div class="wf-email-inbox-wrap">' +
+        '<div class="wf-email-client-bar">' +
+          '<div class="wf-email-client-left">' +
+            '<div class="wf-email-window-dots"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>' +
+            '<div class="wf-email-folder"><span class="wf-folder-icon">&#128233;</span> <strong>Inbox</strong> &rsaquo; Agents &rsaquo; 4827 Rolando Blvd</div>' +
+          '</div>' +
+          '<div class="wf-email-client-right">' +
+            '<div class="wf-email-actions">' +
+              '<button type="button" class="wf-email-action-btn" title="Reply">&#8617; Reply</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Star">&#9733;</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Print">&#128438;</button>' +
+            '</div>' +
+            '<span class="wf-email-tool-tag" style="background:rgba(224,169,59,.18);color:#d97706;border-color:rgba(224,169,59,.4);">&#9888; EMD Issue</span>' +
+            '<span class="wf-email-time">Wed, Oct 8, 2025 &middot; 10:30 AM</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wf-email">' +
+          '<div class="wf-email-header">' +
+            '<div class="wf-email-subject-bar">' +
+              '<h3 class="wf-email-subject">EMD Wire &mdash; 4827 Rolando Blvd (Quick update)</h3>' +
+            '</div>' +
+            '<div class="wf-email-sender-profile">' +
+              '<div class="wf-email-avatar-wrap">' +
+                '<div class="wf-email-avatar" style="background:linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%);box-shadow:0 0 0 2.5px #38bdf8, 0 4px 12px rgba(3,105,161,.2);">ML</div>' +
+              '</div>' +
+              '<div class="wf-email-sender-info">' +
+                '<div class="wf-email-sender-line">' +
+                  '<span class="wf-email-sender-name">Marcus Lee</span>' +
+                  '<span class="wf-email-sender-addr">&lt;marcus.lee@exprealty.com&gt;</span>' +
+                  '<span class="wf-badge-broker" style="color:#0369a1;border-color:#0ea5e9;">eXp Realty</span>' +
+                '</div>' +
+                '<div class="wf-email-recipient-line"><span>To: <strong>TC</strong> &lt;tc@bhhscal.com&gt;</span></div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="wf-email-body">' +
+            '<p>Hey TC,</p>' +
+            '<p>Quick update on the deposit &mdash; I just talked to Jason and Michelle and they said they <strong>forgot to initiate the EMD wire</strong>. They\'ve been swamped at work and said they\'ll take care of it next week when things calm down.</p>' +
+            '<p>It\'s only been a few days so it shouldn\'t be a big deal, right? I told them not to worry about it.</p>' +
+            '<p>Let me know if you need anything else.</p>' +
+            '<p>Marcus Lee<br>Buyer\'s Agent &middot; eXp Realty</p>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
 
-    var composeBox = compose({
+    var marcusEmdCompose = compose({
+      key: 'ca2-marcus-emd-reply',
+      scenario: 'tc-ca-emd-late-reply',
+      prompt: 'Respond to the late EMD situation — flag the deadline risk to Sofia',
+      to: 'Sofia Reyes <sofia.reyes@bhhscal.com>',
+      cc: 'Marcus Lee <marcus.lee@exprealty.com>',
+      subj: 'URGENT: EMD Deadline Risk — 4827 Rolando Blvd (Brooks / Herrera)',
+      inst: 'Marcus Lee informed you that the buyers forgot to wire the $17,200 EMD due today (Oct 8). Under the C.A.R. RPA, the EMD is due within 3 business days of acceptance. This is a material breach risk. Flag this immediately to Sofia as the listing agent — the TC never contacts the buyers directly or reassures Marcus that there is no rush.',
+      ans: 'Hi Sofia,\n\nI am flagging an urgent EMD deadline issue. Marcus Lee just informed me that the buyers have not wired the $17,200 earnest money deposit as of today, October 8, 2025.\n\nUnder the C.A.R. RPA, the EMD is due within 3 business days of acceptance, making today the contractual deadline. A missed EMD deadline is a material breach that gives the sellers grounds to issue a Notice to Buyer to Perform (NBP) with a 48-hour cure period, after which the sellers could cancel the agreement.\n\nMarcus, the wire needs to go out today to avoid putting the transaction at risk. Please confirm with your buyers that the transfer has been initiated immediately.\n\nSofia, I wanted to make sure you were aware so you can advise Daniel and Carmen on how they would like to proceed.\n\nBest regards,\nTransaction Coordinator\nBerkshire Hathaway HomeServices California Properties'
+    });
+
+    var discComposeBox = compose({
       key: 'ca2-disc-delivery',
       scenario: 'tc-ca-disc-delivery',
       prompt: 'Deliver seller statutory disclosure package to buyers Jason & Michelle Brooks',
@@ -4386,27 +5269,165 @@
       ans: 'Dear Jason and Michelle,\n\nOn behalf of sellers Daniel and Carmen Herrera and listing agent Sofia Reyes, please find attached the complete California seller disclosure package for 4827 Rolando Blvd:\n\n1. Real Estate Transfer Disclosure Statement (TDS)\n2. Seller Property Questionnaire (SPQ)\n3. JCP-LGS Natural Hazard Disclosure (NHD) Statutory Report\n4. Agent Visual Inspection Disclosure (AVID) completed by Sofia Reyes\n5. Federal Lead-Based Paint and Lead Hazard Disclosure (Required: home constructed in 1961)\n6. Preliminary Title Report from Chicago Title (Order #CTT-2025-07421)\n\nPursuant to California Civil Code §1102.3, you have a statutory period of 5 days after electronic delivery (or 3 days after personal delivery) to review these disclosures, during which you have the right to terminate the agreement if desired. In addition, under federal law, you have a 10-day period from receipt to conduct a lead-based paint hazard inspection.\n\nPlease review, initial and sign where indicated, and return signed copies to our office at your earliest convenience.\n\nBest regards,\nTransaction Coordinator\nBerkshire Hathaway HomeServices California Properties'
     });
 
-    REVEAL['ca2-emd'] = 'ca2-s6-p1';
-    REVEAL['ca2-d-emd-late'] = 'ca2-s6-p2';
-
-    var main =
-      '<div class="wf-phase" style="display:' + (activeIdx === 0 ? 'block' : 'none') + '">' + banner + emdForm + '</div>' +
-      '<div class="wf-phase" id="ca2-s6-p1" style="display:' + (activeIdx === 1 ? 'block' : 'none') + '">' + dec + '</div>' +
-      '<div class="wf-phase" id="ca2-s6-p2" style="display:' + (activeIdx === 2 ? 'block' : 'none') + '">' +
-        composeBox +
-        '<button class="wf-nav-btn primary" onclick="caNewGatedNext()">Continue &rarr;</button>' +
+    /* ── Marcus confirmation reply after disclosure delivery ── */
+    var marcusDiscReply =
+      '<div class="wf-email-card received" id="ca2-s4-marcus-disc-reply" style="display:' + (composeDone ? 'block' : 'none') + '">' +
+        '<div class="wf-email-card-header received">' +
+          '<div class="wf-email-card-status">' +
+            '<div class="wf-email-badge-group"><span class="wf-email-type-badge received">&#128233; Inbox</span></div>' +
+            '<div class="wf-email-time-tag">Wed, Oct 8, 2025 at 4:45 PM (1 hour later)</div>' +
+          '</div>' +
+          '<div class="wf-email-card-profile">' +
+            '<div class="wf-email-avatar-wrap">' +
+              '<div class="wf-email-avatar" style="background:linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%);">ML</div>' +
+              '<span class="wf-email-avatar-status"></span>' +
+            '</div>' +
+            '<div class="wf-email-sender-info">' +
+              '<div class="wf-email-sender-line">' +
+                '<span class="wf-email-sender-name">Marcus Lee</span>' +
+                '<span class="wf-email-sender-addr">&lt;marcus.lee@exprealty.com&gt;</span>' +
+                '<span class="wf-email-role-chip agent" style="background:rgba(3,105,161,.1);color:#0369a1;">Buyer\'s Agent</span>' +
+              '</div>' +
+              '<div class="wf-email-meta-grid">' +
+                '<div class="wf-email-meta-row"><span class="wf-email-meta-lbl">To:</span><span class="wf-email-meta-val"><strong>You</strong> &lt;tc@bhhscal.com&gt;</span></div>' +
+                '<div class="wf-email-meta-row"><span class="wf-email-meta-lbl">Subject:</span><span class="wf-email-meta-val"><strong>Re: Disclosure Package: 4827 Rolando Blvd</strong></span></div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wf-email-card-body received">' +
+          '<p>Received, thank you! I\'ve forwarded the full package to Jason and Michelle. They\'ll review and sign this week.</p>' +
+          '<p>Also &mdash; just confirmed the EMD wire went out this morning after Sofia flagged it. Good catch on the deadline.</p>' +
+          '<p>Marcus Lee<br>Buyer\'s Agent &middot; eXp Realty</p>' +
+        '</div>' +
+      '</div>' +
+      '<div class="wf-reply-footer-banner" id="ca2-s4-reply-banner" style="display:' + (composeDone ? 'flex' : 'none') + ';margin-top:14px;">' +
+        '<span class="wf-reply-footer-icon">&#10004;</span>' +
+        '<span><strong>Disclosures Delivered:</strong> Full statutory disclosure package served to buyers. Marcus confirmed receipt and EMD wire sent.</span>' +
       '</div>';
 
-    return step(7, 'EMD & Disclosure Delivery to Buyers', 'Tue, Oct 7 – Wed, Oct 8, 2025',
+    var peekSarahEmd =
+      '<div class="wf-peek-bar">' +
+        '<button type="button" class="wf-peek-btn" onclick="caNewToggleEmailPeek(this)">' +
+          '<span class="wf-peek-icon">&#9993;</span>' +
+          '<span class="wf-peek-text"><strong>Sarah\'s Email:</strong> EMD Wire Confirmed &mdash; $17,200</span>' +
+          '<span class="wf-peek-arrow">&#9662;</span>' +
+        '</button>' +
+      '</div>' +
+      '<div class="wf-email-peek-drawer" style="display:none;margin-top:12px;">' + sarahEmdEmail + '</div>';
+
+    REVEAL['ca2-marcus-emd-reply'] = 'ca2-s4-p3';
+    REVEAL['ca2-disc-delivery'] = 'ca2-s4-nav';
+
+    var s4PillLabels = ['EMD Email', 'Log Deposit', 'Late EMD', 'Disclosures'];
+    var s4PillStates = [
+      emdDone ? 'done' : 'upcoming',
+      emdDone ? 'done' : 'upcoming',
+      marcusDone ? 'done' : (!emdDone ? 'locked' : 'upcoming'),
+      composeDone ? 'done' : (!marcusDone ? 'locked' : 'upcoming')
+    ];
+    var substepper4 = '<div class="wf-substepper" id="ca2-s4-tracker">';
+    for (var s4i = 0; s4i < 4; s4i++) {
+      substepper4 += '<button type="button" class="wf-substep-pill wf-pt-item ' + (curSlide === s4i ? 'active' : s4PillStates[s4i]) + '" id="ca2-s4-pill-' + s4i + '" onclick="caNewGoStep4Sub(' + s4i + ')">' +
+        '<span class="substep-num">' + (s4i + 1) + '</span><span>' + s4PillLabels[s4i] + '</span></button>';
+    }
+    substepper4 += '</div>';
+
+    var main = substepper4 +
+      '<div class="wf-phase" id="ca2-s4-p0" style="display:' + (curSlide === 0 ? 'block' : 'none') + '">' +
+        sarahEmdEmail +
+        '<div class="wf-deck-nav" style="margin-top:18px;"><button type="button" class="wf-phase-btn" onclick="caNewGoStep4Sub(1)">Log deposit details &rarr;</button></div>' +
+      '</div>' +
+      '<div class="wf-phase" id="ca2-s4-p1" style="display:' + (curSlide === 1 ? 'block' : 'none') + '">' +
+        peekSarahEmd + emdForm +
+        '<div id="ca2-s4-p1-err" class="wf-slide-err"></div>' +
+        '<div class="wf-deck-nav">' +
+          '<button type="button" class="wf-deck-prev" onclick="caNewGoStep4Sub(0)">&larr; Back to Email</button>' +
+          '<button type="button" class="wf-deck-next" onclick="caNewS4EmdNext()">Next: Late EMD &rarr;</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="wf-phase" id="ca2-s4-p2" style="display:' + (curSlide === 2 ? 'block' : 'none') + '">' +
+        marcusEmdEmail + marcusEmdCompose +
+      '</div>' +
+      '<div class="wf-phase" id="ca2-s4-p3" style="display:' + (curSlide === 3 ? 'block' : 'none') + '">' +
+        '<div class="wf-email-thread-flow">' +
+          discComposeBox +
+          '<div class="wf-thread-gap-connector" id="ca2-s4-disc-connector" style="display:' + (composeDone ? 'flex' : 'none') + '">' +
+            '<div class="wf-thread-gap-line"></div>' +
+            '<div class="wf-thread-gap-pill"><span class="wf-thread-gap-icon">&#9201;</span><span>Marcus Lee replied 1 hour later</span></div>' +
+            '<div class="wf-thread-gap-line"></div>' +
+          '</div>' +
+          marcusDiscReply +
+        '</div>' +
+        '<div id="ca2-s4-nav" style="display:' + (composeDone ? 'block' : 'none') + ';margin-top:20px;">' +
+          '<button class="wf-nav-btn primary" onclick="caNewGatedNext()">Continue to Step 6 &rarr;</button>' +
+        '</div>' +
+      '</div>';
+
+    return step(5, 'EMD & Disclosure Delivery to Buyers', 'Tue, Oct 7 – Wed, Oct 8, 2025',
       'Track and verify the buyers\' earnest money wire with Chicago Title, then serve the statutory disclosure package to Jason & Michelle Brooks with formal statutory cancellation notices.',
       main, side([['EMD', '$17,200 (received)'], ['Escrow #', 'CTT-2025-07421']], ['tds', 'spq', 'nhd', 'avid', 'lead', 'prelim', 'wire'], ['sofia', 'daniel', 'carmen', 'marcus', 'sarah', 'tyler']), true);
   }
 
-  /* ════════════════ Step 8: Inspections & Repair Negotiation ════════════════ */
-  function caNewStep7() {
-    var vendorDone = run()['d_ca2-d-vendor'] !== undefined;
-    var sellerDone = run()['d_ca2-d-seller-advice'] !== undefined;
-    var activeIdx = sellerDone ? 3 : (vendorDone ? 2 : 0);
+  /* ---------- Sub-step Controller for Step 5 (EMD & Disclosure) ---------- */
+  window._caNewSlide4 = null;
+
+  window.caNewGoStep4Sub = function (idx) {
+    if (idx === undefined || idx === null) idx = 0;
+    var cur = (typeof window._caNewSlide4 === 'number') ? window._caNewSlide4 : 0;
+    if (idx < cur) { window._caNewSlide4 = idx; caNewApplyStep4Sub(idx); return; }
+    var emdRes = run()['r_ca2-emd'];
+    var emdDone = !!(emdRes && emdRes.length && emdRes.indexOf(false) === -1);
+    var marcusDone = !!run()['c_ca2-marcus-emd-reply'];
+    if (idx >= 2 && !emdDone) { window._caNewSlide4 = 0; caNewApplyStep4Sub(0); return; }
+    if (idx >= 3 && !marcusDone) { window._caNewSlide4 = emdDone ? 2 : 0; caNewApplyStep4Sub(window._caNewSlide4); return; }
+    window._caNewSlide4 = idx;
+    caNewApplyStep4Sub(idx);
+  };
+
+  window.caNewApplyStep4Sub = function (idx) {
+    var phaseIds = ['ca2-s4-p0', 'ca2-s4-p1', 'ca2-s4-p2', 'ca2-s4-p3'];
+    phaseIds.forEach(function (pid, i) {
+      var el = document.getElementById(pid);
+      if (el) { if (i === idx) { el.style.display = 'block'; el.classList.add('wf-phase-enter'); } else { el.style.display = 'none'; el.classList.remove('wf-phase-enter'); } }
+    });
+    caNewUpdateStep4Pills();
+    var topEl = document.querySelector('.mh-top');
+    if (topEl) topEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  window.caNewUpdateStep4Pills = function () {
+    var cur = (typeof window._caNewSlide4 === 'number') ? window._caNewSlide4 : 0;
+    var emdRes = run()['r_ca2-emd'];
+    var emdDone = !!(emdRes && emdRes.length && emdRes.indexOf(false) === -1);
+    var marcusDone = !!run()['c_ca2-marcus-emd-reply'];
+    var composeDone = !!run()['c_ca2-disc-delivery'];
+    var states = [
+      emdDone ? 'done' : 'upcoming',
+      emdDone ? 'done' : 'upcoming',
+      marcusDone ? 'done' : (!emdDone ? 'locked' : 'upcoming'),
+      composeDone ? 'done' : (!marcusDone ? 'locked' : 'upcoming')
+    ];
+    for (var i = 0; i < 4; i++) {
+      var pill = document.getElementById('ca2-s4-pill-' + i);
+      if (pill) pill.className = 'wf-substep-pill wf-pt-item ' + (i === cur ? 'active' : states[i]);
+    }
+  };
+
+  window.caNewS4EmdNext = function () {
+    caNewCheck('ca2-emd');
+    var res = run()['r_ca2-emd'];
+    var ok = !!(res && res.length && res.indexOf(false) === -1);
+    var errEl = document.getElementById('ca2-s4-p1-err');
+    if (ok) { if (errEl) errEl.style.display = 'none'; caNewGoStep4Sub(2); }
+    else { if (errEl) { errEl.innerHTML = '<strong>&#9888; Incomplete:</strong> Please complete all deposit details from Sarah\'s email before proceeding.'; errEl.style.display = 'block'; errEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } }
+  };
+
+  /* ════════════════ Step 6: Inspections & Repair Negotiation ════════════════ */
+  function caNewStep5() {
+    var vendorDone = !!run()['c_ca2-vendor-reply'];
+    var sellerDone = !!run()['c_ca2-seller-reply'];
+    var curSlide = (typeof window._caNewSlide5 === 'number') ? window._caNewSlide5 : 0;
 
     var inspectCard = card('Property Inspection Findings & Timeline',
       'The buyers conducted physical, pest, and engineering inspections.',
@@ -4423,52 +5444,202 @@
       '<strong>Critical Deadline — Day 17:</strong> Under paragraph 14 of the C.A.R. RPA, Day 17 (October 20) is the default inspection contingency removal deadline. If a buyer does not remove contingencies or submit an agreed extension, the seller has the legal right to issue a <em>Notice to Buyer to Perform (C.A.R. Form NBP)</em> giving the buyer 48 hours to remove or face cancellation.' +
       '</div>';
 
-    var decVendor = decision('ca2-d-vendor',
-      'Before the inspection, Marcus Lee asks you to recommend a foundation company for the specialist assessment. Should you?',
-      [
-        { t: 'Yes. Recommending vendors and scheduling inspections is a core TC responsibility.', ok: false },
-        { t: 'You can help schedule the appointment if requested, but never recommend a specific vendor. Recommending vendors creates liability. Offer a list of licensed contractors if asked, or let the agent choose.', ok: true },
-        { t: 'Tell Marcus that inspections are the buyer\'s responsibility and the TC has no role.', ok: false }
-      ],
-      'A TC coordinates — schedules, confirms, tracks. But recommending specific vendors puts the TC and brokerage in a position of liability. The safe practice is to offer multiple options or let the agent select.'
-    );
-
-    var decSeller = decision('ca2-d-seller-advice',
-      'Daniel Herrera calls you and says: "The HVAC works fine. I don\'t want to give them anything. What do you think — should we reject the whole repair request?" What do you say?',
-      [
-        { t: '"I agree, reject everything. The HVAC is functional."', ok: false },
-        { t: '"You should at least offer something for the foundation and termites, or you might lose the deal."', ok: false },
-        { t: '"That\'s a decision between you and Sofia. I\'ll make sure whatever you decide is documented correctly and signed before the Day 17 deadline. Would you like me to connect you with Sofia to discuss the response?"', ok: true }
-      ],
-      'The TC does not advise sellers on whether to accept, reject, or counter repair requests. This is a business/negotiation decision between the seller and their agent. The TC\'s role is to ensure paperwork is prepared correctly and deadlines are met.'
-    );
-
-    REVEAL['ca2-d-vendor'] = 'ca2-s7-p2';
-    REVEAL['ca2-d-seller-advice'] = 'ca2-s7-nav';
-
-    var main =
-      '<div class="wf-phase" style="display:' + (activeIdx === 0 ? 'block' : 'none') + '">' + inspectCard + calloutWarn +
-        '<button class="wf-phase-btn" onclick="caNewReveal(\'ca2-s7-p1\')">Begin inspection review &rarr;</button>' +
-      '</div>' +
-      '<div class="wf-phase" id="ca2-s7-p1" style="display:' + (activeIdx === 1 ? 'block' : 'none') + '">' + decVendor + '</div>' +
-      '<div class="wf-phase" id="ca2-s7-p2" style="display:' + (activeIdx === 2 ? 'block' : 'none') + '">' + decSeller + '</div>' +
-      '<div class="wf-phase" id="ca2-s7-nav" style="display:' + (activeIdx === 3 ? 'block' : 'none') + '">' +
-        '<button class="wf-nav-btn primary" onclick="wfNext()">Continue &rarr;</button>' +
+    /* ── Marcus vendor recommendation email ── */
+    var marcusVendorEmail =
+      '<div class="wf-email-inbox-wrap">' +
+        '<div class="wf-email-client-bar">' +
+          '<div class="wf-email-client-left">' +
+            '<div class="wf-email-window-dots"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>' +
+            '<div class="wf-email-folder"><span class="wf-folder-icon">&#128233;</span> <strong>Inbox</strong> &rsaquo; Inspections &rsaquo; 4827 Rolando Blvd</div>' +
+          '</div>' +
+          '<div class="wf-email-client-right">' +
+            '<div class="wf-email-actions">' +
+              '<button type="button" class="wf-email-action-btn" title="Reply">&#8617; Reply</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Star">&#9733;</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Print">&#128438;</button>' +
+            '</div>' +
+            '<span class="wf-email-tool-tag" style="background:rgba(224,169,59,.18);color:#d97706;border-color:rgba(224,169,59,.4);">&#128736; Inspection</span>' +
+            '<span class="wf-email-time">Thu, Oct 16, 2025 &middot; 9:15 AM</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wf-email">' +
+          '<div class="wf-email-header">' +
+            '<div class="wf-email-subject-bar">' +
+              '<h3 class="wf-email-subject">Foundation specialist needed &mdash; 4827 Rolando Blvd</h3>' +
+            '</div>' +
+            '<div class="wf-email-sender-profile">' +
+              '<div class="wf-email-avatar-wrap">' +
+                '<div class="wf-email-avatar" style="background:linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%);">ML</div>' +
+              '</div>' +
+              '<div class="wf-email-sender-info">' +
+                '<div class="wf-email-sender-line">' +
+                  '<span class="wf-email-sender-name">Marcus Lee</span>' +
+                  '<span class="wf-email-sender-addr">&lt;marcus.lee@exprealty.com&gt;</span>' +
+                  '<span class="wf-badge-broker" style="color:#0369a1;border-color:#0ea5e9;">eXp Realty</span>' +
+                '</div>' +
+                '<div class="wf-email-recipient-line"><span>To: <strong>TC</strong> &lt;tc@bhhscal.com&gt;</span></div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="wf-email-body">' +
+            '<p>Hey TC,</p>' +
+            '<p>Jerry Sandoval\'s home inspection flagged an <strong>18-inch crack on the south foundation</strong>. My buyers want a specialist assessment before we go any further.</p>' +
+            '<p>Do you have a <strong>good foundation company you can recommend</strong>? We need someone reliable who can get out there quickly &mdash; the Day 17 deadline is coming up fast.</p>' +
+            '<p>Thanks,<br>Marcus Lee<br>Buyer\'s Agent &middot; eXp Realty</p>' +
+          '</div>' +
+        '</div>' +
       '</div>';
 
-    return step(8, 'Inspections & Repair Negotiation', 'Oct 14 – Oct 20, 2025',
+    var vendorCompose = compose({
+      key: 'ca2-vendor-reply',
+      scenario: 'tc-ca-vendor-boundary',
+      prompt: 'Reply to Marcus about the foundation specialist request',
+      to: 'Marcus Lee <marcus.lee@exprealty.com>',
+      subj: 'Re: Foundation specialist needed — 4827 Rolando Blvd',
+      inst: 'Marcus is asking you to recommend a specific foundation company. As TC, you must NOT recommend specific vendors — this creates liability for the brokerage. You CAN offer to help schedule once Marcus selects a company, and you can offer a list of licensed contractors. Politely explain the boundary.',
+      ans: 'Hi Marcus,\n\nI\'d be happy to help coordinate the specialist appointment once you\'ve selected a company. I can contact them, schedule the inspection, and make sure access to the property is arranged with Sofia and the sellers.\n\nHowever, I\'m not able to recommend a specific vendor — recommending vendors could create liability for our brokerage. I\'d suggest checking with your broker for a referral list, or I can provide you with a list of licensed foundation contractors in the San Diego area if that would be helpful.\n\nOnce you\'ve chosen a company, just send me their contact info and I\'ll handle the scheduling right away. We want to get this done well before the Day 17 deadline on October 20.\n\nBest regards,\nTransaction Coordinator\nBerkshire Hathaway HomeServices California Properties'
+    });
+
+    /* ── Daniel seller advice email ── */
+    var danielSellerEmail =
+      '<div class="wf-email-inbox-wrap">' +
+        '<div class="wf-email-client-bar">' +
+          '<div class="wf-email-client-left">' +
+            '<div class="wf-email-window-dots"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>' +
+            '<div class="wf-email-folder"><span class="wf-folder-icon">&#128233;</span> <strong>Inbox</strong> &rsaquo; Sellers &rsaquo; 4827 Rolando Blvd</div>' +
+          '</div>' +
+          '<div class="wf-email-client-right">' +
+            '<div class="wf-email-actions">' +
+              '<button type="button" class="wf-email-action-btn" title="Reply">&#8617; Reply</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Star">&#9733;</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Print">&#128438;</button>' +
+            '</div>' +
+            '<span class="wf-email-tool-tag" style="background:rgba(224,169,59,.18);color:#d97706;border-color:rgba(224,169,59,.4);">&#128172; Seller Question</span>' +
+            '<span class="wf-email-time">Sun, Oct 19, 2025 &middot; 6:40 PM</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wf-email">' +
+          '<div class="wf-email-header">' +
+            '<div class="wf-email-subject-bar">' +
+              '<h3 class="wf-email-subject">Re: Repair Request &mdash; 4827 Rolando Blvd</h3>' +
+            '</div>' +
+            '<div class="wf-email-sender-profile">' +
+              '<div class="wf-email-avatar-wrap">' +
+                '<div class="wf-email-avatar" style="background:linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%);box-shadow:0 0 0 2.5px #64748b, 0 4px 12px rgba(30,58,95,.2);">DH</div>' +
+              '</div>' +
+              '<div class="wf-email-sender-info">' +
+                '<div class="wf-email-sender-line">' +
+                  '<span class="wf-email-sender-name">Daniel Herrera</span>' +
+                  '<span class="wf-email-sender-addr">&lt;herrera.family@email.com&gt;</span>' +
+                  '<span class="wf-badge-broker" style="color:#1e3a5f;border-color:#2d5a87;">Seller</span>' +
+                '</div>' +
+                '<div class="wf-email-recipient-line"><span>To: <strong>TC</strong> &lt;tc@bhhscal.com&gt;</span></div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="wf-email-body">' +
+            '<p>Hi,</p>' +
+            '<p>I just saw the buyers\' repair request for <strong>$12,550</strong>. That HVAC works perfectly fine &mdash; it cools the house just like it always has. I don\'t want to give them anything for that.</p>' +
+            '<p>Carmen and I are thinking we should just <strong>reject the whole thing</strong>. What do you think &mdash; should we reject it all, or do we need to offer something? I want to be done with this before the deadline.</p>' +
+            '<p>Daniel</p>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    var sellerCompose = compose({
+      key: 'ca2-seller-reply',
+      scenario: 'tc-ca-seller-boundary',
+      prompt: 'Reply to Daniel about the repair request maintaining TC boundaries',
+      to: 'Daniel Herrera <herrera.family@email.com>',
+      cc: 'Sofia Reyes <sofia.reyes@bhhscal.com>',
+      subj: 'Re: Repair Request — 4827 Rolando Blvd',
+      inst: 'Daniel is asking you for advice on whether to accept, reject, or counter the repair request. As TC, you must NOT advise on negotiation decisions — that is between the seller and their listing agent (Sofia). Redirect Daniel to Sofia, confirm you will handle the paperwork, and remind him of the Day 17 deadline.',
+      ans: 'Hi Daniel,\n\nI understand your frustration with the repair request. However, the decision on how to respond — whether to accept, reject, or counter — is a negotiation decision between you, Carmen, and Sofia as your listing agent. It would not be appropriate for me to advise on that.\n\nWhat I can tell you is that the Day 17 deadline (October 20) is tomorrow, and whatever you decide needs to be documented and signed before that date. I will make sure the paperwork is prepared correctly and signed by all parties once you and Sofia determine the response.\n\nWould you like me to connect you with Sofia to discuss your options? She can walk you through the pros and cons of each approach.\n\nBest regards,\nTransaction Coordinator\nBerkshire Hathaway HomeServices California Properties'
+    });
+
+    REVEAL['ca2-vendor-reply'] = 'ca2-s5-p2';
+    REVEAL['ca2-seller-reply'] = 'ca2-s5-nav';
+
+    var s5PillLabels = ['Inspections', 'Vendor Question', 'Seller Advice'];
+    var s5PillStates = [
+      vendorDone ? 'done' : 'upcoming',
+      vendorDone ? 'done' : 'upcoming',
+      sellerDone ? 'done' : (!vendorDone ? 'locked' : 'upcoming')
+    ];
+    var substepper5 = '<div class="wf-substepper" id="ca2-s5-tracker">';
+    for (var s5i = 0; s5i < 3; s5i++) {
+      substepper5 += '<button type="button" class="wf-substep-pill wf-pt-item ' + (curSlide === s5i ? 'active' : s5PillStates[s5i]) + '" id="ca2-s5-pill-' + s5i + '" onclick="caNewGoStep5Sub(' + s5i + ')">' +
+        '<span class="substep-num">' + (s5i + 1) + '</span><span>' + s5PillLabels[s5i] + '</span></button>';
+    }
+    substepper5 += '</div>';
+
+    var main = substepper5 +
+      '<div class="wf-phase" id="ca2-s5-p0" style="display:' + (curSlide === 0 ? 'block' : 'none') + '">' +
+        inspectCard + calloutWarn +
+        '<div class="wf-deck-nav" style="margin-top:18px;"><button type="button" class="wf-phase-btn" onclick="caNewGoStep5Sub(1)">Begin inspection review &rarr;</button></div>' +
+      '</div>' +
+      '<div class="wf-phase" id="ca2-s5-p1" style="display:' + (curSlide === 1 ? 'block' : 'none') + '">' +
+        marcusVendorEmail + vendorCompose +
+      '</div>' +
+      '<div class="wf-phase" id="ca2-s5-p2" style="display:' + (curSlide === 2 ? 'block' : 'none') + '">' +
+        danielSellerEmail + sellerCompose +
+      '</div>' +
+      '<div class="wf-phase" id="ca2-s5-nav" style="display:' + (sellerDone ? 'block' : 'none') + '">' +
+        '<button class="wf-nav-btn primary" onclick="wfNext()">Continue to Step 7 &rarr;</button>' +
+      '</div>';
+
+    return step(6, 'Inspections & Repair Negotiation', 'Oct 14 – Oct 20, 2025',
       'Manage inspection reports, coordinate specialist evaluations, navigate seller repair negotiations under Day 17 pressure, and secure executed Amendment #1.',
       main, side([['Repair credit', '$4,500 (agreed)'], ['Day 17', 'Oct 20, 2025']], ['inspect', 'termite', 'foundation', 'rr', 'sellerRR', 'amend1'], ['sofia', 'daniel', 'carmen', 'marcus', 'sarah', 'tyler']), true,
       { text: 'Physical Inspection Contingency Deadline: Day 17 is Oct 20, 2025. Buyer must submit Request for Repair or remove contingency.', days: '3 days remaining', critical: false });
   }
 
-  /* ════════════════ Step 9: Appraisal, Contingencies & Wire Fraud ════════════════ */
-  function caNewStep8() {
-    var extDone = run()['d_ca2-d-extension'] !== undefined;
+  /* ---------- Sub-step Controller for Step 6 (Inspections) ---------- */
+  window._caNewSlide5 = null;
+
+  window.caNewGoStep5Sub = function (idx) {
+    if (idx === undefined || idx === null) idx = 0;
+    var cur = (typeof window._caNewSlide5 === 'number') ? window._caNewSlide5 : 0;
+    if (idx < cur) { window._caNewSlide5 = idx; caNewApplyStep5Sub(idx); return; }
+    var vendorDone = !!run()['c_ca2-vendor-reply'];
+    if (idx >= 2 && !vendorDone) { window._caNewSlide5 = 0; caNewApplyStep5Sub(0); return; }
+    window._caNewSlide5 = idx;
+    caNewApplyStep5Sub(idx);
+  };
+
+  window.caNewApplyStep5Sub = function (idx) {
+    var phaseIds = ['ca2-s5-p0', 'ca2-s5-p1', 'ca2-s5-p2'];
+    phaseIds.forEach(function (pid, i) {
+      var el = document.getElementById(pid);
+      if (el) { if (i === idx) { el.style.display = 'block'; el.classList.add('wf-phase-enter'); } else { el.style.display = 'none'; el.classList.remove('wf-phase-enter'); } }
+    });
+    caNewUpdateStep5Pills();
+    var topEl = document.querySelector('.mh-top');
+    if (topEl) topEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  window.caNewUpdateStep5Pills = function () {
+    var cur = (typeof window._caNewSlide5 === 'number') ? window._caNewSlide5 : 0;
+    var vendorDone = !!run()['c_ca2-vendor-reply'];
+    var sellerDone = !!run()['c_ca2-seller-reply'];
+    var states = [
+      vendorDone ? 'done' : 'upcoming',
+      vendorDone ? 'done' : 'upcoming',
+      sellerDone ? 'done' : (!vendorDone ? 'locked' : 'upcoming')
+    ];
+    for (var i = 0; i < 3; i++) {
+      var pill = document.getElementById('ca2-s5-pill-' + i);
+      if (pill) pill.className = 'wf-substep-pill wf-pt-item ' + (i === cur ? 'active' : states[i]);
+    }
+  };
+
+  /* ════════════════ Step 7: Appraisal, Contingencies & Wire Fraud ════════════════ */
+  function caNewStep6() {
+    var extDone = !!run()['c_ca2-extension-reply'];
     var amend2Res = run()['r_ca2-amend2'];
     var amend2Done = !!(amend2Res && amend2Res.length && amend2Res.indexOf(false) === -1);
-    var wireDone = run()['d_ca2-d-wire'] !== undefined;
-    var activeIdx = wireDone ? 4 : (amend2Done ? 3 : (extDone ? 2 : 0));
+    var wireDone = !!run()['c_ca2-wire-reply'];
+    var curSlide = (typeof window._caNewSlide6 === 'number') ? window._caNewSlide6 : 0;
 
     var appraisalCard = card('Appraisal Gap Negotiation Timeline',
       'Handling appraisal shortfalls and financing contingencies.',
@@ -4481,16 +5652,137 @@
         ['Oct 27, 2025', 'Buyer removes appraisal contingency. ALL contingencies are now fully removed!']
       ]));
 
-    var decExt = decision('ca2-d-extension',
-      'Marcus Lee says: "Extensions are automatic in California. You don\'t need the seller to agree — just log it." Is this correct?',
-      [
-        { t: 'Yes. California contingency extensions are automatic if the buyer sends written notice before the deadline.', ok: false },
-        { t: 'No. In California, a contingency extension requires mutual written agreement. Both parties must sign. If the seller refuses, the buyer must remove the contingency by the original deadline or risk a Notice to Buyer to Perform.', ok: true },
-        { t: 'Extensions don\'t exist. The buyer must either remove the contingency or cancel.', ok: false }
-      ],
-      'California contingency extensions are NOT automatic or unilateral. They require a signed amendment agreed to by both parties.'
-    );
+    /* ── Marcus extension email ── */
+    var marcusExtEmail =
+      '<div class="wf-email-inbox-wrap">' +
+        '<div class="wf-email-client-bar">' +
+          '<div class="wf-email-client-left">' +
+            '<div class="wf-email-window-dots"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>' +
+            '<div class="wf-email-folder"><span class="wf-folder-icon">&#128233;</span> <strong>Inbox</strong> &rsaquo; Contingencies &rsaquo; 4827 Rolando Blvd</div>' +
+          '</div>' +
+          '<div class="wf-email-client-right">' +
+            '<div class="wf-email-actions">' +
+              '<button type="button" class="wf-email-action-btn" title="Reply">&#8617; Reply</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Star">&#9733;</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Print">&#128438;</button>' +
+            '</div>' +
+            '<span class="wf-email-tool-tag" style="background:rgba(224,169,59,.18);color:#d97706;border-color:rgba(224,169,59,.4);">&#9888; Contingency</span>' +
+            '<span class="wf-email-time">Mon, Oct 20, 2025 &middot; 11:30 AM</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wf-email">' +
+          '<div class="wf-email-header">' +
+            '<div class="wf-email-subject-bar">' +
+              '<h3 class="wf-email-subject">Appraisal contingency extension &mdash; 4827 Rolando Blvd</h3>' +
+            '</div>' +
+            '<div class="wf-email-sender-profile">' +
+              '<div class="wf-email-avatar-wrap">' +
+                '<div class="wf-email-avatar" style="background:linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%);">ML</div>' +
+              '</div>' +
+              '<div class="wf-email-sender-info">' +
+                '<div class="wf-email-sender-line">' +
+                  '<span class="wf-email-sender-name">Marcus Lee</span>' +
+                  '<span class="wf-email-sender-addr">&lt;marcus.lee@exprealty.com&gt;</span>' +
+                  '<span class="wf-badge-broker" style="color:#0369a1;border-color:#0ea5e9;">eXp Realty</span>' +
+                '</div>' +
+                '<div class="wf-email-recipient-line"><span>To: <strong>TC</strong> &lt;tc@bhhscal.com&gt;</span></div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="wf-email-body">' +
+            '<p>Hi TC,</p>' +
+            '<p>Just a heads up &mdash; the lender\'s appraiser is running behind and won\'t have the report ready by the <strong>October 20 deadline</strong>. I\'m going to need to extend the appraisal contingency.</p>' +
+            '<p>Don\'t worry about getting the seller to sign anything &mdash; <strong>extensions are automatic in California</strong> as long as I send written notice before the deadline. Just log it in the file and we\'ll be good.</p>' +
+            '<p>Thanks,<br>Marcus Lee<br>Buyer\'s Agent &middot; eXp Realty</p>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
 
+    var extCompose = compose({
+      key: 'ca2-extension-reply',
+      scenario: 'tc-ca-extension-reply',
+      prompt: 'Correct Marcus about contingency extension requirements',
+      to: 'Marcus Lee <marcus.lee@exprealty.com>',
+      cc: 'Sofia Reyes <sofia.reyes@bhhscal.com>',
+      subj: 'Re: Appraisal contingency extension — 4827 Rolando Blvd',
+      inst: 'Marcus incorrectly claims contingency extensions are automatic in California. Correct this misinformation: extensions require MUTUAL written agreement (both parties must sign). If the seller refuses, the buyer must remove the contingency by the original deadline or risk a Notice to Buyer to Perform. CC Sofia so the extension can be coordinated.',
+      ans: 'Hi Marcus,\n\nI want to clarify an important point: in California, contingency extensions are NOT automatic or unilateral. A contingency extension requires mutual written agreement — both parties must sign an extension addendum.\n\nIf the seller refuses to extend, the buyer must either remove the appraisal contingency by the original deadline (October 20) or risk the seller issuing a Notice to Buyer to Perform (NBP), which gives 48 hours to remove or face cancellation.\n\nI am copying Sofia so we can coordinate getting an extension agreement drafted and signed by both parties as quickly as possible. Time is critical here.\n\nPlease confirm the new proposed deadline so I can prepare the extension form.\n\nBest regards,\nTransaction Coordinator\nBerkshire Hathaway HomeServices California Properties'
+    });
+
+    /* ── Sofia's amendment email ── */
+    var sofiaAmendEmail =
+      '<div class="wf-email-inbox-wrap">' +
+        '<div class="wf-email-client-bar">' +
+          '<div class="wf-email-client-left">' +
+            '<div class="wf-email-window-dots"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>' +
+            '<div class="wf-email-folder"><span class="wf-folder-icon">&#128233;</span> <strong>Inbox</strong> &rsaquo; Amendments &rsaquo; 4827 Rolando Blvd</div>' +
+          '</div>' +
+          '<div class="wf-email-client-right">' +
+            '<div class="wf-email-actions">' +
+              '<button type="button" class="wf-email-action-btn" title="Reply">&#8617; Reply</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Star">&#9733;</button>' +
+              '<button type="button" class="wf-email-action-btn" title="Print">&#128438;</button>' +
+            '</div>' +
+            '<span class="wf-email-tool-tag" style="background:rgba(31,158,90,.18);color:#1f9e5a;border-color:rgba(31,158,90,.4);">&#128203; Amendment</span>' +
+            '<span class="wf-email-time">Sat, Oct 25, 2025 &middot; 3:10 PM</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wf-email">' +
+          '<div class="wf-email-header">' +
+            '<div class="wf-email-subject-bar">' +
+              '<h3 class="wf-email-subject">Amendment #2: Price Reduction &mdash; 4827 Rolando Blvd (Appraisal Gap)</h3>' +
+              '<span class="wf-email-priority-badge" style="background:rgba(224,169,59,.1);color:#d97706;border-color:rgba(224,169,59,.3);">&#9889; Action Required</span>' +
+            '</div>' +
+            '<div class="wf-email-sender-profile">' +
+              '<div class="wf-email-avatar-wrap">' +
+                '<div class="wf-email-avatar">SR</div>' +
+                '<span class="wf-email-avatar-status" title="Active now"></span>' +
+              '</div>' +
+              '<div class="wf-email-sender-info">' +
+                '<div class="wf-email-sender-line">' +
+                  '<span class="wf-email-sender-name">Sofia Reyes</span>' +
+                  '<span class="wf-email-sender-addr">&lt;sofia.reyes@bhhscal.com&gt;</span>' +
+                  '<span class="wf-badge-verified">&#10003; Verified Agent</span>' +
+                  '<span class="wf-badge-broker">BHHS California Properties</span>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="wf-email-body">' +
+            '<p>Hi TC,</p>' +
+            '<p>The appraisal came back at <strong>$845,000</strong> &mdash; that\'s a <strong>$15,000 shortfall</strong> below our $860,000 contract price. After negotiations with Marcus Lee, we\'ve reached a compromise:</p>' +
+            '<div class="wf-email-terms-grid">' +
+              '<div class="wf-term-item"><span>Original Price</span><b>$860,000</b></div>' +
+              '<div class="wf-term-item"><span>Appraisal Value</span><b>$845,000</b></div>' +
+              '<div class="wf-term-item"><span>Gap Amount</span><b>$15,000</b></div>' +
+              '<div class="wf-term-item"><span>New Price</span><b>$852,500 (split gap 50/50)</b></div>' +
+              '<div class="wf-term-item"><span>Reason</span><b>Appraisal shortfall / split gap compromise</b></div>' +
+            '</div>' +
+            '<p>Please prepare <strong>Amendment #2</strong> reflecting the price reduction to $852,500. Both parties have agreed and I need signatures ASAP before the appraisal contingency deadline on October 27.</p>' +
+            SOFIA_SIG +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    var amend2Form = form('ca2-amend2', 'Amendment #2: Price reduction', 'From Sofia\'s email (use the peek bar above to review), record the negotiated price amendment following the appraisal gap compromise.', [
+      { label: 'Original price', kind: 'money', ans: 860000, ph: '$', show: '$860,000' },
+      { label: 'New price', kind: 'money', ans: 852500, ph: '$', show: '$852,500' },
+      { label: 'Reason', kind: 'text', ans: ['appraisal'], ph: 'Reason for price reduction', show: 'Appraisal shortfall / split gap' },
+      { label: 'Appraisal value', kind: 'money', ans: 845000, ph: '$', show: '$845,000' },
+      { label: 'Gap amount', kind: 'money', ans: 15000, ph: '$', show: '$15,000' }
+    ]);
+
+    var peekSofiaAmend =
+      '<div class="wf-peek-bar">' +
+        '<button type="button" class="wf-peek-btn" onclick="caNewToggleEmailPeek(this)">' +
+          '<span class="wf-peek-icon">&#9993;</span>' +
+          '<span class="wf-peek-text"><strong>Sofia\'s Email:</strong> Amendment #2 &mdash; Price Reduction to $852,500</span>' +
+          '<span class="wf-peek-arrow">&#9662;</span>' +
+        '</button>' +
+      '</div>' +
+      '<div class="wf-email-peek-drawer" style="display:none;margin-top:12px;">' + sofiaAmendEmail + '</div>';
+
+    /* ── Wire fraud phishing email (kept as-is) ── */
     var phishCard =
       '<div class="wf-email-inbox-wrap">' +
         '<div class="wf-email-client-bar" style="background:#b91c1c;color:#fff;">' +
@@ -4527,47 +5819,126 @@
         '</div>' +
       '</div>';
 
-    var decWire = decision('ca2-d-wire',
-      'The buyers forward this email to you asking for confirmation. What do you do?',
-      [
-        { t: 'Forward the updated instructions to Sofia and confirm they should wire to the new account.', ok: false },
-        { t: 'Reply to the email asking Sarah to confirm the change.', ok: false },
-        { t: 'Do NOT forward or act on this email. The sender name is misspelled (\'Nquyen\' not \'Nguyen\') and the domain is wrong. Call Sarah Nguyen directly on the phone number you already have on file to verify. Alert all parties that a fraud attempt is in progress.', ok: true }
-      ],
-      'Wire fraud is the #1 financial crime targeting real estate. Red flags: misspelled name, wrong domain, \'URGENT\' pressure, mid-transaction instruction change. Always verify wire instructions by phone using a known number. A TC who catches this saves the buyers their entire down payment.'
-    );
+    var wireFraudCompose = compose({
+      key: 'ca2-wire-reply',
+      scenario: 'tc-ca-wire-fraud',
+      prompt: 'Respond to the wire fraud attempt — alert all parties',
+      to: 'Jason & Michelle Brooks <jmbrooks.home@email.com>',
+      cc: 'Marcus Lee <marcus.lee@exprealty.com>, Sofia Reyes <sofia.reyes@bhhscal.com>, Sarah Nguyen <sarah.nguyen@ctt.com>',
+      subj: 'URGENT: Wire Fraud Alert — DO NOT Wire Funds (4827 Rolando Blvd)',
+      inst: 'The buyers forwarded a suspicious email claiming to be from Sarah Nguyen with updated wire instructions. Identify the red flags (misspelled name "Nquyen", wrong domain chicago-titleco.com vs ctt.com, urgency, phone lines "down") and alert ALL parties NOT to wire any funds. Advise verifying wire instructions by phone using known contact information.',
+      ans: 'Jason and Michelle,\n\nSTOP — DO NOT wire any funds based on the email you received. This is a wire fraud attempt.\n\nRed flags I identified:\n• The sender name is misspelled ("Nquyen" instead of "Nguyen")\n• The email domain is wrong (chicago-titleco.com instead of ctt.com)\n• The email creates false urgency and demands immediate action\n• The email claims phone lines are down to prevent verification\n• The wire instructions are to an unfamiliar bank and beneficiary\n\nI am alerting all parties immediately. Sarah Nguyen at Chicago Title has been copied — Sarah, please confirm that these wire instructions did NOT come from your office.\n\nCRITICAL: NEVER wire funds based on email instructions alone. Always verify wire instructions by calling the escrow officer directly using the phone number you already have on file, not any number provided in the suspicious email.\n\nI will follow up after speaking directly with Sarah to confirm the legitimate wire instructions.\n\nBest regards,\nTransaction Coordinator\nBerkshire Hathaway HomeServices California Properties'
+    });
 
-    var amend2Form = form('ca2-amend2', 'Amendment #2: Price reduction', 'Record the negotiated price amendment following the appraisal gap compromise.', [
-      { label: 'Original price', kind: 'money', ans: 860000, ph: '$', show: '$860,000' },
-      { label: 'New price', kind: 'money', ans: 852500, ph: '$', show: '$852,500' },
-      { label: 'Reason', kind: 'text', ans: ['appraisal'], ph: 'Reason for price reduction', show: 'Appraisal shortfall / split gap' },
-      { label: 'Appraisal value', kind: 'money', ans: 845000, ph: '$', show: '$845,000' },
-      { label: 'Gap amount', kind: 'money', ans: 15000, ph: '$', show: '$15,000' }
-    ]);
+    REVEAL['ca2-extension-reply'] = 'ca2-s6-p2';
+    REVEAL['ca2-wire-reply'] = 'ca2-s6-nav';
 
-    REVEAL['ca2-d-extension'] = 'ca2-s8-p2';
-    REVEAL['ca2-amend2'] = 'ca2-s8-p3';
-    REVEAL['ca2-d-wire'] = 'ca2-s8-nav';
+    var s6PillLabels = ['Timeline', 'Extension', 'Amendment Email', 'Amendment Terms', 'Wire Fraud'];
+    var s6PillStates = [
+      extDone ? 'done' : 'upcoming',
+      extDone ? 'done' : 'upcoming',
+      amend2Done ? 'done' : (!extDone ? 'locked' : 'upcoming'),
+      amend2Done ? 'done' : (!extDone ? 'locked' : 'upcoming'),
+      wireDone ? 'done' : (!amend2Done ? 'locked' : 'upcoming')
+    ];
+    var substepper6 = '<div class="wf-substepper" id="ca2-s6-tracker">';
+    for (var s6i = 0; s6i < 5; s6i++) {
+      substepper6 += '<button type="button" class="wf-substep-pill wf-pt-item ' + (curSlide === s6i ? 'active' : s6PillStates[s6i]) + '" id="ca2-s6-pill-' + s6i + '" onclick="caNewGoStep6Sub(' + s6i + ')">' +
+        '<span class="substep-num">' + (s6i + 1) + '</span><span>' + s6PillLabels[s6i] + '</span></button>';
+    }
+    substepper6 += '</div>';
 
-    var main =
-      '<div class="wf-phase" style="display:' + (activeIdx === 0 ? 'block' : 'none') + '">' + appraisalCard +
-        '<button class="wf-phase-btn" onclick="caNewReveal(\'ca2-s8-p1\')">Review appraisal contingency &rarr;</button>' +
+    var main = substepper6 +
+      '<div class="wf-phase" id="ca2-s6-p0" style="display:' + (curSlide === 0 ? 'block' : 'none') + '">' +
+        appraisalCard +
+        '<div class="wf-deck-nav" style="margin-top:18px;"><button type="button" class="wf-phase-btn" onclick="caNewGoStep6Sub(1)">Review appraisal contingency &rarr;</button></div>' +
       '</div>' +
-      '<div class="wf-phase" id="ca2-s8-p1" style="display:' + (activeIdx === 1 ? 'block' : 'none') + '">' + decExt + '</div>' +
-      '<div class="wf-phase" id="ca2-s8-p2" style="display:' + (activeIdx === 2 ? 'block' : 'none') + '">' + amend2Form + '</div>' +
-      '<div class="wf-phase" id="ca2-s8-p3" style="display:' + (activeIdx === 3 ? 'block' : 'none') + '">' + phishCard + decWire + '</div>' +
-      '<div class="wf-phase" id="ca2-s8-nav" style="display:' + (activeIdx === 4 ? 'block' : 'none') + '">' +
-        '<button class="wf-nav-btn primary" onclick="caNewGatedNext()">Continue &rarr;</button>' +
+      '<div class="wf-phase" id="ca2-s6-p1" style="display:' + (curSlide === 1 ? 'block' : 'none') + '">' +
+        marcusExtEmail + extCompose +
+      '</div>' +
+      '<div class="wf-phase" id="ca2-s6-p2" style="display:' + (curSlide === 2 ? 'block' : 'none') + '">' +
+        sofiaAmendEmail +
+        '<div class="wf-deck-nav" style="margin-top:18px;"><button type="button" class="wf-phase-btn" onclick="caNewGoStep6Sub(3)">Extract amendment terms &rarr;</button></div>' +
+      '</div>' +
+      '<div class="wf-phase" id="ca2-s6-p3" style="display:' + (curSlide === 3 ? 'block' : 'none') + '">' +
+        peekSofiaAmend + amend2Form +
+        '<div id="ca2-s6-p3-err" class="wf-slide-err"></div>' +
+        '<div class="wf-deck-nav">' +
+          '<button type="button" class="wf-deck-prev" onclick="caNewGoStep6Sub(2)">&larr; Back to Email</button>' +
+          '<button type="button" class="wf-deck-next" onclick="caNewS6Amend2Next()">Next: Wire Fraud &rarr;</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="wf-phase" id="ca2-s6-p4" style="display:' + (curSlide === 4 ? 'block' : 'none') + '">' +
+        phishCard + wireFraudCompose +
+      '</div>' +
+      '<div class="wf-phase" id="ca2-s6-nav" style="display:' + (wireDone ? 'block' : 'none') + '">' +
+        '<button class="wf-nav-btn primary" onclick="caNewGatedNext()">Continue to Step 8 &rarr;</button>' +
       '</div>';
 
-    return step(9, 'Appraisal, Contingencies & Wire Fraud', 'Oct 20 – Oct 29, 2025',
+    return step(7, 'Appraisal, Contingencies & Wire Fraud', 'Oct 20 – Oct 29, 2025',
       'Resolve the $15,000 appraisal shortfall via Amendment #2, confirm contingency removals, and intercept an aggressive cyber wire fraud attempt.',
       main, side([['Original price', '$860,000'], ['Appraisal', '$845,000'], ['New price', '$852,500']], ['appraisal', 'extAppr', 'amend2', 'wireFraud'], ['sofia', 'daniel', 'carmen', 'marcus', 'sarah', 'tyler']), true,
       { text: 'Appraisal Contingency Deadline: Extended to Oct 27, 2025. Lender appraisal completed at $845,000 ($15,000 short of contract price).', days: '2 days remaining', critical: false });
   }
 
-  /* ════════════════ Step 10: Closing & Post-Closing ════════════════ */
-  function caNewStep9() {
+  /* ---------- Sub-step Controller for Step 7 (Appraisal) ---------- */
+  window._caNewSlide6 = null;
+
+  window.caNewGoStep6Sub = function (idx) {
+    if (idx === undefined || idx === null) idx = 0;
+    var cur = (typeof window._caNewSlide6 === 'number') ? window._caNewSlide6 : 0;
+    if (idx < cur) { window._caNewSlide6 = idx; caNewApplyStep6Sub(idx); return; }
+    var extDone = !!run()['c_ca2-extension-reply'];
+    var amend2Res = run()['r_ca2-amend2'];
+    var amend2Done = !!(amend2Res && amend2Res.length && amend2Res.indexOf(false) === -1);
+    if (idx >= 2 && idx <= 3 && !extDone) { window._caNewSlide6 = 0; caNewApplyStep6Sub(0); return; }
+    if (idx >= 4 && !amend2Done) { window._caNewSlide6 = extDone ? 2 : 0; caNewApplyStep6Sub(window._caNewSlide6); return; }
+    window._caNewSlide6 = idx;
+    caNewApplyStep6Sub(idx);
+  };
+
+  window.caNewApplyStep6Sub = function (idx) {
+    var phaseIds = ['ca2-s6-p0', 'ca2-s6-p1', 'ca2-s6-p2', 'ca2-s6-p3', 'ca2-s6-p4'];
+    phaseIds.forEach(function (pid, i) {
+      var el = document.getElementById(pid);
+      if (el) { if (i === idx) { el.style.display = 'block'; el.classList.add('wf-phase-enter'); } else { el.style.display = 'none'; el.classList.remove('wf-phase-enter'); } }
+    });
+    caNewUpdateStep6Pills();
+    var topEl = document.querySelector('.mh-top');
+    if (topEl) topEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  window.caNewUpdateStep6Pills = function () {
+    var cur = (typeof window._caNewSlide6 === 'number') ? window._caNewSlide6 : 0;
+    var extDone = !!run()['c_ca2-extension-reply'];
+    var amend2Res = run()['r_ca2-amend2'];
+    var amend2Done = !!(amend2Res && amend2Res.length && amend2Res.indexOf(false) === -1);
+    var wireDone = !!run()['c_ca2-wire-reply'];
+    var states = [
+      extDone ? 'done' : 'upcoming',
+      extDone ? 'done' : 'upcoming',
+      amend2Done ? 'done' : (!extDone ? 'locked' : 'upcoming'),
+      amend2Done ? 'done' : (!extDone ? 'locked' : 'upcoming'),
+      wireDone ? 'done' : (!amend2Done ? 'locked' : 'upcoming')
+    ];
+    for (var i = 0; i < 5; i++) {
+      var pill = document.getElementById('ca2-s6-pill-' + i);
+      if (pill) pill.className = 'wf-substep-pill wf-pt-item ' + (i === cur ? 'active' : states[i]);
+    }
+  };
+
+  window.caNewS6Amend2Next = function () {
+    caNewCheck('ca2-amend2');
+    var res = run()['r_ca2-amend2'];
+    var ok = !!(res && res.length && res.indexOf(false) === -1);
+    var errEl = document.getElementById('ca2-s6-p3-err');
+    if (ok) { if (errEl) errEl.style.display = 'none'; caNewGoStep6Sub(4); }
+    else { if (errEl) { errEl.innerHTML = '<strong>&#9888; Incomplete:</strong> Please complete all amendment fields from Sofia\'s email before proceeding.'; errEl.style.display = 'block'; errEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } }
+  };
+
+  /* ════════════════ Step 8: Closing & Post-Closing ════════════════ */
+  function caNewStep7() {
+    var composeDone = !!run()['c_ca2-post-close'];
     var activeIdx = run()['post_close_started'] ? 1 : 0;
 
     var checkCard = card('Closing Readiness Checklist',
@@ -4581,7 +5952,6 @@
         '<div class="check-item"><span class="check-box checked"></span> <span><strong>Seller Signing:</strong> Daniel &amp; Carmen Herrera executed grant deed with mobile notary (Oct 31)</span></div>' +
         '<div class="check-item"><span class="check-box checked"></span> <span><strong>Final Walkthrough:</strong> Verification of Property Condition signed by buyers (Nov 2)</span></div>' +
         '<div class="check-item"><span class="check-box checked"></span> <span><strong>Closing Wire:</strong> Buyer closing funds verified verbally by phone with Sarah Nguyen (Nov 2)</span></div>' +
-        '<div class="check-item"><span class="check-box checked"></span> <span><strong>Lien Cleared:</strong> SDG&amp;E $1,200 utility lien release confirmed by Chicago Title</span></div>' +
         '<div class="check-item"><span class="check-box checked"></span> <span><strong>Recording:</strong> San Diego County Recorder confirms deed recording (Nov 3, 2025)</span></div>' +
       '</div>');
 
@@ -4605,17 +5975,53 @@
       ans: 'Congratulations Everyone,\n\nWe are thrilled to confirm that the sale of 4827 Rolando Blvd, San Diego, CA 92115 has officially closed escrow today, Monday, November 3, 2025! Recording has been confirmed by the San Diego County Recorder.\n\nFinal Transaction Summary:\n• Final Sale Price: $852,500.00\n• Repair Credit to Buyer: $4,500.00 (Amendment #1)\n• Earnest Money Deposit: $17,200.00 credited\n• Escrow & Title: Chicago Title Company (Sarah Nguyen, Escrow #CTT-2025-07421)\n• Sellers: Daniel & Carmen Herrera — congratulations on your move to Austin!\n• Buyers: Jason & Michelle Brooks — congratulations on your new home!\n\nAll executed documents, disclosures, inspection reports, amendments, and the final ALTA Settlement Statement have been audited and archived in our compliance file.\n\nThank you all for a seamless closing!\n\nWarm regards,\nTransaction Coordinator\nBerkshire Hathaway HomeServices California Properties'
     });
 
+    /* ── Sofia's closing congratulations reply ── */
+    var sofiaCloseReply =
+      '<div class="wf-email-card received" id="ca2-s7-sofia-close-reply" style="display:' + (composeDone ? 'block' : 'none') + '">' +
+        '<div class="wf-email-card-header received">' +
+          '<div class="wf-email-card-status">' +
+            '<div class="wf-email-badge-group"><span class="wf-email-type-badge received">&#128233; Inbox</span></div>' +
+            '<div class="wf-email-time-tag">Mon, Nov 3, 2025 at 10:15 AM (12 mins later)</div>' +
+          '</div>' +
+          '<div class="wf-email-card-profile">' +
+            '<div class="wf-email-avatar-wrap">' +
+              '<div class="wf-email-avatar">SR</div>' +
+              '<span class="wf-email-avatar-status"></span>' +
+            '</div>' +
+            '<div class="wf-email-sender-info">' +
+              '<div class="wf-email-sender-line">' +
+                '<span class="wf-email-sender-name">Sofia Reyes</span>' +
+                '<span class="wf-email-sender-addr">&lt;sofia.reyes@bhhscal.com&gt;</span>' +
+                '<span class="wf-email-role-chip agent">Listing Agent</span>' +
+              '</div>' +
+              '<div class="wf-email-meta-grid">' +
+                '<div class="wf-email-meta-row"><span class="wf-email-meta-lbl">To:</span><span class="wf-email-meta-val"><strong>You</strong> &lt;tc@bhhscal.com&gt;</span></div>' +
+                '<div class="wf-email-meta-row"><span class="wf-email-meta-lbl">Subject:</span><span class="wf-email-meta-val"><strong>Re: Closed: 4827 Rolando Blvd, San Diego (Recording Confirmed)</strong></span></div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wf-email-card-body received">' +
+          '<p>What an incredible job on this transaction! From the listing setup all the way through close of escrow, you kept everything running like clockwork.</p>' +
+          '<p>The Herreras are thrilled &mdash; Carmen even mentioned how smooth the process felt from their end. And catching that wire fraud attempt? That alone saved the Brooks family over $158,000. Outstanding work.</p>' +
+          '<p>I\'m looking forward to our next transaction together. You\'ve proven you can handle anything this business throws at you!</p>' +
+          SOFIA_SIG +
+        '</div>' +
+      '</div>' +
+      '<div class="wf-reply-footer-banner" id="ca2-s7-reply-banner" style="display:' + (composeDone ? 'flex' : 'none') + ';margin-top:14px;">' +
+        '<span class="wf-reply-footer-icon">&#127942;</span>' +
+        '<span><strong>Transaction Complete!</strong> 8-step California seller-side transaction from listing to close. Congratulations!</span>' +
+      '</div>';
+
     var evalBox = card('Workflow Validation & Performance Assessment',
-      'Comprehensive 10-step transaction lifecycle completed.',
+      'Comprehensive 8-step transaction lifecycle completed.',
       '<div style="margin-bottom:14px;font-size:13.5px;color:var(--v-ink);line-height:1.6;">' +
         'You have successfully coordinated the seller-side transaction from initial listing assignment through close of escrow:' +
         '<ul style="margin:8px 0 14px;padding-left:22px;">' +
-          '<li>Set up the listing file and audited statutory California disclosure requirements</li>' +
+          '<li>Set up the listing file and identified the required California disclosure and compliance package</li>' +
           '<li>Verified 12 essential fields of C.A.R. Form RLA and preserved heirloom fixture exclusion</li>' +
-          '<li>Audited TDS completeness, caught missing signatures, and ordered NHD report</li>' +
-          '<li>Cleared title exception ($1,200 SDG&amp;E lien) and addressed seismic liquefaction zone</li>' +
-          '<li>Managed offer negotiation and counters to protect the seller\'s firm closing deadline</li>' +
-          '<li>Opened escrow with Chicago Title and distributed ratified contracts</li>' +
+          '<li>Reviewed incoming offer, extracted terms, and prepared counter-offer under seller relocation pressure</li>' +
+          '<li>Opened escrow with Chicago Title and distributed ratified contracts to all transaction principals</li>' +
           '<li>Tracked $17,200 EMD wire and delivered full disclosure package with statutory notices</li>' +
           '<li>Coordinated inspection findings and negotiated $4,500 repair credit under Day 17 deadline</li>' +
           '<li>Resolved $15,000 appraisal gap (Amendment #2 at $852,500) and intercepted cyber wire fraud</li>' +
@@ -4626,11 +6032,22 @@
 
     var main =
       '<div class="wf-phase" style="display:' + (activeIdx === 0 ? 'block' : 'none') + '">' + checkCard + vpcBanner +
-        '<button class="wf-phase-btn" onclick="run()[\'post_close_started\'] = 1; caNewReveal(\'ca2-s9-p1\')">Complete post-closing &rarr;</button>' +
+        '<button class="wf-phase-btn" onclick="run()[\'post_close_started\'] = 1; caNewReveal(\'ca2-s7-p1\')">Complete post-closing &rarr;</button>' +
       '</div>' +
-      '<div class="wf-phase" id="ca2-s9-p1" style="display:' + (activeIdx === 1 ? 'block' : 'none') + '">' + composeBox + evalBox + '</div>';
+      '<div class="wf-phase" id="ca2-s7-p1" style="display:' + (activeIdx === 1 ? 'block' : 'none') + '">' +
+        '<div class="wf-email-thread-flow">' +
+          composeBox +
+          '<div class="wf-thread-gap-connector" id="ca2-s7-close-connector" style="display:' + (composeDone ? 'flex' : 'none') + '">' +
+            '<div class="wf-thread-gap-line"></div>' +
+            '<div class="wf-thread-gap-pill"><span class="wf-thread-gap-icon">&#9201;</span><span>Sofia Reyes replied 12 minutes later</span></div>' +
+            '<div class="wf-thread-gap-line"></div>' +
+          '</div>' +
+          sofiaCloseReply +
+        '</div>' +
+        evalBox +
+      '</div>';
 
-    return step(10, 'Closing & Post-Closing', 'Mon, Nov 3, 2025',
+    return step(8, 'Closing & Post-Closing', 'Mon, Nov 3, 2025',
       'Escrow closed and recording confirmed! Complete the post-closing wrap-up, issue the final settlement statement, and review your simulator scorecard.',
       main, side([['Status', 'Closed Nov 3, 2025'], ['Final price', '$852,500'], ['Repair credit', '$4,500']], ['settlement'], ['sofia', 'daniel', 'carmen', 'marcus', 'sarah', 'tyler']), true,
       { text: 'Hard Closing Deadline: Relocation departure for Austin, TX is mandatory by close of business TODAY, Nov 3, 2025.', days: 'CLOSING DAY', critical: true });
@@ -4649,41 +6066,31 @@
       "Property: 4827 Rolando Blvd, APN 470-362-18-00. Sellers: Daniel & Carmen Herrera (Joint Tenants). List price $889,000. Commission 5% (2.5% to buyer agent). Brokerage DRE #01317331. Listing dates Sep 24, 2025 to Mar 24, 2026. Included: refrigerator, washer, dryer. Excluded: antique dining room chandelier."
     ],
     2: [
-      "Remember the TC's duty regarding seller disclosures: review for completeness, not content accuracy or legal interpretation.",
-      "Check Section III of the TDS for signatures. If any section is blank or unsigned, flag it to Sofia — do not write in answers yourself.",
-      "Required: TDS, SPQ, NHD, AVID, Lead-Based Paint. No HOA or Mello-Roos. TDS is missing Section III seller signatures. Return to sellers for signature and flag to Sofia without advising on what to disclose."
+      "Review BOTH offer emails carefully — Marcus Lee's conventional offer and Rachel Torres's cash offer. All terms you need are in each email's body and terms grid: price, financing, EMD, contingency periods, closing timeline, seller credits, and deadlines.",
+      "Remember: the TC never advises on which offer to accept, even when one seems obviously better. That's Sofia's fiduciary duty. Your job is to extract and organize ALL offers for the agent to present. Note that Rachel's $855K cash offer has a $12,000 seller credit — the net to sellers is only $843K, comparable to Marcus's $840K with no credits.",
+      "Sofia chose Marcus Lee's buyers. Counter at $875,000 with a firm November 3 closing date. The Nov 3 deadline is non-negotiable — it comes from the Herreras' Austin relocation. When buyers counter at $860,000 keeping Nov 3, the deal works for everyone."
     ],
     3: [
-      "Examine Sofia's AVID report and the JCP-LGS NHD report for material disclosure requirements.",
-      "Notice the NHD flags a Seismic Hazard (liquefaction zone). As TC, ensure this report is included in the statutory package delivered to buyers.",
-      "AVID notes water stains and hairline cracks. NHD identifies seismic liquefaction. Ensure both reports are documented in the master disclosure index."
+      "Escrow opening requires the ratified RPA and all counter offers sent to Chicago Title with earnest money instructions.",
+      "Ensure Sarah Nguyen receives the complete ratified agreement package (RPA + SCO #1 + BCO #1). EMD of $17,200 (2% of $860,000) is due within 3 business days — by October 8.",
+      "The executed contract goes to escrow (Sarah Nguyen), both agents (Sofia and Marcus), and the lender (Tyler Adams). Seller copies go through Sofia, not directly to the Herreras."
     ],
     4: [
-      "Review buyer Jason & Michelle Brooks' purchase offer (C.A.R. RPA) against the sellers' relocation deadline.",
-      "Marcus Lee offered $840,000 with a 45-day close. But Daniel and Carmen MUST close by November 3 to relocate to Austin.",
-      "Counter at $875,000 with a firm November 3 closing date. When buyers counter at $860,000 keeping Nov 3, recommend acceptance because the date is non-negotiable."
-    ],
-    5: [
-      "Escrow opening requires sending the ratified RPA and counter offers to Chicago Title Company with earnest money instructions.",
-      "Ensure Sarah Nguyen receives the complete ratified agreement (RPA + SCO #1 + BCO #1).",
-      "Chicago Title escrow officer is Sarah Nguyen. Wire fraud prevention warning must accompany initial escrow opening communications."
-    ],
-    6: [
       "California C.A.R. RPA requires Earnest Money Deposit (EMD) within 3 business days of acceptance.",
       "Track receipt of the $17,200 EMD (2% of $860,000) from Chicago Title. Deliver the statutory seller disclosure package within 7 days.",
       "Verify Chicago Title's Escrow Receipt confirming $17,200 wired. Serve the full disclosure packet to Marcus Lee."
     ],
-    7: [
+    5: [
       "The buyer's 17-day physical inspection contingency deadline is approaching. Jerry Sandoval's inspection report noted plumbing and electrical issues.",
       "Buyer requested $12,550 in repairs. Daniel and Carmen are willing to offer a $4,500 repair credit at closing instead of doing physical repairs.",
       "Draft C.A.R. Amendment #1 reflecting a $4,500 seller closing cost credit in lieu of repairs, signed by both parties."
     ],
-    8: [
+    6: [
       "Lender Western Valuation appraised at $845,000 — $15,000 short of the $860,000 purchase price. Watch out for phishing emails!",
       "Examine the email from 'Sarah Nquyen' (note the 'q' instead of 'g'). Never verify wire instructions via email — always verify in person or via telephone.",
       "Negotiate price compromise: split gap to $852,500. Flag spoofed wire fraud email immediately to listing agent and escrow."
     ],
-    9: [
+    7: [
       "Review final ALTA settlement statement, recording confirmation, and assemble compliance file.",
       "Verify final price $852,500, repair credit $4,500, recording number, and commission disbursement.",
       "Send congratulatory wrap-up email to Daniel & Carmen Herrera and archive the transaction file for 5-year DRE compliance."
@@ -4696,13 +6103,13 @@
     usePipeline: true,
     tag: 'California · Full Transaction',
     title: '4827 Rolando Blvd: Full Transaction Workflow',
-    desc: 'A full seller-side TC workflow from listing assignment through close of escrow: listing agreement preparation, seller disclosures, pre-listing review, offer negotiation, escrow management, inspections, appraisal gap, wire fraud, and post-closing.',
-    stepCount: 10,
+    desc: 'A full seller-side TC workflow from listing assignment through close of escrow: listing agreement preparation, offer negotiation, escrow management, inspections, appraisal gap, wire fraud, and post-closing.',
+    stepCount: 8,
     specs: [
       { label: 'List Price', value: '$889,000' },
       { label: 'Sellers', value: 'Daniel &amp; Carmen Herrera' },
-      { label: 'Escrow Scope', value: '10 End-to-End Steps' },
-      { label: 'Key TC Scope', value: 'NAR Split, Solar, Wire Defense' }
+      { label: 'Escrow Scope', value: '8 End-to-End Steps' },
+      { label: 'Key TC Scope', value: 'NAR Split, Offers, Wire Defense' }
     ],
     onReset: function () {
       if (typeof window.caNewResetCase === 'function') {
@@ -4712,9 +6119,7 @@
     wfLabels: [
       'New Listing Assignment',
       'Listing Agreement & File Setup',
-      'Seller Disclosures',
-      'Pre-Listing Review',
-      'Offer & Counter',
+      'Offer Review & Negotiation',
       'Open Escrow',
       'EMD & Disclosures',
       'Inspections & Repairs',
@@ -4729,9 +6134,7 @@
       caNewStep4,
       caNewStep5,
       caNewStep6,
-      caNewStep7,
-      caNewStep8,
-      caNewStep9
+      caNewStep7
     ],
     wfAfterRender: {
       0: function () { if (typeof wfSetHints === 'function') wfSetHints(STEP_HINTS[0]); },
@@ -4741,11 +6144,9 @@
       4: function () { if (typeof wfSetHints === 'function') wfSetHints(STEP_HINTS[4]); },
       5: function () { if (typeof wfSetHints === 'function') wfSetHints(STEP_HINTS[5]); },
       6: function () { if (typeof wfSetHints === 'function') wfSetHints(STEP_HINTS[6]); },
-      7: function () { if (typeof wfSetHints === 'function') wfSetHints(STEP_HINTS[7]); },
-      8: function () { if (typeof wfSetHints === 'function') wfSetHints(STEP_HINTS[8]); },
-      9: function () {
-        if (typeof wfSetHints === 'function') wfSetHints(STEP_HINTS[9]);
-        if (typeof wfRenderFinalScore === 'function') wfRenderFinalScore('wf-eval-container', 'tc', 'ca-new', 10);
+      7: function () {
+        if (typeof wfSetHints === 'function') wfSetHints(STEP_HINTS[7]);
+        if (typeof wfRenderFinalScore === 'function') wfRenderFinalScore('wf-eval-container', 'tc', 'ca-new', 8);
         if (typeof wfConfetti === 'function') wfConfetti();
       }
     }
