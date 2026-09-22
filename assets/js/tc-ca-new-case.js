@@ -49,6 +49,10 @@
   }
   ensureStyles();
 
+  var esc = (typeof window !== 'undefined' && typeof window.esc === 'function')
+    ? window.esc
+    : function (s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
+
   var DIR = '../assets/docs/tc-ca-new/';
   var DOCS = {
     rla:        ['listing-agreement.pdf', 'Exclusive Right to Sell Agreement', 'Executed Listing Contract · 4827 Rolando Blvd'],
@@ -143,9 +147,8 @@
     '</div>';
 
   window.caNewRevealSideDocs = function (keys) {
-    var section = document.querySelector('.mh-docs-section');
-    if (!section || typeof section.querySelectorAll !== 'function') return;
-    var allBtns = section.querySelectorAll('.mh-doc[data-doc]');
+    var allBtns = document.querySelectorAll('.mh-doc[data-doc]');
+    if (!allBtns || !allBtns.length) return;
     var vis = 0;
     allBtns.forEach(function (btn) {
       if (keys.indexOf(btn.getAttribute('data-doc')) > -1) {
@@ -155,11 +158,8 @@
         btn.style.display = 'none';
       }
     });
-    var countEl = typeof section.querySelector === 'function' ? section.querySelector('.mh-docs-count') : null;
-    if (countEl) countEl.textContent = vis;
-    if (vis > 0 && section.classList && !section.classList.contains('open')) {
-      section.classList.add('open');
-    }
+    var countEls = document.querySelectorAll('.mh-docs-count, .tc-docs-count');
+    countEls.forEach(function (el) { el.textContent = vis; });
   };
 
   window.caNewDocDragStart = function (ev, docKey) {
@@ -180,83 +180,781 @@
   };
 
   var CONTACTS = {
-    'sofia': { name: 'Sofia Reyes', role: 'Listing Agent · BHHS California Properties', email: 'sofia.reyes@bhhscal.com', phone: '(619) 555-0312', initials: 'SR' },
-    'daniel': { name: 'Daniel Herrera', role: 'Seller', email: 'herrera.family@email.com', phone: '(619) 555-0488', initials: 'DH' },
-    'carmen': { name: 'Carmen Herrera', role: 'Seller', email: 'herrera.family@email.com', phone: '(619) 555-0488', initials: 'CH' },
-    'marcus': { name: 'Marcus Lee', role: 'Buyer Agent · eXp Realty', email: 'marcus.lee@exprealty.com', phone: '(619) 555-0291', initials: 'ML' },
-    'rachel': { name: 'Rachel Torres', role: 'Buyer Agent · Compass', email: 'rachel.torres@compass.com', phone: '(619) 555-0385', initials: 'RT' },
-    'sarah': { name: 'Sarah Nguyen', role: 'Escrow Officer · Chicago Title', email: 'sarah.nguyen@ctt.com', phone: '(619) 555-0144', initials: 'SN' },
-    'tyler': { name: 'Tyler Adams', role: 'Loan Officer · Pacific Home Lending', email: 'tyler.adams@pacificlending.com', phone: '(619) 555-0277', initials: 'TA' }
+    'sofia': { name: 'Sofia Reyes', role: 'Listing Agent', brokerage: 'BHHS California Properties', email: 'sofia.reyes@bhhscal.com', phone: '(619) 555-0312', initials: 'SR', color: 'linear-gradient(135deg, #7c1d34, #a82d4a)' },
+    'daniel': { name: 'Daniel Herrera', role: 'Seller (Owner)', brokerage: 'Property Owner', email: 'herrera.family@email.com', phone: '(619) 555-0488', initials: 'DH', color: 'linear-gradient(135deg, #0284c7, #0369a1)' },
+    'carmen': { name: 'Carmen Herrera', role: 'Seller (Co-Owner)', brokerage: 'Property Owner', email: 'herrera.family@email.com', phone: '(619) 555-0488', initials: 'CH', color: 'linear-gradient(135deg, #0284c7, #0369a1)' },
+    'marcus': { name: 'Marcus Lee', role: "Buyer's Agent", brokerage: 'eXp Realty California', email: 'marcus.lee@exprealty.com', phone: '(619) 555-0291', initials: 'ML', color: 'linear-gradient(135deg, #d97706, #b45309)' },
+    'rachel': { name: 'Rachel Torres', role: 'Competing Buyer Agent', brokerage: 'Compass California', email: 'rachel.torres@compass.com', phone: '(619) 555-0385', initials: 'RT', color: 'linear-gradient(135deg, #059669, #047857)' },
+    'sarah': { name: 'Sarah Nguyen', role: 'Escrow Officer', brokerage: 'Chicago Title Company', email: 'sarah.nguyen@ctt.com', phone: '(619) 555-0144', initials: 'SN', color: 'linear-gradient(135deg, #6366f1, #4f46e5)' },
+    'tyler': { name: 'Tyler Adams', role: 'Mortgage Loan Officer', brokerage: 'Pacific Home Lending', email: 'tyler.adams@pacificlending.com', phone: '(619) 555-0277', initials: 'TA', color: 'linear-gradient(135deg, #0891b2, #0e7490)' }
   };
 
-  function side(facts, docs, contacts, hideDocs) {
-    var h = '<aside class="mh-side">';
-    if (facts && facts.length) {
-      h += '<h5>Case file</h5><ul class="mh-facts">';
-      facts.forEach(function (f) { h += '<li><span>' + f[0] + '</span><b>' + f[1] + '</b></li>'; });
-      h += '</ul>';
+  var DOC_TYPES = {
+    rla:        { type: 'contract',   badge: 'signed', label: 'Listing Contract' },
+    ad:         { type: 'disclosure', badge: 'signed', label: 'Agency Disclosure' },
+    mlsa:       { type: 'contract',   badge: 'signed', label: 'MLS Addendum' },
+    da:         { type: 'disclosure', badge: 'signed', label: 'Dual Agency' },
+    dia:        { type: 'disclosure', badge: 'signed', label: 'Statutory Advisory' },
+    bca:        { type: 'contract',   badge: 'signed', label: 'Broker Comp' },
+    fhda:       { type: 'disclosure', badge: 'signed', label: 'Fair Housing' },
+    sa:         { type: 'disclosure', badge: 'signed', label: "Seller's Advisory" },
+    ccpa:       { type: 'disclosure', badge: 'signed', label: 'Privacy Notice' },
+    wire:       { type: 'disclosure', badge: 'signed', label: 'Wire Fraud Adv.' },
+    tds:        { type: 'disclosure', badge: 'draft',  label: 'TDS Disclosure' },
+    spq:        { type: 'disclosure', badge: 'draft',  label: 'SPQ Questionnaire' },
+    nhd:        { type: 'report',     badge: 'draft',  label: 'NHD Report' },
+    avid:       { type: 'disclosure', badge: 'draft',  label: 'AVID Inspection' },
+    lead:       { type: 'disclosure', badge: 'signed', label: 'Lead Paint' },
+    prelim:     { type: 'report',     badge: 'draft',  label: 'Title Report' },
+    offer:      { type: 'contract',   badge: 'signed', label: "Buyer's Offer" },
+    offer2:     { type: 'contract',   badge: 'signed', label: 'Cash Offer' },
+    sco:        { type: 'contract',   badge: 'signed', label: 'Counter Offer #1' },
+    bco:        { type: 'contract',   badge: 'signed', label: 'Buyer Counter #1' },
+    rpa:        { type: 'contract',   badge: 'signed', label: 'Ratified Purchase' },
+    inspect:    { type: 'report',     badge: 'signed', label: 'Home Inspection' },
+    termite:    { type: 'report',     badge: 'signed', label: 'WDO Pest Report' },
+    foundation: { type: 'report',     badge: 'signed', label: 'Engineering Report' },
+    rr:         { type: 'contract',   badge: 'signed', label: 'Request for Repair' },
+    sellerRR:   { type: 'contract',   badge: 'signed', label: 'Seller Response' },
+    amend1:     { type: 'contract',   badge: 'signed', label: 'Repair Amendment' },
+    appraisal:  { type: 'report',     badge: 'signed', label: 'Appraisal Report' },
+    extAppr:    { type: 'contract',   badge: 'signed', label: 'Contingency Ext.' },
+    amend2:     { type: 'contract',   badge: 'signed', label: 'Price Reduction' },
+    wireFraud:  { type: 'report',     badge: 'locked', label: 'Phishing Email' },
+    settlement: { type: 'report',     badge: 'signed', label: 'ALTA Settlement' }
+  };
+
+  var TC_DEADLINES = [
+    {
+      id: 'emd',
+      name: 'EMD Due: Oct 8',
+      desc: '$17,200 (3 business days from acceptance)',
+      daysLeft: function (s) {
+        if (s <= 3) return { days: 'Due Oct 8 (3d)', cls: 'yellow' };
+        if (s === 4) return { days: '2 days left (Oct 8)', cls: 'red' };
+        return { met: true, label: 'Met (Oct 8)' };
+      }
+    },
+    {
+      id: 'day17',
+      name: 'Day 17 Inspections: Oct 20',
+      desc: 'Physical, pest & engineering inspections',
+      daysLeft: function (s) {
+        if (s <= 4) return { days: 'Due Oct 20', cls: 'green' };
+        if (s === 5) return { days: '12 days left', cls: 'green' };
+        if (s === 6) return { days: 'Due Today (5 PM)', cls: 'red' };
+        return { met: true, label: 'Met (Oct 20)' };
+      }
+    },
+    {
+      id: 'loan',
+      name: 'Day 21 Loan: Oct 24',
+      desc: 'Buyer loan commitment contingency',
+      daysLeft: function (s) {
+        if (s <= 5) return { days: 'Due Oct 24', cls: 'green' };
+        if (s === 6) return { days: '4 days left', cls: 'yellow' };
+        if (s === 7) return { days: 'Resolved Oct 24', cls: 'yellow' };
+        return { met: true, label: 'Met (Oct 24)' };
+      }
+    },
+    {
+      id: 'appraisal',
+      name: 'Appraisal: Oct 27',
+      desc: 'Contingency extended to Oct 27',
+      daysLeft: function (s) {
+        if (s <= 6) return { days: 'Due Oct 27', cls: 'green' };
+        if (s === 7) return { days: 'Resolved ($852.5K)', cls: 'yellow' };
+        return { met: true, label: 'Met (Oct 27)' };
+      }
+    },
+    {
+      id: 'coe',
+      name: 'Close of Escrow: Nov 3',
+      desc: 'FIRM contractual closing date',
+      daysLeft: function (s) {
+        if (s <= 5) return { days: 'Nov 3 (FIRM)', cls: 'green' };
+        if (s === 6) return { days: '14 days left', cls: 'green' };
+        if (s === 7) return { days: '7 days left', cls: 'yellow' };
+        return { met: true, label: 'Closed (Nov 3)' };
+      }
     }
-    if (docs && docs.length) {
-      var initCount = 0;
-      var docsHtml = '';
+  ];
 
-      docs.forEach(function (k) {
-        var d = DOCS[k];
-        if (!d) return;
+  var TC_EMAILS = [
+    // Step 1: New Listing Assignment
+    {
+      id: 'em_s1_sofia_assign',
+      folder: 'inbox',
+      stepIdx: 0,
+      stepNum: 1,
+      senderKey: 'sofia',
+      senderName: 'Sofia Reyes',
+      avatarInitials: 'SR',
+      avatarBg: 'linear-gradient(135deg, #7c1d34, #a82d4a)',
+      subject: 'New Listing Assignment: 4827 Rolando Blvd (Herrera Family)',
+      snip: 'Welcome to the team! I just signed the listing contract with Daniel & Carmen Herrera...',
+      time: 'Sep 22 · 9:15 AM',
+      slideIdx: 0,
+      unlocked: function (s, r) { return s >= 1; }
+    },
+    {
+      id: 'em_s1_reply_agent',
+      folder: 'sent',
+      stepIdx: 0,
+      stepNum: 1,
+      senderKey: 'tc',
+      senderName: 'You (TC)',
+      avatarInitials: 'TC',
+      avatarBg: 'linear-gradient(135deg, #1565c0, #17c3d4)',
+      subject: 'Re: New Listing Assignment: 4827 Rolando Blvd — Missing Info',
+      snip: 'Hi Sofia, reviewing the file now. Please clarify HOA status, solar lease transfer...',
+      time: 'Sep 22 · 10:45 AM',
+      slideIdx: 3,
+      unlocked: function (s, r) { return (r && r['c_ca2-missing-info']) || s > 1; }
+    },
+    {
+      id: 'em_s1_sofia_followup',
+      folder: 'inbox',
+      stepIdx: 0,
+      stepNum: 1,
+      senderKey: 'sofia',
+      senderName: 'Sofia Reyes',
+      avatarInitials: 'SR',
+      avatarBg: 'linear-gradient(135deg, #7c1d34, #a82d4a)',
+      subject: 'Re: Missing Information · 4827 Rolando Blvd',
+      snip: 'Great catch on the solar lease! The sellers own the panels outright, no lien...',
+      time: 'Sep 22 · 11:30 AM',
+      slideIdx: 4,
+      unlocked: function (s, r) { return (r && r['c_ca2-missing-info']) || s > 1; }
+    },
 
-        var isHidden = hideDocs;
-        if (!isHidden) initCount++;
+    // Step 2: Listing Agreement & File Setup
+    {
+      id: 'em_s2_sofia_executed',
+      folder: 'inbox',
+      stepIdx: 1,
+      stepNum: 2,
+      senderKey: 'sofia',
+      senderName: 'Sofia Reyes',
+      avatarInitials: 'SR',
+      avatarBg: 'linear-gradient(135deg, #7c1d34, #a82d4a)',
+      subject: 'Executed RLA + Complete Listing File: 4827 Rolando Blvd',
+      snip: 'Attached is the fully executed RLA package. Please initiate ZipForms and SkySlope...',
+      time: 'Sep 25 · 8:45 AM',
+      slide1Idx: 0,
+      unlocked: function (s, r) { return s >= 2; }
+    },
+    {
+      id: 'em_s2_reply_confirm',
+      folder: 'sent',
+      stepIdx: 1,
+      stepNum: 2,
+      senderKey: 'tc',
+      senderName: 'You (TC)',
+      avatarInitials: 'TC',
+      avatarBg: 'linear-gradient(135deg, #1565c0, #17c3d4)',
+      subject: 'Re: Executed RLA + Complete Listing File: Setup Complete',
+      snip: 'Listing file initialized in SkySlope. ZipForms template applied with all statutory disclosures...',
+      time: 'Sep 25 · 10:15 AM',
+      slide1Idx: 2,
+      unlocked: function (s, r) { return (r && r['c_ca2-listing-confirm']) || s > 2; }
+    },
+    {
+      id: 'em_s2_sofia_thanks',
+      folder: 'inbox',
+      stepIdx: 1,
+      stepNum: 2,
+      senderKey: 'sofia',
+      senderName: 'Sofia Reyes',
+      avatarInitials: 'SR',
+      avatarBg: 'linear-gradient(135deg, #7c1d34, #a82d4a)',
+      subject: 'Re: Listing File Setup Confirmation — Thank you!',
+      snip: 'Outstanding organization! The open house is scheduled for this coming Saturday...',
+      time: 'Sep 25 · 11:20 AM',
+      slide1Idx: 2,
+      unlocked: function (s, r) { return (r && r['c_ca2-listing-confirm']) || s > 2; }
+    },
 
-        var hideStyle = isHidden ? ' style="display:none"' : '';
-        var isAssigned = (typeof SS_STATE !== 'undefined' && !!SS_STATE['ca2-ss_' + k]);
+    // Step 3: Offer Review & Acceptance
+    {
+      id: 'em_s3_marcus_offer',
+      folder: 'inbox',
+      stepIdx: 2,
+      stepNum: 3,
+      senderKey: 'marcus',
+      senderName: 'Marcus Lee (eXp)',
+      avatarInitials: 'ML',
+      avatarBg: 'linear-gradient(135deg, #d97706, #b45309)',
+      subject: 'OFFER SUBMISSION: 4827 Rolando Blvd — Brooks Family',
+      snip: 'Sofia, attached is our buyers’ RPA offer of $840,000 with pre-approval letter from Pacific Home Lending...',
+      time: 'Oct 1 · 2:30 PM',
+      unlocked: function (s, r) { return s >= 3; }
+    },
+    {
+      id: 'em_s3_rachel_cash',
+      folder: 'inbox',
+      stepIdx: 2,
+      stepNum: 3,
+      senderKey: 'rachel',
+      senderName: 'Rachel Torres (Compass)',
+      avatarInitials: 'RT',
+      avatarBg: 'linear-gradient(135deg, #059669, #047857)',
+      subject: 'CASH OFFER: 4827 Rolando Blvd — Patel Family',
+      snip: 'Please present this all-cash offer of $855,000 from Kevin & Priya Patel with proof of funds...',
+      time: 'Oct 1 · 4:15 PM',
+      unlocked: function (s, r) { return s >= 3; }
+    },
+    {
+      id: 'em_s3_marcus_ratified',
+      folder: 'inbox',
+      stepIdx: 2,
+      stepNum: 3,
+      senderKey: 'marcus',
+      senderName: 'Marcus Lee (eXp)',
+      avatarInitials: 'ML',
+      avatarBg: 'linear-gradient(135deg, #d97706, #b45309)',
+      subject: 'ACCEPTED BCO #1: Ratified Purchase Agreement · $860,000',
+      snip: 'We have agreement! Buyers signed BCO #1 accepting $860,000 with firm Nov 3 closing...',
+      time: 'Oct 3 · 3:30 PM',
+      unlocked: function (s, r) { return s >= 3; }
+    },
 
-        var docCls = 'mh-doc' + (isAssigned ? ' is-assigned' : '');
-        var dragAttr = isAssigned ? 'draggable="false"' : 'draggable="true"';
+    // Step 4: Escrow & Title Opening
+    {
+      id: 'em_s4_sofia_ratified',
+      folder: 'inbox',
+      stepIdx: 3,
+      stepNum: 4,
+      senderKey: 'sofia',
+      senderName: 'Sofia Reyes',
+      avatarInitials: 'SR',
+      avatarBg: 'linear-gradient(135deg, #7c1d34, #a82d4a)',
+      subject: 'Ratified RPA Package: 4827 Rolando Blvd (Brooks Purchase)',
+      snip: 'Contract is ratified! Please open escrow with Sarah Nguyen at Chicago Title and loop in lender...',
+      time: 'Oct 6 · 8:30 AM',
+      unlocked: function (s, r) { return s >= 4; }
+    },
+    {
+      id: 'em_s4_distribute_rpa',
+      folder: 'sent',
+      stepIdx: 3,
+      stepNum: 4,
+      senderKey: 'tc',
+      senderName: 'You (TC)',
+      avatarInitials: 'TC',
+      avatarBg: 'linear-gradient(135deg, #1565c0, #17c3d4)',
+      subject: 'Executed RPA Package + Opening Information',
+      snip: 'Good morning Sarah and Tyler, attaching ratified purchase contract for 4827 Rolando Blvd...',
+      time: 'Oct 6 · 9:45 AM',
+      unlocked: function (s, r) { return (r && r['c_ca2-ratified-distribute']) || s > 4; }
+    },
+    {
+      id: 'em_s4_sarah_escrow',
+      folder: 'inbox',
+      stepIdx: 3,
+      stepNum: 4,
+      senderKey: 'sarah',
+      senderName: 'Sarah Nguyen (Escrow)',
+      avatarInitials: 'SN',
+      avatarBg: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+      subject: 'Escrow Opened: Order #CTT-2025-07421 (4827 Rolando Blvd)',
+      snip: 'Escrow is officially opened under order #CTT-2025-07421. Wiring instructions sent via secure portal...',
+      time: 'Oct 6 · 11:15 AM',
+      unlocked: function (s, r) { return s >= 4; }
+    },
+    {
+      id: 'em_s4_reply_escrow',
+      folder: 'sent',
+      stepIdx: 3,
+      stepNum: 4,
+      senderKey: 'tc',
+      senderName: 'You (TC)',
+      avatarInitials: 'TC',
+      avatarBg: 'linear-gradient(135deg, #1565c0, #17c3d4)',
+      subject: 'Re: Escrow Opened #CTT-2025-07421 — Initial Docs & Commission',
+      snip: 'Thank you Sarah. Attaching broker commission instructions and preliminary seller info sheet...',
+      time: 'Oct 6 · 1:15 PM',
+      unlocked: function (s, r) { return (r && r['c_ca2-escrow-package']) || s > 4; }
+    },
+    {
+      id: 'em_s4_tyler_lender',
+      folder: 'inbox',
+      stepIdx: 3,
+      stepNum: 4,
+      senderKey: 'tyler',
+      senderName: 'Tyler Adams (Lender)',
+      avatarInitials: 'TA',
+      avatarBg: 'linear-gradient(135deg, #0891b2, #0e7490)',
+      subject: 'Loan File Opened & EMD Instructions · 4827 Rolando Blvd',
+      snip: 'Loan application in underwriting. Appraisal has been ordered with priority turn time...',
+      time: 'Oct 6 · 2:45 PM',
+      unlocked: function (s, r) { return s >= 4; }
+    },
 
-        docsHtml += '<button type="button" class="' + docCls + '" data-doc="' + k + '"' + hideStyle +
-          ' ' + dragAttr +
-          ' ondragstart="caNewDocDragStart(event, \'' + k + '\')"' +
-          ' ondragend="caNewDocDragEnd(event, \'' + k + '\')"' +
-          ' onclick="caNewOpen(\'' + k + '\')"' +
-          ' title="Drag to SkySlope slot or click to preview ' + esc(d[1]) + '">' +
-          ICON_DOC +
-          '<span><b>' + d[1] + '</b><small>' + d[2] + '</small></span>' +
-          '<span class="mh-doc-assigned-badge" style="display:' + (isAssigned ? 'inline-flex' : 'none') + ';">&#10003; Attached</span>' +
-          '</button>';
-      });
+    // Step 5: Statutory Disclosures & EMD
+    {
+      id: 'em_s5_sarah_emd',
+      folder: 'inbox',
+      stepIdx: 4,
+      stepNum: 5,
+      senderKey: 'sarah',
+      senderName: 'Sarah Nguyen (Escrow)',
+      avatarInitials: 'SN',
+      avatarBg: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+      subject: 'EMD Receipt Confirmation ($17,200 Received) · Order #CTT-2025-07421',
+      snip: 'We have received the $17,200 initial deposit wire into escrow from buyers Jason & Michelle Brooks...',
+      time: 'Oct 8 · 3:15 PM',
+      unlocked: function (s, r) { return s >= 5; }
+    },
+    {
+      id: 'em_s5_distrib_disclosures',
+      folder: 'sent',
+      stepIdx: 4,
+      stepNum: 5,
+      senderKey: 'tc',
+      senderName: 'You (TC)',
+      avatarInitials: 'TC',
+      avatarBg: 'linear-gradient(135deg, #1565c0, #17c3d4)',
+      subject: 'Full Seller Disclosure Package Delivered · 4827 Rolando Blvd',
+      snip: 'Marcus, delivering fully executed statutory disclosure package: TDS, SPQ, NHD, Lead Paint, and Prelim...',
+      time: 'Oct 8 · 4:30 PM',
+      unlocked: function (s, r) { return (r && r['c_ca2-disclosure-delivery']) || s > 5; }
+    },
+    {
+      id: 'em_s5_marcus_confirm',
+      folder: 'inbox',
+      stepIdx: 4,
+      stepNum: 5,
+      senderKey: 'marcus',
+      senderName: 'Marcus Lee (eXp)',
+      avatarInitials: 'ML',
+      avatarBg: 'linear-gradient(135deg, #d97706, #b45309)',
+      subject: 'Receipt of Seller Disclosures Confirmed (5-Day Review Period Begins)',
+      snip: 'Confirmed receipt of all statutory disclosures. Buyers are reviewing alongside home inspection...',
+      time: 'Oct 9 · 10:20 AM',
+      unlocked: function (s, r) { return s >= 5; }
+    },
 
-      h += '<div class="mh-docs-section open">' +
-        '<button type="button" class="mh-docs-toggle" onclick="this.parentElement.classList.toggle(\'open\')">' +
-          '<h5>Documents <span class="mh-docs-count">' + initCount + '</span></h5>' +
-          '<span class="mh-docs-arrow">&#9656;</span>' +
-        '</button>' +
-        '<div class="mh-docs-list">' + docsHtml + '</div></div>';
+    // Step 6: Buyer Inspections & Repair Requests
+    {
+      id: 'em_s6_marcus_rr',
+      folder: 'inbox',
+      stepIdx: 5,
+      stepNum: 6,
+      senderKey: 'marcus',
+      senderName: 'Marcus Lee (eXp)',
+      avatarInitials: 'ML',
+      avatarBg: 'linear-gradient(135deg, #d97706, #b45309)',
+      subject: 'Request for Repair (C.A.R. RR) · 4827 Rolando Blvd ($12,550)',
+      snip: 'Attached is buyer’s RR requesting $12,550 credit for foundation reinforcement and subpanel upgrade...',
+      time: 'Oct 18 · 1:45 PM',
+      unlocked: function (s, r) { return s >= 6; }
+    },
+    {
+      id: 'em_s6_sofia_rrr',
+      folder: 'inbox',
+      stepIdx: 5,
+      stepNum: 6,
+      senderKey: 'sofia',
+      senderName: 'Sofia Reyes',
+      avatarInitials: 'SR',
+      avatarBg: 'linear-gradient(135deg, #7c1d34, #a82d4a)',
+      subject: 'Seller Response to RR (Agreed to $4,500 Credit) · 4827 Rolando Blvd',
+      snip: 'Herreras countered with $4,500 closing cost credit. Buyer accepted! Draft Amendment #1...',
+      time: 'Oct 20 · 11:00 AM',
+      unlocked: function (s, r) { return s >= 6; }
+    },
+    {
+      id: 'em_s6_distrib_amend1',
+      folder: 'sent',
+      stepIdx: 5,
+      stepNum: 6,
+      senderKey: 'tc',
+      senderName: 'You (TC)',
+      avatarInitials: 'TC',
+      avatarBg: 'linear-gradient(135deg, #1565c0, #17c3d4)',
+      subject: 'Amendment #1 (Repair Credit) — Executed Copy Distributed',
+      snip: 'Sarah and Tyler, distributing fully ratified Amendment #1 granting $4,500 seller closing credit...',
+      time: 'Oct 20 · 3:30 PM',
+      unlocked: function (s, r) { return (r && r['c_ca2-repair-amend']) || s > 6; }
+    },
+
+    // Step 7: Appraisal Shortfall & Wire Fraud Defense
+    {
+      id: 'em_s7_tyler_appraisal',
+      folder: 'inbox',
+      stepIdx: 6,
+      stepNum: 7,
+      senderKey: 'tyler',
+      senderName: 'Tyler Adams (Lender)',
+      avatarInitials: 'TA',
+      avatarBg: 'linear-gradient(135deg, #0891b2, #0e7490)',
+      subject: 'Appraisal Received: $845,000 (Shortfall) · 4827 Rolando Blvd',
+      snip: 'Appraisal came in at $845,000 ($15,000 under contract price). We need resolution or contingency extension...',
+      time: 'Oct 22 · 10:15 AM',
+      unlocked: function (s, r) { return s >= 7; }
+    },
+    {
+      id: 'em_s7_sofia_amend2',
+      folder: 'inbox',
+      stepIdx: 6,
+      stepNum: 7,
+      senderKey: 'sofia',
+      senderName: 'Sofia Reyes',
+      avatarInitials: 'SR',
+      avatarBg: 'linear-gradient(135deg, #7c1d34, #a82d4a)',
+      subject: 'Price Reduction Amendment ($852,500) Agreed · 4827 Rolando Blvd',
+      snip: 'Parties agreed to split difference: purchase price adjusted to $852,500. Amendment #2 signed...',
+      time: 'Oct 24 · 2:30 PM',
+      unlocked: function (s, r) { return s >= 7; }
+    },
+    {
+      id: 'em_s7_cr_distrib',
+      folder: 'sent',
+      stepIdx: 6,
+      stepNum: 7,
+      senderKey: 'tc',
+      senderName: 'You (TC)',
+      avatarInitials: 'TC',
+      avatarBg: 'linear-gradient(135deg, #1565c0, #17c3d4)',
+      subject: 'Contingency Removal & Price Amendment Distributed',
+      snip: 'Distributing executed Amendment #2 ($852,500) and signed Contingency Removal Form...',
+      time: 'Oct 24 · 4:45 PM',
+      unlocked: function (s, r) { return (r && r['c_ca2-cr-check']) || s > 7; }
+    },
+    {
+      id: 'em_s7_phishing_alert',
+      folder: 'inbox',
+      stepIdx: 6,
+      stepNum: 7,
+      senderKey: 'security',
+      senderName: '⚠️ Spoofed Wire Phishing Alert',
+      avatarInitials: '🚨',
+      avatarBg: 'linear-gradient(135deg, #dc2626, #991b1b)',
+      subject: 'URGENT WIRE INSTRUCTIONS UPDATE from "Sarah Nquyen"',
+      snip: 'ALERT: Suspicious email intercepted with spoofed domain ctt-escrow-update.com attempting wire diversion...',
+      time: 'Oct 27 · 9:00 AM',
+      unlocked: function (s, r) { return s >= 7; }
+    },
+
+    // Step 8: Final Closing & Archive
+    {
+      id: 'em_s8_sarah_closed',
+      folder: 'inbox',
+      stepIdx: 7,
+      stepNum: 8,
+      senderKey: 'sarah',
+      senderName: 'Sarah Nguyen (Escrow)',
+      avatarInitials: 'SN',
+      avatarBg: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+      subject: 'RECORDING CONFIRMATION: Grant Deed Recorded — Escrow Closed!',
+      snip: 'Congratulations! Official recording #2025-049812 confirmed at 2:14 PM with San Diego County Recorder...',
+      time: 'Nov 3 · 2:15 PM',
+      unlocked: function (s, r) { return s >= 8; }
+    },
+    {
+      id: 'em_s8_closing_wrapup',
+      folder: 'sent',
+      stepIdx: 7,
+      stepNum: 8,
+      senderKey: 'tc',
+      senderName: 'You (TC)',
+      avatarInitials: 'TC',
+      avatarBg: 'linear-gradient(135deg, #1565c0, #17c3d4)',
+      subject: 'Transaction Complete & Complete File Archive Notice · 4827 Rolando Blvd',
+      snip: 'Closing statement verified. Complete audited transaction file archived in compliance with DRE...',
+      time: 'Nov 3 · 4:00 PM',
+      unlocked: function (s, r) { return (r && r['c_ca2-closing-wrapup']) || s >= 8; }
     }
-    if (contacts && contacts.length) {
-      h += '<div class="mh-contacts-section">' +
-        '<button type="button" class="mh-contacts-toggle" onclick="this.parentElement.classList.toggle(\'open\')">' +
-          '<h5>Contacts</h5>' +
-          '<span class="mh-contacts-arrow">&#9656;</span>' +
-        '</button>' +
-        '<div class="mh-contacts-list">';
-      contacts.forEach(function (ck) {
-        var c = CONTACTS[ck];
-        if (!c) return;
-        h += '<div class="mh-contact-card">' +
-          '<div class="mh-contact-avatar">' + esc(c.initials || '') + '</div>' +
-          '<div class="mh-contact-info">' +
-            '<div class="mh-contact-name">' + esc(c.name) + '</div>' +
-            '<div class="mh-contact-role">' + esc(c.role) + '</div>' +
-            '<div class="mh-contact-links">' +
-              '<span class="mh-contact-email" title="Email ' + esc(c.email) + '">' + esc(c.email) + '</span> &middot; ' +
-              '<span class="mh-contact-phone">' + esc(c.phone) + '</span>' +
-            '</div>' +
-          '</div>' +
+  ];
+
+  var STEP_TITLES = {
+    1: 'New Listing Assignment',
+    2: 'Listing Agreement & File Setup',
+    3: 'Offer Review & Acceptance',
+    4: 'Escrow & Title Opening',
+    5: 'Statutory Disclosures & EMD',
+    6: 'Buyer Inspections & Repair Requests',
+    7: 'Appraisal Shortfall & Wire Fraud Defense',
+    8: 'Final Closing & Archive'
+  };
+
+  function tcRenderDeadlineBar(n) {
+    var h = '<div class="tc-deadline-bar">' +
+      '<div class="tc-dl-left">' +
+        '<div class="tc-dl-icon">⏱️</div>' +
+        '<div class="tc-dl-title-wrap">' +
+          '<span class="tc-dl-title">Statutory Deadlines & Contingencies</span>' +
+          '<span class="tc-dl-sub">4827 Rolando Blvd &middot; Ratified Oct 3, 2025</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="tc-dl-items">';
+
+    TC_DEADLINES.forEach(function (dl) {
+      var res = dl.daysLeft(n);
+      if (res.met) {
+        h += '<div class="tc-dl-item met" title="' + esc(dl.desc) + '">' +
+          '<span class="tc-dl-check">&#10003;</span> ' +
+          '<strong>' + esc(dl.name.split(':')[0]) + ':</strong> ' + esc(res.label) +
         '</div>';
+      } else {
+        h += '<div class="tc-dl-item ' + (res.cls || 'green') + '" title="' + esc(dl.desc) + '">' +
+          '<span class="tc-dl-dot"></span> ' +
+          '<strong>' + esc(dl.name.split(':')[0]) + ':</strong> ' + esc(res.days) +
+        '</div>';
+      }
+    });
+
+    h += '</div></div>';
+    return h;
+  }
+
+  function tcRenderInboxPanel(n, runState) {
+    var readMap = (typeof window !== 'undefined' && window._tcReadEmails) ? window._tcReadEmails : {};
+    var activeFolder = (typeof window !== 'undefined' && window._tcInboxFolder) ? window._tcInboxFolder : 'inbox';
+    var activeEmailId = (typeof window !== 'undefined' && window._tcActiveEmailId) ? window._tcActiveEmailId : null;
+
+    var unlocked = TC_EMAILS.filter(function (e) {
+      return typeof e.unlocked === 'function' ? e.unlocked(n, runState) : true;
+    });
+
+    var inboxEmails = unlocked.filter(function (e) { return e.folder === 'inbox'; });
+    var sentEmails = unlocked.filter(function (e) { return e.folder === 'sent'; });
+
+    var unreadCount = 0;
+    inboxEmails.forEach(function (e) {
+      if (!readMap[e.id]) unreadCount++;
+    });
+
+    var listEmails = activeFolder === 'sent' ? sentEmails : inboxEmails;
+
+    var itemsHtml = '';
+    if (!listEmails.length) {
+      itemsHtml = '<div style="font-size:11px;color:#94a3b8;padding:16px 8px;text-align:center;">' +
+        (activeFolder === 'sent' ? 'No sent messages yet in this phase.' : 'No messages in inbox.') +
+        '</div>';
+    } else {
+      listEmails.forEach(function (e) {
+        var isUnread = (e.folder === 'inbox') && !readMap[e.id];
+        var isActive = (activeEmailId === e.id) || (!activeEmailId && e.stepNum === n);
+        var itemCls = 'tc-inbox-item' + (isUnread ? ' unread' : '') + (isActive ? ' active' : '');
+
+        itemsHtml += '<button type="button" class="' + itemCls + '" data-id="' + e.id + '" onclick="tcSelectEmail(\'' + e.id + '\')">' +
+          '<div class="tc-inbox-avatar" style="background:' + e.avatarBg + ';">' + esc(e.avatarInitials) + '</div>' +
+          '<div class="tc-inbox-item-body">' +
+            '<div class="tc-inbox-item-top">' +
+              '<span class="tc-inbox-sender">' +
+                (isUnread ? '<span class="tc-unread-dot"></span>' : '') +
+                esc(e.senderName) +
+              '</span>' +
+              '<span class="tc-inbox-time">' + esc(e.time.split('·')[0].trim()) + '</span>' +
+            '</div>' +
+            '<div class="tc-inbox-subj">' + esc(e.subject) + '</div>' +
+            '<div class="tc-inbox-snip">' + esc(e.snip) + '</div>' +
+          '</div>' +
+        '</button>';
       });
-      h += '</div></div>';
     }
-    return h + '</aside>';
+
+    var isCollapsed = false;
+    try {
+      isCollapsed = typeof localStorage !== 'undefined' && localStorage.getItem('tc_left_collapsed') === '1';
+    } catch (e) {}
+
+    return '<aside class="tc-inbox-panel' + (isCollapsed ? ' collapsed' : '') + '" id="tc-inbox-panel">' +
+      '<div class="tc-inbox-header">' +
+        '<div class="tc-inbox-title-wrap">' +
+          '<span class="tc-inbox-icon">📬</span>' +
+          '<span class="tc-inbox-title">Communications</span>' +
+          (unreadCount > 0 ? '<span class="tc-inbox-count-badge" id="tc-inbox-unread-count">' + unreadCount + '</span>' : '') +
+        '</div>' +
+        '<button type="button" class="tc-panel-toggle-btn" onclick="tcTogglePanel(\'left\')" title="Collapse / Expand Inbox">&lsaquo;&rsaquo;</button>' +
+      '</div>' +
+      '<div class="tc-inbox-tabs">' +
+        '<button type="button" class="tc-inbox-tab' + (activeFolder === 'inbox' ? ' active' : '') + '" id="tc-tab-inbox" onclick="tcSwitchInboxFolder(\'inbox\')">' +
+          'Inbox (' + inboxEmails.length + ')' +
+        '</button>' +
+        '<button type="button" class="tc-inbox-tab' + (activeFolder === 'sent' ? ' active' : '') + '" id="tc-tab-sent" onclick="tcSwitchInboxFolder(\'sent\')">' +
+          'Sent (' + sentEmails.length + ')' +
+        '</button>' +
+      '</div>' +
+      '<div class="tc-inbox-list" id="tc-inbox-list">' + itemsHtml + '</div>' +
+    '</aside>';
+  }
+
+  function tcRenderKeyFacts(n, stepFacts) {
+    var defaultFacts = [
+      ['Property', '4827 Rolando Blvd, San Diego CA 92115'],
+      ['Listing Price', '$889,000'],
+      ['Contract Price', n >= 7 ? '$852,500 (reduced)' : (n >= 3 ? '$860,000 (ratified)' : '$889,000')],
+      ['EMD Amount', n >= 5 ? '$17,200 (received)' : (n >= 4 ? '$17,200 (due Oct 8)' : '$17,200 (2%)')],
+      ['Escrow #', n >= 4 ? 'CTT-2025-07421' : 'Pending Opening'],
+      ['Title / Escrow', 'Chicago Title (Sarah Nguyen)'],
+      ['Lender', n >= 4 ? 'Pacific Home Lending (Tyler Adams)' : 'Pending Buyer Loan'],
+      ['COE Date', 'Nov 3, 2025 (FIRM)'],
+      ['Repair Credit', n >= 6 ? '$4,500 (agreed)' : 'None ($0)']
+    ];
+
+    var rowsHtml = '';
+    var displayedLabels = {};
+
+    if (stepFacts && stepFacts.length) {
+      stepFacts.forEach(function (f) {
+        displayedLabels[f[0].toLowerCase()] = true;
+        rowsHtml += '<div class="tc-fact-row"><span class="tc-fact-label">' + esc(f[0]) + '</span><span class="tc-fact-val" style="color:var(--v-blue,#1565c0);">' + esc(f[1]) + '</span></div>';
+      });
+    }
+
+    defaultFacts.forEach(function (df) {
+      if (!displayedLabels[df[0].toLowerCase()]) {
+        rowsHtml += '<div class="tc-fact-row"><span class="tc-fact-label">' + esc(df[0]) + '</span><span class="tc-fact-val">' + esc(df[1]) + '</span></div>';
+      }
+    });
+
+    return '<div class="tc-facts-card">' + rowsHtml + '</div>';
+  }
+
+  function tcRenderContacts(n, activeContactKeys) {
+    var activeSet = {};
+    if (activeContactKeys && activeContactKeys.length) {
+      activeContactKeys.forEach(function (k) { activeSet[k] = true; });
+    }
+
+    var h = '<div class="tc-contacts-list">';
+    var allKeys = ['sofia', 'daniel', 'carmen', 'marcus', 'rachel', 'sarah', 'tyler'];
+
+    allKeys.forEach(function (k) {
+      var c = CONTACTS[k];
+      if (!c) return;
+      var isActive = !!activeSet[k];
+
+      h += '<div class="tc-contact-card' + (isActive ? ' active-step' : '') + '">' +
+        '<div class="tc-contact-top">' +
+          '<div class="tc-contact-avatar" style="background:' + (c.color || 'var(--v-navy)') + ';">' + esc(c.initials) + '</div>' +
+          '<div class="tc-contact-meta">' +
+            '<div class="tc-contact-name">' + esc(c.name) + '</div>' +
+            '<div class="tc-contact-role">' + esc(c.role) + '</div>' +
+          '</div>' +
+          '<span class="tc-contact-status-badge ' + (isActive ? 'active' : 'inactive') + '">' +
+            (isActive ? '<span style="font-size:8px;">●</span> Active' : '<span style="font-size:8px;">○</span> Idle') +
+          '</span>' +
+        '</div>' +
+        '<div class="tc-contact-links">' +
+          '<div><strong>Brokerage:</strong> ' + esc(c.brokerage || 'Real Estate') + '</div>' +
+          '<div><strong>Email:</strong> <span style="color:var(--v-blue,#1565c0);">' + esc(c.email) + '</span></div>' +
+          '<div><strong>Phone:</strong> ' + esc(c.phone) + '</div>' +
+        '</div>' +
+      '</div>';
+    });
+
+    h += '</div>';
+    return h;
+  }
+
+  function tcRenderDocs(n, docKeys, hideDocs) {
+    if (!docKeys || !docKeys.length) {
+      return '<div style="font-size:11px;color:#94a3b8;padding:8px;text-align:center;">No documents assigned to this phase yet.</div>';
+    }
+
+    var h = '<div class="tc-docs-list">';
+    docKeys.forEach(function (k) {
+      var d = DOCS[k];
+      if (!d) return;
+
+      var meta = DOC_TYPES[k] || { type: 'contract', badge: 'draft', label: 'Document' };
+      var isHidden = !!hideDocs;
+      var hideStyle = isHidden ? ' style="display:none"' : '';
+      var isAssigned = (typeof SS_STATE !== 'undefined' && !!SS_STATE['ca2-ss_' + k]);
+
+      var docCls = 'tc-doc-item mh-doc' + (isAssigned ? ' is-assigned' : '');
+      var dragAttr = isAssigned ? 'draggable="false"' : 'draggable="true"';
+
+      var badgeClass = isAssigned ? 'signed' : meta.badge;
+      var badgeText = isAssigned ? '📋 Filed' : (badgeClass === 'signed' ? '✅ Signed' : (badgeClass === 'draft' ? '📝 Draft' : '🔒 Locked'));
+
+      h += '<button type="button" class="' + docCls + '" data-doc="' + k + '"' + hideStyle +
+        ' ' + dragAttr +
+        ' ondragstart="caNewDocDragStart(event, \'' + k + '\')"' +
+        ' ondragend="caNewDocDragEnd(event, \'' + k + '\')"' +
+        ' onclick="caNewOpen(\'' + k + '\')"' +
+        ' title="Drag to SkySlope slot or click to preview ' + esc(d[1]) + '">' +
+        '<div class="tc-doc-icon">' + ICON_DOC + '</div>' +
+        '<div class="tc-doc-meta">' +
+          '<div class="tc-doc-title">' + esc(d[1]) + '</div>' +
+          '<div class="tc-doc-sub">' + esc(meta.label) + ' &middot; ' + esc(d[2]) + '</div>' +
+        '</div>' +
+        '<span class="tc-doc-badge ' + badgeClass + '">' + badgeText + '</span>' +
+      '</button>';
+    });
+
+    h += '</div>';
+    return h;
+  }
+
+  function tcRenderResourcesPanel(n, runState, facts, docs, contacts, hideDocs) {
+    var isCollapsed = false;
+    try {
+      isCollapsed = typeof localStorage !== 'undefined' && localStorage.getItem('tc_right_collapsed') === '1';
+    } catch (e) {}
+
+    return '<aside class="tc-resources-panel' + (isCollapsed ? ' collapsed' : '') + '" id="tc-resources-panel">' +
+      '<div class="tc-res-header">' +
+        '<div class="tc-res-title-wrap">' +
+          '<span class="tc-res-icon">📁</span>' +
+          '<span class="tc-res-title">Transaction Resources</span>' +
+        '</div>' +
+        '<button type="button" class="tc-panel-toggle-btn" onclick="tcTogglePanel(\'right\')" title="Collapse / Expand Resources">&lsaquo;&rsaquo;</button>' +
+      '</div>' +
+      '<div class="tc-res-body">' +
+        '<div class="tc-res-section">' +
+          '<div class="tc-res-section-title"><span>Key Transaction Facts</span><span style="font-size:10px;color:#94a3b8;">4827 Rolando</span></div>' +
+          tcRenderKeyFacts(n, facts) +
+        '</div>' +
+        '<div class="tc-res-section">' +
+          '<div class="tc-res-section-title"><span>Parties &amp; Contacts</span><span style="font-size:10px;color:#94a3b8;">' + (contacts ? contacts.length : 0) + ' active</span></div>' +
+          tcRenderContacts(n, contacts) +
+        '</div>' +
+        '<div class="tc-res-section tc-docs-section mh-docs-section open">' +
+          '<div class="tc-res-section-title"><span>Documents &amp; Files</span><span class="mh-docs-count tc-docs-count" style="font-size:10px;color:#94a3b8;">' + (docs ? docs.length : 0) + '</span></div>' +
+          tcRenderDocs(n, docs, hideDocs) +
+        '</div>' +
+      '</div>' +
+    '</aside>';
+  }
+
+  function tcRenderStatusBar(n) {
+    var scoreData = (typeof wfScoreSummary === 'function') ? wfScoreSummary() : { correct: 0, total: 0, pct: 100 };
+    var scorePct = scoreData.pct;
+    var dayMap = { 1: 1, 2: 4, 3: 12, 4: 15, 5: 17, 6: 29, 7: 36, 8: 43 };
+    var transDay = dayMap[n] || 1;
+    var hintsUsed = (typeof wfActiveScenario !== 'undefined' && wfActiveScenario && wfActiveScenario._hintsUsed) ? wfActiveScenario._hintsUsed : 0;
+
+    return '<div class="tc-status-bar">' +
+      '<div class="tc-status-group">' +
+        '<span class="tc-status-pill highlight"><strong>Step ' + n + ' of 8</strong> &middot; ' + esc(STEP_TITLES[n] || '') + '</span>' +
+        '<span class="tc-status-divider"></span>' +
+        '<span class="tc-status-pill">Transaction Day <strong>' + transDay + '</strong> of 43</span>' +
+        '<span class="tc-status-divider"></span>' +
+        '<span class="tc-status-pill">Property: <strong>4827 Rolando Blvd, San Diego</strong></span>' +
+      '</div>' +
+      '<div class="tc-status-group">' +
+        '<span class="tc-status-pill">Decision Score: <strong id="tc-status-score">' + scorePct + '%</strong></span>' +
+        '<span class="tc-status-divider"></span>' +
+        '<span class="tc-status-pill">Time: <strong id="tc-status-timer">00:00</strong></span>' +
+        '<span class="tc-status-divider"></span>' +
+        '<span class="tc-status-pill">Hints: <strong>' + hintsUsed + ' used</strong></span>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function side(facts, docs, contacts, hideDocs) {
+    return {
+      facts: facts || [],
+      docs: docs || [],
+      contacts: contacts || [],
+      hideDocs: !!hideDocs,
+      toString: function () { return ''; }
+    };
   }
 
   function phaseTracker(id, phases, activeIndex) {
@@ -290,27 +988,223 @@
   };
 
   function step(n, title, date, lead, main, aside, last, deadline) {
+    var facts = (aside && aside.facts) ? aside.facts : [];
+    var docs = (aside && aside.docs) ? aside.docs : [];
+    var contacts = (aside && aside.contacts) ? aside.contacts : [];
+    var hideDocs = (aside && aside.hideDocs) ? aside.hideDocs : false;
+
     var nav = last === true ? '' : wfNav(n > 1);
     if (last === 'gated') {
       nav = '<div class="wf-nav">' +
         (n > 1 ? '<button class="wf-nav-btn outline" onclick="wfPrev()">&larr; Previous</button>' : '') +
         '<button class="wf-nav-btn primary" onclick="caNewGatedNext()">Continue &rarr;</button></div>';
     }
-    var dBar = '';
+
+    var dlBar = tcRenderDeadlineBar(n);
+    var inboxPanel = tcRenderInboxPanel(n, run());
+    var resourcesPanel = tcRenderResourcesPanel(n, run(), facts, docs, contacts, hideDocs);
+    var statusBar = tcRenderStatusBar(n);
+
+    var leftCol = false, rightCol = false;
+    try {
+      leftCol = typeof localStorage !== 'undefined' && localStorage.getItem('tc_left_collapsed') === '1';
+      rightCol = typeof localStorage !== 'undefined' && localStorage.getItem('tc_right_collapsed') === '1';
+    } catch (e) {}
+
+    var gridClasses = 'tc-workspace-grid';
+    if (leftCol && rightCol) gridClasses += ' both-collapsed';
+    else if (leftCol) gridClasses += ' left-collapsed';
+    else if (rightCol) gridClasses += ' right-collapsed';
+
+    var dlChip = '';
     if (deadline) {
-      dBar = '<div class="wf-deadline-bar' + (deadline.critical ? ' critical' : '') + '">' +
-        '<span class="wf-deadline-bar-icon">' + (deadline.critical ? '🚨' : '⚠️') + '</span>' +
-        '<div class="wf-deadline-bar-text"><strong>Contingency Deadline:</strong> ' + esc(deadline.text) + '</div>' +
-        '<span class="wf-deadline-bar-days">' + esc(deadline.days) + '</span>' +
+      dlChip = '<div class="tc-step-contingency-chip' + (deadline.critical ? ' critical' : '') + '">' +
+        (deadline.critical ? '🚨 ' : '⚠️ ') + esc(deadline.text) + ' &middot; <strong>' + esc(deadline.days) + '</strong>' +
         '</div>';
     }
-    return '<div class="wf-step-wrap">' +
-      '<div class="mh-top"><div class="wf-step-label-row">Step ' + n + ': ' + title + '</div></div>' +
-      '<p class="mh-lead">' + lead + '</p>' +
-      dBar +
-      '<div class="mh-grid"><div class="mh-main">' + main + '</div>' + aside + '</div>' +
-      nav + '</div>';
+
+    if (typeof window !== 'undefined') {
+      setTimeout(function () {
+        if (typeof window.tcInitTimer === 'function') window.tcInitTimer();
+      }, 50);
+    }
+
+    return '<div class="tc-workspace-root">' +
+      dlBar +
+      '<div class="' + gridClasses + '" id="tc-workspace-grid">' +
+        inboxPanel +
+        '<main class="tc-main-workspace">' +
+          '<div class="tc-step-header-card">' +
+            '<div class="tc-step-header-top">' +
+              '<span class="tc-step-badge">Step ' + n + ' of 8</span>' +
+              '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+                dlChip +
+                '<span class="tc-step-date-chip">' + ICON_CAL + ' ' + esc(date) + '</span>' +
+              '</div>' +
+            '</div>' +
+            '<h2 class="tc-step-title">' + esc(title) + '</h2>' +
+            '<p class="tc-step-lead">' + lead + '</p>' +
+          '</div>' +
+          '<div class="tc-main-content">' + main + '</div>' +
+          nav +
+        '</main>' +
+        resourcesPanel +
+      '</div>' +
+      statusBar +
+    '</div>';
   }
+
+  // Interactive Window Handlers
+  window.tcTogglePanel = function (side) {
+    var grid = document.getElementById('tc-workspace-grid');
+    var panel = document.getElementById(side === 'left' ? 'tc-inbox-panel' : 'tc-resources-panel');
+    if (!grid || !panel) return;
+
+    panel.classList.toggle('collapsed');
+    var isLeftCol = document.getElementById('tc-inbox-panel') && document.getElementById('tc-inbox-panel').classList.contains('collapsed');
+    var isRightCol = document.getElementById('tc-resources-panel') && document.getElementById('tc-resources-panel').classList.contains('collapsed');
+
+    grid.classList.remove('left-collapsed', 'right-collapsed', 'both-collapsed');
+    if (isLeftCol && isRightCol) grid.classList.add('both-collapsed');
+    else if (isLeftCol) grid.classList.add('left-collapsed');
+    else if (isRightCol) grid.classList.add('right-collapsed');
+
+    try {
+      if (side === 'left') localStorage.setItem('tc_left_collapsed', isLeftCol ? '1' : '0');
+      if (side === 'right') localStorage.setItem('tc_right_collapsed', isRightCol ? '1' : '0');
+    } catch (e) {}
+  };
+
+  window.tcSwitchInboxFolder = function (folder) {
+    window._tcInboxFolder = folder;
+    var tabIn = document.getElementById('tc-tab-inbox');
+    var tabSent = document.getElementById('tc-tab-sent');
+    if (tabIn && tabSent) {
+      if (folder === 'sent') {
+        tabIn.classList.remove('active');
+        tabSent.classList.add('active');
+      } else {
+        tabIn.classList.add('active');
+        tabSent.classList.remove('active');
+      }
+    }
+    if (typeof window.tcRefreshInboxList === 'function') {
+      window.tcRefreshInboxList();
+    }
+  };
+
+  window.tcSelectEmail = function (emailId) {
+    if (!window._tcReadEmails) window._tcReadEmails = {};
+    window._tcReadEmails[emailId] = true;
+    window._tcActiveEmailId = emailId;
+
+    var email = null;
+    for (var i = 0; i < TC_EMAILS.length; i++) {
+      if (TC_EMAILS[i].id === emailId) { email = TC_EMAILS[i]; break; }
+    }
+    if (!email) return;
+
+    if (typeof wfStep !== 'undefined' && wfStep !== email.stepIdx) {
+      wfStep = email.stepIdx;
+      if (typeof email.slideIdx === 'number') {
+        window._caNewSlide0 = email.slideIdx;
+      }
+      if (typeof email.slide1Idx === 'number') {
+        window._caNewSlide1 = email.slide1Idx;
+      }
+      if (typeof wfRender === 'function') wfRender();
+    } else {
+      if (typeof email.slideIdx === 'number' && typeof window.caNewGoSlide === 'function') {
+        window.caNewGoSlide(email.slideIdx);
+      }
+      if (typeof email.slide1Idx === 'number' && typeof window.caNewGoSlide1 === 'function') {
+        window.caNewGoSlide1(email.slide1Idx);
+      }
+      if (email.targetId) {
+        var el = document.getElementById(email.targetId);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      if (typeof window.tcRefreshInboxList === 'function') {
+        window.tcRefreshInboxList();
+      }
+    }
+  };
+
+  window.tcRefreshInboxList = function () {
+    var curStep = (typeof wfStep !== 'undefined') ? (wfStep + 1) : 1;
+    var container = document.getElementById('tc-inbox-list');
+    if (!container) return;
+
+    var readMap = window._tcReadEmails || {};
+    var activeFolder = window._tcInboxFolder || 'inbox';
+    var activeEmailId = window._tcActiveEmailId || null;
+
+    var unlocked = TC_EMAILS.filter(function (e) {
+      return typeof e.unlocked === 'function' ? e.unlocked(curStep, run()) : true;
+    });
+
+    var inboxEmails = unlocked.filter(function (e) { return e.folder === 'inbox'; });
+    var sentEmails = unlocked.filter(function (e) { return e.folder === 'sent'; });
+
+    var unreadCount = 0;
+    inboxEmails.forEach(function (e) {
+      if (!readMap[e.id]) unreadCount++;
+    });
+
+    var unreadBadge = document.getElementById('tc-inbox-unread-count');
+    if (unreadBadge) {
+      unreadBadge.textContent = unreadCount;
+      unreadBadge.style.display = unreadCount > 0 ? '' : 'none';
+    }
+
+    var listEmails = activeFolder === 'sent' ? sentEmails : inboxEmails;
+    if (!listEmails.length) {
+      container.innerHTML = '<div style="font-size:11px;color:#94a3b8;padding:16px 8px;text-align:center;">' +
+        (activeFolder === 'sent' ? 'No sent messages yet in this phase.' : 'No messages in inbox.') +
+        '</div>';
+      return;
+    }
+
+    var h = '';
+    listEmails.forEach(function (e) {
+      var isUnread = (e.folder === 'inbox') && !readMap[e.id];
+      var isActive = (activeEmailId === e.id) || (!activeEmailId && e.stepNum === curStep);
+      var itemCls = 'tc-inbox-item' + (isUnread ? ' unread' : '') + (isActive ? ' active' : '');
+
+      h += '<button type="button" class="' + itemCls + '" data-id="' + e.id + '" onclick="tcSelectEmail(\'' + e.id + '\')">' +
+        '<div class="tc-inbox-avatar" style="background:' + e.avatarBg + ';">' + esc(e.avatarInitials) + '</div>' +
+        '<div class="tc-inbox-item-body">' +
+          '<div class="tc-inbox-item-top">' +
+            '<span class="tc-inbox-sender">' +
+              (isUnread ? '<span class="tc-unread-dot"></span>' : '') +
+              esc(e.senderName) +
+            '</span>' +
+            '<span class="tc-inbox-time">' + esc(e.time.split('·')[0].trim()) + '</span>' +
+          '</div>' +
+          '<div class="tc-inbox-subj">' + esc(e.subject) + '</div>' +
+          '<div class="tc-inbox-snip">' + esc(e.snip) + '</div>' +
+        '</div>' +
+      '</button>';
+    });
+    container.innerHTML = h;
+  };
+
+  window.tcInitTimer = function () {
+    if (!window._tcStartTime) {
+      window._tcStartTime = Date.now();
+    }
+    if (!window._tcTimerInterval) {
+      window._tcTimerInterval = setInterval(function () {
+        var timerEl = document.getElementById('tc-status-timer');
+        if (!timerEl) return;
+        var elapsed = Math.floor((Date.now() - window._tcStartTime) / 1000);
+        var mins = Math.floor(elapsed / 60);
+        var secs = elapsed % 60;
+        timerEl.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
+      }, 1000);
+    }
+  };
+
 
   function card(title, sub, body, type) {
     var tAttr = type ? ' data-type="' + type + '"' : '';
@@ -1603,7 +2497,6 @@
             '<span class="wf-zf-title">ZipForm&reg; Plus &middot; Transaction Setup: 4827 Rolando Blvd &middot; Form: C.A.R. RLA</span>' +
           '</div>' +
           '<div class="wf-zf-toolbar-right" style="display:flex;align-items:center;gap:8px;">' +
-            '<button type="button" class="wf-zf-tool-btn primary" id="' + id + '-btn-open-template" onclick="caNewZfAutoFill(\'' + id + '\')">&#9889; Auto-fill</button>' +
             '<span class="wf-zf-status' + (isSubmitted ? ' done' : '') + '" id="' + id + '-status">' +
               (isSubmitted ? '&#10003; Signed &amp; Ratified' : 'Draft &mdash; In Progress') +
             '</span>' +
