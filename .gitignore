@@ -13,3 +13,9 @@ __MACOSX/
 # Claude local state
 .claude/scheduled_tasks.lock
 .claude/settings.local.json
+
+# Local temp files
+*.tmp
+*.log
+__pycache__/
+node_modules/

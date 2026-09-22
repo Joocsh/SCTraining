@@ -71,11 +71,15 @@ enlaces. Si agregas una página nueva, va en la raíz.
 
 | Archivo                     | Qué es                                                        |
 | --------------------------- | ------------------------------------------------------------- |
-| `index.html`                | Landing. Secciones `#roles`, `#how-it-works`, `#test-drive`    |
+| `index.html`                | Home. Con sesión abre en "My learning" (retomar + ruta de aprendizaje); sin sesión, landing |
 | `login.html`                | Login simulado                                                 |
-| `account.html`              | Panel del asociado: su progreso y su puesto                    |
-| `admin.html`                | Panel del supervisor: califica las entregas                    |
-| `ai.html`                   | Introducción a IA                                              |
+| `account.html`              | Panel del asociado: cursos, logros, certificados y puntajes   |
+| `admin.html`                | Panel del supervisor: avance del equipo y calificación         |
+| `ai.html`                   | AI Introduction (curso, desbloquea las Simulations)            |
+| `va.html`                   | Catálogo de trainings VA con progreso                          |
+| `marketing.html`            | Catálogo de trainings de Marketing con progreso                |
+| `va/sop-foundations.html`   | Curso SOP Foundations                                          |
+| `marketing-training.html`   | Curso Marketing Training                                       |
 | `ai-lab.html`               | Índice del AI Lab, enlaza a todo `guides/`                     |
 | `simulator.html`            | Simulador de casos reales, general                             |
 | `mls.html`                  | Práctica de captura en MLS                                     |
@@ -163,6 +167,17 @@ El núcleo. Expone todo en `window.SCApp`. Cubre cuatro cosas:
 El archivo está escrito para que un backend real pueda reemplazar las funciones de
 almacenamiento sin tocar ninguna página.
 
+### Reproductor de cursos
+
+`assets/css/course.css` + `assets/js/course.js` (`window.SCCourse`). Toda página de curso
+usa el mismo reproductor: índice lateral con checks, "Lesson i of n · x min", objetivos al
+inicio de cada lección, checkpoints que desbloquean la flecha de siguiente, medalla al
+cerrar un módulo y certificado al terminar el curso.
+
+`assets/js/courses.js` (`window.SCCourses`) es el catálogo único de cursos. El Home
+(`learn-dash.js`), `va.html`, `account.html` y `admin.html` leen el progreso desde ahí.
+Cómo agregar un curso: ver [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ### Llaves de `localStorage`
 
 | Llave                    | Contenido                                   |
@@ -173,6 +188,10 @@ almacenamiento sin tocar ninguna página.
 | `scc_last_page__<userId>`| Última página visitada, para retomar         |
 | `scc_submissions`        | Emails entregados y sus calificaciones       |
 | `scc_seeded_v2`          | Bandera para no volver a sembrar             |
+| `scc_intro_done__<userId>` | AI Introduction completada                 |
+| `sc_course_intro__<userId>` | Progreso del curso AI Introduction         |
+| `sc_va_sop_foundations_v2__<userId>` | Progreso de SOP Foundations       |
+| `mt3_*`                  | Progreso de Marketing Training (global)      |
 | `sc_<role>_<mode>`       | Trackers viejos por puesto, ver abajo        |
 
 Las llaves `sc_<role>_<mode>` son del sistema anterior. `syncLegacyProgress()` las importa
@@ -312,6 +331,14 @@ referencia histórica. No la uses como punto de partida.
    `ai-lab.html`.
 6. Un puesto nuevo necesita entrada en `ROLE_LABELS`, `ROLE_PAGES` y `LEGACY_MODES` en
    `app-core.js`.
+
+---
+
+## Trabajo en equipo
+
+Flujo de Git, quién trabaja qué área y convenciones: [CONTRIBUTING.md](CONTRIBUTING.md).
+`.editorconfig` y `.gitattributes` mantienen el mismo formato y finales de línea en
+Windows y Mac.
 
 ---
 
