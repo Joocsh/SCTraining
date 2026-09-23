@@ -39,6 +39,12 @@ function closePanel(id) {
   const panel = document.getElementById('panel-' + id);
   if (panel) panel.classList.remove('open');
   document.body.style.overflow = '';
+  if (id === 'sim') {
+    const pipeEl = document.getElementById('wf-pipeline');
+    if (pipeEl) pipeEl.style.display = 'none';
+    const pipeWrap = document.getElementById('tc-header-pipeline-wrap');
+    if (pipeWrap) pipeWrap.style.display = 'none';
+  }
   try {
     if (localStorage.getItem('sc_active_panel') === id) {
       localStorage.removeItem('sc_active_panel');
@@ -76,6 +82,30 @@ function _wfLoadState() {
 
 function wfRestoreSession() {
   try {
+    // Only auto-restore on explicit page RELOAD (F5 / Refresh)
+    // If the user navigated via link or menu, start fresh on the role dashboard
+    var isReload = false;
+    try {
+      if (typeof performance !== 'undefined' && typeof performance.getEntriesByType === 'function') {
+        var navEntries = performance.getEntriesByType('navigation');
+        if (navEntries && navEntries.length > 0) {
+          isReload = (navEntries[0].type === 'reload');
+        }
+      }
+      if (!isReload && typeof performance !== 'undefined' && performance.navigation) {
+        isReload = (performance.navigation.type === 1);
+      }
+    } catch (e) {}
+
+    if (!isReload) {
+      // Normal navigation from menu or link: clear active panel so the role dashboard is shown
+      try {
+        localStorage.removeItem('sc_active_panel');
+        localStorage.removeItem(WF_STATE_KEY);
+      } catch (e) {}
+      return false;
+    }
+
     var activePanel = localStorage.getItem('sc_active_panel');
     if (activePanel === 'sim') {
       var state = _wfLoadState();
@@ -157,6 +187,10 @@ function simGoToCity(key) {
 
 function simBackToCities() {
   _wfClearState();
+  const pipeEl = document.getElementById('wf-pipeline');
+  if (pipeEl) pipeEl.style.display = 'none';
+  const pipeWrap = document.getElementById('tc-header-pipeline-wrap');
+  if (pipeWrap) pipeWrap.style.display = 'none';
   document.getElementById('sim-pick').style.display = 'none';
   const citiesView = document.getElementById('sim-view-cities');
   if (citiesView) citiesView.style.display = 'block';
@@ -207,8 +241,8 @@ function simRenderCards() {
 
       card.innerHTML = `
         <div class="wf-card-topbar">
-          <span class="lc-sc-tag">${isCA ? '🌴 ' : ''}${esc(sc.tag)}</span>
-          <span class="wf-card-steps-pill">&#9889; ${sc.stepCount || 10} Progressive Phases</span>
+          <span class="lc-sc-tag">${esc(sc.tag)}</span>
+          <span class="wf-card-steps-pill">${sc.stepCount || 10} Progressive Phases</span>
         </div>
         <div class="wf-card-main-content">
           <div class="wf-card-property-header">
@@ -324,6 +358,10 @@ function simReset() {
   document.getElementById('sim-play').style.display = 'none';
   const wfEl = document.getElementById('sim-workflow');
   if (wfEl) wfEl.style.display = 'none';
+  const pipeEl = document.getElementById('wf-pipeline');
+  if (pipeEl) pipeEl.style.display = 'none';
+  const pipeWrap = document.getElementById('tc-header-pipeline-wrap');
+  if (pipeWrap) pipeWrap.style.display = 'none';
   simPickCenterToggle(true);
   document.getElementById('sim-pick').style.display = 'block';
   simRenderCards();
@@ -363,9 +401,11 @@ function wfStart(sc, restoreStep) {
   /* Pipeline mode detection: show pipeline stepper or fallback scorebar */
   const isPipeline = wfActiveScenario && wfActiveScenario.usePipeline;
   const pipeEl = document.getElementById('wf-pipeline');
+  const pipeWrap = document.getElementById('tc-header-pipeline-wrap');
   const fallbackEl = document.getElementById('wf-scorebar-fallback');
   const scoreEl = document.getElementById('wf-score-float');
   if (pipeEl) pipeEl.style.display = isPipeline ? '' : 'none';
+  if (pipeWrap) pipeWrap.style.display = isPipeline ? 'flex' : 'none';
   if (fallbackEl) fallbackEl.style.display = isPipeline ? 'none' : '';
   if (scoreEl) scoreEl.style.display = 'none';
 
@@ -427,6 +467,10 @@ function wfReset() {
   simRenderCards();
 
   /* Clean up pipeline UI elements */
+  var pipeEl = document.getElementById('wf-pipeline');
+  if (pipeEl) pipeEl.style.display = 'none';
+  var pipeWrap = document.getElementById('tc-header-pipeline-wrap');
+  if (pipeWrap) pipeWrap.style.display = 'none';
   var scoreEl = document.getElementById('wf-score-float');
   if (scoreEl) scoreEl.style.display = 'none';
   var notifEl = document.getElementById('wf-notif-container');
@@ -452,6 +496,7 @@ function wfRender() {
   const isPipeline = wfActiveScenario && wfActiveScenario.usePipeline;
   
   const pipeEl = document.getElementById('wf-pipeline');
+  const pipeWrap = document.getElementById('tc-header-pipeline-wrap');
   const fallbackEl = document.getElementById('wf-scorebar-fallback');
   const stepChip = document.getElementById('wf-step-chip');
   const labelChip = document.getElementById('wf-label-chip');
@@ -459,10 +504,12 @@ function wfRender() {
   
   if (isPipeline) {
     if (pipeEl) pipeEl.style.display = '';
+    if (pipeWrap) pipeWrap.style.display = 'flex';
     if (fallbackEl) fallbackEl.style.display = 'none';
     wfRenderPipeline(wfStep, total, wfActiveLabels);
   } else {
     if (pipeEl) pipeEl.style.display = 'none';
+    if (pipeWrap) pipeWrap.style.display = 'none';
     if (fallbackEl) fallbackEl.style.display = '';
     if (stepChip) stepChip.textContent = 'Step ' + (wfStep + 1) + ' of ' + total;
     if (labelChip) labelChip.textContent = wfActiveLabels[wfStep];
@@ -530,8 +577,12 @@ function wfRenderPipeline(step, total, labels) {
   
   if (pipeEl.querySelector) {
     const activeNode = pipeEl.querySelector('.wf-pipe-step.active');
-    if (activeNode && pipeEl.scrollWidth > pipeEl.clientWidth) {
-      activeNode.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    // the scrolling box is either the pipeline itself or the header wrapper around it
+    const scroller = [pipeEl, pipeEl.parentElement].find(el => el && el.scrollWidth > el.clientWidth + 1);
+    if (activeNode && scroller) {
+      const box = scroller.getBoundingClientRect();
+      const node = activeNode.getBoundingClientRect();
+      scroller.scrollLeft += (node.left + node.width / 2) - (box.left + box.width / 2);
     }
   }
 }
@@ -564,7 +615,7 @@ function wfToggleDocSidebar(url, title) {
   }
 }
 
-/* Floating Actions Stack ("Ask Sofia", "Reset Case", "Salir a los escenarios") */
+/* Floating Actions Stack ("Ask Sofia", "Notepad", "Reset Case", "Exit to Scenarios") */
 function wfEnsureFloatingActions() {
   let stack = document.getElementById('wf-fab-stack');
   if (!stack) {
@@ -580,7 +631,7 @@ function wfEnsureFloatingActions() {
     fabSofia.setAttribute('aria-label', 'Ask Sofia');
     fabSofia.setAttribute('title', 'Ask Sofia');
     fabSofia.onclick = wfToggleHintPanel;
-    fabSofia.innerHTML = '<span>💡</span><span class="wf-hint-fab-label">Ask Sofia</span>';
+    fabSofia.innerHTML = '<span class="wf-fab-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M12 2a7 7 0 0 0-4 12.74V17h8v-2.26A7 7 0 0 0 12 2z"></path></svg></span><span class="wf-hint-fab-label">Ask Sofia</span>';
     stack.appendChild(fabSofia);
 
     // 2. Notepad FAB
@@ -591,7 +642,7 @@ function wfEnsureFloatingActions() {
     fabNotes.setAttribute('aria-label', 'Notepad');
     fabNotes.setAttribute('title', 'Notepad');
     fabNotes.onclick = wfToggleNotesPanel;
-    fabNotes.innerHTML = '<span class="wf-fab-icon">&#128221;</span><span class="wf-hint-fab-label">Notepad</span>';
+    fabNotes.innerHTML = '<span class="wf-fab-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg></span><span class="wf-hint-fab-label">Notepad</span>';
     stack.appendChild(fabNotes);
 
     // 3. Reset Case FAB
@@ -599,21 +650,21 @@ function wfEnsureFloatingActions() {
     fabReset.type = 'button';
     fabReset.id = 'wf-reset-fab';
     fabReset.className = 'wf-fab-btn wf-fab-reset';
-    fabReset.setAttribute('aria-label', 'Reiniciar caso');
-    fabReset.setAttribute('title', 'Reiniciar caso al inicio');
+    fabReset.setAttribute('aria-label', 'Reset case');
+    fabReset.setAttribute('title', 'Reset case to the beginning');
     fabReset.onclick = wfRestartCase;
-    fabReset.innerHTML = '<span class="wf-fab-icon">&#8635;</span><span class="wf-hint-fab-label">Reiniciar caso</span>';
+    fabReset.innerHTML = '<span class="wf-fab-icon">&#8635;</span><span class="wf-hint-fab-label">Reset case</span>';
     stack.appendChild(fabReset);
 
-    // 3. Salir a Escenarios FAB
+    // 4. Exit to Scenarios FAB
     const fabExit = document.createElement('button');
     fabExit.type = 'button';
     fabExit.id = 'wf-exit-fab';
     fabExit.className = 'wf-fab-btn wf-fab-exit';
-    fabExit.setAttribute('aria-label', 'Salir a los escenarios');
-    fabExit.setAttribute('title', 'Salir a los escenarios');
+    fabExit.setAttribute('aria-label', 'Exit to scenarios');
+    fabExit.setAttribute('title', 'Exit to scenarios');
     fabExit.onclick = wfReset;
-    fabExit.innerHTML = '<span class="wf-fab-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span><span class="wf-hint-fab-label">Salir a los escenarios</span>';
+    fabExit.innerHTML = '<span class="wf-fab-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></span><span class="wf-hint-fab-label">Exit to scenarios</span>';
     stack.appendChild(fabExit);
 
     document.body.appendChild(stack);
@@ -833,7 +884,7 @@ function wfToggleDocMaximize() {
   const isMax = modal.classList.contains('wf-modal-maximized');
   const label = document.getElementById('wf-doc-max-label');
   const icon = document.getElementById('wf-doc-max-icon');
-  if (label) label.textContent = isMax ? 'Restaurar' : 'Maximizar';
+  if (label) label.textContent = isMax ? 'Restore' : 'Maximize';
   if (icon) {
     icon.innerHTML = isMax
       ? '<path d="M4 14h6v6m10-10h-6V4m0 6 7-7M3 21l7-7"/>'
@@ -885,25 +936,25 @@ function wfEnsureDocModal() {
         <div class="wf-doc-modal-title-wrap">
           <span class="wf-doc-badge-pdf" id="wf-doc-modal-badge">PDF</span>
           <span class="wf-doc-modal-title" id="wf-doc-modal-title">Document</span>
-          <span class="wf-doc-hint-pill" id="wf-doc-hint-pill" title="Tip: En la barra del visor de PDF, haz clic en el icono [↔] para ajustar al ancho completo">
+          <span class="wf-doc-hint-pill" id="wf-doc-hint-pill" title="Tip: in the PDF toolbar, click the [↔] icon to fit the page width">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-            <span>Tip: Usa <b>↔</b> para ancho completo</span>
+            <span>Tip: use <b>↔</b> to fit width</span>
           </span>
         </div>
         <div class="wf-doc-modal-actions">
           <div class="wf-doc-toggle-group" id="wf-doc-toggle-group" style="display:none;">
-            <button type="button" class="wf-doc-toggle-btn active" id="wf-doc-tab-pdf" onclick="wfSwitchDocMode('pdf')" title="Ver formato oficial PDF">
+            <button type="button" class="wf-doc-toggle-btn active" id="wf-doc-tab-pdf" onclick="wfSwitchDocMode('pdf')" title="View the official PDF">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               <span>PDF</span>
             </button>
-            <button type="button" class="wf-doc-toggle-btn" id="wf-doc-tab-web" onclick="wfSwitchDocMode('web')" title="Ver texto limpio y nítido">
+            <button type="button" class="wf-doc-toggle-btn" id="wf-doc-tab-web" onclick="wfSwitchDocMode('web')" title="View clean, readable text">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-              <span>Vista Lectura</span>
+              <span>Reading View</span>
             </button>
           </div>
-          <button type="button" class="wf-doc-action-btn" id="wf-doc-modal-max" onclick="wfToggleDocMaximize()" title="Maximizar / Pantalla completa">
+          <button type="button" class="wf-doc-action-btn" id="wf-doc-modal-max" onclick="wfToggleDocMaximize()" title="Maximize / full screen">
             <svg id="wf-doc-max-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-            <span id="wf-doc-max-label">Maximizar</span>
+            <span id="wf-doc-max-label">Maximize</span>
           </button>
           <a id="wf-doc-modal-newtab" class="wf-doc-action-btn" target="_blank" rel="noopener" title="Open in new window">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
@@ -965,7 +1016,7 @@ function wfCloseDoc() {
     modal.classList.remove('wf-modal-maximized');
   }
   const label = document.getElementById('wf-doc-max-label');
-  if (label) label.textContent = 'Maximizar';
+  if (label) label.textContent = 'Maximize';
   document.body.classList.remove('wf-modal-open');
   const frame = document.getElementById('wf-doc-modal-frame');
   if (frame) frame.src = '';

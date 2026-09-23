@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link rel="stylesheet" href="../assets/css/role-dash.css">
   <link rel="stylesheet" href="../assets/css/workflow.css">
-  <link rel="stylesheet" href="../assets/css/tc-case.css?v=20260922g">
+  <link rel="stylesheet" href="../assets/css/tc-case.css?v=20260923h">
 
   <style>
     /* MLS Practice panel */
@@ -1941,6 +1941,11 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
       </div>
     </div>
 
+    <!-- Pipeline Stepper Track in Executive Header -->
+    <div class="tc-header-pipeline-wrap" id="tc-header-pipeline-wrap">
+      <div id="wf-pipeline" class="wf-pipeline" style="display:none"></div>
+    </div>
+
     <div class="tc-header-right">
       <button type="button" class="tc-header-reset-btn" onclick="wfRestartCase()" title="Reset case to beginning">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -1997,8 +2002,6 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
 
     <!-- Workflow area (full case) -->
     <div id="sim-workflow" style="display:none">
-      <!-- Pipeline Stepper (rendered by wfRenderPipeline for pipeline workflows) -->
-      <div id="wf-pipeline" class="wf-pipeline" style="display:none"></div>
       <!-- Fallback scorebar for non-pipeline workflows -->
       <div id="wf-scorebar-fallback" class="lc-scorebar">
         <div class="lc-progress-track"><div class="lc-progress-fill" id="wf-prog"></div></div>
@@ -2054,9 +2057,9 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
 <script>SCApp.requireIntro();</script>
 <script src="../assets/js/rein-va-features.js"></script>
 <script src="../assets/js/rein-va-form.js"></script>
-<script src="../assets/js/workflow.js?v=20260922g"></script>
+<script src="../assets/js/workflow.js?v=20260923a"></script>
 <script src="../assets/js/tc-va-case.js"></script>
-<script src="../assets/js/tc-ca-new-case.js?v=20260922g"></script>
+<script src="../assets/js/tc-ca-new-case.js?v=20260923m"></script>
 <script>
   /* ══════════════════════════════════════════════════════════
      CASE SIMULATOR CONTENT: Transaction Coordinator
@@ -4878,6 +4881,12 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
   const ROLE = 'tc';
   const rpMe = SCApp.requireAuth();
 
+  /* Instructor mode: auto-fill shortcuts stay hidden from associates.
+     Admins see them; anyone can opt in with ?instructor=1 for demos. */
+  if ((rpMe && rpMe.role === 'admin') || /[?&]instructor=1/.test(location.search)) {
+    document.body.classList.add('tc-instructor');
+  }
+
   /* ── Dynamic Simulation Header Sync ──────────────────────── */
   function syncSimHeader() {
     const wfEl = document.getElementById('sim-workflow');
@@ -4888,7 +4897,7 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
     if (caseName) {
       caseName.innerHTML = isWfActive
         ? '<span class="tc-title-main">California TC Simulator</span> <span class="tc-title-dot">&middot;</span> <span class="tc-title-prop">4827 Rolando Blvd</span>'
-        : '<span class="tc-title-main">Case Simulator</span> <span class="tc-title-dot">&middot;</span> <span class="tc-title-prop">Select Case</span>';
+        : '<span class="tc-title-main">Case Simulator</span> <span class="tc-title-dot">&middot;</span> <span class="tc-title-prop">Choose a Market</span>';
     }
     if (resetBtn) resetBtn.style.display = isWfActive ? 'inline-flex' : 'none';
   }
