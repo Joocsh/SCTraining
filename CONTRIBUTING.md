@@ -63,26 +63,38 @@ La base compartida la carga todo el sitio: un cambio ahí afecta todas las pági
 - **Cache busting:** cuando cambias un CSS o JS compartido, sube el `?v=AAAAMMDD` en las
   páginas que lo cargan. Si no, los navegadores siguen usando la versión vieja.
 
-## 4. Cómo agregar un curso
+## 4. Vocabulario del sitio
 
-Todos los cursos usan el mismo reproductor (`assets/css/course.css` + `assets/js/course.js`).
+Una sola palabra para cada cosa, en toda la interfaz:
 
-1. Crea la página (por ejemplo `va/mi-curso.html`) con `<body class="course">` y un
+- **Path:** el área. Hoy son VA y Marketing. Cada una tiene su catálogo (`va.html`,
+  `marketing.html`) y su tarjeta en el Home. En el código se llama `track`.
+- **Training:** lo que se estudia dentro de un path. Por ejemplo SOP Foundations.
+  Nunca le digas "course" en textos visibles.
+- **Module** y **lesson:** las partes de un training.
+- **Simulation:** la práctica del caso real. No es un training.
+
+## 5. Cómo agregar un training
+
+Todos los trainings usan el mismo reproductor (`assets/css/course.css` + `assets/js/course.js`).
+
+1. Crea la página (por ejemplo `va/mi-training.html`) con `<body class="course">` y un
    `<main class="c-stage" id="stage">`.
 2. Cada lección es una `<section class="lesson" data-mod="Módulo" data-title="Título"
    data-goals="Objetivo 1|Objetivo 2">`. El reproductor arma solo el índice, los tiempos,
    la flecha de siguiente, las medallas por módulo y el certificado.
 3. Los checkpoints son `.checkpoint` con tareas `.task.gate` de tipo `choice`, `match` o
    `sort`. Copia uno de `va/sop-foundations.html`.
-4. Al final: `SCCourse.init({ id: 'mi-curso', title: 'Mi curso', kick: 'VA course',
-   store: 'sc_mi_curso__' })`.
+4. Al final: `SCCourse.init({ id: 'mi-training', title: 'Mi training', kick: 'VA training',
+   store: 'sc_mi_training__' })`.
 5. Regístralo en `assets/js/courses.js` con su área: `track: 'va'` o
    `track: 'marketing'`. Con eso aparece solo en el catálogo de su área (`va.html` o
    `marketing.html`), en el Home, en My Account y en el panel del supervisor.
-6. ¿Un área nueva de trainings? Agrégala a `TRACKS` en `courses.js` y crea su catálogo
-   copiando `marketing.html` y cambiando `data-track` en el `<body>` y el título.
+6. ¿Un path nuevo? Agrégalo a `TRACKS` en `courses.js`, crea su catálogo copiando
+   `marketing.html` (cambia `data-track` en el `<body>` y el título) y agrega su tarjeta
+   en el Home, dentro de `#trackGrid`.
 
-## 5. Carpetas de trabajo
+## 6. Carpetas de trabajo
 
 - `scratch/`: scripts de prueba y verificación. No se enlaza desde el sitio. Si un script
   ya no sirve, bórralo en su propio commit.

@@ -34,16 +34,16 @@
   /* ── where to resume ── */
   var NAMES = {
     'ai.html': ['Introduction', 'AI tools you will use every day'],
-    'va/sop-foundations.html': ['SOP Foundations', 'VA course'],
-    'va.html': ['VA', 'Courses by role'],
+    'va/sop-foundations.html': ['SOP Foundations', 'VA training'],
+    'va.html': ['VA', 'Path'],
     'roles/transaction-coordinator.html': ['Transaction Coordinator', 'Simulation'],
     'roles/listing-coordinator.html': ['Listing Coordinator', 'Simulation'],
     'roles/property-manager.html': ['Property Manager', 'Simulation'],
     'roles/lead-manager.html': ['Lead Manager', 'Simulation'],
     'roles/operations-manager.html': ['Operations Manager', 'Simulation'],
     'roles/cfo-bookkeeper.html': ['CFO & Bookkeeper', 'Simulation'],
-    'marketing-training.html': ['Marketing Training', 'Marketing course'],
-    'marketing.html': ['Marketing', 'Trainings']
+    'marketing-training.html': ['Marketing Training', 'Marketing training'],
+    'marketing.html': ['Marketing', 'Path']
   };
   var last = SCApp.getLastPage(me.id);
   var resume;
@@ -55,7 +55,7 @@
   } else if (!introDone) {
     resume = { href: 'ai.html', title: 'Introduction', kind: 'Start here', cta: 'Start', meta: 'Unlocks the Simulations' };
   } else if (sopPct < 100) {
-    resume = { href: 'va/sop-foundations.html', title: 'SOP Foundations', kind: 'Up next in VA', cta: sopDone ? 'Resume' : 'Start', meta: sopDone + ' of ' + SOP_TOTAL + ' lessons done' };
+    resume = { href: 'va/sop-foundations.html', title: 'SOP Foundations', kind: 'Up next', cta: sopDone ? 'Resume' : 'Start', meta: sopDone + ' of ' + SOP_TOTAL + ' lessons done' };
   } else {
     resume = { href: '#simulations', title: 'Simulations', kind: 'Up next', cta: 'Choose a simulation', meta: 'Practice your role on real cases' };
   }
@@ -64,8 +64,8 @@
   var steps = [
     { n: 1, title: 'Introduction', desc: 'What Claude, ChatGPT and Manus are, and when to use each one.', pct: introPct,
       meta: introDone ? 'Complete' : (introSeen + ' of 5 lessons'), href: 'ai.html', cta: introDone ? 'Review' : (introSeen ? 'Continue' : 'Start') },
-    { n: 2, title: 'Trainings', desc: 'Study your role before you simulate it: ' + (C ? C.tracks.map(function (t) { return t.title; }).join(' and ') : 'VA') + ' trainings.', pct: sopPct,
-      meta: vaComplete + ' of ' + vaCourses.length + ' courses done', href: 'va.html', cta: vaDone ? (sopPct === 100 ? 'Review' : 'Continue') : 'Start' },
+    { n: 2, title: 'Training paths', desc: 'Study your role before you simulate it. Two paths: ' + (C ? C.tracks.map(function (t) { return t.title; }).join(' and ') : 'VA') + '.', pct: sopPct,
+      meta: vaComplete + ' of ' + vaCourses.length + ' trainings done', href: 'va.html', cta: vaDone ? (sopPct === 100 ? 'Review' : 'Continue') : 'Start' },
     { n: 3, title: 'Simulations', desc: 'Practice real cases for your role with instant feedback.', pct: null, locked: !introDone,
       meta: introDone ? (practiced ? practiced + ' role' + (practiced > 1 ? 's' : '') + ' practiced' : 'Ready to start') : 'Unlocks after the Introduction',
       href: introDone ? '#simulations' : 'ai.html', cta: introDone ? 'Choose a simulation' : 'Finish the Introduction' }
@@ -90,7 +90,7 @@
       '</a>' +
     '</div></div>' +
     '<div class="ld-path"><div class="ld-inner">' +
-      '<div class="ld-path-head"><h2>Your learning path</h2>' +
+      '<div class="ld-path-head"><h2>Your next steps</h2>' +
         '<div class="ld-overall"><div class="ld-bar"><i style="width:' + overall + '%"></i></div><span>' + overall + '% overall</span></div></div>' +
       '<ol class="ld-steps">' + steps.map(function (s) {
         var state = s.locked ? 'locked' : (s.pct === 100 ? 'done' : ((s.pct || (s.n === 3 && practiced)) ? 'active' : 'todo'));

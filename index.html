@@ -1720,13 +1720,13 @@
   <!-- ===== VA: CLASSES BY ROLE ===== -->
   <section class="h-sec h-va" id="va">
     <div class="inner">
-      <span class="h-eyebrow rv">Trainings &middot; Study first</span>
+      <span class="h-eyebrow rv">Paths &middot; Study first</span>
       <h2 class="h-h2 rv">Learn your role before you simulate it</h2>
-      <p class="h-lead rv">Trainings are organized by area. Each course has modules, short lessons and a checkpoint at
-        the end of every lesson. Open to everyone, no prerequisites.</p>
+      <p class="h-lead rv">Each path holds the trainings for one area. Every training has modules, short lessons and a
+        checkpoint at the end of each one. Open to everyone, no prerequisites.</p>
       <div class="va-grid" id="trackGrid">
-        <a class="va-card rv" href="va.html" style="background-image:url('assets/img/va/sop-foundations.jpg')"><span class="va-kick">Trainings</span><b>VA</b><span class="va-soon">Study your role before you simulate it: processes, systems and SOPs</span></a>
-        <a class="va-card rv" href="marketing.html" style="background-image:url('assets/img/marketing/m1-global-standard.jpg')"><span class="va-kick">Trainings</span><b>Marketing</b><span class="va-soon">The brand, the design tools and the marketing playbook</span></a>
+        <a class="va-card rv" href="va.html" data-track="va" style="background-image:url('assets/img/va/sop-foundations.jpg')"><span class="va-kick">Path</span><b>VA</b><span class="va-soon">Study your role before you simulate it: processes, systems and SOPs</span></a>
+        <a class="va-card rv" href="marketing.html" data-track="marketing" style="background-image:url('assets/img/marketing/m1-global-standard.jpg')"><span class="va-kick">Path</span><b>Marketing</b><span class="va-soon">The brand, the design tools and the marketing playbook</span></a>
       </div>
     </div>
   </section>
@@ -1972,8 +1972,20 @@
 
   <script src="assets/js/app-core.js?v=20260917"></script>
   <script src="assets/js/site.js?v=20260917"></script>
-  <script src="assets/js/courses.js?v=20260922b"></script>
-  <script src="assets/js/learn-dash.js?v=20260922b"></script>
+  <script src="assets/js/courses.js?v=20260923"></script>
+  <script src="assets/js/learn-dash.js?v=20260923"></script>
+  <script>
+    /* how many trainings each path holds, straight from the catalog */
+    (function () {
+      if (!window.SCCourses) return;
+      var g = document.getElementById('trackGrid'); if (!g) return;
+      [].forEach.call(g.querySelectorAll('[data-track]'), function (card) {
+        var n = SCCourses.byTrack(card.getAttribute('data-track')).length;
+        var line = card.querySelector('.va-soon');
+        if (line) line.textContent += ' · ' + n + ' training' + (n === 1 ? '' : 's');
+      });
+    })();
+  </script>
   <script>
     function openTestDrive(){ document.getElementById('tdOverlay').classList.add('open'); document.body.style.overflow='hidden'; }
     function closeTestDrive(){ document.getElementById('tdOverlay').classList.remove('open'); document.body.style.overflow=''; }

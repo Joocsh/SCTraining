@@ -48,7 +48,7 @@
       '<div class="c-cert-wrap" id="cCert" role="dialog" aria-modal="true" aria-label="Certificate"><div class="c-cert"><div class="c-cert-in">' +
         '<svg class="c-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>' +
         '<small>SkillCloud Academy · Certificate of completion</small><h2>Well done</h2><p>This certifies that</p><div class="c-name" id="cCertName"></div>' +
-        '<p>completed the course <span class="c-course">' + o.title + '</span></p><div class="c-date" id="cCertDate"></div></div>' +
+        '<p>completed the training <span class="c-course">' + o.title + '</span></p><div class="c-date" id="cCertDate"></div></div>' +
         '<div class="c-cert-actions"><button class="c-btn primary" id="cPrint">Print or save as PDF</button><button class="c-btn ghost" id="cClose">Close</button></div></div></div>');
 
     var bar = $('.scbar');
@@ -98,7 +98,7 @@
     var last = C.cur === L.length - 1;
     $('#cTip').textContent = last ? 'Finish course' : 'Next: ' + L[C.cur + 1].dataset.title;
     $('#cIcon').innerHTML = last ? CHECK : ARROW;
-    $('#cNext').setAttribute('aria-label', last ? 'Finish course' : 'Next lesson');
+    $('#cNext').setAttribute('aria-label', last ? 'Finish training' : 'Next lesson');
     reveal();
   }
 

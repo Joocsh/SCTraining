@@ -16,12 +16,12 @@
       image: 'assets/img/va/sop/m2-build.jpg', lessons: 5, modules: 1, store: 'sc_course_intro__', track: 'intro'
     },
     {
-      id: 'sop', title: 'SOP Foundations', href: 'va/sop-foundations.html', kind: 'VA course',
+      id: 'sop', title: 'SOP Foundations', href: 'va/sop-foundations.html', kind: 'VA training',
       desc: 'Turn everyday work into a reliable, repeatable system with clear Standard Operating Procedures.',
       image: 'assets/img/va/sop-foundations.jpg', lessons: 11, modules: 3, store: 'sc_va_sop_foundations_v2__', track: 'va'
     },
     {
-      id: 'marketing', title: 'Marketing Training', href: 'marketing-training.html', kind: 'Marketing course', track: 'marketing',
+      id: 'marketing', title: 'Marketing Training', href: 'marketing-training.html', kind: 'Marketing training', track: 'marketing',
       desc: 'The Sotheby’s brand, Design Vault, ListTrac and the marketing tools, lesson by lesson.',
       image: 'assets/img/marketing/m1-global-standard.jpg', lessons: 58, modules: 9,
       /* this course keeps its own progress in the browser */
