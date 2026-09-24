@@ -131,13 +131,6 @@
     .va-row > * { position: relative; }
     .va-row-body { max-width: 560px; }
     .va-row .lab-badge { position: absolute; top: 20px; right: 22px; background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.35); }
-    .va-start { display: flex; align-items: center; gap: 16px; background: #fff; border: 1px solid var(--v-line); border-radius: 18px; padding: 16px 20px; margin: 0 0 40px; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
-    .va-start:hover { border-color: rgba(23,195,212,.5); box-shadow: 0 8px 22px rgba(10,38,71,.06); text-decoration: none; }
-    .va-start .n { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: #eef3f8; color: var(--v-navy); font-weight: 800; }
-    .va-start.done .n { background: #1f9e5a; color: #fff; }
-    .va-start b { display: block; color: var(--v-navy); font-size: 16px; }
-    .va-start span { font-size: 14px; color: var(--v-muted); }
-    .va-start .go { margin-left: auto; font-weight: 800; color: var(--v-cyan-d); font-size: 14px; white-space: nowrap; }
     .va-prog { display: flex; align-items: center; gap: 12px; margin-top: 4px; max-width: 360px; }
     .va-prog i { flex: 1; height: 6px; border-radius: 99px; background: rgba(255,255,255,.2); overflow: hidden; }
     .va-prog i b { display: block; height: 100%; background: var(--v-cyan); border-radius: 99px; }
@@ -188,7 +181,6 @@
 </header>
 
 <div class="lab-content">
-  <a class="va-start" id="vaStart" href="ai.html"></a>
 
   <div class="lab-intro">
     <h2>Trainings in this path</h2>
@@ -239,12 +231,6 @@
 <script>
   (function () {
     var me = SCApp.currentUser(); if (!me) return;
-    var intro = SCCourses.progress(SCCourses.get('intro'), me.id), introDone = SCApp.isIntroDone(me);
-    var st = document.getElementById('vaStart');
-    if (introDone) st.classList.add('done');
-    st.innerHTML = '<span class="n">' + (introDone ? '&#10003;' : '1') + '</span><div><b>AI Introduction</b><span>' +
-      (introDone ? 'Complete. The Simulations are unlocked.' : 'Start here. ' + intro.done + ' of ' + intro.total + ' lessons, and it unlocks the Simulations.') +
-      '</span></div><span class="go">' + (introDone ? 'Review' : (intro.done ? 'Continue' : 'Start')) + ' &rarr;</span>';
     var list = document.getElementById('vaList');
     SCCourses.byTrack(document.body.getAttribute('data-track')).forEach(function (c) {
       var p = SCCourses.progress(c, me.id);
