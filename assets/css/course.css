@@ -72,7 +72,7 @@ body.course .scbar{position:fixed;top:0;left:0;right:0;z-index:40}
 .step-h h3{font-size:20px;letter-spacing:-.3px}
 
 /* common blocks */
-.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 24px}
+body.course .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:22px 24px;box-shadow:none}
 .card h3{font-size:17.5px;font-weight:800;margin-bottom:6px}
 .card p{color:#44566c}
 .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
@@ -122,9 +122,11 @@ body.course .scbar{position:fixed;top:0;left:0;right:0;z-index:40}
 .choice.wrong{border-color:#efc2ba;background:#fdf4f2}
 .choice.wrong .key{background:var(--bad);color:#fff}
 .choice:disabled{cursor:default}
-.fb{margin-top:12px;font-size:15px;font-weight:600}
-.fb:empty{display:none}
-.fb.good{color:var(--good)}.fb.bad{color:var(--bad)}
+/* feedback line. body.course wins over any base .fb rule a page also loads */
+body.course .fb{display:block;margin-top:12px;padding:0;border:0;background:none;font-size:15px;font-weight:600}
+body.course .fb:empty{display:none}
+body.course .fb.good{color:var(--good)}
+body.course .fb.bad{color:var(--bad)}
 .match{display:grid;gap:8px}
 .match-row{display:grid;grid-template-columns:1fr 220px;gap:12px;align-items:center;background:var(--bg);border:1.5px solid transparent;border-radius:14px;padding:10px 12px 10px 16px;font-size:15px}
 .match-row select{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff;font:inherit;font-size:14.5px;color:var(--navy)}
