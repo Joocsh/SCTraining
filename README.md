@@ -170,8 +170,8 @@ almacenamiento sin tocar ninguna página.
 ### Reproductor de cursos
 
 `assets/css/course.css` + `assets/js/course.js` (`window.SCCourse`). Toda página de curso
-usa el mismo reproductor: índice lateral con checks, "Lesson i of n · x min", objetivos al
-inicio de cada lección, medalla al cerrar un módulo y certificado al terminar el training.
+usa el mismo reproductor: índice lateral con checks, objetivos al inicio de cada
+lección, medalla al cerrar un módulo y certificado al terminar el training.
 
 Cada lección corre en dos pasos: primero se lee, y el checkpoint pasa a una pantalla
 propia, para no leer con las preguntas a la vista. El índice muestra los dos pasos, y

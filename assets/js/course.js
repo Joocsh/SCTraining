@@ -22,7 +22,6 @@
   var C = { lessons: [], cur: 0, state: null, opts: null, key: '' };
 
   function save() { try { localStorage.setItem(C.key, JSON.stringify(C.state)); } catch (e) {} }
-  function minutes(el) { return Math.max(1, Math.ceil((el.textContent || '').trim().split(/\s+/).length / 130)); }
   function mods() {
     var out = [];
     C.lessons.forEach(function (l, i) {
@@ -90,9 +89,7 @@
     var bar = $('.scbar');
     if (bar && !$('#cOutlineBtn')) bar.insertAdjacentHTML('afterbegin', '<button class="scbar-act icon c-outline-btn" id="cOutlineBtn" aria-label="Course outline" aria-expanded="false">&#9776;</button>');
 
-    C.lessons.forEach(function (l, i) {
-      var meta = $('.c-meta', l);
-      if (meta) meta.insertAdjacentHTML('beforeend', '<span class="c-sep"></span><span>Lesson ' + (i + 1) + ' of ' + C.lessons.length + '</span><span class="c-sep"></span><span>' + minutes(l) + ' min</span>');
+    C.lessons.forEach(function (l) {
       if (l.dataset.goals) {
         var anchor = $('.lead', l) || $('h2', l);
         while (anchor && anchor.parentElement !== l) anchor = anchor.parentElement;
@@ -109,7 +106,7 @@
         var l = C.lessons[i];
         var b = document.createElement('button');
         b.className = 'c-item'; b.dataset.i = i;
-        b.innerHTML = '<span class="c-dot">' + (i + 1) + '</span><span>' + l.dataset.title + '<small>' + minutes(l) + ' min</small></span>';
+        b.innerHTML = '<span class="c-dot">' + (i + 1) + '</span><span>' + l.dataset.title + '</span>';
         b.onclick = function () { go(i); };
         nav.appendChild(b);
         if (!isSplit(i)) return;
