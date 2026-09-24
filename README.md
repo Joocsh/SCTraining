@@ -305,9 +305,13 @@ usuario baja; `skills-source/` tiene ese mismo contenido descomprimido y editabl
 ### Fotos de stock
 
 Las fotos libres vienen de Pexels, con su licencia gratuita para uso comercial y sin
-atribución obligatoria. El fondo del saludo del Home es
-[`assets/img/home-sky.jpg`](assets/img/home-sky.jpg), de
-https://www.pexels.com/photo/12335838/.
+atribución obligatoria. Las que se usan hoy:
+
+| Archivo | Dónde | Origen |
+| ------- | ----- | ------ |
+| `assets/img/home-sky.jpg` | Fondo del saludo del Home | https://www.pexels.com/photo/12335838/ |
+| `assets/img/marketing-path.jpg` | Tarjeta del path Marketing | https://www.pexels.com/photo/31737859/ |
+| `assets/img/marketing/marketing-training-cover.jpg` | Tarjeta del training de Marketing | https://www.pexels.com/photo/12558848/ |
 
 ### `assets/brand/`
 

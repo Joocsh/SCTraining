@@ -23,7 +23,7 @@
     {
       id: 'marketing', title: 'Marketing Training', href: 'marketing-training.html', kind: 'Marketing training', track: 'marketing',
       desc: 'The Sotheby’s brand, Design Vault, ListTrac and the marketing tools, lesson by lesson.',
-      image: 'assets/img/marketing/m1-global-standard.jpg', lessons: 58, modules: 9,
+      image: 'assets/img/marketing/marketing-training-cover.jpg', lessons: 58, modules: 9,
       /* this course keeps its own progress in the browser */
       progress: function () { return { done: read('mt3_done', []).length }; }
     }
@@ -34,7 +34,7 @@
   var TRACKS = [
     { id: 'va', title: 'VA', href: 'va.html', image: 'assets/img/va/sop-foundations.jpg',
       desc: 'Study your role before you simulate it: processes, systems and SOPs.' },
-    { id: 'marketing', title: 'Marketing', href: 'marketing.html', image: 'assets/img/marketing/m1-global-standard.jpg',
+    { id: 'marketing', title: 'Marketing', href: 'marketing.html', image: 'assets/img/marketing-path.jpg',
       desc: 'The brand, the design tools and the marketing playbook.' }
   ];
 
