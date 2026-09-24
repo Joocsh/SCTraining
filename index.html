@@ -1375,9 +1375,6 @@
     .va-kick { font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--v-cyan); }
     .va-card b { font-size: 20px; color: #fff; }
     .va-soon { font-size: 13px; color: #d6e4f0; }
-    .va-in { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-    .va-in span { font-size: 12px; font-weight: 700; color: #eaf6fb; background: rgba(255,255,255,.14);
-      border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 4px 11px; }
     .va-cta { margin-top: 24px; }
     .sim-locked-note { margin-top: 14px; display: inline-block; background: #fff8ec; border: 1.5px solid rgba(217,138,20,.35);
       color: #7a4d00; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 600; }
@@ -1977,18 +1974,6 @@
   <script src="assets/js/site.js?v=20260917"></script>
   <script src="assets/js/courses.js?v=20260924c"></script>
   <script src="assets/js/learn-dash.js?v=20260924c"></script>
-  <script>
-    /* the trainings each path holds, straight from the catalog */
-    (function () {
-      if (!window.SCCourses) return;
-      var g = document.getElementById('trackGrid'); if (!g) return;
-      [].forEach.call(g.querySelectorAll('[data-track]'), function (card) {
-        var names = SCCourses.byTrack(card.getAttribute('data-track')).map(function (c) { return c.title; });
-        if (names.length) card.insertAdjacentHTML('beforeend',
-          '<span class="va-in">' + names.map(function (t) { return '<span>' + t + '</span>'; }).join('') + '</span>');
-      });
-    })();
-  </script>
   <script>
     function openTestDrive(){ document.getElementById('tdOverlay').classList.add('open'); document.body.style.overflow='hidden'; }
     function closeTestDrive(){ document.getElementById('tdOverlay').classList.remove('open'); document.body.style.overflow=''; }
