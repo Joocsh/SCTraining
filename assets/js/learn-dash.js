@@ -47,7 +47,6 @@
   dash.innerHTML =
     '<div class="ld-top"><div class="ld-inner">' +
       '<div class="ld-hello">' +
-        '<span class="ld-kick">My learning</span>' +
         '<h1>Welcome back' + (first ? ', ' + esc(first) : '') + '</h1>' +
         '<p>Your path is below. Pick the step you are on and keep going.</p>' +
       '</div>' +
@@ -59,7 +58,7 @@
         var state = s.locked ? 'locked' : (s.pct === 100 ? 'done' : ((s.pct || (s.n === 3 && practiced)) ? 'active' : 'todo'));
         return '<li class="ld-step ' + state + '">' +
           '<div class="ld-num">' + (state === 'done' ? '&#10003;' : (s.locked ? '&#128274;' : s.n)) + '</div>' +
-          '<div class="ld-body"><span class="ld-step-kick">Step ' + s.n + '</span><h3>' + esc(s.title) + '</h3><p>' + esc(s.desc) + '</p>' +
+          '<div class="ld-body"><h3>' + esc(s.title) + '</h3><p>' + esc(s.desc) + '</p>' +
             (s.pct != null ? '<div class="ld-bar sm"><i style="width:' + s.pct + '%"></i></div>' : '') +
             '<div class="ld-foot"><span>' + esc(s.meta) + '</span><a href="' + s.href + '">' + esc(s.cta) + ' &rarr;</a></div>' +
           '</div></li>';

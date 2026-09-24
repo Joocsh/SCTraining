@@ -59,7 +59,7 @@
         '<button class="c-btn primary" data-phase="quiz">Go to the checkpoint <span aria-hidden="true">&rarr;</span></button></div>');
       quiz.insertAdjacentHTML('afterbegin',
         '<div class="c-qhead"><button class="c-back" data-phase="read"><span aria-hidden="true">&larr;</span> Back to the lesson</button>' +
-        '<div class="c-meta"><span class="c-kick">Checkpoint</span><span class="c-sep"></span><span>' + l.dataset.title + '</span></div></div>');
+        '<div class="c-meta"><span>Checkpoint</span><span class="c-sep"></span><span>' + l.dataset.title + '</span></div></div>');
       quiz.insertAdjacentHTML('beforeend',
         '<div class="c-step-end done"><div><b>Checkpoint complete</b><span>Well done. Your progress is saved.</span></div>' +
         '<button class="c-btn primary" data-advance></button></div>');
@@ -74,7 +74,7 @@
     document.body.classList.add('course');
     document.body.insertAdjacentHTML('beforeend',
       '<div class="c-topline"><i id="cTop"></i></div>' +
-      '<aside class="c-outline" id="cOutline" aria-label="Course outline"><div class="c-outline-hd"><div class="c-kick">' + (o.kick || 'Course') + '</div><h1>' + o.title + '</h1>' +
+      '<aside class="c-outline" id="cOutline" aria-label="Course outline"><div class="c-outline-hd"><h1>' + o.title + '</h1>' +
         '<div class="c-meter"><div class="c-meter-bar"><i id="cMeter"></i></div><span id="cMeterTxt">0%</span></div></div><nav id="cNav"></nav></aside>' +
       '<div class="c-scrim" id="cScrim"></div>' +
       '<div class="c-hint" id="cHint">Answer the checkpoint to continue</div>' +

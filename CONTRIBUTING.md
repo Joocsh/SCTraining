@@ -49,6 +49,10 @@ La base compartida la carga todo el sitio: un cambio ahí afecta todas las pági
 - Minimalista: pocas palabras, un mensaje por bloque.
 
 **Diseño**
+- Sin etiquetas decorativas en mayúsculas encima de los títulos, ni en píldora ni en
+  texto suelto ("START HERE", "MY LEARNING", "STEP 1"). El título dice de qué se trata.
+  Sí se quedan las etiquetas que informan algo real: estados, números de pregunta,
+  nombres de módulo en el índice.
 - Colores desde las variables de `:root` en `styles.css` (navy `#0a2647`, cyan `#17c3d4`).
   Nunca hex sueltos nuevos.
 - La misma tipografía del Home en todas las páginas.
