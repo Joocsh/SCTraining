@@ -491,6 +491,12 @@ body.sidehid .sidetab:hover{color:var(--v-cyan-d);padding-right:11px}
 .qnextwrap.show{display:flex}
 .qnext{background:var(--v-navy);color:#fff;border-radius:var(--r-sm);padding:10px 20px;font-size:13.5px;font-weight:800}
 .qnext:hover{background:var(--v-navy2)}
+.mstep{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:30px;background:#fff;border:1px solid var(--v-line);border-radius:var(--radius);padding:18px 22px;box-shadow:var(--shadow)}
+.mstep b{display:block;color:var(--v-navy);font-size:16px}
+.mstep span{font-size:14px;color:var(--v-muted)}
+.mstep button{margin-left:auto;background:var(--v-cyan);color:var(--v-navy);border-radius:999px;padding:11px 20px;font-size:14px;font-weight:800}
+.mstep button:hover{background:var(--v-cyan-d);color:#fff}
+@media(max-width:700px){.mstep button{margin-left:0;width:100%}}
 .qdone{background:linear-gradient(160deg,var(--v-navy),var(--v-navy2));border-radius:var(--radius);padding:28px;color:#c7d7e6;text-align:center;box-shadow:var(--shadow-m)}
 .qdone .big{font-family:var(--display);font-size:38px;font-weight:900;color:#7ee3ee;letter-spacing:-1.5px;line-height:1}
 .qdone h3{color:#fff;font-size:19px;margin:8px 0 5px}
@@ -1925,6 +1931,15 @@ function render(){
         ${split?`<div class="med">${med}</div>`:''}
       </div>`;
   }
+  // read first, answer after: the last lesson of a module hands off to its check
+  const nx=L[idx+1];
+  if(nx&&nx.k==='Quiz'&&l.k!=='Quiz'&&QUIZ[nx.m]){
+    const n=QUIZ[nx.m].q.length;
+    body+=`<div class="mstep"><div><b>${modOf(l.m).n} check</b>
+      <span>${n} question${n>1?'s':''} on this module. Each one shows the answer and why, right after you pick.</span></div>
+      <button onclick="go(1)">Go to the check &rarr;</button></div>`;
+  }
+
   const box=$('#lesson');
   box.innerHTML=
     `<div class="crumb"><span class="pill">Module ${modNum(l.m)}</span><span>${mo.n}</span><span class="sep">&rsaquo;</span><span>${l.k}</span>${slideBtn(l.t)}</div>${body}`;
@@ -2016,7 +2031,9 @@ function qResults(){
     <p>${s.c===s.t?'You have this one down. Hit Next to keep going.':'Review the answers below, then hit Next to keep going.'}</p>
     <div class="qreview">${Q.q.map((q,n)=>
       `<div><span class="m ${qs.marks[n]?'y':'n'}">${qs.marks[n]?'&#10003;':'&#10007;'}</span><span>${q.q}</span></div>`).join('')}</div>
-  </div>`;
+  </div>
+  <div class="mstep"><div><b>Check complete</b><span>Your progress is saved.</span></div>
+    <button onclick="go(1)">${idx===L.length-1?'Finish the training':'Next module &rarr;'}</button></div>`;
 }
 
 /* ============ PROMPT LIBRARY ============ */
