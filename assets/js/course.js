@@ -7,8 +7,10 @@
                 data-goals="First goal|Second goal"> … </section>
      </main>
    Every lesson may hold .task.gate items (data-type choice | match | sort
-   or any custom type the page passes with SCCourse.pass). The next
-   arrow appears at the end of a lesson once its gates are passed.
+   or any custom type the page passes with SCCourse.pass). A lesson that
+   holds a .checkpoint runs in two steps: read first, answer after. The
+   player moves the checkpoint onto a screen of its own, so nobody reads
+   with the questions sitting in the corner of the eye.
    Call SCCourse.init({ id, title, store, certificate, onComplete }).
    ══════════════════════════════════════════════════════════ */
 (function () {
@@ -32,6 +34,40 @@
   }
   function gates(i) { return $$('.gate', C.lessons[i]); }
   function passedAll(i) { return gates(i).every(function (g, k) { return C.state.passed[C.lessons[i].id + ':' + k]; }); }
+  function isSplit(i) { return C.lessons[i].classList.contains('split'); }
+  function reading(i) { return isSplit(i) && !C.lessons[i].classList.contains('quiz'); }
+
+  /* ── read first, answer after ──
+     The checkpoint and anything the page puts after it move to a second
+     screen inside the same lesson. A lesson with almost nothing to read,
+     like a final knowledge check, stays on one screen. */
+  function twoSteps() {
+    C.lessons.forEach(function (l) {
+      var kids = [].slice.call(l.children);
+      var cut = kids.map(function (k) { return k.classList.contains('checkpoint'); }).indexOf(true);
+      if (cut < 1) return;
+      var read = document.createElement('div'); read.className = 'c-read';
+      var quiz = document.createElement('div'); quiz.className = 'c-quiz';
+      kids.forEach(function (k, i) { (i < cut ? read : quiz).appendChild(k); });
+      if ((read.textContent || '').trim().split(/\s+/).length < 70) {
+        kids.forEach(function (k) { l.appendChild(k); });
+        return;
+      }
+      var n = $$('.gate', quiz).length;
+      read.insertAdjacentHTML('beforeend',
+        '<div class="c-step-end"><div><b>Checkpoint</b><span>' +
+          (n === 1 ? 'One quick task' : n + ' quick tasks') + ' on what you just read. Retry as often as you need.</span></div>' +
+        '<button class="c-btn primary" data-phase="quiz">Go to the checkpoint <span aria-hidden="true">&rarr;</span></button></div>');
+      quiz.insertAdjacentHTML('afterbegin',
+        '<div class="c-qhead"><button class="c-back" data-phase="read"><span aria-hidden="true">&larr;</span> Back to the lesson</button>' +
+        '<div class="c-meta"><span class="c-kick">Checkpoint</span><span class="c-sep"></span><span>' + l.dataset.title + '</span></div></div>');
+      quiz.insertAdjacentHTML('beforeend',
+        '<div class="c-step-end done"><div><b>Checkpoint complete</b><span>Well done. Your progress is saved.</span></div>' +
+        '<button class="c-btn primary" data-advance></button></div>');
+      l.appendChild(read); l.appendChild(quiz);
+      l.classList.add('split');
+    });
+  }
 
   /* ── chrome the player adds around the page's lessons ── */
   function build() {
@@ -42,7 +78,7 @@
       '<aside class="c-outline" id="cOutline" aria-label="Course outline"><div class="c-outline-hd"><div class="c-kick">' + (o.kick || 'Course') + '</div><h1>' + o.title + '</h1>' +
         '<div class="c-meter"><div class="c-meter-bar"><i id="cMeter"></i></div><span id="cMeterTxt">0%</span></div></div><nav id="cNav"></nav></aside>' +
       '<div class="c-scrim" id="cScrim"></div>' +
-      '<div class="c-hint" id="cHint">Complete the checkpoint to continue</div>' +
+      '<div class="c-hint" id="cHint">Answer the checkpoint to continue</div>' +
       '<button class="c-next" id="cNext" aria-label="Next lesson"><span class="c-tip" id="cTip"></span><svg id="cIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ARROW + '</svg></button>' +
       '<div class="c-toast" id="cToast" role="status"><div class="c-medal">&#9733;</div><div><b id="cToastT"></b><span id="cToastS"></span></div></div>' +
       '<div class="c-cert-wrap" id="cCert" role="dialog" aria-modal="true" aria-label="Certificate"><div class="c-cert"><div class="c-cert-in">' +
@@ -54,19 +90,6 @@
     var bar = $('.scbar');
     if (bar && !$('#cOutlineBtn')) bar.insertAdjacentHTML('afterbegin', '<button class="scbar-act icon c-outline-btn" id="cOutlineBtn" aria-label="Course outline" aria-expanded="false">&#9776;</button>');
 
-    var nav = $('#cNav');
-    mods().forEach(function (m) {
-      if (m.name) nav.insertAdjacentHTML('beforeend', '<div class="c-mod" data-mod="' + m.name + '"><span>' + m.name + '</span><span class="c-badge" title="Module complete">&#9733;</span></div>');
-      m.idx.forEach(function (i) {
-        var l = C.lessons[i], g = gates(i).length;
-        var b = document.createElement('button');
-        b.className = 'c-item'; b.dataset.i = i;
-        b.innerHTML = '<span class="c-dot">' + (i + 1) + '</span><span>' + l.dataset.title + '<small>' + minutes(l) + ' min' + (g ? ' · checkpoint' : '') + '</small></span>';
-        b.onclick = function () { go(i); };
-        nav.appendChild(b);
-      });
-    });
-
     C.lessons.forEach(function (l, i) {
       var meta = $('.c-meta', l);
       if (meta) meta.insertAdjacentHTML('beforeend', '<span class="c-sep"></span><span>Lesson ' + (i + 1) + ' of ' + C.lessons.length + '</span><span class="c-sep"></span><span>' + minutes(l) + ' min</span>');
@@ -76,6 +99,27 @@
         if (anchor) anchor.insertAdjacentHTML('afterend', '<div class="c-goals"><b>In this lesson</b><ul>' + l.dataset.goals.split('|').map(function (g) { return '<li>' + g + '</li>'; }).join('') + '</ul></div>');
       }
     });
+
+    twoSteps();
+
+    var nav = $('#cNav');
+    mods().forEach(function (m) {
+      if (m.name) nav.insertAdjacentHTML('beforeend', '<div class="c-mod" data-mod="' + m.name + '"><span>' + m.name + '</span><span class="c-badge" title="Module complete">&#9733;</span></div>');
+      m.idx.forEach(function (i) {
+        var l = C.lessons[i];
+        var b = document.createElement('button');
+        b.className = 'c-item'; b.dataset.i = i;
+        b.innerHTML = '<span class="c-dot">' + (i + 1) + '</span><span>' + l.dataset.title + '<small>' + minutes(l) + ' min</small></span>';
+        b.onclick = function () { go(i); };
+        nav.appendChild(b);
+        if (!isSplit(i)) return;
+        var s = document.createElement('button');
+        s.className = 'c-item c-sub'; s.dataset.i = i;
+        s.innerHTML = '<span class="c-dot">&#183;</span><span>Checkpoint</span>';
+        s.onclick = function () { go(i, 'quiz'); };
+        nav.appendChild(s);
+      });
+    });
   }
 
   function paint() {
@@ -84,10 +128,11 @@
     $('#cMeterTxt').textContent = pct + '%';
     $('#cTop').style.width = ((C.cur + 1) / L.length * 100) + '%';
     $$('.c-item').forEach(function (b) {
-      var i = +b.dataset.i, d = s.done.indexOf(i) > -1;
-      b.classList.toggle('on', i === C.cur);
+      var i = +b.dataset.i, sub = b.classList.contains('c-sub');
+      var d = sub ? passedAll(i) : s.done.indexOf(i) > -1;
+      b.classList.toggle('on', i === C.cur && sub !== reading(i));
       b.classList.toggle('done', d);
-      $('.c-dot', b).innerHTML = d ? '&#10003;' : (i + 1);
+      $('.c-dot', b).innerHTML = d ? '&#10003;' : (sub ? '&#183;' : (i + 1));
     });
     $$('.c-mod').forEach(function (m) { m.classList.toggle('done', (s.modulesDone || []).indexOf(m.dataset.mod) > -1); });
     $$('.checkpoint', L[C.cur]).forEach(function (cp) {
@@ -95,26 +140,41 @@
       var st = $('.cp-state', cp);
       if (st) st.textContent = g.length ? n + ' of ' + g.length + ' done' : '';
     });
-    var last = C.cur === L.length - 1;
-    $('#cTip').textContent = last ? 'Finish course' : 'Next: ' + L[C.cur + 1].dataset.title;
-    $('#cIcon').innerHTML = last ? CHECK : ARROW;
-    $('#cNext').setAttribute('aria-label', last ? 'Finish training' : 'Next lesson');
+    var last = C.cur === L.length - 1, read = reading(C.cur);
+    L[C.cur].classList.toggle('cleared', passedAll(C.cur));
+    $('#cTip').textContent = read ? 'Go to the checkpoint' : (last ? 'Finish training' : 'Next: ' + L[C.cur + 1].dataset.title);
+    $('#cIcon').innerHTML = (last && !read) ? CHECK : ARROW;
+    $('#cNext').setAttribute('aria-label', read ? 'Go to the checkpoint' : (last ? 'Finish training' : 'Next lesson'));
+    var adv = $('[data-advance]', L[C.cur]);
+    if (adv) adv.innerHTML = last ? 'Finish the training' : 'Next lesson <span aria-hidden="true">&rarr;</span>';
     reveal();
   }
 
   function reveal() {
     var end = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 60;
-    var open = passedAll(C.cur);
-    var finished = C.cur === C.lessons.length - 1 && C.state.done.indexOf(C.cur) > -1;
+    var read = reading(C.cur), open = read || passedAll(C.cur);
+    var finished = C.cur === C.lessons.length - 1 && C.state.done.indexOf(C.cur) > -1 && !read;
     $('#cNext').classList.toggle('show', end && open && !finished);
     $('#cHint').classList.toggle('show', end && !open);
   }
 
-  function go(i) {
+  /* move between the two steps of one lesson */
+  function setPhase(p) {
+    var l = C.lessons[C.cur];
+    if (!l.classList.contains('split')) return;
+    l.classList.toggle('quiz', p === 'quiz');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    $('#cNext').classList.remove('show');
+    paint();
+    setTimeout(reveal, 320);
+  }
+
+  function go(i, phase) {
     i = Math.max(0, Math.min(i, C.lessons.length - 1));
-    C.lessons[C.cur].classList.remove('on');
+    C.lessons[C.cur].classList.remove('on', 'quiz');
     C.cur = i; C.state.at = i;
     C.lessons[i].classList.add('on');
+    C.lessons[i].classList.toggle('quiz', phase === 'quiz' && isSplit(i));
     window.scrollTo({ top: 0, behavior: 'instant' });
     document.body.classList.remove('nav-open');
     var ob = $('#cOutlineBtn'); if (ob) ob.setAttribute('aria-expanded', 'false');
@@ -149,6 +209,7 @@
     save();
   }
   function next() {
+    if (reading(C.cur)) return setPhase('quiz');
     if (!passedAll(C.cur)) return;
     complete(C.cur);
     if (C.cur === C.lessons.length - 1) { paint(); return; }
@@ -264,9 +325,11 @@
     document.addEventListener('click', function () { setTimeout(reveal, 60); });
     $('#cNext').onclick = next;
     document.addEventListener('click', function (e) {
-      var t = e.target.closest('[data-jump],[data-next],[data-cert]');
+      var t = e.target.closest('[data-jump],[data-next],[data-cert],[data-phase],[data-advance]');
       if (!t) return;
       if (t.hasAttribute('data-cert')) return showCert();
+      if (t.hasAttribute('data-phase')) return setPhase(t.dataset.phase);
+      if (t.hasAttribute('data-advance')) return next();
       if (t.hasAttribute('data-next')) { complete(C.cur); return go(C.cur + 1); }
       go(C.lessons.findIndex(function (l) { return l.id === t.dataset.jump; }));
     });
@@ -274,7 +337,7 @@
       if (e.key === 'Escape') $('#cCert').classList.remove('open');
       if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName) || e.altKey || e.ctrlKey || e.metaKey) return;
       if (e.key === 'ArrowRight') next();
-      if (e.key === 'ArrowLeft') go(C.cur - 1);
+      if (e.key === 'ArrowLeft') C.lessons[C.cur].classList.contains('quiz') ? setPhase('read') : go(C.cur - 1);
     });
     $('#cOutlineBtn').onclick = function () { var o = document.body.classList.toggle('nav-open'); this.setAttribute('aria-expanded', o); };
     $('#cScrim').onclick = function () { document.body.classList.remove('nav-open'); };

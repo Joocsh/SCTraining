@@ -171,8 +171,11 @@ almacenamiento sin tocar ninguna página.
 
 `assets/css/course.css` + `assets/js/course.js` (`window.SCCourse`). Toda página de curso
 usa el mismo reproductor: índice lateral con checks, "Lesson i of n · x min", objetivos al
-inicio de cada lección, checkpoints que desbloquean la flecha de siguiente, medalla al
-cerrar un módulo y certificado al terminar el curso.
+inicio de cada lección, medalla al cerrar un módulo y certificado al terminar el training.
+
+Cada lección corre en dos pasos: primero se lee, y el checkpoint pasa a una pantalla
+propia, para no leer con las preguntas a la vista. El índice muestra los dos pasos, y
+cada pantalla termina con una tarjeta que dice qué sigue.
 
 `assets/js/courses.js` (`window.SCCourses`) es el catálogo único de cursos. El Home
 (`learn-dash.js`), `va.html`, `account.html` y `admin.html` leen el progreso desde ahí.

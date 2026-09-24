@@ -138,6 +138,24 @@ body.course .scbar{position:fixed;top:0;left:0;right:0;z-index:40}
 .sort .mv:disabled{opacity:.35;cursor:default}
 .sort.right li{border-color:var(--good);background:#f1faf5}
 
+/* two steps: read, then answer */
+.c-quiz{display:none}
+.lesson.split.quiz > .c-read{display:none}
+.lesson.split.quiz > .c-quiz{display:block}
+.c-qhead{margin-bottom:26px}
+.c-back{display:inline-flex;align-items:center;gap:8px;border:0;background:none;padding:0;margin-bottom:22px;cursor:pointer;font-size:14px;font-weight:700;color:var(--cyan-d)}
+.c-back:hover{color:var(--navy)}
+.lesson.split.quiz .checkpoint{margin-top:0}
+.c-step-end{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-top:44px;padding:22px 26px;border-radius:20px;background:#fff;border:1px solid var(--line)}
+.c-step-end b{display:block;color:var(--navy);font-size:16.5px;font-weight:800}
+.c-step-end span{font-size:14.5px;color:var(--muted)}
+.c-step-end .c-btn{margin-left:auto}
+.c-step-end.done{display:none;border-color:#bfe6cf;background:#f4fbf7}
+.lesson.cleared .c-step-end.done{display:flex;animation:c-rise .35s cubic-bezier(.2,.7,.2,1)}
+.c-item.c-sub{padding-left:24px;font-size:13.5px}
+.c-item.c-sub .c-dot{width:18px;height:18px;font-size:10px;border-style:dashed}
+.c-item.c-sub.done .c-dot{border-style:solid}
+
 /* next arrow and locked hint */
 .c-next{position:fixed;right:32px;bottom:30px;z-index:20;width:58px;height:58px;border:0;border-radius:50%;cursor:pointer;background:var(--cyan);color:var(--navy);display:grid;place-items:center;
   box-shadow:0 10px 28px rgba(15,166,182,.35),0 2px 6px rgba(10,38,71,.12);opacity:0;transform:translateY(16px) scale(.9);pointer-events:none;
@@ -199,4 +217,5 @@ body.course .scbar{position:fixed;top:0;left:0;right:0;z-index:40}
   .c-next{right:18px;bottom:20px;width:54px;height:54px}.c-next .c-tip{display:none}
   .c-hint{right:18px;left:18px;text-align:center}
   .c-cert-in{padding:30px 20px}.c-cert h2{font-size:26px}
+  .c-step-end{padding:18px 20px}.c-step-end .c-btn{margin-left:0;width:100%;justify-content:center}
 }

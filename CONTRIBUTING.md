@@ -84,7 +84,12 @@ Todos los trainings usan el mismo reproductor (`assets/css/course.css` + `assets
    data-goals="Objetivo 1|Objetivo 2">`. El reproductor arma solo el índice, los tiempos,
    la flecha de siguiente, las medallas por módulo y el certificado.
 3. Los checkpoints son `.checkpoint` con tareas `.task.gate` de tipo `choice`, `match` o
-   `sort`. Copia uno de `va/sop-foundations.html`.
+   `sort`. Copia uno de `va/sop-foundations.html`. **Primero se lee, después se responde:**
+   el reproductor mueve el checkpoint a una pantalla propia, así que ponlo siempre al
+   final de la lección, como hijo directo de la `<section>`. Lo que va después del
+   checkpoint (por ejemplo un bloque de cierre) viaja con él a esa segunda pantalla.
+   Si una lección tiene menos de 70 palabras antes del checkpoint, se queda en una sola
+   pantalla; eso es lo correcto para un examen final.
 4. Al final: `SCCourse.init({ id: 'mi-training', title: 'Mi training', kick: 'VA training',
    store: 'sc_mi_training__' })`.
 5. Regístralo en `assets/js/courses.js` con su área: `track: 'va'` o
