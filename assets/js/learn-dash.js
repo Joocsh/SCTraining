@@ -1,8 +1,8 @@
 /* ══════════════════════════════════════════════════════════
    Learner home
-   For a signed in associate the Home opens on "My learning": resume
-   where they left off, then the three steps in order (Introduction,
-   training paths, Simulations) with real progress. Signed out
+   For a signed in associate the Home opens on "My learning": the three
+   steps in order (Introduction, training paths, Simulations) with the
+   real progress of each one. Signed out
    visitors keep the original landing hero.
    ══════════════════════════════════════════════════════════ */
 (function () {
@@ -29,53 +29,6 @@
   var roles = SCApp.getRoleBreakdown ? SCApp.getRoleBreakdown(me.id) : {};
   var practiced = Object.keys(roles || {}).length;
 
-  /* ── where to resume ──
-     The Home never names a single training: a training belongs to its path
-     and is opened from there, so a page inside a path resumes as the path. */
-  var NAMES = {
-    'ai.html': ['Introduction', 'AI tools you will use every day'],
-    'roles/transaction-coordinator.html': ['Transaction Coordinator', 'Simulation'],
-    'roles/listing-coordinator.html': ['Listing Coordinator', 'Simulation'],
-    'roles/property-manager.html': ['Property Manager', 'Simulation'],
-    'roles/lead-manager.html': ['Lead Manager', 'Simulation'],
-    'roles/operations-manager.html': ['Operations Manager', 'Simulation'],
-    'roles/cfo-bookkeeper.html': ['CFO & Bookkeeper', 'Simulation']
-  };
-  var INSIDE = {};
-  if (C) {
-    C.tracks.forEach(function (t) { INSIDE[t.href] = t.id; });
-    C.list.forEach(function (c) { if (c.track && c.track !== 'intro') INSIDE[c.href] = c.track; });
-  }
-  function pathCard(id) {
-    var t = C.tracks.filter(function (x) { return x.id === id; })[0] || C.tracks[0];
-    var inside = C.byTrack(t.id), done = 0, total = 0;
-    inside.forEach(function (c) { var p = C.progress(c, me.id); done += p.done; total += p.total; });
-    return {
-      href: t.href, title: t.title, kind: 'Up next in your training',
-      meta: done ? done + ' of ' + total + ' lessons done' : inside.length + ' training' + (inside.length === 1 ? '' : 's') + ' in this path',
-      cta: done ? 'Continue' : 'Open the path'
-    };
-  }
-
-  var last = SCApp.getLastPage(me.id);
-  var resume;
-  if (last && C && INSIDE[last]) {
-    resume = pathCard(INSIDE[last]);
-  } else if (last && NAMES[last]) {
-    resume = { href: last, title: NAMES[last][0], kind: NAMES[last][1], cta: 'Resume' };
-    if (last === 'ai.html') resume.meta = introSeen + ' of 5 lessons done';
-  } else if (!introDone) {
-    resume = { href: 'ai.html', title: 'Introduction', kind: 'Start here', cta: 'Start', meta: 'Unlocks the Simulations' };
-  } else if (trainPct < 100 && C) {
-    var open = C.tracks.filter(function (t) {
-      return C.byTrack(t.id).some(function (c) { return C.progress(c, me.id).done > 0; });
-    })[0];
-    resume = open ? pathCard(open.id)
-      : { href: '#paths', title: 'Training paths', kind: 'Up next', cta: 'Choose a path', meta: C.tracks.map(function (t) { return t.title; }).join(' and ') };
-  } else {
-    resume = { href: '#simulations', title: 'Simulations', kind: 'Up next', cta: 'Choose a simulation', meta: 'Practice your role on real cases' };
-  }
-
   /* ── path steps ── */
   var steps = [
     { n: 1, title: 'Introduction', desc: 'What Claude, ChatGPT and Manus are, and when to use each one.', pct: introPct,
@@ -96,14 +49,8 @@
       '<div class="ld-hello">' +
         '<span class="ld-kick">My learning</span>' +
         '<h1>Welcome back' + (first ? ', ' + esc(first) : '') + '</h1>' +
-        '<p>Pick up where you left off, or follow the path below.</p>' +
+        '<p>Your path is below. Pick the step you are on and keep going.</p>' +
       '</div>' +
-      '<a class="ld-resume" href="' + resume.href + '">' +
-        '<span class="ld-resume-kind">' + esc(resume.kind) + '</span>' +
-        '<b>' + esc(resume.title) + '</b>' +
-        (resume.meta ? '<span class="ld-resume-meta">' + esc(resume.meta) + '</span>' : '') +
-        '<span class="ld-resume-cta">' + esc(resume.cta) + ' <span aria-hidden="true">&rarr;</span></span>' +
-      '</a>' +
     '</div></div>' +
     '<div class="ld-path"><div class="ld-inner">' +
       '<div class="ld-path-head"><h2>Your next steps</h2>' +

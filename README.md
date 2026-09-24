@@ -302,6 +302,13 @@ usuario baja; `skills-source/` tiene ese mismo contenido descomprimido y editabl
 **Si editas algo en `skills-source/`, tienes que volver a comprimirlo en
 `assets/downloads/`.** No hay proceso automático. Ese es el error fácil de cometer aquí.
 
+### Fotos de stock
+
+Las fotos libres vienen de Pexels, con su licencia gratuita para uso comercial y sin
+atribución obligatoria. El fondo del saludo del Home es
+[`assets/img/home-sky.jpg`](assets/img/home-sky.jpg), de
+https://www.pexels.com/photo/12335838/.
+
 ### `assets/brand/`
 
 Entrega original del diseñador: logos, fuentes Visby CF, fotos de la web, banners de redes
