@@ -138,8 +138,6 @@
     .va-start b { display: block; color: var(--v-navy); font-size: 16px; }
     .va-start span { font-size: 14px; color: var(--v-muted); }
     .va-start .go { margin-left: auto; font-weight: 800; color: var(--v-cyan-d); font-size: 14px; white-space: nowrap; }
-    .va-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
-    .va-meta span { font-size: 12px; font-weight: 700; color: #cfe0f0; background: rgba(255,255,255,.12); border-radius: 999px; padding: 3px 10px; }
     .va-prog { display: flex; align-items: center; gap: 12px; margin-top: 4px; max-width: 360px; }
     .va-prog i { flex: 1; height: 6px; border-radius: 99px; background: rgba(255,255,255,.2); overflow: hidden; }
     .va-prog i b { display: block; height: 100%; background: var(--v-cyan); border-radius: 99px; }
@@ -237,7 +235,7 @@
 
 <script src="assets/js/app-core.js?v=20260917"></script>
 <script>SCApp.requireAuth();</script>
-<script src="assets/js/courses.js?v=20260923"></script>
+<script src="assets/js/courses.js?v=20260924c"></script>
 <script>
   (function () {
     var me = SCApp.currentUser(); if (!me) return;
@@ -255,7 +253,6 @@
         '<a class="va-row" id="' + c.id + '" href="' + c.href + '" style="background-image:url(\'' + c.image + '\')">' +
           '<span class="lab-badge soon' + (p.complete ? ' done' : '') + '">' + label + '</span>' +
           '<div class="va-row-body">' +
-            '<div class="va-meta">' + (c.modules ? '<span>' + c.modules + ' modules</span>' : '') + '<span>' + c.lessons + ' lessons</span></div>' +
             '<h3>' + c.title + '</h3><p>' + c.desc + '</p>' +
             '<div class="va-prog"><i><b style="width:' + p.pct + '%"></b></i><span>' + p.done + ' of ' + p.total + '</span></div>' +
             '<span class="lab-cta" style="display:inline-block;margin-top:12px">' + (p.complete ? 'Review the training' : (p.done ? 'Continue' : 'Start the training')) + ' &rarr;</span>' +

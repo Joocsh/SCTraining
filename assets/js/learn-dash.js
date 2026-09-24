@@ -55,7 +55,7 @@
   } else if (!introDone) {
     resume = { href: 'ai.html', title: 'Introduction', kind: 'Start here', cta: 'Start', meta: 'Unlocks the Simulations' };
   } else if (sopPct < 100) {
-    resume = { href: 'va/sop-foundations.html', title: 'SOP Foundations', kind: 'Up next', cta: sopDone ? 'Resume' : 'Start', meta: sopDone + ' of ' + SOP_TOTAL + ' lessons done' };
+    resume = { href: 'va/sop-foundations.html', title: 'SOP Foundations', kind: 'Up next in the VA path', cta: sopDone ? 'Resume' : 'Start', meta: sopDone + ' of ' + SOP_TOTAL + ' lessons done' };
   } else {
     resume = { href: '#simulations', title: 'Simulations', kind: 'Up next', cta: 'Choose a simulation', meta: 'Practice your role on real cases' };
   }
@@ -65,7 +65,7 @@
     { n: 1, title: 'Introduction', desc: 'What Claude, ChatGPT and Manus are, and when to use each one.', pct: introPct,
       meta: introDone ? 'Complete' : (introSeen + ' of 5 lessons'), href: 'ai.html', cta: introDone ? 'Review' : (introSeen ? 'Continue' : 'Start') },
     { n: 2, title: 'Training paths', desc: 'Study your role before you simulate it. Two paths: ' + (C ? C.tracks.map(function (t) { return t.title; }).join(' and ') : 'VA') + '.', pct: sopPct,
-      meta: vaComplete + ' of ' + vaCourses.length + ' trainings done', href: 'va.html', cta: vaDone ? (sopPct === 100 ? 'Review' : 'Continue') : 'Start' },
+      meta: vaComplete + ' of ' + vaCourses.length + ' trainings done', href: '#paths', cta: vaDone ? (sopPct === 100 ? 'Review' : 'Continue') : 'Choose a path' },
     { n: 3, title: 'Simulations', desc: 'Practice real cases for your role with instant feedback.', pct: null, locked: !introDone,
       meta: introDone ? (practiced ? practiced + ' role' + (practiced > 1 ? 's' : '') + ' practiced' : 'Ready to start') : 'Unlocks after the Introduction',
       href: introDone ? '#simulations' : 'ai.html', cta: introDone ? 'Choose a simulation' : 'Finish the Introduction' }

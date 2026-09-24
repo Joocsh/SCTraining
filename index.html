@@ -1375,6 +1375,9 @@
     .va-kick { font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--v-cyan); }
     .va-card b { font-size: 20px; color: #fff; }
     .va-soon { font-size: 13px; color: #d6e4f0; }
+    .va-in { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .va-in span { font-size: 12px; font-weight: 700; color: #eaf6fb; background: rgba(255,255,255,.14);
+      border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 4px 11px; }
     .va-cta { margin-top: 24px; }
     .sim-locked-note { margin-top: 14px; display: inline-block; background: #fff8ec; border: 1.5px solid rgba(217,138,20,.35);
       color: #7a4d00; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 600; }
@@ -1718,7 +1721,7 @@
   </section>
 
   <!-- ===== VA: CLASSES BY ROLE ===== -->
-  <section class="h-sec h-va" id="va">
+  <section class="h-sec h-va" id="paths">
     <div class="inner">
       <span class="h-eyebrow rv">Paths &middot; Study first</span>
       <h2 class="h-h2 rv">Learn your role before you simulate it</h2>
@@ -1741,7 +1744,7 @@
           <h2 class="h-h2 rv">Find your simulation and get started</h2>
           <p class="h-lead rv">Each simulation trains on the scenario a role actually owns day to day. Pick your seat and
             practice what matters most.</p>
-          <div class="sim-locked-note rv" hidden>&#128274; Simulations unlock after you finish the <a href="ai.html">Introduction</a>. VA classes are open anytime.</div>
+          <div class="sim-locked-note rv" hidden>&#128274; Simulations unlock after you finish the <a href="ai.html">Introduction</a>. The training paths are open anytime.</div>
         </div>
         <div class="role-select-wrap rv">
           <label for="roleSelect">Choose your role</label>
@@ -1972,17 +1975,17 @@
 
   <script src="assets/js/app-core.js?v=20260917"></script>
   <script src="assets/js/site.js?v=20260917"></script>
-  <script src="assets/js/courses.js?v=20260923"></script>
-  <script src="assets/js/learn-dash.js?v=20260923"></script>
+  <script src="assets/js/courses.js?v=20260924c"></script>
+  <script src="assets/js/learn-dash.js?v=20260924c"></script>
   <script>
-    /* how many trainings each path holds, straight from the catalog */
+    /* the trainings each path holds, straight from the catalog */
     (function () {
       if (!window.SCCourses) return;
       var g = document.getElementById('trackGrid'); if (!g) return;
       [].forEach.call(g.querySelectorAll('[data-track]'), function (card) {
-        var n = SCCourses.byTrack(card.getAttribute('data-track')).length;
-        var line = card.querySelector('.va-soon');
-        if (line) line.textContent += ' · ' + n + ' training' + (n === 1 ? '' : 's');
+        var names = SCCourses.byTrack(card.getAttribute('data-track')).map(function (c) { return c.title; });
+        if (names.length) card.insertAdjacentHTML('beforeend',
+          '<span class="va-in">' + names.map(function (t) { return '<span>' + t + '</span>'; }).join('') + '</span>');
       });
     })();
   </script>
