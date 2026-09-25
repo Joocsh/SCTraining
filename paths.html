@@ -112,20 +112,19 @@
           '<div class="pa-list">' + list.map(card).join('') + '</div></section>';
       }).join('');
 
-      /* department filter; #va or #marketing opens on that department */
+      /* one department at a time; #va or #marketing opens on that one, the first by default */
       var tabs = document.getElementById('paTabs');
-      tabs.innerHTML = '<button class="pa-tab" type="button" role="tab" data-f="all">All<span class="n">' + all.length + '</span></button>' +
-        tracks.map(function (t) {
+      tabs.innerHTML = tracks.map(function (t) {
           return '<button class="pa-tab" type="button" role="tab" data-f="' + t.id + '">' + esc(t.title) + '<span class="n">' + C.byTrack(t.id).length + '</span></button>';
         }).join('');
       function filter(f) {
         [].forEach.call(tabs.children, function (b) { var on = b.getAttribute('data-f') === f; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-        [].forEach.call(document.querySelectorAll('.pa-dept'), function (d) { d.hidden = f !== 'all' && d.getAttribute('data-dept') !== f; });
-        try { history.replaceState(null, '', f === 'all' ? location.pathname : '#' + f); } catch (e) {}
+        [].forEach.call(document.querySelectorAll('.pa-dept'), function (d) { d.hidden = d.getAttribute('data-dept') !== f; });
+        try { history.replaceState(null, '', '#' + f); } catch (e) {}
       }
       tabs.addEventListener('click', function (e) { var b = e.target.closest('.pa-tab'); if (b) filter(b.getAttribute('data-f')); });
       var start = location.hash.slice(1);
-      filter(tracks.some(function (t) { return t.id === start; }) ? start : 'all');
+      filter(tracks.some(function (t) { return t.id === start; }) ? start : tracks[0].id);
     })();
   </script>
 </body>
