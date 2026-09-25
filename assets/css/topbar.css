@@ -107,3 +107,27 @@
 @media(max-width:940px){.scbar-id .scbar-name{display:none}.scbar-count{display:none}}
 @media(max-width:760px){.scbar-safe{display:none}.scbar-ctx em{display:none}}
 @media(max-width:520px){.scbar-back span{display:none}.scbar-back{padding:0 10px}.scbar{gap:10px;padding:0 10px}}
+
+/* ── light variant for the trainings ──
+   A lesson is our own content, not a simulated app, so it gets the same
+   white bar as the site: the real logo, the training name, a way out. */
+.scbar.light{--scbar-h:64px;height:64px;gap:16px;padding:0 20px;background:#fff;color:#0a2647;box-shadow:none;border-bottom:1px solid #e3eaf1}
+.scbar.light .scbar-logo{display:inline-flex;align-items:center;flex:none;height:36px;padding-right:18px;border-right:1px solid #e3eaf1}
+.scbar.light .scbar-logo img{display:block;height:36px;width:auto}
+.scbar.light .scbar-ctx{color:#0a2647;font-size:15.5px;font-weight:800;letter-spacing:-.2px}
+.scbar.light .scbar-exit{display:inline-flex;align-items:center;gap:6px;flex:none;height:38px;padding:0 16px;border-radius:999px;border:1px solid #e3eaf1;
+  background:#fff;color:#0a2647;font-weight:700;font-size:14px;text-decoration:none;white-space:nowrap;transition:border-color .15s,color .15s}
+.scbar.light .scbar-exit:hover{border-color:#17c3d4;color:#0fa6b6;text-decoration:none}
+.scbar.light .scbar-act{height:38px;border-color:#e3eaf1;background:#fff;color:#0a2647}
+.scbar.light .scbar-act.icon{width:38px}
+.scbar.light .scbar-act:hover{background:#f6f9fc;border-color:#17c3d4;color:#0a2647}
+.scbar.light .scbar-count{color:#5b6b7e}
+.scbar.light .scbar-count b{color:#0a2647}
+.scbar.light + .scbar-prog{background:#e3eaf1}
+@media(max-width:640px){
+  .scbar.light{gap:10px;padding:0 12px}
+  .scbar.light .scbar-logo{border-right:0;padding-right:0}
+  .scbar.light .scbar-logo img{height:30px}
+  .scbar.light .scbar-ctx{display:none}
+  .scbar.light .scbar-exit{padding:0 12px}
+}

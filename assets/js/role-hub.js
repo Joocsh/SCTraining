@@ -145,8 +145,9 @@
 
     hub.innerHTML =
       '<header class="rh-bar">' +
-        '<a class="rh-back" href="../index.html#simulations">' + svg('<path d="M15 5l-7 7 7 7"/>', 2.4) + 'Simulations</a>' +
-        '<span class="rh-crumb">' + svg('<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>', 2) + '<span class="muted">SkillCloud</span><span class="sep">/</span>' + C.title.replace('&', '&amp;') + '</span>' +
+        '<a class="rh-logo" href="../index.html" aria-label="Skill Cloud Academy home"><img src="../assets/img/skillcloud-navlogo.png" alt="Skill Cloud"></a>' +
+        '<span class="rh-title">' + C.title.replace('&', '&amp;') + '</span>' +
+        '<a class="rh-back" href="../index.html#simulations">Back to Simulations</a>' +
       '</header>' +
       '<section class="rh-hero"><div class="rh-hero-in">' +
         '<div class="rh-photo"><img src="../assets/img/' + C.photo + '" alt=""></div>' +

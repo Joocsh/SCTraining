@@ -16,17 +16,15 @@ body.hub-on { margin: 0; overflow-x: hidden; background: #f6f9fc; }
 body.hub-on > *:not(#roleHub):not(script):not(style):not(link) { display: none !important; }
 body.hub-on #roleHub { display: block; }
 
-/* top bar */
-.rh-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 14px; height: 56px; padding: 0 20px;
-  background: var(--h-navy); color: #cfe0f0; }
-.rh-back { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px 0 10px; border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, .16); color: #fff; text-decoration: none; font-size: 13.5px; font-weight: 700; }
-.rh-back:hover { background: rgba(255, 255, 255, .08); text-decoration: none; }
-.rh-back svg { width: 16px; height: 16px; }
-.rh-crumb { display: flex; align-items: center; gap: 10px; font-size: 14.5px; font-weight: 700; color: #fff; }
-.rh-crumb svg { width: 22px; height: 22px; color: var(--h-cyan); }
-.rh-crumb .sep { color: rgba(255, 255, 255, .35); font-weight: 400; }
-.rh-crumb .muted { color: #9fb4c9; font-weight: 600; }
+/* top bar: the same white bar as the trainings */
+.rh-bar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 16px; height: 64px; padding: 0 20px;
+  background: #fff; border-bottom: 1px solid var(--h-line); }
+.rh-logo { display: inline-flex; align-items: center; height: 36px; padding-right: 18px; border-right: 1px solid var(--h-line); }
+.rh-logo img { display: block; height: 36px; width: auto; }
+.rh-title { font-size: 15.5px; font-weight: 800; color: var(--h-navy); letter-spacing: -.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rh-back { margin-left: auto; display: inline-flex; align-items: center; height: 38px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--h-line);
+  color: var(--h-navy); text-decoration: none; font-size: 14px; font-weight: 700; white-space: nowrap; transition: border-color .15s, color .15s; }
+.rh-back:hover { border-color: var(--h-cyan); color: var(--h-cyan-d); text-decoration: none; }
 
 /* hero: the person on the left, the role and your progress on the right */
 .rh-hero { position: relative; overflow: hidden; background: #fff; border-bottom: 1px solid var(--h-line); }
@@ -107,7 +105,9 @@ body.hub-away .rh-overview { display: inline-flex; }
   .rh-photo { order: 2; height: 320px; }
   .rh-photo img { height: 320px; }
   .rh-mods, .rh-extras { grid-template-columns: 1fr; }
-  .rh-crumb .muted, .rh-crumb .sep { display: none; }
+  .rh-logo { border-right: 0; padding-right: 0; }
+  .rh-logo img { height: 30px; }
+  .rh-title { display: none; }
 }
 @media (max-width: 560px) {
   .rh-mod { flex-direction: column; gap: 12px; }
