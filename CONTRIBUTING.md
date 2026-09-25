@@ -37,6 +37,7 @@ archivo de otra área, avisa primero.
 | Simulaciones TC y Listing | `roles/transaction-coordinator.html`, `roles/listing-coordinator.html`, `assets/css/role-shell.css`, `tc-case.css`, `workflow.css`, `assets/js/role-shell.js`, `workflow.js`, `tc-ca-new-case.js`, `tc-va-case.js` | Gerald |
 | Cursos y experiencia del alumno | `index.html`, `assets/css/home.css`, `assets/js/home.js`, `ai.html`, `va.html`, `va/`, `account.html`, `admin.html`, `marketing-training.html`, `assets/css/course.css`, `assets/js/course.js`, `courses.js`, `learn-dash.js` | Naesa |
 | Test drives | `AppFolio/`, `Docusign/`, `Quialia/`, `testdrive-*.html` | Quien lo esté construyendo |
+| Pantalla de inicio de las simulaciones | `assets/css/role-hub.css`, `assets/js/role-hub.js` (cada `roles/*.html` solo la incluye) | Naesa |
 | Base compartida | `assets/css/styles.css`, `assets/js/app-core.js`, `site.js` | Todos, **avisando antes** |
 
 La base compartida la carga todo el sitio: un cambio ahí afecta todas las páginas.

@@ -189,6 +189,18 @@ progreso y entra directo al Home guiado, con la bienvenida de la primera visita.
 cuenta de administrador no sirve para esto, porque para el sitio un admin ya terminó la
 Introducción.
 
+### Pantalla de inicio de las simulaciones
+
+Los seis roles abren con la misma pantalla de inicio: la persona del rol, el progreso, y
+los módulos en el orden recomendado (el siguiente lleva el botón principal). La arma
+`assets/js/role-hub.js` con `assets/css/role-hub.css`, y cada página de rol solo la
+incluye con dos líneas y su `data-role` (`tc`, `listing`, `pm`, `lead`, `ops`, `cfo`).
+
+El componente no reescribe ningún simulador: abre cada módulo con las funciones que la
+página ya tiene (`openPanel`, los botones de la barra lateral de `role-shell.js`, o el
+menú de la app de Operations), y vuelve a la pantalla de inicio cuando el módulo se
+cierra. Los textos, fotos y totales de cada rol están en `CONFIG`, al inicio del archivo.
+
 ### Reproductor de cursos
 
 `assets/css/course.css` + `assets/js/course.js` (`window.SCCourse`). Toda página de curso
