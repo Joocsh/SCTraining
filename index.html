@@ -895,30 +895,30 @@
       height: auto; /* Natural scaling — max-height controls the size per role */
       display: block;
       margin: 0 auto; /* Center horizontally in column */
-      transform: scale(1.06);
-      transition: transform .9s cubic-bezier(.16,1,.3,1);
+      /* photos never move or scale: any transform resamples the pixels and softens them */
+      transform: none;
     }
 
     .role-panel.active .rp-media img {
-      transform: scale(1);
+      transform: none;
     }
 
     /* Per-role max-height — tuned to each image's aspect ratio so they all look similarly sized */
     [data-index="0"] .rp-media,
     [data-index="3"] .rp-media { height: 100%; } /* Force full stage height so flex-end reaches the border */
     [data-index="0"] .rp-media img { height: 100%; max-height: 520px; } /* TC       */
-    [data-index="1"] .rp-media img { max-height: 680px; margin-left: 0; margin-right: auto; transform: translateY(180px) scale(1.06); } /* Leasing  619x595  ratio 1.04 */
+    [data-index="1"] .rp-media img { max-height: 680px; margin-left: 0; margin-right: auto; transform: translateY(180px); } /* Leasing  619x595  ratio 1.04 */
     [data-index="2"] .rp-media img { max-height: 645px; } /* Listing — Andrea Villalta, ~20% transparent headroom above her */
     [data-index="3"] .rp-media img { max-height: 520px; } /* Lead     */
-    [data-index="1"].active .rp-media img { transform: translateY(180px) scale(1); }
+    [data-index="1"].active .rp-media img { transform: translateY(180px); }
     [data-index="4"] .rp-media img { max-height: 655px; } /* Ops — Brandon Montenegro, ~21% transparent headroom above him */
     [data-index="5"] .rp-media img { max-height: 665px; } /* CFO — Carlos Flores, ~22% transparent headroom above him */
 
 
 
     /* The photo lives in the section: a brand halo rises from the floor behind
-       the person, follows the cursor a little while the person leans the other
-       way, and swells in each time a new role is picked. */
+       the person and follows the cursor a little. The photo itself never moves,
+       so it always renders at full sharpness. */
     .role-stage {
       --mx: 0; --my: 0;
       border-bottom: 1px solid var(--v-line);
@@ -959,11 +959,10 @@
       position: relative;
       z-index: 1; /* the person always sits in front of the halo, never blended into it */
       mix-blend-mode: normal;
-      translate: calc(var(--mx) * -8px) calc(var(--my) * -4px);
-      transition: transform .9s cubic-bezier(.16,1,.3,1), translate .35s ease-out;
+
     }
     @media (prefers-reduced-motion: reduce) {
-      .rp-media::before, .rp-media::after, .rp-media img { translate: none; transition: opacity .3s ease; }
+      .rp-media::before, .rp-media::after { translate: none; transition: opacity .3s ease; }
     }
 
     .rp-text .tag {
@@ -1156,6 +1155,13 @@
     .rv.in {
       opacity: 1;
       transform: none
+    }
+
+    /* blocks that hold a photo only fade in: sliding them would resample the image */
+    .h-visual.rv,
+    .va-card.rv {
+      transform: none;
+      transition: opacity .6s ease;
     }
 
     @media(prefers-reduced-motion:reduce) {
@@ -1438,7 +1444,7 @@
     .va-card::before { content: ""; position: absolute; inset: 0;
       background: linear-gradient(90deg, rgba(10,38,71,.9) 0%, rgba(10,38,71,.65) 50%, rgba(10,38,71,.12) 100%); }
     .va-card > * { position: relative; }
-    .va-card:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(10,38,71,.18); text-decoration: none; }
+    .va-card:hover { box-shadow: 0 14px 32px rgba(10,38,71,.18); text-decoration: none; }
     .va-kick { font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--v-cyan); }
     .va-card b { font-size: 20px; color: #fff; }
     .va-soon { font-size: 13px; color: #d6e4f0; }
@@ -2062,7 +2068,7 @@
         showRole(+select.value);
       });
 
-      /* the halo and the person answer the cursor, a few pixels each way */
+      /* the halo answers the cursor; the photo stays still */
       var stage = document.querySelector('.role-stage');
       var sec = document.getElementById('simulations');
       var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
