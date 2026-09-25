@@ -35,7 +35,7 @@ archivo de otra área, avisa primero.
 | Área | Archivos | Referencia |
 | ---- | -------- | ---------- |
 | Simulaciones TC y Listing | `roles/transaction-coordinator.html`, `roles/listing-coordinator.html`, `assets/css/role-shell.css`, `tc-case.css`, `workflow.css`, `assets/js/role-shell.js`, `workflow.js`, `tc-ca-new-case.js`, `tc-va-case.js` | Gerald |
-| Cursos y experiencia del alumno | `index.html`, `assets/css/home.css`, `assets/js/home.js`, `paths.html`, `assets/css/paths.css`, `ai.html`, `va/`, `account.html`, `admin.html`, `marketing-training.html`, `assets/css/course.css`, `assets/js/course.js`, `courses.js`, `learn-dash.js` | Naesa |
+| Cursos y experiencia del alumno | `index.html`, `assets/css/home.css`, `assets/js/home.js`, `paths.html`, `assets/css/paths.css`, `ai.html`, `va/`, `account.html`, `admin.html`, `marketing-training.html`, `assets/css/course.css`, `assets/js/course.js`, `course-kit.css`, `course-kit.js`, `courses.js`, `learn-dash.js` | Naesa |
 | Test drives | `AppFolio/`, `Docusign/`, `Quialia/`, `testdrive-*.html` | Quien lo esté construyendo |
 | Pantalla de inicio de las simulaciones | `assets/css/role-hub.css`, `assets/js/role-hub.js` (cada `roles/*.html` solo la incluye) | Naesa |
 | Base compartida | `assets/css/styles.css`, `assets/js/app-core.js`, `site.js` | Todos, **avisando antes** |
@@ -98,6 +98,10 @@ Todos los trainings usan el mismo reproductor (`assets/css/course.css` + `assets
    checkpoint (por ejemplo un bloque de cierre) viaja con él a esa segunda pantalla.
    Si una lección tiene menos de 70 palabras antes del checkpoint, se queda en una sola
    pantalla; eso es lo correcto para un examen final.
+   Para bloques extra (ejemplo, idea clave, pasos con captura `ol.how`, escenarios,
+   prácticas escritas que se guardan solas `textarea[data-draft]` y preguntas sin
+   respuesta correcta `data-type="poll"`), carga también `assets/css/course-kit.css` y
+   `assets/js/course-kit.js`. Mira `va/ai-real-estate-ops.html` y `va/asana.html`.
 4. Al final: `SCCourse.init({ id: 'mi-training', title: 'Mi training', kick: 'VA training',
    store: 'sc_mi_training__' })`.
 5. Regístralo en `assets/js/courses.js` con su departamento: `track: 'va'` o

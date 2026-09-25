@@ -21,6 +21,16 @@
       image: 'assets/img/va/sop-foundations.jpg', lessons: 11, modules: 3, store: 'sc_va_sop_foundations_v2__', track: 'va'
     },
     {
+      id: 'ai-ops', title: 'AI for Real Estate Operations', href: 'va/ai-real-estate-ops.html', kind: 'VA training',
+      desc: 'Use AI to draft, organize and analyze with clear prompts, protected client data and a person accountable for every result.',
+      image: 'assets/img/va/ai-ops/m1-orientation.jpg', lessons: 24, modules: 4, store: 'sc_va_ai_re_ops__', track: 'va'
+    },
+    {
+      id: 'asana', title: 'Asana Essentials', href: 'va/asana.html', kind: 'VA training',
+      desc: 'Organize, assign and track the team’s work in Asana, from your first task to full projects and teams.',
+      image: 'assets/img/va/asana/m2-tasks.jpg', lessons: 10, modules: 4, store: 'sc_va_asana__', track: 'va'
+    },
+    {
       id: 'marketing', title: 'Marketing Training', href: 'marketing-training.html', kind: 'Marketing training', track: 'marketing',
       desc: 'The Sotheby’s brand, Design Vault, ListTrac and the marketing tools, lesson by lesson.',
       image: 'assets/img/marketing/marketing-training-cover.jpg', lessons: 58, modules: 9,
