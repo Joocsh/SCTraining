@@ -33,6 +33,12 @@
   }
   function gates(i) { return $$('.gate', C.lessons[i]); }
   function passedAll(i) { return gates(i).every(function (g, k) { return C.state.passed[C.lessons[i].id + ':' + k]; }); }
+  /* ── one step at a time ──
+     A lesson opens once every lesson before it is done, so modules unlock
+     one by one. Lessons already done stay open for review. */
+  function frontier() { var i = 0; while (i < C.lessons.length && C.state.done.indexOf(i) > -1) i++; return i; }
+  function unlocked(i) { return i <= frontier() || C.state.done.indexOf(i) > -1; }
+  var LOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
   function isSplit(i) { return C.lessons[i].classList.contains('split'); }
   function reading(i) { return isSplit(i) && !C.lessons[i].classList.contains('quiz'); }
 
@@ -101,7 +107,7 @@
 
     var nav = $('#cNav');
     mods().forEach(function (m) {
-      if (m.name) nav.insertAdjacentHTML('beforeend', '<div class="c-mod" data-mod="' + m.name + '"><span>' + m.name + '</span><span class="c-badge" title="Module complete">&#9733;</span></div>');
+      if (m.name) nav.insertAdjacentHTML('beforeend', '<div class="c-mod" data-mod="' + m.name + '" data-first="' + m.idx[0] + '"><span>' + m.name + '</span><span class="c-badge" title="Module complete">&#9733;</span><span class="c-lock" title="Finish the previous module to unlock">' + LOCK + '</span></div>');
       m.idx.forEach(function (i) {
         var l = C.lessons[i];
         var b = document.createElement('button');
@@ -126,12 +132,24 @@
     $('#cTop').style.width = ((C.cur + 1) / L.length * 100) + '%';
     $$('.c-item').forEach(function (b) {
       var i = +b.dataset.i, sub = b.classList.contains('c-sub');
-      var d = sub ? passedAll(i) : s.done.indexOf(i) > -1;
+      var d = sub ? passedAll(i) : s.done.indexOf(i) > -1, lk = !unlocked(i);
       b.classList.toggle('on', i === C.cur && sub !== reading(i));
       b.classList.toggle('done', d);
-      $('.c-dot', b).innerHTML = d ? '&#10003;' : (sub ? '&#183;' : (i + 1));
+      b.classList.toggle('locked', lk);
+      b.setAttribute('aria-disabled', lk);
+      $('.c-dot', b).innerHTML = d ? '&#10003;' : (lk ? LOCK : (sub ? '&#183;' : (i + 1)));
     });
-    $$('.c-mod').forEach(function (m) { m.classList.toggle('done', (s.modulesDone || []).indexOf(m.dataset.mod) > -1); });
+    $$('.c-mod').forEach(function (m) {
+      m.classList.toggle('done', (s.modulesDone || []).indexOf(m.dataset.mod) > -1);
+      m.classList.toggle('locked', !unlocked(+m.dataset.first));
+    });
+    /* shortcuts inside the lessons, like the module list on the welcome screen */
+    $$('[data-jump]').forEach(function (b) {
+      var k = C.lessons.findIndex(function (l) { return l.id === b.dataset.jump; });
+      var lk = k > -1 && !unlocked(k);
+      b.classList.toggle('locked', lk);
+      b.setAttribute('aria-disabled', lk);
+    });
     $$('.checkpoint', L[C.cur]).forEach(function (cp) {
       var g = $$('.gate', cp), n = g.filter(function (x) { return x.classList.contains('passed'); }).length;
       var st = $('.cp-state', cp);
@@ -168,6 +186,11 @@
 
   function go(i, phase) {
     i = Math.max(0, Math.min(i, C.lessons.length - 1));
+    if (!unlocked(i)) {
+      var f = frontier();
+      toast('Locked for now', 'Finish ' + C.lessons[f].dataset.title + ' to unlock it.');
+      return;
+    }
     C.lessons[C.cur].classList.remove('on', 'quiz');
     C.cur = i; C.state.at = i;
     C.lessons[i].classList.add('on');
@@ -182,7 +205,10 @@
 
   function toast(t, s) {
     $('#cToastT').textContent = t; $('#cToastS').textContent = s;
-    var el = $('#cToast'); el.classList.add('show');
+    var el = $('#cToast'), lock = t === 'Locked for now';
+    el.classList.toggle('lock', lock);
+    $('.c-medal', el).innerHTML = lock ? LOCK : '&#9733;';
+    el.classList.add('show');
     clearTimeout(toast.t); toast.t = setTimeout(function () { el.classList.remove('show'); }, 3200);
   }
 
@@ -313,6 +339,7 @@
     try { Object.assign(C.state, JSON.parse(localStorage.getItem(C.key) || '{}')); } catch (e) {}
     C.state.passed = C.state.passed || {};
     C.cur = Math.min(C.state.at || 0, C.lessons.length - 1);
+    if (!unlocked(C.cur)) C.cur = Math.min(frontier(), C.lessons.length - 1);
 
     build(); wireTasks(); restore();
 

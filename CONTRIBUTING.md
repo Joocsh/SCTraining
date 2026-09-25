@@ -90,7 +90,8 @@ Todos los trainings usan el mismo reproductor (`assets/css/course.css` + `assets
    `<main class="c-stage" id="stage">`.
 2. Cada lección es una `<section class="lesson" data-mod="Módulo" data-title="Título"
    data-goals="Objetivo 1|Objetivo 2">`. El reproductor arma solo el índice, la flecha de
-   siguiente, las medallas por módulo y el certificado.
+   siguiente, las medallas por módulo y el certificado. Las lecciones se abren en orden:
+   cada una se desbloquea al terminar la anterior, así que los módulos se abren uno por uno.
 3. Los checkpoints son `.checkpoint` con tareas `.task.gate` de tipo `choice`, `match` o
    `sort`. Copia uno de `va/sop-foundations.html`. **Primero se lee, después se responde:**
    el reproductor mueve el checkpoint a una pantalla propia, así que ponlo siempre al

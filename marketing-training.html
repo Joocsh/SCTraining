@@ -85,6 +85,13 @@ b,strong{color:var(--v-ink);font-weight:700}
 .les{width:100%;display:flex;align-items:center;gap:11px;min-height:40px;padding:8px 10px 8px 12px;text-align:left;font-size:13px;color:var(--v-muted);line-height:1.4;border-radius:8px;transition:background .13s,color .13s}
 .les:hover{background:var(--v-bg);color:var(--v-ink)}
 .les.cur{background:var(--soft);color:var(--v-navy);font-weight:700;box-shadow:inset 3px 0 0 var(--v-cyan);padding:8px 10px 8px 12px}
+.mod.locked .mod-n{background:#eef3f8;color:#a9b6c4}
+.mod.locked .mod-n svg{width:12px;height:12px}
+.mod.locked .nm{color:#a9b6c4}
+.les.locked{cursor:not-allowed;color:#b3bfcc}
+.les.locked:hover{background:none}
+.les.locked .les-tick{color:#a9b6c4;border-color:#e3eaf1;background:#f6f9fc}
+.les.locked .les-tick svg{width:9px;height:9px}
 .les-tick{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line-2);flex:none;display:grid;place-items:center;font-size:8px;color:transparent;background:#fff;transition:.2s}
 .les.seen .les-tick{background:var(--good);border-color:var(--good);color:#fff}
 .les.cur:not(.seen) .les-tick{border-color:var(--v-cyan-d)}
@@ -1742,6 +1749,12 @@ try{
   idx=+(localStorage.getItem('mt3_idx')||0);
 }catch(e){}
 if(!(idx>=0&&idx<L.length))idx=0;
+/* one step at a time: a lesson opens once every lesson before it is done,
+   so the modules unlock one by one. Done lessons stay open for review. */
+const frontier=()=>{let i=0;while(i<L.length&&done.includes(i))i++;return i;};
+const unlocked=i=>i<=frontier()||done.includes(i);
+const LOCK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+if(!unlocked(idx))idx=Math.min(frontier(),L.length-1);
 const save=()=>{try{
   localStorage.setItem('mt3_done',JSON.stringify(done));
   localStorage.setItem('mt3_scores',JSON.stringify(scores));
@@ -1759,16 +1772,16 @@ function renderSide(){
   const cur=L[idx];
   $('#sideNav').innerHTML=MODS.map(mo=>{
     const ls=lessonsOf(mo.id), d=ls.filter(l=>done.includes(l.i)).length;
-    const all=d===ls.length, isCur=cur&&cur.m===mo.id;
-    return `<section class="mod ${all?'fin':''} ${isCur?'active open':''}">
+    const all=d===ls.length, isCur=cur&&cur.m===mo.id, lk=!unlocked(ls[0].i);
+    return `<section class="mod ${all?'fin':''} ${isCur?'active open':''} ${lk?'locked':''}">
       <button class="mod-h" onclick="tMod(this)" aria-expanded="${isCur}">
-        <span class="mod-n">${all?'&#10003;':modNum(mo.id)}</span>
+        <span class="mod-n">${all?'&#10003;':lk?LOCK:modNum(mo.id)}</span>
         <span class="mod-t"><span class="nm">${mo.n}</span><span class="ct">${d}/${ls.length} &middot; ${mo.d}</span></span>
         <span class="mod-chev">&#9656;</span>
       </button>
       <div class="mod-b">${ls.map(l=>`
-        <button class="les ${done.includes(l.i)?'seen':''} ${l.i===idx?'cur':''}" onclick="jumpTo(${l.i})">
-          <span class="les-tick">&#10003;</span>
+        <button class="les ${done.includes(l.i)?'seen':''} ${l.i===idx?'cur':''} ${unlocked(l.i)?'':'locked'}" onclick="jumpTo(${l.i})" aria-disabled="${!unlocked(l.i)}">
+          <span class="les-tick">${unlocked(l.i)?'&#10003;':LOCK}</span>
           <span class="les-x">${l.t}${l.k==='Quiz'?'<span class="les-kind">Knowledge check</span>':''}</span>
         </button>`).join('')}</div>
     </section>`;
@@ -1788,7 +1801,7 @@ function renderSide(){
   }
 }
 function tMod(h){const m=h.parentNode;m.classList.toggle('open');h.setAttribute('aria-expanded',m.classList.contains('open'));}
-function jumpTo(i){idx=i;render();if(window.innerWidth<=960)closeSide();}
+function jumpTo(i){if(!unlocked(i)){toast('Locked for now. Finish <b>'+L[frontier()].t+'</b> to unlock it.');return;}idx=i;render();if(window.innerWidth<=960)closeSide();}
 function jump(mid){const i=L.findIndex(l=>l.m===mid);if(i>=0)jumpTo(i);}
 function toggleSide(){$('#side').classList.toggle('open');$('#sideVeil').classList.toggle('on');}
 function closeSide(){$('#side').classList.remove('open');$('#sideVeil').classList.remove('on');}
