@@ -168,11 +168,6 @@
 .car-arrow.prev { left: -8px; }
 .car-arrow.next { right: -8px; }
 
-.car-tabs { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 26px; }
-.car-tab { border: 1px solid var(--v-line); background: #fff; color: var(--v-muted); border-radius: 999px; padding: 9px 16px;
-  font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; transition: all .18s; }
-.car-tab:hover { border-color: var(--v-cyan); color: var(--v-navy); }
-.car-tab.on { background: var(--v-navy); border-color: var(--v-navy); color: #fff; }
 
 @media (max-width: 900px) {
   .car-stage { height: auto; }
