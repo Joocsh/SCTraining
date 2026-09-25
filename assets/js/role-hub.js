@@ -9,7 +9,8 @@
    Include after the page's own scripts:
      <link rel="stylesheet" href="../assets/css/role-hub.css">
      <script src="../assets/js/role-hub.js" data-role="tc" defer></script>
-   Roles: tc, listing, pm, lead, ops, cfo.
+   Roles: tc, listing, pm, lead, ops, cfo. Operations runs inside the same
+   role-shell rail as the others; its sections are panels there.
    ══════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -31,12 +32,6 @@
 
   var SHELL = function (sec) { return function () { var b = document.querySelector('#rsNav button[data-sec="' + sec + '"]'); if (b) b.click(); }; };
   var PANEL = function (id) { return function () { if (window.openPanel) window.openPanel(id); }; };
-  var OPS = function (label) {
-    return function () {
-      var b = [].slice.call(document.querySelectorAll('#root aside button')).filter(function (x) { return x.textContent.trim() === label; })[0];
-      if (b) b.click();
-    };
-  };
   /* inside the shell, Listing's own start hooks never run; call them here */
   var LISTING = function (id, init) { return function () { SHELL(id)(); if (typeof window[init] === 'function') window[init](); }; };
 
@@ -100,16 +95,17 @@
       extras: [{ name: 'Resources', icon: 'book', open: SHELL('resources'), desc: 'Prompt library and role playbooks.' }]
     },
     ops: {
-      title: 'Operations Manager', key: 'ops', photo: 'Brandon%20Montenegro.png?v=2', kind: 'ops',
+      title: 'Operations Manager', key: 'ops', photo: 'Brandon%20Montenegro.png?v=2', kind: 'shell',
       note: 'Start here: the paths teach the frameworks the simulations then test.',
       desc: 'Fix agency bottlenecks with real decisions: onboarding SOPs, 90 day reviews and client reporting.',
       modes: [
-        { id: 'paths', name: 'Learning Paths', icon: 'book', open: OPS('Learning Paths'), desc: 'Six paths built from the Operations Manager Handbook, with practice from real decisions.' },
-        { id: 'sims', name: 'Simulations', icon: 'sim', total: 10, open: OPS('Simulations'), desc: 'Realistic case studies with no single right answer, judged on your reasoning.' }
+        { id: 'paths', name: 'Learning Paths', icon: 'book', open: SHELL('paths'), desc: 'Six paths built from the Operations Manager Handbook, with practice from real decisions.' },
+        { id: 'sims', name: 'Simulations', icon: 'sim', total: 10, open: SHELL('sims'), desc: 'Realistic case studies with no single right answer, judged on your reasoning.' }
       ],
       extras: [
-        { name: 'Operations Toolkit', icon: 'tool', open: OPS('Operations Toolkit'), desc: 'Templates from the training that autosave as you fill them in.' },
-        { name: 'My Progress', icon: 'chart', open: OPS('My Progress'), desc: 'Lessons, simulations and skills so far.' }
+        { name: 'Operations Toolkit', icon: 'tool', open: SHELL('toolkit'), desc: 'Templates from the training that autosave as you fill them in.' },
+        { name: 'My Work', icon: 'tax', open: SHELL('work'), desc: 'Everything you have submitted: lessons, simulations and toolkit documents.' },
+        { name: 'My Progress', icon: 'chart', open: SHELL('progress'), desc: 'Lessons, simulations and skills so far.' }
       ]
     }
   };
@@ -119,7 +115,7 @@
   /* ── progress, read from what each simulator already saves ── */
   function num(k) { try { return parseInt(localStorage.getItem(k), 10) || 0; } catch (e) { return 0; } }
   function done(m) {
-    if (C.kind === 'ops') {
+    if (C.key === 'ops') {
       var st = {};
       try { st = JSON.parse(localStorage.getItem('ops-platform-state-v2') || '{}'); } catch (e) {}
       if (m.id === 'paths') return Object.keys(st.completedLessons || {}).length;
@@ -185,8 +181,8 @@
   }
 
   /* ── on and off ── */
-  function on() { render(); document.body.classList.add('hub-on'); document.body.classList.remove('hub-away'); window.scrollTo(0, 0); }
-  function off() { document.body.classList.remove('hub-on'); }
+  function on() { render(); document.documentElement.classList.add('hub-on'); document.body.classList.add('hub-on'); document.body.classList.remove('hub-away'); window.scrollTo(0, 0); }
+  function off() { document.documentElement.classList.remove('hub-on'); document.body.classList.remove('hub-on'); }
   function away() { document.body.classList.add('hub-away'); }
   function anyOpen() { return !!document.querySelector('.lc-panel.open, .rd-resources-panel.open, iframe.rs-frame.open'); }
   function backSoon() { setTimeout(function () { if (!anyOpen()) on(); }, 0); }
@@ -211,7 +207,7 @@
       fn();
     });
 
-    /* coming back: the page's own close calls, the shell's Overview, the ops Home */
+    /* coming back: the page's own close calls and the shell's Overview */
     ['closePanel'].forEach(function (name) {
       var orig = window[name];
       if (typeof orig !== 'function') return;
@@ -220,10 +216,7 @@
     var origOpen = window.openPanel;
     if (typeof origOpen === 'function') window.openPanel = function () { off(); document.body.classList.remove('hub-away'); return origOpen.apply(this, arguments); };
     document.addEventListener('click', function (e) {
-      var b = e.target.closest('#rsNav button[data-sec="home"], #root aside button');
-      if (!b) return;
-      if (b.matches('#root aside button') && b.textContent.trim() !== 'Home') return;
-      setTimeout(on, 0);
+      if (e.target.closest('#rsNav button[data-sec="home"]')) setTimeout(on, 0);
     });
 
     /* a simulator that restores itself after a reload keeps the screen */

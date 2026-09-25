@@ -197,9 +197,14 @@ los módulos en el orden recomendado (el siguiente lleva el botón principal). L
 incluye con dos líneas y su `data-role` (`tc`, `listing`, `pm`, `lead`, `ops`, `cfo`).
 
 El componente no reescribe ningún simulador: abre cada módulo con las funciones que la
-página ya tiene (`openPanel`, los botones de la barra lateral de `role-shell.js`, o el
-menú de la app de Operations), y vuelve a la pantalla de inicio cuando el módulo se
-cierra. Los textos, fotos y totales de cada rol están en `CONFIG`, al inicio del archivo.
+página ya tiene (`openPanel`, o los botones de la barra lateral de `role-shell.js`), y
+vuelve a la pantalla de inicio cuando el módulo se cierra.
+
+Operations es una app de React, pero corre dentro de la misma barra lateral que Property
+Manager, Listing, Lead y CFO: `role-shell.js` arma la barra con las secciones que la página
+declara (Learning Paths, Simulations, Toolkit, My Work, My Progress), y al abrir una, la
+app se mueve a ese panel y cambia de sección con `window.opsGoto`. Su menú y su barra
+propios quedan escondidos. Los textos, fotos y totales de cada rol están en `CONFIG`, al inicio del archivo.
 
 ### Reproductor de cursos
 

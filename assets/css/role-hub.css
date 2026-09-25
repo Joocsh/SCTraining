@@ -12,7 +12,10 @@
   font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;
 }
 #roleHub *, #roleHub *::before, #roleHub *::after { box-sizing: border-box; }
-body.hub-on { margin: 0; overflow-x: hidden; background: #f6f9fc; }
+/* the simulators pin the body to the viewport and scroll inside; the start screen scrolls as a normal page */
+html.hub-on { height: auto !important; overflow-y: auto !important; }
+body.hub-on { margin: 0; height: auto !important; min-height: 100vh; overflow-x: hidden !important; overflow-y: visible !important;
+  display: block !important; background: #f6f9fc; }
 body.hub-on > *:not(#roleHub):not(script):not(style):not(link) { display: none !important; }
 body.hub-on #roleHub { display: block; }
 

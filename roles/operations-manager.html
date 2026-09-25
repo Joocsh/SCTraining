@@ -70,7 +70,17 @@
   .focus-ring:focus{outline:2px solid var(--brass);outline-offset:2px}
   @media (prefers-reduced-motion: reduce){ *{transition:none !important; animation:none !important} }
 </style>
-<link rel="stylesheet" href="../assets/css/role-hub.css?v=20260925c">
+<link rel="stylesheet" href="../assets/css/role-shell.css">
+<link rel="stylesheet" href="../assets/css/role-hub.css?v=20260925f">
+<style>
+  /* same frame as every other role: the shared rail on the left, the app in the column */
+  body.rshell > header.scbar { display: none; }
+  body.rshell #root aside { display: none; }
+  .ops-src { display: none; }
+  .lc-panel { display: none; }
+  .lc-panel.open { display: block; }
+  body.rshell #root { height: auto; }
+</style>
 </head>
 <body>
 <header class="scbar">
@@ -83,6 +93,32 @@
   </div>
 </header>
 <div id="root"></div>
+<div class="ops-src" aria-hidden="true">
+  <div class="rd-hero"><h1>Operations Manager</h1><p class="rd-hero-desc">Fix agency bottlenecks with real decisions: onboarding SOPs, 90 day reviews and client reporting.</p></div>
+  <div class="rd-mode-card" data-mode="paths"><span class="rd-mode-name">Learning Paths</span><span class="rd-mode-desc">Six paths built from the Operations Manager Handbook.</span></div>
+  <div class="rd-mode-card" data-mode="sims"><span class="rd-mode-name">Simulations</span><span class="rd-mode-desc">Case studies judged on your reasoning.</span></div>
+  <div class="rd-mode-card" data-mode="toolkit"><span class="rd-mode-name">Operations Toolkit</span><span class="rd-mode-desc">Templates that autosave as you fill them in.</span></div>
+  <div class="rd-mode-card" data-mode="work"><span class="rd-mode-name">My Work</span><span class="rd-mode-desc">Everything you have submitted.</span></div>
+  <div class="rd-mode-card" data-mode="progress"><span class="rd-mode-name">My Progress</span><span class="rd-mode-desc">Lessons, simulations and skills so far.</span></div>
+</div>
+<div class="lc-panel" id="panel-paths"></div>
+<div class="lc-panel" id="panel-sims"></div>
+<div class="lc-panel" id="panel-toolkit"></div>
+<div class="lc-panel" id="panel-work"></div>
+<div class="lc-panel" id="panel-progress"></div>
+<script>
+  /* opening a section in the rail moves the app into that panel and switches it there */
+  (function () {
+    function mount(sec) {
+      return function () {
+        var p = document.getElementById('panel-' + sec), r = document.getElementById('root');
+        if (p && r && r.parentNode !== p) p.appendChild(r);
+        if (window.opsGoto) window.opsGoto(sec);
+      };
+    }
+    window.PANEL_ON_OPEN = { paths: mount('paths'), sims: mount('sims'), toolkit: mount('toolkit'), work: mount('work'), progress: mount('progress') };
+  })();
+</script>
 
 <script type="text/babel" data-presets="react,typescript">
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
@@ -2798,6 +2834,7 @@ function App() {
   const overallPct = Math.round(((Object.keys(state.completedLessons).length + Object.keys(state.completedSims).length) / TOTAL_ITEMS) * 100);
 
   function goto(sec){ setSection(sec); setActivePathId(null); setActiveLessonId(null); setActiveSimId(null); setActiveToolId(null); }
+  window.opsGoto = goto; /* the shared role rail (role-shell.js) switches sections through this */
 
   function openPath(id){ setActivePathId(id); }
   function openLesson(id){
@@ -2874,6 +2911,7 @@ function App() {
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </script>
-<script src="../assets/js/role-hub.js?v=20260925c" data-role="ops" defer></script>
+<script src="../assets/js/role-shell.js?v=20260917" defer></script>
+<script src="../assets/js/role-hub.js?v=20260925f" data-role="ops" defer></script>
 </body>
 </html>
