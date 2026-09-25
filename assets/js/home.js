@@ -89,6 +89,12 @@
     }
   }
 
+  /* ── the departments on the paths card come from the catalog ── */
+  var depts = document.getElementById('phDepts');
+  if (depts && window.SCCourses) {
+    depts.innerHTML = SCCourses.tracks.map(function (t) { return '<span>' + t.title + '</span>'; }).join('');
+  }
+
   /* ── older pages link to #test-drive-open; the apps now sit on the page ── */
   if (location.hash === '#test-drive-open') {
     var td = document.getElementById('test-drive');

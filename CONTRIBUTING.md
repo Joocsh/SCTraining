@@ -35,7 +35,7 @@ archivo de otra área, avisa primero.
 | Área | Archivos | Referencia |
 | ---- | -------- | ---------- |
 | Simulaciones TC y Listing | `roles/transaction-coordinator.html`, `roles/listing-coordinator.html`, `assets/css/role-shell.css`, `tc-case.css`, `workflow.css`, `assets/js/role-shell.js`, `workflow.js`, `tc-ca-new-case.js`, `tc-va-case.js` | Gerald |
-| Cursos y experiencia del alumno | `index.html`, `assets/css/home.css`, `assets/js/home.js`, `ai.html`, `va.html`, `va/`, `account.html`, `admin.html`, `marketing-training.html`, `assets/css/course.css`, `assets/js/course.js`, `courses.js`, `learn-dash.js` | Naesa |
+| Cursos y experiencia del alumno | `index.html`, `assets/css/home.css`, `assets/js/home.js`, `paths.html`, `assets/css/paths.css`, `ai.html`, `va/`, `account.html`, `admin.html`, `marketing-training.html`, `assets/css/course.css`, `assets/js/course.js`, `courses.js`, `learn-dash.js` | Naesa |
 | Test drives | `AppFolio/`, `Docusign/`, `Quialia/`, `testdrive-*.html` | Quien lo esté construyendo |
 | Pantalla de inicio de las simulaciones | `assets/css/role-hub.css`, `assets/js/role-hub.js` (cada `roles/*.html` solo la incluye) | Naesa |
 | Base compartida | `assets/css/styles.css`, `assets/js/app-core.js`, `site.js` | Todos, **avisando antes** |
@@ -75,8 +75,8 @@ La base compartida la carga todo el sitio: un cambio ahí afecta todas las pági
 
 Una sola palabra para cada cosa, en toda la interfaz:
 
-- **Path:** el área. Hoy son VA y Marketing. Cada una tiene su catálogo (`va.html`,
-  `marketing.html`) y su tarjeta en el Home. En el código se llama `track`.
+- **Path:** el departamento. Hoy son VA y Marketing, y todos viven juntos en
+  `paths.html`, con un filtro por departamento. En el código se llama `track`.
 - **Training:** lo que se estudia dentro de un path. Por ejemplo SOP Foundations.
   Nunca le digas "course" en textos visibles.
 - **Module** y **lesson:** las partes de un training.
@@ -100,12 +100,11 @@ Todos los trainings usan el mismo reproductor (`assets/css/course.css` + `assets
    pantalla; eso es lo correcto para un examen final.
 4. Al final: `SCCourse.init({ id: 'mi-training', title: 'Mi training', kick: 'VA training',
    store: 'sc_mi_training__' })`.
-5. Regístralo en `assets/js/courses.js` con su área: `track: 'va'` o
-   `track: 'marketing'`. Con eso aparece solo en el catálogo de su área (`va.html` o
-   `marketing.html`), en el Home, en My Account y en el panel del supervisor.
-6. ¿Un path nuevo? Agrégalo a `TRACKS` en `courses.js`, crea su catálogo copiando
-   `marketing.html` (cambia `data-track` en el `<body>` y el título) y agrega su tarjeta
-   en el Home, dentro de `#trackGrid`.
+5. Regístralo en `assets/js/courses.js` con su departamento: `track: 'va'` o
+   `track: 'marketing'`. Con eso aparece solo en `paths.html`, en My Account y en el panel
+   del supervisor.
+6. ¿Un departamento nuevo? Agrégalo a `TRACKS` en `courses.js`. `paths.html` le crea su
+   filtro y su sección, y el Home lo lista en la tarjeta de Paths, sin tocar nada más.
 
 ## 6. Carpetas de trabajo
 

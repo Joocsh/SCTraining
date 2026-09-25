@@ -32,9 +32,9 @@
   /* Training areas. Each one has its own catalog page; a new course only needs
      its track here to show up in the right place. */
   var TRACKS = [
-    { id: 'va', title: 'VA', href: 'va.html', image: 'assets/img/va/sop-foundations.jpg',
+    { id: 'va', title: 'VA', href: 'paths.html#va', image: 'assets/img/va/sop-foundations.jpg',
       desc: 'Study your role before you simulate it: processes, systems and SOPs.' },
-    { id: 'marketing', title: 'Marketing', href: 'marketing.html', image: 'assets/img/marketing-path.jpg',
+    { id: 'marketing', title: 'Marketing', href: 'paths.html#marketing', image: 'assets/img/marketing-path.jpg',
       desc: 'The brand, the design tools and the marketing playbook.' }
   ];
 

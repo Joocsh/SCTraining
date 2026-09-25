@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Training paths · Skill Cloud Academy</title>
+  <meta name="description" content="Every training for every department, in one place.">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/home.css?v=20260925d">
+  <link rel="stylesheet" href="assets/css/paths.css?v=20260925b">
+</head>
+
+<body class="h-body pa-body">
+
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a class="brand" href="index.html"><img src="assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+      <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+      <div class="menu">
+        <a class="navlink" href="index.html">Home</a>
+        <a class="navlink" href="ai.html">Introduction</a>
+        <a class="navlink" href="paths.html">Paths</a>
+        <a class="navlink" href="index.html#simulations">Simulations</a>
+        <a class="navlink" href="index.html#test-drive">Test Drive</a>
+      </div>
+      <span class="spacer"></span>
+      <a class="pill" href="index.html#simulations">Start Practicing</a>
+      <a class="user-chip" href="account.html" aria-label="My account"><span class="av">A</span> <span class="uc-label">My Account</span></a>
+    </div>
+  </nav>
+
+  <header class="pa-head">
+    <div class="pa-head-in">
+      <h1>Training paths</h1>
+      <p>Every training for every department, in one place. Pick one and work through it lesson by lesson; your progress saves as you go.</p>
+      <div class="pa-tabs" id="paTabs" role="tablist" aria-label="Filter by department"></div>
+    </div>
+  </header>
+
+  <main class="pa-main">
+    <a class="pa-resume" id="paResume" hidden></a>
+    <div id="paDepts"></div>
+  </main>
+
+  <footer class="h-foot">
+    <div class="inner">
+      <div class="cols">
+        <div>
+          <h4>Skill Cloud Academy</h4>
+          <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+        </div>
+        <div>
+          <h4>Learn</h4>
+          <a class="fl" href="ai.html">Introduction</a>
+          <a class="fl" href="paths.html">Training paths</a>
+        </div>
+        <div>
+          <h4>Practice</h4>
+          <a class="fl" href="index.html#simulations">Simulations</a>
+          <a class="fl" href="index.html#test-drive">Test drives</a>
+          <a class="fl" href="account.html">My account</a>
+        </div>
+        <div>
+          <h4>Program</h4>
+          <span class="fl">Skill Cloud Executive Associates</span>
+          <span class="fl">Markets: TX · CA · VA · NY</span>
+        </div>
+      </div>
+      <div class="bottom">
+        <span>© 2026 Skill Cloud Academy. Internal use for associates.</span>
+        <span>Powered by Claude AI</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="assets/js/app-core.js?v=20260917"></script>
+  <script>SCApp.requireAuth();</script>
+  <script src="assets/js/site.js?v=20260925"></script>
+  <script src="assets/js/courses.js?v=20260925"></script>
+  <script>
+    /* Paths: one page for every department. The departments and trainings
+       come from assets/js/courses.js, so a new one shows up here on its own. */
+    (function () {
+      var me = window.SCApp && SCApp.currentUser();
+      var C = window.SCCourses;
+      if (!me || !C) return;
+
+      function esc(s) { return String(s).replace(/&(?!amp;)/g, '&amp;').replace(/</g, '&lt;'); }
+      var tracks = C.tracks.filter(function (t) { return C.byTrack(t.id).length; });
+      var all = [];
+      tracks.forEach(function (t) {
+        C.byTrack(t.id).forEach(function (c) { all.push({ c: c, t: t, p: C.progress(c, me.id) }); });
+      });
+
+      /* the training you left open */
+      var open = all.filter(function (x) { return x.p.done && !x.p.complete; })[0];
+      var rs = document.getElementById('paResume');
+      if (open) {
+        rs.href = open.c.href;
+        rs.innerHTML =
+          '<span class="pa-resume-img" style="background-image:url(\'' + open.c.image + '\')"></span>' +
+          '<span class="pa-resume-copy"><small>Pick up where you left off</small><b>' + esc(open.c.title) + '</b>' +
+            '<span class="pa-resume-bar"><span><i style="width:' + open.p.pct + '%"></i></span><span>' + open.p.done + ' of ' + open.p.total + ' lessons</span></span></span>' +
+          '<span class="hb cyan">Continue &rarr;</span>';
+        rs.hidden = false;
+      }
+
+      /* one block per department */
+      function card(x) {
+        var p = x.p, state = p.complete ? 'st-done' : (p.done ? 'st-progress' : 'st-new');
+        var label = p.complete ? 'Completed' : (p.done ? 'In progress' : 'Not started');
+        var go = p.complete ? 'Review' : (p.done ? 'Continue' : 'Start');
+        return '<a class="pa-card' + (p.complete ? ' is-done' : '') + '" href="' + x.c.href + '">' +
+          '<span class="pa-card-img" style="background-image:url(\'' + x.c.image + '\')"><span class="pa-status ' + state + '">' + label + '</span></span>' +
+          '<span class="pa-card-body"><h3>' + esc(x.c.title) + '</h3><p>' + esc(x.c.desc) + '</p>' +
+            '<span class="pa-card-foot"><span class="pa-mini"><i style="width:' + p.pct + '%"></i></span>' +
+            '<span class="pa-count">' + p.done + ' of ' + p.total + '</span><span class="pa-go">' + go + ' &rarr;</span></span></span></a>';
+      }
+      document.getElementById('paDepts').innerHTML = tracks.map(function (t) {
+        var list = all.filter(function (x) { return x.t === t; });
+        var n = list.length;
+        return '<section class="pa-dept" id="dept-' + t.id + '" data-dept="' + t.id + '">' +
+          '<div class="pa-dept-head"><div><h2>' + esc(t.title) + '</h2><p>' + esc(t.desc) + '</p></div>' +
+          '<span class="count">' + n + ' training' + (n === 1 ? '' : 's') + '</span></div>' +
+          '<div class="pa-grid">' + list.map(card).join('') + '</div></section>';
+      }).join('');
+
+      /* department filter; #va or #marketing opens on that department */
+      var tabs = document.getElementById('paTabs');
+      tabs.innerHTML = '<button class="pa-tab" type="button" role="tab" data-f="all">All<span class="n">' + all.length + '</span></button>' +
+        tracks.map(function (t) {
+          return '<button class="pa-tab" type="button" role="tab" data-f="' + t.id + '">' + esc(t.title) + '<span class="n">' + C.byTrack(t.id).length + '</span></button>';
+        }).join('');
+      function filter(f) {
+        [].forEach.call(tabs.children, function (b) { var on = b.getAttribute('data-f') === f; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+        [].forEach.call(document.querySelectorAll('.pa-dept'), function (d) { d.hidden = f !== 'all' && d.getAttribute('data-dept') !== f; });
+        try { history.replaceState(null, '', f === 'all' ? location.pathname : '#' + f); } catch (e) {}
+      }
+      tabs.addEventListener('click', function (e) { var b = e.target.closest('.pa-tab'); if (b) filter(b.getAttribute('data-f')); });
+      var start = location.hash.slice(1);
+      filter(tracks.some(function (t) { return t.id === start; }) ? start : 'all');
+    })();
+  </script>
+</body>
+
+</html>

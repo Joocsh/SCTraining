@@ -76,8 +76,8 @@ enlaces. Si agregas una página nueva, va en la raíz.
 | `account.html`              | Panel del asociado: cursos, logros, certificados y puntajes   |
 | `admin.html`                | Panel del supervisor: avance del equipo y calificación         |
 | `ai.html`                   | AI Introduction (curso, desbloquea las Simulations)            |
-| `va.html`                   | Catálogo de trainings VA con progreso                          |
-| `marketing.html`            | Catálogo de trainings de Marketing con progreso                |
+| `paths.html`                | Training paths: los trainings de todos los departamentos en una página, con filtro por departamento |
+| `va.html`, `marketing.html` | Solo redirigen a `paths.html#va` y `paths.html#marketing`, para no romper enlaces viejos |
 | `va/sop-foundations.html`   | Curso SOP Foundations                                          |
 | `marketing-training.html`   | Curso Marketing Training                                       |
 | `ai-lab.html`               | Índice del AI Lab, enlaza a todo `guides/`                     |

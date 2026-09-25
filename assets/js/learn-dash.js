@@ -50,7 +50,7 @@
     { n: 2, icon: 'study', title: 'Study your role', desc: 'Pick a training path, VA or Marketing, and work through it lesson by lesson.',
       done: tComplete > 0, pct: tTotal ? Math.round(tDone / tTotal * 100) : 0,
       meta: tComplete ? tComplete + ' of ' + trainings.length + ' trainings done' : (tDone ? 'In progress' : (introDone ? 'Not started yet' : 'Open anytime')),
-      href: resumeHref || '#paths', go: resumeHref ? 'Continue your training' : 'Choose a path', again: 'Open the paths' },
+      href: resumeHref || 'paths.html', go: resumeHref ? 'Continue your training' : 'Choose a path', again: 'Open the paths' },
     { n: 3, icon: 'practice', title: 'Practice real cases', desc: 'Run the scenario your role handles every day, with instant feedback.',
       done: practiced > 0, locked: !introDone, pct: null,
       meta: !introDone ? 'Opens after step 1' : (practiced ? practiced + ' simulation' + (practiced > 1 ? 's' : '') + ' practiced' : 'Ready when you are'),
