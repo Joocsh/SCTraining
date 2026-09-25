@@ -128,7 +128,8 @@
 .sim-locked-note a { color: #7a5200; text-decoration: underline; }
 
 .carousel { position: relative; outline: none; }
-.car-stage { position: relative; height: 540px; border-bottom: 1px solid var(--v-line);
+#simulations { padding-bottom: 0; } /* the photos stand on the next section */
+.car-stage { position: relative; height: 540px;
   clip-path: inset(-60px -100vw 0 -100vw); } /* only the floor cuts the halo and the photos */
 .slide { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px;
   visibility: hidden; pointer-events: none; }
