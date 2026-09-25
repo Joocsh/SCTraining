@@ -8,7 +8,7 @@
   <meta name="description" content="Every training for every department, in one place.">
   <link rel="stylesheet" href="assets/css/styles.css">
   <link rel="stylesheet" href="assets/css/home.css?v=20260925d">
-  <link rel="stylesheet" href="assets/css/paths.css?v=20260925b">
+  <link rel="stylesheet" href="assets/css/paths.css?v=20260925d">
 </head>
 
 <body class="h-body pa-body">
@@ -39,7 +39,6 @@
   </header>
 
   <main class="pa-main">
-    <a class="pa-resume" id="paResume" hidden></a>
     <div id="paDepts"></div>
   </main>
 
@@ -93,29 +92,16 @@
         C.byTrack(t.id).forEach(function (c) { all.push({ c: c, t: t, p: C.progress(c, me.id) }); });
       });
 
-      /* the training you left open */
-      var open = all.filter(function (x) { return x.p.done && !x.p.complete; })[0];
-      var rs = document.getElementById('paResume');
-      if (open) {
-        rs.href = open.c.href;
-        rs.innerHTML =
-          '<span class="pa-resume-img" style="background-image:url(\'' + open.c.image + '\')"></span>' +
-          '<span class="pa-resume-copy"><small>Pick up where you left off</small><b>' + esc(open.c.title) + '</b>' +
-            '<span class="pa-resume-bar"><span><i style="width:' + open.p.pct + '%"></i></span><span>' + open.p.done + ' of ' + open.p.total + ' lessons</span></span></span>' +
-          '<span class="hb cyan">Continue &rarr;</span>';
-        rs.hidden = false;
-      }
-
       /* one block per department */
       function card(x) {
         var p = x.p, state = p.complete ? 'st-done' : (p.done ? 'st-progress' : 'st-new');
         var label = p.complete ? 'Completed' : (p.done ? 'In progress' : 'Not started');
-        var go = p.complete ? 'Review' : (p.done ? 'Continue' : 'Start');
-        return '<a class="pa-card' + (p.complete ? ' is-done' : '') + '" href="' + x.c.href + '">' +
-          '<span class="pa-card-img" style="background-image:url(\'' + x.c.image + '\')"><span class="pa-status ' + state + '">' + label + '</span></span>' +
-          '<span class="pa-card-body"><h3>' + esc(x.c.title) + '</h3><p>' + esc(x.c.desc) + '</p>' +
-            '<span class="pa-card-foot"><span class="pa-mini"><i style="width:' + p.pct + '%"></i></span>' +
-            '<span class="pa-count">' + p.done + ' of ' + p.total + '</span><span class="pa-go">' + go + ' &rarr;</span></span></span></a>';
+        var go = p.complete ? 'Review the training' : (p.done ? 'Continue' : 'Start the training');
+        return '<a class="pa-row' + (p.complete ? ' is-done' : '') + '" href="' + x.c.href + '" style="background-image:url(\'' + x.c.image + '\')">' +
+          '<span class="pa-status ' + state + '">' + label + '</span>' +
+          '<span class="pa-row-body"><h3>' + esc(x.c.title) + '</h3><p>' + esc(x.c.desc) + '</p>' +
+            '<span class="pa-prog"><i><b style="width:' + p.pct + '%"></b></i><span>' + p.done + ' of ' + p.total + ' lessons</span></span>' +
+            '<span class="pa-go">' + go + ' &rarr;</span></span></a>';
       }
       document.getElementById('paDepts').innerHTML = tracks.map(function (t) {
         var list = all.filter(function (x) { return x.t === t; });
@@ -123,7 +109,7 @@
         return '<section class="pa-dept" id="dept-' + t.id + '" data-dept="' + t.id + '">' +
           '<div class="pa-dept-head"><div><h2>' + esc(t.title) + '</h2><p>' + esc(t.desc) + '</p></div>' +
           '<span class="count">' + n + ' training' + (n === 1 ? '' : 's') + '</span></div>' +
-          '<div class="pa-grid">' + list.map(card).join('') + '</div></section>';
+          '<div class="pa-list">' + list.map(card).join('') + '</div></section>';
       }).join('');
 
       /* department filter; #va or #marketing opens on that department */
