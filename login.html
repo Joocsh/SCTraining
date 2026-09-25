@@ -14,8 +14,8 @@
 
 <div class="auth-wrap">
   <div class="auth-card">
-    <h1>Welcome back</h1>
-    <p class="sub">Log in to pick up your training right where you left off.</p>
+    <h1>Sign in</h1>
+    <p class="sub">Use the account your team gave you. The Academy picks up wherever you are.</p>
 
     <div class="auth-err" id="authErr">That email or password doesn't match an account.</div>
 
@@ -73,7 +73,7 @@
     }
     if(next){ window.location.href = next; return; }
     var last = SCApp.getLastPage(user.id);
-    window.location.href = last || 'account.html';
+    window.location.href = last || 'index.html'; /* a first sign in lands on the guided home */
   }
 })();
 </script>

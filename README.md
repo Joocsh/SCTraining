@@ -71,7 +71,7 @@ enlaces. Si agregas una página nueva, va en la raíz.
 
 | Archivo                     | Qué es                                                        |
 | --------------------------- | ------------------------------------------------------------- |
-| `index.html`                | Home. Con sesión abre en "My learning" (retomar + ruta de aprendizaje); sin sesión, landing |
+| `index.html`                | Home. Visitante: qué es, cómo funciona y un botón para entrar. Con sesión: Home guiado con los 3 pasos y una bienvenida la primera vez |
 | `login.html`                | Login simulado                                                 |
 | `account.html`              | Panel del asociado: cursos, logros, certificados y puntajes   |
 | `admin.html`                | Panel del supervisor: avance del equipo y calificación         |
@@ -166,6 +166,22 @@ El núcleo. Expone todo en `window.SCApp`. Cubre cuatro cosas:
 
 El archivo está escrito para que un backend real pueda reemplazar las funciones de
 almacenamiento sin tocar ninguna página.
+
+### Home guiado
+
+El Home tiene dos caras. El visitante sin sesión ve qué es la Academia, los 3 pasos y un
+solo botón: "Sign in to start". El asociado con sesión ve un Home guiado que arma
+`assets/js/learn-dash.js`: un saludo que dice en qué paso va, y los 3 pasos en orden
+(Introduction, un training path, las Simulations). Solo el paso actual tiene botón; los
+terminados muestran un check y los que no están abiertos, un candado. La primera vez que
+entra, una bienvenida de 3 pantallas explica el sitio y lo manda al paso 1 (se guarda en
+`scc_onboard__<userId>`).
+
+Los estilos están en `assets/css/home.css` y la lógica (carrusel de simulaciones,
+animación de entrada) en `assets/js/home.js`. Las secciones solo para visitantes llevan
+la clase `only-out`, y las solo para asociados, `only-in`. Un enlace como
+`index.html#sim-pm` abre el carrusel en ese rol (`tc`, `pm`, `listing`, `lead`, `ops`,
+`cfo`).
 
 ### Reproductor de cursos
 

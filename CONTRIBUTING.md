@@ -35,7 +35,7 @@ archivo de otra área, avisa primero.
 | Área | Archivos | Referencia |
 | ---- | -------- | ---------- |
 | Simulaciones TC y Listing | `roles/transaction-coordinator.html`, `roles/listing-coordinator.html`, `assets/css/role-shell.css`, `tc-case.css`, `workflow.css`, `assets/js/role-shell.js`, `workflow.js`, `tc-ca-new-case.js`, `tc-va-case.js` | Gerald |
-| Cursos y experiencia del alumno | `index.html`, `ai.html`, `va.html`, `va/`, `account.html`, `admin.html`, `marketing-training.html`, `assets/css/course.css`, `assets/js/course.js`, `courses.js`, `learn-dash.js` | Naesa |
+| Cursos y experiencia del alumno | `index.html`, `assets/css/home.css`, `assets/js/home.js`, `ai.html`, `va.html`, `va/`, `account.html`, `admin.html`, `marketing-training.html`, `assets/css/course.css`, `assets/js/course.js`, `courses.js`, `learn-dash.js` | Naesa |
 | Test drives | `AppFolio/`, `Docusign/`, `Quialia/`, `testdrive-*.html` | Quien lo esté construyendo |
 | Base compartida | `assets/css/styles.css`, `assets/js/app-core.js`, `site.js` | Todos, **avisando antes** |
 
@@ -57,6 +57,9 @@ La base compartida la carga todo el sitio: un cambio ahí afecta todas las pági
   Nunca hex sueltos nuevos.
 - La misma tipografía del Home en todas las páginas.
 - En el Home, las secciones alternan navy y claro. Nunca dos secciones navy seguidas.
+- Guiar antes que mostrar: un usuario nuevo ve una sola acción principal a la vez. Nada
+  de pantallas con todo el contenido del sitio de golpe.
+- Las fotos no se mueven ni se escalan (se pierde nitidez); solo aparecen con un fundido.
 
 **Código**
 - HTML, CSS y JS sin build step. Indentación de 2 espacios (ver `.editorconfig`).
