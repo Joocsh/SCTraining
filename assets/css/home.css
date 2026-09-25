@@ -105,8 +105,6 @@
   transition: border-color .2s, box-shadow .2s; }
 .paths-hub:hover { text-decoration: none; border-color: rgba(23, 195, 212, .55); box-shadow: 0 20px 48px rgba(10, 38, 71, .11); }
 .ph-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 44px 44px 46px; }
-.ph-depts { display: flex; gap: 8px; flex-wrap: wrap; }
-.ph-depts span { font-size: 13px; font-weight: 800; color: var(--v-navy); background: var(--v-soft); border: 1px solid #cfeff3; border-radius: 999px; padding: 5px 12px; }
 .ph-copy b { font-family: "Helvetica Neue", Arial, sans-serif; font-size: clamp(24px, 2.6vw, 32px); font-weight: 900; letter-spacing: -.6px; line-height: 1.15; color: var(--v-navy); }
 .ph-text { font-size: 16.5px; line-height: 1.65; color: var(--v-muted); max-width: 440px; margin-bottom: 8px; }
 .ph-media { position: relative; min-height: 320px; background: var(--v-bg); }
