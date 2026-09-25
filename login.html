@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Log In · Skill Cloud Academy</title>
 <link rel="stylesheet" href="assets/css/styles.css">
+<style>
+.auth-fresh{display:block;margin-top:10px;padding:0;border:0;background:none;font:inherit;font-size:13px;font-weight:800;color:var(--v-cyan-d,#0fa6b6);cursor:pointer}
+.auth-fresh:hover{color:var(--v-navy,#0a2647)}
+</style>
 </head>
 <body>
 <nav class="nav" id="nav"><div class="nav-inner">
@@ -36,6 +40,7 @@
       Associate: maria@demo / demo123 (Transaction Coordinator)<br>
       Associate: jose@demo / demo123 (Listing Coordinator)<br>
       Admin: admin@demo / admin123
+      <button type="button" class="auth-fresh" id="freshBtn">Try it as a brand new associate &rarr;</button>
     </div>
   </div>
 </div>
@@ -45,6 +50,21 @@
 (function(){
   var params = new URLSearchParams(location.search);
   var next = params.get('next');
+
+  /* demo: a clean associate with no progress, to see the first visit exactly as a new hire does.
+     login.html?new=1 does it in one step. */
+  function startFresh(){
+    var users = JSON.parse(localStorage.getItem('scc_users') || '[]');
+    var n = users.filter(function(u){ return /^new\d+@demo$/.test(u.email); }).length + 1;
+    var email = 'new' + n + '@demo';
+    users.push({ id: 'new_' + Date.now().toString(36), name: 'Daniela Rojas', email: email, password: 'demo123',
+      role: 'user', assignedRole: 'tc', avatar: 'D' });
+    localStorage.setItem('scc_users', JSON.stringify(users));
+    SCApp.login(email, 'demo123');
+    window.location.href = 'index.html';
+  }
+  document.getElementById('freshBtn').addEventListener('click', startFresh);
+  if(params.has('new')){ startFresh(); return; }
 
   // already logged in? go straight where they belong
   var existing = SCApp.currentUser();

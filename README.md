@@ -183,6 +183,12 @@ la clase `only-out`, y las solo para asociados, `only-in`. Un enlace como
 `index.html#sim-pm` abre el carrusel en ese rol (`tc`, `pm`, `listing`, `lead`, `ops`,
 `cfo`).
 
+Para ver el sitio como un asociado recién llegado, abre `login.html?new=1` (o el botón
+"Try it as a brand new associate" del login): crea una cuenta de demo sin ningún
+progreso y entra directo al Home guiado, con la bienvenida de la primera visita. Una
+cuenta de administrador no sirve para esto, porque para el sitio un admin ya terminó la
+Introducción.
+
 ### Reproductor de cursos
 
 `assets/css/course.css` + `assets/js/course.js` (`window.SCCourse`). Toda página de curso

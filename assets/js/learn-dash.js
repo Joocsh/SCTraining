@@ -49,7 +49,7 @@
       href: 'ai.html', go: introSeen ? 'Continue the Introduction' : 'Start the Introduction', again: 'Review' },
     { n: 2, icon: 'study', title: 'Study your role', desc: 'Pick a training path, VA or Marketing, and work through it lesson by lesson.',
       done: tComplete > 0, pct: tTotal ? Math.round(tDone / tTotal * 100) : 0,
-      meta: tComplete ? tComplete + ' of ' + trainings.length + ' trainings done' : (tDone ? 'In progress' : 'Open anytime'),
+      meta: tComplete ? tComplete + ' of ' + trainings.length + ' trainings done' : (tDone ? 'In progress' : (introDone ? 'Not started yet' : 'Open anytime')),
       href: resumeHref || '#paths', go: resumeHref ? 'Continue your training' : 'Choose a path', again: 'Open the paths' },
     { n: 3, icon: 'practice', title: 'Practice real cases', desc: 'Run the scenario your role handles every day, with instant feedback.',
       done: practiced > 0, locked: !introDone, pct: null,
