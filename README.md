@@ -310,8 +310,11 @@ atribución obligatoria. Las que se usan hoy:
 | Archivo | Dónde | Origen |
 | ------- | ----- | ------ |
 | `assets/img/home-sky.jpg` | Fondo del saludo del Home | https://www.pexels.com/photo/12335838/ |
-| `assets/img/marketing-path.jpg` | Tarjeta del path Marketing | https://www.pexels.com/photo/31737859/ |
-| `assets/img/marketing/marketing-training-cover.jpg` | Tarjeta del training de Marketing | https://www.pexels.com/photo/12558848/ |
+| `assets/img/marketing-path.jpg` | Tarjeta del path Marketing | https://www.pexels.com/photo/39205089/ |
+| `assets/img/marketing/marketing-training-cover.jpg` | Tarjeta del training de Marketing | https://www.pexels.com/photo/5439478/ |
+
+Son fotos de gente estudiando o trabajando: el sitio enseña, no vende propiedades, así
+que nada de fotos de casas en las tarjetas.
 
 ### `assets/brand/`
 
