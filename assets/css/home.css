@@ -143,7 +143,6 @@
   opacity: 0; transition: opacity .45s ease; }
 .slide.on .slide-media img { opacity: 1; }
 /* each cutout has its own headroom; these heights make everyone the same size */
-.slide[data-role="pm"] .slide-media img { height: 700px; margin-bottom: -170px; }
 .slide[data-role="listing"] .slide-media img { height: 660px; }
 .slide[data-role="ops"] .slide-media img { height: 670px; }
 .slide[data-role="cfo"] .slide-media img { height: 680px; }
@@ -177,7 +176,6 @@
   .slide-text p { margin-left: auto; margin-right: auto; }
   .slide-media { order: 2; height: 360px; }
   .slide-media img, .slide[data-role] .slide-media img { height: 360px; margin-bottom: 0; }
-  .slide[data-role="pm"] .slide-media img { height: 470px; margin-bottom: -110px; }
   .slide[data-role="listing"] .slide-media img,
   .slide[data-role="ops"] .slide-media img,
   .slide[data-role="cfo"] .slide-media img { height: 440px; }
