@@ -792,6 +792,24 @@ body.rshell .lc-panel-body:has(#wf-pipeline:not([style*="display: none"])) {
   padding: 3px 11px;
   box-shadow: 0 1px 3px rgba(10, 38, 71, .04);
 }
+.mh-attach .mh-attach-chip.is-doc {
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--v-blue, #1565c0);
+  background: #fff;
+  border: 1px solid var(--v-line);
+  border-radius: 999px;
+  padding: 3px 11px;
+  box-shadow: 0 1px 3px rgba(10, 38, 71, .04);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.mh-attach .mh-attach-chip.is-doc:hover {
+  border-color: var(--v-blue, #1565c0);
+  background: #eff6ff;
+  text-decoration: underline;
+}
 
 .mh-main .wf-compose {
   background: #fff;
@@ -8322,6 +8340,51 @@ body:not(.tc-instructor) .wf-dec-modal .tc-assist {
   color: #92400e !important;
   border: 1px solid #fde68a !important;
 }
+#panel-sim .tc-step-docs-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 14px;
+  border: 1px dashed #bcd3ee;
+  border-radius: var(--tc-radius, 12px);
+  background: #f5f9ff;
+  color: #334155;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+#panel-sim .tc-step-docs-chip:hover {
+  border-color: #1565c0;
+  background: #eef5ff;
+}
+#panel-sim .tc-step-docs-icon {
+  flex: none;
+  display: inline-flex;
+  color: #1565c0;
+}
+#panel-sim .tc-step-docs-icon svg {
+  width: 16px;
+  height: 16px;
+}
+#panel-sim .tc-step-docs-chip em {
+  margin-left: auto;
+  flex: none;
+  font-style: normal;
+  font-weight: 700;
+  color: #1565c0;
+  white-space: nowrap;
+}
+#panel-sim .tc-rail-btn.tc-rail-flash {
+  animation: tcRailFlash 1.2s ease 2;
+}
+@keyframes tcRailFlash {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(21, 101, 192, 0); }
+  50% { box-shadow: 0 0 0 5px rgba(21, 101, 192, .28); }
+}
 #panel-sim .tc-step-contingency-chip.critical {
   background: #fef2f2 !important;
   color: #991b1b !important;
@@ -8527,6 +8590,25 @@ body:not(.tc-instructor) .wf-dec-modal .tc-assist {
   color: #9aa7b6 !important;
   font-style: italic;
   opacity: 1 !important;
+}
+
+/* even form grid: every field the same width, inputs aligned even when a label wraps */
+#panel-sim .mh-rows.tc-cols {
+  grid-template-columns: repeat(var(--mh-cols, 4), minmax(0, 1fr));
+}
+#panel-sim .mh-row input,
+#panel-sim .mh-row select {
+  margin-top: auto;
+}
+@media (max-width: 1100px) {
+  #panel-sim .mh-rows.tc-cols {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  #panel-sim .mh-rows.tc-cols {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ── 8.9 Timelines: date column wide enough for "Oct 14, 2025" ── */
@@ -9630,6 +9712,13 @@ body.tc-mail-is-open .wf-notes-panel {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+#panel-sim .tc-mail-receipt-snip {
+  font-size: 12.5px;
+  color: #8a97a8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 #panel-sim .tc-mail-receipt-actions {
   flex: none;
   display: flex;
@@ -9818,6 +9907,7 @@ body.tc-mail-is-open .wf-notes-panel {
 }
 #panel-sim .tc-mail-slot:not(:empty) {
   margin-top: 14px;
+  margin-bottom: 14px;
 }
 #panel-sim .wf-deck-slide > .tc-mail-slot:first-child {
   margin-top: 0;
@@ -10051,4 +10141,216 @@ body.tc-mail-is-open .tc-mail-dock {
 #panel-sim .tc-mail-slot.is-read + .mh-card,
 #panel-sim .tc-mail-slot.is-read + .tc-mail-task {
   margin-top: 14px;
+}
+
+/* ── 9.9 County assessor parcel search (Step 1 · APN lookup) ── */
+#panel-sim .tc-apn-card {
+  margin-bottom: 18px;
+}
+#panel-sim .tc-apn-tool {
+  margin-top: 14px;
+  border: 1px solid var(--v-line, #e3eaf1);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+}
+#panel-sim .tc-apn-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #1f3b2d;
+  color: #e8f3ec;
+  font-size: 13px;
+}
+#panel-sim .tc-apn-bar strong {
+  color: #ffffff;
+}
+#panel-sim .tc-apn-seal {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #c9a227;
+  color: #1f3b2d;
+  font-size: 10.5px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#panel-sim .tc-apn-search {
+  display: flex;
+  gap: 10px;
+  padding: 14px;
+  border-bottom: 1px solid #eef2f6;
+  background: #f8fafc;
+}
+#panel-sim .tc-apn-search input {
+  flex: 1 1 auto;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1.5px solid var(--v-line, #e3eaf1);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 14px;
+}
+#panel-sim .tc-apn-search input:focus {
+  outline: none;
+  border-color: var(--v-blue, #1565c0);
+}
+#panel-sim .tc-apn-results {
+  padding: 12px 14px 14px;
+}
+#panel-sim .tc-apn-table tr.on td {
+  background: #eff6ff;
+}
+#panel-sim .tc-apn-pick {
+  border: 1.5px solid #cbd5e1;
+  background: #fff;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1565c0;
+  cursor: pointer;
+}
+#panel-sim .tc-apn-table tr.on .tc-apn-pick {
+  border-color: #1565c0;
+  background: #1565c0;
+  color: #fff;
+}
+#panel-sim .tc-apn-detail {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid #dbe4ee;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+#panel-sim .tc-apn-detail-title {
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: #64748b;
+}
+#panel-sim .tc-apn-detail dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 16px;
+  margin: 0;
+  font-size: 13px;
+}
+#panel-sim .tc-apn-detail dt {
+  color: #64748b;
+}
+#panel-sim .tc-apn-detail dd {
+  margin: 0;
+  color: var(--v-ink, #0c1e33);
+  font-weight: 600;
+}
+#panel-sim .tc-apn-empty {
+  font-size: 13px;
+  color: var(--v-muted, #5b6b7e);
+}
+#panel-sim .tc-apn-count {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--v-muted, #5b6b7e);
+}
+#panel-sim .tc-apn-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+#panel-sim .tc-apn-table th {
+  text-align: left;
+  padding: 7px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: #64748b;
+  border-bottom: 1px solid #e3eaf1;
+}
+#panel-sim .tc-apn-table td {
+  padding: 9px 8px;
+  border-bottom: 1px solid #f1f4f8;
+  color: var(--v-ink, #0c1e33);
+}
+#panel-sim .tc-apn-num {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── 9.10 Reply templates inside Mail (pick, complete, send) ── */
+.tc-draft-pick { margin: 4px 0 12px; display: grid; gap: 8px; }
+.tc-draft-pick-title { font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #64748b; }
+.tc-draft-opt { display: flex; align-items: flex-start; gap: 10px; width: 100%; text-align: left; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; cursor: pointer; font-family: inherit; transition: border-color .15s, background .15s; }
+.tc-draft-opt:hover { border-color: #93c5fd; background: #f8fbff; }
+.tc-draft-opt.on { border-color: #1565c0; background: #eff6ff; }
+.tc-draft-radio { flex: none; width: 16px; height: 16px; margin-top: 2px; border-radius: 50%; border: 2px solid #94a3b8; }
+.tc-draft-opt.on .tc-draft-radio { border-color: #1565c0; background: radial-gradient(#1565c0 45%, transparent 50%); }
+.tc-draft-text { display: flex; flex-direction: column; gap: 2px; }
+.tc-draft-text strong { font-size: 13px; color: #0f172a; }
+.tc-draft-text em { font-style: normal; font-size: 12px; color: #64748b; line-height: 1.45; }
+
+/* ── 9.11 End of case: leave the simulator or run it again ── */
+#panel-sim .tc-finish-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  padding: 18px 22px;
+  border: 1.5px solid var(--v-line, #e3eaf1);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 6px 24px rgba(10, 38, 71, .04);
+}
+#panel-sim .tc-finish-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 13px;
+  color: var(--v-muted, #5b6b7e);
+}
+#panel-sim .tc-finish-text strong {
+  font-size: 15px;
+  color: var(--v-navy, #0a2647);
+}
+#panel-sim .tc-finish-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+#panel-sim .tc-finish-btn {
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+#panel-sim .tc-finish-btn.ghost {
+  background: #ffffff;
+  border: 1.5px solid var(--v-line, #e3eaf1);
+  color: var(--v-navy, #0a2647);
+}
+#panel-sim .tc-finish-btn.ghost:hover {
+  border-color: #94a3b8;
+}
+#panel-sim .tc-finish-btn.primary {
+  background: var(--v-navy, #0a2647);
+  border: 1.5px solid var(--v-navy, #0a2647);
+  color: #ffffff;
+}
+#panel-sim .tc-finish-btn.primary:hover {
+  background: #123a66;
 }

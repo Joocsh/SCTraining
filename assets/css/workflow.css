@@ -172,15 +172,65 @@
   position: relative;
   z-index: 1;
 }
+/* the card itself is not clickable: no pointer, no lift; only the button reacts */
+.lc-sc-card-wf,
 .lc-sc-card-wf:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 26px 56px rgba(10, 38, 71, .36), 0 0 0 1px rgba(23, 195, 212, .4) inset;
-  border-color: rgba(23, 195, 212, .4);
+  cursor: default;
+  transform: none;
+}
+.lc-sc-card-wf:hover {
+  border-color: rgba(255, 255, 255, .16);
+  box-shadow: 0 20px 48px rgba(10, 38, 71, .26), 0 0 0 1px rgba(255, 255, 255, .08) inset;
 }
 .lc-sc-card-wf.st-va { background-image: url('https://images.unsplash.com/photo-1573510460136-8a26ce45ed2c?auto=format&fit=crop&w=1400&q=75'); }
 .lc-sc-card-wf.st-tx { background-image: url('https://images.unsplash.com/photo-1666610278692-51058ed05e9a?auto=format&fit=crop&w=1400&q=75'); }
 .lc-sc-card-wf.st-ca { background-image: url('https://images.unsplash.com/photo-1767681774612-a3062667f6ac?auto=format&fit=crop&w=1400&q=75'); }
 .lc-sc-card-wf.st-ny { background-image: url('https://images.unsplash.com/photo-1514565131-fce0801e5785?auto=format&fit=crop&w=1400&q=75'); }
+
+/* Case with its own property photo: the photo on top, clear; the text below it */
+.lc-sc-card-wf.has-cover {
+  background-image: none;
+  background-color: #0d2238;
+  padding: 0;
+  justify-content: flex-start;
+}
+.lc-sc-card-wf.has-cover::before {
+  display: none;
+}
+.lc-sc-card-wf.has-cover .wf-card-photo {
+  position: relative;
+  height: 280px;
+  flex: none;
+  background-size: cover;
+  background-position: center;
+  padding: 22px 26px;
+  box-sizing: border-box;
+}
+/* a light shade at the top keeps the tags readable without hiding the photo */
+.lc-sc-card-wf.has-cover .wf-card-photo::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 90px;
+  background: linear-gradient(180deg, rgba(6, 18, 32, .55), rgba(6, 18, 32, 0));
+  pointer-events: none;
+}
+.lc-sc-card-wf.has-cover .wf-card-photo .wf-card-topbar {
+  position: relative;
+  margin-bottom: 0;
+}
+.lc-sc-card-wf.has-cover .wf-card-photo .lc-sc-tag,
+.lc-sc-card-wf.has-cover .wf-card-photo .wf-card-steps-pill {
+  background: rgba(6, 18, 32, .62);
+  backdrop-filter: blur(6px);
+}
+.lc-sc-card-wf.has-cover .wf-card-main-content {
+  padding: 26px 38px 30px;
+}
+@media (max-width: 640px) {
+  .lc-sc-card-wf.has-cover .wf-card-photo { height: 200px; padding: 16px; }
+  .lc-sc-card-wf.has-cover .wf-card-main-content { padding: 22px 20px 24px; }
+}
 
 /* Topbar inside workflow card */
 .wf-card-topbar {
@@ -279,10 +329,6 @@
   gap: 3px;
   transition: background .2s, border-color .2s;
 }
-.wf-card-spec-item:hover {
-  background: rgba(255, 255, 255, .15);
-  border-color: rgba(255, 255, 255, .3);
-}
 .wf-spec-label {
   font-size: 10px;
   font-weight: 800;
@@ -328,7 +374,7 @@
   transition: all .2s cubic-bezier(.25, 1, .5, 1);
   font-family: inherit;
 }
-.lc-sc-card-wf:hover .wf-card-cta-btn {
+.lc-sc-card-wf .wf-card-cta-btn:hover {
   background: #fff;
   color: var(--v-navy, #0a2647);
   box-shadow: 0 6px 24px rgba(255, 255, 255, .4);
@@ -339,7 +385,7 @@
   line-height: 1;
   transition: transform .2s ease;
 }
-.lc-sc-card-wf:hover .wf-cta-arr {
+.lc-sc-card-wf .wf-card-cta-btn:hover .wf-cta-arr {
   transform: translateX(3px);
 }
 .wf-card-guarantee {

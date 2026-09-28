@@ -7,8 +7,8 @@
   <meta name="description" content="Practice real transaction coordination cases, MLS entries, deadline quizzes and prompt practice across Texas, California, Virginia, and New York.">
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link rel="stylesheet" href="../assets/css/role-dash.css">
-  <link rel="stylesheet" href="../assets/css/workflow.css">
-  <link rel="stylesheet" href="../assets/css/tc-case.css?v=20260923h">
+  <link rel="stylesheet" href="../assets/css/workflow.css?v=20260928c">
+  <link rel="stylesheet" href="../assets/css/tc-case.css?v=20260928i">
 
   <style>
     /* MLS Practice panel */
@@ -1372,7 +1372,7 @@
     }
   </style>
 
-<link rel="stylesheet" href="../assets/css/role-hub.css?v=20260925f">
+<link rel="stylesheet" href="../assets/css/role-hub.css?v=20260925k">
 </head>
 <body>
 
@@ -1938,7 +1938,7 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
       <div class="tc-header-title-wrap" id="tc-header-case-name">
         <span class="tc-title-main">California TC Simulator</span>
         <span class="tc-title-dot">&middot;</span>
-        <span class="tc-title-prop">4827 Rolando Blvd</span>
+        <span class="tc-title-prop">Seller &amp; Buyer Cases</span>
       </div>
     </div>
 
@@ -1975,7 +1975,7 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
           </button>
           <div class="sim-active-location-chip" id="sim-location-chip">
             <span class="sim-loc-dot"></span>
-            <span id="sim-location-chip-text">California Market &middot; 4827 Rolando Blvd</span>
+            <span id="sim-location-chip-text">California Market &middot; Seller &amp; Buyer Cases</span>
           </div>
         </div>
         <div class="sim-pick-hero">
@@ -2058,9 +2058,10 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
 <script>SCApp.requireIntro();</script>
 <script src="../assets/js/rein-va-features.js"></script>
 <script src="../assets/js/rein-va-form.js"></script>
-<script src="../assets/js/workflow.js?v=20260923a"></script>
+<script src="../assets/js/workflow.js?v=20260928c"></script>
 <script src="../assets/js/tc-va-case.js"></script>
-<script src="../assets/js/tc-ca-new-case.js?v=20260923m"></script>
+<script src="../assets/js/tc-ca-new-case.js?v=20260928l"></script>
+<script src="../assets/js/tc-ca-seller-case.js?v=20260928l"></script>
 <script>
   /* ══════════════════════════════════════════════════════════
      CASE SIMULATOR CONTENT: Transaction Coordinator
@@ -2084,6 +2085,7 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
         wfAfterRender: { 5: function () { txRentBackDecision(); }, 7: function () { wfRenderFinalScore('wf-eval-container', 'tc', 'tx', 4); } } }
     ],
     ca: [
+      window.TC_CA_SELLER_CASE,
       window.TC_CA_NEW_CASE
     ],
     ny: [
@@ -4897,7 +4899,7 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
 
     if (caseName) {
       caseName.innerHTML = isWfActive
-        ? '<span class="tc-title-main">California TC Simulator</span> <span class="tc-title-dot">&middot;</span> <span class="tc-title-prop">4827 Rolando Blvd</span>'
+        ? '<span class="tc-title-main">California TC Simulator</span> <span class="tc-title-dot">&middot;</span> <span class="tc-title-prop">' + ((typeof wfActiveScenario !== 'undefined' && wfActiveScenario && wfActiveScenario.headerProp) || '') + '</span>'
         : '<span class="tc-title-main">Case Simulator</span> <span class="tc-title-dot">&middot;</span> <span class="tc-title-prop">Choose a Market</span>';
     }
     if (resetBtn) resetBtn.style.display = isWfActive ? 'inline-flex' : 'none';
@@ -5047,6 +5049,6 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
     setTimeout(function(){ panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 40);
   }
 </script>
-<script src="../assets/js/role-hub.js?v=20260925f" data-role="tc" defer></script>
+<script src="../assets/js/role-hub.js?v=20260925k" data-role="tc" defer></script>
 </body>
 </html>

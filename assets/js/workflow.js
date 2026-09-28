@@ -176,7 +176,7 @@ function simGoToCity(key) {
   const stateLabel = stateObj ? stateObj.label : (key ? key.toUpperCase() : '');
   const chipText = document.getElementById('sim-location-chip-text');
   if (chipText) {
-    chipText.textContent = key === 'ca' ? 'California · 4827 Rolando Blvd' : (stateLabel + ' Market Case');
+    chipText.textContent = key === 'ca' ? 'California · Seller & Buyer Cases' : (stateLabel + ' Market Case');
   }
   const heroTitle = document.getElementById('sim-hero-title');
   if (heroTitle) {
@@ -217,15 +217,12 @@ function simRenderCards() {
   scenarios.forEach(sc => {
     const card = document.createElement('div');
     const isWF = sc.type === 'workflow';
-    card.className = 'lc-sc-card' + (isWF ? ' lc-sc-card-wf st-' + simState : '');
+    /* a case with its own property photo shows it on top, with the text below */
+    const hasCover = isWF && !!sc.cover;
+    card.className = 'lc-sc-card' + (isWF ? ' lc-sc-card-wf st-' + simState : '') + (hasCover ? ' has-cover' : '');
     if (isWF) {
-      const isCA = simState === 'ca' || (sc.title && sc.title.includes('Rolando'));
-      const specs = sc.specs || (isCA ? [
-        { label: 'List Price', value: '$889,000' },
-        { label: 'Sellers', value: 'Daniel &amp; Carmen Herrera' },
-        { label: 'Escrow Scope', value: '10 End-to-End Steps' },
-        { label: 'Key TC Scope', value: 'NAR Split, Solar, Wire Defense' }
-      ] : [
+      const isCA = simState === 'ca';
+      const specs = sc.specs || ([
         { label: 'Workflow', value: (sc.stepCount || 8) + ' Steps End-to-End' },
         { label: 'Role', value: 'Transaction Coordinator' },
         { label: 'Milestone', value: 'Executed Contract &rarr; Close' },
@@ -239,15 +236,17 @@ function simRenderCards() {
         </div>
       `).join('');
 
-      card.innerHTML = `
+      const topbar = `
         <div class="wf-card-topbar">
           <span class="lc-sc-tag">${esc(sc.tag)}</span>
           <span class="wf-card-steps-pill">${sc.stepCount || 10} Progressive Phases</span>
-        </div>
+        </div>`;
+      card.innerHTML = `
+        ${hasCover ? `<div class="wf-card-photo" style="background-image:url('${sc.cover}')">${topbar}</div>` : topbar}
         <div class="wf-card-main-content">
           <div class="wf-card-property-header">
             <h3 class="wf-card-title">${esc(sc.title)}</h3>
-            <div class="wf-card-subtitle">${isCA ? 'San Diego, CA 92115 &middot; Single-Family Residence' : 'Real-World Client File &middot; Active Escrow'}</div>
+            <div class="wf-card-subtitle">${sc.subtitle || (isCA ? 'California &middot; Real Client File' : 'Real-World Client File &middot; Active Escrow')}</div>
           </div>
           <p class="wf-card-desc">${esc(sc.desc)}</p>
           <div class="wf-card-specs-grid">
@@ -272,7 +271,10 @@ function simRenderCards() {
         <p>${esc(sc.desc)}</p>
         ${badge}`;
     }
-    card.onclick = () => simStart(sc);
+    /* a workflow card is information: only its button starts the case */
+    const cta = isWF ? card.querySelector('.wf-card-cta-btn') : null;
+    if (cta) cta.onclick = () => simStart(sc);
+    else card.onclick = () => simStart(sc);
     grid.appendChild(card);
   });
 }
@@ -378,7 +380,27 @@ let wfStep = 0;
    backward compatibility with a single-workflow page. */
 let wfActiveLabels = null, wfActiveSteps = null, wfActiveScenario = null;
 
+/* A case file builds its UI inside install(). Several cases can share the
+   page: starting one re-runs its install so its handlers and state own the
+   shared mail app, modals and sidebar again. */
+function tcCaseModule(install) {
+  const desc = install();
+  desc.install = function () {
+    ['tc-mail-app', 'tc-mail-dock', 'tc-mail-toasts', 'wf-dec-modal'].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    });
+    document.querySelectorAll('body > .zf-modal-overlay').forEach(function (el) { el.parentNode.removeChild(el); });
+    document.body.classList.remove('tc-mail-is-open', 'tc-mail-docked');
+    const fresh = install();
+    ['wfSteps', 'wfAfterRender', 'onReset'].forEach(function (k) { desc[k] = fresh[k]; });
+  };
+  return desc;
+}
+window.tcCaseModule = tcCaseModule;
+
 function wfStart(sc, restoreStep) {
+  if (sc && typeof sc.install === 'function') sc.install();
   wfStep = (typeof restoreStep === 'number' && restoreStep > 0) ? restoreStep : 0;
   wfActiveScenario = sc || null;
   wfActiveLabels = (sc && sc.wfLabels) || window.WF_LABELS;
@@ -615,7 +637,10 @@ function wfToggleDocSidebar(url, title) {
   }
 }
 
-/* Floating Actions Stack ("Ask Sofia", "Notepad", "Reset Case", "Exit to Scenarios") */
+/* Floating Actions Stack (mentor hints, "Notepad", "Reset Case", "Exit to Scenarios") */
+function wfHintMentor() {
+  return window.WF_HINT_MENTOR || { initials: 'TC', name: 'Mentor', role: 'Transaction Coordinator', fab: 'Ask for a hint' };
+}
 function wfEnsureFloatingActions() {
   let stack = document.getElementById('wf-fab-stack');
   if (!stack) {
@@ -623,15 +648,15 @@ function wfEnsureFloatingActions() {
     stack.id = 'wf-fab-stack';
     stack.className = 'wf-fab-stack';
 
-    // 1. Sofia Hint FAB
+    // 1. Mentor hint FAB
     const fabSofia = document.createElement('button');
     fabSofia.type = 'button';
     fabSofia.id = 'wf-hint-fab';
     fabSofia.className = 'wf-hint-fab';
-    fabSofia.setAttribute('aria-label', 'Ask Sofia');
-    fabSofia.setAttribute('title', 'Ask Sofia');
+    fabSofia.setAttribute('aria-label', wfHintMentor().fab);
+    fabSofia.setAttribute('title', wfHintMentor().fab);
     fabSofia.onclick = wfToggleHintPanel;
-    fabSofia.innerHTML = '<span class="wf-fab-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M12 2a7 7 0 0 0-4 12.74V17h8v-2.26A7 7 0 0 0 12 2z"></path></svg></span><span class="wf-hint-fab-label">Ask Sofia</span>';
+    fabSofia.innerHTML = '<span class="wf-fab-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M12 2a7 7 0 0 0-4 12.74V17h8v-2.26A7 7 0 0 0 12 2z"></path></svg></span><span class="wf-hint-fab-label">' + wfHintMentor().fab + '</span>';
     stack.appendChild(fabSofia);
 
     // 2. Notepad FAB
@@ -672,7 +697,7 @@ function wfEnsureFloatingActions() {
   return stack;
 }
 
-/* Hint System ("Ask Sofia") */
+/* Hint System (mentor hints) */
 let wfCurrentHints = null;
 
 function wfSetHints(hints) {
@@ -715,10 +740,10 @@ function wfRenderHintPanel() {
   
   let html =
     '<div class="wf-hint-panel-header">' +
-      '<div class="wf-hint-panel-avatar">SR</div>' +
+      '<div class="wf-hint-panel-avatar">' + wfHintMentor().initials + '</div>' +
       '<div>' +
-        '<div class="wf-hint-panel-name">Sofia Reyes</div>' +
-        '<div class="wf-hint-panel-role">Listing Agent &middot; Mentor</div>' +
+        '<div class="wf-hint-panel-name">' + wfHintMentor().name + '</div>' +
+        '<div class="wf-hint-panel-role">' + wfHintMentor().role + '</div>' +
       '</div>' +
       '<button type="button" class="wf-hint-panel-close" onclick="wfCloseHintPanel()" aria-label="Close">&times;</button>' +
     '</div>' +
