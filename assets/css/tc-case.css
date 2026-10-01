@@ -811,15 +811,15 @@ body.rshell .lc-panel-body:has(#wf-pipeline:not([style*="display: none"])) {
   text-decoration: underline;
 }
 
-.mh-main .wf-compose {
+.wf-compose {
   background: #fff;
   border: 1.5px solid var(--v-line);
   border-radius: 16px;
-  overflow: hidden;
+  overflow: visible;
   margin-bottom: 18px;
   box-shadow: 0 6px 24px rgba(10, 38, 71, .04);
 }
-.mh-main .wf-compose-header {
+.wf-compose-header {
   background: #fbfdff;
   padding: 12px 18px;
   border-bottom: 1px solid var(--v-line);
@@ -827,12 +827,12 @@ body.rshell .lc-panel-body:has(#wf-pipeline:not([style*="display: none"])) {
   flex-direction: column;
   gap: 7px;
 }
-.mh-main .wf-compose-field {
+.wf-compose-field {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-.mh-main .wf-compose-lbl {
+.wf-compose-lbl {
   width: 55px;
   flex: none;
   font-size: 11px;
@@ -841,7 +841,7 @@ body.rshell .lc-panel-body:has(#wf-pipeline:not([style*="display: none"])) {
   text-transform: uppercase;
   color: var(--v-muted);
 }
-.mh-main .wf-compose-field input {
+.wf-compose-field input {
   flex: 1;
   border: 1px solid transparent;
   background: transparent;
@@ -851,15 +851,15 @@ body.rshell .lc-panel-body:has(#wf-pipeline:not([style*="display: none"])) {
   border-radius: 6px;
   font-family: inherit;
 }
-.mh-main .wf-compose-field input:focus {
+.wf-compose-field input:focus {
   outline: none;
   border-color: var(--v-blue);
   background: #fff;
 }
-.mh-main .wf-compose-body {
+.wf-compose-body {
   padding: 14px 18px 16px;
 }
-.mh-main .wf-compose-body textarea {
+.wf-compose-body textarea {
   width: 100%;
   min-height: 140px;
   border: 1.5px solid var(--v-line);
@@ -873,7 +873,7 @@ body.rshell .lc-panel-body:has(#wf-pipeline:not([style*="display: none"])) {
   resize: vertical;
   transition: border-color .15s, box-shadow .15s;
 }
-.mh-main .wf-compose-body textarea:focus {
+.wf-compose-body textarea:focus {
   outline: none;
   border-color: var(--v-blue);
   box-shadow: 0 0 0 3px rgba(21, 101, 192, .14);
@@ -2114,6 +2114,7 @@ body.rshell .lc-panel-body:has(#wf-pipeline:not([style*="display: none"])) {
   align-items: center;
   justify-content: space-between;
   font-size: 12px;
+  border-radius: 15px 15px 0 0;
 }
 .wf-compose-tab {
   display: flex;
@@ -2697,11 +2698,11 @@ body.rshell .lc-panel-body:has(#wf-pipeline:not([style*="display: none"])) {
 }
 
 /* Interactive Email Recipient & Subject Fields */
-.mh-main .wf-compose-field.wf-compose-field-interactive {
+.wf-compose-field.wf-compose-field-interactive {
   position: relative;
 }
-.mh-main .wf-compose-field.wf-compose-field-interactive input,
-.mh-main .wf-compose-field input.wf-compose-input-interactive {
+.wf-compose-field.wf-compose-field-interactive input,
+.wf-compose-field input.wf-compose-input-interactive {
   border: 1.5px solid var(--v-line, #e2e8f0);
   background: #fff;
   padding: 6px 10px;
@@ -2710,8 +2711,8 @@ body.rshell .lc-panel-body:has(#wf-pipeline:not([style*="display: none"])) {
   color: var(--v-ink);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.mh-main .wf-compose-field.wf-compose-field-interactive input:focus,
-.mh-main .wf-compose-field input.wf-compose-input-interactive:focus {
+.wf-compose-field.wf-compose-field-interactive input:focus,
+.wf-compose-field input.wf-compose-input-interactive:focus {
   border-color: var(--v-blue, #1565c0);
   box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.12);
   outline: none;
@@ -2719,17 +2720,13 @@ body.rshell .lc-panel-body:has(#wf-pipeline:not([style*="display: none"])) {
 
 /* Contact Autocomplete Dropdown */
 .wf-contact-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 65px;
-  right: 0;
+  position: fixed;
+  z-index: 10000;
   max-width: 520px;
   background: #ffffff;
   border: 1.5px solid var(--v-blue, #1565c0);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(10, 38, 71, 0.15);
-  z-index: 100;
-  margin-top: 4px;
   max-height: 240px;
   overflow-y: auto;
 }
@@ -5052,6 +5049,77 @@ body:has(.wf-notes-panel.open) .wf-score-float {
   transition: all 0.15s;
   box-sizing: border-box;
   max-width: 100%;
+}
+
+/* California date fields and shared SkillCloud calendar. */
+input[data-tc-field="date"] {
+  min-width: 0;
+  padding-right: 32px !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23196a83' stroke-width='1.8'%3E%3Crect x='3' y='5' width='18' height='16' rx='3'/%3E%3Cpath d='M7 3v4m10-4v4M3 11h18m-13 4h3m2 0h3m-8 3h3'/%3E%3C/svg%3E") !important;
+  background-position: right 9px center !important;
+  background-size: 17px !important;
+  background-repeat: no-repeat !important;
+}
+
+.zf-inline-input[data-tc-field="date"] {
+  min-width: 160px;
+  padding-right: 47px !important;
+  background-position: right 26px center !important;
+}
+
+.tc-calendar {
+  position: fixed;
+  z-index: 1000001;
+  width: 320px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  box-sizing: border-box;
+  border: 1px solid #dce5ed;
+  border-radius: 18px;
+  background: #fff;
+  color: #17304a;
+  box-shadow: 0 18px 55px rgba(10, 38, 71, .25), 0 3px 12px rgba(10, 38, 71, .08);
+  font: 13px/1.4 Inter, "Segoe UI", sans-serif;
+}
+.tc-calendar[hidden] { display: none; }
+.tc-calendar * { box-sizing: border-box; }
+.tc-calendar-head {
+  background: linear-gradient(120deg, #102b49, #194568);
+  padding: 17px 19px 14px;
+  color: #fff;
+}
+.tc-calendar-eyebrow { font-size: 9px; font-weight: 700; letter-spacing: 1.4px; color: #8edbe4; }
+.tc-calendar-title { display: flex; align-items: center; justify-content: space-between; margin-top: 5px; font-size: 19px; font-weight: 700; }
+.tc-calendar button { font: inherit; border: 0; cursor: pointer; }
+.tc-calendar-title button { background: rgba(255,255,255,.1); color: white; width: 27px; height: 27px; border-radius: 8px; font-size: 21px; line-height: 1; }
+.tc-calendar-nav { display: flex; align-items: center; gap: 6px; padding: 15px 15px 11px; }
+.tc-calendar-nav button { flex: 0 0 30px; height: 32px; border-radius: 9px; color: #173b59; background: #f0f5f8; font-size: 23px; }
+.tc-calendar-nav select { min-width: 0; border: 1px solid #dce5ed; border-radius: 8px; background: #fff; color: #17304a; padding: 6px 3px; font: inherit; font-weight: 650; cursor: pointer; }
+.tc-calendar-nav select[data-cal-select="month"] { flex: 1; }
+.tc-calendar-nav select[data-cal-select="year"] { width: 73px; }
+.tc-calendar-week, .tc-calendar-grid [role="row"] { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.tc-calendar-week { margin: 0 15px 7px; text-align: center; font-size: 11px; font-weight: 650; color: #7c8b9b; }
+.tc-calendar-grid { padding: 0 15px 13px; }
+.tc-calendar-grid [role="row"] + [role="row"] { margin-top: 3px; }
+.tc-calendar-grid button { aspect-ratio: 1; padding: 0; border-radius: 10px; background: transparent; color: #24415a; font-weight: 550; }
+.tc-calendar-grid button.outside { color: #abb7c3; }
+.tc-calendar-grid button.today { box-shadow: inset 0 0 0 1px #20a8b4; color: #13818e; }
+.tc-calendar-grid button.selected { background: #153c60; color: white; box-shadow: 0 3px 8px rgba(21,60,96,.2); }
+.tc-calendar button:hover { background: #e8f4f6; color: #116d7c; }
+.tc-calendar-grid button.selected:hover { background: #215678; color: #fff; }
+.tc-calendar button:focus-visible, .tc-calendar select:focus-visible { outline: 2px solid #18aab9; outline-offset: 2px; }
+.tc-calendar-footer { border-top: 1px solid #e9eef3; padding: 11px 15px; display: flex; align-items: center; justify-content: space-between; gap: 5px; }
+.tc-calendar-footer span { font-size: 9px; letter-spacing: .7px; color: #91a0af; }
+.tc-calendar-footer button { background: #f0f5f8; color: #315775; font-size: 12px; font-weight: 650; border-radius: 8px; padding: 6px 11px; }
+.tc-calendar-footer button[data-cal="today"] { color: #087e8c; background: #e9f7f8; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .tc-calendar button { transition: background-color .12s, color .12s; }
+}
+
+input[data-tc-field="money"] {
+  font-variant-numeric: tabular-nums;
 }
 
 .zf-inline-select {
@@ -8252,14 +8320,86 @@ body:has(.wf-notes-panel.open) .wf-score-float {
   --tc-fab-gutter: 76px;
 }
 
-/* ── 8.1 Instructor mode: auto-fill shortcuts hidden from associates ── */
-body:not(.tc-instructor) #panel-sim .tc-assist,
-body:not(.tc-instructor) .wf-dec-modal .tc-assist {
+/* ── 8.1 Instructor & Dev Mode: auto-fill shortcuts hidden from associates by default ── */
+body:not(.tc-instructor):not(.tc-dev-mode) .tc-assist,
+body:not(.tc-instructor):not(.tc-dev-mode) #panel-sim .tc-assist,
+body:not(.tc-instructor):not(.tc-dev-mode) .wf-dec-modal .tc-assist,
+body:not(.tc-instructor):not(.tc-dev-mode) .tc-mail-app .tc-assist,
+body:not(.tc-instructor):not(.tc-dev-mode) .wf-compose-autofill,
+body:not(.tc-instructor):not(.tc-dev-mode) .wf-zf-autofill-btn,
+body:not(.tc-instructor):not(.tc-dev-mode) .wf-ss-autofill-btn,
+body:not(.tc-instructor):not(.tc-dev-mode) .wf-chat-autofill {
   display: none !important;
 }
-#panel-sim .tc-assist {
-  border-style: dashed !important;
-  color: #92400e !important;
+
+body.tc-instructor #panel-sim .tc-assist,
+body.tc-dev-mode #panel-sim .tc-assist,
+body.tc-instructor .tc-assist,
+body.tc-dev-mode .tc-assist {
+  display: inline-flex !important;
+  border: 1px dashed #d97706 !important;
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  font-weight: 700 !important;
+}
+
+/* ── Hint data styling (used inside wf-hint-panel for task-level hints) ── */
+.wf-task-hint-kicker {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--v-blue, #1565c0);
+  margin-bottom: 6px;
+}
+.wf-task-hint-list {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+.wf-task-hint-list li {
+  margin-bottom: 5px;
+}
+.wf-task-hint-chip {
+  display: inline-block;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 12px;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.tc-dev-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #1e293b;
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  z-index: 999999;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+  pointer-events: none;
+}
+.tc-dev-toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+.tc-dev-toast.on {
+  border-left: 4px solid #f59e0b;
+}
+.tc-dev-toast.off {
+  border-left: 4px solid #10b981;
 }
 
 /* ── 8.2 Floating actions: header already has Back + Reset Case ── */
@@ -9928,7 +10068,7 @@ body.tc-mail-is-open .wf-notes-panel {
   margin: 0;
   border: 1px solid #e3eaf1;
   border-radius: 14px;
-  overflow: hidden;
+  overflow: visible;
   background: #ffffff;
   box-shadow: 0 4px 20px rgba(10, 38, 71, 0.05);
 }
@@ -10286,17 +10426,32 @@ body.tc-mail-is-open .tc-mail-dock {
   white-space: nowrap;
 }
 
-/* ── 9.10 Reply templates inside Mail (pick, complete, send) ── */
-.tc-draft-pick { margin: 4px 0 12px; display: grid; gap: 8px; }
+/* ── 9.10 Reply templates inside Mail (dropdown select) ── */
+.tc-draft-pick { margin: 4px 0 12px; display: flex; flex-direction: column; gap: 6px; }
 .tc-draft-pick-title { font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #64748b; }
-.tc-draft-opt { display: flex; align-items: flex-start; gap: 10px; width: 100%; text-align: left; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; cursor: pointer; font-family: inherit; transition: border-color .15s, background .15s; }
-.tc-draft-opt:hover { border-color: #93c5fd; background: #f8fbff; }
-.tc-draft-opt.on { border-color: #1565c0; background: #eff6ff; }
-.tc-draft-radio { flex: none; width: 16px; height: 16px; margin-top: 2px; border-radius: 50%; border: 2px solid #94a3b8; }
-.tc-draft-opt.on .tc-draft-radio { border-color: #1565c0; background: radial-gradient(#1565c0 45%, transparent 50%); }
-.tc-draft-text { display: flex; flex-direction: column; gap: 2px; }
-.tc-draft-text strong { font-size: 13px; color: #0f172a; }
-.tc-draft-text em { font-style: normal; font-size: 12px; color: #64748b; line-height: 1.45; }
+.tc-draft-select {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--v-ink, #0f172a);
+  background: #fff;
+  border: 1.5px solid var(--v-line, #e2e8f0);
+  border-radius: 8px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.tc-draft-select:focus {
+  outline: none;
+  border-color: var(--v-blue, #1565c0);
+  box-shadow: 0 0 0 3px rgba(21, 101, 192, 0.12);
+}
 
 /* ── 9.11 End of case: leave the simulator or run it again ── */
 #panel-sim .tc-finish-bar {

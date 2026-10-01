@@ -21,6 +21,239 @@ function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
+/* California case fields share formatting across forms, zipForm and SkySlope. */
+function tcFormatMoney(value) {
+  var raw = String(value == null ? '' : value).replace(/[^0-9.\-]/g, '');
+  var sign = raw.charAt(0) === '-' ? '-' : '';
+  raw = raw.replace(/-/g, '');
+  if (!raw) return sign;
+  var parts = raw.split('.');
+  var whole = parts[0].replace(/^0+(?=\d)/, '') || '0';
+  return sign + whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',') +
+    (parts.length > 1 ? '.' + parts.slice(1).join('').slice(0, 2) : '');
+}
+
+function tcCaseFieldAttrs(field) {
+  if (field.kind === 'date') return 'type="text" inputmode="numeric" autocomplete="off" data-tc-field="date" aria-haspopup="dialog" aria-expanded="false" aria-controls="tc-calendar"';
+  if (field.kind === 'money') return 'type="text" inputmode="decimal" data-tc-field="money"';
+  return 'type="text"';
+}
+
+function tcCaseFieldValue(field, value) {
+  if (field.kind === 'money') return tcFormatMoney(value);
+  if (field.kind !== 'date' || !value) return value == null ? '' : value;
+  var text = String(value).trim();
+  var iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(text);
+  var us = /^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/.exec(text);
+  var parts = iso ? [iso[1], iso[2], iso[3]] : us ? [us[3], us[1], us[2]] : null;
+  return parts ? parts[1].padStart(2, '0') + '/' + parts[2].padStart(2, '0') + '/' + parts[0] : '';
+}
+
+/* One calendar is shared by all California forms, including portaled modals. */
+(function () {
+  if (typeof document.addEventListener !== 'function') return;
+  var field = null, popup = null, view = null, focusDate = null, restoringFocus = false;
+  var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  function parse(value) {
+    var text = tcCaseFieldValue({ kind: 'date' }, value);
+    var match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text);
+    if (!match) return null;
+    var date = new Date(+match[3], +match[1] - 1, +match[2], 12);
+    return date.getFullYear() === +match[3] && date.getMonth() === +match[1] - 1 && date.getDate() === +match[2] ? date : null;
+  }
+  function key(date) {
+    return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+  }
+  function close(restore) {
+    var previous = field;
+    if (previous) previous.setAttribute('aria-expanded', 'false');
+    field = null;
+    if (popup) popup.hidden = true;
+    if (restore && previous && previous.isConnected) {
+      restoringFocus = true;
+      previous.focus({ preventScroll: true });
+      restoringFocus = false;
+    }
+  }
+  window.tcCloseCalendar = close;
+  function position() {
+    if (!field || !field.isConnected) return close();
+    var rect = field.getBoundingClientRect();
+    var height = popup.offsetHeight, width = popup.offsetWidth;
+    var left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+    var top = rect.bottom + 8;
+    if (top + height > window.innerHeight - 8) top = rect.top - height - 8;
+    popup.style.left = left + 'px';
+    popup.style.top = Math.max(8, top) + 'px';
+  }
+  function render(focusDay) {
+    var year = view.getFullYear(), month = view.getMonth();
+    var selected = parse(field.value), today = key(new Date());
+    var html = '<div class="tc-calendar-head"><div class="tc-calendar-eyebrow">SKILLCLOUD · CASE SIMULATOR</div>' +
+      '<div class="tc-calendar-title">Choose a date<button type="button" data-cal="close" aria-label="Close calendar">&times;</button></div></div>' +
+      '<div class="tc-calendar-nav"><button type="button" data-cal="prev" aria-label="Previous month">&#8249;</button>' +
+      '<select aria-label="Month" data-cal-select="month">';
+    months.forEach(function (name, index) { html += '<option value="' + index + '"' + (index === month ? ' selected' : '') + '>' + name + '</option>'; });
+    html += '</select><select aria-label="Year" data-cal-select="year">';
+    for (var y = Math.min(1900, year - 10); y <= Math.max(2100, year + 10); y++) {
+      html += '<option' + (y === year ? ' selected' : '') + '>' + y + '</option>';
+    }
+    html += '</select><button type="button" data-cal="next" aria-label="Next month">&#8250;</button></div>' +
+      '<div class="tc-calendar-week" aria-hidden="true"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>' +
+      '<div class="tc-calendar-grid" role="grid" aria-label="' + months[month] + ' ' + year + '">';
+    var start = new Date(year, month, 1, 12);
+    start.setDate(1 - start.getDay());
+    for (var week = 0; week < 6; week++) {
+      html += '<div role="row">';
+      for (var day = 0; day < 7; day++) {
+        var date = new Date(start);
+        date.setDate(start.getDate() + week * 7 + day);
+        var value = key(date), chosen = selected && key(selected) === value;
+        html += '<button type="button" role="gridcell" data-date="' + value + '" tabindex="' + (key(focusDate) === value ? '0' : '-1') +
+          '" aria-label="' + months[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear() + '" aria-selected="' + !!chosen + '"' +
+          (value === today ? ' aria-current="date"' : '') + ' class="' + (date.getMonth() !== month ? 'outside ' : '') +
+          (chosen ? 'selected ' : '') + (value === today ? 'today' : '') + '">' + date.getDate() + '</button>';
+      }
+      html += '</div>';
+    }
+    html += '</div><div class="tc-calendar-footer"><button type="button" data-cal="clear">Clear</button><span>MM / DD / YYYY</span>' +
+      '<button type="button" data-cal="today">Today</button></div>';
+    popup.innerHTML = html;
+    position();
+    if (focusDay) popup.querySelector('[tabindex="0"]').focus({ preventScroll: true });
+  }
+  function choose(date) {
+    var target = field;
+    target.value = date ? tcCaseFieldValue({ kind: 'date' }, key(date)) : '';
+    target.removeAttribute('aria-invalid');
+    close(true);
+    target.dispatchEvent(new Event('input', { bubbles: true }));
+    target.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  function moveMonth(delta, focusDay) {
+    var day = focusDate.getDate();
+    view = new Date(view.getFullYear(), view.getMonth() + delta, 1, 12);
+    focusDate = new Date(view.getFullYear(), view.getMonth(), Math.min(day, new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate()), 12);
+    render(focusDay);
+  }
+  function open(target, focusDay) {
+    if (restoringFocus || target.disabled || target.readOnly) return;
+    if (field === target) {
+      if (focusDay) popup.querySelector('[tabindex="0"]').focus();
+      return;
+    }
+    close();
+    field = target;
+    focusDate = parse(target.value) || new Date();
+    view = new Date(focusDate.getFullYear(), focusDate.getMonth(), 1, 12);
+    if (!popup) {
+      popup = document.createElement('div');
+      popup.id = 'tc-calendar';
+      popup.className = 'tc-calendar';
+      popup.setAttribute('role', 'dialog');
+      popup.setAttribute('aria-label', 'Choose a date');
+      document.body.appendChild(popup);
+      popup.addEventListener('click', function (event) {
+        var button = event.target.closest('button');
+        if (!button) return;
+        if (button.dataset.date) return choose(parse(button.dataset.date));
+        switch (button.dataset.cal) {
+          case 'close': close(true); break;
+          case 'clear': choose(null); break;
+          case 'today': choose(new Date()); break;
+          case 'prev': moveMonth(-1, false); popup.querySelector('[data-cal="prev"]').focus(); break;
+          case 'next': moveMonth(1, false); popup.querySelector('[data-cal="next"]').focus(); break;
+        }
+      });
+      popup.addEventListener('change', function (event) {
+        var select = event.target.dataset.calSelect;
+        if (!select) return;
+        view = new Date(select === 'year' ? +event.target.value : view.getFullYear(), select === 'month' ? +event.target.value : view.getMonth(), 1, 12);
+        focusDate = new Date(view);
+        render(false);
+        popup.querySelector('[data-cal-select="' + select + '"]').focus();
+      });
+    }
+    popup.hidden = false;
+    target.setAttribute('aria-expanded', 'true');
+    render(focusDay);
+  }
+  function isDate(target) { return target.matches && target.matches('input[data-tc-field="date"]'); }
+  document.addEventListener('focusin', function (event) {
+    if (isDate(event.target)) open(event.target, false);
+    else if (field && !popup.contains(event.target)) close();
+  });
+  document.addEventListener('pointerdown', function (event) {
+    if (field && event.target !== field && !popup.contains(event.target)) close();
+  });
+  document.addEventListener('click', function (event) { if (isDate(event.target)) open(event.target, false); });
+  document.addEventListener('input', function (event) {
+    if (!field || event.target !== field) return;
+    var date = parse(field.value);
+    if (date) {
+      focusDate = date;
+      view = new Date(date.getFullYear(), date.getMonth(), 1, 12);
+      render(false);
+    }
+  });
+  document.addEventListener('change', function (event) {
+    if (!isDate(event.target)) return;
+    var date = parse(event.target.value);
+    if (date) event.target.value = tcCaseFieldValue({ kind: 'date' }, key(date));
+    event.target.setAttribute('aria-invalid', String(!!event.target.value && !date));
+    if (field === event.target && date) { focusDate = date; view = new Date(date.getFullYear(), date.getMonth(), 1, 12); render(false); }
+  }, true);
+  document.addEventListener('keydown', function (event) {
+    if (isDate(event.target) && event.key === 'ArrowDown') { event.preventDefault(); open(event.target, true); return; }
+    if (!field) return;
+    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(true); return; }
+    if (!event.target.dataset.date) return;
+    var delta = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[event.key];
+    if (event.key === 'PageUp' || event.key === 'PageDown') { event.preventDefault(); moveMonth(event.key === 'PageUp' ? -1 : 1, true); return; }
+    if (event.key === 'Home') delta = -focusDate.getDay();
+    if (event.key === 'End') delta = 6 - focusDate.getDay();
+    if (delta !== undefined) {
+      event.preventDefault();
+      focusDate.setDate(focusDate.getDate() + delta);
+      view = new Date(focusDate.getFullYear(), focusDate.getMonth(), 1, 12);
+      render(true);
+    }
+  }, true);
+  document.addEventListener('scroll', function (event) {
+    if (field && event.target !== popup && !popup.contains(event.target)) close();
+  }, true);
+  window.addEventListener('resize', function () { if (field) position(); });
+})();
+
+if (typeof document.addEventListener === 'function') {
+  document.addEventListener('beforeinput', function (event) {
+    var field = event.target;
+    if (!field.matches || !field.matches('input[data-tc-field="money"]')) return;
+    var pos = field.selectionStart;
+    if (pos !== field.selectionEnd) return;
+    // Skip grouping commas when deleting so backspace/delete removes a digit.
+    if (event.inputType === 'deleteContentBackward' && field.value[pos - 1] === ',') {
+      field.setSelectionRange(pos - 1, pos - 1);
+    } else if (event.inputType === 'deleteContentForward' && field.value[pos] === ',') {
+      field.setSelectionRange(pos + 1, pos + 1);
+    }
+  }, true);
+  document.addEventListener('input', function (event) {
+    var field = event.target;
+    if (event.isComposing || !field.matches || !field.matches('input[data-tc-field="money"]')) return;
+    var old = field.value;
+    var pos = field.selectionStart;
+    var count = old.slice(0, pos).replace(/[^0-9.\-]/g, '').length;
+    field.value = tcFormatMoney(old);
+    var caret = 0;
+    while (caret < field.value.length && count > 0) {
+      if (field.value[caret] !== ',') count--;
+      caret++;
+    }
+    field.setSelectionRange(caret, caret);
+  }, true);
+}
+
 /* ── Panel open/close (generic; a page can register onOpen hooks) ── */
 window.PANEL_ON_OPEN = window.PANEL_ON_OPEN || {};
 
@@ -59,16 +292,50 @@ let simState = null, simScenario = null, simIdx = 0, simRight = 0, simAnswered =
 
 var WF_STATE_KEY = 'sc_wf_state';
 function _wfSaveState() {
+  if (!wfActiveScenario) return;
   try {
     var scenarios = simDataForState();
     var caseIdx = scenarios && wfActiveScenario ? scenarios.indexOf(wfActiveScenario) : -1;
-    localStorage.setItem(WF_STATE_KEY, JSON.stringify({
+    var payload = {
       city: simState,
       caseIdx: caseIdx,
       step: wfStep,
       maxStep: _wfMaxStep
-    }));
+    };
+    if (typeof wfActiveScenario.getState === 'function') {
+      payload.caseState = wfActiveScenario.getState();
+    }
+    if (wfActiveScenario && wfActiveScenario._mh) {
+      payload.mh = wfActiveScenario._mh;
+    }
+    if (wfActiveScenario && wfActiveScenario._decisions && wfActiveScenario._decisions.length) {
+      payload.decisions = wfActiveScenario._decisions;
+    }
+    localStorage.setItem(WF_STATE_KEY, JSON.stringify(payload));
   } catch (e) {}
+}
+
+/* Save after the case's inline handlers update their state, including drafts
+   and drag/drop tasks that do not advance the main workflow step. */
+if (typeof document.addEventListener === 'function') {
+  ['input', 'change', 'click', 'drop'].forEach(function (type) {
+    document.addEventListener(type, function (event) {
+      var target = event.target;
+      var selector = '#sim-workflow, #tc-mail-app, #tc-mail-dock, .zf-modal-overlay, #wf-dec-modal';
+      // A handler may replace the clicked button before the event reaches us.
+      var path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+      if (path.some(function (node) { return node.matches && node.matches(selector); }) ||
+          (target && target.closest && target.closest(selector))) {
+        _wfSaveState();
+      }
+    });
+  });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') _wfSaveState();
+  });
+}
+if (typeof window.addEventListener === 'function') {
+  window.addEventListener('pagehide', _wfSaveState);
 }
 function _wfClearState() {
   try { localStorage.removeItem(WF_STATE_KEY); } catch (e) {}
@@ -109,7 +376,7 @@ function wfRestoreSession() {
     var activePanel = localStorage.getItem('sc_active_panel');
     if (activePanel === 'sim') {
       var state = _wfLoadState();
-      if (state && state.city) {
+      if (state && (state.city || !window.SIM_STATES || !window.SIM_STATES.length)) {
         simState = state.city;
         var scenarios = simDataForState();
         var caseIdx = typeof state.caseIdx === 'number' && state.caseIdx >= 0 ? state.caseIdx : 0;
@@ -119,8 +386,7 @@ function wfRestoreSession() {
           if (panel) {
             panel.classList.add('open');
             document.body.style.overflow = 'hidden';
-            _wfMaxStep = typeof state.maxStep === 'number' ? state.maxStep : (state.step || 0);
-            wfStart(sc, state.step || 0);
+            wfStart(sc, state.step || 0, state);
             return true;
           }
         }
@@ -393,20 +659,29 @@ function tcCaseModule(install) {
     document.querySelectorAll('body > .zf-modal-overlay').forEach(function (el) { el.parentNode.removeChild(el); });
     document.body.classList.remove('tc-mail-is-open', 'tc-mail-docked');
     const fresh = install();
-    ['wfSteps', 'wfAfterRender', 'onReset'].forEach(function (k) { desc[k] = fresh[k]; });
+    ['wfSteps', 'wfAfterRender', 'onReset', 'getState', 'restoreState'].forEach(function (k) { desc[k] = fresh[k]; });
   };
   return desc;
 }
 window.tcCaseModule = tcCaseModule;
 
-function wfStart(sc, restoreStep) {
+function wfStart(sc, restoreStep, savedState) {
   if (sc && typeof sc.install === 'function') sc.install();
   wfStep = (typeof restoreStep === 'number' && restoreStep > 0) ? restoreStep : 0;
   wfActiveScenario = sc || null;
   wfActiveLabels = (sc && sc.wfLabels) || window.WF_LABELS;
   wfActiveSteps = (sc && sc.wfSteps) || window.WF_STEPS;
-  if (wfActiveScenario) wfActiveScenario._decisions = [];
-  if (!restoreStep) {
+  wfStep = Math.max(0, Math.min(wfStep, wfActiveSteps.length - 1));
+  _wfMaxStep = savedState && typeof savedState.maxStep === 'number'
+    ? Math.max(wfStep, Math.min(savedState.maxStep, wfActiveSteps.length - 1)) : wfStep;
+  if (wfActiveScenario) {
+    wfActiveScenario._decisions = savedState && Array.isArray(savedState.decisions) ? savedState.decisions : [];
+    wfActiveScenario._mh = (savedState && savedState.mh) || {};
+    wfActiveScenario._mhFor = wfActiveScenario._decisions;
+  }
+  if (savedState) {
+    if (sc && typeof sc.restoreState === 'function') sc.restoreState(savedState.caseState || {});
+  } else if (!restoreStep) {
     if (sc && typeof sc.onReset === 'function') {
       try { sc.onReset(); } catch (e) {}
     }
@@ -483,6 +758,7 @@ function wfReset() {
   if (typeof window.caNewResetCase === 'function') {
     try { window.caNewResetCase(); } catch (e) {}
   }
+  wfActiveScenario = null;
   document.getElementById('sim-workflow').style.display = 'none';
   simPickCenterToggle(true);
   document.getElementById('sim-pick').style.display = 'block';
@@ -514,6 +790,7 @@ function wfPrev() {
 }
 
 function wfRender() {
+  if (window.tcCloseCalendar) window.tcCloseCalendar();
   const total = wfActiveLabels.length;
   const isPipeline = wfActiveScenario && wfActiveScenario.usePipeline;
   

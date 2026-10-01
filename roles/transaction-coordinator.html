@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link rel="stylesheet" href="../assets/css/role-dash.css">
   <link rel="stylesheet" href="../assets/css/workflow.css?v=20260928c">
-  <link rel="stylesheet" href="../assets/css/tc-case.css?v=20260928i">
+  <link rel="stylesheet" href="../assets/css/tc-case.css?v=20261001c">
 
   <style>
     /* MLS Practice panel */
@@ -2058,10 +2058,10 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
 <script>SCApp.requireIntro();</script>
 <script src="../assets/js/rein-va-features.js"></script>
 <script src="../assets/js/rein-va-form.js"></script>
-<script src="../assets/js/workflow.js?v=20260928c"></script>
+<script src="../assets/js/workflow.js?v=20261001c"></script>
 <script src="../assets/js/tc-va-case.js"></script>
-<script src="../assets/js/tc-ca-new-case.js?v=20260928l"></script>
-<script src="../assets/js/tc-ca-seller-case.js?v=20260928l"></script>
+<script src="../assets/js/tc-ca-new-case.js?v=20261001c"></script>
+<script src="../assets/js/tc-ca-seller-case.js?v=20261001c"></script>
 <script>
   /* ══════════════════════════════════════════════════════════
      CASE SIMULATOR CONTENT: Transaction Coordinator
@@ -4884,9 +4884,9 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
   const ROLE = 'tc';
   const rpMe = SCApp.requireAuth();
 
-  /* Instructor mode: auto-fill shortcuts stay hidden from associates.
-     Admins see them; anyone can opt in with ?instructor=1 for demos. */
-  if ((rpMe && rpMe.role === 'admin') || /[?&]instructor=1/.test(location.search)) {
+  /* Instructor mode: auto-fill shortcuts stay hidden by default.
+     Opt in with ?instructor=1 in the URL or Ctrl+Shift+D at runtime. */
+  if (/[?&]instructor=1/.test(location.search)) {
     document.body.classList.add('tc-instructor');
   }
 

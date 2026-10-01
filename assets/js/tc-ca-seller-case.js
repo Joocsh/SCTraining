@@ -52,9 +52,410 @@
   }
   ensureStyles();
 
+  /* ════════════════ Developer Mode (Ctrl + Shift + D) ════════════════ */
+  function showDevToast(msg, isDev) {
+    var toast = document.getElementById('tc-dev-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'tc-dev-toast';
+      toast.className = 'tc-dev-toast';
+      document.body.appendChild(toast);
+    }
+    toast.className = 'tc-dev-toast show ' + (isDev ? 'on' : 'off');
+    toast.innerHTML = msg;
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(function () {
+      toast.classList.remove('show');
+    }, 3200);
+  }
+
+  function initDevMode() {
+    try { localStorage.removeItem('tc_dev_mode'); } catch (e) {}
+    window.addEventListener('keydown', function (e) {
+      if (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+        e.preventDefault();
+        var isDev = !document.body.classList.contains('tc-dev-mode');
+        document.body.classList.toggle('tc-instructor', isDev);
+        document.body.classList.toggle('tc-dev-mode', isDev);
+        showDevToast(isDev
+          ? '🛠️ <strong>Modo Desarrollador ACTIVADO</strong> · Atajos Auto-fill visibles'
+          : '🔒 <strong>Modo Alumno ACTIVADO</strong> · Atajos Auto-fill ocultos', isDev);
+      }
+    });
+  }
+  initDevMode();
+
   var esc = (typeof window !== 'undefined' && typeof window.esc === 'function')
     ? window.esc
     : function (s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
+
+  /* ════════════════ In-Task 3-Tier Hint Engine ════════════════ */
+  var TASK_HINTS = {
+    'hs-file': {
+      title: 'Búsqueda de APN y Datos de Parcela',
+      l1: 'Buscar en el registro del asesor del condado la parcela exacta de 8638 Hollywood Blvd para obtener el APN, propietario registrado y año de construcción.',
+      l2: 'Usa la tarjeta del Assessor arriba. Escribe "8638 Hollywood" y selecciona el resultado con el número exacto de calle. El precio de lista ($2,198,000) proviene del correo inicial de Ben.',
+      l3: '<div class="wf-task-hint-kicker">Valores exactos del archivo:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>APN:</strong> <span class="wf-task-hint-chip">5559-025-014</span></li>' +
+            '<li><strong>Propietario registrado:</strong> <span class="wf-task-hint-chip">Raymond Philips, as an individual</span></li>' +
+            '<li><strong>Ciudad / Jurisdicción:</strong> <span class="wf-task-hint-chip">City of Los Angeles</span></li>' +
+            '<li><strong>Año de construcción:</strong> <span class="wf-task-hint-chip">1958</span></li>' +
+            '<li><strong>Precio de lista:</strong> <span class="wf-task-hint-chip">$2,198,000</span></li>' +
+          '</ul>'
+    },
+    'hs-p-missing': {
+      title: 'Elementos pendientes para el listado',
+      l1: 'Identificar qué información y autorizaciones necesita el TC del agente de listado (Ben) antes de preparar el RLA y subir los datos al MLS.',
+      l2: 'Piensa en qué datos son indispensables para el cierre (préstamo), para DocuSign (contactos) y para la posesión (inquilinos). Recuerda que jamás se solicita el Seguro Social por correo electrónico.',
+      l3: '<div class="wf-task-hint-kicker">Opciones correctas a seleccionar:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><span class="wf-task-hint-chip">&#10003; Raymond&rsquo;s email and phone</span> (para firmas en DocuSign)</li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; Who services his mortgage</span> (para el payoff al cierre)</li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; Occupancy and showing instructions</span> (vacante, instrucciones para agentes)</li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; Whether the guest apartment is rented</span> (los inquilinos alteran la venta)</li>' +
+            '<li><span style="color:#dc2626">&#10007; NO seleccionar:</span> Social Security number por email, pre-approval letter ni home inspection.</li>' +
+          '</ul>'
+    },
+    'hs-intake-info': {
+      title: 'Redacción: Solicitar elementos pendientes a Ben',
+      l1: 'Pedirle internamente a Ben Belack los 4 datos indispensables para abrir el archivo del listado antes de la reunión con Raymond.',
+      l2: 'Este es un correo estrictamente interno con tu agente (Ben). No incluyas al cliente vendedor (Raymond) en este checklist inicial.',
+      l3: '<div class="wf-task-hint-kicker">Requisitos y estructura del correo:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Para (To):</strong> <span class="wf-task-hint-chip">Ben Belack &lt;bbelack@theagencyre.com&gt;</span></li>' +
+            '<li><strong>En copia (CC):</strong> Vacío (o Emily Cavan). <em style="color:#dc2626">¡No copiar a Raymond!</em></li>' +
+            '<li><strong>Asunto:</strong> Debe contener <span class="wf-task-hint-chip">8638 Hollywood</span> y el propósito (listing file / items).</li>' +
+            '<li><strong>4 Puntos en el cuerpo:</strong>' +
+              '<ol style="margin-top:4px;padding-left:18px;">' +
+                '<li>Email y celular de Raymond para DocuSign</li>' +
+                '<li>Servicer de la hipoteca (Shellpoint) para el payoff</li>' +
+                '<li>Instrucciones de visitas y ocupación</li>' +
+                '<li>Si el apartamento de invitados está alquilado</li>' +
+              '</ol>' +
+            '</li>' +
+          '</ul>'
+    },
+    'hs-zf': {
+      title: 'ZipForms: Paquete de Listado Residencial (RLA)',
+      l1: 'Completar los términos del contrato de listado residencial (RLA) y adjuntos en zipForm según las instrucciones de Ben.',
+      l2: 'Revisa el correo matutino de Ben: Vendedor Raymond Philips, periodo 10/22/2025 al 04/21/2026, precio $2,198,000, comisión 2.5% (+ 1% no representado), TheMLS.com + CLAW, concesiones en el MLS, NHD en 5 días.',
+      l3: '<div class="wf-task-hint-kicker">Términos acordados:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Vendedor:</strong> Raymond Philips (con una sola &ldquo;L&rdquo;)</li>' +
+            '<li><strong>Periodo de listado:</strong> 10/22/2025 al 04/21/2026</li>' +
+            '<li><strong>Precio:</strong> $2,198,000</li>' +
+            '<li><strong>Comisión:</strong> 2.5% (nuestro lado) + 1% si viene sin representante. Continuación 180 días.</li>' +
+            '<li><strong>MLS:</strong> TheMLS.com + CLAW; concesiones solo en el MLS. NHD en 5 días.</li>' +
+          '</ul>'
+    },
+    'hs-ss': {
+      title: 'SkySlope: Configuración del Archivo del Listado',
+      l1: 'Ingresar los metadatos oficiales del RLA firmado en el sistema de cumplimiento SkySlope.',
+      l2: 'Usa los datos del RLA firmado por Raymond a las 3:12 PM. El vendedor debe escribirse exactamente como en título.',
+      l3: '<div class="wf-task-hint-kicker">Campos clave:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Dirección:</strong> 8638 Hollywood Blvd, Los Angeles, CA 90069</li>' +
+            '<li><strong>APN:</strong> 5559-025-014</li>' +
+            '<li><strong>Seller:</strong> Raymond Philips</li>' +
+            '<li><strong>List price:</strong> $2,198,000</li>' +
+            '<li><strong>Fechas:</strong> Comienza 10/22/2025 &middot; Termina 04/21/2026</li>' +
+            '<li><strong>Representación:</strong> Seller side (listing)</li>' +
+          '</ul>'
+    },
+    'hs-expire': {
+      title: 'Respuesta a Ben: Conflicto de Fechas de Expiración',
+      l1: 'Explicar qué fecha de expiración registrar en el calendario cuando el contrato firmado y los términos adicionales tienen fechas distintas.',
+      l2: 'El RLA firmado tiene una fecha fija (04/21/2026). El término adicional dice 6 meses desde MLS Active (20 de mayo de 2026). Solo una enmienda firmada puede cambiar el plazo oficial.',
+      l3: '<div class="wf-task-hint-kicker">Estrategia recomendada:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Opción correcta:</strong> &ldquo;Firm date + flag the conflict&rdquo; (calendarizar 04/21/2026 y señalar la discrepancia a Ben).</li>' +
+            '<li><strong>Completar corchete:</strong> Reemplaza [date six months after Nov 20, 2025] por <span class="wf-task-hint-chip">05/20/2026</span>.</li>' +
+          '</ul>'
+    },
+    'hs-offer': {
+      title: 'Revisión de la Oferta de 844 LLC',
+      l1: 'Auditar la oferta en efectivo recibida y detectar errores críticos en la confirmación de agencia antes de contraofertar.',
+      l2: 'Abre el RPA (Purchase Agreement). Revisa el precio, depósito, fecha de cierre, y especialmente el párrafo 2B (Agency Confirmation).',
+      l3: '<div class="wf-task-hint-kicker">Puntos auditados:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Comprador:</strong> 844 LLC (all cash)</li>' +
+            '<li><strong>Oferta:</strong> $2,000,000 con depósito de $60,000</li>' +
+            '<li><strong>Cierre propuesto:</strong> 02/06/2026</li>' +
+            '<li><strong>Error crítico en &para;2B:</strong> Marca erróneamente doble agencia en cada línea. The Agency representa solo al vendedor y Compass solo al comprador.</li>' +
+          '</ul>'
+    },
+    'hs-take-reply': {
+      title: 'Redacción: Respuesta a Raymond sobre la oferta',
+      l1: 'El vendedor pregunta si debería aceptar la oferta en efectivo de $2M. El rol del TC es neutral: coordinar una llamada con sus agentes licenciados (Ben y Emily), jamás dar consejos de precio o negociación.',
+      l2: 'Revisa las plantillas disponibles. Selecciona la opción que conecta a Raymond con Ben y Emily y establece el horario de la llamada.',
+      l3: '<div class="wf-task-hint-kicker">Requisitos y estructura del correo:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Para (To):</strong> <span class="wf-task-hint-chip">Raymond Philips</span></li>' +
+            '<li><strong>En copia (CC):</strong> <span class="wf-task-hint-chip">Ben Belack, Emily Cavan</span></li>' +
+            '<li><strong>Plantilla recomendada:</strong> &ldquo;Connect him with Ben and Emily&rdquo;.</li>' +
+            '<li><strong>Completar corchete:</strong> Reemplaza <span class="wf-task-hint-chip">[day and time of the call]</span> por una hora concreta (ej. <em>today at 4:00 PM</em>).</li>' +
+          '</ul>'
+    },
+    'hs-escrow-open': {
+      title: 'Redacción: Apertura de Escrow con Patsy Addy',
+      l1: 'Enviar el paquete contractual formalmente ejecutado (RPA, SCO 1, BCO 1, SCO 2, ETA 1) a la oficial de escrow para abrir la transacción y solicitar el preliminar de título.',
+      l2: 'Revisa ETA No. 1 para la fecha de cierre acordada (02/12/2026), SCO No. 2 para precio final ($2,050,000) y comisiones, y las notas iniciales para el servicer del préstamo (Shellpoint).',
+      l3: '<div class="wf-task-hint-kicker">Requisitos y datos clave:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Para (To):</strong> <span class="wf-task-hint-chip">Patsy Addy &lt;patsy@closedescrow.com&gt;</span></li>' +
+            '<li><strong>En copia (CC):</strong> <span class="wf-task-hint-chip">Ben Belack, Craig Strong</span> (agentes de ambas partes). <em style="color:#dc2626">No copiar a Raymond.</em></li>' +
+            '<li><strong>Asunto:</strong> Debe incluir <span class="wf-task-hint-chip">Escrow opening: 8638 Hollywood Blvd</span></li>' +
+            '<li><strong>Datos en el cuerpo:</strong> Partes (Raymond Philips y 844 LLC), Precio ($2,050,000 all cash), Depósito ($61,500 / 3% antes del 2/2 y antes de acceso), Cierre (02/12/2026), Préstamo (Shellpoint Mortgage), Comisiones (The Agency 2.5%, Compass 2.0%).</li>' +
+          '</ul>'
+    },
+    'hs-emd': {
+      title: 'Registro del Depósito de Garantía (EMD)',
+      l1: 'Verificar en el recibo de escrow que los fondos entraron completos, dentro del plazo contractual y registrar la entidad ordenante.',
+      l2: 'Abre el PDF del recibo EMD adjunto en el correo de Patsy. Observa quién envió la transferencia y la fecha de recepción.',
+      l3: '<div class="wf-task-hint-kicker">Valores a registrar:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Monto recibido:</strong> <span class="wf-task-hint-chip">$61,500.00</span></li>' +
+            '<li><strong>Porcentaje:</strong> <span class="wf-task-hint-chip">3% of the final price</span> (3% de $2,050,000)</li>' +
+            '<li><strong>Recibido de:</strong> <span class="wf-task-hint-chip">Coopable Inc., for the benefit of 844 LLC</span></li>' +
+            '<li><strong>Fecha de recepción:</strong> <span class="wf-task-hint-chip">01/29/2026</span></li>' +
+            '<li><strong>¿A tiempo?:</strong> <span class="wf-task-hint-chip">Yes</span> (antes del plazo del 02/02 y antes del acceso)</li>' +
+          '</ul>'
+    },
+    'hs-p-pkg': {
+      title: 'Paquete de Divulgaciones del Vendedor',
+      l1: 'Determinar qué documentos obligatorios debe entregar el vendedor individual en una casa unifamiliar de Los Ángeles construida en 1958 en zona de alto riesgo de incendios.',
+      l2: 'La casa es de 1958 (aplica Lead Paint), está en Very High FHSZ (aplica FHDS y Defensible Space), no hay HOA ni compraste hace menos de 18 meses.',
+      l3: '<div class="wf-task-hint-kicker">Documentos a seleccionar:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><span class="wf-task-hint-chip">&#10003; TDS</span> (Transfer Disclosure Statement)</li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; SPQ</span> (Seller Property Questionnaire)</li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; NHD report &amp; statement</span> (Natural Hazards)</li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; FHDS</span> (Fire Hardening &amp; Defensible Space)</li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; Lead-based paint disclosure</span> (Construcción anterior a 1978)</li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; Earthquake &amp; Hazards booklets</span></li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; Listing agent AVID</span></li>' +
+          '</ul>'
+    },
+    'hs-p-flags': {
+      title: 'Puntos de Atención en las Divulgaciones',
+      l1: 'Identificar qué aspectos divulgados por el vendedor llamarán la atención del inspector o del comprador.',
+      l2: 'Revisa el NHD y el SPQ: zona de fuego, zona de deslizamientos (Hollywood Hills), pintura interior reciente y desbroce de maleza anual.',
+      l3: '<div class="wf-task-hint-kicker">Puntos clave:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><span class="wf-task-hint-chip">&#10003; Very High Fire Hazard Severity Zone</span></li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; Landslide hazard zone</span></li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; Interior paint in November 2025</span> (puede ocultar condiciones de muros)</li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; Weed clearance every summer</span> (deber obligatorio en zona de incendio)</li>' +
+          '</ul>'
+    },
+    'hs-disc': {
+      title: 'Redacción: Entrega de Divulgaciones a Craig Strong',
+      l1: 'Enviar el paquete firmado de divulgaciones del vendedor al agente del comprador y solicitar la firma de recibo de 844 LLC.',
+      l2: 'El comprador (844 LLC / Puneet) está representado por Craig Strong (Compass). La comunicación debe dirigirse siempre a Craig, nunca directo al cliente.',
+      l3: '<div class="wf-task-hint-kicker">Requisitos y datos clave:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Para (To):</strong> <span class="wf-task-hint-chip">Craig Strong &lt;craig.strong@compass.com&gt;</span></li>' +
+            '<li><strong>En copia (CC):</strong> <span class="wf-task-hint-chip">Ben Belack</span></li>' +
+            '<li><strong>Asunto:</strong> <span class="wf-task-hint-chip">Seller disclosures: 8638 Hollywood Blvd</span></li>' +
+            '<li><strong>Cuerpo:</strong> Listar los documentos adjuntos (TDS, SPQ, NHD, FHDS, Lead Paint, folletos de terremotos/riesgos, AVID) y pedir que 844 LLC firme los acuses de recibo.</li>' +
+          '</ul>'
+    },
+    'hs-access': {
+      title: 'Redacción: Logística de Acceso para Inspección a Raymond',
+      l1: 'Explicar a Raymond qué servicios e ingresos necesita el inspector de Home-Front para concluir la inspección antes de que venza el plazo de contingencia el 6 de febrero.',
+      l2: 'Revisa el correo de Craig: faltó gas (SoCalGas), falta termostato para probar calefacción, y acceso al garaje y clóset del calentador.',
+      l3: '<div class="wf-task-hint-kicker">Requisitos y datos clave:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Para (To):</strong> <span class="wf-task-hint-chip">Raymond Philips</span></li>' +
+            '<li><strong>En copia (CC):</strong> <span class="wf-task-hint-chip">Ben Belack</span></li>' +
+            '<li><strong>Asunto:</strong> Debe mencionar inspección y <span class="wf-task-hint-chip">8638 Hollywood</span></li>' +
+            '<li><strong>Puntos a solicitar:</strong> Reconectar gas, instalar termostato funcional, dejar llaves de garaje/calentador en lockbox, recordando la fecha límite de investigación (Viernes 2/6).</li>' +
+          '</ul>'
+    },
+    'hs-rr-reply': {
+      title: 'Respuesta a Raymond sobre el crédito de $50,000',
+      l1: 'El vendedor pregunta si debería otorgar los $50,000 que pidió el comprador en RR No. 1. El rol del TC es recordar la fecha límite y conectar con los agentes.',
+      l2: 'El TC nunca asesora en negociación económica. Elige la plantilla que delega la decisión en Ben y Emily y señala el plazo de contingencia.',
+      l3: '<div class="wf-task-hint-kicker">Opción recomendada:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Opción:</strong> &ldquo;Connect him; give the timing&rdquo;</li>' +
+            '<li><strong>Completar corchete:</strong> Reemplaza [investigation deadline] por <span class="wf-task-hint-chip">Friday, February 6</span>.</li>' +
+          '</ul>'
+    },
+    'hs-rr': {
+      title: 'Acuerdo Final de Reparaciones (RR No. 2 & CR-B)',
+      l1: 'Registrar los términos pactados de reparaciones y verificar que el comprador haya firmado la remoción de contingencia en tiempo.',
+      l2: 'Revisa RR No. 2, Addendum No. 1 y el formulario CR-B firmado el 02/06/2026.',
+      l3: '<div class="wf-task-hint-kicker">Valores acordados:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Crédito del vendedor:</strong> $15,000.00</li>' +
+            '<li><strong>Reparaciones adicionales:</strong> 17 reparaciones en Addendum No. 1</li>' +
+            '<li><strong>Remoción de contingencia (CR-B):</strong> Firmado a tiempo el 02/06/2026</li>' +
+          '</ul>'
+    },
+    'hs-repairs': {
+      title: 'Redacción: Coordinación de Reparaciones con Raymond',
+      l1: 'Notificar a Raymond el acuerdo alcanzado en el Request for Repair No. 2 y fijar el plazo estricto para tener listas las 17 reparaciones antes del walk-through final.',
+      l2: 'Revisa Addendum No. 1 y RR No. 2. El comprador aceptó $15,000 de crédito y 17 reparaciones. El walk-through final es el jueves 12 de febrero a las 9:00 AM (día de cierre).',
+      l3: '<div class="wf-task-hint-kicker">Requisitos y datos clave:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Para (To):</strong> <span class="wf-task-hint-chip">Raymond Philips</span></li>' +
+            '<li><strong>En copia (CC):</strong> <span class="wf-task-hint-chip">Ben Belack</span></li>' +
+            '<li><strong>Asunto:</strong> <span class="wf-task-hint-chip">Repairs due before the walk-through: 8638 Hollywood Blvd</span></li>' +
+            '<li><strong>Puntos en el cuerpo:</strong> Mencionar el crédito de $15,000, las 17 reparaciones en Addendum No. 1, plazo límite (Jueves 12 de feb, 9:00 AM) y pedir facturas o recibos de contratista.</li>' +
+          '</ul>'
+    },
+    'hs-prelim': {
+      title: 'Revisión del Informe Preliminar de Título',
+      l1: 'Auditar el informe preliminar de Fidelity National Title para identificar qué gravámenes y notas deben liquidarse o aclararse antes de grabar la escritura.',
+      l2: 'Abre el preliminar (PDF prelim). Revisa el apartado de vesting, la escritura de hipoteca (Deed of Trust) y la sección de gravámenes e impuestos.',
+      l3: '<div class="wf-task-hint-kicker">Valores a registrar:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Vesting:</strong> <span class="wf-task-hint-chip">Raymond Philips, a single man</span></li>' +
+            '<li><strong>Monto original de la hipoteca:</strong> <span class="wf-task-hint-chip">$1,162,000</span> (Shellpoint)</li>' +
+            '<li><strong>Gravamen de impuestos 2019:</strong> <span class="wf-task-hint-chip">$928.51</span></li>' +
+            '<li><strong>Juicios registrados contra:</strong> <span class="wf-task-hint-chip">A similar name: Raymond Phillips (two L&rsquo;s)</span></li>' +
+            '<li><strong>Cómo se aclaran:</strong> <span class="wf-task-hint-chip">The seller&rsquo;s Statement of Information</span> (SI)</li>' +
+          '</ul>'
+    },
+    'hs-si': {
+      title: 'Redacción: Elementos de Título y Payoff a Raymond',
+      l1: 'Pedir discretamente a Raymond que llene el Statement of Information (SI) en el portal de escrow y envíe su número de préstamo Shellpoint para el payoff.',
+      l2: 'Sé profesional y prudente: aclara que los juicios encontrados están bajo un nombre similar ("Phillips" con dos L) y que el SI sirve para descartar que sea él. No describas detalles innecesarios de los juicios.',
+      l3: '<div class="wf-task-hint-kicker">Requisitos y datos clave:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Para (To):</strong> <span class="wf-task-hint-chip">Raymond Philips</span></li>' +
+            '<li><strong>En copia (CC):</strong> <span class="wf-task-hint-chip">Patsy Addy, Ben Belack</span>. <em style="color:#dc2626">No copiar al comprador.</em></li>' +
+            '<li><strong>Asunto:</strong> <span class="wf-task-hint-chip">Title items to clear: 8638 Hollywood Blvd</span></li>' +
+            '<li><strong>Puntos en el cuerpo:</strong> Statement of Information para descartar juicios del nombre similar, número de préstamo Shellpoint para payoff, y aviso de que dos gravámenes fiscales pequeños se deducirán al cierre.</li>' +
+          '</ul>'
+    },
+    'hs-p-preclose': {
+      title: 'Lista de Requisitos Pre-Cierre',
+      l1: 'Seleccionar las tareas indispensables que deben completarse antes de que el archivo pueda grabar en el condado.',
+      l2: 'Es una compra en efectivo (sin prestamista del comprador ni tasación) y sin HOA. Aplican los gravámenes, la hipoteca, las reparaciones, FIRPTA y las ordenanzas locales de LA (9A y bajo consumo de agua).',
+      l3: '<div class="wf-task-hint-kicker">Tareas obligatorias:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><span class="wf-task-hint-chip">&#10003; Shellpoint payoff demand</span></li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; Seller&rsquo;s Statement of Information</span></li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; Unsecured tax liens paid through escrow</span></li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; LADWP Certificate of Compliance</span></li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; City 9A report</span></li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; FIRPTA affidavit</span></li>' +
+            '<li><span class="wf-task-hint-chip">&#10003; 17 repairs before walk-through</span></li>' +
+          '</ul>'
+    },
+    'hs-ac': {
+      title: 'Redacción: Confirmación de Agencia (AC) a Craig Strong',
+      l1: 'Enviar el formulario AC para subsanar el error de doble agencia en el RPA §2B detectado en la auditoría de cumplimiento de The Agency.',
+      l2: 'Revisa el correo de Ingrid Mejia. El AC aclara que The Agency representa únicamente al vendedor y Compass únicamente al comprador.',
+      l3: '<div class="wf-task-hint-kicker">Requisitos y datos clave:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Para (To):</strong> <span class="wf-task-hint-chip">Craig Strong &lt;craig.strong@compass.com&gt;</span></li>' +
+            '<li><strong>En copia (CC):</strong> <span class="wf-task-hint-chip">Ben Belack</span></li>' +
+            '<li><strong>Asunto:</strong> <span class="wf-task-hint-chip">Agency confirmation (AC) for signature: 8638 Hollywood Blvd</span></li>' +
+            '<li><strong>Puntos en el cuerpo:</strong> Explicar el error en RPA §2B, indicar las representaciones reales exclusivas y solicitar la firma de Puneet (844 LLC) antes del cierre del 2/12.</li>' +
+          '</ul>'
+    },
+    'hs-wire': {
+      title: 'Redacción: ALERTA DE FRAUDE DE WIRE a Raymond',
+      l1: 'Detener de inmediato a Raymond para que no envíe sus datos bancarios a un correo fraudulento de phishing y dirigirlo al teléfono oficial de escrow.',
+      l2: 'El correo falso proviene de "closedescrow-docs.com" y le pide no llamar por teléfono. El TC debe actuar de inmediato como escudo de seguridad.',
+      l3: '<div class="wf-task-hint-kicker">Requisitos y datos clave:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Para (To):</strong> <span class="wf-task-hint-chip">Raymond Philips</span></li>' +
+            '<li><strong>En copia (CC):</strong> <span class="wf-task-hint-chip">Patsy Addy, Ben Belack</span></li>' +
+            '<li><strong>Asunto:</strong> Debe alertar sobre no enviar datos (ej: <span class="wf-task-hint-chip">Do not send your bank details: 8638 Hollywood Blvd</span>)</li>' +
+            '<li><strong>Puntos indispensables:</strong> Advertir que es un fraude, señalar el dominio falso, y ordenar que llame a Patsy a su número oficial telefónico para dar instrucciones verbales.</li>' +
+          '</ul>'
+    },
+    'hs-stmt': {
+      title: 'Conciliación del Seller Settlement Statement',
+      l1: 'Reconciliar los números finales del estado de cuenta de cierre contra el contrato, contraofertas y acuerdos de reparación.',
+      l2: 'Abre el PDF sellerStmt adjunto en el correo de Patsy. Compara el precio, la liquidación de Shellpoint, el crédito de reparación y las comisiones pactadas en SCO No. 2.',
+      l3: '<div class="wf-task-hint-kicker">Valores a verificar:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Precio de venta:</strong> <span class="wf-task-hint-chip">$2,050,000.00</span></li>' +
+            '<li><strong>Payoff de Shellpoint:</strong> <span class="wf-task-hint-chip">$1,087,879.42</span></li>' +
+            '<li><strong>Crédito al comprador:</strong> <span class="wf-task-hint-chip">$15,000.00</span> (según RR No. 2)</li>' +
+            '<li><strong>Comisión The Agency (2.5%):</strong> <span class="wf-task-hint-chip">$51,250.00</span></li>' +
+            '<li><strong>Comisión Compass (2.0%):</strong> <span class="wf-task-hint-chip">$41,000.00</span> (SCO No. 2 mantuvo 2.0%)</li>' +
+            '<li><strong>Retención de maleza (brush clearance):</strong> <span class="wf-task-hint-chip">$5,000.00</span></li>' +
+            '<li><strong>Net proceeds al vendedor:</strong> <span class="wf-task-hint-chip">$825,098.47</span></li>' +
+          '</ul>'
+    },
+    'hs-wrapup': {
+      title: 'Redacción: Cierre y Números Finales a Raymond',
+      l1: 'Felicitar al cliente vendedor, certificar la grabación de la escritura y resumir el estado final de sus fondos y deberes post-cierre.',
+      l2: 'Revisa el estado de cierre conciliado: precio $2,050,000, payoff $1,087,879.42, crédito $15,000, comisiones ($51,250 y $41,000), retención de $5,000 y fondos netos de $825,098.47.',
+      l3: '<div class="wf-task-hint-kicker">Requisitos y datos clave:</div>' +
+          '<ul class="wf-task-hint-list">' +
+            '<li><strong>Para (To):</strong> <span class="wf-task-hint-chip">Raymond Philips</span></li>' +
+            '<li><strong>En copia (CC):</strong> <span class="wf-task-hint-chip">Ben Belack, Emily Cavan</span>. <em style="color:#dc2626">No copiar a la otra parte.</em></li>' +
+            '<li><strong>Asunto:</strong> <span class="wf-task-hint-chip">Closed: 8638 Hollywood Blvd, your final numbers</span></li>' +
+            '<li><strong>Puntos en el cuerpo:</strong> Confirmar grabación de escritura (12 de febrero de 2026), desglosar números netos ($825,098.47), explicar retención de $5,000 por maleza, y recordar cancelar seguros/servicios y guardar estado para reporte 1099-S.</li>' +
+          '</ul>'
+    }
+  };
+
+  /* ── Floating-panel integration: show task-specific hints via Ask Ben ── */
+  function renderTaskHintsInPanel(taskId) {
+    var h = TASK_HINTS[taskId];
+    if (!h) return;
+    var panel = document.getElementById('wf-hint-panel');
+    if (!panel && typeof wfEnsureHintPanel === 'function') panel = wfEnsureHintPanel();
+    if (!panel) return;
+    var m = window.WF_HINT_MENTOR || { initials: 'BB', name: 'Ben Belack', role: 'Listing Agent' };
+    var tiers = [
+      { badge: 'Nivel 1', cls: 'nudge', label: 'El Objetivo', html: '<p>' + esc(h.l1) + '</p>' },
+      { badge: 'Nivel 2', cls: 'guidance', label: 'Dónde Buscar', html: '<p>' + esc(h.l2) + '</p>' },
+      { badge: 'Nivel 3', cls: 'answer', label: 'Datos Clave', html: h.l3 }
+    ];
+    var out =
+      '<div class="wf-hint-panel-header">' +
+        '<div class="wf-hint-panel-avatar">' + m.initials + '</div>' +
+        '<div>' +
+          '<div class="wf-hint-panel-name">' + m.name + '</div>' +
+          '<div class="wf-hint-panel-role">' + esc(h.title) + '</div>' +
+        '</div>' +
+        '<button type="button" class="wf-hint-panel-close" onclick="wfCloseHintPanel()" aria-label="Close">&times;</button>' +
+      '</div><div id="wf-hint-tiers">';
+    for (var i = 0; i < tiers.length; i++) {
+      var t = tiers[i];
+      out +=
+        '<div class="wf-hint-tier">' +
+          '<button type="button" class="wf-hint-tier-btn" id="wf-hint-btn-' + i + '" onclick="wfRevealHintTier(' + i + ')">' +
+            '<span class="wf-hint-tier-badge ' + t.cls + '">' + t.badge + '</span>' +
+            '<span>' + t.label + '</span>' +
+          '</button>' +
+          '<div class="wf-hint-content" id="wf-hint-content-' + i + '">' + t.html + '</div>' +
+        '</div>';
+    }
+    out += '</div>';
+    panel.innerHTML = out;
+  }
+
+  var origToggleHint = window.wfToggleHintPanel;
+  window.wfToggleHintPanel = function () {
+    var panel = document.getElementById('wf-hint-panel');
+    if (panel && panel.classList.contains('open')) {
+      panel.classList.remove('open');
+      return;
+    }
+    var keys = Object.keys(TASK_HINTS);
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      var target = document.getElementById('wf-' + k + '-body') || document.getElementById(k);
+      if (target && target.offsetParent !== null) {
+        renderTaskHintsInPanel(k);
+        if (!panel && typeof wfEnsureHintPanel === 'function') panel = wfEnsureHintPanel();
+        if (panel) panel.classList.add('open');
+        return;
+      }
+    }
+    if (typeof origToggleHint === 'function') origToggleHint();
+  };
 
   var DIR = '../assets/docs/tc-ca-hollywood/';
   /* Real listing file, 8638 Hollywood Blvd (escrow 004274-PA) */
@@ -136,6 +537,7 @@
     if (sc && sc._decisions) sc._decisions.push({ correct: !!ok });
     if (document.getElementById('wf-eval-container')) wfRenderFinalScore('wf-eval-container', 'tc', 'ca-seller', 10);
     if (typeof window.caNewRefresh === 'function') setTimeout(window.caNewRefresh, 0);
+    if (typeof _wfSaveState === 'function') _wfSaveState();
   }
 
   window.caNewOpen = function (key) {
@@ -787,6 +1189,7 @@
     var task = MAIL_TASKS[key];
     if (task && typeof task.onSent === 'function') task.onSent();
     if (typeof window.tcRefreshInboxList === 'function') window.tcRefreshInboxList();
+    if (typeof _wfSaveState === 'function') _wfSaveState();
   };
   /* Show the waiting state now and deliver the email a few seconds later */
   window.tcMailScheduleReply = function (id, delay) {
@@ -834,6 +1237,7 @@
     var app = document.getElementById('tc-mail-app');
     if (app && app.classList.contains('open')) tcMailRender();
     if (typeof window.tcRefreshInboxList === 'function') window.tcRefreshInboxList();
+    if (typeof _wfSaveState === 'function') _wfSaveState();
   }
 
   /* Legacy Reply for steps whose compose still lives in the center */
@@ -1394,6 +1798,7 @@
     return '';
   }
 
+  var _sideDocsMeta = { step: 0, wanted: [], hideDocs: false };
   function side(facts, docs, contacts, hideDocs) {
     return {
       facts: facts || [],
@@ -1770,6 +2175,8 @@
   window.caNewResetCase = function () {
     DEC_LAST = {};
     SS_STATE = {};
+    window.SS_STATE = window.caNewSsState = SS_STATE;
+    _tcMail.compose = null;
     pendingReveal = null;
     window._caNewSlide0 = 0;
     window._caNewSlide1 = 0;
@@ -2124,7 +2531,7 @@
         r.options.forEach(function (o) { h += '<option value="' + o[0] + '"' + (v === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; });
         h += '</select>';
       } else {
-        h += '<input type="text" id="' + id + '-' + i + '" value="' + esc(v) + '" placeholder="' + (r.ph || '') + '" oninput="caNewSave(\'' + id + '\',' + i + ',this.value)">';
+        h += '<input ' + tcCaseFieldAttrs(r) + ' id="' + id + '-' + i + '" value="' + esc(tcCaseFieldValue(r, r.kind === 'date' ? toDate(v) : v)) + '" placeholder="' + (r.ph || '') + '" oninput="caNewSave(\'' + id + '\',' + i + ',this.value)">';
       }
       h += '<span class="mh-ans' + (st['s_' + id] ? ' show' : '') + '">File says: ' + r.show + '</span></div>';
     });
@@ -2182,8 +2589,7 @@
       var el = document.getElementById(id + '-' + i);
       if (!el) return;
       if (r.kind === 'select') { el.value = r.ans; }
-      else if (r.kind === 'date') { el.value = r.ans.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$2/$3/$1'); }
-      else if (r.kind === 'money') { el.value = r.ans; }
+      else if (r.kind === 'date' || r.kind === 'money') { el.value = tcCaseFieldValue(r, r.ans); }
       else { el.value = Array.isArray(r.ans) ? r.show.split('(')[0].trim() : r.ans; }
       caNewSave(id, i, el.value);
     });
@@ -2234,7 +2640,8 @@
              '</div>';
       }
     } else {
-      h += '<div class="mh-actions"><button class="mh-btn mh-btn-ghost tc-assist" onclick="caNewAutoPick(\'' + id + '\')">Auto-fill</button></div>';
+      h += '<div class="mh-actions"><button class="mh-btn mh-btn-ghost tc-assist" onclick="caNewAutoPick(\'' + id + '\')">Auto-fill</button>' +
+           '</div>';
     }
     return h;
   }
@@ -2292,18 +2699,36 @@
     caNewFilterContacts(key, field);
   };
 
+  var _contactDrop = null;
+  function getContactDrop() {
+    if (!_contactDrop) {
+      _contactDrop = document.createElement('div');
+      _contactDrop.className = 'wf-contact-dropdown';
+      _contactDrop.style.display = 'none';
+      document.body.appendChild(_contactDrop);
+    }
+    return _contactDrop;
+  }
+  function positionDropdown(input) {
+    var drop = getContactDrop();
+    var rect = input.getBoundingClientRect();
+    drop.style.top = (rect.bottom + 4) + 'px';
+    drop.style.left = rect.left + 'px';
+    drop.style.width = rect.width + 'px';
+  }
+
   /* The To / CC inputs hold a comma-separated list; suggestions match the
      name being typed after the last comma. */
   window.caNewFilterContacts = function (key, field) {
     var input = document.getElementById('wf-' + key + '-' + field);
-    var drop = document.getElementById('wf-' + key + '-' + field + '-suggestions');
-    if (!input || !drop) return;
+    var drop = getContactDrop();
+    if (!input) return;
 
     var parts = String(input.value || '').split(',');
     var q = parts[parts.length - 1].trim().toLowerCase();
+    if (!q) { drop.style.display = 'none'; return; }
     var filtered = CASE_DIRECTORY.filter(function (c) {
       if (input.value.toLowerCase().indexOf(c.email) > -1) return false;
-      if (!q) return true;
       return c.name.toLowerCase().indexOf(q) !== -1 ||
              c.email.toLowerCase().indexOf(q) !== -1 ||
              c.role.toLowerCase().indexOf(q) !== -1;
@@ -2312,6 +2737,7 @@
     if (filtered.length === 0) {
       drop.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:var(--v-muted);">No matching contacts</div>';
       drop.style.display = 'block';
+      positionDropdown(input);
       return;
     }
 
@@ -2328,26 +2754,27 @@
 
     drop.innerHTML = html;
     drop.style.display = 'block';
+    positionDropdown(input);
   };
 
   window.caNewSelectContact = function (key, field, name, email) {
     var input = document.getElementById('wf-' + key + '-' + field);
-    var drop = document.getElementById('wf-' + key + '-' + field + '-suggestions');
     if (input) {
       var parts = String(input.value || '').split(',');
       parts[parts.length - 1] = ' ' + name + ' <' + email + '>';
       input.value = parts.join(',').replace(/^\s+/, '') + ', ';
       input.focus();
     }
-    if (drop) drop.style.display = 'none';
+    var drop = getContactDrop();
+    drop.style.display = 'none';
     var statusEl = document.getElementById('wf-' + key + '-body-status');
     if (statusEl) statusEl.innerHTML = '';
   };
 
-  window.caNewHideContacts = function (key, field) {
+  window.caNewHideContacts = function () {
     setTimeout(function () {
-      var drop = document.getElementById('wf-' + key + '-' + field + '-suggestions');
-      if (drop) drop.style.display = 'none';
+      var drop = getContactDrop();
+      drop.style.display = 'none';
     }, 200);
   };
 
@@ -2397,12 +2824,15 @@
       '</div>' : '') +
       '<div class="wf-compose-body">' +
         (o.inst ? '<div class="wf-compose-prompt-hint"><strong>TC Task:</strong> ' + o.inst + '</div>' : '') +
-        (o.choices ? '<div class="tc-draft-pick"><div class="tc-draft-pick-title">Start from a template</div>' +
-          o.choices.map(function (c, i) {
-            return '<button type="button" class="tc-draft-opt" id="wf-' + o.key + '-opt-' + i + '" onclick="caNewPickDraft(\'' + o.key + '\',' + i + ')">' +
-              '<span class="tc-draft-radio"></span><span class="tc-draft-text"><strong>' + c.label + '</strong><em>' + c.preview + '</em></span></button>';
-          }).join('') + '</div>' : '') +
-        '<textarea id="wf-' + o.key + '-body" placeholder="' + (o.choices ? 'Pick a template above, then complete the parts in [brackets]&hellip;' : 'Write your email here&hellip;') + '"></textarea>' +
+        (o.choices ? '<div class="tc-draft-pick">' +
+          '<label class="tc-draft-pick-title" for="wf-' + o.key + '-tpl">Choose a response approach</label>' +
+          '<select id="wf-' + o.key + '-tpl" class="tc-draft-select" onchange="caNewPickDraft(\'' + o.key + '\', this.selectedIndex - 1)">' +
+            '<option value="" disabled selected>Select a template&hellip;</option>' +
+            o.choices.map(function (c, i) {
+              return '<option value="' + i + '">' + esc(c.label) + '</option>';
+            }).join('') +
+          '</select></div>' : '') +
+        '<textarea id="wf-' + o.key + '-body" placeholder="' + (o.choices ? 'Select a template above, then complete the parts in [brackets]&hellip;' : 'Write your email here&hellip;') + '"></textarea>' +
         '<div class="wf-compose-actions">' +
           '<button type="button" class="wf-compose-submit" id="wf-' + o.key + '-body-btn" onclick="caNewSubmitCompose(\'' + o.key + '\', {textareaId:\'wf-' + o.key + '-body\', statusElId:\'wf-' + o.key + '-body-status\', btnId:\'wf-' + o.key + '-body-btn\', role:\'tc\', scenarioId:\'' + (o.scenario || o.key) + '\', scenarioPrompt:\'' + String(o.prompt || '').replace(/'/g, "\\'") + '\', maxScore:5})">Send &amp; Submit for Grading &rarr;</button>' +
           '<button type="button" class="wf-compose-autofill tc-assist" onclick="caNewAutoCompose(\'' + o.key + '\')">&#9889; Load TC Standard Draft</button>' +
@@ -2415,10 +2845,8 @@
   /* Template reply: fill the draft and remember which approach was chosen */
   function caNewMarkDraft(key) {
     var sel = run()['dsel_' + key];
-    (COMPOSE_CHOICES[key] || []).forEach(function (c, i) {
-      var b = document.getElementById('wf-' + key + '-opt-' + i);
-      if (b) b.classList.toggle('on', i === sel);
-    });
+    var dd = document.getElementById('wf-' + key + '-tpl');
+    if (dd && typeof sel === 'number') dd.selectedIndex = sel + 1;
   }
   window.caNewPickDraft = function (key, i) {
     var c = (COMPOSE_CHOICES[key] || [])[i];
@@ -2680,11 +3108,11 @@
     {
       title: '2. Listing Period & Price',
       fields: [
-        { id: 'begin', label: 'Listing begins', type: 'text', ph: 'mm/dd/yyyy',
+        { id: 'begin', label: 'Listing begins', type: 'text', kind: 'date', ph: 'mm/dd/yyyy',
           validate: function (v) { return toDate(v) === '2025-10-22'; }, hint: 'The listing is signed today.', auto: '10/22/2025' },
-        { id: 'end', label: 'Listing ends', type: 'text', ph: 'mm/dd/yyyy',
+        { id: 'end', label: 'Listing ends', type: 'text', kind: 'date', ph: 'mm/dd/yyyy',
           validate: function (v) { return toDate(v) === '2026-04-21'; }, hint: 'Ben gave you the end date for the form. The 6-month rule from the MLS date goes in Additional Terms.', auto: '04/21/2026' },
-        { id: 'price', label: 'Listing price', type: 'text', ph: '$', validate: zfMoney(2198000),
+        { id: 'price', label: 'Listing price', type: 'text', kind: 'money', ph: '$', validate: zfMoney(2198000),
           hint: 'List price from Ben’s email.', auto: '$2,198,000.00' }
       ]
     },
@@ -2768,8 +3196,10 @@
             '<div style="font-size:13px;color:#475569;margin-bottom:14px;">Review the data before it cascades into the RLA.</div>' +
             '<div class="zf-fastfill-grid">' +
               ZF_FF.map(function (f) {
+                var target = f[3].split('-');
+                var field = ZF_SECTIONS[+target[0]].fields[+target[1]];
                 return '<div class="zf-fastfill-field' + (f[0] === 'address' ? ' full' : '') + '"><label class="zf-fastfill-label">' + f[1] + '</label>' +
-                  '<input type="text" class="zf-fastfill-input" id="' + id + '-ff-' + f[0] + '" value="' + esc(f[2]) + '"></div>';
+                  '<input ' + tcCaseFieldAttrs(field) + ' data-tc-store="ff_val_" aria-label="' + esc(f[1]) + '" class="zf-fastfill-input" id="' + id + '-ff-' + f[0] + '" value="' + esc(tcCaseFieldValue(field, run()['ff_val_' + id + '-ff-' + f[0]] !== undefined ? run()['ff_val_' + id + '-ff-' + f[0]] : f[2])) + '"></div>';
               }).join('') +
             '</div>' +
           '</div>' +
@@ -2791,9 +3221,9 @@
     function F(secIdx, fIdx, w) {
       var f = sections[secIdx].fields[fIdx];
       var fieldInputId = id + '-' + secIdx + '-' + fIdx;
-      var val = st['zf_val_' + fieldInputId] || '';
+      var val = tcCaseFieldValue(f, f.kind === 'date' ? toDate(st['zf_val_' + fieldInputId]) : st['zf_val_' + fieldInputId]);
       var okNow = val ? f.validate(val) : false;
-      var style = w ? ' style="width:' + w + 'px;"' : '';
+      var style = w ? ' style="width:' + (f.kind === 'date' ? Math.max(w, 160) : w) + 'px;"' : '';
       var out = '<span class="zf-inline-wrap' + (okNow ? ' is-valid' : '') + '" id="' + fieldInputId + '-wrap">';
       if (f.type === 'select') {
         out += '<select class="zf-inline-select" id="' + fieldInputId + '"' + style + ' onchange="caNewZfValidateField(\'' + id + '\',' + secIdx + ',' + fIdx + ')">';
@@ -2802,7 +3232,7 @@
         });
         out += '</select>';
       } else {
-        out += '<input type="text" class="zf-inline-input" id="' + fieldInputId + '"' + style + ' value="' + esc(val) + '" placeholder="' + esc(f.ph || '') + '" onblur="caNewZfValidateField(\'' + id + '\',' + secIdx + ',' + fIdx + ')">';
+        out += '<input ' + tcCaseFieldAttrs(f) + ' data-tc-store="zf_val_" aria-label="' + esc(f.label) + '" class="zf-inline-input" id="' + fieldInputId + '"' + style + ' value="' + esc(val) + '" placeholder="' + esc(f.ph || '') + '" onchange="caNewZfValidateField(\'' + id + '\',' + secIdx + ',' + fIdx + ')" onblur="caNewZfValidateField(\'' + id + '\',' + secIdx + ',' + fIdx + ')">';
       }
       return out + '<span class="zf-inline-check">&#10003;</span></span>';
     }
@@ -3028,7 +3458,7 @@
         var el = document.getElementById(fieldInputId);
         if (el) {
           if (!el.value || el.value.trim() === '') {
-            el.value = f.auto || '';
+            el.value = tcCaseFieldValue(f, f.auto);
           }
           caNewZfValidateField(id, secIdx, fIdx);
         }
@@ -3246,11 +3676,11 @@
 
     listingFields.forEach(function (f, fIdx) {
       var fieldInputId = id + '-f-' + fIdx;
-      var val = st['ss_val_' + fieldInputId] || '';
+      var val = tcCaseFieldValue(f, f.kind === 'date' ? toDate(st['ss_val_' + fieldInputId]) : st['ss_val_' + fieldInputId]);
       html += '<div class="wf-zf-field">' +
         '<label for="' + fieldInputId + '">' + esc(f.label) + '</label>' +
         '<div class="wf-zf-input-wrap" id="' + fieldInputId + '-wrap">' +
-          '<input type="text" id="' + fieldInputId + '" value="' + esc(val) + '" placeholder="' + esc(f.ph || '') + '" onblur="caNewSsValidateField(\'' + id + '\',' + fIdx + ')">' +
+          '<input ' + tcCaseFieldAttrs(f) + ' data-tc-store="ss_val_" id="' + fieldInputId + '" value="' + esc(val) + '" placeholder="' + esc(f.ph || '') + '" onchange="caNewSsValidateField(\'' + id + '\',' + fIdx + ')" onblur="caNewSsValidateField(\'' + id + '\',' + fIdx + ')">' +
           '<span class="wf-zf-icon">&#10003;</span>' +
         '</div>' +
         '<div class="wf-zf-hint" id="' + fieldInputId + '-hint">' + esc(f.hint) + '</div>' +
@@ -3625,7 +4055,7 @@
       var fieldInputId = id + '-f-' + fIdx;
       var el = document.getElementById(fieldInputId);
       if (el) {
-        el.value = f.auto || '';
+        el.value = tcCaseFieldValue(f, f.auto);
         caNewSsValidateField(id, fIdx);
       }
     });
@@ -3934,6 +4364,17 @@
   };
   /* Pills and conditional blocks follow the case state */
   var BC_IF = {};
+  function tcRefreshDocs() {
+    if (!_sideDocsMeta.wanted.length) return;
+    var fresh = sideDocs(_sideDocsMeta.step, _sideDocsMeta.wanted);
+    var sec = document.getElementById('tc-sec-docs');
+    if (!sec) return;
+    var content = sec.querySelector('.tc-sec-content');
+    if (content) content.innerHTML = tcRenderDocs(_sideDocsMeta.step, fresh, _sideDocsMeta.hideDocs);
+    var badge = sec.querySelector('.tc-mac-sec-badge');
+    if (badge) badge.textContent = fresh.length + ' files';
+  }
+
   window.caNewRefresh = function () {
     var n = (typeof wfStep !== 'undefined') ? wfStep + 1 : 1;
     var subs = SUBS[n] || [];
@@ -3951,6 +4392,8 @@
       el.style.display = on ? (el.getAttribute('data-bc-display') || 'block') : 'none';
       if (on && !was) el.classList.add('wf-phase-enter');
     });
+    tcRefreshDocs();
+    if (typeof _wfSaveState === 'function') _wfSaveState();
   };
   function when(key, fn, html, display) {
     BC_IF[key] = fn;
@@ -4037,6 +4480,71 @@
     var out = [];
     for (var i = 1; i <= n; i++) out = out.concat(byStep[i] || []);
     return out;
+  }
+
+  /* ── Progressive document reveal ──
+     Each group lists documents and the condition that "creates" them in the
+     case file.  sideDocs(stepNum, wantedKeys) returns only the docs from
+     wantedKeys whose trigger has fired (or that belong to a past step). */
+  var DOC_GROUPS = [
+    { step: 1, docs: ['mls'] },
+
+    { step: 2, docs: ['rla', 'bca', 'mlsa', 'sa', 'ad', 'prbs', 'dia', 'fhda', 'ccpa', 'aba', 'lad'],
+      when: function () { return !!run()['zf_submitted_hs-zf']; } },
+
+    { step: 3, docs: ['rpa', 'compass', 'bia', 'bhia', 'wfa', 'sbsa'],
+      when: function () { return readOk('h3_craig_offer'); } },
+    { step: 3, docs: ['sco1', 'bco1'],
+      when: function () { return formOk('hs-sco1'); } },
+    { step: 3, docs: ['sco2', 'eta', 'frr'],
+      when: function () { return formOk('hs-sco2'); } },
+
+    { step: 4, docs: ['escrow', 'escrowAck'],
+      when: function () { return !!tcMailState().sent['hs-escrow-open']; } },
+    { step: 4, docs: ['emd'],
+      when: function () { return formOk('hs-emd'); } },
+
+    { step: 5, docs: ['tds', 'spq', 'nhd', 'nhdStmt', 'nhdInv', 'fhds', 'lpd', 'earthquake', 'hazards', 'wcmd', 'sfls', 'wfda', 'avidLA'],
+      when: function () { return pickOk('hs-p-pkg'); } },
+
+    { step: 6, docs: ['inspect'],
+      when: function () { return readOk('h6_craig_access'); } },
+    { step: 6, docs: ['rr1'],
+      when: function () { return readOk('h6_craig_rr1'); } },
+    { step: 6, docs: ['rr2', 'crb'],
+      when: function () { return formOk('hs-rr'); } },
+    { step: 6, docs: ['avidBA'],
+      when: function () { return !!tcMailState().sent['hs-repairs']; } },
+
+    { step: 7, docs: ['prelim', 'prelimRcpt'],
+      when: function () { return readOk('h7_patsy_prelim'); } },
+    { step: 7, docs: ['city', 'coc', 'cocCover', 'retrofit', 'qs'],
+      when: function () { return pickOk('hs-p-preclose'); } },
+    { step: 7, docs: ['ac'],
+      when: function () { return !!tcMailState().sent['hs-ac']; } },
+
+    { step: 8, docs: ['sellerStmt', 'cda', 'commission', 'vp'],
+      when: function () { return readOk('h8_patsy_stmt'); } },
+    { step: 8, docs: ['closingPkg'],
+      when: function () { return formOk('hs-stmt'); } }
+  ];
+
+  var _docAvail = {};
+  DOC_GROUPS.forEach(function (g) {
+    g.docs.forEach(function (k) {
+      if (!_docAvail[k]) _docAvail[k] = { step: g.step, when: g.when || null };
+    });
+  });
+
+  function sideDocs(stepNum, wantedKeys) {
+    _sideDocsMeta = { step: stepNum, wanted: wantedKeys, hideDocs: false };
+    return wantedKeys.filter(function (k) {
+      var a = _docAvail[k];
+      if (!a) return true;
+      if (a.step < stepNum) return true;
+      if (!a.when) return true;
+      return a.when();
+    });
   }
 
   /* ── Los Angeles County assessor parcel search ── */
@@ -4180,7 +4688,6 @@
     var summary = card('Listing file ready', 'Everything you need for the RLA.',
       timeline([
         ['Oct 21, 2025', 'Listing file opened: 8638 Hollywood Blvd, APN 5559-025-014, owner Raymond Philips, City of Los Angeles.'],
-        ['Oct 21, 2025', 'Disclosure plan started: TDS, SPQ, NHD, lead-based paint, AVID.'],
         ['Oct 21, 2025', 'Seller contacts, Shellpoint loan, vacant with showings by email, guest apartment not rented.']
       ]));
 
@@ -4188,15 +4695,14 @@
       { label: 'Ben&rsquo;s Email', body: intro, ok: function () { return readOk('h1_ben_intro'); }, err: 'Open Ben&rsquo;s email in Mail first.' },
       { label: 'File Setup', body: caNewApnLookupCard() + when('hsapn', function () { return !!apnPicked(); }, fileForm), ok: function () { return formOk('hs-file'); }, check: function () { caNewCheck('hs-file'); },
         err: function () { return apnErr('8638 Hollywood Blvd'); } },
-      { label: 'Disclosure Plan', body: discPlan, ok: function () { return pickOk('hs-p-disc-plan'); }, err: 'Pick what the seller side prepares. If a pick is wrong, use Try again.' },
       { label: 'Missing Info', body: missingPick, ok: function () { return pickOk('hs-p-missing'); }, err: 'Pick what is missing, then press Next. If a pick is wrong, use Try again.' },
       { label: 'Email Ben', body: infoTask + infoReply, ok: function () { return replyOk('hs-intake-info', 'h1_ben_info'); }, err: replyErr('Ben') },
       { label: 'File Summary', body: summary }
     ], 'Continue to Step 2: Listing Agreement');
 
     return step(1, STEP_TITLES[1], 'Tue, Oct 21, 2025',
-      'Ben Belack and Emily Cavan have a new listing. Open the file, find the parcel, plan the disclosures and collect what you need before the listing agreement.',
-      main, side([['Stage', 'New listing'], ['List price', '$2,198,000']], ['mls'], sideContacts(1)), true);
+      'Ben Belack and Emily Cavan have a new listing. Open the file, find the parcel and collect what you need before the listing agreement.',
+      main, side([['Stage', 'New listing'], ['List price', '$2,198,000']], sideDocs(1, ['mls']), sideContacts(1)), true);
   }
 
   /* ── SkySlope listing file ── */
@@ -4207,11 +4713,11 @@
       validate: function (v) { return String(v || '').replace(/\D/g, '') === '5559025014'; }, hint: 'The APN from the assessor search.', auto: '5559-025-014' },
     { id: 'ss_seller', label: 'Seller', ph: 'Full name',
       validate: function (v) { var s = (v || '').toLowerCase(); return s.indexOf('raymond') > -1 && s.indexOf('philips') > -1 && s.indexOf('phillips') === -1; }, hint: 'Owner of record, spelled as on title.', auto: 'Raymond Philips' },
-    { id: 'ss_price', label: 'List price', ph: '$',
+    { id: 'ss_price', label: 'List price', kind: 'money', ph: '$',
       validate: function (v) { return Math.abs(toMoney(v) - 2198000) < 0.5; }, hint: 'List price from the RLA.', auto: '$2,198,000' },
-    { id: 'ss_begin', label: 'Listing begins', ph: 'mm/dd/yyyy',
+    { id: 'ss_begin', label: 'Listing begins', kind: 'date', ph: 'mm/dd/yyyy',
       validate: function (v) { return toDate(v) === '2025-10-22'; }, hint: 'RLA begin date.', auto: '10/22/2025' },
-    { id: 'ss_end', label: 'Listing ends', ph: 'mm/dd/yyyy',
+    { id: 'ss_end', label: 'Listing ends', kind: 'date', ph: 'mm/dd/yyyy',
       validate: function (v) { return toDate(v) === '2026-04-21'; }, hint: 'RLA end date.', auto: '04/21/2026' },
     { id: 'ss_side', label: 'Representation', ph: 'Buyer / Seller',
       validate: function (v) { return /seller|listing/i.test(v || ''); }, hint: 'Which side does The Agency represent?', auto: 'Seller side (listing)' }
@@ -4285,7 +4791,7 @@
           body: "Hi Ben,\n\nI changed the listing period in SkySlope to 05/20/2026 so it matches the MLS.\n\nBest,\nMaria Rodriguez\nTransaction Coordinator for Ben Belack, The Agency" }
       ],
       ans: "Hi Ben,\n\nI calendared 04/21/2026, the firm end date in the RLA. Six months from going Active would be 05/20/2026, so the two terms don't match. If Raymond wants the later date, we need a signed amendment to the listing period; until then I am keeping 04/21/2026 in SkySlope.\n\nBest,\nMaria Rodriguez\nTransaction Coordinator for Ben Belack, The Agency",
-      replyFrom: 'ben', replyBody: '<p>Good catch, thank you. I will ask Raymond whether he wants an amendment to 05/20/2026. Keep 04/21 until then.</p>\' + BEN_SIG + \'', replyOpts: {}
+      replyFrom: 'ben', replyBody: '<p>Good catch, thank you. I will ask Raymond whether he wants an amendment to 05/20/2026. Keep 04/21 until then.</p>' + BEN_SIG, replyOpts: {}
     });
     var expire = expireAsk + when('h2exp', function () { return readOk('h2_ben_expire'); }, expirePick);
 
@@ -4298,7 +4804,7 @@
 
     return step(2, STEP_TITLES[2], 'Wed, Oct 22 – Thu, Nov 20, 2025',
       'Prepare the listing agreement in zipForm, set up the compliance file and calendar the listing once it goes live.',
-      main, side([['RLA', 'Oct 22, 2025'], ['Live on MLS', 'Nov 20, 2025']], ['rla', 'bca', 'mlsa', 'sa', 'ad', 'prbs', 'dia', 'fhda', 'ccpa', 'aba', 'lad', 'mls'], sideContacts(2)), true);
+      main, side([['RLA', 'Oct 22, 2025'], ['Live on MLS', 'Nov 20, 2025']], sideDocs(2, ['rla', 'bca', 'mlsa', 'sa', 'ad', 'prbs', 'dia', 'fhda', 'ccpa', 'aba', 'lad', 'mls']), sideContacts(2)), true);
   }
 
   /* ════════════════ Step 3 · Offer & counter offers ════════════════ */
@@ -4425,7 +4931,7 @@
 
     return step(3, STEP_TITLES[3], 'Fri, Jan 23 – Wed, Jan 28, 2026',
       'An all-cash offer arrived after 64 days on the market. Review it, keep the seller&rsquo;s decisions with his agents and prepare the counter offers until there is a deal.',
-      main, side([['Offer', '$2,000,000 cash'], ['Accepted', '$2,050,000 · Jan 28']], ['rpa', 'sco1', 'bco1', 'sco2', 'eta', 'frr', 'compass', 'bia', 'bhia', 'wfa', 'sbsa', 'mls'], sideContacts(3)), true);
+      main, side([['Offer', '$2,000,000 cash'], ['Accepted', '$2,050,000 · Jan 28']], sideDocs(3, ['rpa', 'sco1', 'bco1', 'sco2', 'eta', 'frr', 'compass', 'bia', 'bhia', 'wfa', 'sbsa', 'mls']), sideContacts(3)), true);
   }
 
   /* ════════════════ Step 4 · Escrow & deposit ════════════════ */
@@ -4504,7 +5010,7 @@
 
     return step(4, STEP_TITLES[4], 'Wed, Jan 28 – Thu, Jan 29, 2026',
       'The contract is accepted. Build the calendar, open escrow, confirm the deposit and understand what the LLC buyer means for the file.',
-      main, side([['Accepted', 'Jan 28, 2026'], ['Deposit due', 'Mon, Feb 2']], ['rpa', 'sco1', 'bco1', 'sco2', 'eta', 'frr', 'emd', 'escrow', 'escrowAck', 'aba'], sideContacts(4)), true,
+      main, side([['Accepted', 'Jan 28, 2026'], ['Deposit due', 'Mon, Feb 2']], sideDocs(4, ['rpa', 'sco1', 'bco1', 'sco2', 'eta', 'frr', 'emd', 'escrow', 'escrowAck', 'aba']), sideContacts(4)), true,
       { text: 'Close of escrow, moved by ETA No. 1.', days: 'Thu, Feb 12' });
   }
 
@@ -4559,7 +5065,7 @@
 
     return step(5, STEP_TITLES[5], 'Thu, Jan 29, 2026',
       'Put together the seller disclosure package, spot what the buyer will focus on and deliver it the same night.',
-      main, side([['Inspection', 'Thu, Jan 29 (done)'], ['Investigation ends', 'Fri, Feb 6']], ['tds', 'spq', 'nhd', 'nhdStmt', 'nhdInv', 'fhds', 'lpd', 'earthquake', 'hazards', 'wcmd', 'sfls', 'wfda', 'avidLA'], sideContacts(5)), true);
+      main, side([['Inspection', 'Thu, Jan 29 (done)'], ['Investigation ends', 'Fri, Feb 6']], sideDocs(5, ['tds', 'spq', 'nhd', 'nhdStmt', 'nhdInv', 'fhds', 'lpd', 'earthquake', 'hazards', 'wcmd', 'sfls', 'wfda', 'avidLA']), sideContacts(5)), true);
   }
 
   /* ════════════════ Step 6 · Inspections & repair negotiation ════════════════ */
@@ -4656,7 +5162,7 @@
 
     return step(6, STEP_TITLES[6], 'Fri, Jan 30 – Fri, Feb 6, 2026',
       'The buyer&rsquo;s inspection starts a repair negotiation. Handle the access logistics, keep the seller&rsquo;s decisions with his agents and record the agreement.',
-      main, side([['Asked', '$50,000 → $40,000'], ['Agreed', '$15,000 + 17 repairs']], ['inspect', 'rr1', 'rr2', 'crb', 'avidBA', 'avidLA'], sideContacts(6)), true,
+      main, side([['Asked', '$50,000 → $40,000'], ['Agreed', '$15,000 + 17 repairs']], sideDocs(6, ['inspect', 'rr1', 'rr2', 'crb', 'avidBA', 'avidLA']), sideContacts(6)), true,
       { text: 'Investigation contingency must be removed (ETA No. 1).', days: 'Fri, Feb 6' });
   }
 
@@ -4752,7 +5258,7 @@
 
     return step(7, STEP_TITLES[7], 'Fri, Feb 6 – Tue, Feb 10, 2026',
       'Clear title, line up the payoff and city items, correct the agency confirmation and protect the seller&rsquo;s proceeds.',
-      main, side([['Contingencies', 'Removed Feb 6'], ['Walk-through', 'Thu, Feb 12 · 9:00 AM']], ['prelim', 'prelimRcpt', 'city', 'coc', 'cocCover', 'retrofit', 'qs', 'ac', 'rpa', 'escrow'], sideContacts(7)), true,
+      main, side([['Contingencies', 'Removed Feb 6'], ['Walk-through', 'Thu, Feb 12 · 9:00 AM']], sideDocs(7, ['prelim', 'prelimRcpt', 'city', 'coc', 'cocCover', 'retrofit', 'qs', 'ac', 'rpa', 'escrow']), sideContacts(7)), true,
       { text: 'Close of escrow.', days: 'Thu, Feb 12' });
   }
 
@@ -4821,7 +5327,7 @@
 
     return step(8, STEP_TITLES[8], 'Thu, Feb 12 – Tue, Feb 17, 2026',
       'The deed recorded. Reconcile the seller&rsquo;s statement and close the loop with Raymond.',
-      main, side([['Status', 'Recorded Feb 12, 2026'], ['Net proceeds', '$825,098.47']], ['sellerStmt', 'cda', 'commission', 'vp', 'coc', 'qs', 'closingPkg', 'sco2', 'rr2'], sideContacts(8)), true);
+      main, side([['Status', 'Recorded Feb 12, 2026'], ['Net proceeds', '$825,098.47']], sideDocs(8, ['sellerStmt', 'cda', 'commission', 'vp', 'coc', 'qs', 'closingPkg', 'sco2', 'rr2']), sideContacts(8)), true);
   }
 
   window.caNewS8EvalRender = function () {
@@ -4832,7 +5338,7 @@
   var STEP_HINTS = {
     0: [
       "Search the county assessor for 8638 Hollywood and pick the parcel with the exact number. It shows the owner and the year built.",
-      "APN 5559-025-014, owner Raymond Philips as an individual, City of Los Angeles, built 1958, list $2,198,000. The seller side owes the TDS, SPQ, NHD, lead-based paint disclosure and the AVID.",
+      "APN 5559-025-014, owner Raymond Philips as an individual, City of Los Angeles, built 1958, list $2,198,000.",
       "From me you need Raymond's contacts, the mortgage servicer, occupancy and showing instructions, and whether the guest apartment is rented. Never ask for an SSN by email."
     ],
     1: [
@@ -4875,6 +5381,26 @@
   /* ════════════════ EXPORT ════════════════ */
   window.WF_HINT_MENTOR = { initials: 'BB', name: 'Ben Belack', role: 'Listing Agent &middot; Mentor', fab: 'Ask Ben' };
   var CASE_EXPORT = {
+    getState: function () {
+      tcMailSaveDraft();
+      // Text fields normally commit on blur; also retain the field being typed.
+      document.querySelectorAll('[data-tc-store]').forEach(function (field) {
+        run()[field.dataset.tcStore + field.id] = field.value;
+      });
+      var slides = [];
+      for (var i = 0; i <= 8; i++) slides[i] = window['_caNewSlide' + i];
+      return { slides: slides, ss: SS_STATE, ssStage: window._caNewSsStage, decisions: DEC_LAST };
+    },
+    restoreState: function (state) {
+      for (var i = 0; i <= 8; i++) {
+        var slide = state.slides && state.slides[i];
+        window['_caNewSlide' + i] = typeof slide === 'number' && slide >= 0 ? slide : 0;
+      }
+      SS_STATE = state.ss || {};
+      window.SS_STATE = window.caNewSsState = SS_STATE;
+      window._caNewSsStage = typeof state.ssStage === 'number' ? state.ssStage : null;
+      DEC_LAST = state.decisions || {};
+    },
     type: 'workflow',
     usePipeline: true,
     tag: 'California · Seller Side · Real File',

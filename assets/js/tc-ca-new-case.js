@@ -134,6 +134,7 @@
     if (sc && sc._decisions) sc._decisions.push({ correct: !!ok });
     if (document.getElementById('wf-eval-container')) wfRenderFinalScore('wf-eval-container', 'tc', 'ca-new', 10);
     if (typeof window.caNewRefresh === 'function') setTimeout(window.caNewRefresh, 0);
+    if (typeof _wfSaveState === 'function') _wfSaveState();
   }
 
   window.caNewOpen = function (key) {
@@ -302,13 +303,13 @@
   var TC_EMAILS = [
     /* ── Step 1 · New buyer client intake ── */
     em({ id: 'e1_ben_intro', step: 1, from: 'ben', replyKey: 'bc-intake-info', replyWhen: function () { return pickOk('bc-p-missing'); },
-      subject: 'New buyer clients: Melony & Senaka Mahaarachchi (BRBC signed)',
-      snip: 'They signed our exclusive BRBC this afternoon. Can you open their buyer file today?',
+      subject: 'New buyer clients: Melony & Senaka Mahaarachchi (buyer rep agreement signed)',
+      snip: 'They signed our exclusive buyer representation agreement this afternoon. Can you open their buyer file today?',
       time: 'Jan 20 · 3:42 PM' }),
     em({ id: 'e1_sent_info', step: 1, from: 'tc', folder: 'sent', composeKey: 'bc-intake-info',
-      subject: 'Mahaarachchi buyer file: a few items before the first offer', snip: '', time: 'Jan 20 · 4:25 PM' }),
+      subject: 'Mahaarachchi buyer file: a few items I need', snip: '', time: 'Jan 20 · 4:25 PM' }),
     em({ id: 'e1_ben_info', step: 1, from: 'ben', arrival: 'reply', afterKey: 'bc-intake-info', onRead: onReadRefresh,
-      subject: 'Re: Mahaarachchi buyer file', snip: 'Here is everything. Pre-approval from Chase is attached; vesting is still open.',
+      subject: 'Re: Mahaarachchi buyer file', snip: 'Here is everything. Vesting is still open; I will send the pre-approval when we write the offer.',
       time: 'Jan 20 · 4:58 PM' }),
 
     /* ── Step 2 · Writing the offer ── */
@@ -368,9 +369,9 @@
     em({ id: 'e4_ben_tds_ok', step: 4, from: 'ben', arrival: 'reply', afterKey: 'bc-tds', onRead: onReadRefresh,
       subject: 'Re: Is the TDS just a courtesy?', snip: 'Perfect, that is what I will tell the buyers.', time: 'Feb 6 · 5:05 PM' }),
     em({ id: 'e4_sent_summary', step: 4, from: 'tc', folder: 'sent', composeKey: 'bc-disc-summary',
-      subject: 'Disclosure review: 1634 Benedict Canyon Dr', snip: '', time: 'Feb 7 · 10:15 AM' }),
+      subject: 'Seller disclosures received: 1634 Benedict Canyon Dr', snip: '', time: 'Feb 7 · 10:15 AM' }),
     em({ id: 'e4_ben_reply', step: 4, from: 'ben', arrival: 'reply', afterKey: 'bc-disc-summary', onRead: onReadRefresh,
-      subject: 'Re: Disclosure review: 1634 Benedict Canyon Dr', snip: 'This is exactly what I needed for the call with the buyers tonight.',
+      subject: 'Re: Seller disclosures received: 1634 Benedict Canyon Dr', snip: 'Good catch on the TDS. Go ahead and send the buyers the DocuSign.',
       time: 'Feb 7 · 10:52 AM' }),
     em({ id: 'e4_sent_buyers', step: 4, from: 'tc', folder: 'sent', composeKey: 'bc-disc-buyers',
       subject: 'Seller disclosures to review and sign: 1634 Benedict Canyon Dr', snip: '', time: 'Feb 7 · 11:00 AM' }),
@@ -863,6 +864,7 @@
     var task = MAIL_TASKS[key];
     if (task && typeof task.onSent === 'function') task.onSent();
     if (typeof window.tcRefreshInboxList === 'function') window.tcRefreshInboxList();
+    if (typeof _wfSaveState === 'function') _wfSaveState();
   };
   /* Show the waiting state now and deliver the email a few seconds later */
   window.tcMailScheduleReply = function (id, delay) {
@@ -910,6 +912,7 @@
     var app = document.getElementById('tc-mail-app');
     if (app && app.classList.contains('open')) tcMailRender();
     if (typeof window.tcRefreshInboxList === 'function') window.tcRefreshInboxList();
+    if (typeof _wfSaveState === 'function') _wfSaveState();
   }
 
   /* Legacy Reply for steps whose compose still lives in the center */
@@ -1178,7 +1181,7 @@
     5: 'Buyer Investigations',
     6: 'Request for Repair & Contingency Removal',
     7: 'Loan, Title & Pre-Closing',
-    8: 'Closing & Reconciliation'
+    8: 'Closing & Wrap-Up'
   };
 
   function tcRenderDeadlineBar(n) {
@@ -1854,6 +1857,8 @@
   window.caNewResetCase = function () {
     DEC_LAST = {};
     SS_STATE = {};
+    window.SS_STATE = window.caNewSsState = SS_STATE;
+    _tcMail.compose = null;
     pendingReveal = null;
     window._caNewSlide0 = 0;
     window._caNewSlide1 = 0;
@@ -2208,7 +2213,7 @@
         r.options.forEach(function (o) { h += '<option value="' + o[0] + '"' + (v === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; });
         h += '</select>';
       } else {
-        h += '<input type="text" id="' + id + '-' + i + '" value="' + esc(v) + '" placeholder="' + (r.ph || '') + '" oninput="caNewSave(\'' + id + '\',' + i + ',this.value)">';
+        h += '<input ' + tcCaseFieldAttrs(r) + ' id="' + id + '-' + i + '" value="' + esc(tcCaseFieldValue(r, r.kind === 'date' ? toDate(v) : v)) + '" placeholder="' + (r.ph || '') + '" oninput="caNewSave(\'' + id + '\',' + i + ',this.value)">';
       }
       h += '<span class="mh-ans' + (st['s_' + id] ? ' show' : '') + '">File says: ' + r.show + '</span></div>';
     });
@@ -2266,8 +2271,7 @@
       var el = document.getElementById(id + '-' + i);
       if (!el) return;
       if (r.kind === 'select') { el.value = r.ans; }
-      else if (r.kind === 'date') { el.value = r.ans.replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$2/$3/$1'); }
-      else if (r.kind === 'money') { el.value = r.ans; }
+      else if (r.kind === 'date' || r.kind === 'money') { el.value = tcCaseFieldValue(r, r.ans); }
       else { el.value = Array.isArray(r.ans) ? r.show.split('(')[0].trim() : r.ans; }
       caNewSave(id, i, el.value);
     });
@@ -2750,7 +2754,7 @@
       fields: [
         { id: 'buyer1', label: 'Buyer 1', type: 'text', ph: 'Full legal name',
           validate: function (v) { var s = (v || '').toLowerCase(); return s.indexOf('nilanthi') > -1 && s.indexOf('mahaarachchi') > -1; },
-          hint: 'Use the full legal name from the BRBC and Ben’s Step 1 reply, not the name she goes by.', auto: 'Nilanthi Melony Mahaarachchi' },
+          hint: "Use the full legal name from the buyer representation agreement and Ben's Step 1 reply, not the name she goes by.", auto: 'Nilanthi Melony Mahaarachchi' },
         { id: 'buyer2', label: 'Buyer 2', type: 'text', ph: 'Full legal name',
           validate: function (v) { var s = (v || '').toLowerCase(); return s.indexOf('senaka') > -1 && s.indexOf('mahaarachchi') > -1; },
           hint: 'Both buyers go on the offer, with their full legal names.', auto: 'Senaka Mahaarachchi' },
@@ -2774,17 +2778,17 @@
     {
       title: '2. Price, Deposit & Loan',
       fields: [
-        { id: 'price', label: 'Purchase price', type: 'text', ph: '$', validate: zfMoney(3695000),
+        { id: 'price', label: 'Purchase price', type: 'text', kind: 'money', ph: '$', validate: zfMoney(3695000),
           hint: 'Offer price from Ben’s terms.', auto: '$3,695,000.00' },
-        { id: 'deposit', label: 'Initial deposit', type: 'text', ph: '$', validate: zfMoney(110850),
+        { id: 'deposit', label: 'Initial deposit', type: 'text', kind: 'money', ph: '$', validate: zfMoney(110850),
           hint: 'Ben asked for a 3% deposit. Calculate 3% of the purchase price.', auto: '$110,850.00' },
-        { id: 'loan', label: 'First loan amount', type: 'text', ph: '$', validate: zfMoney(2956000),
+        { id: 'loan', label: 'First loan amount', type: 'text', kind: 'money', ph: '$', validate: zfMoney(2956000),
           hint: 'The loan is 80% of the purchase price.', auto: '$2,956,000.00' },
         { id: 'rate', label: 'Interest rate not to exceed', type: 'text', ph: '%',
           validate: function (v) { return zfNum(v) === 7; }, hint: 'Rate cap from Ben’s terms.', auto: '7.000' },
         { id: 'coe', label: 'Close of escrow', type: 'text', ph: 'days', validate: zfDays(30),
           hint: 'Days after acceptance, from Ben’s terms.', auto: '30' },
-        { id: 'expires', label: 'Offer expires', type: 'text', ph: 'mm/dd/yyyy',
+        { id: 'expires', label: 'Offer expires', type: 'text', kind: 'date', ph: 'mm/dd/yyyy',
           validate: function (v) { return toDate(v) === '2026-02-02'; }, hint: 'Ben wants an answer by Monday morning at 10:00 AM.', auto: '02/02/2026' }
       ]
     },
@@ -2808,7 +2812,7 @@
       fields: [
         { id: 'comp', label: "Seller pays Buyer's Broker", type: 'text', ph: '%',
           validate: function (v) { return zfNum(v) === 2.5; },
-          hint: 'The BRBC sets 2.5%. Ben is asking the seller to pay it out of the proceeds (RPA 3G(3)).', auto: '2.500' },
+          hint: 'The buyer representation agreement sets 2.5%. Ben is asking the seller to pay it out of the proceeds (RPA 3G(3)).', auto: '2.500' },
         { id: 'escrow_holder', label: 'Escrow holder', type: 'select',
           options: [['', 'Select...'], ['seller', "Seller's choice"], ['buyer', "Buyer's choice"], ['named', 'Named escrow company']],
           validate: function (v) { return v === 'seller'; }, hint: 'Ben is leaving escrow and title to the seller.', auto: 'seller' },
@@ -2882,9 +2886,11 @@
             '<div style="font-size:13px;color:#475569;margin-bottom:14px;">Review the data before it cascades into the RPA.</div>' +
             '<div class="zf-fastfill-grid">' +
               ZF_FF.map(function (f) {
+                var target = f[3].split('-');
+                var field = ZF_SECTIONS[+target[0]].fields[+target[1]];
                 return '<div class="zf-fastfill-field' + (f[0] === 'address' ? ' full' : '') + '">' +
                   '<label class="zf-fastfill-label">' + f[1] + '</label>' +
-                  '<input type="text" class="zf-fastfill-input" id="' + id + '-ff-' + f[0] + '" value="' + esc(f[2]) + '">' +
+                  '<input ' + tcCaseFieldAttrs(field) + ' data-tc-store="ff_val_" aria-label="' + esc(f[1]) + '" class="zf-fastfill-input" id="' + id + '-ff-' + f[0] + '" value="' + esc(tcCaseFieldValue(field, run()['ff_val_' + id + '-ff-' + f[0]] !== undefined ? run()['ff_val_' + id + '-ff-' + f[0]] : f[2])) + '">' +
                 '</div>';
               }).join('') +
             '</div>' +
@@ -2909,9 +2915,9 @@
     function F(secIdx, fIdx, w) {
       var f = sections[secIdx].fields[fIdx];
       var fieldInputId = id + '-' + secIdx + '-' + fIdx;
-      var val = st['zf_val_' + fieldInputId] || '';
+      var val = tcCaseFieldValue(f, f.kind === 'date' ? toDate(st['zf_val_' + fieldInputId]) : st['zf_val_' + fieldInputId]);
       var okNow = val ? f.validate(val) : false;
-      var style = w ? ' style="width:' + w + 'px;"' : '';
+      var style = w ? ' style="width:' + (f.kind === 'date' ? Math.max(w, 160) : w) + 'px;"' : '';
       var out = '<span class="zf-inline-wrap' + (okNow ? ' is-valid' : '') + '" id="' + fieldInputId + '-wrap">';
       if (f.type === 'select') {
         out += '<select class="zf-inline-select" id="' + fieldInputId + '"' + style + ' onchange="caNewZfValidateField(\'' + id + '\',' + secIdx + ',' + fIdx + ')">';
@@ -2920,7 +2926,7 @@
         });
         out += '</select>';
       } else {
-        out += '<input type="text" class="zf-inline-input" id="' + fieldInputId + '"' + style + ' value="' + esc(val) + '" placeholder="' + esc(f.ph || '') + '" onblur="caNewZfValidateField(\'' + id + '\',' + secIdx + ',' + fIdx + ')">';
+        out += '<input ' + tcCaseFieldAttrs(f) + ' data-tc-store="zf_val_" aria-label="' + esc(f.label) + '" class="zf-inline-input" id="' + fieldInputId + '"' + style + ' value="' + esc(val) + '" placeholder="' + esc(f.ph || '') + '" onchange="caNewZfValidateField(\'' + id + '\',' + secIdx + ',' + fIdx + ')" onblur="caNewZfValidateField(\'' + id + '\',' + secIdx + ',' + fIdx + ')">';
       }
       return out + '<span class="zf-inline-check">&#10003;</span></span>';
     }
@@ -2992,7 +2998,7 @@
               'Escrow Holder: ' + F(3, 1, 170) + ' &middot; Title Company: Seller&rsquo;s choice<br>' +
               'Home warranty: ' + F(3, 2, 250) + '<br>' +
               'Natural Hazard Zone Disclosure report paid by: ' + F(3, 3, 110),
-              '<strong>TC Pro-Tip (buyer broker compensation):</strong> Since 2024 the offer of compensation cannot appear on the MLS, but the buyer can still ask the seller to pay it in the offer. The BRBC sets what the buyer owes; anything the seller pays is credited against it.') +
+              '<strong>TC Pro-Tip (buyer broker compensation):</strong> Since 2024 the offer of compensation cannot appear on the MLS, but the buyer can still ask the seller to pay it in the offer. The buyer representation agreement sets what the buyer owes; anything the seller pays is credited against it.') +
             '<div class="zf-doc-section-block" id="' + id + '-sec-sign">' +
               '<div class="zf-clause-head"><span class="zf-clause-num">32</span><span class="zf-clause-title">BUYER SIGNATURES</span></div>' +
               '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 16px;">' +
@@ -3156,7 +3162,7 @@
         var el = document.getElementById(fieldInputId);
         if (el) {
           if (!el.value || el.value.trim() === '') {
-            el.value = f.auto || '';
+            el.value = tcCaseFieldValue(f, f.auto);
           }
           caNewZfValidateField(id, secIdx, fIdx);
         }
@@ -3374,11 +3380,11 @@
 
     listingFields.forEach(function (f, fIdx) {
       var fieldInputId = id + '-f-' + fIdx;
-      var val = st['ss_val_' + fieldInputId] || '';
+      var val = tcCaseFieldValue(f, f.kind === 'date' ? toDate(st['ss_val_' + fieldInputId]) : st['ss_val_' + fieldInputId]);
       html += '<div class="wf-zf-field">' +
         '<label for="' + fieldInputId + '">' + esc(f.label) + '</label>' +
         '<div class="wf-zf-input-wrap" id="' + fieldInputId + '-wrap">' +
-          '<input type="text" id="' + fieldInputId + '" value="' + esc(val) + '" placeholder="' + esc(f.ph || '') + '" onblur="caNewSsValidateField(\'' + id + '\',' + fIdx + ')">' +
+          '<input ' + tcCaseFieldAttrs(f) + ' data-tc-store="ss_val_" id="' + fieldInputId + '" value="' + esc(val) + '" placeholder="' + esc(f.ph || '') + '" onchange="caNewSsValidateField(\'' + id + '\',' + fIdx + ')" onblur="caNewSsValidateField(\'' + id + '\',' + fIdx + ')">' +
           '<span class="wf-zf-icon">&#10003;</span>' +
         '</div>' +
         '<div class="wf-zf-hint" id="' + fieldInputId + '-hint">' + esc(f.hint) + '</div>' +
@@ -3753,7 +3759,7 @@
       var fieldInputId = id + '-f-' + fIdx;
       var el = document.getElementById(fieldInputId);
       if (el) {
-        el.value = f.auto || '';
+        el.value = tcCaseFieldValue(f, f.auto);
         caNewSsValidateField(id, fIdx);
       }
     });
@@ -4079,6 +4085,7 @@
       el.style.display = on ? (el.getAttribute('data-bc-display') || 'block') : 'none';
       if (on && !was) el.classList.add('wf-phase-enter');
     });
+    if (typeof _wfSaveState === 'function') _wfSaveState();
   };
   function when(key, fn, html, display) {
     BC_IF[key] = fn;
@@ -4171,12 +4178,12 @@
   function caNewStep0() {
     var intro = inbox('e1_ben_intro', 'ben',
       '<p>Hi Maria,</p>' +
-      '<p>Good news: <strong>Nilanthi Melony Mahaarachchi</strong> and <strong>Senaka Mahaarachchi</strong> signed our <strong>exclusive BRBC</strong> through DocuSign this afternoon. She goes by Melony.</p>' +
+      '<p>Good news: <strong>Nilanthi Melony Mahaarachchi</strong> and <strong>Senaka Mahaarachchi</strong> signed our <strong>exclusive Buyer Representation and Broker Compensation Agreement</strong> through DocuSign this afternoon. She goes by Melony.</p>' +
       '<p>They are looking for a single-family home in <strong>Los Angeles County</strong>, the canyons above Beverly Hills if we can find the right one, up to about $3.8M. They are financing with <strong>Chase</strong> at around 80%.</p>' +
-      '<p>Can you open their buyer file today? Please review the BRBC before it goes into SkySlope and send them our brokerage disclosures. We will probably write an offer within a couple of weeks.</p>' +
+      '<p>Can you open their buyer file today? Please review the agreement before it goes into SkySlope and send them the Disclosure Regarding Real Estate Agency Relationship. We will probably write an offer within a couple of weeks.</p>' +
       BEN_SIG, { attach: ['brbc'] });
 
-    var brbcForm = form('bc-brbc', 'Review the BRBC', 'Open the signed BRBC and confirm the terms that go into the buyer file.', [
+    var brbcForm = form('bc-brbc', 'Review the Buyer Representation Agreement', 'Open the signed agreement and confirm the terms that go into the buyer file.', [
       { label: 'Broker (firm)', ans: ['the agency'], show: 'The Agency', ph: 'Brokerage name' },
       { label: 'Representation begins', kind: 'date', ans: '2026-01-20', show: '01/20/2026', ph: 'mm/dd/yyyy' },
       { label: 'Representation ends', kind: 'date', ans: '2026-02-19', show: '02/19/2026', ph: 'mm/dd/yyyy' },
@@ -4189,62 +4196,62 @@
 
     var intakePick = picker('bc-p-intake', 'What goes into the intake file today?',
       'No property is under contract yet. Pick only the documents that belong in the buyer file at intake.', [
-        { t: 'BRBC', sub: 'Signed Jan 20', ok: true },
-        { t: 'Affiliated Business Arrangement Disclosure', sub: 'The Agency', ok: true },
-        { t: 'Local Area Disclosures', sub: 'The Agency', ok: true },
+        { t: 'Buyer Representation and Broker Compensation Agreement', sub: 'Signed Jan 20', ok: true },
+        { t: 'Disclosure Regarding Real Estate Agency Relationship', sub: 'C.A.R. AD', ok: true },
+        { t: 'Affiliated Business Arrangement Disclosure', sub: 'The Agency', ok: false },
+        { t: 'Local Area Disclosures', sub: 'The Agency', ok: false },
         { t: 'Residential Purchase Agreement (RPA)', sub: 'C.A.R. RPA', ok: false },
         { t: 'Transfer Disclosure Statement (TDS)', sub: 'Seller form', ok: false },
         { t: 'Preliminary Title Report', sub: 'Title company', ok: false },
         { t: 'Residential Listing Agreement (RLA)', sub: 'Listing side', ok: false },
         { t: 'Natural Hazard Disclosure', sub: 'Property report', ok: false }
-      ], 'At intake the file holds the representation agreement and The Agency&rsquo;s own brokerage disclosures. The AD, PRBS and the buyer advisories go out with the first offer: Civil Code 2079.14 only requires the AD as soon as practicable before the buyer signs an offer. Property documents (RPA, TDS, NHD, prelim) only exist once there is a property.');
+      ], 'At intake the file holds the buyer representation agreement and the Disclosure Regarding Real Estate Agency Relationship (C.A.R. AD). The PRBS and the buyer advisories go out with the first offer. The Affiliated Business Arrangement and Local Area Disclosures are brokerage disclosures but do not go into the buyer file at intake. Property documents (RPA, TDS, NHD, prelim) only exist once there is a property.');
 
     var missingPick = picker('bc-p-missing', 'What do you still need from Ben?',
       'You will write the first offer soon. Pick what is missing from the file.', [
         { t: 'Buyers&rsquo; emails and phones', sub: 'For DocuSign and escrow', ok: true },
-        { t: 'Lender pre-approval letter', sub: 'Goes with the offer', ok: true },
-        { t: 'Proof of funds for the deposit and down payment', sub: 'Goes with the offer', ok: true },
         { t: 'Full legal names and how they will take title', sub: 'Vesting', ok: true },
+        { t: 'Lender pre-approval letter', sub: 'Ben sends it with the offer', ok: false },
+        { t: 'Proof of funds for the deposit and down payment', sub: 'Ben sends it with the offer', ok: false },
         { t: 'The buyers&rsquo; Social Security numbers', sub: 'By email', ok: false },
         { t: 'The seller&rsquo;s loan payoff', sub: 'Seller side', ok: false },
         { t: 'The listing agent&rsquo;s commission split', sub: 'Listing side', ok: false },
         { t: 'HOA documents', sub: 'No property yet', ok: false }
-      ], 'Contacts, pre-approval, proof of funds and the exact names and vesting are what you need to write an offer and open escrow. Never ask for Social Security numbers by email: escrow collects them securely on the Statement of Information.');
+      ], 'Contacts and the full legal names and vesting are what you need for the buyer file. The pre-approval letter and proof of funds go with the offer package: Ben will send those when it is time. Never ask for Social Security numbers by email: escrow collects them securely on the Statement of Information.');
 
     var infoTask = mailTask('bc-intake-info', 'Email Ben',
       'Ask Ben for the items you picked. This is internal: write to Ben only.', 'e1_sent_info');
     compose({
       key: 'bc-intake-info', prompt: 'Ask Ben for the missing buyer file items',
-      to: 'Ben Belack <ben.belack@theagencyre.com>', subj: 'Mahaarachchi buyer file: a few items before the first offer',
-      inst: 'Ask for the buyers&rsquo; contact details, the pre-approval, proof of funds, and their full legal names and vesting. Keep it short and internal.',
+      to: 'Ben Belack <ben.belack@theagencyre.com>', subj: 'Mahaarachchi buyer file: a few items I need',
+      inst: 'Ask for the buyers&rsquo; contact details and their full legal names and vesting. Keep it short and internal.',
       rules: {
         need: [['ben', 'to', 'This question is for Ben, the buyers&rsquo; agent.']],
         never: [['melony', 'Keep the buyers off this one: it is an internal checklist between you and Ben.'], ['senaka', 'Keep the buyers off this one: it is an internal checklist between you and Ben.']],
         subj: ['mahaarachchi', 'buyer file', 'buyer'], subjMsg: 'There is no property yet, so name the clients (Mahaarachchi) in the subject.'
       },
-      ans: "Hi Ben,\n\nThanks, I opened the Mahaarachchi buyer file and reviewed the BRBC (exclusive, 01/20/2026 to 02/19/2026, Los Angeles County, 2.5%). I sent The Agency's Affiliated Business Arrangement and Local Area Disclosures for signature.\n\nBefore we write the first offer I need:\n1. Melony's and Senaka's emails and cell numbers for DocuSign and escrow\n2. The Chase pre-approval letter\n3. Proof of funds for the deposit and down payment\n4. Their full legal names and how they plan to take title\n\nThanks,\nMaria Rodriguez\nTransaction Coordinator, The Agency"
+      ans: "Hi Ben,\n\nThanks, I opened the Mahaarachchi buyer file and reviewed the Buyer Representation and Broker Compensation Agreement (exclusive, 01/20/2026 to 02/19/2026, Los Angeles County, 2.5%). I sent the Disclosure Regarding Real Estate Agency Relationship for signature.\n\nFor the file I need:\n1. Melony's and Senaka's emails and cell numbers for DocuSign and escrow\n2. Their full legal names and how they plan to take title\n\nThanks,\nMaria Rodriguez\nTransaction Coordinator, The Agency"
     });
     var infoReply = inbox('e1_ben_info', 'ben',
       '<p>Here you go:</p>' +
       '<ul>' +
         '<li><strong>Melony</strong> (Nilanthi Melony Mahaarachchi): melony.mahaarachchi@email.com &middot; (818) 555-0142</li>' +
         '<li><strong>Senaka Mahaarachchi</strong>: senaka.mahaarachchi@email.com &middot; (818) 555-0187</li>' +
-        '<li><strong>Pre-approval:</strong> Ryan Cho at Chase, up to a $3,000,000 conventional loan. Letter attached.</li>' +
-        '<li><strong>Proof of funds:</strong> Chase statements for the deposit and down payment are coming tomorrow.</li>' +
         '<li><strong>Vesting:</strong> not decided yet. They are talking to their CPA. Use the full legal names on everything; escrow will get the vesting before closing.</li>' +
       '</ul>' +
+      '<p>I&rsquo;ll send you the Chase pre-approval and proof of funds when we are ready to write the offer.</p>' +
       '<p>Thanks for jumping on this so fast.</p>' + BEN_SIG);
 
     var summary = card('Buyer file ready', 'Everything you need for the first offer.',
       timeline([
-        ['Jan 20, 2026', 'BRBC signed: exclusive, The Agency, Los Angeles County, 2.5%, ends Feb 19, 2026.'],
-        ['Jan 20, 2026', 'Brokerage disclosures (Affiliated Business Arrangement, Local Area Disclosures) sent for signature.'],
-        ['Jan 20, 2026', 'Contacts, Chase pre-approval (Ryan Cho) and proof of funds collected. Vesting still open: escrow needs it before closing.']
-      ]) + callout('Watch the BRBC end date.', 'The representation period ends Feb 19, 2026. If the buyers are not in contract by then, Ben needs an extension signed.'));
+        ['Jan 20, 2026', 'Buyer Representation and Broker Compensation Agreement signed: exclusive, The Agency, Los Angeles County, 2.5%, ends Feb 19, 2026.'],
+        ['Jan 20, 2026', 'Disclosure Regarding Real Estate Agency Relationship sent for signature.'],
+        ['Jan 20, 2026', 'Contacts and full legal names collected. Vesting still open: escrow needs it before closing. Ben will send the pre-approval and proof of funds with the offer.']
+      ]) + callout('Watch the representation end date.', 'The representation period ends Feb 19, 2026. If the buyers are not in contract by then, Ben needs an extension signed.'));
 
     var main = deck(1, [
       { label: 'Ben&rsquo;s Email', body: intro, ok: function () { return readOk('e1_ben_intro'); }, err: 'Open Ben&rsquo;s email in Mail first.' },
-      { label: 'BRBC Review', body: brbcForm, ok: function () { return formOk('bc-brbc'); }, check: function () { caNewCheck('bc-brbc'); }, err: 'Some BRBC terms do not match the signed agreement. Fix the red rows.' },
+      { label: 'Agreement Review', body: brbcForm, ok: function () { return formOk('bc-brbc'); }, check: function () { caNewCheck('bc-brbc'); }, err: 'Some terms do not match the signed agreement. Fix the red rows.' },
       { label: 'Intake File', body: intakePick, ok: function () { return pickOk('bc-p-intake'); }, err: 'Pick the intake documents. If a pick is wrong, use Try again.' },
       { label: 'Missing Info', body: missingPick, ok: function () { return pickOk('bc-p-missing'); }, err: 'Pick what is missing, then press Next. If a pick is wrong, use Try again.' },
       { label: 'Email Ben', body: infoTask + infoReply, ok: function () { return replyOk('bc-intake-info', 'e1_ben_info'); }, err: replyErr('Ben') },
@@ -4253,7 +4260,7 @@
 
     return step(1, STEP_TITLES[1], 'Tue, Jan 20, 2026',
       'Ben Belack has new buyer clients. Open their file, review the buyer representation agreement and collect what you will need for the first offer.',
-      main, side([['Stage', 'Buyer representation'], ['BRBC', 'Exclusive · ends Feb 19, 2026']], ['brbc', 'aba', 'lad'], sideContacts(1)), true);
+      main, side([['Stage', 'Buyer representation'], ['Buyer Rep. Agreement', 'Exclusive · ends Feb 19, 2026']], ['brbc', 'ad'], sideContacts(1)), true);
   }
 
   /* ── Los Angeles County assessor parcel search ── */
@@ -4342,7 +4349,7 @@
         '<li><strong>Loan:</strong> conventional, 80%, rate not to exceed 7.000%</li>' +
         '<li><strong>Contingencies:</strong> loan 21 days, appraisal 14, investigation 12, seller documents and prelim 7</li>' +
         '<li><strong>Close of escrow:</strong> 30 days after acceptance</li>' +
-        '<li><strong>Compensation:</strong> seller pays our 2.5% out of the proceeds, per the BRBC</li>' +
+        '<li><strong>Compensation:</strong> seller pays our 2.5% out of the proceeds, per the buyer representation agreement</li>' +
         '<li><strong>Escrow and title:</strong> seller&rsquo;s choice</li>' +
         '<li><strong>Home warranty:</strong> buyers waive it. Otherwise standard allocations: seller pays the NHD report.</li>' +
         '<li><strong>Offer expires:</strong> Monday, February 2 at 10:00 AM</li>' +
@@ -4413,11 +4420,11 @@
       validate: function (v) { return /1634\s+benedict/i.test(v || ''); }, hint: 'Property from the accepted RPA.', auto: '1634 Benedict Canyon Dr, Beverly Hills, CA 90210' },
     { id: 'ss_apn', label: 'APN', ph: '0000-000-000',
       validate: function (v) { return String(v || '').replace(/\D/g, '') === '4356007010'; }, hint: 'The APN from the assessor search.', auto: '4356-007-010' },
-    { id: 'ss_price', label: 'Purchase price', ph: '$',
+    { id: 'ss_price', label: 'Purchase price', kind: 'money', ph: '$',
       validate: function (v) { return Math.abs(toMoney(v) - 3695000) < 0.5; }, hint: 'Accepted price.', auto: '$3,695,000' },
-    { id: 'ss_accept', label: 'Acceptance date', ph: 'mm/dd/yyyy',
+    { id: 'ss_accept', label: 'Acceptance date', kind: 'date', ph: 'mm/dd/yyyy',
       validate: function (v) { return toDate(v) === '2026-02-02'; }, hint: 'Acceptance is when the signed acceptance was delivered.', auto: '02/02/2026' },
-    { id: 'ss_coe', label: 'Close of escrow', ph: 'mm/dd/yyyy',
+    { id: 'ss_coe', label: 'Close of escrow', kind: 'date', ph: 'mm/dd/yyyy',
       validate: function (v) { return toDate(v) === '2026-03-04'; }, hint: '30 days after acceptance.', auto: '03/04/2026' },
     { id: 'ss_escrow', label: 'Escrow company & number', ph: 'Company · #',
       validate: function (v) { var s = (v || '').toLowerCase(); return s.indexOf('2064') > -1 && s.indexOf('next door') > -1; }, hint: 'From Alicia’s opening email.', auto: 'Next Door Escrow · 2064-AS' },
@@ -4625,21 +4632,21 @@
         { t: 'Seller bought the home less than 18 months ago', sub: 'SPQ 7.F', ok: false }
       ], 'The SPQ answers Yes to an insurance claim (the crawl-space pipe burst) and discloses the broken pool heater. The NHD puts the home in a Very High Fire Hazard Severity Zone and in landslide and liquefaction zones, which will matter for insurance and the geotechnical inspection. The SPQ also notes the Beverly Hills postal address with City of LA services. The 2021 reports are historical. There is no HOA, no solar, no death on the property, and Michael has owned it since 2021.');
 
-    var summaryTask = mailTask('bc-disc-summary', 'Send Ben your review',
-      'Summarize what you flagged and the dates that matter. Ben reviews the disclosures with his clients, so this goes to him.', 'e4_sent_summary');
+    var summaryTask = mailTask('bc-disc-summary', 'Let Ben know the package arrived',
+      'Tell Ben the disclosures are in, note the TDS issue you caught, and give the review deadline. Ben reviews the content with his clients.', 'e4_sent_summary');
     compose({
-      key: 'bc-disc-summary', prompt: 'Summarize the seller disclosure review for Ben',
-      to: 'Ben Belack <ben.belack@theagencyre.com>', subj: 'Disclosure review: 1634 Benedict Canyon Dr',
-      inst: 'List the flags, note that the TDS was required, and give the review and investigation deadlines. Do not interpret the disclosures for the buyers yourself.',
+      key: 'bc-disc-summary', prompt: 'Tell Ben the disclosure package arrived and give the review deadline',
+      to: 'Ben Belack <ben.belack@theagencyre.com>', subj: 'Seller disclosures received: 1634 Benedict Canyon Dr',
+      inst: 'Tell Ben the package arrived, note that the TDS is required even though the seller is a trust, and give the review deadline. You do not analyze the disclosures for the buyers: Ben reviews the content with them.',
       rules: {
-        need: [['ben', 'to', 'This review goes to Ben.']],
-        never: [['melony', 'Send your review to Ben first. He goes over the disclosures with his clients.'], ['senaka', 'Send your review to Ben first. He goes over the disclosures with his clients.']]
+        need: [['ben', 'to', 'This goes to Ben.']],
+        never: [['melony', 'Send this to Ben first. He goes over the disclosures with his clients.'], ['senaka', 'Send this to Ben first. He goes over the disclosures with his clients.']]
       },
-      ans: "Hi Ben,\n\nCarolwood delivered the full disclosure package on Friday 2/6. Items to walk through with Melony and Senaka:\n\n• SPQ 6.H / 8.A: insurance claim for a pipe burst in the crawl space, repaired (details in the TDS)\n• SPQ 13: pool heater does not work, fountain may need repair\n• NHD: Very High Fire Hazard Severity Zone, wildland area, landslide and liquefaction zones\n• SPQ 17.K: Beverly Hills mailing address, City of LA services\n• 2021 inspection, termite and 9A reports are historical only (Historical Documents Advisory)\n\nNote: Jonathan said the trust was exempt from the TDS, but Michael owned the home before putting it in his trust, so the TDS is required under the Trust Advisory.\n\nDates: review of seller documents runs to 2/11 (5 days after delivery); investigation contingency 2/17. The buyers need to sign the disclosure receipts in DocuSign.\n\nThanks,\nMaria Rodriguez\nTransaction Coordinator for Ben Belack, The Agency"
+      ans: "Hi Ben,\n\nCarolwood delivered the full disclosure package today (Friday 2/6). I have everything in the file.\n\nOne note: Jonathan said the trust was exempt from the TDS, but Michael owned the home before putting it in his trust, so the TDS is required under the Trust Advisory.\n\nReview of seller documents runs to Wednesday 2/11 (5 days after delivery); investigation contingency ends 2/17. I will send the buyers the DocuSign envelope for their signatures once you are ready to go over the disclosures with them.\n\nThanks,\nMaria Rodriguez\nTransaction Coordinator for Ben Belack, The Agency"
     });
     var benReply = inbox('e4_ben_reply', 'ben',
-      '<p>This is exactly what I needed for my call with them tonight. Good catch on the TDS; I will mention it to Jonathan.</p>' +
-      '<p>I did my own AVID yesterday at 12:35 PM, it is in DocuSign. Please send the buyers the disclosure package for their signatures now; I will walk them through it tonight. Inspection list coming in a minute.</p>' + BEN_SIG);
+      '<p>Good catch on the TDS; I will mention it to Jonathan.</p>' +
+      '<p>I did my own AVID yesterday at 12:35 PM, it is in DocuSign. Go ahead and send the buyers the disclosure package for their signatures now; I will walk them through everything tonight. Inspection list coming in a minute.</p>' + BEN_SIG);
     var buyersTask = mailTask('bc-disc-buyers', 'Send the package to the buyers',
       'The buyers have to receive and sign the seller disclosures. Tell them what is in the DocuSign envelope and by when. Ben explains the content.', 'e4_sent_buyers');
     compose({
@@ -4660,13 +4667,12 @@
     var main = deck(4, [
       { label: 'Disclosure Package', body: pkg, ok: function () { return readOk('e4_jon_disc'); }, err: 'Open Jonathan&rsquo;s email in Mail first.' },
       { label: 'Trust & TDS', body: tdsDec, ok: function () { return replyOk('bc-tds', 'e4_ben_tds_ok'); }, err: 'Answer in Mail and read the reply.' },
-      { label: 'Flags', body: flags, ok: function () { return pickOk('bc-p-flags'); }, err: 'Pick the items that need attention. If a pick is wrong, use Try again.' },
-      { label: 'Review for Ben', body: summaryTask + benReply, ok: function () { return replyOk('bc-disc-summary', 'e4_ben_reply'); }, err: replyErr('Ben') },
+      { label: 'Notify Ben', body: summaryTask + benReply, ok: function () { return replyOk('bc-disc-summary', 'e4_ben_reply'); }, err: replyErr('Ben') },
       { label: 'Buyers&rsquo; Signatures', body: buyersTask + buyersReply, ok: function () { return replyOk('bc-disc-buyers', 'e4_melony_disc'); }, err: replyErr('Melony') }
     ], 'Continue to Step 5: Inspections');
 
     return step(4, STEP_TITLES[4], 'Fri, Feb 6 – Sat, Feb 7, 2026',
-      'Carolwood delivered the seller disclosures. Check them against the contract, catch what matters, brief Ben and get the package to the buyers for signature.',
+      'Carolwood delivered the seller disclosures. Check whether the TDS is required, let Ben know the package arrived, and send it to the buyers for signature.',
       main, side([['Disclosures delivered', 'Fri, Feb 6'], ['Review ends', 'Wed, Feb 11']], ['discPkg', 'tds', 'spq', 'nhd', 'lead', 'earthquake', 'envHaz', 'whsd', 'wcmd', 'sfls', 'spt', 'wfda', 'rcsd', 'ta', 'avidLA', 'avidBA', 'histAdv', 'histInsp', 'histTermite', 'hist9a', 'aaa', 'sbsa', 'mca'], sideContacts(4)), true,
       { text: 'Review of seller documents: 7 days after acceptance or 5 days after delivery, whichever is later.', days: 'Wed, Feb 11' });
   }
@@ -4883,7 +4889,7 @@
     ]);
 
     var preclose = picker('bc-p-preclose', 'Build your pre-closing tracker',
-      'Pick what has to be cleared before recording. Several items are the seller side&rsquo;s to deliver: you track them so your buyers get clear title on time.', [
+      'In practice, start this tracker as soon as escrow opens. Pick what has to be cleared before recording. Several items are the seller side&rsquo;s to deliver: you track them so your buyers get clear title on time.', [
         { t: 'LAFD brush clearance lien release', sub: '9A Pending Lien Warning', ok: true },
         { t: 'LADWP Certificate of Compliance', sub: 'Water conservation · RetrofitLA', ok: true },
         { t: 'Certification of trust from the trustee', sub: 'Title requirement', ok: true },
@@ -5084,16 +5090,15 @@
     var evalBox = card('Workflow Validation & Performance Assessment',
       'Buyer-side transaction, from representation to recording.',
       '<div style="margin-bottom:14px;font-size:13.5px;color:var(--v-ink);line-height:1.6;">' +
-        'You coordinated Ben Belack&rsquo;s buyer file for 1634 Benedict Canyon Dr from the BRBC to recording:' +
+        'You coordinated Ben Belack&rsquo;s buyer file for 1634 Benedict Canyon Dr from the buyer representation agreement to recording:' +
         '<ul style="margin:8px 0 14px;padding-left:22px;">' +
-          '<li>Reviewed the BRBC and collected what the first offer needed</li>' +
+          '<li>Reviewed the Buyer Representation and Broker Compensation Agreement and collected what the file needed</li>' +
           '<li>Found the parcel and prepared the RPA offer package for a trust-owned property</li>' +
           '<li>Built the contract calendar, opened escrow, briefed the lender and kept the deposit wire safe</li>' +
-          '<li>Reviewed the seller disclosures, caught that the TDS was required and routed them to the buyers</li>' +
+          '<li>Caught that the TDS was required despite the trust, sent the disclosure package to the buyers for signature</li>' +
           '<li>Coordinated inspections without choosing vendors for the buyers</li>' +
           '<li>Drafted RR No. 1 and delivered the $95,000 agreement and the contingency removal on time</li>' +
           '<li>Tracked title, city, insurance and compliance items, set up the final walk-through and stopped a wire fraud attempt</li>' +
-          '<li>Reconciled the closing statement and the commission wire</li>' +
         '</ul>' +
       '</div>' +
       '<div id="wf-eval-container"></div>');
@@ -5109,11 +5114,6 @@
 
     var main = deck(8, [
       { label: 'Closing Day', body: closed + closeCheck, ok: function () { return readOk('e8_alicia_closed'); }, err: 'Open Alicia&rsquo;s email in Mail first.' },
-      { label: 'Statement Check', body: final + when('s8close', function () { return readOk('e8_alicia_final'); }, closeForm),
-        ok: function () { return formOk('bc-close'); }, check: function () { if (readOk('e8_alicia_final')) caNewCheck('bc-close'); },
-        err: function () { return readOk('e8_alicia_final') ? 'Some figures do not match the closing statement.' : 'Open Alicia&rsquo;s email in Mail first.'; } },
-      { label: 'Commission Check', body: commForm, ok: function () { return formOk('bc-comm'); }, err: 'Compare the instructions with the wire and fix the red rows.' },
-      { label: 'Ask Escrow', body: commTask + commReply, ok: function () { return replyOk('bc-comm-q', 'e8_alicia_comm'); }, err: replyErr('Alicia') },
       { label: 'Wrap-up', body: wrapTask + wrapReply +
           banner('s8done', function () { return replyOk('bc-wrapup', 'e8_ben_wrap'); }, '<strong>Transaction complete:</strong> buyer file closed and archived.') +
           when('s8eval', function () { return replyOk('bc-wrapup', 'e8_ben_wrap'); }, '<div style="margin-top:18px;">' + evalBox + '</div>' +
@@ -5128,7 +5128,7 @@
     ], null);
 
     return step(8, STEP_TITLES[8], 'Wed, Mar 4 – Tue, Mar 10, 2026',
-      'The deed recorded. Reconcile the numbers before you archive the file, and close the loop with the buyers.',
+      'The deed recorded. Close the loop with the buyers and wrap up the file.',
       main, side([['Status', 'Recorded Mar 4, 2026'], ['Seller credit applied', '$87,015.79']], ['closing', 'commission', 'commWire', 'coc', 'affidavit', 'firpta', 'prelimOk', 'lafd', 'retrofit', 'hw', 'rr'], sideContacts(8)), true);
   }
 
@@ -5139,9 +5139,9 @@
   /* ════════════════ Hints ("Ask Ben") ════════════════ */
   var STEP_HINTS = {
     0: [
-      "Start with my email, then open the BRBC from the Documents panel. Every term you need is on page 1.",
-      "The BRBC is exclusive, runs 01/20/2026 to 02/19/2026, covers Los Angeles County and sets 2.5%. Anything a seller pays us is credited against what the buyers owe, and for individual buyers the term can't run past 90 days.",
-      "Intake file: BRBC plus our Affiliated Business Arrangement and Local Area Disclosures. From me you need contacts, the pre-approval, proof of funds and their full legal names and vesting. Never ask for Social Security numbers by email."
+      "Start with my email, then open the Buyer Representation and Broker Compensation Agreement from the Documents panel. Every term you need is on page 1.",
+      "The agreement is exclusive, runs 01/20/2026 to 02/19/2026, covers Los Angeles County and sets 2.5%. Anything a seller pays us is credited against what the buyers owe, and for individual buyers the term can't run past 90 days.",
+      "Intake file: the Buyer Representation and Broker Compensation Agreement plus the Disclosure Regarding Real Estate Agency Relationship. From me you need contacts and their full legal names and vesting. I will send the pre-approval and proof of funds when we write the offer. Never ask for Social Security numbers by email."
     ],
     1: [
       "Search the county assessor for 1634 Benedict Canyon and pick the parcel with the exact number. It will also tell you who owns it.",
@@ -5156,7 +5156,7 @@
     3: [
       "Read the Trust Advisory before you accept that the trust was exempt. Look at when Michael bought the house and when he created the trust.",
       "The SPQ has a Yes on insurance claims and notes on the pool; the NHD puts the lot in fire and seismic zones; the 2021 reports are historical.",
-      "The TDS was required: Michael owned the home before his 2024 trust. Flag the pipe-burst claim, the pool heater, the fire zone, the landslide and liquefaction zones, the Beverly Hills address with LA services and the historical reports. Send your review to me first, then send the buyers the DocuSign envelope without interpreting it for them."
+      "The TDS was required: Michael owned the home before his 2024 trust. Let me know the package arrived and mention the TDS issue. Then send the buyers the DocuSign envelope for their signatures. I will review the content with them."
     ],
     4: [
       "Access to a listed property goes through the listing agent. Give Jonathan a schedule he can approve.",
@@ -5174,15 +5174,34 @@
       "Insurance goes to both buyers (FAIR Plan plus the Aegis wrap by 2/27), the signatures go to Senaka, the final walk-through is set with Jonathan for 3/3 with the Mr. Speedy invoices, and the fake wire email gets a STOP to the buyers with Alicia and me copied."
     ],
     7: [
-      "Put the closing statement next to the RR. The credit is not what we agreed.",
-      "Seller credit on the statement: $87,015.79, so $7,984.21 of the $95,000 was not applied because Chase capped it at allowable closing costs. Due to the buyers: $221.30.",
-      "Commission: $92,375 per the instructions (2.5%), but the wire was $91,975, a $400 difference. Ask Alicia for the backup before you log it, then send the buyers their wrap-up."
+      "The deed recorded. Send the buyers their post-closing wrap-up: supplemental tax, insurance renewals, brush clearance and the outstanding AVID signature.",
+      "Congratulate them but keep it practical: list what they should watch for after closing, and tell them their documents are in our file."
     ]
   };
 
   /* ════════════════ EXPORT ════════════════ */
   window.WF_HINT_MENTOR = { initials: 'BB', name: 'Ben Belack', role: "Buyer's Agent &middot; Mentor", fab: 'Ask Ben' };
   var CASE_EXPORT = {
+    getState: function () {
+      tcMailSaveDraft();
+      // Text fields normally commit on blur; also retain the field being typed.
+      document.querySelectorAll('[data-tc-store]').forEach(function (field) {
+        run()[field.dataset.tcStore + field.id] = field.value;
+      });
+      var slides = [];
+      for (var i = 0; i <= 8; i++) slides[i] = window['_caNewSlide' + i];
+      return { slides: slides, ss: SS_STATE, ssStage: window._caNewSsStage, decisions: DEC_LAST };
+    },
+    restoreState: function (state) {
+      for (var i = 0; i <= 8; i++) {
+        var slide = state.slides && state.slides[i];
+        window['_caNewSlide' + i] = typeof slide === 'number' && slide >= 0 ? slide : 0;
+      }
+      SS_STATE = state.ss || {};
+      window.SS_STATE = window.caNewSsState = SS_STATE;
+      window._caNewSsStage = typeof state.ssStage === 'number' ? state.ssStage : null;
+      DEC_LAST = state.decisions || {};
+    },
     type: 'workflow',
     usePipeline: true,
     tag: 'California · Buyer Side · Real File',
