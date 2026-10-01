@@ -2376,6 +2376,24 @@
     return { key: k, name: c.name, role: c.role + ' · ' + c.brokerage, email: c.email, initials: c.initials };
   });
 
+  var _contactDrop = null;
+  function getContactDrop() {
+    if (!_contactDrop) {
+      _contactDrop = document.createElement('div');
+      _contactDrop.className = 'wf-contact-dropdown';
+      _contactDrop.style.display = 'none';
+      document.body.appendChild(_contactDrop);
+    }
+    return _contactDrop;
+  }
+  function positionDropdown(input) {
+    var drop = getContactDrop();
+    var rect = input.getBoundingClientRect();
+    drop.style.top = (rect.bottom + 4) + 'px';
+    drop.style.left = rect.left + 'px';
+    drop.style.width = rect.width + 'px';
+  }
+
   window.caNewShowContacts = function (key, field) {
     caNewFilterContacts(key, field);
   };
@@ -2384,14 +2402,14 @@
      name being typed after the last comma. */
   window.caNewFilterContacts = function (key, field) {
     var input = document.getElementById('wf-' + key + '-' + field);
-    var drop = document.getElementById('wf-' + key + '-' + field + '-suggestions');
-    if (!input || !drop) return;
+    var drop = getContactDrop();
+    if (!input) return;
 
     var parts = String(input.value || '').split(',');
     var q = parts[parts.length - 1].trim().toLowerCase();
+    if (!q) { drop.style.display = 'none'; return; }
     var filtered = CASE_DIRECTORY.filter(function (c) {
       if (input.value.toLowerCase().indexOf(c.email) > -1) return false;
-      if (!q) return true;
       return c.name.toLowerCase().indexOf(q) !== -1 ||
              c.email.toLowerCase().indexOf(q) !== -1 ||
              c.role.toLowerCase().indexOf(q) !== -1;
@@ -2400,6 +2418,7 @@
     if (filtered.length === 0) {
       drop.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:var(--v-muted);">No matching contacts</div>';
       drop.style.display = 'block';
+      positionDropdown(input);
       return;
     }
 
@@ -2416,26 +2435,27 @@
 
     drop.innerHTML = html;
     drop.style.display = 'block';
+    positionDropdown(input);
   };
 
   window.caNewSelectContact = function (key, field, name, email) {
     var input = document.getElementById('wf-' + key + '-' + field);
-    var drop = document.getElementById('wf-' + key + '-' + field + '-suggestions');
     if (input) {
       var parts = String(input.value || '').split(',');
       parts[parts.length - 1] = ' ' + name + ' <' + email + '>';
       input.value = parts.join(',').replace(/^\s+/, '') + ', ';
       input.focus();
     }
-    if (drop) drop.style.display = 'none';
+    var drop = getContactDrop();
+    drop.style.display = 'none';
     var statusEl = document.getElementById('wf-' + key + '-body-status');
     if (statusEl) statusEl.innerHTML = '';
   };
 
-  window.caNewHideContacts = function (key, field) {
+  window.caNewHideContacts = function () {
     setTimeout(function () {
-      var drop = document.getElementById('wf-' + key + '-' + field + '-suggestions');
-      if (drop) drop.style.display = 'none';
+      var drop = getContactDrop();
+      drop.style.display = 'none';
     }, 200);
   };
 
@@ -2485,12 +2505,15 @@
       '</div>' : '') +
       '<div class="wf-compose-body">' +
         (o.inst ? '<div class="wf-compose-prompt-hint"><strong>TC Task:</strong> ' + o.inst + '</div>' : '') +
-        (o.choices ? '<div class="tc-draft-pick"><div class="tc-draft-pick-title">Start from a template</div>' +
-          o.choices.map(function (c, i) {
-            return '<button type="button" class="tc-draft-opt" id="wf-' + o.key + '-opt-' + i + '" onclick="caNewPickDraft(\'' + o.key + '\',' + i + ')">' +
-              '<span class="tc-draft-radio"></span><span class="tc-draft-text"><strong>' + c.label + '</strong><em>' + c.preview + '</em></span></button>';
-          }).join('') + '</div>' : '') +
-        '<textarea id="wf-' + o.key + '-body" placeholder="' + (o.choices ? 'Pick a template above, then complete the parts in [brackets]&hellip;' : 'Write your email here&hellip;') + '"></textarea>' +
+        (o.choices ? '<div class="tc-draft-pick">' +
+          '<label class="tc-draft-pick-title" for="wf-' + o.key + '-tpl">Choose a response approach</label>' +
+          '<select id="wf-' + o.key + '-tpl" class="tc-draft-select" onchange="caNewPickDraft(\'' + o.key + '\', this.selectedIndex - 1)">' +
+            '<option value="" disabled selected>Select a template&hellip;</option>' +
+            o.choices.map(function (c, i) {
+              return '<option value="' + i + '">' + esc(c.label) + '</option>';
+            }).join('') +
+          '</select></div>' : '') +
+        '<textarea id="wf-' + o.key + '-body" placeholder="' + (o.choices ? 'Select a template above, then complete the parts in [brackets]&hellip;' : 'Write your email here&hellip;') + '"></textarea>' +
         '<div class="wf-compose-actions">' +
           '<button type="button" class="wf-compose-submit" id="wf-' + o.key + '-body-btn" onclick="caNewSubmitCompose(\'' + o.key + '\', {textareaId:\'wf-' + o.key + '-body\', statusElId:\'wf-' + o.key + '-body-status\', btnId:\'wf-' + o.key + '-body-btn\', role:\'tc\', scenarioId:\'' + (o.scenario || o.key) + '\', scenarioPrompt:\'' + String(o.prompt || '').replace(/'/g, "\\'") + '\', maxScore:5})">Send &amp; Submit for Grading &rarr;</button>' +
           '<button type="button" class="wf-compose-autofill tc-assist" onclick="caNewAutoCompose(\'' + o.key + '\')">&#9889; Load TC Standard Draft</button>' +
@@ -2503,10 +2526,8 @@
   /* Template reply: fill the draft and remember which approach was chosen */
   function caNewMarkDraft(key) {
     var sel = run()['dsel_' + key];
-    (COMPOSE_CHOICES[key] || []).forEach(function (c, i) {
-      var b = document.getElementById('wf-' + key + '-opt-' + i);
-      if (b) b.classList.toggle('on', i === sel);
-    });
+    var dd = document.getElementById('wf-' + key + '-tpl');
+    if (dd && typeof sel === 'number') dd.selectedIndex = sel + 1;
   }
   window.caNewPickDraft = function (key, i) {
     var c = (COMPOSE_CHOICES[key] || [])[i];
@@ -4614,7 +4635,7 @@
           body: "Hi Ben,\n\nIt only matters if the buyers ask for one.\n\nBest,\nMaria Rodriguez\nTransaction Coordinator for Ben Belack, The Agency" }
       ],
       ans: "Hi Ben,\n\nNot quite. Under the Trust Advisory (TA 1A(2)), a trustee still owes a TDS when the trustee is a natural person, the trust is revocable and the trustee is a former owner or occupant. Michael bought the house in 2021 and put it in his own trust in December 2024, so the TDS was required, not a courtesy. The buyers can rely on it as a statutory disclosure.\n\nBest,\nMaria Rodriguez\nTransaction Coordinator for Ben Belack, The Agency",
-      replyFrom: 'ben', replyBody: '<p>Perfect, that is exactly what I will tell the buyers. Nice work.</p>\' + BEN_SIG + \'', replyOpts: {}
+      replyFrom: 'ben', replyBody: '<p>Perfect, that is exactly what I will tell the buyers. Nice work.</p>' + BEN_SIG, replyOpts: {}
     });
     var tdsDec = tdsAsk + when('s4tds', function () { return readOk('e4_ben_tds'); }, tdsPick);
 
