@@ -166,7 +166,7 @@
     'hs-expire': {
       title: 'Respuesta a Ben: Conflicto de Fechas de Expiración',
       l1: 'Explicar qué fecha de expiración registrar en el calendario cuando el contrato firmado y los términos adicionales tienen fechas distintas.',
-      l2: 'El RLA firmado tiene una fecha fija (04/21/2026). El término adicional dice 6 meses desde MLS Active (20 de mayo de 2026). Solo una enmienda firmada puede cambiar el plazo oficial.',
+      l2: 'El RLA firmado tiene una fecha fija (04/21/2026). El término adicional dice 6 meses desde MLS Active (05/20/2026). Solo una enmienda firmada puede cambiar el plazo oficial.',
       l3: '<div class="wf-task-hint-kicker">Estrategia recomendada:</div>' +
           '<ul class="wf-task-hint-list">' +
             '<li><strong>Opción correcta:</strong> &ldquo;Firm date + flag the conflict&rdquo; (calendarizar 04/21/2026 y señalar la discrepancia a Ben).</li>' +
@@ -263,7 +263,7 @@
     },
     'hs-access': {
       title: 'Redacción: Logística de Acceso para Inspección a Raymond',
-      l1: 'Explicar a Raymond qué servicios e ingresos necesita el inspector de Home-Front para concluir la inspección antes de que venza el plazo de contingencia el 6 de febrero.',
+      l1: 'Explicar a Raymond qué servicios e ingresos necesita el inspector de Home-Front para concluir la inspección antes de que venza el plazo de contingencia el 02/06/2026.',
       l2: 'Revisa el correo de Craig: faltó gas (SoCalGas), falta termostato para probar calefacción, y acceso al garaje y clóset del calentador.',
       l3: '<div class="wf-task-hint-kicker">Requisitos y datos clave:</div>' +
           '<ul class="wf-task-hint-list">' +
@@ -297,7 +297,7 @@
     'hs-repairs': {
       title: 'Redacción: Coordinación de Reparaciones con Raymond',
       l1: 'Notificar a Raymond el acuerdo alcanzado en el Request for Repair No. 2 y fijar el plazo estricto para tener listas las 17 reparaciones antes del walk-through final.',
-      l2: 'Revisa Addendum No. 1 y RR No. 2. El comprador aceptó $15,000 de crédito y 17 reparaciones. El walk-through final es el jueves 12 de febrero a las 9:00 AM (día de cierre).',
+      l2: 'Revisa Addendum No. 1 y RR No. 2. El comprador aceptó $15,000 de crédito y 17 reparaciones. El walk-through final es el 02/12/2026 a las 9:00 AM (día de cierre).',
       l3: '<div class="wf-task-hint-kicker">Requisitos y datos clave:</div>' +
           '<ul class="wf-task-hint-list">' +
             '<li><strong>Para (To):</strong> <span class="wf-task-hint-chip">Raymond Philips</span></li>' +
@@ -394,7 +394,7 @@
             '<li><strong>Para (To):</strong> <span class="wf-task-hint-chip">Raymond Philips</span></li>' +
             '<li><strong>En copia (CC):</strong> <span class="wf-task-hint-chip">Ben Belack, Emily Cavan</span>. <em style="color:#dc2626">No copiar a la otra parte.</em></li>' +
             '<li><strong>Asunto:</strong> <span class="wf-task-hint-chip">Closed: 8638 Hollywood Blvd, your final numbers</span></li>' +
-            '<li><strong>Puntos en el cuerpo:</strong> Confirmar grabación de escritura (12 de febrero de 2026), desglosar números netos ($825,098.47), explicar retención de $5,000 por maleza, y recordar cancelar seguros/servicios y guardar estado para reporte 1099-S.</li>' +
+            '<li><strong>Puntos en el cuerpo:</strong> Confirmar grabación de escritura (02/12/2026), desglosar números netos ($825,098.47), explicar retención de $5,000 por maleza, y recordar cancelar seguros/servicios y guardar estado para reporte 1099-S.</li>' +
           '</ul>'
     }
   };

@@ -2061,7 +2061,7 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
 <script src="../assets/js/workflow.js?v=20261001c"></script>
 <script src="../assets/js/tc-va-case.js"></script>
 <script src="../assets/js/tc-ca-new-case.js?v=20261001c"></script>
-<script src="../assets/js/tc-ca-seller-case.js?v=20261001c"></script>
+<script src="../assets/js/tc-ca-seller-case.js?v=20261001d"></script>
 <script>
   /* ══════════════════════════════════════════════════════════
      CASE SIMULATOR CONTENT: Transaction Coordinator
@@ -4392,7 +4392,7 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
               <td><select><option>Yes</option><option>No</option></select></td>
               <td><select><option>Yes</option><option>No</option></select></td>
               <td><input type="number" placeholder="0.00"></td>
-              <td><input type="date"></td>
+              <td><input ${tcCaseFieldAttrs({ kind: 'date' })} id="caf-ca-adu-rent-until" aria-label="Rent Until Date" placeholder="MM/DD/YYYY"></td>
             </tr>
           </tbody>
         </table>
