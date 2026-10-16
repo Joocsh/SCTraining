@@ -110,6 +110,41 @@ ol.num{margin:0;padding-left:20px;display:grid;gap:6px;color:#33465c;font-size:1
 .lesson .callout{margin-top:16px}
 .lesson .more{margin-top:10px}
 .card h3{font-size:16.5px}
+.mw-open{cursor:pointer;font:inherit}
+.mw-scrim{position:fixed;inset:0;background:rgba(10,38,71,.35);z-index:70}
+.mw{position:fixed;top:0;right:0;bottom:0;width:min(600px,100%);background:var(--bg);z-index:71;display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(10,38,71,.18)}
+.mw[hidden],.mw-scrim[hidden]{display:none}
+.mw-hd{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;background:#fff;border-bottom:1px solid var(--line)}
+.mw-hd h2{font-size:21px}
+.mw-x{border:0;background:var(--bg);width:36px;height:36px;border-radius:10px;font-size:22px;cursor:pointer;color:var(--navy)}
+.mw-tabs{display:flex;gap:6px;padding:12px 24px 0;background:#fff;border-bottom:1px solid var(--line)}
+.mw-tabs button{border:0;background:none;padding:10px 4px;margin-right:16px;font:inherit;font-weight:700;color:var(--muted);border-bottom:3px solid transparent;cursor:pointer}
+.mw-tabs button.on{color:var(--navy);border-bottom-color:var(--cyan)}
+.mw-body{flex:1;overflow-y:auto;padding:22px 24px 40px}
+.mw-body h3{font-size:15.5px;margin:22px 0 10px}
+.mw-body h3:first-child{margin-top:0}
+.mw-stat{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mw-stat div{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.mw-stat b{display:block;font:900 22px "Helvetica Neue",Arial,sans-serif;color:var(--navy)}
+.mw-stat span{font-size:12.5px;color:var(--muted)}
+.mw-lvl{display:grid;gap:12px}
+.mw-lvl > div{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.mw-lvl .row{display:flex;justify-content:space-between;align-items:center;font-size:14.5px;color:var(--navy);font-weight:700;margin-bottom:8px}
+.mw-lvl .row em{font-style:normal;font-size:12px;font-weight:700;color:var(--cyan-d);background:var(--soft);border-radius:999px;padding:2px 10px}
+.mw-seg{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.mw-seg i{height:7px;border-radius:99px;background:#e3eaf1}
+.mw-seg i.on{background:var(--cyan)}
+.mw-item{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px}
+.mw-item > b{display:block;color:var(--navy);font-size:15px}
+.mw-item small{color:var(--muted);font-size:12.5px}
+.mw-item p{font-size:14px;color:#44566c;margin-top:8px;white-space:pre-wrap}
+.mw-item p span{font-weight:700;color:var(--navy)}
+.mw-empty{color:var(--muted);font-size:14.5px}
+.mw-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.mw-docs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mw-docs div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--navy);font-weight:700}
+.mw-docs small{display:block;font-weight:600;color:var(--cyan-d)}
+@media (max-width:640px){ .mw-stat{grid-template-columns:1fr 1fr} .mw-docs{grid-template-columns:1fr} .mw-open{padding:8px 12px} }
 </style>
 </head>
 <body>
@@ -118,6 +153,7 @@ ol.num{margin:0;padding-left:20px;display:grid;gap:6px;color:#33465c;font-size:1
   <a class="scbar-logo" href="../index.html" aria-label="Skill Cloud Academy home"><img src="../assets/img/skillcloud-navlogo.png" alt="Skill Cloud"></a>
   <span class="scbar-ctx">Operations Manager</span>
   <div class="scbar-right">
+    <button class="scbar-exit mw-open" type="button" id="mwOpen" aria-haspopup="dialog">My work</button>
     <a class="scbar-exit" href="../paths.html#va">Back to Paths</a>
   </div>
 </header>
@@ -3713,10 +3749,25 @@ ol.num{margin:0;padding-left:20px;display:grid;gap:6px;color:#33465c;font-size:1
 
 </main>
 
+<!-- My work and My progress: open anytime from the top bar -->
+<div class="mw-scrim" id="mwScrim" hidden></div>
+<aside class="mw" id="mw" role="dialog" aria-modal="true" aria-labelledby="mwTitle" hidden>
+  <div class="mw-hd">
+    <h2 id="mwTitle">My progress</h2>
+    <button class="mw-x" type="button" id="mwClose" aria-label="Close">&times;</button>
+  </div>
+  <div class="mw-tabs" role="tablist">
+    <button type="button" role="tab" class="on" data-tab="progress" aria-selected="true">My progress</button>
+    <button type="button" role="tab" data-tab="work" aria-selected="false">My work</button>
+  </div>
+  <div class="mw-body" id="mwProgress"></div>
+  <div class="mw-body" id="mwWork" hidden></div>
+</aside>
+
 <script src="../assets/js/app-core.js?v=20260917"></script>
 <script>SCApp.requireAuth();</script>
 <script src="../assets/js/course.js?v=20261016"></script>
-<script src="../assets/js/course-kit.js?v=20260925"></script>
+<script src="../assets/js/course-kit.js?v=20261016"></script>
 <script>
   SCCourse.init({ id: 'ops', title: 'Operations Manager', kick: 'VA training', store: 'sc_va_ops__' });
   SCCourseKit.init('sc_va_ops__');
@@ -3743,6 +3794,141 @@ ol.num{margin:0;padding-left:20px;display:grid;gap:6px;color:#33465c;font-size:1
     }
     draw();
     document.addEventListener('click', function () { setTimeout(draw, 80); });
+  })();
+  /* My work and My progress, as in the original platform: every lesson,
+     case and template you have worked on, and your skill levels. */
+  (function () {
+    var SKILLS = ['Operational Thinking', 'Communication', 'People Management', 'Negotiation', 'Prioritization',
+      'Organization', 'Process Improvement', 'Decision-Making', 'Stakeholder Management', 'Strategic Thinking'];
+    var LEVELS = ['Beginning', 'Developing', 'Proficient', 'Advanced'];
+    var PRACTICE = /^(think|people|negotiate|organize|systems|lead)-\d+$/;
+    var $ = function (s, r) { return (r || document).querySelector(s); };
+    var $$ = function (s, r) { return [].slice.call((r || document).querySelectorAll(s)); };
+    function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+    function level(n) { return n >= 5 ? 3 : n >= 3 ? 2 : n >= 1 ? 1 : 0; }
+    function prompt(ta) {
+      var lab = ta.closest('label');
+      if (lab) return lab.childNodes[0].textContent.trim();
+      var q = $('.task-q', ta.closest('.task'));
+      if (!q) return '';
+      var c = q.cloneNode(true), sm = $('small', c); if (sm) sm.remove();
+      return c.textContent.trim();
+    }
+
+    function data() {
+      var lessons = $$('.lesson'), done = SCCourse.state.done || [], drafts = SCCourseKit.drafts();
+      var passed = SCCourse.state.passed || {};
+      return { lessons: lessons, done: done, drafts: drafts, passed: passed };
+    }
+
+    function progress() {
+      var d = data(), count = {}, practiceDone = 0, casesDone = 0, practiceAll = 0, casesAll = 0;
+      d.lessons.forEach(function (l, i) {
+        var isCase = /^sim-/.test(l.id), isPr = PRACTICE.test(l.id), isDone = d.done.indexOf(i) > -1;
+        if (isPr) { practiceAll++; if (isDone) practiceDone++; }
+        if (isCase) { casesAll++; if (isDone) casesDone++; }
+        var sk = l.getAttribute('data-skills');
+        if (isDone && sk) sk.split('|').forEach(function (k) { count[k] = (count[k] || 0) + 1; });
+      });
+      var total = d.lessons.length;
+      $('#mwProgress').innerHTML =
+        '<h3>Overview</h3><div class="mw-stat">' +
+          '<div><b>' + d.done.length + '/' + total + '</b><span>Lessons in the training</span></div>' +
+          '<div><b>' + practiceDone + '/' + practiceAll + '</b><span>Practice lessons</span></div>' +
+          '<div><b>' + casesDone + '/' + casesAll + '</b><span>Case studies</span></div></div>' +
+        '<p class="mw-empty" style="margin-top:12px">' + (practiceDone + casesDone) + ' of ' + (practiceAll + casesAll) +
+          ' lessons and case studies complete. Skill development, not module completion, is what matters here.</p>' +
+        '<h3>Skill map</h3><div class="mw-lvl">' + SKILLS.map(function (k) {
+          var lv = level(count[k] || 0);
+          return '<div><div class="row">' + k + '<em>' + LEVELS[lv] + '</em></div><div class="mw-seg">' +
+            [0, 1, 2, 3].map(function (i) { return '<i class="' + (i <= lv ? 'on' : '') + '"></i>'; }).join('') + '</div></div>';
+        }).join('') + '</div>' +
+        '<p class="mw-empty" style="margin-top:12px">A skill levels up as you finish the lessons and cases that practice it: 1 or 2 Developing, 3 or 4 Proficient, 5 or more Advanced.</p>';
+    }
+
+    function entries(l, d) {
+      var out = [];
+      if (PRACTICE.test(l.id)) {
+        var g = $('.task.gate[data-type="choice"]', l);
+        if (g && $$('.gate', l).every(function (x, k) { return d.passed[l.id + ':' + k]; })) {
+          var b = $('.choice[data-choice="' + g.dataset.answer + '"]', g), c = b.cloneNode(true), key = $('.key', c); if (key) key.remove();
+          out.push(['Decision', c.textContent.trim()]);
+        }
+      }
+      $$('.task[data-type="poll"]', l).forEach(function (t) {
+        var n = $$('.task[data-type="poll"]').indexOf(t), v = d.drafts['poll:' + l.id + ':' + n];
+        if (v != null) { var c = $$('.choice', t)[v].cloneNode(true), k = $('.key', c); if (k) k.remove(); out.push(['Your choice', c.textContent.trim()]); }
+      });
+      $$('textarea[data-draft]', l).forEach(function (ta) {
+        var v = (d.drafts[ta.getAttribute('data-draft')] || '').trim();
+        if (!v) return;
+        var id = ta.getAttribute('data-draft'), label = /-apply$/.test(id) ? 'Applied to my work' : /-decide$/.test(id) ? 'Your triage' : prompt(ta);
+        out.push([label, v]);
+      });
+      return out;
+    }
+
+    function work() {
+      var d = data(), lessons = [], cases = [], docs = [];
+      d.lessons.forEach(function (l, i) {
+        if (l.id === 'welcome' || l.id === 'finish') return;
+        if (l.id === 'toolkit') {
+          $$('details', l).forEach(function (det) {
+            var fields = $$('textarea[data-draft]', det), filled = fields.filter(function (t) { return (d.drafts[t.getAttribute('data-draft')] || '').trim(); });
+            if (filled.length) docs.push({ title: $('summary', det).textContent, n: filled.length, of: fields.length, items: filled.map(function (t) { return [prompt(t), d.drafts[t.getAttribute('data-draft')].trim()]; }) });
+          });
+          return;
+        }
+        var e = entries(l, d), isDone = d.done.indexOf(i) > -1;
+        if (!isDone && !e.length) return;
+        var item = { title: l.dataset.title, mod: (l.dataset.mod || '').replace(/^Module \d+ · /, ''), done: isDone, e: e };
+        (/^sim-/.test(l.id) ? cases : lessons).push(item);
+      });
+      function card(x) {
+        return '<div class="mw-item"><b>' + esc(x.title) + '</b><small>' + esc(x.mod) + (x.done ? '' : ' · in progress') + '</small>' +
+          x.e.map(function (r) { return '<p><span>' + esc(r[0]) + ':</span> ' + esc(r[1]) + '</p>'; }).join('') + '</div>';
+      }
+      window.__mwExport = { lessons: lessons, cases: cases, docs: docs };
+      $('#mwWork').innerHTML =
+        '<div class="mw-actions"><button class="c-btn ghost sm" type="button" id="mwDownload">Download my work</button></div>' +
+        '<p class="mw-empty">Everything you have submitted: lessons, case studies, and toolkit documents. It is saved on this device.</p>' +
+        '<h3>Completed lessons (' + lessons.filter(function (x) { return x.done; }).length + ')</h3>' +
+          (lessons.length ? lessons.map(card).join('') : '<p class="mw-empty">No lessons completed yet.</p>') +
+        '<h3>Case studies (' + cases.filter(function (x) { return x.done; }).length + ')</h3>' +
+          (cases.length ? cases.map(card).join('') : '<p class="mw-empty">No case studies completed yet.</p>') +
+        '<h3>Toolkit documents (' + docs.length + ')</h3>' +
+          (docs.length ? '<div class="mw-docs">' + docs.map(function (x) { return '<div>' + esc(x.title) + '<small>In progress · ' + x.n + ' of ' + x.of + ' fields</small></div>'; }).join('') + '</div>'
+                       : '<p class="mw-empty">No toolkit documents started yet.</p>');
+      $('#mwDownload').onclick = download;
+    }
+
+    function download() {
+      var x = window.__mwExport, me = window.SCApp && SCApp.currentUser(), L = [];
+      L.push('Operations Manager training · My work', me ? me.name : '', new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), '');
+      function block(title, list) {
+        L.push('== ' + title + ' ==', '');
+        list.forEach(function (i) { L.push(i.title + (i.mod ? ' (' + i.mod + ')' : '')); (i.e || i.items).forEach(function (r) { L.push('  ' + r[0] + ': ' + r[1]); }); L.push(''); });
+      }
+      block('Lessons', x.lessons); block('Case studies', x.cases); block('Toolkit documents', x.docs);
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([L.join('\n')], { type: 'text/plain' }));
+      a.download = 'operations-manager-my-work.txt';
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+
+    var panel = $('#mw'), scrim = $('#mwScrim');
+    var cur = 'progress';
+    function tab(t) {
+      cur = t;
+      $$('.mw-tabs button').forEach(function (b) { var on = b.dataset.tab === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+      $('#mwProgress').hidden = t !== 'progress'; $('#mwWork').hidden = t !== 'work';
+      $('#mwTitle').textContent = t === 'progress' ? 'My progress' : 'My work';
+    }
+    function open() { progress(); work(); tab(cur); panel.hidden = false; scrim.hidden = false; $('#mwClose').focus(); }
+    function close() { panel.hidden = true; scrim.hidden = true; $('#mwOpen').focus(); }
+    $('#mwOpen').onclick = open; $('#mwClose').onclick = close; scrim.onclick = close;
+    $$('.mw-tabs button').forEach(function (b) { b.onclick = function () { tab(b.dataset.tab); }; });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !panel.hidden) close(); });
   })();
 </script>
 </body>
