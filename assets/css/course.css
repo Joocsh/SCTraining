@@ -34,19 +34,33 @@ body.course .scbar{position:fixed;top:0;left:0;right:0;z-index:40}
 .c-meter-bar{flex:1;height:6px;border-radius:99px;background:#e8eef4;overflow:hidden}
 .c-meter-bar i{display:block;height:100%;width:0;background:var(--cyan);border-radius:99px;transition:width .5s cubic-bezier(.4,0,.2,1)}
 .c-outline nav{flex:1;overflow-y:auto;padding:8px 12px 28px;overscroll-behavior:contain}
-.c-mod{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#8a99ab;padding:18px 12px 6px}
+/* module cards in the outline: they open downward */
+.c-modbox{margin:8px 0;border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden;transition:border-color .15s}
+.c-modbox.open{border-color:#bfe9ee}
+.c-mod{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:12px 14px;text-align:left;cursor:pointer;font:inherit;transition:background .15s}
+.c-mod:hover{background:var(--bg)}
+.c-modbox.current .c-mod{background:var(--soft)}
+.c-mod-t{flex:1;min-width:0;display:grid;gap:1px}
+.c-mod-t small{font-size:12px;font-weight:800;color:var(--cyan-d)}
+.c-mod-t b{font-size:14px;color:var(--navy);line-height:1.3}
+.c-mod-meta{flex:none;display:flex;align-items:center;gap:6px}
+.c-mod-n{font-size:12px;font-weight:700;color:#8a99ab}
+.c-chev{width:8px;height:8px;border:solid #8a99ab;border-width:0 2px 2px 0;transform:rotate(45deg);margin:0 2px 3px 4px;transition:transform .2s}
+.c-modbox.open .c-chev{transform:rotate(-135deg);margin-bottom:-3px}
+.c-mod-body{display:none;padding:0 6px 8px}
+.c-modbox.open .c-mod-body{display:block;animation:c-rise .25s}
 /* locked until the lesson before is done */
-.c-mod .c-lock{display:none;margin-left:auto;color:#a9b6c4}
+.c-mod .c-lock{display:none;color:#a9b6c4}
 .c-mod .c-lock svg,.c-dot svg{width:12px;height:12px}
-.c-mod.locked .c-lock{display:inline-flex}
-.c-mod.locked{color:#b3bfcc}
+.c-modbox.locked .c-lock{display:inline-flex}
+.c-modbox.locked .c-mod-t b,.c-modbox.locked .c-mod-t small{color:#a9b6c4}
 .c-item.locked{cursor:not-allowed;color:#a9b6c4}
 .c-item.locked:hover{background:none}
 .c-item.locked .c-dot{border-color:#e3eaf1;color:#a9b6c4;background:#f6f9fc}
 [data-jump].locked{opacity:.55;cursor:not-allowed}
 [data-jump].locked:hover{border-color:var(--line);box-shadow:none}
 .c-mod .c-badge{display:none;width:18px;height:18px;border-radius:6px;background:#fff4d6;color:#b7791f;font-size:11px;align-items:center;justify-content:center}
-.c-mod.done .c-badge{display:inline-flex}
+.c-modbox.done .c-badge{display:inline-flex}
 .c-item{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;text-align:left;cursor:pointer;padding:9px 12px;border-radius:12px;color:#40526a;font-size:14.5px;line-height:1.35;transition:background .15s,color .15s}
 .c-item:hover{background:var(--bg);color:var(--navy)}
 .c-item.on{background:var(--soft);color:var(--navy);font-weight:700}

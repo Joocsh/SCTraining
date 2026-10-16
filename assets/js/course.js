@@ -105,23 +105,48 @@
 
     twoSteps();
 
+    /* the outline: one card per module that opens downward, so the list
+       stays short; the module you are in opens on its own */
     var nav = $('#cNav');
     mods().forEach(function (m) {
-      if (m.name) nav.insertAdjacentHTML('beforeend', '<div class="c-mod" data-mod="' + m.name + '" data-first="' + m.idx[0] + '"><span>' + m.name + '</span><span class="c-badge" title="Module complete">&#9733;</span><span class="c-lock" title="Finish the previous module to unlock">' + LOCK + '</span></div>');
+      var host = nav;
+      if (m.name) {
+        var cut = m.name.indexOf(' · '), label = cut > -1 ? m.name.slice(0, cut) : '', title = cut > -1 ? m.name.slice(cut + 3) : m.name;
+        var box = document.createElement('div');
+        box.className = 'c-modbox'; box.dataset.mod = m.name; box.dataset.first = m.idx[0]; box.dataset.idx = m.idx.join(',');
+        box.innerHTML = '<button class="c-mod" type="button" aria-expanded="false">' +
+          '<span class="c-mod-t">' + (label ? '<small>' + label + '</small>' : '') + '<b>' + title + '</b></span>' +
+          '<span class="c-mod-meta"><span class="c-badge" title="Module complete">&#9733;</span><span class="c-lock" title="Finish the previous module to unlock">' + LOCK + '</span>' +
+          '<span class="c-mod-n"></span><span class="c-chev" aria-hidden="true"></span></span></button><div class="c-mod-body"></div>';
+        $('.c-mod', box).onclick = function () { setOpen(box, !box.classList.contains('open')); };
+        nav.appendChild(box);
+        host = $('.c-mod-body', box);
+      }
       m.idx.forEach(function (i) {
         var l = C.lessons[i];
         var b = document.createElement('button');
         b.className = 'c-item'; b.dataset.i = i;
         b.innerHTML = '<span class="c-dot">' + (i + 1) + '</span><span>' + l.dataset.title + '</span>';
         b.onclick = function () { go(i); };
-        nav.appendChild(b);
+        host.appendChild(b);
         if (!isSplit(i)) return;
         var s = document.createElement('button');
         s.className = 'c-item c-sub'; s.dataset.i = i;
         s.innerHTML = '<span class="c-dot">&#183;</span><span>Checkpoint</span>';
         s.onclick = function () { go(i, 'quiz'); };
-        nav.appendChild(s);
+        host.appendChild(s);
       });
+    });
+  }
+
+  function setOpen(box, open) {
+    box.classList.toggle('open', open);
+    $('.c-mod', box).setAttribute('aria-expanded', open);
+  }
+  /* open the module of the current lesson and fold the rest */
+  function focusModule() {
+    $$('.c-modbox').forEach(function (box) {
+      setOpen(box, box.dataset.idx.split(',').indexOf(String(C.cur)) > -1);
     });
   }
 
@@ -139,9 +164,12 @@
       b.setAttribute('aria-disabled', lk);
       $('.c-dot', b).innerHTML = d ? '&#10003;' : (lk ? LOCK : (sub ? '&#183;' : (i + 1)));
     });
-    $$('.c-mod').forEach(function (m) {
+    $$('.c-modbox').forEach(function (m) {
+      var idx = m.dataset.idx.split(',').map(Number), n = idx.filter(function (i) { return s.done.indexOf(i) > -1; }).length;
       m.classList.toggle('done', (s.modulesDone || []).indexOf(m.dataset.mod) > -1);
       m.classList.toggle('locked', !unlocked(+m.dataset.first));
+      m.classList.toggle('current', idx.indexOf(C.cur) > -1);
+      $('.c-mod-n', m).textContent = n + '/' + idx.length;
     });
     /* shortcuts inside the lessons, like the module list on the welcome screen */
     $$('[data-jump]').forEach(function (b) {
@@ -195,6 +223,7 @@
     C.cur = i; C.state.at = i;
     C.lessons[i].classList.add('on');
     C.lessons[i].classList.toggle('quiz', phase === 'quiz' && isSplit(i));
+    focusModule();
     window.scrollTo({ top: 0, behavior: 'instant' });
     document.body.classList.remove('nav-open');
     var ob = $('#cOutlineBtn'); if (ob) ob.setAttribute('aria-expanded', 'false');
@@ -370,6 +399,7 @@
     $('#cCert').onclick = function (e) { if (e.target === this) this.classList.remove('open'); };
 
     C.lessons[C.cur].classList.add('on');
+    focusModule();
     paint();
     setTimeout(reveal, 400);
     if (location.hash === '#certificate' && C.state.completedAt && C.opts.certificate !== false) showCert();
