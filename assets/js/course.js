@@ -61,7 +61,7 @@
       var n = $$('.gate', quiz).length;
       read.insertAdjacentHTML('beforeend',
         '<div class="c-step-end"><div><b>Checkpoint</b><span>' +
-          (n === 1 ? 'One quick task' : n + ' quick tasks') + ' on what you just read. Retry as often as you need.</span></div>' +
+          (n === 0 ? 'Put what you just read into practice, in writing.' : (n === 1 ? 'One quick task' : n + ' quick tasks') + ' on what you just read. Retry as often as you need.') + '</span></div>' +
         '<button class="c-btn primary" data-phase="quiz">Go to the checkpoint <span aria-hidden="true">&rarr;</span></button></div>');
       quiz.insertAdjacentHTML('afterbegin',
         '<div class="c-qhead"><button class="c-back" data-phase="read"><span aria-hidden="true">&larr;</span> Back to the lesson</button>' +

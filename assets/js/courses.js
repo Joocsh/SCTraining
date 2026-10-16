@@ -31,6 +31,11 @@
       image: 'assets/img/va/asana/m2-tasks.jpg', lessons: 10, modules: 4, store: 'sc_va_asana__', track: 'va'
     },
     {
+      id: 'ops', title: 'Operations Manager', href: 'va/operations-manager.html', kind: 'VA training',
+      desc: 'Think in systems, lead people, negotiate, prioritize and improve processes, with real situations and ten case studies.',
+      image: 'assets/img/va/ops/m1-think.jpg', lessons: 56, modules: 8, store: 'sc_va_ops__', track: 'va'
+    },
+    {
       id: 'marketing', title: 'Marketing Training', href: 'marketing-training.html', kind: 'Marketing training', track: 'marketing',
       desc: 'The Sotheby’s brand, Design Vault, ListTrac and the marketing tools, lesson by lesson.',
       image: 'assets/img/marketing/marketing-training-cover.jpg', lessons: 58, modules: 9,

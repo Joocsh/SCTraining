@@ -22,7 +22,7 @@
   var ROLE_PAGES = {
     tc:'roles/transaction-coordinator.html', listing:'roles/listing-coordinator.html',
     lc:'roles/property-manager.html', lm:'roles/lead-manager.html',
-    ops:'roles/operations-manager.html', cfo:'roles/cfo-bookkeeper.html',
+    ops:'va/operations-manager.html', cfo:'roles/cfo-bookkeeper.html',
     admin_social:'roles/admin-social.html'
   };
   // legacy per-role MODES config (from the existing, already-working workflow.js/role-page trackers)

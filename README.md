@@ -81,6 +81,7 @@ enlaces. Si agregas una página nueva, va en la raíz.
 | `va/sop-foundations.html`   | Curso SOP Foundations                                          |
 | `va/ai-real-estate-ops.html` | Curso AI for Real Estate Operations (VA)                     |
 | `va/asana.html`             | Curso Asana Essentials (VA)                                    |
+| `va/operations-manager.html` | Curso Operations Manager (VA). Antes era una simulación     |
 | `marketing-training.html`   | Curso Marketing Training                                       |
 | `ai-lab.html`               | Índice del AI Lab, enlaza a todo `guides/`                     |
 | `simulator.html`            | Simulador de casos reales, general                             |
@@ -118,7 +119,7 @@ compartido de simulación.
 | `listing-coordinator.html`     | Listing Coordinator     | `listing`      |
 | `leasing-coordinator.html`     | Leasing Coordinator     | `lc`           |
 | `lead-manager.html`            | Lead Manager            | `lm`           |
-| `operations-manager.html`      | Operations Manager      | `ops`          |
+| `operations-manager.html`      | Solo redirige al training `va/operations-manager.html` | `ops` |
 | `cfo-bookkeeper.html`          | CFO y Bookkeeper        | `cfo`          |
 | `admin-social.html`            | Admin y Social Media    | `admin_social` |
 
