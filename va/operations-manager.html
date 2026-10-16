@@ -145,6 +145,13 @@ ol.num{margin:0;padding-left:20px;display:grid;gap:6px;color:#33465c;font-size:1
 .mw-docs div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--navy);font-weight:700}
 .mw-docs small{display:block;font-weight:600;color:var(--cyan-d)}
 @media (max-width:640px){ .mw-stat{grid-template-columns:1fr 1fr} .mw-docs{grid-template-columns:1fr} .mw-open{padding:8px 12px} }
+.mod h3 .mod-n{display:block;font-size:12.5px;font-weight:800;color:var(--cyan-d);margin-bottom:2px}
+.res{display:grid;gap:8px;margin-top:14px}
+.res > div{display:grid;grid-template-columns:1fr auto;gap:4px 14px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+.res b{grid-column:1;color:var(--navy);font-size:15px}
+.res .by{grid-column:1;color:var(--muted);font-size:13.5px}
+.res .book-links{grid-column:2;grid-row:1 / span 2;margin:0;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:640px){ .res > div{grid-template-columns:1fr} .res .book-links{grid-column:1;grid-row:auto;justify-content:flex-start;margin-top:6px} }
 </style>
 </head>
 <body>
@@ -202,28 +209,34 @@ ol.num{margin:0;padding-left:20px;display:grid;gap:6px;color:#33465c;font-size:1
   <div class="block">
     <h3 class="blk-h">Part 1 · Foundations, from the Handbook</h3>
     <div class="mods two">
-      <button class="mod" data-jump="f-operations"><i style="background-image:url('../assets/img/va/ops/f1-role.jpg')"></i><div><h3>Understanding the Operations Role</h3><p>What Operations is, the career path, responsibilities and client expectations.</p></div></button>
-      <button class="mod" data-jump="f-structure"><i style="background-image:url('../assets/img/va/ops/f2-business.jpg')"></i><div><h3>Understanding the Business</h3><p>Structure, company foundations and existing operations.</p></div></button>
-      <button class="mod" data-jump="f-competencies"><i style="background-image:url('../assets/img/va/ops/f3-mindset.jpg')"></i><div><h3>Developing the Operations Mindset</h3><p>Competencies, communication, organization and growth.</p></div></button>
-      <button class="mod" data-jump="f-systems"><i style="background-image:url('../assets/img/va/ops/f4-systems.jpg')"></i><div><h3>Operational Systems &amp; Business Optimization</h3><p>Processes, planning, KPIs, improvement, AI and automation.</p></div></button>
-      <button class="mod" data-jump="f-tech"><i style="background-image:url('../assets/img/va/ops/f5-tech.jpg')"></i><div><h3>Operations Technology Toolkit</h3><p>The role of every tool in the stack.</p></div></button>
-      <button class="mod" data-jump="f-client"><i style="background-image:url('../assets/img/va/ops/f6-client.jpg')"></i><div><h3>Applying the Operations Mindset</h3><p>Discovery with a new client, before recommending changes.</p></div></button>
+      <button class="mod" data-jump="f-operations"><i style="background-image:url('../assets/img/va/ops/f1-role.jpg')"></i><div><h3><small class="mod-n">Module 1</small>Understanding the Operations Role</h3><p>What Operations is, the career path, responsibilities and client expectations.</p></div></button>
+      <button class="mod" data-jump="f-structure"><i style="background-image:url('../assets/img/va/ops/f2-business.jpg')"></i><div><h3><small class="mod-n">Module 2</small>Understanding the Business</h3><p>Structure, company foundations and existing operations.</p></div></button>
+      <button class="mod" data-jump="f-competencies"><i style="background-image:url('../assets/img/va/ops/f3-mindset.jpg')"></i><div><h3><small class="mod-n">Module 3</small>Developing the Operations Mindset</h3><p>Competencies, communication, organization and growth.</p></div></button>
+      <button class="mod" data-jump="f-systems"><i style="background-image:url('../assets/img/va/ops/f4-systems.jpg')"></i><div><h3><small class="mod-n">Module 4</small>Operational Systems &amp; Business Optimization</h3><p>Processes, planning, KPIs, improvement, AI and automation.</p></div></button>
+      <button class="mod" data-jump="f-tech"><i style="background-image:url('../assets/img/va/ops/f5-tech.jpg')"></i><div><h3><small class="mod-n">Module 5</small>Operations Technology Toolkit</h3><p>The role of every tool in the stack.</p></div></button>
+      <button class="mod" data-jump="f-client"><i style="background-image:url('../assets/img/va/ops/f6-client.jpg')"></i><div><h3><small class="mod-n">Module 6</small>Applying the Operations Mindset</h3><p>Discovery with a new client, before recommending changes.</p></div></button>
     </div>
   </div>
 
   <div class="block">
     <h3 class="blk-h">Part 2 · Practice</h3>
     <div class="mods two">
-      <button class="mod" data-jump="think-1"><i style="background-image:url('../assets/img/va/ops/m1-think.jpg')"></i><div><h3>Think Like an Operations Manager</h3><p>From fixing tasks to seeing the system.</p></div></button>
-      <button class="mod" data-jump="people-1"><i style="background-image:url('../assets/img/va/ops/m2-people.jpg')"></i><div><h3>People, Communication &amp; Leadership</h3><p>Feedback, listening and accountability.</p></div></button>
-      <button class="mod" data-jump="negotiate-1"><i style="background-image:url('../assets/img/va/ops/m3-negotiate.jpg')"></i><div><h3>Negotiation &amp; Stakeholder Management</h3><p>Scope, deadlines and expectations.</p></div></button>
-      <button class="mod" data-jump="organize-1"><i style="background-image:url('../assets/img/va/ops/m4-organize.jpg')"></i><div><h3>Organization, Prioritization &amp; Task Management</h3><p>What matters now and what waits.</p></div></button>
-      <button class="mod" data-jump="systems-1"><i style="background-image:url('../assets/img/va/ops/m5-systems.jpg')"></i><div><h3>Systems, Processes &amp; Operational Improvement</h3><p>Standardize what recurs, fix causes.</p></div></button>
-      <button class="mod" data-jump="lead-1"><i style="background-image:url('../assets/img/va/ops/m6-lead.jpg')"></i><div><h3>Operational Leadership &amp; Strategic Thinking</h3><p>The judgment behind the role, plus the reading list.</p></div></button>
-      <button class="mod" data-jump="sim-people"><i style="background-image:url('../assets/img/va/ops/m7-cases.jpg')"></i><div><h3>Case studies</h3><p>Ten cases judged on your reasoning.</p></div></button>
-      <button class="mod" data-jump="toolkit"><i style="background-image:url('../assets/img/va/ops/m8-toolkit.jpg')"></i><div><h3>Operations toolkit</h3><p>Templates to use on the job.</p></div></button>
+      <button class="mod" data-jump="think-1"><i style="background-image:url('../assets/img/va/ops/m1-think.jpg')"></i><div><h3><small class="mod-n">Module 7</small>Think Like an Operations Manager</h3><p>From fixing tasks to seeing the system.</p></div></button>
+      <button class="mod" data-jump="people-1"><i style="background-image:url('../assets/img/va/ops/m2-people.jpg')"></i><div><h3><small class="mod-n">Module 8</small>People, Communication &amp; Leadership</h3><p>Feedback, listening and accountability.</p></div></button>
+      <button class="mod" data-jump="negotiate-1"><i style="background-image:url('../assets/img/va/ops/m3-negotiate.jpg')"></i><div><h3><small class="mod-n">Module 9</small>Negotiation &amp; Stakeholder Management</h3><p>Scope, deadlines and expectations.</p></div></button>
+      <button class="mod" data-jump="organize-1"><i style="background-image:url('../assets/img/va/ops/m4-organize.jpg')"></i><div><h3><small class="mod-n">Module 10</small>Organization, Prioritization &amp; Task Management</h3><p>What matters now and what waits.</p></div></button>
+      <button class="mod" data-jump="systems-1"><i style="background-image:url('../assets/img/va/ops/m5-systems.jpg')"></i><div><h3><small class="mod-n">Module 11</small>Systems, Processes &amp; Operational Improvement</h3><p>Standardize what recurs, fix causes.</p></div></button>
+      <button class="mod" data-jump="lead-1"><i style="background-image:url('../assets/img/va/ops/m6-lead.jpg')"></i><div><h3><small class="mod-n">Module 12</small>Operational Leadership &amp; Strategic Thinking</h3><p>The judgment behind the role, plus the reading list.</p></div></button>
+      <button class="mod" data-jump="sim-people"><i style="background-image:url('../assets/img/va/ops/m7-cases.jpg')"></i><div><h3><small class="mod-n">Module 13</small>Case studies</h3><p>Ten cases judged on your reasoning.</p></div></button>
+      <button class="mod" data-jump="toolkit"><i style="background-image:url('../assets/img/va/ops/m8-toolkit.jpg')"></i><div><h3><small class="mod-n">Module 14</small>Operations toolkit</h3><p>Templates to use on the job.</p></div></button>
     </div>
     <p class="note">Every lesson ends with a checkpoint. Your writing saves on this device. The Operational Leadership module closes with a recommended reading list, with the books ready to download.</p>
+  </div>
+
+  <div class="block" id="resources">
+    <h3 class="blk-h">Resources</h3>
+    <p class="para">The books behind the leadership lessons, free to download. You will also find them, with the full summaries, at the end of Module 12.</p>
+    <div class="res"><div><b>How to Win Friends and Influence People</b><span class="by">Dale Carnegie</span><span class="book-links"><a class="c-btn primary sm" href="https://drive.google.com/uc?export=download&amp;id=1RuiPpb2EH_GSibBBxpsUSSiAt5tf97F2" target="_blank" rel="noopener">Download PDF</a><a class="c-btn ghost sm" href="https://drive.google.com/file/d/1RuiPpb2EH_GSibBBxpsUSSiAt5tf97F2/view" target="_blank" rel="noopener">Read online</a></span></div><div><b>Psycho-Cybernetics</b><span class="by">Maxwell Maltz</span><span class="book-links"><a class="c-btn primary sm" href="https://drive.google.com/uc?export=download&amp;id=1tVXnh_rKZH85kdXjIIic46eZ3JwgUp9S" target="_blank" rel="noopener">Download PDF</a><a class="c-btn ghost sm" href="https://drive.google.com/file/d/1tVXnh_rKZH85kdXjIIic46eZ3JwgUp9S/view" target="_blank" rel="noopener">Read online</a></span></div><div><b>Zero to One</b><span class="by">Peter Thiel</span><span class="book-links"><a class="c-btn primary sm" href="https://drive.google.com/uc?export=download&amp;id=1kjQmoCrlk3Obl6kWbleO3RoTjgPb7-6w" target="_blank" rel="noopener">Download PDF</a><a class="c-btn ghost sm" href="https://drive.google.com/file/d/1kjQmoCrlk3Obl6kWbleO3RoTjgPb7-6w/view" target="_blank" rel="noopener">Read online</a></span></div><div><b>Built to Last</b><span class="by">Jim Collins &amp; Jerry I. Porras</span><span class="book-links"><a class="c-btn primary sm" href="https://drive.google.com/uc?export=download&amp;id=196o6OhYD2Rxt9W8_HVUX4SSu-EfxkPaI" target="_blank" rel="noopener">Download PDF</a><a class="c-btn ghost sm" href="https://drive.google.com/file/d/196o6OhYD2Rxt9W8_HVUX4SSu-EfxkPaI/view" target="_blank" rel="noopener">Read online</a></span></div><div><b>BE 2.0 (Beyond Entrepreneurship 2.0)</b><span class="by">Jim Collins with William Lazier</span><span class="book-links"><a class="c-btn primary sm" href="https://drive.google.com/uc?export=download&amp;id=1Q0A_IdSZKMUxGUb3Ld9tvG92gCb3Gdkg" target="_blank" rel="noopener">Download PDF</a><a class="c-btn ghost sm" href="https://drive.google.com/file/d/1Q0A_IdSZKMUxGUb3Ld9tvG92gCb3Gdkg/view" target="_blank" rel="noopener">Read online</a></span></div><div><b>Traction</b><span class="by">Gino Wickman</span><span class="book-links"><a class="c-btn primary sm" href="https://drive.google.com/uc?export=download&amp;id=1RxCsRqZqyXWtuMHu5u2WXb6L9fMdaM7L" target="_blank" rel="noopener">Download PDF</a><a class="c-btn ghost sm" href="https://drive.google.com/file/d/1RxCsRqZqyXWtuMHu5u2WXb6L9fMdaM7L/view" target="_blank" rel="noopener">Read online</a></span></div><div><b>The Five Dysfunctions of a Team</b><span class="by">Patrick Lencioni</span><span class="book-links"><a class="c-btn primary sm" href="https://drive.google.com/uc?export=download&amp;id=19aeW2zPomeNCZ8Wp2NseF2a4a9b9a3IU" target="_blank" rel="noopener">Download PDF</a><a class="c-btn ghost sm" href="https://drive.google.com/file/d/19aeW2zPomeNCZ8Wp2NseF2a4a9b9a3IU/view" target="_blank" rel="noopener">Read online</a></span></div></div>
   </div>
 
   <div class="block">
