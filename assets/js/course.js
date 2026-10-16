@@ -293,7 +293,8 @@
     $$('.task[data-type="choice"]').forEach(function (task) {
       $$('.choice', task).forEach(function (b) {
         b.onclick = function () {
-          if (b.dataset.choice === task.dataset.answer) {
+          /* data-answer may list more than one right choice, like "b,d" */
+          if (task.dataset.answer.split(',').indexOf(b.dataset.choice) > -1) {
             $$('.choice', task).forEach(function (x) { x.disabled = true; });
             b.classList.add('right');
             pass(task, task.dataset.ok);
@@ -351,7 +352,7 @@
       $$('.gate', l).forEach(function (g, k) {
         if (!C.state.passed[l.id + ':' + k]) return;
         g.classList.add('passed');
-        if (g.dataset.type === 'choice') { var b = $('.choice[data-choice="' + g.dataset.answer + '"]', g); if (b) b.classList.add('right'); $$('.choice', g).forEach(function (x) { x.disabled = true; }); }
+        if (g.dataset.type === 'choice') { var b = $('.choice[data-choice="' + g.dataset.answer.split(',')[0] + '"]', g); if (b) b.classList.add('right'); $$('.choice', g).forEach(function (x) { x.disabled = true; }); }
         if (g.dataset.type === 'match') { $$('.match-row', g).forEach(function (row) { $('select', row).value = row.dataset.answer; row.classList.add('right'); $('select', row).disabled = true; }); $('[data-check]', g).disabled = true; }
         if (g.dataset.type === 'sort') { var list = $('.sort', g); $$('li', list).sort(function (a, b) { return a.dataset.order - b.dataset.order; }).forEach(function (li) { list.appendChild(li); }); list.classList.add('right'); $$('.mv', list).forEach(function (m) { m.disabled = true; }); $('[data-check]', g).disabled = true; }
       });
