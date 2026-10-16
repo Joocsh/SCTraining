@@ -44,7 +44,6 @@ body.course .scbar{position:fixed;top:0;left:0;right:0;z-index:40}
 .c-mod-t small{font-size:12px;font-weight:800;color:var(--cyan-d)}
 .c-mod-t b{font-size:14px;color:var(--navy);line-height:1.3}
 .c-mod-meta{flex:none;display:flex;align-items:center;gap:6px}
-.c-mod-n{font-size:12px;font-weight:700;color:#8a99ab}
 .c-chev{width:8px;height:8px;border:solid #8a99ab;border-width:0 2px 2px 0;transform:rotate(45deg);margin:0 2px 3px 4px;transition:transform .2s}
 .c-modbox.open .c-chev{transform:rotate(-135deg);margin-bottom:-3px}
 .c-mod-body{display:none;padding:0 6px 8px}

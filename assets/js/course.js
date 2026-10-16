@@ -117,7 +117,7 @@
         box.innerHTML = '<button class="c-mod" type="button" aria-expanded="false">' +
           '<span class="c-mod-t">' + (label ? '<small>' + label + '</small>' : '') + '<b>' + title + '</b></span>' +
           '<span class="c-mod-meta"><span class="c-badge" title="Module complete">&#9733;</span><span class="c-lock" title="Finish the previous module to unlock">' + LOCK + '</span>' +
-          '<span class="c-mod-n"></span><span class="c-chev" aria-hidden="true"></span></span></button><div class="c-mod-body"></div>';
+          '<span class="c-chev" aria-hidden="true"></span></span></button><div class="c-mod-body"></div>';
         $('.c-mod', box).onclick = function () { setOpen(box, !box.classList.contains('open')); };
         nav.appendChild(box);
         host = $('.c-mod-body', box);
@@ -165,11 +165,10 @@
       $('.c-dot', b).innerHTML = d ? '&#10003;' : (lk ? LOCK : (sub ? '&#183;' : (i + 1)));
     });
     $$('.c-modbox').forEach(function (m) {
-      var idx = m.dataset.idx.split(',').map(Number), n = idx.filter(function (i) { return s.done.indexOf(i) > -1; }).length;
+      var idx = m.dataset.idx.split(',').map(Number);
       m.classList.toggle('done', (s.modulesDone || []).indexOf(m.dataset.mod) > -1);
       m.classList.toggle('locked', !unlocked(+m.dataset.first));
       m.classList.toggle('current', idx.indexOf(C.cur) > -1);
-      $('.c-mod-n', m).textContent = n + '/' + idx.length;
     });
     /* shortcuts inside the lessons, like the module list on the welcome screen */
     $$('[data-jump]').forEach(function (b) {
