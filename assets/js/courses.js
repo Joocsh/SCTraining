@@ -32,8 +32,8 @@
     },
     {
       id: 'ops', title: 'Operations Manager', href: 'va/operations-manager.html', kind: 'VA training',
-      desc: 'Think in systems, lead people, negotiate, prioritize and improve processes, with real situations and ten case studies.',
-      image: 'assets/img/va/ops/m1-think.jpg', lessons: 56, modules: 8, store: 'sc_va_ops__', track: 'va'
+      desc: 'The Operations Manager Handbook, six practice paths, ten case studies, a toolkit and a reading list: from understanding the role to leading the operation.',
+      image: 'assets/img/va/ops/m1-think.jpg', lessons: 79, modules: 14, store: 'sc_va_ops__', track: 'va'
     },
     {
       id: 'marketing', title: 'Marketing Training', href: 'marketing-training.html', kind: 'Marketing training', track: 'marketing',
