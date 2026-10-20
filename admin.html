@@ -127,7 +127,7 @@
       return '<tr><td class="nm">'+u.name+'</td>'+
         '<td>'+(done ? '<span class="pill-ok">Complete</span>' : '<span class="pill-no">'+ip.done+' of '+ip.total+'</span>')+'</td>'+
         '<td><div class="mini"><i><b style="width:'+sp.pct+'%"></b></i><span>'+(sp.complete ? 'Certified' : sp.done+' of '+sp.total)+'</span></div></td>'+
-        '<td>'+(sims ? sims+' role'+(sims>1?'s':'')+' practiced' : (done ? 'Not started' : 'Locked'))+'</td>'+
+        '<td>'+(sims ? sims+' role'+(sims>1?'s':'')+' practiced' : 'Not started')+'</td>'+
         '<td>'+(last ? last.replace(/\.html$/,'').replace(/^(roles|va)\//,'').replace(/-/g,' ') : '')+'</td></tr>';
     }).join('');
   }

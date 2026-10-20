@@ -12,23 +12,13 @@ window.addEventListener('DOMContentLoaded',()=>{
     if(t===here) a.classList.add('active');
   });
 });
-/* Introduction first: hide the nudge once it is finished, and send anyone who
-   has not finished it to the Introduction instead of into a simulation */
+/* The Introduction is optional: the simulations are open to every signed in
+   associate, so the old "complete the Introduction first" notes stay hidden */
 function introDone(){ return !!(window.SCApp && SCApp.isIntroDone()); }
 window.addEventListener('DOMContentLoaded',()=>{
-  if(introDone()){
-    document.querySelectorAll('.fund-nudge').forEach(el=>el.style.display='none');
-  }
-  document.querySelectorAll('.sim-locked-note').forEach(el=>{ el.hidden = introDone(); });
+  document.querySelectorAll('.fund-nudge').forEach(el=>el.style.display='none');
+  document.querySelectorAll('.sim-locked-note').forEach(el=>{ el.hidden = true; });
   document.body.classList.toggle('intro-done', introDone());
-  /* a signed in associate who has not started yet is sent to step 1, not to a locked simulation */
-  const pill=document.querySelector('.nav .pill');
-  if(pill && window.SCApp && SCApp.currentUser() && !introDone()){
-    const up=location.pathname.split('/').slice(-2,-1)[0];
-    const deep=['roles','va','guides','Quialia','Docusign','AppFolio'].indexOf(up)>-1;
-    pill.textContent='Start here';
-    pill.setAttribute('href',(deep?'../':'')+'ai.html');
-  }
 });
 document.addEventListener('click',e=>{
   const btn=e.target.closest('.role-gate-btn, a[href^="roles/"], a[href^="../roles/"]');
@@ -37,9 +27,5 @@ document.addEventListener('click',e=>{
     e.preventDefault();
     window.location.href=SCApp.loginUrl('index.html#simulations');
     return;
-  }
-  if(!introDone() && /roles\//.test(btn.getAttribute('href')||'')){
-    e.preventDefault();
-    window.location.href=(location.pathname.indexOf('/roles/')>-1?'../':'')+'ai.html?locked=simulations';
   }
 });

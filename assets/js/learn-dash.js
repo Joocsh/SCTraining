@@ -45,15 +45,15 @@
   var steps = [
     { n: 1, icon: 'learn', title: 'Learn the tools', desc: 'What Claude, ChatGPT and Manus are, and when to use each one.',
       done: introDone, pct: introDone ? 100 : Math.round(introSeen / introP.total * 100),
-      meta: introDone ? 'Complete' : (introSeen ? introSeen + ' of ' + introP.total + ' lessons' : introP.total + ' short lessons'),
+      meta: introDone ? 'Complete' : (introSeen ? introSeen + ' of ' + introP.total + ' lessons' : 'Optional · ' + introP.total + ' short lessons'),
       href: 'ai.html', go: introSeen ? 'Continue the Introduction' : 'Start the Introduction', again: 'Review' },
     { n: 2, icon: 'study', title: 'Study your role', desc: 'Pick a training path, VA or Marketing, and work through it lesson by lesson.',
       done: tComplete > 0, pct: tTotal ? Math.round(tDone / tTotal * 100) : 0,
       meta: tComplete ? tComplete + ' of ' + trainings.length + ' trainings done' : (tDone ? 'In progress' : (introDone ? 'Not started yet' : 'Open anytime')),
       href: resumeHref || 'paths.html', go: resumeHref ? 'Continue your training' : 'Choose a path', again: 'Open the paths' },
     { n: 3, icon: 'practice', title: 'Practice real cases', desc: 'Run the scenario your role handles every day, with instant feedback.',
-      done: practiced > 0, locked: !introDone, pct: null,
-      meta: !introDone ? 'Opens after step 1' : (practiced ? practiced + ' simulation' + (practiced > 1 ? 's' : '') + ' practiced' : 'Ready when you are'),
+      done: practiced > 0, pct: null,
+      meta: practiced ? practiced + ' simulation' + (practiced > 1 ? 's' : '') + ' practiced' : 'Open anytime',
       href: '#simulations', go: 'Choose a simulation', again: 'Practice again' }
   ];
   var cur = steps.filter(function (s) { return !s.done && !s.locked; })[0];
@@ -64,7 +64,7 @@
   var first = (me.name || '').split(' ')[0];
   var fresh = !introDone && introSeen === 0 && !tDone && !practiced;
   var hello = fresh ? 'Welcome' + (first ? ', ' + esc(first) : '') : 'Welcome back' + (first ? ', ' + esc(first) : '');
-  var line = fresh ? 'Three steps take you from the classroom to your first real case. Start with step 1.'
+  var line = fresh ? 'Three steps take you from the classroom to your first real case. Step 1 is a good warm-up, and the simulations are open anytime.'
     : allDone ? 'You have been through all three steps. Keep your skills sharp in the simulations.'
     : 'You are on step ' + cur.n + ': ' + cur.title.toLowerCase() + '.';
 
@@ -100,9 +100,9 @@
 
   var SLIDES = [
     { t: 'Welcome to Skill Cloud Academy', p: 'This is where you practice your role before your first real day, on real Skill Cloud cases, with no risk to a client.' },
-    { t: 'Three steps, in order',
-      list: ['<b>Learn the tools.</b> The Introduction to Claude, ChatGPT and Manus.', '<b>Study your role.</b> A training path, VA or Marketing.', '<b>Practice real cases.</b> The simulations, which open after step 1.'] },
-    { t: 'Start with step 1', p: 'The Introduction takes you through five short lessons with a quick check after each one. Your progress saves as you go.' }
+    { t: 'Three steps',
+      list: ['<b>Learn the tools.</b> The Introduction to Claude, ChatGPT and Manus.', '<b>Study your role.</b> A training path, VA or Marketing.', '<b>Practice real cases.</b> The simulations, open anytime.'] },
+    { t: 'Start where it helps you most', p: 'The Introduction is optional: five short lessons with a quick check after each one. If you already know the tools, go straight to your path or a simulation. Your progress saves as you go.' }
   ];
   var at = 0;
   document.body.insertAdjacentHTML('beforeend',

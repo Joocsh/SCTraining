@@ -137,9 +137,9 @@
   }
 
   // ---------- Introduction gate ----------
-  // Simulations open only after the Introduction (ai.html) is finished.
-  // Finished means the associate reached every section of it. VA classes
-  // stay open to everyone who is signed in.
+  // The Introduction (ai.html) is recommended, not required: every
+  // signed in associate can open the simulations and the trainings.
+  // isIntroDone still tells whether it was finished, for progress and badges.
   var LS_INTRO = 'scc_intro_done__';   // + userId
   function isIntroDone(u){
     u = u || currentUser();
@@ -151,14 +151,10 @@
     var u = currentUser();
     if(u) localStorage.setItem(LS_INTRO + u.id, '1');
   }
+  /* Kept so the role pages that call it keep working: it now only
+     asks for a signed in associate. */
   function requireIntro(){
-    var u = requireAuth();
-    if(!u) return null;
-    if(!isIntroDone(u)){
-      window.location.replace(rootUrl('ai.html') + '?locked=simulations');
-      return null;
-    }
-    return u;
+    return requireAuth();
   }
 
   // ---------- last page memory ----------

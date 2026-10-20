@@ -216,7 +216,7 @@
   }).join('');
 
   var badges = [];
-  badges.push({ t: 'AI Introduction', s: 'Simulations unlocked', on: SCApp.isIntroDone(me) });
+  badges.push({ t: 'AI Introduction', s: 'Introduction complete', on: SCApp.isIntroDone(me) });
   var sop = C.get('sop'), sp = C.progress(sop, me.id);
   ['Module 1 · Understand SOPs', 'Module 2 · Build an SOP', 'Module 3 · Practice and assessment'].forEach(function (m) {
     badges.push({ t: m.replace(/^Module \d+ · /, ''), s: 'SOP Foundations', on: sp.modulesDone.indexOf(m) > -1 });
