@@ -13,6 +13,7 @@ on the team's NAS later.
 | `migrations/0004_coaches.sql` | Coaches (supervisors): the `coach` role, `coach_assignments`, and policies so coaches see and grade only their associates while admins see everything. Run step 1 on its own, then step 2 |
 | `migrations/0005_assignments_notifications.sql` | Admins assign VA and Marketing trainings per associate (`course_assignments`, `assign_course()`); the Introduction and the simulations are open to everyone. `notifications` created by triggers (training assigned, email graded, coach assigned) plus admin announcements, live through Realtime |
 | `migrations/0006_invoker_rpcs.sql` | The admin functions that the security rules already cover run with the caller's rights |
+| `migrations/0007_progress.sql` | Simulation access (open by default, or assigned per associate with a notification) and the general progress views: `progress_items` (Introduction, trainings and simulations each person has) and `progress_summary` (per category and overall). Run step 1 on its own, then step 2 |
 
 Run them in order in the SQL editor (or with `psql`) on an empty project.
 
@@ -32,7 +33,11 @@ Run them in order in the SQL editor (or with `psql`) on an empty project.
 `template_responses`, `role_mode_scores`, `email_submissions` → `email_grades`.
 
 **Views** (computed, never stored): `course_lesson_counts`, `course_progress`,
-`first_attempts`, `skill_progress`, `role_progress`.
+`first_attempts`, `skill_progress`, `role_progress`, `my_courses`, `my_simulations`,
+`simulation_max_points`, `progress_items`, `progress_summary`.
+
+**General progress** = the Introduction + the trainings a person has + the
+simulations a person has, each item weighing the same (test drives do not count).
 
 ## Rules
 
