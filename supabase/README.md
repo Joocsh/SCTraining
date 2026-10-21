@@ -14,6 +14,7 @@ on the team's NAS later.
 | `migrations/0005_assignments_notifications.sql` | Admins assign VA and Marketing trainings per associate (`course_assignments`, `assign_course()`); the Introduction and the simulations are open to everyone. `notifications` created by triggers (training assigned, email graded, coach assigned) plus admin announcements, live through Realtime |
 | `migrations/0006_invoker_rpcs.sql` | The admin functions that the security rules already cover run with the caller's rights |
 | `migrations/0007_progress.sql` | Simulation access (open by default, or assigned per associate with a notification) and the general progress views: `progress_items` (Introduction, trainings and simulations each person has) and `progress_summary` (per category and overall). Run step 1 on its own, then step 2 |
+| `migrations/0008_admin_people.sql` | `admin_people()`: the admin's list of people with their email (read from auth.users, admins only) |
 
 Run them in order in the SQL editor (or with `psql`) on an empty project.
 
