@@ -12,6 +12,7 @@ on the team's NAS later.
 | `migrations/0003_security.sql` | Hardening from the Supabase Security Advisor: fixed search paths, private helper functions, execute rights |
 | `migrations/0004_coaches.sql` | Coaches (supervisors): the `coach` role, `coach_assignments`, and policies so coaches see and grade only their associates while admins see everything. Run step 1 on its own, then step 2 |
 | `migrations/0005_assignments_notifications.sql` | Admins assign VA and Marketing trainings per associate (`course_assignments`, `assign_course()`); the Introduction and the simulations are open to everyone. `notifications` created by triggers (training assigned, email graded, coach assigned) plus admin announcements, live through Realtime |
+| `migrations/0006_invoker_rpcs.sql` | The admin functions that the security rules already cover run with the caller's rights |
 
 Run them in order in the SQL editor (or with `psql`) on an empty project.
 
