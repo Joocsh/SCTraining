@@ -9,6 +9,7 @@ on the team's NAS later.
 | --- | --- |
 | `migrations/0001_schema.sql` | Tables, types, functions, views and row level security |
 | `migrations/0002_seed.sql` | The catalog the site has today: departments, the 6 trainings with their modules, lessons, questions and writing prompts, skills, books, toolkit templates, simulation roles, modes, markets and email scenarios |
+| `migrations/0003_security.sql` | Hardening from the Supabase Security Advisor: fixed search paths, private helper functions, execute rights |
 
 Run them in order in the SQL editor (or with `psql`) on an empty project.
 
