@@ -10,6 +10,7 @@ on the team's NAS later.
 | `migrations/0001_schema.sql` | Tables, types, functions, views and row level security |
 | `migrations/0002_seed.sql` | The catalog the site has today: departments, the 6 trainings with their modules, lessons, questions and writing prompts, skills, books, toolkit templates, simulation roles, modes, markets and email scenarios |
 | `migrations/0003_security.sql` | Hardening from the Supabase Security Advisor: fixed search paths, private helper functions, execute rights |
+| `migrations/0004_coaches.sql` | Coaches (supervisors): the `coach` role, `coach_assignments`, and policies so coaches see and grade only their associates while admins see everything. Run step 1 on its own, then step 2 |
 
 Run them in order in the SQL editor (or with `psql`) on an empty project.
 
@@ -34,8 +35,9 @@ Run them in order in the SQL editor (or with `psql`) on an empty project.
 ## Rules
 
 - One fact in one place: totals, percentages, "graded" and skill levels are derived.
-- Admins are profiles with `app_role = 'admin'`; access changes go through
-  `set_profile_access()`, so nobody can promote themselves.
+- Roles: `associate`, `coach` (sees and grades the associates in `coach_assignments`)
+  and `admin` (sees everything). Access changes go through `set_profile_access()`
+  and `assign_coach()`, so nobody can promote themselves.
 - Never commit the `service_role` key or the database password.
 
 ## Moving to the NAS
