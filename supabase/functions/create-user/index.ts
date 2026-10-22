@@ -23,6 +23,17 @@ const CORS = {
 };
 const ROLES = ['associate', 'coach', 'admin'];
 
+// The project's secret key (Supabase sets it for every function), or the
+// legacy service role key on projects that still use it.
+function serverKey(): string {
+  try {
+    const keys = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') || '{}');
+    const first = keys.default || Object.values(keys)[0];
+    if (first) return String(first);
+  } catch { /* fall back below */ }
+  return Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+}
+
 function reply(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 }
@@ -31,7 +42,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return reply({ error: 'Use POST.' }, 405);
 
-  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
+  const db = createClient(Deno.env.get('SUPABASE_URL')!, serverKey(), {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
