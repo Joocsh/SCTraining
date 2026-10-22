@@ -40,6 +40,18 @@ The Introduction is required before any training or simulation. Nobody starts wi
 trainings or simulations: an admin, or the associate's coach, assigns them in the Assign
 tab, and the associate gets a notification. The Permissions tab builds each coach's team.
 
+- **Reminders.** A daily job in the database notifies an associate after 3 days without
+  activity on something unfinished (the Introduction, an assigned training or simulation),
+  and their coaches after 7. There are no due dates.
+- **Simulation cases resume.** `assets/js/sim-resume.js` (loaded by `app-core.js` on
+  `roles/*.html`) copies the case snapshot that `workflow.js` keeps in `sc_wf_state` into a
+  copy per person and per simulation, and into `simulation_sessions`. Coming back, a card
+  offers "Continue the case" (puts the snapshot back and reloads, so `workflow.js` restores
+  it) or "Start over". `workflow.js` itself is unchanged.
+- **Report and insights.** Admins download the progress report as a CSV from the Progress
+  tab. The Insights tab (admins and coaches) shows each checkpoint question: people, right
+  on the first try, tries per person.
+
 ------------ | ---------- | ------------- | ----------------------- |
 | `maria@demo` | `demo123`  | Asociado      | Transaction Coordinator |
 | `jose@demo`  | `demo123`  | Asociado      | Listing Coordinator     |

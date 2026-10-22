@@ -2,7 +2,9 @@
    Staff panels: coach.html (supervisor) and admin.html.
    Everything comes from Supabase; row level security decides what each
    person sees (a coach: the associates assigned to them; an admin: all).
-     Progress       general progress of each associate, item by item
+     Progress       general progress of each associate, item by item;
+                    admins download it as a CSV report
+     Insights       how each checkpoint question does (first try, attempts)
      Emails         the inbox to grade (coaches grade their associates)
      Assign         admin and coach: trainings and simulations per associate
      People         admin: roles and the main simulation
@@ -47,7 +49,9 @@
         var x = sum.filter(function (s) { return s.user_id === uid && s.category === cat; })[0];
         return x ? '<div class="st-cell">' + bar(x.percent) + '<span>' + x.completed_items + '/' + x.items + '</span></div>' : '<span class="st-muted">None</span>';
       }
-      box.innerHTML = '<table class="st-table"><thead><tr><th>Associate</th><th>Overall</th><th>Introduction</th><th>Trainings</th><th>Simulations</th><th>Last activity</th></tr></thead><tbody>' +
+      box.innerHTML = (mode === 'admin' ? '<div class="st-bar-top"><p class="st-muted">' + people.length + ' associate' + (people.length === 1 ? '' : 's') + '. Open a row for the detail.</p>' +
+          '<button type="button" class="st-btn st-dl" id="stReport">Download report (CSV)</button></div>' : '') +
+        '<table class="st-table"><thead><tr><th>Associate</th><th>Overall</th><th>Introduction</th><th>Trainings</th><th>Simulations</th><th>Last activity</th></tr></thead><tbody>' +
         people.map(function (p) {
           var all = sum.filter(function (s) { return s.user_id === p.id && !s.category; })[0] || { percent: 0 };
           return '<tr class="st-row" data-uid="' + p.id + '"><td class="nm">' + esc(p.full_name) + '</td><td><b class="st-pct">' + all.percent + '%</b></td>' +
@@ -55,6 +59,7 @@
             '<td>' + (all.last_activity_at ? day(all.last_activity_at) : '<span class="st-muted">No activity</span>') + '</td></tr>' +
             '<tr class="st-detail" data-for="' + p.id + '" hidden><td colspan="6"></td></tr>';
         }).join('') + '</tbody></table>';
+      if ($('#stReport', box)) $('#stReport', box).onclick = downloadReport;
       $$('.st-row', box).forEach(function (row) {
         row.onclick = function () {
           var d = $('.st-detail[data-for="' + row.dataset.uid + '"]', box), open = d.hidden;
@@ -69,6 +74,96 @@
           });
         };
       });
+    }).catch(function (e) { box.innerHTML = '<p class="st-empty">Could not load: ' + esc(e.message) + '</p>'; });
+  }
+
+  /* ─────────── CSV files ─────────── */
+  function isoDay(t) { return t ? new Date(t).toISOString().slice(0, 10) : ''; }
+  function saveCsv(rows, name) {
+    var text = rows.map(function (r) {
+      return r.map(function (v) { v = v == null ? '' : String(v); return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(',');
+    }).join('\r\n');
+    var url = URL.createObjectURL(new Blob(['\ufeff' + text], { type: 'text/csv;charset=utf-8' }));
+    var a = document.createElement('a'); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  /* The progress report (admin): one Overall row per associate, then one
+     row per training or simulation they have. Opens in Excel or Sheets. */
+  function downloadReport() {
+    var btn = $('#stReport'); btn.disabled = true; btn.textContent = 'Preparing…';
+    Promise.all([
+      sb.rpc('admin_people'),
+      sb.from('coach_assignments').select('coach_id,associate_id'),
+      sb.from('progress_summary').select('user_id,category,items,completed_items,percent,last_activity_at'),
+      sb.from('progress_items').select('user_id,category,title,percent,completed,last_activity_at')
+    ]).then(function (r) {
+      var people = check(r[0]), links = check(r[1]), sum = check(r[2]), items = check(r[3]);
+      var byId = {}; people.forEach(function (p) { byId[p.id] = p; });
+      var rows = [['Associate', 'Email', 'Coach', 'Type', 'Item', 'Progress %', 'Completed', 'Last activity', 'Joined']];
+      people.filter(function (p) { return p.app_role === 'associate'; }).forEach(function (p) {
+        var coaches = links.filter(function (l) { return l.associate_id === p.id; }).map(function (l) { return byId[l.coach_id] ? byId[l.coach_id].full_name : ''; }).join('; ');
+        var all = sum.filter(function (x) { return x.user_id === p.id && !x.category; })[0];
+        rows.push([p.full_name, p.email, coaches, 'Overall', '', all ? all.percent : 0, all ? all.completed_items + ' of ' + all.items : '0 of 0', isoDay(all && all.last_activity_at), isoDay(p.created_at)]);
+        items.filter(function (i) { return i.user_id === p.id; }).forEach(function (i) {
+          rows.push([p.full_name, p.email, coaches, LABEL[i.category].replace(/s$/, ''), i.title, i.percent, i.completed ? 'Yes' : 'No', isoDay(i.last_activity_at), '']);
+        });
+      });
+      saveCsv(rows, 'skillcloud-progress-' + isoDay(Date.now()) + '.csv');
+      toast('Report downloaded.');
+    }).catch(function (e) { toast(e.message, true); })
+      .then(function () { btn.disabled = false; btn.textContent = 'Download report (CSV)'; });
+  }
+
+  /* ─────────── Insights: checkpoint questions ─────────── */
+  var QTYPE = { choice: 'Multiple choice', match: 'Match', sort: 'Order' };
+  function renderInsights() {
+    var box = $('#tabInsights');
+    box.innerHTML = '<p class="st-muted">Loading…</p>';
+    return sb.from('question_stats').select('*').gt('people', 0).then(function (r) {
+      var all = check(r);
+      if (!all.length) {
+        box.innerHTML = '<p class="st-empty">No answers yet. As ' + (mode === 'coach' ? 'your associates' : 'associates') + ' pass the checkpoints of the Introduction and the trainings, each question shows here: how many got it right on the first try and how many tries it took.</p>';
+        return;
+      }
+      var courses = []; all.forEach(function (q) { if (courses.indexOf(q.course) < 0) courses.push(q.course); });
+      function rate(list) {
+        var p = list.reduce(function (t, q) { return t + q.people; }, 0), c = list.reduce(function (t, q) { return t + q.first_try_correct; }, 0);
+        return p ? Math.round(100 * c / p) : 0;
+      }
+      var hardest = courses.map(function (c) { var l = all.filter(function (q) { return q.course === c; }); return { c: c, r: rate(l) }; })
+        .sort(function (a, b) { return a.r - b.r; })[0];
+      box.innerHTML = '<div class="tm-kpis">' +
+          '<div class="tm-kpi"><b>' + all.length + '</b><span>Questions answered</span></div>' +
+          '<div class="tm-kpi"><b>' + rate(all) + '%</b><span>Right on the first try</span></div>' +
+          '<div class="tm-kpi' + (hardest.r < 60 ? ' warn' : '') + '"><b>' + hardest.r + '%</b><span>Hardest: ' + esc(hardest.c) + '</span></div></div>' +
+        '<div class="st-bar-top"><div class="st-filters"><select class="tm-sel" id="qiCourse" aria-label="Training"><option value="">All trainings</option>' +
+          courses.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select>' +
+          '<input class="tm-search" id="qiQ" type="search" placeholder="Search a question" aria-label="Search a question"></div>' +
+          (mode === 'admin' ? '<button type="button" class="st-btn st-dl" id="qiCsv">Download CSV</button>' : '') + '</div>' +
+        '<p class="st-muted" style="margin:0 0 10px">Hardest first. A low first try rate usually means the lesson needs a clearer explanation, or the question is ambiguous.</p>' +
+        '<table class="st-table st-qtable"><thead><tr><th>Question</th><th>People</th><th>Right on the first try</th><th>Tries per person</th></tr></thead><tbody id="qiRows"></tbody></table>';
+      function draw() {
+        var c = $('#qiCourse').value, q = $('#qiQ').value.toLowerCase();
+        var list = all.filter(function (x) { return (!c || x.course === c) && (!q || (x.prompt + ' ' + x.lesson).toLowerCase().indexOf(q) > -1); })
+          .sort(function (a, b) { return (a.first_try_rate - b.first_try_rate) || (b.people - a.people); });
+        $('#qiRows').innerHTML = list.length ? list.map(function (x) {
+          var tone = x.first_try_rate < 50 ? ' bad' : (x.first_try_rate < 75 ? ' mid' : '');
+          return '<tr><td><b class="qi-q">' + esc(x.prompt) + '</b><small class="qi-where">' + esc(x.course) + ' · Module ' + x.module_position + ' · ' + esc(x.lesson) + ' · ' + (QTYPE[x.type] || x.type) + '</small></td>' +
+            '<td>' + x.people + '</td><td><div class="st-cell qi-rate' + tone + '">' + bar(x.first_try_rate) + '<span>' + x.first_try_rate + '%</span></div></td>' +
+            '<td>' + (x.attempts / x.people).toFixed(1) + '</td></tr>';
+        }).join('') : '<tr><td colspan="4" class="st-muted">Nothing matches.</td></tr>';
+      }
+      $('#qiCourse').onchange = draw; $('#qiQ').oninput = draw;
+      if ($('#qiCsv')) $('#qiCsv').onclick = function () {
+        var rows = [['Training', 'Module', 'Lesson', 'Question', 'Type', 'People', 'Right on the first try', 'First try %', 'Attempts', 'Tries per person']];
+        all.slice().sort(function (a, b) { return a.first_try_rate - b.first_try_rate; }).forEach(function (x) {
+          rows.push([x.course, x.module_position, x.lesson, x.prompt, QTYPE[x.type] || x.type, x.people, x.first_try_correct, x.first_try_rate, x.attempts, (x.attempts / x.people).toFixed(1)]);
+        });
+        saveCsv(rows, 'skillcloud-questions-' + isoDay(Date.now()) + '.csv');
+      };
+      draw();
     }).catch(function (e) { box.innerHTML = '<p class="st-empty">Could not load: ' + esc(e.message) + '</p>'; });
   }
 
@@ -462,7 +557,7 @@
     };
   }
 
-  var TABS = { progress: renderProgress, emails: renderEmails, assign: renderAssign, people: renderPeople, perms: renderPermissions, sims: renderSims, announce: renderAnnounce };
+  var TABS = { progress: renderProgress, insights: renderInsights, emails: renderEmails, assign: renderAssign, people: renderPeople, perms: renderPermissions, sims: renderSims, announce: renderAnnounce };
   function show(t) {
     $$('.st-tabs button').forEach(function (b) { var on = b.dataset.tab === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
     $$('.st-panel').forEach(function (p) { p.hidden = p.dataset.tab !== t; });

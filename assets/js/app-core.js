@@ -64,9 +64,11 @@
     if(window.SCDB || window.__scdbLoading) return;
     window.__scdbLoading = true;
     var lib = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
-    var db = ROOT + 'assets/js/sc-db.js?v=20261021c';
+    var db = ROOT + 'assets/js/sc-db.js?v=20261022';
+    /* the simulation pages also keep each person's place in a case */
+    var resume = /\/roles\/[^/]+\.html$/.test(location.pathname) ? '<script src="'+ROOT+'assets/js/sim-resume.js?v=20261022"><\/script>' : '';
     if(document.readyState === 'loading'){
-      document.write('<script src="'+lib+'"><\/script><script src="'+db+'"><\/script>');
+      document.write('<script src="'+lib+'"><\/script><script src="'+db+'"><\/script>'+resume);
     } else {
       var a = document.createElement('script'); a.src = lib;
       a.onload = function(){ var b = document.createElement('script'); b.src = db; document.head.appendChild(b); };

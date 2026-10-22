@@ -9,6 +9,7 @@
      · push: every change goes to an outbox in localStorage and is sent
        to Supabase in order, so nothing is lost offline or on a reload
      · notifications: the bell in the nav, live through Realtime
+     · simulation cases: the exact point in each case (sim-resume.js)
    Tables and policies: supabase/migrations.
    ══════════════════════════════════════════════════════════ */
 (function (window) {
@@ -192,7 +193,7 @@
     var q = read(OUT, []);
     item.u = uid(); item.at = new Date().toISOString();
     /* the newest draft or score replaces an older one still waiting */
-    if (item.t === 'draft' || item.t === 'mode' || item.t === 'last') q = q.filter(function (x) { return !(x.t === item.t && x.k === item.k && x.u === item.u); });
+    if (item.t === 'draft' || item.t === 'mode' || item.t === 'last' || item.t === 'simcase') q = q.filter(function (x) { return !(x.t === item.t && x.k === item.k && x.u === item.u); });
     q.push(item); write(OUT, q);
     flushSoon();
   }
@@ -256,6 +257,12 @@
         return sb.from('profiles').update({ last_path: x.k }).eq('id', u);
       case 'onboarded':
         return sb.from('profiles').update({ onboarded_at: x.at }).eq('id', u);
+      case 'simcase': {
+        var role = cat.roles[x.k];
+        if (!role) return Promise.resolve();
+        if (!x.state) return sb.from('simulation_sessions').delete().eq('user_id', u).eq('role_id', role.id);
+        return sb.from('simulation_sessions').upsert({ user_id: u, role_id: role.id, state: x.state, updated_at: x.at });
+      }
     }
     return Promise.resolve();
   }
@@ -289,6 +296,16 @@
   var lastSent = null;
   function lastPath(p) { if (p && p !== lastSent) { lastSent = p; enqueue({ t: 'last', k: p }); } }
   function onboarded() { enqueue({ t: 'onboarded', k: 'x' }); }
+  /* where the person is in a simulation case; null forgets it */
+  function simCase(role, state) { enqueue({ t: 'simcase', k: role, state: state || null }); }
+  function simCaseSaved(role) {
+    var id = uid(); if (!id) return Promise.resolve(null);
+    return loadCatalog().then(function (cat) {
+      var r = cat.roles[role]; if (!r) return null;
+      return sb.from('simulation_sessions').select('state,updated_at').eq('user_id', id).eq('role_id', r.id).maybeSingle()
+        .then(function (res) { return res.error || !res.data ? null : { state: res.data.state, at: Date.parse(res.data.updated_at) }; });
+    });
+  }
 
   /* ─────────── auth ─────────── */
   function signIn(email, password) {
@@ -307,7 +324,7 @@
   function signOut() {
     var id = uid();
     return flush().catch(function () {}).then(function () { return sb.auth.signOut(); }).then(function () {
-      ['scc_profile', 'scc_people', 'scc_submissions', OUT].forEach(function (k) { localStorage.removeItem(k); });
+      ['scc_profile', 'scc_people', 'scc_submissions', OUT, 'sc_wf_state', 'sc_active_panel'].forEach(function (k) { localStorage.removeItem(k); });
       if (id) Object.keys(localStorage).forEach(function (k) { if (k.indexOf('__' + id) > -1 || k === 'mt3_done' || k === 'mt3_scores' || k === 'mt3_idx') localStorage.removeItem(k); });
     });
   }
@@ -342,6 +359,14 @@
       case 'email_graded': return { t: 'Your email was graded', s: n.submission && n.submission.scenario ? n.submission.scenario.prompt : '', href: root('account.html#feedback') };
       case 'coach_assigned': return { t: 'You have a coach', s: n.person ? n.person.full_name + ' will follow your progress.' : '', href: root('account.html') };
       case 'associate_assigned': return { t: 'New associate to coach', s: n.person ? n.person.full_name : '', href: root('coach.html') };
+      case 'reminder': {
+        var what = n.course ? n.course.title : (n.sim ? n.sim.title : '');
+        if (n.person) {
+          var me = window.SCApp && SCApp.currentUser();
+          return { t: n.person.full_name + ' has not finished ' + what, s: n.message || '', href: root(me && me.role === 'admin' ? 'admin.html' : 'coach.html') };
+        }
+        return { t: 'Keep going: ' + what, s: n.message || '', href: n.course ? root(n.course.page_path) : (n.sim ? root(n.sim.page_path) : null) };
+      }
       default: return { t: 'Announcement', s: n.message || '', href: null };
     }
   }
@@ -417,7 +442,7 @@
     signIn: signIn, signUp: signUp, signOut: signOut, resetPassword: resetPassword,
     refreshProfile: refreshProfile, pull: pull, pullPeople: pullPeople, pullSubmissions: pullSubmissions, loadCatalog: loadCatalog, flush: flush,
     courseState: courseState, attempt: attempt, pollAnswer: pollAnswer, draft: draft, modeScore: modeScore,
-    submitEmail: submitEmail, grade: grade, lastPath: lastPath, onboarded: onboarded,
+    submitEmail: submitEmail, grade: grade, lastPath: lastPath, onboarded: onboarded, simCase: simCase, simCaseSaved: simCaseSaved,
     notifications: notifications, markRead: markRead, onNotification: onNotification
   };
   ready.then(function (p) {

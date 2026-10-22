@@ -17,6 +17,9 @@ on the team's NAS later.
 | `migrations/0008_admin_people.sql` | `admin_people()`: the admin's list of people with their email (read from auth.users, admins only) |
 | `migrations/0009_intro_required.sql` | The Introduction is required before trainings and simulations (enforced in `has_course` and `has_simulation`), and its new lesson "Keep client data safe" |
 | `migrations/0010_staff_assignments.sql` | Coaches assign trainings and simulations to their own associates; admins to anyone |
+| `migrations/0011_assigned_only.sql` | Simulations are closed by default: nobody starts with trainings or simulations, an admin or the associate's coach assigns them |
+| `migrations/0012_best_email_grade.sql` | A simulation counts the best grade of each email scenario once, and a practice mode never above its maximum |
+| `migrations/0013_resume_reminders_insights.sql` | `simulation_sessions` (the exact point of each person in each simulation case), daily reminders through `pg_cron` (`private.send_reminders()`: associates after 3 days without activity on something unfinished, their coaches after 7), and the `question_stats` view. Run step 1 on its own, then step 2 |
 
 Run them in order in the SQL editor (or with `psql`) on an empty project.
 
