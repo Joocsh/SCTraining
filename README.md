@@ -39,8 +39,8 @@ Settings waits for "Save changes":
 | Role      | Panel          | Can                                                                 |
 | --------- | -------------- | ------------------------------------------------------------------- |
 | associate | `account.html` | Take the Introduction, then the trainings and simulations they have |
-| coach     | `coach.html`   | See their team's progress, grade their emails, assign them trainings and simulations |
-| admin     | `admin.html`   | Everything: roles, coach teams, assignments, open simulations, announcements |
+| coach     | `settings.html` | Their team (Members, Assign, Progress, Emails to grade, Insights) and each associate's full profile (`profile.html`) |
+| admin     | `settings.html` | Everything: users and roles, coach teams, assignments, progress, emails, insights, open simulations, announcements, every profile |
 
 The Introduction is required before any training or simulation. Nobody starts with
 trainings or simulations: an admin, or the associate's coach, assigns them in the Assign
@@ -105,7 +105,8 @@ enlaces. Si agregas una página nueva, va en la raíz.
 | `account.html`              | Panel del asociado: cursos, logros, certificados y puntajes   |
 | `admin.html`                | Admin panel: progress, insights, grading, assignments, simulations, announcements |
 | `settings.html`             | Settings: account and password for everyone; Users (coaches: their team; admins: everyone) and Coach teams for admins |
-| `coach.html`                | Coach panel: their team's progress, grading and assignments   |
+| `admin.html`, `coach.html`  | Only redirect to `settings.html`, so old links keep working |
+| `profile.html?id=`          | Full profile of one person for coaches (their team) and admins (everyone): progress, every lesson, simulations and the case in progress, emails with grades, checkpoints missed on the first try, written work and the activity timeline |
 | `ai.html`                   | AI Introduction (curso, desbloquea las Simulations)            |
 | `paths.html`                | Training paths: los trainings de todos los departamentos en una página, con filtro por departamento |
 | `va.html`, `marketing.html` | Solo redirigen a `paths.html#va` y `paths.html#marketing`, para no romper enlaces viejos |
@@ -200,8 +201,8 @@ El núcleo. Expone todo en `window.SCApp`. Cubre cuatro cosas:
 4. **Navegación.** `wireNav()` arma el chip de usuario y los botones de logout en toda
    página que cargue este archivo.
 
-`assets/js/staff.js` drives `admin.html` and `coach.html` and talks to Supabase
-directly; row level security decides what each person can read and change.
+`assets/js/staff.js` drives the staff sections of `settings.html`, `assets/js/profile.js`
+drives `profile.html`, and both talk to Supabase directly; row level security decides what each person can read and change.
 
 ### Home guiado
 
