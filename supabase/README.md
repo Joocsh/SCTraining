@@ -21,6 +21,7 @@ on the team's NAS later.
 | `migrations/0012_best_email_grade.sql` | A simulation counts the best grade of each email scenario once, and a practice mode never above its maximum |
 | `migrations/0013_resume_reminders_insights.sql` | `simulation_sessions` (the exact point of each person in each simulation case), daily reminders through `pg_cron` (`private.send_reminders()`: associates after 3 days without activity on something unfinished, their coaches after 7), and the `question_stats` view. Run step 1 on its own, then step 2 |
 | `migrations/0014_staff_create_accounts.sql` | `profiles.created_by`. Accounts are created by admins and coaches through the `create-user` Edge Function (`functions/create-user`, deployed with "Verify JWT" off because it checks the caller itself); public sign up is turned off in Authentication |
+| `migrations/0015_people_directory.sql` | `people_directory()`: the accounts a staff member manages in Settings > Users (admins: everyone; coaches: their team), with email, last sign in and deactivation from auth.users. Password resets and deactivation go through the `manage-user` Edge Function (`functions/manage-user`, "Verify JWT" off) |
 
 Run them in order in the SQL editor (or with `psql`) on an empty project.
 

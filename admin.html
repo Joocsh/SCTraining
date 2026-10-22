@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Admin · Skill Cloud Academy</title>
-<link rel="stylesheet" href="assets/css/styles.css">
-<link rel="stylesheet" href="assets/css/staff.css?v=20261022c">
+<link rel="stylesheet" href="assets/css/styles.css?v=20261022">
+<link rel="stylesheet" href="assets/css/staff.css?v=20261022d">
 </head>
 <body>
 <nav class="nav" id="nav"><div class="nav-inner">
@@ -28,13 +28,13 @@
       <div><h1>Admin panel</h1><p id="stHello"></p></div>
       <button class="logout-btn" type="button">Log Out</button>
     </div>
-    <p style="margin-top:8px">Everything in the Academy: progress, grading, roles, which associates each coach supervises, and the trainings and simulations each associate has.</p>
-    <div class="st-tabs" role="tablist"><button data-tab="progress" role="tab">Progress</button><button data-tab="insights" role="tab">Insights</button><button data-tab="emails" role="tab">Emails</button><button data-tab="assign" role="tab">Assign</button><button data-tab="people" role="tab">People</button><button data-tab="perms" role="tab">Permissions</button><button data-tab="sims" role="tab">Simulations</button><button data-tab="announce" role="tab">Announcements</button></div>
+    <p style="margin-top:8px">The Academy: progress, insights, grading, and the trainings and simulations each associate has. Users, passwords and coach teams are in <a href="settings.html#users">Settings</a>.</p>
+    <div class="st-tabs" role="tablist"><button data-tab="progress" role="tab">Progress</button><button data-tab="insights" role="tab">Insights</button><button data-tab="emails" role="tab">Emails</button><button data-tab="assign" role="tab">Assign</button><button data-tab="sims" role="tab">Simulations</button><button data-tab="announce" role="tab">Announcements</button></div>
   </div>
 </header>
 
 <main class="st-wrap">
-  <section class="st-panel" data-tab="progress" id="tabProgress"></section><section class="st-panel" data-tab="insights" id="tabInsights" hidden></section><section class="st-panel" data-tab="emails" id="tabEmails" hidden></section><section class="st-panel" data-tab="assign" id="tabAssign" hidden></section><section class="st-panel" data-tab="people" id="tabPeople" hidden></section><section class="st-panel" data-tab="perms" id="tabPerms" hidden></section><section class="st-panel" data-tab="sims" id="tabSims" hidden></section><section class="st-panel" data-tab="announce" id="tabAnnounce" hidden></section>
+  <section class="st-panel" data-tab="progress" id="tabProgress"></section><section class="st-panel" data-tab="insights" id="tabInsights" hidden></section><section class="st-panel" data-tab="emails" id="tabEmails" hidden></section><section class="st-panel" data-tab="assign" id="tabAssign" hidden></section><section class="st-panel" data-tab="sims" id="tabSims" hidden></section><section class="st-panel" data-tab="announce" id="tabAnnounce" hidden></section>
 </main>
 <div class="st-toast" id="stToast" role="status"></div>
 
@@ -72,9 +72,9 @@
   </div>
 </footer>
 
-<script src="assets/js/app-core.js?v=20261022d"></script>
+<script src="assets/js/app-core.js?v=20261022e"></script>
 <script src="assets/js/site.js?v=20261021"></script>
-<script src="assets/js/staff.js?v=20261022c"></script>
+<script src="assets/js/staff.js?v=20261022d"></script>
 <script>SCStaff.init({ mode: 'admin' });</script>
 </body>
 </html>

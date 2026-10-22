@@ -64,7 +64,7 @@
     if(window.SCDB || window.__scdbLoading) return;
     window.__scdbLoading = true;
     var lib = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
-    var db = ROOT + 'assets/js/sc-db.js?v=20261022b';
+    var db = ROOT + 'assets/js/sc-db.js?v=20261022c';
     /* the simulation pages also keep each person's place in a case */
     var resume = /\/roles\/[^/]+\.html$/.test(location.pathname) ? '<script src="'+ROOT+'assets/js/sim-resume.js?v=20261022b"><\/script>' : '';
     if(document.readyState === 'loading'){
@@ -359,6 +359,36 @@
   }
 
   // ---------- nav wiring ----------
+  /* The account menu under the chip: learning (the panel, My profile) and
+     the technical side (Settings) stay apart. */
+  function escHtml(t){ return String(t==null?'':t).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function accountMenu(chip, u){
+    var wrap = chip.closest('.uc-wrap');
+    if(!wrap){
+      wrap = document.createElement('span'); wrap.className = 'uc-wrap';
+      chip.parentNode.insertBefore(wrap, chip); wrap.appendChild(chip);
+      chip.setAttribute('aria-haspopup', 'menu'); chip.setAttribute('aria-expanded', 'false');
+      chip.addEventListener('click', function(e){ e.preventDefault(); var o = wrap.classList.toggle('open'); chip.setAttribute('aria-expanded', o); });
+      document.addEventListener('click', function(e){ if(!wrap.contains(e.target)){ wrap.classList.remove('open'); chip.setAttribute('aria-expanded', 'false'); } });
+      document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && wrap.classList.contains('open')){ wrap.classList.remove('open'); chip.setAttribute('aria-expanded', 'false'); chip.focus(); } });
+    }
+    var old = wrap.querySelector('.uc-menu'); if(old) old.remove();
+    var items = [];
+    if(u.role === 'admin') items.push(['admin.html', 'Admin panel']);
+    if(u.role === 'coach') items.push(['coach.html', 'Coach panel']);
+    items.push(['account.html', 'My profile'], ['settings.html', 'Settings']);
+    var here_ = location.pathname.split('/').pop() || 'index.html';
+    var menu = document.createElement('div');
+    menu.className = 'uc-menu'; menu.setAttribute('role', 'menu');
+    menu.innerHTML = '<div class="uc-head"><b>'+escHtml(u.name)+'</b><small>'+escHtml(u.email || '')+'</small></div>' +
+      items.map(function(i){ return '<a role="menuitem" href="'+rootUrl(i[0])+'"'+(here_ === i[0] ? ' aria-current="page"' : '')+'>'+i[1]+'</a>'; }).join('') +
+      '<button type="button" role="menuitem" class="uc-out">Log out</button>';
+    wrap.appendChild(menu);
+    menu.querySelector('.uc-out').onclick = function(){
+      function go(){ window.location.href = rootUrl('login.html'); }
+      logout().then(go, go);
+    };
+  }
   function wireNav(){
     var u = currentUser();
     document.querySelectorAll('.user-chip').forEach(function(chip){
@@ -367,7 +397,8 @@
       if(u){
         if(av) av.textContent = (u.avatar||u.name.charAt(0)).toUpperCase();
         if(label) label.textContent = u.role==='admin' ? 'Admin' : u.role==='coach' ? 'Coach' : u.name.split(' ')[0];
-        chip.href = rootUrl(u.role==='admin' ? 'admin.html' : u.role==='coach' ? 'coach.html' : 'account.html');
+        chip.href = rootUrl('account.html');
+        accountMenu(chip, u);
       } else {
         if(av) av.textContent='?';
         if(label) label.textContent='Log In';

@@ -31,7 +31,10 @@ coaches create the accounts from their panels ("+ Add a person" / "+ Add an asso
 through the `create-user` Edge Function (`supabase/functions/create-user`). A coach's new
 associate joins that coach's team; an admin picks the role and, for an associate, the
 coach. The creator hands over the email and a temporary password, and the person changes
-it in My account. An admin changes roles in `admin.html`:
+it in Settings. The account menu (the chip in the nav) keeps learning and the technical side
+apart: Admin or Coach panel and My profile (`account.html`) for learning, Settings for the
+account, passwords, users and coach teams. Assigning and editing in the panels and in
+Settings waits for "Save changes":
 
 | Role      | Panel          | Can                                                                 |
 | --------- | -------------- | ------------------------------------------------------------------- |
@@ -100,7 +103,8 @@ enlaces. Si agregas una página nueva, va en la raíz.
 | `index.html`                | Home. Visitante: qué es, cómo funciona y un botón para entrar. Con sesión: Home guiado con los 3 pasos y una bienvenida la primera vez |
 | `login.html`                | Sign in, create an account, reset the password (Supabase Auth) |
 | `account.html`              | Panel del asociado: cursos, logros, certificados y puntajes   |
-| `admin.html`                | Admin panel: progress, grading, assignments, roles, coach teams, simulations, announcements |
+| `admin.html`                | Admin panel: progress, insights, grading, assignments, simulations, announcements |
+| `settings.html`             | Settings: account and password for everyone; Users (coaches: their team; admins: everyone) and Coach teams for admins |
 | `coach.html`                | Coach panel: their team's progress, grading and assignments   |
 | `ai.html`                   | AI Introduction (curso, desbloquea las Simulations)            |
 | `paths.html`                | Training paths: los trainings de todos los departamentos en una página, con filtro por departamento |

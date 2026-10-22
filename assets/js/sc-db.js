@@ -315,9 +315,9 @@
       return refreshProfile().then(function (p) { return pull().then(function () { return p; }); });
     });
   }
-  /* admins and coaches only (the function checks); a coach's new associate joins their team */
-  function createUser(person) {
-    return sb.functions.invoke('create-user', { body: person }).then(function (r) {
+  /* Edge Functions for accounts (admins and coaches only; each function checks) */
+  function invoke(name, body) {
+    return sb.functions.invoke(name, { body: body }).then(function (r) {
       if (r.error) {
         var ctx = r.error.context;
         return (ctx && ctx.json ? ctx.json().catch(function () { return {}; }) : Promise.resolve({})).then(function (b) {
@@ -327,6 +327,10 @@
       return r.data;
     });
   }
+  /* a coach's new associate joins their team */
+  function createUser(person) { return invoke('create-user', person); }
+  /* set_password, deactivate, reactivate */
+  function manageUser(action, data) { var b = { action: action }; for (var k in data) b[k] = data[k]; return invoke('manage-user', b); }
   function changePassword(password) {
     return sb.auth.updateUser({ password: password }).then(function (r) { if (r.error) throw r.error; });
   }
@@ -411,7 +415,8 @@
     wrap.className = 'sc-bell'; wrap.id = 'scBell';
     wrap.innerHTML = '<button type="button" aria-label="Notifications" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="dot" hidden></span></button>' +
       '<div class="panel" role="dialog" aria-label="Notifications"><div class="hd">Notifications<button type="button" data-all>Mark all as read</button></div><div class="list"><p class="none">Loading…</p></div></div>';
-    chip.parentNode.insertBefore(wrap, chip);
+    var anchor = chip.closest('.uc-wrap') || chip;   /* the account menu wraps the chip */
+    anchor.parentNode.insertBefore(wrap, anchor);
     var list = [], btn = wrap.querySelector('button'), dot = wrap.querySelector('.dot');
     function render() {
       var unread = list.filter(function (n) { return !n.read_at; }).length;
@@ -448,7 +453,7 @@
 
   window.SCDB = {
     client: sb, ready: ready, uid: uid,
-    signIn: signIn, signOut: signOut, resetPassword: resetPassword, createUser: createUser, changePassword: changePassword,
+    signIn: signIn, signOut: signOut, resetPassword: resetPassword, createUser: createUser, manageUser: manageUser, changePassword: changePassword,
     refreshProfile: refreshProfile, pull: pull, pullPeople: pullPeople, pullSubmissions: pullSubmissions, loadCatalog: loadCatalog, flush: flush,
     courseState: courseState, attempt: attempt, pollAnswer: pollAnswer, draft: draft, modeScore: modeScore,
     submitEmail: submitEmail, grade: grade, lastPath: lastPath, onboarded: onboarded, simCase: simCase, simCaseSaved: simCaseSaved,

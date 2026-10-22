@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings · Skill Cloud Academy</title>
+<link rel="stylesheet" href="assets/css/styles.css?v=20261022">
+<link rel="stylesheet" href="assets/css/staff.css?v=20261022d">
+</head>
+<body>
+<nav class="nav" id="nav"><div class="nav-inner">
+  <a class="brand" href="index.html"><img src="assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+  <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+  <div class="menu">
+    <a class="navlink" href="index.html">Home</a>
+    <a class="navlink" href="ai.html">Introduction</a>
+    <a class="navlink" href="paths.html">Paths</a>
+    <a class="navlink" href="index.html#simulations">Simulations</a>
+  </div>
+  <span class="spacer"></span>
+  <a class="pill" href="index.html#simulations">Start Practicing</a>
+  <a class="user-chip" href="account.html" aria-label="My account"><span class="av">A</span><span class="uc-label">Account</span></a>
+</div></nav>
+
+<header class="st-hero set-hero">
+  <div class="in">
+    <h1>Settings</h1>
+    <p id="setHello">Your account, your password<span data-staff hidden> and the accounts you manage</span>.</p>
+  </div>
+</header>
+
+<main class="set-wrap">
+  <aside class="set-nav" aria-label="Settings sections">
+    <p class="set-group">Your account</p>
+    <a href="#account" data-sec="account">Account</a>
+    <a href="#password" data-sec="password">Password</a>
+    <p class="set-group" data-staff hidden>Administration</p>
+    <a href="#users" data-sec="users" hidden>Users</a>
+    <a href="#teams" data-sec="teams" hidden>Coach teams</a>
+  </aside>
+  <div class="set-main">
+    <section class="set-panel" data-sec="account" id="secAccount"></section>
+    <section class="set-panel" data-sec="password" id="secPassword" hidden></section>
+    <section class="set-panel st-panel-like" data-sec="users" id="tabPeople" hidden></section>
+    <section class="set-panel st-panel-like" data-sec="teams" id="tabPerms" hidden></section>
+  </div>
+</main>
+<div class="st-toast" id="stToast" role="status"></div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/app-core.js?v=20261022e"></script>
+<script src="assets/js/site.js?v=20261021"></script>
+<script src="assets/js/staff.js?v=20261022d"></script>
+<script src="assets/js/settings.js?v=20261022"></script>
+</body>
+</html>
