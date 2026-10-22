@@ -16,6 +16,7 @@ on the team's NAS later.
 | `migrations/0007_progress.sql` | Simulation access (open by default, or assigned per associate with a notification) and the general progress views: `progress_items` (Introduction, trainings and simulations each person has) and `progress_summary` (per category and overall). Run step 1 on its own, then step 2 |
 | `migrations/0008_admin_people.sql` | `admin_people()`: the admin's list of people with their email (read from auth.users, admins only) |
 | `migrations/0009_intro_required.sql` | The Introduction is required before trainings and simulations (enforced in `has_course` and `has_simulation`), and its new lesson "Keep client data safe" |
+| `migrations/0010_staff_assignments.sql` | Coaches assign trainings and simulations to their own associates; admins to anyone |
 
 Run them in order in the SQL editor (or with `psql`) on an empty project.
 
