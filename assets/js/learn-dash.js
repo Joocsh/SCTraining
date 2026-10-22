@@ -47,7 +47,7 @@
   var steps = [
     { n: 1, icon: 'learn', title: 'Learn the tools', desc: 'What Claude, ChatGPT and Manus are, and when to use each one.',
       done: introDone, pct: introDone ? 100 : Math.round(introSeen / introP.total * 100),
-      meta: introDone ? 'Complete' : (introSeen ? introSeen + ' of ' + introP.total + ' lessons' : 'Required · ' + introP.total + ' short lessons'),
+      meta: introDone ? 'Complete' : (introSeen ? introSeen + ' of ' + introP.total + ' lessons' : 'Required · 3 short modules'),
       href: 'ai.html', go: introSeen ? 'Continue the Introduction' : 'Start the Introduction', again: 'Review' },
     { n: 2, icon: 'study', title: 'Study your role', desc: 'Pick a training path, VA or Marketing, and work through it lesson by lesson.',
       done: tComplete > 0, pct: tTotal ? Math.round(tDone / tTotal * 100) : 0,
@@ -110,7 +110,7 @@
     { t: 'Welcome to Skill Cloud Academy', p: 'This is where you practice your role before your first real day, on real Skill Cloud cases, with no risk to a client.' },
     { t: 'Three steps, in order',
       list: ['<b>Learn the tools.</b> The Introduction to Claude, ChatGPT and Manus.', '<b>Study your role.</b> A training path, VA or Marketing.', '<b>Practice real cases.</b> The simulations your coach assigns you.'] },
-    { t: 'Start with step 1', p: 'The Introduction comes first: six short lessons, including how to keep client data safe with AI, each with a quick check. Then your coach assigns your trainings and simulations, and you get a notification. Your progress saves as you go.' }
+    { t: 'Start with step 1', p: 'The Introduction comes first: three short modules, including how to keep client data safe with AI, with a quick check after each lesson. Then your coach assigns your trainings and simulations, and you get a notification. Your progress saves as you go.' }
   ];
   var at = 0;
   document.body.insertAdjacentHTML('beforeend',

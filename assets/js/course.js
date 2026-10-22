@@ -387,7 +387,7 @@
     var introFirst = window.SCApp && C.opts.id !== 'intro' && SCApp.isIntroDone && !SCApp.isIntroDone();
     if (introFirst) {
       document.body.insertAdjacentHTML('beforeend', '<div class="c-cert-wrap open" role="dialog" aria-modal="true"><div class="c-cert"><div class="c-cert-in">' +
-        '<h2>Finish the Introduction first</h2><p>The Introduction comes before every training and simulation. It is six short lessons, including how to keep client data safe with AI.</p></div>' +
+        '<h2>Finish the Introduction first</h2><p>The Introduction comes before every training and simulation. It is three short modules, including how to keep client data safe with AI.</p></div>' +
         '<div class="c-cert-actions"><a class="c-btn primary" href="' + (SCApp.rootUrl ? SCApp.rootUrl('ai.html') : '../ai.html') + '">Go to the Introduction</a></div></div></div>');
     }
     /* a training that is not assigned to this person (open ones are for everyone) */

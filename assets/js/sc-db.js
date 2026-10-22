@@ -21,8 +21,8 @@
 
   /* local store key of each course (the same keys the pages use) */
   var STORES = {
-    intro: 'sc_course_intro__', sop: 'sc_va_sop_foundations_v2__', 'ai-ops': 'sc_va_ai_re_ops__',
-    asana: 'sc_va_asana__', ops: 'sc_va_ops__'
+    intro: 'sc_course_intro_v2__', sop: 'sc_va_sop_foundations_v2__', 'ai-ops': 'sc_va_ai_re_ops__',
+    asana: 'sc_va_asana__', ops: 'sc_va_ops__', marketing: 'sc_marketing__'
   };
   var DRAFT_STORES = { 'ai-ops': 'sc_va_ai_re_ops__', ops: 'sc_va_ops__' };
 
@@ -96,6 +96,9 @@
   }
 
   /* ─────────── pull: the person's activity into the local copy ─────────── */
+  /* a new version name makes every browser pull once more, for example after
+     the trainings changed shape (0018: Start, modules, Finish) */
+  var PULLED = 'scc_pulled_v2__';
   function pull() {
     var id = uid();
     if (!id) return Promise.resolve();
@@ -117,12 +120,6 @@
         r[1].data.forEach(function (x) { completedAt[cat.courseById[x.course_id]] = Date.parse(x.completed_at); sent['C' + x.course_id] = 1; });
         Object.keys(cat.order).forEach(function (cs) {
           var list = byCourse[cs] || [];
-          if (cs === 'marketing') {
-            var mt = read('mt3_done', []);
-            list.forEach(function (x) { var i = cat.order[cs].indexOf(x.slug); if (i > -1 && mt.indexOf(i) < 0) mt.push(i); });
-            write('mt3_done', mt);
-            return;
-          }
           if (!STORES[cs]) return;
           var key = STORES[cs] + id, st = read(key, {});
           st.done = st.done || []; st.passed = st.passed || {};
@@ -153,7 +150,7 @@
         });
         write('scc_progress__' + id, prog);
         write('scc_sent__' + id, sent);
-        return pullSubmissions().then(function () { localStorage.setItem('scc_pulled__' + id, String(Date.now())); });
+        return pullSubmissions().then(function () { localStorage.setItem(PULLED + id, String(Date.now())); });
       });
     });
   }
@@ -338,7 +335,7 @@
     var id = uid();
     return flush().catch(function () {}).then(function () { return sb.auth.signOut(); }).then(function () {
       ['scc_profile', 'scc_people', 'scc_submissions', OUT, 'sc_wf_state', 'sc_active_panel'].forEach(function (k) { localStorage.removeItem(k); });
-      if (id) Object.keys(localStorage).forEach(function (k) { if (k.indexOf('__' + id) > -1 || k === 'mt3_done' || k === 'mt3_scores' || k === 'mt3_idx') localStorage.removeItem(k); });
+      if (id) Object.keys(localStorage).forEach(function (k) { if (k.indexOf('__' + id) > -1) localStorage.removeItem(k); });
     });
   }
   function resetPassword(email) {
@@ -457,7 +454,7 @@
   var ready = (uid() ? sb.auth.getSession().then(function (r) {
     if (!r.data.session) { localStorage.removeItem('scc_profile'); return null; }
     var id = r.data.session.user.id;
-    var stale = !localStorage.getItem('scc_pulled__' + id);
+    var stale = !localStorage.getItem(PULLED + id);
     return refreshProfile().then(function (p) { return (stale ? pull() : Promise.resolve()).then(function () { return p; }); });
   }) : Promise.resolve(null)).then(function (p) { flush(); return p; }, function (e) { console.warn('[sc-db]', e && e.message); return null; });
 

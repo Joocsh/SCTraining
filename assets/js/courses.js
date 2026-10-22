@@ -13,7 +13,7 @@
     {
       id: 'intro', title: 'AI Introduction', href: 'ai.html', kind: 'Start here',
       desc: 'What Claude, ChatGPT and Manus are, how each one works, and when to use which.',
-      image: 'assets/img/va/sop/m2-build.jpg', lessons: 6, modules: 1, store: 'sc_course_intro__', track: 'intro'
+      image: 'assets/img/va/sop/m2-build.jpg', lessons: 8, modules: 3, store: 'sc_course_intro_v2__', track: 'intro'
     },
     {
       id: 'sop', title: 'SOP Foundations', href: 'va/sop-foundations.html', kind: 'VA training',
@@ -38,9 +38,7 @@
     {
       id: 'marketing', title: 'Marketing Training', href: 'marketing-training.html', kind: 'Marketing training', track: 'marketing',
       desc: 'The Sotheby’s brand, Design Vault, ListTrac and the marketing tools, lesson by lesson.',
-      image: 'assets/img/marketing/marketing-training-cover.jpg', lessons: 58, modules: 9,
-      /* this course keeps its own progress in the browser */
-      progress: function () { return { done: read('mt3_done', []).length }; }
+      image: 'assets/img/marketing/marketing-training-cover.jpg', lessons: 59, modules: 9, store: 'sc_marketing__'
     }
   ];
 

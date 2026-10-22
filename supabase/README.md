@@ -24,6 +24,7 @@ on the team's NAS later.
 | `migrations/0015_people_directory.sql` | `people_directory()`: the accounts a staff member manages in Settings > Users (admins: everyone; coaches: their team), with email, last sign in and deactivation from auth.users. Password resets and deactivation go through the `manage-user` Edge Function (`functions/manage-user`, "Verify JWT" off) |
 | `migrations/0016_must_change_password.sql` | `profiles.must_change_password`: on when an admin or a coach creates an account or sets someone's password; the site asks the person to choose their own first. A trigger on `auth.users` turns it off when the password really changes |
 | `migrations/0017_coaches_take_intro.sql` | Coaches finish the Introduction like associates; only admins are not held by it |
+| `migrations/0018_consistent_trainings.sql` | Every training has the same shape: Start, numbered modules, Finish. The Introduction gets three modules plus welcome and finish lessons; SOP's recap becomes Finish; Marketing (now on the shared course player) gets a Start and a Finish. Lesson order is unchanged |
 
 Run them in order in the SQL editor (or with `psql`) on an empty project.
 

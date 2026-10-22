@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="assets/css/styles.css?v=20261022">
   <link rel="stylesheet" href="assets/css/topbar.css?v=20260925">
   <link rel="stylesheet" href="assets/css/course.css?v=20261016d">
+  <link rel="stylesheet" href="assets/css/course-kit.css?v=20261016">
   <style>
     :root {
       --v-navy:#0a2647; --v-navy2:#0f3460; --v-cyan:#17c3d4; --v-cyan-d:#0fa6b6;
@@ -450,11 +451,35 @@
 <main class="c-stage" id="stage" tabindex="-1">
 
   <div class="intro-lock" id="intro-lock" hidden>
-    <div class="intro-lock-box"><span aria-hidden="true">&#128274;</span><span><b>Trainings and simulations unlock after the Introduction.</b> Finish all six lessons and their checkpoints, including how to keep client data safe with AI.</span></div>
+    <div class="intro-lock-box"><span aria-hidden="true">&#128274;</span><span><b>Trainings and simulations unlock after the Introduction.</b> Finish its three short modules and their checkpoints, including how to keep client data safe with AI.</span></div>
   </div>
 
+  <!-- ========== START ========== -->
+  <section class="lesson" id="welcome" data-mod="Start" data-title="Welcome">
+    <h2>Learn the AI tools you will use every day.</h2>
+    <p class="lead">Claude, ChatGPT and Manus do a lot of the heavy lifting in real estate operations. This Introduction shows what each one does best, how to brief it, and how to keep client data safe while you use it.</p>
+    <div class="block">
+      <h3 class="blk-h">By the end, you can</h3>
+      <ul class="checks">
+        <li>Explain how a language model works, and the one rule that decides the quality of its answers.</li>
+        <li>Keep client data safe: what never goes into an AI tool, and how to anonymize before you paste.</li>
+        <li>Prompt Claude with R.E.A.C.H., use ChatGPT's tools, and brief Manus with B.R.A.I.N.</li>
+        <li>Choose the right tool for each task.</li>
+      </ul>
+    </div>
+    <div class="block">
+      <h3 class="blk-h">How it works</h3>
+      <ul class="checks">
+        <li>Three short modules. Each lesson ends with a quick check.</li>
+        <li>Lessons open one by one as you pass each check.</li>
+        <li>Your progress saves as you go, on any device.</li>
+        <li>Finishing it opens the trainings and simulations your coach assigns you.</li>
+      </ul>
+    </div>
+  </section>
+
   <!-- ========== WHAT IS AI ========== -->
-  <section class="section-intro lesson" id="what-is-ai" data-mod="AI Introduction" data-title="What is AI" data-goals="How a language model works|The one rule that decides output quality">
+  <section class="section-intro lesson" id="what-is-ai" data-mod="Module 1 · AI basics" data-title="What is AI" data-goals="How a language model works|The one rule that decides output quality">
     <h2 class="disp">What Is AI and How Does It Work?</h2>
 
     <div class="ai-article">
@@ -543,7 +568,7 @@
   <div class="ai-divider"></div>
 
   <!-- ========== DATA SAFETY (required for everyone) ========== -->
-  <section class="section-intro lesson" id="data-safety" data-mod="AI Introduction" data-title="Keep client data safe" data-goals="What never goes into an AI tool|Anonymize before you paste|What to do if something slips">
+  <section class="section-intro lesson" id="data-safety" data-mod="Module 1 · AI basics" data-title="Keep client data safe" data-goals="What never goes into an AI tool|Anonymize before you paste|What to do if something slips">
     <h2 class="disp">Keep Client Data Safe With AI</h2>
 
     <div class="ai-article">
@@ -626,7 +651,7 @@
   <div class="ai-divider"></div>
 
   <!-- ========== MODULE 1: CLAUDE ========== -->
-  <section class="ai-module lesson" id="claude" data-mod="AI Introduction" data-title="Claude" data-goals="What Claude does best and its tools|Prompt with R.E.A.C.H. and know its limits">
+  <section class="ai-module lesson" id="claude" data-mod="Module 2 · The three tools" data-title="Claude" data-goals="What Claude does best and its tools|Prompt with R.E.A.C.H. and know its limits">
 
     <div class="mod-header claude">
       <div class="mod-header-inner">
@@ -892,7 +917,7 @@
   <div class="ai-divider"></div>
 
   <!-- ========== MODULE 2: CHATGPT ========== -->
-  <section class="ai-module lesson" id="chatgpt" data-mod="AI Introduction" data-title="ChatGPT" data-goals="When ChatGPT beats Claude|Custom GPTs and its other tools">
+  <section class="ai-module lesson" id="chatgpt" data-mod="Module 2 · The three tools" data-title="ChatGPT" data-goals="When ChatGPT beats Claude|Custom GPTs and its other tools">
 
     <div class="mod-header chatgpt">
       <div class="mod-header-inner">
@@ -1101,7 +1126,7 @@
   <div class="ai-divider"></div>
 
   <!-- ========== MODULE 3: MANUS ========== -->
-  <section class="ai-module lesson" id="manus" data-mod="AI Introduction" data-title="Manus" data-goals="When an agent is the right tool|Brief with B.R.A.I.N. and check with three QA gates">
+  <section class="ai-module lesson" id="manus" data-mod="Module 2 · The three tools" data-title="Manus" data-goals="When an agent is the right tool|Brief with B.R.A.I.N. and check with three QA gates">
 
     <div class="mod-header manus">
       <div class="mod-header-inner">
@@ -1339,7 +1364,7 @@
   <div class="ai-divider"></div>
 
   <!-- ========== COMPARISON ========== -->
-  <section class="ai-module lesson" id="compare" data-mod="AI Introduction" data-title="Compare all three" data-goals="Choose the right tool for each task">
+  <section class="ai-module lesson" id="compare" data-mod="Module 3 · Choose the right tool" data-title="Compare all three" data-goals="Choose the right tool for each task">
     <h2 class="disp" style="font-size:clamp(24px,3.4vw,32px);color:var(--v-navy);margin:0 0 28px;">Side-by-Side Comparison</h2>
 
     <div class="cmp-wrap">
@@ -1438,35 +1463,37 @@
     </div>
   </div>
 
-  <div class="block" id="introDone" hidden><div class="ai-complete">
-    <div class="orb orb-1" aria-hidden="true"></div>
-    <div class="orb orb-2" aria-hidden="true"></div>
-    <div class="ai-complete-inner">
-      <h3 class="disp" id="intro-done-title">Foundation complete.</h3>
-      <p id="intro-done-text">Step 1 is done. Next, your coach assigns your trainings and simulations, and you get a notification for each one.</p>
-      <div class="ai-complete-btns">
-        <a class="btn v-cyan" href="index.html#simulations">Go to Simulations</a>
-        <a class="btn v-ghost" href="index.html">Go to Home</a>
+  </section>
+
+  <!-- ========== FINISH ========== -->
+  <section class="lesson" id="finish" data-mod="Finish" data-title="Introduction complete">
+    <div class="done-card">
+      <div class="done-mark">&#10003;</div>
+      <div>
+        <h2>Foundation complete.</h2>
+        <p class="lead">Step 1 is done. Next, your coach assigns your trainings and simulations, and you get a notification for each one.</p>
       </div>
     </div>
-  </div></div>
+    <ul class="checks" style="margin-top:28px">
+      <li>A language model predicts the next words; the brief you give it decides the result.</li>
+      <li>Client data stays out of AI tools unless it is anonymized and the client authorized it.</li>
+      <li>Claude for writing and long documents, ChatGPT for current research and images, Manus for work that spans several tools.</li>
+    </ul>
+    <div class="c-actions"><button class="c-btn primary" data-cert>View certificate</button><a class="c-btn ghost" href="index.html">Go to Home</a></div>
   </section>
 
 </main>
 
-<script src="assets/js/app-core.js?v=20261022g"></script>
+<script src="assets/js/app-core.js?v=20261022h"></script>
 <script>SCApp.requireAuth();</script>
-<script src="assets/js/course.js?v=20261022"></script>
+<script src="assets/js/course.js?v=20261022b"></script>
 <script>
   (function () {
-    var done = document.getElementById('introDone');
-    if (SCApp.isIntroDone()) done.hidden = false;
     if (new URLSearchParams(location.search).get('locked') && !SCApp.isIntroDone()) document.getElementById('intro-lock').hidden = false;
     SCCourse.init({
-      id: 'intro', title: 'AI Introduction', kick: 'Start here', certificate: false,
+      id: 'intro', title: 'AI Introduction', kick: 'Start here', store: 'sc_course_intro_v2__',
       onComplete: function () {
         SCApp.markIntroDone();
-        done.hidden = false;
         document.getElementById('intro-lock').hidden = true;
       }
     });

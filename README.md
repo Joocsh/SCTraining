@@ -113,7 +113,7 @@ enlaces. Si agregas una página nueva, va en la raíz.
 | `va/ai-real-estate-ops.html` | Curso AI for Real Estate Operations (VA)                     |
 | `va/asana.html`             | Curso Asana Essentials (VA)                                    |
 | `va/operations-manager.html` | Curso Operations Manager (VA). Antes era una simulación     |
-| `marketing-training.html`   | Curso Marketing Training                                       |
+| `marketing-training.html`   | Marketing Training, on the shared course player (Start, 9 modules, Finish) |
 | `ai-lab.html`               | Índice del AI Lab, enlaza a todo `guides/`                     |
 | `simulator.html`            | Simulador de casos reales, general                             |
 | `mls.html`                  | Práctica de captura en MLS                                     |
@@ -265,9 +265,9 @@ Cómo agregar un curso: ver [CONTRIBUTING.md](CONTRIBUTING.md).
 | `scc_submissions`        | Emails entregados y sus calificaciones       |
 | `scc_seeded_v2`          | Bandera para no volver a sembrar             |
 | `scc_intro_done__<userId>` | AI Introduction completada                 |
-| `sc_course_intro__<userId>` | Progreso del curso AI Introduction         |
+| `sc_course_intro_v2__<userId>` | AI Introduction progress (v2: Start, 3 modules, Finish) |
 | `sc_va_sop_foundations_v2__<userId>` | Progreso de SOP Foundations       |
-| `mt3_*`                  | Progreso de Marketing Training (global)      |
+| `sc_marketing__<id>`     | Marketing Training progress (course player)  |
 | `sc_<role>_<mode>`       | Trackers viejos por puesto, ver abajo        |
 
 Las llaves `sc_<role>_<mode>` son del sistema anterior. `syncLegacyProgress()` las importa
