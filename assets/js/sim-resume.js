@@ -126,7 +126,7 @@
       '<small>Saved ' + when(saved.at) + '. Your answers and notes come back with it.</small>' +
       '<div class="sr-act"><button type="button" class="sr-go">Continue the case</button><button type="button" class="sr-new">Start over</button></div>' +
       '<button type="button" class="sr-x" aria-label="Not now">&times;</button>';
-    document.body.appendChild(card);
+    (document.getElementById('roleHub') || document.body).appendChild(card);   /* the role hub hides the other children of body */
     requestAnimationFrame(function () { card.classList.add('in'); });
     function close() { card.classList.remove('in'); setTimeout(function () { card.remove(); }, 260); }
     card.querySelector('.sr-go').onclick = function () {
