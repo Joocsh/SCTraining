@@ -34,7 +34,9 @@
   function uid() { var s = read(TOKEN, null); return s && s.user ? s.user.id : null; }
 
   /* ─────────── catalog: ids behind the slugs the pages use ─────────── */
-  var CAT_KEY = 'scc_catalog_v2';
+  /* bump the version whenever lessons are added or regrouped, so no browser
+     maps progress with an old lesson order (v3: 0018, Start/modules/Finish) */
+  var CAT_KEY = 'scc_catalog_v3';
   function loadCatalog(force) {
     var c = read(CAT_KEY, null);
     if (c && !force && Date.now() - c.at < 6 * 3600 * 1000) return Promise.resolve(c);
@@ -98,7 +100,7 @@
   /* ─────────── pull: the person's activity into the local copy ─────────── */
   /* a new version name makes every browser pull once more, for example after
      the trainings changed shape (0018: Start, modules, Finish) */
-  var PULLED = 'scc_pulled_v2__';
+  var PULLED = 'scc_pulled_v3__';
   function pull() {
     var id = uid();
     if (!id) return Promise.resolve();
