@@ -64,9 +64,6 @@
 .h-copy p { font-size: 19px; line-height: 1.65; color: #d3e1ee; max-width: 540px; margin: 0 0 32px; }
 .h-ctas { display: flex; gap: 14px; flex-wrap: wrap; }
 .h-person { position: relative; display: flex; align-items: flex-end; justify-content: center; }
-.h-person::before { content: ""; position: absolute; left: 50%; bottom: -30%; width: min(620px, 118%); aspect-ratio: 1;
-  transform: translateX(-50%); border-radius: 50%; pointer-events: none;
-  background: var(--v-cyan); box-shadow: 0 0 90px rgba(23, 195, 212, .45); } /* the same cyan as "Sign in to start" */
 .h-person img { position: relative; z-index: 1; height: 540px; width: auto; max-width: 100%; object-fit: contain; object-position: bottom; display: block; }
 .h-stats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 34px; }
 .h-stat { display: flex; align-items: baseline; gap: 8px; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .18);
