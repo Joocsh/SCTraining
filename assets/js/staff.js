@@ -39,6 +39,8 @@
     clearTimeout(toast.t); toast.t = setTimeout(function () { el.className = 'st-toast'; }, undo ? 6000 : 2600);
   }
   function check(r) { if (r && r.error) throw r.error; return r ? r.data : null; }
+  /* the full profile of a person (profile.html): everything about their progress */
+  function profileLink(id, name) { return '<a class="st-plink" href="profile.html?id=' + id + '">' + esc(name) + '</a>'; }
 
   /* Pending changes wait for "Save changes" in a bar at the bottom of the
      section. Leaving the section or the page with unsaved changes asks first. */
@@ -90,7 +92,7 @@
         '<table class="st-table"><thead><tr><th>Associate</th><th>Overall</th><th>Introduction</th><th>Trainings</th><th>Simulations</th><th>Last activity</th></tr></thead><tbody>' +
         people.map(function (p) {
           var all = sum.filter(function (s) { return s.user_id === p.id && !s.category; })[0] || { percent: 0 };
-          return '<tr class="st-row" data-uid="' + p.id + '"><td class="nm">' + esc(p.full_name) + '</td><td><b class="st-pct">' + all.percent + '%</b></td>' +
+          return '<tr class="st-row" data-uid="' + p.id + '"><td class="nm">' + profileLink(p.id, p.full_name) + '</td><td><b class="st-pct">' + all.percent + '%</b></td>' +
             '<td>' + cell(p.id, 'introduction') + '</td><td>' + cell(p.id, 'training') + '</td><td>' + cell(p.id, 'simulation') + '</td>' +
             '<td>' + (all.last_activity_at ? day(all.last_activity_at) : '<span class="st-muted">No activity</span>') + '</td></tr>' +
             '<tr class="st-detail" data-for="' + p.id + '" hidden><td colspan="6"></td></tr>';
@@ -104,9 +106,10 @@
           d.hidden = false; d.firstChild.innerHTML = '<p class="st-muted">Loading…</p>';
           sb.from('progress_items').select('category,title,percent,completed,last_activity_at').eq('user_id', row.dataset.uid).then(function (res) {
             var items = check(res);
-            d.firstChild.innerHTML = items.length ? '<div class="st-items">' + items.map(function (i) {
+            d.firstChild.innerHTML = (items.length ? '<div class="st-items">' + items.map(function (i) {
               return '<div><em>' + LABEL[i.category] + '</em><span>' + esc(i.title) + '</span>' + bar(i.percent) + '<b>' + (i.completed ? '&#10003;' : i.percent + '%') + '</b></div>';
-            }).join('') + '</div>' : '<p class="st-muted">Nothing assigned yet.</p>';
+            }).join('') + '</div>' : '<p class="st-muted">Nothing assigned yet.</p>') +
+              '<p class="st-more"><a href="profile.html?id=' + row.dataset.uid + '">Open the full profile: lessons, checkpoints, emails, written work and activity &rarr;</a></p>';
           });
         };
       });
@@ -218,7 +221,7 @@
         var el = $('#stInbox');
         if (!subs.length) { el.innerHTML = '<p class="st-empty">' + (emailFilter === 'pending' ? 'Nothing to grade right now.' : 'No graded emails yet.') + '</p>'; return; }
         el.innerHTML = subs.map(function (s) {
-          var max = s.scenario.max_score, head = '<div class="st-meta"><b>' + esc(s.author ? s.author.full_name : 'Associate') + '</b><span>' + esc(s.scenario.role.title) + '</span><span>' + day(s.submitted_at) + '</span>' +
+          var max = s.scenario.max_score, head = '<div class="st-meta"><b>' + profileLink(s.user_id, s.author ? s.author.full_name : 'Associate') + '</b><span>' + esc(s.scenario.role.title) + '</span><span>' + day(s.submitted_at) + '</span>' +
             (s.g ? '<span class="st-tag">Graded ' + s.g.score + '/' + max + (s.g.grader ? ' by ' + esc(s.g.grader.full_name) : '') + '</span>' : '') + '</div>';
           var body = '<p class="st-scn">' + esc(s.scenario.prompt) + '</p><div class="st-email">' + esc(s.body) + '</div>';
           if (s.g) return '<div class="st-card">' + head + body + (s.g.feedback ? '<div class="st-fb"><b>Feedback</b><p>' + esc(s.g.feedback) + '</p></div>' : '') + '</div>';
@@ -272,7 +275,7 @@
           '<table class="st-table up-table' + (admin ? '' : ' up-coach') + '"><thead><tr>' + head + '</tr></thead><tbody>' + people.map(function (p) {
             var self = p.id === me.id, deact = off(p), was = simId[p.assigned_role] || '';
             return '<tr data-id="' + p.id + '" data-role="' + p.app_role + '" data-off="' + (deact ? 1 : 0) + '" data-find="' + esc((p.full_name + ' ' + p.email).toLowerCase()) + '"' + (deact ? ' class="up-off"' : '') + '>' +
-              '<td><div class="up-who">' + avatar(p) + '<span class="tm-who"><b>' + esc(p.full_name) + (self ? ' <em class="up-you">You</em>' : '') + '</b><small>' + esc(p.email) + '</small></span></div></td>' +
+              '<td><div class="up-who">' + avatar(p) + '<span class="tm-who"><b>' + profileLink(p.id, p.full_name) + (self ? ' <em class="up-you">You</em>' : '') + '</b><small>' + esc(p.email) + '</small></span></div></td>' +
               (admin ? '<td><select class="tm-sel" data-k="role" data-was="' + p.app_role + '" aria-label="Role of ' + esc(p.full_name) + '"' + (self ? ' disabled title="You cannot change your own role"' : '') + '>' +
                   ['associate', 'coach', 'admin'].map(function (x) { return '<option value="' + x + '"' + (x === p.app_role ? ' selected' : '') + '>' + x.charAt(0).toUpperCase() + x.slice(1) + '</option>'; }).join('') + '</select></td>' +
                 '<td><select class="tm-sel" data-k="sim" data-was="' + was + '" aria-label="Main simulation of ' + esc(p.full_name) + '"><option value="">None</option>' +
@@ -463,7 +466,7 @@
   function first(p) { return esc(String(p.full_name || '').split(' ')[0]); }
   function plural(n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); }
   function pct(id) { var v = team.pct[id] || 0; return '<span class="tm-pct" title="General progress">' + bar(v) + '<b>' + v + '%</b></span>'; }
-  function who(p) { return '<span class="tm-who"><b>' + esc(p.full_name) + '</b><small>' + esc(p.email || '') + '</small></span>'; }
+  function who(p, link) { return '<span class="tm-who"><b>' + (link ? profileLink(p.id, p.full_name) : esc(p.full_name)) + '</b><small>' + esc(p.email || '') + '</small></span>'; }
 
   function renderPermissions() {
     var box = $('#tabPerms');
@@ -527,7 +530,7 @@
       return '<header class="tm-head"><span class="tm-av big ' + (free.length ? 'warn' : 'ok') + '" aria-hidden="true">' + (free.length ? '!' : '&#10003;') + '</span><div class="tm-hd"><h3>Without a coach</h3>' +
         '<p>' + (free.length ? 'Nobody follows the progress of these associates or grades their emails yet. Pick a coach for each one.' : 'Every associate has a coach.') + '</p></div></header>' +
         (free.length ? '<ul class="tm-list">' + free.map(function (x) {
-          return '<li class="tm-row">' + avatar(x) + who(x) + pct(x.id) +
+          return '<li class="tm-row">' + avatar(x) + who(x, true) + pct(x.id) +
             '<select class="tm-sel' + (team.pend[x.id] ? ' chg' : '') + '" data-assign="' + x.id + '" aria-label="Assign ' + esc(x.full_name) + ' to a coach"><option value="">Assign to a coach…</option>' +
             team.coaches.map(function (c) { return '<option value="' + c.id + '"' + (team.pend[x.id] === c.id ? ' selected' : '') + '>' + esc(c.full_name) + '</option>'; }).join('') + '</select></li>';
         }).join('') + '</ul>' : '');
@@ -545,7 +548,7 @@
     } else {
       html += '<ul class="tm-list">' + members.map(function (x) {
         var others = coachesOf(x.id).filter(function (id) { return id !== c.id && team.byId[id]; });
-        return '<li class="tm-row">' + avatar(x) + who(x) +
+        return '<li class="tm-row">' + avatar(x) + who(x, true) +
           '<span class="tm-chips">' + others.map(function (id) { return '<span class="tm-chip">Also with ' + first(team.byId[id]) + '</span>'; }).join('') + '</span>' +
           pct(x.id) + '<button type="button" class="tm-x" data-rm="' + x.id + '" aria-label="Remove ' + esc(x.full_name) + ' from this team">Remove</button></li>';
       }).join('') + '</ul>';
@@ -707,7 +710,7 @@
           var myS = sa.filter(function (x) { return x.associate_id === p.id; }).map(function (x) { return x.role_id; });
           return '<div class="st-person" data-id="' + p.id + '"><button class="st-ph" type="button">' + avatar(p) + '<span class="st-who"><b>' + esc(p.full_name) + '</b></span>' +
             '<span class="st-sub" data-count></span><span class="st-chev"></span></button>' +
-            '<div class="st-pb" hidden><h4>Trainings (paths)</h4><div class="st-checks">' + courses.map(function (c) {
+            '<div class="st-pb" hidden><p class="st-more"><a href="profile.html?id=' + p.id + '">Open ' + esc(String(p.full_name).split(' ')[0]) + '&rsquo;s full profile &rarr;</a></p><h4>Trainings (paths)</h4><div class="st-checks">' + courses.map(function (c) {
               var has = myC.indexOf(c.id) > -1;
               return '<label><input type="checkbox" data-course="' + c.id + '" data-was="' + (has ? 1 : 0) + '"' + (has ? ' checked' : '') + '> ' + esc(c.title) + ' <small>' + esc(c.department.name) + '</small></label>';
             }).join('') + '</div>' +

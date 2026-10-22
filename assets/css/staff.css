@@ -245,3 +245,68 @@ button.tm-kpi{cursor:pointer}button.tm-kpi:hover{border-color:#bfe9ee}
   .set-dl{grid-template-columns:1fr}.set-dl dt{margin-top:6px}
   .up-act{text-align:left}
 }
+/* links to a person's full profile */
+.st-plink{color:inherit;text-decoration:none;border-bottom:1px dashed #9fd8df}
+.st-plink:hover{color:#0fa6b6;border-bottom-color:#0fa6b6}
+.st-more{margin:10px 0 0;font-size:13.5px}.st-more a{color:#0fa6b6;font-weight:800;text-decoration:none}.st-more a:hover{text-decoration:underline}
+.st-pb .st-more{margin:12px 0 0}
+/* profile.html */
+.pf-hero{padding-bottom:0}
+.pf-back{display:inline-block;color:#9fd8df;font-weight:700;font-size:14px;text-decoration:none;margin-bottom:16px}.pf-back:hover{color:#fff}
+.pf-loading{color:#b9cde0}
+.pf-id{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.pf-av{width:72px;height:72px;font-size:24px;border:3px solid rgba(255,255,255,.18)}
+.pf-who{flex:1;min-width:240px}.pf-who h1{margin:0;color:#fff;font-size:clamp(26px,3vw,34px);font-weight:900;letter-spacing:-.6px}.pf-who>p{margin:2px 0 0;color:#b9cde0}
+.pf-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pf-tag{background:rgba(255,255,255,.1);color:#d6e4f0;border-radius:999px;padding:4px 11px;font-size:12.5px;font-weight:700;text-decoration:none}
+.pf-tag.warn{background:#fff1d1;color:#8a5a00}
+.pf-card .pf-tag.warn{display:inline-block}
+.pf-ring{--p:0;width:112px;height:112px;border-radius:50%;background:conic-gradient(#17c3d4 calc(var(--p)*1%),rgba(255,255,255,.12) 0);display:grid;place-content:center;text-align:center;position:relative}
+.pf-ring::before{content:"";position:absolute;inset:9px;border-radius:50%;background:#0f3460}
+.pf-ring b,.pf-ring span{position:relative}.pf-ring b{color:#fff;font-size:26px;font-weight:900;line-height:1}.pf-ring span{color:#9fb7cc;font-size:12px;font-weight:700}
+.pf-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.pf-btn{background:#17c3d4;color:#0a2647;border-radius:999px;padding:9px 16px;font-weight:800;font-size:14px;text-decoration:none}
+.pf-btn.ghost{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.3)}
+.pf-tabs{margin-top:18px}
+.pf-kpis{grid-template-columns:repeat(5,minmax(0,1fr))}
+.pf-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+.pf-card{background:#fff;border:1px solid #e3eaf1;border-radius:18px;padding:18px 20px;margin-bottom:16px}
+.pf-card-h{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.pf-card-h h2{margin:0;font-size:17px;color:#0a2647;flex:1}
+.pf-card-h span{color:#5b6b7e;font-size:13px;font-weight:700}.pf-card-h a{color:#0fa6b6;font-weight:800;font-size:13.5px;text-decoration:none}
+.pf-card-h .st-bar{width:160px}
+.pf-items{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.pf-items li{display:grid;grid-template-columns:96px minmax(0,1fr) 120px 44px;gap:4px 12px;align-items:center}
+.pf-items em{font-style:normal;font-size:11.5px;font-weight:800;color:#0fa6b6;text-transform:uppercase;letter-spacing:.4px}
+.pf-items b{color:#0a2647;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pf-items small{grid-column:2/-1;color:#8a99ab;font-size:12px;margin-top:-4px}
+.pf-pct{color:#0a2647;font-weight:800;font-size:14px;text-align:right}
+.pf-tl{list-style:none;margin:0;padding:0}
+.pf-tl li{display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:12px;padding:9px 0;border-bottom:1px solid #f0f4f8;align-items:start}
+.pf-tl li:last-child{border-bottom:0}
+.pf-tl-dot{width:10px;height:10px;border-radius:50%;background:#cfd9e3;margin-top:5px}
+.pf-tl .k-lesson .pf-tl-dot,.pf-tl .k-check .pf-tl-dot{background:#17c3d4}.pf-tl .k-cert .pf-tl-dot{background:#1c9e5b}
+.pf-tl .k-mail .pf-tl-dot,.pf-tl .k-grade .pf-tl-dot{background:#f2b33d}.pf-tl .k-sim .pf-tl-dot{background:#5b7cfa}.pf-tl .k-assign .pf-tl-dot{background:#0a2647}
+.pf-tl b{display:block;color:#0a2647;font-size:14px}.pf-tl span{display:block;color:#5b6b7e;font-size:13px}
+.pf-tl small{color:#8a99ab;font-size:12px;white-space:nowrap}
+.pf-fold{padding:0;overflow:hidden}
+.pf-fold>button{display:grid;grid-template-columns:minmax(0,1fr) 160px 48px 14px;gap:14px;align-items:center;width:100%;border:0;background:none;padding:16px 20px;text-align:left;font:inherit;cursor:pointer}
+.pf-fold-t b{display:block;color:#0a2647;font-size:16px}.pf-fold-t small{color:#5b6b7e;font-size:13px}
+.pf-fold-b{display:none;padding:4px 20px 18px;border-top:1px solid #f0f4f8}
+.pf-fold.open .pf-fold-b{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.pf-fold.open .st-chev{transform:rotate(-135deg)}
+.pf-mod{border:1px solid #eef2f6;border-radius:14px;padding:12px 14px}
+.pf-mod-h{display:flex;justify-content:space-between;gap:8px;margin-bottom:8px}.pf-mod-h b{color:#0a2647;font-size:13.5px}.pf-mod-h span{color:#5b6b7e;font-size:12.5px;font-weight:700}
+.pf-mod ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pf-mod li{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13.5px;color:#8a99ab}
+.pf-mod li.ok{color:#33465c}.pf-mod li small{font-size:11.5px;color:#8a99ab}
+.pf-dot{width:9px;height:9px;border-radius:50%;border:2px solid #cfd9e3}.pf-mod li.ok .pf-dot{background:#17c3d4;border-color:#17c3d4}
+.pf-case{background:#eefbfc;color:#0a2647;border-radius:10px;padding:8px 12px;font-size:13.5px;font-weight:700;margin:0 0 12px}
+.pf-table{margin-top:4px}
+.pf-grade{background:#eefaf3;color:#1c6e41;font-weight:900;border-radius:999px;padding:4px 12px;font-size:14px}
+.pf-mail .st-email{margin-top:8px}
+.pf-missed{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.pf-missed li{border-left:3px solid #f2b33d;padding:4px 0 4px 12px}.pf-missed b{display:block;color:#0a2647;font-size:14px}.pf-missed small{color:#5b6b7e;font-size:12.5px}
+.pf-answer{margin-bottom:14px}.pf-answer b{display:block;color:#0a2647;font-size:14px;margin-bottom:6px}.pf-answer small{color:#8a99ab;font-size:12px}
+@media (max-width:900px){.pf-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.pf-grid{grid-template-columns:1fr}.pf-fold>button{grid-template-columns:minmax(0,1fr) 48px 14px}.pf-fold>button .st-bar{display:none}
+  .pf-items li{grid-template-columns:minmax(0,1fr) 44px}.pf-items em,.pf-items .st-bar{display:none}.pf-items small{grid-column:1/-1}}
