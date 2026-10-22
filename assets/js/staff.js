@@ -7,7 +7,7 @@
      Assign         admin and coach: trainings and simulations per associate
      People         admin: roles and the main simulation
      Permissions    admin: coach teams (which associates each coach supervises)
-     Simulations    admin: which simulations are open to everyone
+     Simulations    admin: open a simulation to everyone (closed by default)
      Announcements  admin: send a notification to the team
    SCStaff.init({ mode: 'coach' | 'admin' })
    ══════════════════════════════════════════════════════════ */
@@ -390,7 +390,7 @@
             '<h4>Simulations</h4>' + (closed.length ? '<div class="st-checks">' + closed.map(function (x) {
               return '<label><input type="checkbox" data-sim="' + x.id + '"' + (myS.indexOf(x.id) > -1 ? ' checked' : '') + '> ' + esc(x.title) + '</label>';
             }).join('') + '</div>' : '') +
-            (open.length ? '<p class="st-muted">Open to everyone: ' + open.map(function (x) { return esc(x.title); }).join(', ') + '.' + (mode === 'admin' ? ' Close one in the Simulations tab to assign it per person.' : '') + '</p>' : '') +
+            (open.length ? '<p class="st-muted">Open to everyone: ' + open.map(function (x) { return esc(x.title); }).join(', ') + '.' + (mode === 'admin' ? ' Close it in the Simulations tab to assign it per person.' : '') + '</p>' : '') +
             '</div></div>';
         }).join('') + '</div>';
       $$('.st-person[data-id]', box).forEach(function (el) {
@@ -425,7 +425,7 @@
     box.innerHTML = '<p class="st-muted">Loading…</p>';
     return sb.from('sim_roles').select('id,title,is_open,is_active').eq('is_active', true).order('position').then(function (r) {
       var roles = check(r);
-      box.innerHTML = '<p class="st-muted" style="margin-bottom:12px">Open simulations are available to everyone. Close one to give it only to the associates you assign in People.</p>' +
+      box.innerHTML = '<p class="st-muted" style="margin-bottom:12px">Simulations are closed by default: each associate gets the ones you or their coach assign in Assign. Open one here only if every associate should have it.</p>' +
         '<div class="st-people">' + roles.map(function (x) {
           return '<label class="st-sim"><span><b>' + esc(x.title) + '</b><small>' + (x.is_open ? 'Open to everyone' : 'Only assigned associates') + '</small></span>' +
             '<input type="checkbox" class="st-switch" data-id="' + x.id + '"' + (x.is_open ? ' checked' : '') + ' aria-label="Open to everyone"></label>';

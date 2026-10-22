@@ -171,8 +171,8 @@
     if(u) localStorage.setItem(LS_INTRO + u.id, '1');
   }
   /* Every role page calls this. It asks for a signed in associate and checks
-     the person has this simulation (simulations are open unless an admin
-     closed one and assigns it instead). */
+     the person has this simulation (an admin or their coach assigns it;
+     an admin can also open one to everyone). */
   function requireIntro(){
     var u = requireAuth();
     if(!u) return null;

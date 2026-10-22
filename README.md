@@ -36,9 +36,9 @@ There are no demo accounts. People sign up on `login.html` with an email and a p
 | coach     | `coach.html`   | See their team's progress, grade their emails, assign them trainings and simulations |
 | admin     | `admin.html`   | Everything: roles, coach teams, assignments, open simulations, announcements |
 
-The Introduction is required before any training or simulation. Open trainings and open
-simulations are for everyone; closed ones are assigned per associate (Assign tab), and the
-associate gets a notification. The Permissions tab builds each coach's team.
+The Introduction is required before any training or simulation. Nobody starts with
+trainings or simulations: an admin, or the associate's coach, assigns them in the Assign
+tab, and the associate gets a notification. The Permissions tab builds each coach's team.
 
 ------------ | ---------- | ------------- | ----------------------- |
 | `maria@demo` | `demo123`  | Asociado      | Transaction Coordinator |

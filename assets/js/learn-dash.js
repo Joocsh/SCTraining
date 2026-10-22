@@ -23,7 +23,9 @@
   var introP = C ? C.progress(C.get('intro'), me.id) : { done: 0, total: 5 };
   var introSeen = introDone ? introP.total : introP.done;
 
-  var trainings = C ? C.list.filter(function (c) { return c.id !== 'intro'; }) : [];
+  /* only what this person has: trainings and simulations are assigned */
+  var trainings = C ? C.mine().filter(function (c) { return c.id !== 'intro'; }) : [];
+  var mySims = (function () { try { return JSON.parse(localStorage.getItem('scc_my_sims__' + me.id)) || []; } catch (e) { return []; } })();
   var tDone = 0, tTotal = 0, tComplete = 0, resumeHref = null;
   trainings.forEach(function (c) {
     var p = C.progress(c, me.id);
@@ -49,16 +51,19 @@
       href: 'ai.html', go: introSeen ? 'Continue the Introduction' : 'Start the Introduction', again: 'Review' },
     { n: 2, icon: 'study', title: 'Study your role', desc: 'Pick a training path, VA or Marketing, and work through it lesson by lesson.',
       done: tComplete > 0, pct: tTotal ? Math.round(tDone / tTotal * 100) : 0,
-      locked: !introDone,
-      meta: !introDone ? 'Opens after step 1' : (tComplete ? tComplete + ' of ' + trainings.length + ' trainings done' : (tDone ? 'In progress' : 'Not started yet')),
+      locked: !introDone || !trainings.length,
+      meta: !introDone ? 'Opens after step 1' : !trainings.length ? 'Not assigned yet. You will get a notification when your coach assigns one.'
+        : (tComplete ? tComplete + ' of ' + trainings.length + ' trainings done' : (tDone ? 'In progress' : 'Not started yet')),
       href: resumeHref || 'paths.html', go: resumeHref ? 'Continue your training' : 'Choose a path', again: 'Open the paths' },
     { n: 3, icon: 'practice', title: 'Practice real cases', desc: 'Run the scenario your role handles every day, with instant feedback.',
-      done: practiced > 0, locked: !introDone, pct: null,
-      meta: !introDone ? 'Opens after step 1' : (practiced ? practiced + ' simulation' + (practiced > 1 ? 's' : '') + ' practiced' : 'Ready when you are'),
+      done: practiced > 0, locked: !introDone || !mySims.length, pct: null,
+      meta: !introDone ? 'Opens after step 1' : !mySims.length ? 'Not assigned yet. You will get a notification when your coach assigns one.'
+        : (practiced ? practiced + ' simulation' + (practiced > 1 ? 's' : '') + ' practiced' : mySims.length + ' assigned to you'),
       href: '#simulations', go: 'Choose a simulation', again: 'Practice again' }
   ];
   var cur = steps.filter(function (s) { return !s.done && !s.locked; })[0];
-  var allDone = !cur;
+  var allDone = steps.every(function (s) { return s.done; });
+  var waiting = !cur && !allDone; /* step 1 done, nothing assigned yet */
   if (allDone) cur = steps[2];
 
   /* ── the welcome line says where you are ── */
@@ -67,6 +72,7 @@
   var hello = fresh ? 'Welcome' + (first ? ', ' + esc(first) : '') : 'Welcome back' + (first ? ', ' + esc(first) : '');
   var line = fresh ? 'Three steps take you from the classroom to your first real case. Start with step 1: it opens the other two.'
     : allDone ? 'You have been through all three steps. Keep your skills sharp in the simulations.'
+    : waiting ? 'Step 1 is done. Your coach assigns your trainings and simulations next, and you will get a notification.'
     : 'You are on step ' + cur.n + ': ' + cur.title.toLowerCase() + '.';
 
   function stepHtml(s) {
@@ -103,8 +109,8 @@
   var SLIDES = [
     { t: 'Welcome to Skill Cloud Academy', p: 'This is where you practice your role before your first real day, on real Skill Cloud cases, with no risk to a client.' },
     { t: 'Three steps, in order',
-      list: ['<b>Learn the tools.</b> The Introduction to Claude, ChatGPT and Manus.', '<b>Study your role.</b> A training path, VA or Marketing.', '<b>Practice real cases.</b> The simulations, which open after step 1.'] },
-    { t: 'Start with step 1', p: 'The Introduction comes first: six short lessons, including how to keep client data safe with AI, each with a quick check. It opens your trainings and the simulations. Your progress saves as you go.' }
+      list: ['<b>Learn the tools.</b> The Introduction to Claude, ChatGPT and Manus.', '<b>Study your role.</b> A training path, VA or Marketing.', '<b>Practice real cases.</b> The simulations your coach assigns you.'] },
+    { t: 'Start with step 1', p: 'The Introduction comes first: six short lessons, including how to keep client data safe with AI, each with a quick check. Then your coach assigns your trainings and simulations, and you get a notification. Your progress saves as you go.' }
   ];
   var at = 0;
   document.body.insertAdjacentHTML('beforeend',

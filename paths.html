@@ -73,7 +73,7 @@
     </div>
   </footer>
 
-  <script src="assets/js/app-core.js?v=20261021c"></script>
+  <script src="assets/js/app-core.js?v=20261022"></script>
   <script>SCApp.requireAuth();</script>
   <script src="assets/js/site.js?v=20261021"></script>
   <script src="assets/js/courses.js?v=20261021"></script>
@@ -87,6 +87,13 @@
 
       function esc(s) { return String(s).replace(/&(?!amp;)/g, '&amp;').replace(/</g, '&lt;'); }
       var tracks = C.tracks.filter(function (t) { return C.byTrack(t.id).length; });
+      if (!tracks.length) {
+        document.getElementById('paTabs').hidden = true;
+        document.getElementById('paDepts').innerHTML = '<div class="pa-empty"><h2>No trainings assigned yet</h2>' +
+          '<p>Your coach or admin assigns your training paths. You will get a notification as soon as one is yours, and it will show up here.</p>' +
+          '<a class="hb cyan" href="ai.html">' + (SCApp.isIntroDone() ? 'Review the Introduction' : 'Start the Introduction') + ' &rarr;</a></div>';
+        return;
+      }
       var all = [];
       tracks.forEach(function (t) {
         C.byTrack(t.id).forEach(function (c) { all.push({ c: c, t: t, p: C.progress(c, me.id) }); });
