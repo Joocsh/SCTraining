@@ -113,6 +113,13 @@
 .pg-item .done{color:#1f9e5a;font-weight:800}
 .pg-note{font-size:13px;color:#5b6b7e;margin-top:12px}
 @media (max-width:720px){.pg-top{grid-template-columns:1fr}.pg-cats{grid-template-columns:1fr}.pg-item{grid-template-columns:1fr 60px}.pg-item em,.pg-item .pg-bar{display:none}}
+.acc-pass{max-width:460px;display:grid;gap:6px}
+.acc-pass label{font-weight:800;color:#0a2647;font-size:14px;margin-top:6px}
+.acc-pass input{border:1.5px solid #e3eaf1;border-radius:12px;padding:10px 12px;font:inherit;font-size:15px}
+.acc-pass input:focus{outline:none;border-color:#17c3d4}
+.acc-pass .btn{justify-self:start;margin-top:8px}
+.acc-pass-msg{margin:4px 0 0;border-radius:10px;padding:9px 12px;font-size:14px;background:#fdf1ee;color:#8f3020}
+.acc-pass-msg.ok{background:#eefaf3;color:#1c6e41}
 </style>
 </head>
 <body>
@@ -175,6 +182,19 @@
     <h2>Coach feedback</h2>
     <div id="feedbackList"><p class="muted small">No graded emails yet. Submit one from your simulation's email steps.</p></div>
   </div>
+
+  <div class="section" id="password">
+    <h2>Password</h2>
+    <form class="card acc-pass" id="passForm" novalidate>
+      <p class="muted small">Your admin or coach gave you a temporary password. Choose your own here.</p>
+      <label for="newPass">New password</label>
+      <input type="password" id="newPass" autocomplete="new-password" minlength="8" placeholder="At least 8 characters">
+      <label for="newPass2">Type it again</label>
+      <input type="password" id="newPass2" autocomplete="new-password" minlength="8">
+      <p class="acc-pass-msg" id="passMsg" role="alert" hidden></p>
+      <button type="submit" class="btn v-cyan">Save the new password</button>
+    </form>
+  </div>
 </div>
 
 <footer class="h-foot">
@@ -210,7 +230,7 @@
     </div>
   </div>
 </footer>
-<script src="assets/js/app-core.js?v=20261022c"></script>
+<script src="assets/js/app-core.js?v=20261022d"></script>
 <script src="assets/js/courses.js?v=20261021"></script>
 <script src="assets/js/site.js?v=20261021"></script>
 <script>
@@ -250,6 +270,17 @@
   document.getElementById('accAv').textContent = (me.avatar||me.name.charAt(0)).toUpperCase();
   document.getElementById('accWelcome').textContent = 'Welcome, '+me.name.split(' ')[0];
   document.getElementById('accSub').textContent = 'This is your personal progress space in Skill Cloud Academy.';
+
+  document.getElementById('passForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var a = document.getElementById('newPass'), b = document.getElementById('newPass2'), m = document.getElementById('passMsg'), btn = this.querySelector('button');
+    function say(t, ok){ m.textContent = t; m.className = 'acc-pass-msg' + (ok ? ' ok' : ''); m.hidden = false; }
+    if(a.value.length < 8) return say('Use at least 8 characters.');
+    if(a.value !== b.value) return say('The two passwords do not match.');
+    btn.disabled = true;
+    SCDB.changePassword(a.value).then(function(){ a.value = b.value = ''; say('Your password was changed. Use it the next time you sign in.', true); },
+      function(err){ say(err.message || 'Could not change it. Try again.'); }).then(function(){ btn.disabled = false; });
+  });
 
   document.getElementById('logoutTop').addEventListener('click', function(){
     SCApp.logout();

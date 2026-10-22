@@ -26,9 +26,12 @@ Luego abre http://localhost:5799. Ese mismo comando está configurado en
 
 ### Accounts and roles
 
-There are no demo accounts. People sign up on `login.html` with an email and a password
-(no confirmation email) and start as **associates**. An admin changes roles in
-`admin.html`:
+There are no demo accounts and no public sign up: `login.html` only signs in. Admins and
+coaches create the accounts from their panels ("+ Add a person" / "+ Add an associate")
+through the `create-user` Edge Function (`supabase/functions/create-user`). A coach's new
+associate joins that coach's team; an admin picks the role and, for an associate, the
+coach. The creator hands over the email and a temporary password, and the person changes
+it in My account. An admin changes roles in `admin.html`:
 
 | Role      | Panel          | Can                                                                 |
 | --------- | -------------- | ------------------------------------------------------------------- |

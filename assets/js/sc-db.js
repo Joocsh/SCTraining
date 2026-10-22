@@ -3,7 +3,8 @@
    Loaded by app-core.js on every page. Pages keep reading a local copy
    synchronously (the SCApp functions), and this file keeps that copy
    and Supabase in step:
-     · signIn / signUp / signOut and the profile (role, coach, access)
+     · signIn / signOut and the profile (role, coach, access); admins and
+       coaches create accounts through the create-user Edge Function
      · pull: after sign in, brings the person's activity into the local
        copy the pages already read (course stores, drafts, scores...)
      · push: every change goes to an outbox in localStorage and is sent
@@ -314,12 +315,20 @@
       return refreshProfile().then(function (p) { return pull().then(function () { return p; }); });
     });
   }
-  function signUp(name, email, password) {
-    return sb.auth.signUp({ email: email, password: password, options: { data: { full_name: name } } }).then(function (r) {
-      if (r.error) throw r.error;
-      if (!r.data.session) return null;   /* email confirmation is on: nothing to load yet */
-      return refreshProfile().then(function (p) { return pull().then(function () { return p; }); });
+  /* admins and coaches only (the function checks); a coach's new associate joins their team */
+  function createUser(person) {
+    return sb.functions.invoke('create-user', { body: person }).then(function (r) {
+      if (r.error) {
+        var ctx = r.error.context;
+        return (ctx && ctx.json ? ctx.json().catch(function () { return {}; }) : Promise.resolve({})).then(function (b) {
+          throw new Error(b.error || r.error.message);
+        });
+      }
+      return r.data;
     });
+  }
+  function changePassword(password) {
+    return sb.auth.updateUser({ password: password }).then(function (r) { if (r.error) throw r.error; });
   }
   function signOut() {
     var id = uid();
@@ -439,7 +448,7 @@
 
   window.SCDB = {
     client: sb, ready: ready, uid: uid,
-    signIn: signIn, signUp: signUp, signOut: signOut, resetPassword: resetPassword,
+    signIn: signIn, signOut: signOut, resetPassword: resetPassword, createUser: createUser, changePassword: changePassword,
     refreshProfile: refreshProfile, pull: pull, pullPeople: pullPeople, pullSubmissions: pullSubmissions, loadCatalog: loadCatalog, flush: flush,
     courseState: courseState, attempt: attempt, pollAnswer: pollAnswer, draft: draft, modeScore: modeScore,
     submitEmail: submitEmail, grade: grade, lastPath: lastPath, onboarded: onboarded, simCase: simCase, simCaseSaved: simCaseSaved,

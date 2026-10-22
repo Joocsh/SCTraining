@@ -6,9 +6,6 @@
 <title>Sign in · Skill Cloud Academy</title>
 <link rel="stylesheet" href="assets/css/styles.css">
 <style>
-.auth-tabs{display:flex;gap:6px;background:#f1f5f9;border-radius:999px;padding:4px;margin:4px 0 18px}
-.auth-tabs button{flex:1;border:0;background:none;border-radius:999px;padding:9px 12px;font:inherit;font-weight:800;font-size:14px;color:#5b6b7e;cursor:pointer}
-.auth-tabs button.on{background:#fff;color:#0a2647;box-shadow:0 2px 8px rgba(10,38,71,.08)}
 .auth-msg{display:none;border-radius:12px;padding:10px 14px;font-size:14px;margin-bottom:14px}
 .auth-msg.show{display:block}
 .auth-msg.bad{background:#fdf1ee;color:#8f3020}
@@ -29,20 +26,11 @@
 <div class="auth-wrap">
   <div class="auth-card">
     <h1 id="authTitle">Sign in</h1>
-    <p class="sub" id="authSub">Use the account your team gave you. The Academy picks up wherever you left off, on any device.</p>
-
-    <div class="auth-tabs" role="tablist">
-      <button type="button" class="on" data-mode="signin" role="tab" aria-selected="true">Sign in</button>
-      <button type="button" data-mode="signup" role="tab" aria-selected="false">Create account</button>
-    </div>
+    <p class="sub" id="authSub">Use the account your admin or coach created for you. The Academy picks up wherever you left off, on any device.</p>
 
     <div class="auth-msg" id="authMsg" role="alert"></div>
 
     <form id="authForm" novalidate>
-      <div class="auth-field" id="nameField" hidden>
-        <label for="name">Full name</label>
-        <input type="text" id="name" autocomplete="name" placeholder="Your name and last name">
-      </div>
       <div class="auth-field">
         <label for="email">Email</label>
         <input type="email" id="email" autocomplete="username" placeholder="you@company.com" required>
@@ -50,15 +38,16 @@
       <div class="auth-field" id="passField">
         <label for="password">Password</label>
         <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" required minlength="6">
-        <p class="auth-hint" id="passHint" hidden>At least 6 characters.</p>
+        <p class="auth-hint" id="passHint" hidden>At least 8 characters.</p>
       </div>
       <button type="submit" class="btn v-cyan auth-submit" id="authSubmit">Sign in</button>
     </form>
     <button type="button" class="auth-link" id="forgotBtn">Forgot your password?</button>
+    <p class="auth-hint" id="noAccount">No account yet? Your admin or coach creates it for you.</p>
   </div>
 </div>
 
-<script src="assets/js/app-core.js?v=20261022c"></script>
+<script src="assets/js/app-core.js?v=20261022d"></script>
 <script>
 (function(){
   var params = new URLSearchParams(location.search);
@@ -67,27 +56,25 @@
   var $ = function(id){ return document.getElementById(id); };
 
   function msg(text, kind){ var m = $('authMsg'); m.textContent = text || ''; m.className = 'auth-msg' + (text ? ' show ' + (kind || 'bad') : ''); }
+  /* Accounts are created by admins and coaches, so there is no sign up here. */
   function setMode(m){
     mode = m;
-    document.querySelectorAll('.auth-tabs button').forEach(function(b){ var on = b.dataset.mode === m; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-    var up = m === 'signup', reset = m === 'reset', recover = m === 'recover';
-    document.querySelector('.auth-tabs').hidden = reset || recover;
-    $('nameField').hidden = !up;
+    var reset = m === 'reset', recover = m === 'recover';
     $('email').parentNode.hidden = recover;
     $('passField').hidden = reset;
-    $('passHint').hidden = !(up || recover);
-    $('forgotBtn').hidden = m !== 'signin';
-    $('password').autocomplete = up || recover ? 'new-password' : 'current-password';
-    $('authTitle').textContent = up ? 'Create your account' : reset ? 'Reset your password' : recover ? 'Choose a new password' : 'Sign in';
-    $('authSub').textContent = up ? 'Use your work email. Your progress will follow you on any device.'
-      : reset ? 'We will email you a link to choose a new password.'
+    $('passHint').hidden = !recover;
+    $('forgotBtn').textContent = reset ? 'Back to sign in' : 'Forgot your password?';
+    $('forgotBtn').hidden = recover;
+    $('noAccount').hidden = m !== 'signin';
+    $('password').autocomplete = recover ? 'new-password' : 'current-password';
+    $('authTitle').textContent = reset ? 'Reset your password' : recover ? 'Choose a new password' : 'Sign in';
+    $('authSub').textContent = reset ? 'We will email you a link to choose a new password.'
       : recover ? 'Type the new password for your account.'
-      : 'Use the account your team gave you. The Academy picks up wherever you left off, on any device.';
-    $('authSubmit').textContent = up ? 'Create account' : reset ? 'Send the link' : recover ? 'Save the new password' : 'Sign in';
+      : 'Use the account your admin or coach created for you. The Academy picks up wherever you left off, on any device.';
+    $('authSubmit').textContent = reset ? 'Send the link' : recover ? 'Save the new password' : 'Sign in';
     msg('');
   }
-  document.querySelectorAll('.auth-tabs button').forEach(function(b){ b.onclick = function(){ setMode(b.dataset.mode); }; });
-  $('forgotBtn').onclick = function(){ setMode('reset'); };
+  $('forgotBtn').onclick = function(){ setMode(mode === 'reset' ? 'signin' : 'reset'); };
 
   function home(user){
     if(user && user.role === 'admin') return 'admin.html';
@@ -100,25 +87,20 @@
   function readable(e){
     var t = (e && e.message) || 'Something went wrong. Try again.';
     if(/invalid login credentials/i.test(t)) return 'That email or password does not match an account.';
-    if(/already registered|already been registered/i.test(t)) return 'That email already has an account. Sign in instead.';
-    if(/password should be at least/i.test(t)) return 'Your password needs at least 6 characters.';
+    if(/password should be at least/i.test(t)) return 'Your password needs at least 8 characters.';
     if(/rate limit/i.test(t)) return 'Too many attempts. Wait a minute and try again.';
     return t;
   }
 
   $('authForm').addEventListener('submit', function(e){
     e.preventDefault();
-    var email = $('email').value.trim(), pass = $('password').value, name = $('name').value.trim();
+    var email = $('email').value.trim(), pass = $('password').value;
     if(mode !== 'recover' && !email){ msg('Type your email.'); return; }
-    if((mode === 'signin' || mode === 'signup' || mode === 'recover') && pass.length < 6){ msg('Your password needs at least 6 characters.'); return; }
-    if(mode === 'signup' && !name){ msg('Type your full name.'); return; }
+    if(mode === 'signin' && !pass){ msg('Type your password.'); return; }
+    if(mode === 'recover' && pass.length < 8){ msg('Your password needs at least 8 characters.'); return; }
     busy(true); msg('');
     SCDB.ready.then(function(){
       if(mode === 'signin') return SCDB.signIn(email, pass).then(function(u){ location.href = home(u); });
-      if(mode === 'signup') return SCDB.signUp(name, email, pass).then(function(u){
-        if(u) { location.href = home(u); return; }
-        msg('Check your email to confirm your account, then sign in.', 'good'); setMode('signin');
-      });
       if(mode === 'reset') return SCDB.resetPassword(email).then(function(r){
         if(r && r.error) throw r.error;
         msg('If that email has an account, a reset link is on its way.', 'good');

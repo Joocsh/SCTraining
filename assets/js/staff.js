@@ -8,6 +8,8 @@
      Emails         the inbox to grade (coaches grade their associates)
      Assign         admin and coach: trainings and simulations per associate
      People         admin: roles and the main simulation
+     Add a person   admins add anyone; coaches add associates, who join their
+                    team (create-user Edge Function)
      Permissions    admin: coach teams (which associates each coach supervises)
      Simulations    admin: open a simulation to everyone (closed by default)
      Announcements  admin: send a notification to the team
@@ -217,13 +219,15 @@
       sb.from('sim_roles').select('id,slug,title').eq('is_active', true).order('position')
     ]).then(function (r) {
       var people = check(r[0]), roles = check(r[1]);
-      box.innerHTML = '<p class="st-muted" style="margin-bottom:12px">' + people.length + ' people. Change a role or the main simulation here; coaches go in Permissions, trainings and simulations in Assign. New accounts are created from the sign in page.</p>' +
+      box.innerHTML = '<div class="st-bar-top"><p class="st-muted">' + people.length + ' people. Change a role or the main simulation here; coaches go in Permissions, trainings and simulations in Assign.</p>' +
+          '<button type="button" class="st-btn" data-add>+ Add a person</button></div>' +
         '<div class="st-people">' + people.map(function (p) {
           return '<div class="st-person st-flat" data-id="' + p.id + '"><div class="st-ph"><span class="st-av">' + esc((p.full_name || '?').charAt(0)) + '</span>' +
             '<span class="st-who"><b>' + esc(p.full_name) + '</b><small>' + esc(p.email) + (p.last_sign_in_at ? ' · last sign in ' + day(p.last_sign_in_at) : '') + '</small></span>' +
             '<select data-k="role" aria-label="Role">' + ['associate', 'coach', 'admin'].map(function (x) { return '<option' + (x === p.app_role ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select>' +
             '<select data-k="assigned" aria-label="Main simulation"><option value="">No main simulation</option>' + roles.map(function (x) { return '<option value="' + x.id + '"' + (x.slug === p.assigned_role ? ' selected' : '') + '>' + esc(x.title) + '</option>'; }).join('') + '</select></div></div>';
         }).join('') + '</div>';
+      $('[data-add]', box).onclick = function () { addPerson(renderPeople); };
       $$('.st-person', box).forEach(function (el) {
         var id = el.dataset.id;
         function save() {
@@ -238,6 +242,76 @@
         $('[data-k="assigned"]', el).onchange = save;
       });
     }).catch(function (e) { box.innerHTML = '<p class="st-empty">Could not load: ' + esc(e.message) + '</p>'; });
+  }
+
+  /* ─────────── Add a person ───────────
+     Admins choose the role (and a coach for an associate); a coach's new
+     associate joins their team. The temporary password is made here, in
+     the creator's browser, so they can hand it over with the email. */
+  var openAfter = null;
+  function tempPassword() {
+    var chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789', out = '';
+    var n = new Uint32Array(12); crypto.getRandomValues(n);
+    for (var i = 0; i < n.length; i++) out += chars.charAt(n[i] % chars.length);
+    return out.slice(0, 4) + '-' + out.slice(4, 8) + '-' + out.slice(8);
+  }
+  function addPerson(done) {
+    var admin = mode === 'admin';
+    var coachesQ = admin ? sb.rpc('admin_people').then(function (r) { return check(r).filter(function (p) { return p.app_role === 'coach'; }); }) : Promise.resolve([]);
+    coachesQ.then(function (coaches) {
+      var wrap = document.createElement('div');
+      wrap.className = 'cu-overlay';
+      wrap.innerHTML = '<form class="cu-card" role="dialog" aria-modal="true" aria-labelledby="cuTitle" novalidate>' +
+        '<div class="cu-head"><h3 id="cuTitle">' + (admin ? 'Add a person' : 'Add an associate') + '</h3><button type="button" class="tm-close" data-close aria-label="Close">&times;</button></div>' +
+        '<p class="st-muted">They sign in with this email and the temporary password. Send both to them; they can change the password in My account.</p>' +
+        '<label class="st-lbl">Full name<input class="st-input" name="full_name" autocomplete="off" placeholder="Name and last name"></label>' +
+        '<label class="st-lbl">Email<input class="st-input" name="email" type="email" autocomplete="off" placeholder="name@company.com"></label>' +
+        '<label class="st-lbl">Temporary password<span class="cu-pass"><input class="st-input" name="password" autocomplete="new-password" spellcheck="false" value="' + tempPassword() + '"><button type="button" class="tm-ghost" data-gen>New</button></span></label>' +
+        (admin ? '<div class="st-grid cu-grid"><label>Role<select name="app_role"><option value="associate">Associate</option><option value="coach">Coach</option><option value="admin">Admin</option></select></label>' +
+          '<label data-coachwrap>Coach<select name="coach_id"><option value="">No coach yet</option>' + coaches.map(function (c) { return '<option value="' + c.id + '">' + esc(c.full_name) + '</option>'; }).join('') + '</select></label></div>'
+          : '<p class="cu-note">They join your team, and you can assign them trainings and simulations right away.</p>') +
+        '<p class="cu-err" role="alert" hidden></p>' +
+        '<div class="cu-actions"><button type="button" class="tm-ghost" data-close>Cancel</button><button type="submit" class="st-btn">Create account</button></div></form>';
+      document.body.appendChild(wrap);
+      var form = $('form', wrap), err = $('.cu-err', wrap);
+      function close() { wrap.remove(); document.removeEventListener('keydown', onKey); }
+      function onKey(e) { if (e.key === 'Escape') close(); }
+      document.addEventListener('keydown', onKey);
+      wrap.addEventListener('click', function (e) { if (e.target === wrap || e.target.closest('[data-close]')) close(); });
+      $('[data-gen]', wrap).onclick = function () { form.password.value = tempPassword(); };
+      if (admin) form.app_role.onchange = function () { $('[data-coachwrap]', wrap).hidden = form.app_role.value !== 'associate'; };
+      form.full_name.focus();
+      form.onsubmit = function (e) {
+        e.preventDefault();
+        var person = { full_name: form.full_name.value.trim(), email: form.email.value.trim(), password: form.password.value };
+        if (admin) { person.app_role = form.app_role.value; if (person.app_role === 'associate' && form.coach_id.value) person.coach_id = form.coach_id.value; }
+        var bad = person.full_name.length < 2 ? 'Type the full name.' : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(person.email) ? 'Type a valid email.' : person.password.length < 8 ? 'The password needs at least 8 characters.' : '';
+        if (bad) { err.textContent = bad; err.hidden = false; return; }
+        err.hidden = true;
+        var btn = $('[type="submit"]', wrap); btn.disabled = true; btn.textContent = 'Creating…';
+        SCDB.createUser(person).then(function (res) {
+          var first = esc(person.full_name.split(' ')[0]);
+          var signIn = location.origin + location.pathname.replace(/[^/]*$/, '') + 'login.html';
+          var details = 'Skill Cloud Academy\nSign in: ' + signIn + '\nEmail: ' + res.email + '\nTemporary password: ' + person.password + '\nYou can change the password in My account.';
+          var isAssociate = res.app_role === 'associate';
+          $('.cu-card', wrap).innerHTML = '<div class="cu-done"><span class="tm-av big ok" aria-hidden="true">&#10003;</span><h3>Account created</h3>' +
+            '<p class="st-muted">' + (isAssociate && res.coach_id ? first + ' is on ' + (mode === 'coach' ? 'your' : 'their coach\'s') + ' team. ' : '') + 'Send these sign in details to ' + first + ':</p>' +
+            '<dl class="cu-cred"><dt>Sign in at</dt><dd>' + esc(signIn) + '</dd><dt>Email</dt><dd>' + esc(res.email) + '</dd><dt>Temporary password</dt><dd><code>' + esc(person.password) + '</code></dd></dl>' +
+            '<div class="cu-actions"><button type="button" class="tm-ghost" data-copy>Copy sign in details</button>' +
+            (isAssociate ? '<button type="button" class="st-btn" data-assign>Assign trainings and simulations</button>' : '<button type="button" class="st-btn" data-close>Done</button>') + '</div></div>';
+          $('[data-copy]', wrap).onclick = function () {
+            var b = this;
+            (navigator.clipboard ? navigator.clipboard.writeText(details) : Promise.reject()).then(function () { b.textContent = 'Copied'; }, function () { b.textContent = 'Select and copy them above'; });
+          };
+          var go = $('[data-assign]', wrap);
+          if (go) go.onclick = function () { close(); openAfter = res.id; show('assign'); };
+          done();
+        }).catch(function (e2) {
+          err.textContent = e2.message; err.hidden = false;
+          btn.disabled = false; btn.textContent = 'Create account';
+        });
+      };
+    }).catch(function (e) { toast(e.message, true); });
   }
 
   /* ─────────── Permissions (admin): coach teams ───────────
@@ -472,8 +546,15 @@
     ]).then(function (r) {
       var people = r[0], courses = check(r[1]).filter(function (c) { return !c.is_open; }), sims = check(r[2]), ca = check(r[3]), sa = check(r[4]);
       var closed = sims.filter(function (x) { return !x.is_open; }), open = sims.filter(function (x) { return x.is_open; });
-      if (!people.length) { box.innerHTML = '<p class="st-empty">' + (mode === 'coach' ? 'No associates are assigned to you yet. Your admin assigns them in Permissions.' : 'No associates yet.') + '</p>'; return; }
-      box.innerHTML = '<p class="st-muted" style="margin-bottom:12px">' + (mode === 'coach' ? 'Your associates. ' : '') + 'Open an associate to give them trainings (paths) and simulations. They get a notification, and their progress counts what they have. The Introduction comes first for everyone.</p>' +
+      if (!people.length) {
+        box.innerHTML = '<div class="tm-empty st-card"><h3>' + (mode === 'coach' ? 'Your team is empty' : 'No associates yet') + '</h3>' +
+          '<p>Create an associate\'s account here' + (mode === 'coach' ? ': they join your team, and you can assign them trainings and simulations right away.' : '.') + '</p>' +
+          '<button type="button" class="st-btn" data-add>+ Add an associate</button></div>';
+        $('[data-add]', box).onclick = function () { addPerson(renderAssign); };
+        return;
+      }
+      box.innerHTML = '<div class="st-bar-top"><p class="st-muted">' + (mode === 'coach' ? 'Your associates. ' : '') + 'Open an associate to give them trainings (paths) and simulations. They get a notification, and their progress counts what they have. The Introduction comes first for everyone.</p>' +
+          '<button type="button" class="st-btn" data-add>+ Add an associate</button></div>' +
         '<div class="st-people">' + people.map(function (p) {
           var myC = ca.filter(function (x) { return x.associate_id === p.id; }).map(function (x) { return x.course_id; });
           var myS = sa.filter(function (x) { return x.associate_id === p.id; }).map(function (x) { return x.role_id; });
@@ -488,9 +569,11 @@
             (open.length ? '<p class="st-muted">Open to everyone: ' + open.map(function (x) { return esc(x.title); }).join(', ') + '.' + (mode === 'admin' ? ' Close it in the Simulations tab to assign it per person.' : '') + '</p>' : '') +
             '</div></div>';
         }).join('') + '</div>';
+      $('[data-add]', box).onclick = function () { addPerson(renderAssign); };
       $$('.st-person[data-id]', box).forEach(function (el) {
         var id = el.dataset.id;
         $('.st-ph', el).onclick = function () { $('.st-pb', el).hidden = !$('.st-pb', el).hidden; el.classList.toggle('open'); };
+        if (el.dataset.id === openAfter) { openAfter = null; $('.st-ph', el).click(); el.scrollIntoView({ block: 'center' }); }
         $$('[data-course]', el).forEach(function (cb) {
           cb.onchange = function () {
             var q = cb.checked ? sb.rpc('assign_course', { associate: id, course: +cb.dataset.course, due: null })

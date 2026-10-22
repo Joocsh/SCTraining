@@ -180,3 +180,21 @@ button.tm-kpi{cursor:pointer}button.tm-kpi:hover{border-color:#bfe9ee}
 .qi-rate{grid-template-columns:110px auto}
 .qi-rate.mid .st-bar i{background:#f2b33d}.qi-rate.bad .st-bar i{background:#d2452f}.qi-rate.bad span{color:#8f3020;font-weight:800}
 #tabInsights .tm-kpi span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+/* Add a person */
+.cu-overlay{position:fixed;inset:0;background:rgba(10,38,71,.45);display:grid;place-items:center;z-index:500;padding:16px}
+.cu-card{background:#fff;border-radius:20px;width:min(520px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:22px 24px;box-shadow:0 30px 80px rgba(10,38,71,.3)}
+.cu-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.cu-head h3{margin:0;color:#0a2647;font-size:20px}
+.cu-card>.st-muted{margin:0 0 16px}
+.cu-pass{display:flex;gap:8px;margin-top:6px}.cu-pass .st-input{margin:0;font-family:Consolas,Menlo,monospace;letter-spacing:.5px}
+.cu-grid{margin:0 0 12px}
+.cu-note{background:#eefbfc;border-radius:12px;padding:10px 14px;color:#23405a;font-size:14px;margin:0 0 12px}
+.cu-err{background:#fdf1ee;color:#8f3020;border-radius:12px;padding:10px 14px;font-size:14px;margin:0 0 12px}
+.cu-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:6px}
+.cu-actions .st-btn{margin:0}
+.cu-done{text-align:center}.cu-done .tm-av{margin:4px auto 10px}.cu-done h3{margin:0 0 6px;color:#0a2647}
+.cu-cred{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;text-align:left;background:#f8fafc;border:1px solid #e3eaf1;border-radius:14px;padding:14px 16px;margin:14px 0}
+.cu-cred dt{color:#5b6b7e;font-size:13px;font-weight:700}.cu-cred dd{margin:0;color:#0a2647;font-weight:700;word-break:break-all}
+.cu-cred code{font-family:Consolas,Menlo,monospace;font-size:15px;background:#eefbfc;border-radius:6px;padding:1px 6px}
+.cu-done .cu-actions{justify-content:center}
+#tabAssign .tm-empty.st-card{padding:36px 20px}
