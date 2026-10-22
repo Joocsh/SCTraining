@@ -1,11 +1,10 @@
 /* ══════════════════════════════════════════════════════════
-   Settings (settings.html): the technical side of an account, apart
-   from learning (My profile) and from the Coach and Admin panels.
-     Account       everyone: name, email, role, coach, member since
-     Password      everyone: choose a new password
-     Users         coaches: their team's accounts; admins: every account
-     Coach teams   admins: which associates each coach supervises
-   Users and Coach teams come from staff.js (SCStaff.settings).
+   Settings (settings.html): everything apart from learning (My profile).
+     Account, Password   everyone
+     My team             coaches: Members, Assign, Progress, Emails, Insights
+     People, Learning,   admins: Users, Coach teams, Assign, Progress,
+     Academy             Emails, Insights, Simulations, Announcements
+   The staff sections come from staff.js (SCStaff.settings).
    ══════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -93,14 +92,17 @@
     var staff = p.role === 'admin' || p.role === 'coach';
     var S = staff ? SCStaff.settings(p.role, p) : null;
     var SECTIONS = { account: account, password: password };
-    if (staff) SECTIONS.users = S.users;
-    if (p.role === 'admin') SECTIONS.teams = S.teams;
-    $$('[data-staff]').forEach(function (el) { el.hidden = !staff; });
+    if (S) Object.keys(S.sections).forEach(function (k) { SECTIONS[k] = S.sections[k]; });
+    $$('.set-nav [data-for]').forEach(function (el) { el.hidden = el.dataset.for !== p.role; });
     $$('.set-nav [data-sec]').forEach(function (a) { a.hidden = !SECTIONS[a.dataset.sec]; });
-    if (p.role === 'coach') $('.set-nav [data-sec="users"]').textContent = 'My team';
+    if (p.role === 'coach') $('.set-nav [data-sec="users"]').textContent = 'Members';
+    $('#setHello').textContent = p.role === 'admin' ? 'Your account, the people and the Academy, in one place.'
+      : p.role === 'coach' ? 'Your account and your team in one place: members, assignments, progress and emails.'
+      : 'Your account and your password.';
+    var start = staff ? 'progress' : 'account';
     var current = null;
     function go(sec) {
-      if (!SECTIONS[sec]) sec = 'account';
+      if (!SECTIONS[sec]) sec = start;
       if (sec === current) return;
       if (S && current && !S.leaveOk()) { history.replaceState(null, '', '#' + current); return; }
       current = sec;

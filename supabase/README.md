@@ -23,6 +23,7 @@ on the team's NAS later.
 | `migrations/0014_staff_create_accounts.sql` | `profiles.created_by`. Accounts are created by admins and coaches through the `create-user` Edge Function (`functions/create-user`, deployed with "Verify JWT" off because it checks the caller itself); public sign up is turned off in Authentication |
 | `migrations/0015_people_directory.sql` | `people_directory()`: the accounts a staff member manages in Settings > Users (admins: everyone; coaches: their team), with email, last sign in and deactivation from auth.users. Password resets and deactivation go through the `manage-user` Edge Function (`functions/manage-user`, "Verify JWT" off) |
 | `migrations/0016_must_change_password.sql` | `profiles.must_change_password`: on when an admin or a coach creates an account or sets someone's password; the site asks the person to choose their own first. A trigger on `auth.users` turns it off when the password really changes |
+| `migrations/0017_coaches_take_intro.sql` | Coaches finish the Introduction like associates; only admins are not held by it |
 
 Run them in order in the SQL editor (or with `psql`) on an empty project.
 

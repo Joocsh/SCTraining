@@ -32,8 +32,8 @@ through the `create-user` Edge Function (`supabase/functions/create-user`). A co
 associate joins that coach's team; an admin picks the role and, for an associate, the
 coach. The creator hands over the email and a temporary password, and the person changes
 it in Settings. The account menu (the chip in the nav) keeps learning and the technical side
-apart: Admin or Coach panel and My profile (`account.html`) for learning, Settings for the
-account, passwords, users and coach teams. Assigning and editing in the panels and in
+apart: My profile (`account.html`) for learning, Settings for everything else (the account
+and, for coaches and admins, their people and the Academy, all in one place). Assigning and editing in the panels and in
 Settings waits for "Save changes":
 
 | Role      | Panel          | Can                                                                 |
@@ -220,8 +220,8 @@ la clase `only-out`, y las solo para asociados, `only-in`. Un enlace como
 `cfo`).
 
 To see the site as a brand new associate, create a new account on `login.html`: it
-starts with no progress and lands on the guided Home with the first visit welcome. Admin
-and coach accounts skip the Introduction, so they do not show this.
+starts with no progress and lands on the guided Home with the first visit welcome. Coaches
+take the Introduction too; only admin accounts skip it.
 
 ### Pantalla de inicio de las simulaciones
 

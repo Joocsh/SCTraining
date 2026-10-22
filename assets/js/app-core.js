@@ -64,7 +64,7 @@
     if(window.SCDB || window.__scdbLoading) return;
     window.__scdbLoading = true;
     var lib = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
-    var db = ROOT + 'assets/js/sc-db.js?v=20261022d';
+    var db = ROOT + 'assets/js/sc-db.js?v=20261022e';
     /* the simulation pages also keep each person's place in a case */
     var resume = /\/roles\/[^/]+\.html$/.test(location.pathname) ? '<script src="'+ROOT+'assets/js/sim-resume.js?v=20261022b"><\/script>' : '';
     if(document.readyState === 'loading'){
@@ -146,7 +146,7 @@
       return null;
     }
     if(opts.adminOnly && u.role !== 'admin'){
-      window.location.href = rootUrl(u.role==='coach' ? 'coach.html' : 'account.html');
+      window.location.href = rootUrl(u.role==='coach' ? 'settings.html' : 'account.html');
       return null;
     }
     if(opts.staffOnly && !isStaff(u)){
@@ -160,12 +160,12 @@
   // ---------- Introduction gate ----------
   // The Introduction (ai.html) is required: the trainings and the simulations
   // open once it is finished (the database enforces the same rule).
-  // Coaches and admins are not held by it.
+  // Coaches take it too; only admins, who review the whole Academy, are not held by it.
   var LS_INTRO = 'scc_intro_done__';   // + userId
   function isIntroDone(u){
     u = u || currentUser();
     if(!u) return false;
-    if(u.role === 'admin' || u.role === 'coach') return true;
+    if(u.role === 'admin') return true;
     return localStorage.getItem(LS_INTRO + u.id) === '1';
   }
   function markIntroDone(){
@@ -359,8 +359,8 @@
   }
 
   // ---------- nav wiring ----------
-  /* The account menu under the chip: learning (the panel, My profile) and
-     the technical side (Settings) stay apart. */
+  /* The account menu under the chip: learning (My profile) and everything
+     else (Settings: the account and, for coaches and admins, their people). */
   function escHtml(t){ return String(t==null?'':t).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function accountMenu(chip, u){
     var wrap = chip.closest('.uc-wrap');
@@ -373,10 +373,7 @@
       document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && wrap.classList.contains('open')){ wrap.classList.remove('open'); chip.setAttribute('aria-expanded', 'false'); chip.focus(); } });
     }
     var old = wrap.querySelector('.uc-menu'); if(old) old.remove();
-    var items = [];
-    if(u.role === 'admin') items.push(['admin.html', 'Admin panel']);
-    if(u.role === 'coach') items.push(['coach.html', 'Coach panel']);
-    items.push(['account.html', 'My profile'], ['settings.html', 'Settings']);
+    var items = [['account.html', 'My profile'], ['settings.html', 'Settings']];
     var here_ = location.pathname.split('/').pop() || 'index.html';
     var menu = document.createElement('div');
     menu.className = 'uc-menu'; menu.setAttribute('role', 'menu');

@@ -1,24 +1,23 @@
 /* ══════════════════════════════════════════════════════════
-   Staff panels: coach.html (supervisor) and admin.html.
+   Staff sections of Settings (settings.html). Coaches and admins have one
+   place: their account, their people and the Academy, side by side.
    Everything comes from Supabase; row level security decides what each
-   person sees (a coach: the associates assigned to them; an admin: all).
+   person sees (a coach: the associates on their team; an admin: all).
+     Users          admins: every account (role, main simulation, password,
+                    deactivate); coaches: their team ("Members", password).
+                    New accounts through the create-user Edge Function, the
+                    rest through manage-user
+     Coach teams    admins: which associates each coach supervises
+     Assign         trainings and simulations per associate
      Progress       general progress of each associate, item by item;
                     admins download it as a CSV report
-     Insights       how each checkpoint question does (first try, attempts)
      Emails         the inbox to grade (coaches grade their associates)
-     Assign         admin and coach: trainings and simulations per associate
-     Simulations    admin: open a simulation to everyone (closed by default)
-     Announcements  admin: send a notification to the team
-   Settings (settings.html) uses two more sections from here:
-     Users          admins: every account (role, main simulation, password,
-                    deactivate); coaches: their team (password). New accounts
-                    through the create-user Edge Function, the rest through
-                    manage-user
-     Coach teams    admin: which associates each coach supervises
+     Insights       how each checkpoint question does (first try, attempts)
+     Simulations    admins: open a simulation to everyone (closed by default)
+     Announcements  admins: send a notification to the team
    Assigning and editing never saves on its own: changes wait for "Save
    changes" in the bar at the bottom.
-   SCStaff.init({ mode: 'coach' | 'admin' })   the panels
-   SCStaff.settings(mode, profile)            the Settings sections
+   SCStaff.settings(mode, profile) returns each section's render function.
    ══════════════════════════════════════════════════════════ */
 (function () {
   'use strict';
@@ -262,9 +261,9 @@
       people.forEach(function (p) { counts[p.app_role]++; if (off(p)) counts.off++; });
       var head = admin ? '<th>Person</th><th>Role</th><th>Main simulation</th><th>Coach</th><th>Last sign in</th><th><span class="sr-only">Actions</span></th>'
         : '<th>Person</th><th>Last sign in</th><th><span class="sr-only">Actions</span></th>';
-      box.innerHTML = '<div class="st-bar-top"><div><h2 class="tm-title">' + (admin ? 'Users' : 'My team') + '</h2><p class="st-muted">' +
+      box.innerHTML = '<div class="st-bar-top"><div><h2 class="tm-title">' + (admin ? 'Users' : 'Members') + '</h2><p class="st-muted">' +
           (admin ? 'Every account in the Academy. Change roles and the main simulation, reset passwords, and deactivate accounts that should no longer sign in.'
-                 : 'The associates on your team. Add new ones and reset their passwords here; give them trainings and simulations in your Coach panel.') + '</p></div>' +
+                 : 'The associates on your team. Add new ones and change their passwords here; give them trainings and simulations in Assign.') + '</p></div>' +
           '<button type="button" class="st-btn" data-add>' + (admin ? '+ Add a person' : '+ Add an associate') + '</button></div>' +
         (people.length ? '<div class="st-bar-top"><div class="st-filters"><input class="tm-search" id="upQ" type="search" placeholder="Search by name or email" aria-label="Search people">' +
           (admin ? '<div class="st-seg up-seg" id="upF">' + [['all', 'All'], ['associate', 'Associates'], ['coach', 'Coaches'], ['admin', 'Admins'], ['off', 'Deactivated']].map(function (f) {
@@ -284,7 +283,7 @@
                 (admin && !self ? '<button type="button" class="tm-x" data-ban>' + (deact ? 'Reactivate' : 'Deactivate') + '</button>' : '') + '</td></tr>';
           }).join('') + '</tbody></table>'
         : '<div class="tm-empty st-card"><h3>' + (admin ? 'No accounts yet' : 'Your team is empty') + '</h3><p>' +
-          (admin ? 'Add the first person.' : 'Add an associate: they join your team, and you can assign them trainings and simulations in your Coach panel.') + '</p></div>');
+          (admin ? 'Add the first person.' : 'Add an associate: they join your team, and you assign them trainings and simulations in Assign.') + '</p></div>');
       $('[data-add]', box).onclick = function () { addPerson(renderPeople); };
       if (!people.length) return;
 
@@ -439,8 +438,8 @@
             (navigator.clipboard ? navigator.clipboard.writeText(details) : Promise.reject()).then(function () { b.textContent = 'Copied'; }, function () { b.textContent = 'Select and copy them above'; });
           };
           var go = $('[data-assign]', wrap);
-          /* trainings and simulations are given in the panel */
-          if (go) go.onclick = function () { close(); location.href = (mode === 'admin' ? 'admin.html' : 'coach.html') + '?open=' + res.id + '#assign'; };
+          /* straight to their trainings and simulations */
+          if (go) go.onclick = function () { close(); openAfter = res.id; location.hash = 'assign'; };
           done();
         }).catch(function (e2) {
           err.textContent = e2.message; err.hidden = false;
@@ -694,8 +693,8 @@
       var closed = sims.filter(function (x) { return !x.is_open; }), open = sims.filter(function (x) { return x.is_open; });
       if (!people.length) {
         box.innerHTML = '<div class="tm-empty st-card"><h3>' + (mode === 'coach' ? 'Your team is empty' : 'No associates yet') + '</h3>' +
-          '<p>' + (mode === 'coach' ? 'Add associates in Settings, under My team. They join your team, and you assign them trainings and simulations here.' : 'Add associates in Settings, under Users.') + '</p>' +
-          '<a class="st-btn" href="settings.html#users">Open Settings</a></div>';
+          '<p>' + (mode === 'coach' ? 'Add associates in Members. They join your team, and you assign them trainings and simulations here.' : 'Add associates in Users.') + '</p>' +
+          '<a class="st-btn" href="#users">' + (mode === 'coach' ? 'Go to Members' : 'Go to Users') + '</a></div>';
         return;
       }
       function summary(el) {
@@ -809,35 +808,13 @@
     };
   }
 
-  var TABS = { progress: renderProgress, insights: renderInsights, emails: renderEmails, assign: renderAssign, sims: renderSims, announce: renderAnnounce };
-  function show(t) {
-    if (!leaveOk()) return;
-    $$('.st-tabs button').forEach(function (b) { var on = b.dataset.tab === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-    $$('.st-panel').forEach(function (p) { p.hidden = p.dataset.tab !== t; });
-    TABS[t]();
-    try { history.replaceState(null, '', '#' + t); } catch (e) {}
-  }
-
-  function init(opts) {
-    mode = opts.mode;
-    me = SCApp.requireAuth(mode === 'admin' ? { adminOnly: true } : { staffOnly: true });
-    if (!me) return;
-    SCDB.ready.then(function (p) {
-      if (!p) { location.href = SCApp.loginUrl(location.pathname.split('/').pop()); return; }
-      me = p; sb = SCDB.client;
-      if (mode === 'admin' && p.role !== 'admin') { location.href = p.role === 'coach' ? 'coach.html' : 'account.html'; return; }
-      if (mode === 'coach' && p.role === 'associate') { location.href = 'account.html'; return; }
-      $('#stHello').textContent = (mode === 'admin' ? 'Admin' : 'Coach') + ' · ' + p.name;
-      openAfter = new URLSearchParams(location.search).get('open');
-      $$('.st-tabs button').forEach(function (b) { b.onclick = function () { show(b.dataset.tab); }; });
-      var start = location.hash.slice(1);
-      show(TABS[start] && $('.st-tabs [data-tab="' + start + '"]') ? start : 'progress');
-    });
-  }
-  /* the Users and Coach teams sections of settings.html */
+  /* the staff sections of settings.html */
   function settings(m, profile) {
     mode = m; me = profile; sb = SCDB.client;
-    return { users: renderPeople, teams: renderPermissions, leaveOk: leaveOk };
+    openAfter = new URLSearchParams(location.search).get('open');
+    var all = { users: renderPeople, assign: renderAssign, progress: renderProgress, emails: renderEmails, insights: renderInsights };
+    if (m === 'admin') { all.teams = renderPermissions; all.sims = renderSims; all.announce = renderAnnounce; }
+    return { sections: all, leaveOk: leaveOk };
   }
-  window.SCStaff = { init: init, settings: settings };
+  window.SCStaff = { settings: settings };
 })();

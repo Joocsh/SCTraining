@@ -371,12 +371,11 @@
       case 'simulation_assigned': return { t: 'New simulation available', s: n.sim ? n.sim.title : '', href: n.sim ? root(n.sim.page_path) : root('index.html#simulations') };
       case 'email_graded': return { t: 'Your email was graded', s: n.submission && n.submission.scenario ? n.submission.scenario.prompt : '', href: root('account.html#feedback') };
       case 'coach_assigned': return { t: 'You have a coach', s: n.person ? n.person.full_name + ' will follow your progress.' : '', href: root('account.html') };
-      case 'associate_assigned': return { t: 'New associate to coach', s: n.person ? n.person.full_name : '', href: root('coach.html') };
+      case 'associate_assigned': return { t: 'New associate to coach', s: n.person ? n.person.full_name : '', href: root('settings.html#users') };
       case 'reminder': {
         var what = n.course ? n.course.title : (n.sim ? n.sim.title : '');
         if (n.person) {
-          var me = window.SCApp && SCApp.currentUser();
-          return { t: n.person.full_name + ' has not finished ' + what, s: n.message || '', href: root(me && me.role === 'admin' ? 'admin.html' : 'coach.html') };
+          return { t: n.person.full_name + ' has not finished ' + what, s: n.message || '', href: root('settings.html#progress') };
         }
         return { t: 'Keep going: ' + what, s: n.message || '', href: n.course ? root(n.course.page_path) : (n.sim ? root(n.sim.page_path) : null) };
       }

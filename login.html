@@ -51,7 +51,7 @@
   </div>
 </div>
 
-<script src="assets/js/app-core.js?v=20261022f"></script>
+<script src="assets/js/app-core.js?v=20261022g"></script>
 <script>
 (function(){
   var params = new URLSearchParams(location.search);
@@ -90,8 +90,7 @@
   };
 
   function home(user){
-    if(user && user.role === 'admin') return 'admin.html';
-    if(user && user.role === 'coach') return 'coach.html';
+    if(user && (user.role === 'admin' || user.role === 'coach')) return 'settings.html#progress';
     if(next) return next;
     var last = user && SCApp.getLastPage(user.id);
     return last || 'index.html';   /* a first sign in lands on the guided home */

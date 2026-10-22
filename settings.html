@@ -25,7 +25,7 @@
 <header class="st-hero set-hero">
   <div class="in">
     <h1>Settings</h1>
-    <p id="setHello">Your account, your password<span data-staff hidden> and the accounts you manage</span>.</p>
+    <p id="setHello">Your account and your password.</p>
   </div>
 </header>
 
@@ -34,15 +34,30 @@
     <p class="set-group">Your account</p>
     <a href="#account" data-sec="account">Account</a>
     <a href="#password" data-sec="password">Password</a>
-    <p class="set-group" data-staff hidden>Administration</p>
+    <p class="set-group" data-for="coach" hidden>My team</p>
+    <p class="set-group" data-for="admin" hidden>People</p>
     <a href="#users" data-sec="users" hidden>Users</a>
     <a href="#teams" data-sec="teams" hidden>Coach teams</a>
+    <a href="#assign" data-sec="assign" hidden>Assign</a>
+    <p class="set-group" data-for="admin" hidden>Learning</p>
+    <a href="#progress" data-sec="progress" hidden>Progress</a>
+    <a href="#emails" data-sec="emails" hidden>Emails to grade</a>
+    <a href="#insights" data-sec="insights" hidden>Insights</a>
+    <p class="set-group" data-for="admin" hidden>Academy</p>
+    <a href="#sims" data-sec="sims" hidden>Simulations</a>
+    <a href="#announce" data-sec="announce" hidden>Announcements</a>
   </aside>
   <div class="set-main">
     <section class="set-panel" data-sec="account" id="secAccount"></section>
     <section class="set-panel" data-sec="password" id="secPassword" hidden></section>
-    <section class="set-panel st-panel-like" data-sec="users" id="tabPeople" hidden></section>
-    <section class="set-panel st-panel-like" data-sec="teams" id="tabPerms" hidden></section>
+    <section class="set-panel" data-sec="users" id="tabPeople" hidden></section>
+    <section class="set-panel" data-sec="teams" id="tabPerms" hidden></section>
+    <section class="set-panel" data-sec="assign" id="tabAssign" hidden></section>
+    <section class="set-panel" data-sec="progress" id="tabProgress" hidden></section>
+    <section class="set-panel" data-sec="emails" id="tabEmails" hidden></section>
+    <section class="set-panel" data-sec="insights" id="tabInsights" hidden></section>
+    <section class="set-panel" data-sec="sims" id="tabSims" hidden></section>
+    <section class="set-panel" data-sec="announce" id="tabAnnounce" hidden></section>
   </div>
 </main>
 <div class="st-toast" id="stToast" role="status"></div>
@@ -56,9 +71,9 @@
   </div>
 </footer>
 
-<script src="assets/js/app-core.js?v=20261022f"></script>
+<script src="assets/js/app-core.js?v=20261022g"></script>
 <script src="assets/js/site.js?v=20261021"></script>
-<script src="assets/js/staff.js?v=20261022e"></script>
-<script src="assets/js/settings.js?v=20261022b"></script>
+<script src="assets/js/staff.js?v=20261022f"></script>
+<script src="assets/js/settings.js?v=20261022c"></script>
 </body>
 </html>
