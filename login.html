@@ -36,9 +36,13 @@
         <input type="email" id="email" autocomplete="username" placeholder="you@company.com" required>
       </div>
       <div class="auth-field" id="passField">
-        <label for="password">Password</label>
+        <label for="password" id="passLabel">Password</label>
         <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" required minlength="6">
         <p class="auth-hint" id="passHint" hidden>At least 8 characters.</p>
+      </div>
+      <div class="auth-field" id="pass2Field" hidden>
+        <label for="password2">Type it again</label>
+        <input type="password" id="password2" autocomplete="new-password" placeholder="••••••••" minlength="8">
       </div>
       <button type="submit" class="btn v-cyan auth-submit" id="authSubmit">Sign in</button>
     </form>
@@ -47,7 +51,7 @@
   </div>
 </div>
 
-<script src="assets/js/app-core.js?v=20261022e"></script>
+<script src="assets/js/app-core.js?v=20261022f"></script>
 <script>
 (function(){
   var params = new URLSearchParams(location.search);
@@ -56,25 +60,34 @@
   var $ = function(id){ return document.getElementById(id); };
 
   function msg(text, kind){ var m = $('authMsg'); m.textContent = text || ''; m.className = 'auth-msg' + (text ? ' show ' + (kind || 'bad') : ''); }
-  /* Accounts are created by admins and coaches, so there is no sign up here. */
+  /* Accounts are created by admins and coaches, so there is no sign up here.
+     "change": the password was chosen by an admin or a coach, so the person
+     chooses their own before anything else (profiles.must_change_password). */
   function setMode(m){
     mode = m;
-    var reset = m === 'reset', recover = m === 'recover';
-    $('email').parentNode.hidden = recover;
+    var reset = m === 'reset', recover = m === 'recover', change = m === 'change', fresh = recover || change;
+    $('email').parentNode.hidden = fresh;
     $('passField').hidden = reset;
-    $('passHint').hidden = !recover;
-    $('forgotBtn').textContent = reset ? 'Back to sign in' : 'Forgot your password?';
+    $('pass2Field').hidden = !fresh;
+    $('passHint').hidden = !fresh;
+    $('passLabel').textContent = fresh ? 'New password' : 'Password';
+    $('forgotBtn').textContent = reset ? 'Back to sign in' : change ? 'Log out' : 'Forgot your password?';
     $('forgotBtn').hidden = recover;
     $('noAccount').hidden = m !== 'signin';
-    $('password').autocomplete = recover ? 'new-password' : 'current-password';
-    $('authTitle').textContent = reset ? 'Reset your password' : recover ? 'Choose a new password' : 'Sign in';
+    $('password').value = ''; $('password2').value = '';
+    $('password').autocomplete = fresh ? 'new-password' : 'current-password';
+    $('authTitle').textContent = reset ? 'Reset your password' : recover ? 'Choose a new password' : change ? 'Choose your own password' : 'Sign in';
     $('authSub').textContent = reset ? 'We will email you a link to choose a new password.'
       : recover ? 'Type the new password for your account.'
+      : change ? 'Your admin or coach gave you a temporary password. Choose your own to continue; only you will know it.'
       : 'Use the account your admin or coach created for you. The Academy picks up wherever you left off, on any device.';
-    $('authSubmit').textContent = reset ? 'Send the link' : recover ? 'Save the new password' : 'Sign in';
+    $('authSubmit').textContent = reset ? 'Send the link' : fresh ? 'Save and continue' : 'Sign in';
     msg('');
   }
-  $('forgotBtn').onclick = function(){ setMode(mode === 'reset' ? 'signin' : 'reset'); };
+  $('forgotBtn').onclick = function(){
+    if(mode === 'change'){ SCApp.logout().then(function(){ setMode('signin'); }, function(){ setMode('signin'); }); return; }
+    setMode(mode === 'reset' ? 'signin' : 'reset');
+  };
 
   function home(user){
     if(user && user.role === 'admin') return 'admin.html';
@@ -95,19 +108,26 @@
   $('authForm').addEventListener('submit', function(e){
     e.preventDefault();
     var email = $('email').value.trim(), pass = $('password').value;
-    if(mode !== 'recover' && !email){ msg('Type your email.'); return; }
+    var fresh = mode === 'recover' || mode === 'change';
+    if(!fresh && !email){ msg('Type your email.'); return; }
     if(mode === 'signin' && !pass){ msg('Type your password.'); return; }
-    if(mode === 'recover' && pass.length < 8){ msg('Your password needs at least 8 characters.'); return; }
+    if(fresh && pass.length < 8){ msg('Your password needs at least 8 characters.'); return; }
+    if(fresh && pass !== $('password2').value){ msg('The two passwords do not match.'); return; }
     busy(true); msg('');
     SCDB.ready.then(function(){
-      if(mode === 'signin') return SCDB.signIn(email, pass).then(function(u){ location.href = home(u); });
+      if(mode === 'signin') return SCDB.signIn(email, pass).then(function(u){
+        if(u && u.mustChange){ setMode('change'); return; }
+        location.href = home(u);
+      });
       if(mode === 'reset') return SCDB.resetPassword(email).then(function(r){
         if(r && r.error) throw r.error;
         msg('If that email has an account, a reset link is on its way.', 'good');
       });
-      if(mode === 'recover') return SCDB.client.auth.updateUser({ password: pass }).then(function(r){
-        if(r.error) throw r.error;
-        return SCDB.refreshProfile().then(function(u){ msg('Your password was updated.', 'good'); setTimeout(function(){ location.href = home(u); }, 900); });
+      if(fresh) return SCDB.changePassword(pass).then(function(){
+        return SCDB.refreshProfile();
+      }).then(function(u){
+        if(u && u.mustChange) throw new Error('Your password changed, but the Academy did not notice yet. Sign in again.');
+        msg('Your password was saved.', 'good'); setTimeout(function(){ location.href = home(u); }, 900);
       });
     }).catch(function(err){ msg(readable(err)); }).then(function(){ busy(false); });
   });
@@ -118,8 +138,12 @@
     setMode('recover');
     return;
   }
-  /* already signed in: go straight where they belong */
-  SCDB.ready.then(function(u){ if(u) location.href = home(u); });
+  /* already signed in: choose a password first if needed, else go straight where they belong */
+  SCDB.ready.then(function(u){
+    if(!u) return;
+    if(u.mustChange){ setMode('change'); return; }
+    location.href = home(u);
+  });
 })();
 </script>
 </body>

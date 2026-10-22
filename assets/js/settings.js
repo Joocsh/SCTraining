@@ -66,7 +66,7 @@
     var box = $('#secPassword');
     box.innerHTML = '<h2 class="tm-title">Password</h2>' +
       '<form class="set-card set-form" id="passForm" novalidate>' +
-        '<p class="st-muted">If your admin or coach gave you a password, choose your own here. Use at least 8 characters; a short sentence is easy to remember and hard to guess.</p>' +
+        '<p class="st-muted">Use at least 8 characters; a short sentence is easy to remember and hard to guess. If an admin or a coach sets a temporary password for you, you choose your own at the next sign in.</p>' +
         '<label class="st-lbl">New password<input class="st-input" type="password" id="newPass" autocomplete="new-password" minlength="8"></label>' +
         '<label class="st-lbl">Type it again<input class="st-input" type="password" id="newPass2" autocomplete="new-password" minlength="8"></label>' +
         '<p class="cu-err" id="passErr" role="alert" hidden></p>' +

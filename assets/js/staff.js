@@ -280,7 +280,7 @@
                   roles.map(function (x) { return '<option value="' + x.id + '"' + (String(x.id) === was ? ' selected' : '') + '>' + esc(x.title) + '</option>'; }).join('') + '</select></td>' +
                 '<td>' + (p.coaches ? esc(p.coaches) : '<span class="st-muted">' + (p.app_role === 'associate' ? 'No coach' : '&#8212;') + '</span>') + '</td>' : '') +
               '<td>' + (deact ? '<span class="tm-chip warn">Deactivated</span>' : p.last_sign_in_at ? day(p.last_sign_in_at) : '<span class="st-muted">Never</span>') + '</td>' +
-              '<td class="up-act"><button type="button" class="tm-x" data-pw>Reset password</button>' +
+              '<td class="up-act"><button type="button" class="tm-x" data-pw>' + (self ? 'Change my password' : 'Change password') + '</button>' +
                 (admin && !self ? '<button type="button" class="tm-x" data-ban>' + (deact ? 'Reactivate' : 'Deactivate') + '</button>' : '') + '</td></tr>';
           }).join('') + '</tbody></table>'
         : '<div class="tm-empty st-card"><h3>' + (admin ? 'No accounts yet' : 'Your team is empty') + '</h3><p>' +
@@ -340,15 +340,17 @@
     }).catch(function (e) { box.innerHTML = '<p class="st-empty">Could not load: ' + esc(e.message) + '</p>'; });
   }
 
-  /* A new password for someone: made here, set by the manage-user function,
-     then shown once to hand over. */
+  /* A new password for someone: typed or generated here, set by the
+     manage-user function, then shown once to hand over. They must choose
+     their own at the next sign in. Your own row goes to Settings > Password. */
   function resetPassword(p) {
+    if (p.id === me.id) { location.href = 'settings.html#password'; return; }
     var wrap = document.createElement('div');
     wrap.className = 'cu-overlay';
     wrap.innerHTML = '<form class="cu-card" role="dialog" aria-modal="true" aria-labelledby="rpTitle" novalidate>' +
-      '<div class="cu-head"><h3 id="rpTitle">Reset password</h3><button type="button" class="tm-close" data-close aria-label="Close">&times;</button></div>' +
-      '<p class="st-muted">' + esc(p.full_name) + ' (' + esc(p.email) + ') signs in with this new password from now on. Send it to them; they can choose their own in Settings.</p>' +
-      '<label class="st-lbl">New password<span class="cu-pass"><input class="st-input" name="password" autocomplete="new-password" spellcheck="false" value="' + tempPassword() + '"><button type="button" class="tm-ghost" data-gen>New</button></span></label>' +
+      '<div class="cu-head"><h3 id="rpTitle">Change password</h3><button type="button" class="tm-close" data-close aria-label="Close">&times;</button></div>' +
+      '<p class="st-muted">' + esc(p.full_name) + ' (' + esc(p.email) + ') signs in with this password next time, and then must choose their own. Type one, or use the one generated for you.</p>' +
+      '<label class="st-lbl">Temporary password<span class="cu-pass"><input class="st-input" name="password" autocomplete="new-password" spellcheck="false" value="' + tempPassword() + '"><button type="button" class="tm-ghost" data-gen>Generate</button></span></label>' +
       '<p class="cu-err" role="alert" hidden></p>' +
       '<div class="cu-actions"><button type="button" class="tm-ghost" data-close>Cancel</button><button type="submit" class="st-btn">Set the new password</button></div></form>';
     document.body.appendChild(wrap);
@@ -365,10 +367,10 @@
       var btn = $('[type="submit"]', wrap); btn.disabled = true; btn.textContent = 'Saving…';
       SCDB.manageUser('set_password', { user_id: p.id, password: pw }).then(function () {
         var signIn = location.origin + location.pathname.replace(/[^/]*$/, '') + 'login.html';
-        var details = 'Skill Cloud Academy\nSign in: ' + signIn + '\nEmail: ' + p.email + '\nPassword: ' + pw + '\nYou can choose your own password in Settings.';
+        var details = 'Skill Cloud Academy\nSign in: ' + signIn + '\nEmail: ' + p.email + '\nTemporary password: ' + pw + '\nYou will choose your own password when you sign in.';
         $('.cu-card', wrap).innerHTML = '<div class="cu-done"><span class="tm-av big ok" aria-hidden="true">&#10003;</span><h3>Password changed</h3>' +
           '<p class="st-muted">Send the new sign in details to ' + esc(p.full_name.split(' ')[0]) + ':</p>' +
-          '<dl class="cu-cred"><dt>Sign in at</dt><dd>' + esc(signIn) + '</dd><dt>Email</dt><dd>' + esc(p.email) + '</dd><dt>Password</dt><dd><code>' + esc(pw) + '</code></dd></dl>' +
+          '<dl class="cu-cred"><dt>Sign in at</dt><dd>' + esc(signIn) + '</dd><dt>Email</dt><dd>' + esc(p.email) + '</dd><dt>Temporary password</dt><dd><code>' + esc(pw) + '</code></dd></dl>' +
           '<div class="cu-actions"><button type="button" class="tm-ghost" data-copy>Copy sign in details</button><button type="button" class="st-btn" data-close>Done</button></div></div>';
         $('[data-copy]', wrap).onclick = function () {
           var b = this;
@@ -396,10 +398,10 @@
       wrap.className = 'cu-overlay';
       wrap.innerHTML = '<form class="cu-card" role="dialog" aria-modal="true" aria-labelledby="cuTitle" novalidate>' +
         '<div class="cu-head"><h3 id="cuTitle">' + (admin ? 'Add a person' : 'Add an associate') + '</h3><button type="button" class="tm-close" data-close aria-label="Close">&times;</button></div>' +
-        '<p class="st-muted">They sign in with this email and the temporary password. Send both to them; they can choose their own password in Settings.</p>' +
+        '<p class="st-muted">They sign in with this email and the temporary password, and must choose their own password the first time they sign in.</p>' +
         '<label class="st-lbl">Full name<input class="st-input" name="full_name" autocomplete="off" placeholder="Name and last name"></label>' +
         '<label class="st-lbl">Email<input class="st-input" name="email" type="email" autocomplete="off" placeholder="name@company.com"></label>' +
-        '<label class="st-lbl">Temporary password<span class="cu-pass"><input class="st-input" name="password" autocomplete="new-password" spellcheck="false" value="' + tempPassword() + '"><button type="button" class="tm-ghost" data-gen>New</button></span></label>' +
+        '<label class="st-lbl">Temporary password<span class="cu-pass"><input class="st-input" name="password" autocomplete="new-password" spellcheck="false" value="' + tempPassword() + '"><button type="button" class="tm-ghost" data-gen>Generate</button></span></label>' +
         (admin ? '<div class="st-grid cu-grid"><label>Role<select name="app_role"><option value="associate">Associate</option><option value="coach">Coach</option><option value="admin">Admin</option></select></label>' +
           '<label data-coachwrap>Coach<select name="coach_id"><option value="">No coach yet</option>' + coaches.map(function (c) { return '<option value="' + c.id + '">' + esc(c.full_name) + '</option>'; }).join('') + '</select></label></div>'
           : '<p class="cu-note">They join your team, and you can assign them trainings and simulations right away.</p>') +
@@ -425,7 +427,7 @@
         SCDB.createUser(person).then(function (res) {
           var first = esc(person.full_name.split(' ')[0]);
           var signIn = location.origin + location.pathname.replace(/[^/]*$/, '') + 'login.html';
-          var details = 'Skill Cloud Academy\nSign in: ' + signIn + '\nEmail: ' + res.email + '\nTemporary password: ' + person.password + '\nYou can choose your own password in Settings.';
+          var details = 'Skill Cloud Academy\nSign in: ' + signIn + '\nEmail: ' + res.email + '\nTemporary password: ' + person.password + '\nYou will choose your own password the first time you sign in.';
           var isAssociate = res.app_role === 'associate';
           $('.cu-card', wrap).innerHTML = '<div class="cu-done"><span class="tm-av big ok" aria-hidden="true">&#10003;</span><h3>Account created</h3>' +
             '<p class="st-muted">' + (isAssociate && res.coach_id ? first + ' is on ' + (mode === 'coach' ? 'your' : 'their coach\'s') + ' team. ' : '') + 'Send these sign in details to ' + first + ':</p>' +

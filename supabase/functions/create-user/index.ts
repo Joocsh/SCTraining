@@ -10,6 +10,8 @@
 //           associate on a coach's team
 //
 // Body: { full_name, email, password, app_role?, coach_id? }
+// The password is temporary: the person must choose their own when they
+// first sign in (profiles.must_change_password).
 // The caller's own session (Authorization: Bearer <access token>) says
 // who is asking. Deploy with "Verify JWT" off: the function checks the
 // token itself.
@@ -84,7 +86,7 @@ Deno.serve(async (req) => {
   }
   const id = created.user.id;
 
-  const steps = [db.from('profiles').update({ created_by: me.id, ...(role !== 'associate' ? { app_role: role } : {}) }).eq('id', id)];
+  const steps = [db.from('profiles').update({ created_by: me.id, must_change_password: true, ...(role !== 'associate' ? { app_role: role } : {}) }).eq('id', id)];
   if (coachId) steps.push(db.from('coach_assignments').insert({ coach_id: coachId, associate_id: id }));
   for (const step of steps) {
     const { error: stepError } = await step;

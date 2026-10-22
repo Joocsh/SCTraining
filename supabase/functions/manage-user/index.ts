@@ -5,6 +5,7 @@
 // role, which never reaches the browser.
 //
 //   set_password   admin: anyone. coach: the associates on their team.
+//                  The person must choose their own at the next sign in.
 //   deactivate     admin only, never their own account. The person can
 //                  no longer sign in; nothing they did is deleted.
 //   reactivate     admin only.
@@ -85,5 +86,10 @@ Deno.serve(async (req) => {
 
   const { error } = await db.auth.admin.updateUserById(userId, change);
   if (error) return reply({ error: error.message }, 400);
+  // after the password update: its trigger turns the flag off, this turns it back on
+  if (action === 'set_password' && userId !== me.id) {
+    const { error: flagError } = await db.from('profiles').update({ must_change_password: true }).eq('id', userId);
+    if (flagError) return reply({ error: 'The password changed, but: ' + flagError.message }, 500);
+  }
   return reply({ ok: true, action, user_id: userId, full_name: target.full_name });
 });

@@ -78,7 +78,7 @@
     var id = uid();
     if (!id) return Promise.resolve(null);
     return Promise.all([
-      sb.from('profiles').select('id,full_name,app_role,last_path,onboarded_at,assigned_role:sim_roles!profiles_assigned_role_id_fkey(slug)').eq('id', id).single(),
+      sb.from('profiles').select('id,full_name,app_role,last_path,onboarded_at,must_change_password,assigned_role:sim_roles!profiles_assigned_role_id_fkey(slug)').eq('id', id).single(),
       sb.from('my_courses').select('slug').eq('user_id', id),
       sb.from('my_simulations').select('slug').eq('user_id', id)
     ]).then(function (r) {
@@ -86,7 +86,7 @@
       var p = r[0].data, s = read(TOKEN, {});
       var prof = { id: p.id, name: p.full_name, email: s.user ? s.user.email : '', appRole: p.app_role,
         role: p.app_role === 'associate' ? 'user' : p.app_role, assignedRole: p.assigned_role ? p.assigned_role.slug : null,
-        avatar: (p.full_name || '?').charAt(0).toUpperCase(), onboardedAt: p.onboarded_at };
+        avatar: (p.full_name || '?').charAt(0).toUpperCase(), onboardedAt: p.onboarded_at, mustChange: !!p.must_change_password };
       write('scc_profile', prof);
       write('scc_my_courses__' + id, (r[1].data || []).map(function (x) { return x.slug; }));
       write('scc_my_sims__' + id, (r[2].data || []).map(function (x) { return x.slug; }));
@@ -443,6 +443,17 @@
     onNotification(function () { load(); refreshProfile().catch(function () {}); });
   }
 
+  /* ─────────── a password someone else chose comes first ───────────
+     The login page asks for a new one; every other page sends the person
+     there until they choose it. */
+  function choosePasswordFirst(p) {
+    if (!p || !p.mustChange || /\/login\.html$/.test(location.pathname)) return false;
+    var here = location.pathname.split('/').pop() + location.search + location.hash;
+    location.replace(root('login.html') + '?change=1&next=' + encodeURIComponent(here));
+    return true;
+  }
+  if (uid()) choosePasswordFirst(read('scc_profile', null));
+
   /* ─────────── start ─────────── */
   var ready = (uid() ? sb.auth.getSession().then(function (r) {
     if (!r.data.session) { localStorage.removeItem('scc_profile'); return null; }
@@ -460,7 +471,7 @@
     notifications: notifications, markRead: markRead, onNotification: onNotification
   };
   ready.then(function (p) {
-    if (!p) return;
+    if (!p || choosePasswordFirst(p)) return;
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mountBell); else mountBell();
   });
 })(window);
