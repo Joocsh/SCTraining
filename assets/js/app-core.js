@@ -1,7 +1,9 @@
 /* ===== Skill Cloud Academy — app core =====
-   Simulated auth, unified progress engine, and admin grading, all in localStorage.
-   No server exists yet; this layer is written so a real backend can replace the
-   storage functions below without touching any page that calls them. */
+   Auth, the unified progress engine and grading. Pages call these functions
+   synchronously and read a local copy; assets/js/sc-db.js (loaded below) keeps
+   that copy in step with Supabase: sign in, pull the person's activity, and
+   push every change through an outbox. The function names did not change, so
+   every page that called them keeps working. */
 (function(window){
   'use strict';
 
@@ -55,6 +57,24 @@
   })();
   function rootUrl(page){ return ROOT + page; }
 
+  // ---------- database layer ----------
+  // supabase-js, then sc-db.js. Written with document.write while the page is
+  // still parsing, so SCDB exists before the page's own scripts run.
+  (function(){
+    if(window.SCDB || window.__scdbLoading) return;
+    window.__scdbLoading = true;
+    var lib = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
+    var db = ROOT + 'assets/js/sc-db.js?v=20261021c';
+    if(document.readyState === 'loading'){
+      document.write('<script src="'+lib+'"><\/script><script src="'+db+'"><\/script>');
+    } else {
+      var a = document.createElement('script'); a.src = lib;
+      a.onload = function(){ var b = document.createElement('script'); b.src = db; document.head.appendChild(b); };
+      document.head.appendChild(a);
+    }
+  })();
+  function db(){ return window.SCDB || null; }
+
   function readJSON(key, fallback){
     try{ var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
     catch(e){ return fallback; }
@@ -63,58 +83,53 @@
   function uid(prefix){ return prefix+'_'+Math.random().toString(36).slice(2,9)+Date.now().toString(36); }
   function here(){ return (location.pathname.split('/').slice(-2).join('/')).replace(/^\//,''); }
 
-  function seed(){
-    if(localStorage.getItem(LS_SEEDED)) return;
-    var users = [
-      {id:'maria',  name:'Maria Gomez',   email:'maria@demo',  password:'demo123',  role:'user',  assignedRole:'tc',      avatar:'M'},
-      {id:'jose',   name:'Jose Ramirez',  email:'jose@demo',   password:'demo123',  role:'user',  assignedRole:'listing', avatar:'J'},
-      {id:'admin1', name:'Alex Rivera',   email:'admin@demo',  password:'admin123', role:'admin', assignedRole:null,      avatar:'A'}
-    ];
-    writeJSON(LS_USERS, users);
-
-    var subs = [
-      {
-        id: uid('sub'), userId:'maria', role:'tc',
-        scenarioId:'tc-va-seller-detail',
-        scenarioPrompt:'Seller detail email, 4232 Maplehurst Road VA — the ratified contract has just come in and the seller needs settlement date, EMD amount, and which forms are attached for them to complete.',
-        text:'Hi Jemal,\n\nGreat news, your home is officially under contract. Settlement is set for Feb 11, and the buyer has put down a $1,000 earnest money deposit.\n\nI have attached three forms for you to complete: the utility form, the walkthrough form, and the items-to-convey form. Please send these back at your earliest convenience so we can keep the file on track.\n\nLet me know if you have any questions.\n\nBest,\nMaria',
-        status:'pending', score:null, maxScore:5, feedback:'', gradedBy:null, ts: Date.now()-86400000*2, gradedTs:null
-      },
-      {
-        id: uid('sub'), userId:'jose', role:'listing',
-        scenarioId:'listing-ca-agent-email',
-        scenarioPrompt:'Data Input Form confirmation email to agent, 139 S Edinburgh Ave — confirm the REIN form is complete and note what is still needed.',
-        text:'Hi Ben, the Data Input Form is done, listing looks good to go, let me know if you need anything else.',
-        status:'pending', score:null, maxScore:5, feedback:'', gradedBy:null, ts: Date.now()-86400000, gradedTs:null
-      }
-    ];
-    writeJSON(LS_SUBMISSIONS, subs);
-    localStorage.setItem(LS_SEEDED, '1');
+  // The demo accounts are gone: people sign in with real accounts (Supabase Auth).
+  // Old demo data left in this browser is cleared once.
+  if(localStorage.getItem(LS_SEEDED)){
+    [LS_USERS, LS_SESSION, LS_SUBMISSIONS, LS_SEEDED].forEach(function(k){ localStorage.removeItem(k); });
   }
-  seed();
 
   // ---------- auth ----------
-  function getUsers(){ return readJSON(LS_USERS, []); }
-  function findUserByEmail(email){
-    email = (email||'').trim().toLowerCase();
-    return getUsers().filter(function(u){ return u.email.toLowerCase()===email; })[0] || null;
+  var LS_TOKEN = 'sb-eagpqzqgzzfmmdbyeoau-auth-token';   // written by supabase-js
+  // People this person may see: themselves, and for coaches and admins the
+  // associates they supervise (filled by sc-db.js from the profiles table).
+  function getUsers(){
+    var me = currentUser(), list = readJSON('scc_people', []);
+    if(me && !list.some(function(u){ return u.id===me.id; })) list = list.concat([me]);
+    return list;
   }
   function findUserById(id){
     return getUsers().filter(function(u){ return u.id===id; })[0] || null;
   }
-  function login(email, password){
-    var u = findUserByEmail(email);
-    if(!u || u.password !== password) return null;
-    writeJSON(LS_SESSION, {userId:u.id});
-    return u;
-  }
+  // Signing in is asynchronous now: SCApp.signIn(email, password) returns a promise.
+  function signIn(email, password){ return db().signIn(email, password); }
+  function login(){ console.warn('SCApp.login is replaced by SCApp.signIn (Supabase).'); return null; }
   function logout(){
-    localStorage.removeItem(LS_SESSION);
+    localStorage.removeItem('scc_profile');
+    return db() ? db().signOut() : Promise.resolve();
   }
   function currentUser(){
-    var s = readJSON(LS_SESSION, null);
-    if(!s) return null;
-    return findUserById(s.userId);
+    var s = readJSON(LS_TOKEN, null);
+    if(!s || !s.user) return null;
+    var p = readJSON('scc_profile', null);
+    if(p && p.id === s.user.id) return p;
+    var meta = s.user.user_metadata || {};
+    var name = meta.full_name || (s.user.email||'').split('@')[0];
+    return {id:s.user.id, name:name, email:s.user.email, role:'user', appRole:'associate', assignedRole:null, avatar:name.charAt(0).toUpperCase()};
+  }
+  function isStaff(u){ u = u || currentUser(); return !!u && (u.role==='admin' || u.role==='coach'); }
+  // Trainings and simulations this person has (open ones, plus what an admin assigned).
+  function hasCourse(slug){
+    var u = currentUser(); if(!u) return false;
+    if(isStaff(u)) return true;
+    var mine = readJSON('scc_my_courses__'+u.id, null);
+    return mine ? mine.indexOf(slug) > -1 : true;
+  }
+  function hasSimulation(slug){
+    var u = currentUser(); if(!u) return false;
+    if(isStaff(u)) return true;
+    var mine = readJSON('scc_my_sims__'+u.id, null);
+    return mine ? mine.indexOf(slug) > -1 : true;
   }
 
   function loginUrl(next){
@@ -129,6 +144,10 @@
       return null;
     }
     if(opts.adminOnly && u.role !== 'admin'){
+      window.location.href = rootUrl(u.role==='coach' ? 'coach.html' : 'account.html');
+      return null;
+    }
+    if(opts.staffOnly && !isStaff(u)){
       window.location.href = rootUrl('account.html');
       return null;
     }
@@ -137,32 +156,47 @@
   }
 
   // ---------- Introduction gate ----------
-  // The Introduction (ai.html) is recommended, not required: every
-  // signed in associate can open the simulations and the trainings.
-  // isIntroDone still tells whether it was finished, for progress and badges.
+  // The Introduction (ai.html) is required: the trainings and the simulations
+  // open once it is finished (the database enforces the same rule).
+  // Coaches and admins are not held by it.
   var LS_INTRO = 'scc_intro_done__';   // + userId
   function isIntroDone(u){
     u = u || currentUser();
     if(!u) return false;
-    if(u.role === 'admin') return true;
+    if(u.role === 'admin' || u.role === 'coach') return true;
     return localStorage.getItem(LS_INTRO + u.id) === '1';
   }
   function markIntroDone(){
     var u = currentUser();
     if(u) localStorage.setItem(LS_INTRO + u.id, '1');
   }
-  /* Kept so the role pages that call it keep working: it now only
-     asks for a signed in associate. */
+  /* Every role page calls this. It asks for a signed in associate and checks
+     the person has this simulation (simulations are open unless an admin
+     closed one and assigns it instead). */
   function requireIntro(){
-    return requireAuth();
+    var u = requireAuth();
+    if(!u) return null;
+    if(!isIntroDone(u)){
+      window.location.replace(rootUrl('ai.html') + '?locked=simulations');
+      return null;
+    }
+    var here_ = location.pathname.replace(/^.*\/(roles\/[^/]+)$/, '$1');
+    var slug = Object.keys(ROLE_PAGES).filter(function(k){ return ROLE_PAGES[k] === here_; })[0];
+    if(slug && !hasSimulation(slug)){
+      window.location.replace(rootUrl('index.html') + '?nosim=' + slug + '#simulations');
+      return null;
+    }
+    return u;
   }
 
   // ---------- last page memory ----------
   function setLastPage(userId, path){
     localStorage.setItem(LS_LASTPAGE+userId, path);
+    if(db() && userId === (currentUser()||{}).id) db().lastPath(path);
   }
   function getLastPage(userId){
-    return localStorage.getItem(LS_LASTPAGE+userId) || null;
+    var p = findUserById(userId);
+    return localStorage.getItem(LS_LASTPAGE+userId) || (p && p.lastPath) || null;
   }
 
   // ---------- unified progress engine ----------
@@ -179,6 +213,7 @@
     p.history.unshift({role:role, mode:mode, score:score, max:max, ts:Date.now()});
     p.history = p.history.slice(0, 30);
     saveProgress(userId, p);
+    if(db() && userId === (currentUser()||{}).id && mode !== 'email') db().modeScore(role, mode, score);
     return p;
   }
   function addModeScore(userId, role, mode, addScore, addMax, note){
@@ -190,6 +225,7 @@
     p.history.unshift({role:role, mode:mode, score:addScore, max:addMax, ts:Date.now(), note:note||''});
     p.history = p.history.slice(0, 30);
     saveProgress(userId, p);
+    if(db() && userId === (currentUser()||{}).id && mode !== 'email') db().modeScore(role, mode, cur.score);
     return p;
   }
   function getOverallPercent(userId){
@@ -243,6 +279,7 @@
       ts: Date.now(), gradedTs:null
     });
     writeJSON(LS_SUBMISSIONS, subs);
+    if(db()) db().submitEmail(entry.scenarioId, entry.text);
   }
   function gradeSubmission(id, score, feedback, gradedByUserId){
     var subs = readJSON(LS_SUBMISSIONS, []);
@@ -252,6 +289,7 @@
     var prevScore = wasGraded ? sub.score : 0;
     sub.status='graded'; sub.score=score; sub.feedback=feedback; sub.gradedBy=gradedByUserId; sub.gradedTs=Date.now();
     writeJSON(LS_SUBMISSIONS, subs);
+    if(db() && typeof sub.id === 'number') db().grade(sub.id, score, feedback);
     addModeScore(sub.userId, sub.role, 'email', score-prevScore, wasGraded?0:sub.maxScore, 'Email graded: '+feedback.slice(0,80));
     return sub;
   }
@@ -326,8 +364,8 @@
       var label = chip.querySelector('.uc-label');
       if(u){
         if(av) av.textContent = (u.avatar||u.name.charAt(0)).toUpperCase();
-        if(label) label.textContent = u.role==='admin' ? 'Admin' : u.name.split(' ')[0];
-        chip.href = rootUrl(u.role==='admin'?'admin.html':'account.html');
+        if(label) label.textContent = u.role==='admin' ? 'Admin' : u.role==='coach' ? 'Coach' : u.name.split(' ')[0];
+        chip.href = rootUrl(u.role==='admin' ? 'admin.html' : u.role==='coach' ? 'coach.html' : 'account.html');
       } else {
         if(av) av.textContent='?';
         if(label) label.textContent='Log In';
@@ -337,8 +375,7 @@
     document.querySelectorAll('.logout-btn').forEach(function(btn){
       btn.addEventListener('click', function(e){
         e.preventDefault();
-        logout();
-        window.location.href = rootUrl('login.html');
+        logout().then(function(){ window.location.href = rootUrl('login.html'); }, function(){ window.location.href = rootUrl('login.html'); });
       });
     });
     if(u){
@@ -351,7 +388,8 @@
 
   window.SCApp = {
     ROLE_LABELS: ROLE_LABELS, ROLE_PAGES: ROLE_PAGES, LEGACY_MODES: LEGACY_MODES,
-    login: login, logout: logout, currentUser: currentUser, requireAuth: requireAuth, loginUrl: loginUrl,
+    login: login, signIn: signIn, logout: logout, currentUser: currentUser, requireAuth: requireAuth, loginUrl: loginUrl,
+    isStaff: isStaff, hasCourse: hasCourse, hasSimulation: hasSimulation, rootUrl: rootUrl,
     isIntroDone: isIntroDone, markIntroDone: markIntroDone, requireIntro: requireIntro,
     findUserById: findUserById, getUsers: getUsers,
     setLastPage: setLastPage, getLastPage: getLastPage,

@@ -21,7 +21,16 @@
 
   var C = { lessons: [], cur: 0, state: null, opts: null, key: '' };
 
-  function save() { try { localStorage.setItem(C.key, JSON.stringify(C.state)); } catch (e) {} }
+  function save() {
+    try { localStorage.setItem(C.key, JSON.stringify(C.state)); } catch (e) {}
+    /* the database layer sends new lessons and the completion to Supabase */
+    if (window.SCDB) SCDB.courseState(C.opts.id, C.state);
+  }
+  function record(task, correct) {
+    if (!window.SCDB) return;
+    var lesson = task.closest('.lesson');
+    SCDB.attempt(C.opts.id, lesson.id, $$('.gate', lesson).indexOf(task), correct);
+  }
   function mods() {
     var out = [];
     C.lessons.forEach(function (l, i) {
@@ -279,6 +288,7 @@
   function pass(task, msg) {
     var lesson = task.closest('.lesson');
     var k = $$('.gate', lesson).indexOf(task);
+    if (!C.state.passed[lesson.id + ':' + k]) record(task, true);
     C.state.passed[lesson.id + ':' + k] = 1; save();
     task.classList.add('passed');
     var fb = $('.fb', task);
@@ -286,6 +296,7 @@
     paint();
   }
   function fail(task, msg) {
+    record(task, false);
     var fb = $('.fb', task);
     if (fb) { fb.textContent = msg; fb.className = 'fb bad'; }
   }
@@ -372,6 +383,20 @@
 
     build(); wireTasks(); restore();
 
+    /* the Introduction comes first: it opens every other training */
+    var introFirst = window.SCApp && C.opts.id !== 'intro' && SCApp.isIntroDone && !SCApp.isIntroDone();
+    if (introFirst) {
+      document.body.insertAdjacentHTML('beforeend', '<div class="c-cert-wrap open" role="dialog" aria-modal="true"><div class="c-cert"><div class="c-cert-in">' +
+        '<h2>Finish the Introduction first</h2><p>The Introduction opens your trainings and the simulations. It is six short lessons, including how to keep client data safe with AI.</p></div>' +
+        '<div class="c-cert-actions"><a class="c-btn primary" href="' + (SCApp.rootUrl ? SCApp.rootUrl('ai.html') : '../ai.html') + '">Go to the Introduction</a></div></div></div>');
+    }
+    /* a training that is not assigned to this person (open ones are for everyone) */
+    else if (window.SCApp && SCApp.hasCourse && !SCApp.hasCourse(C.opts.id)) {
+      document.body.insertAdjacentHTML('beforeend', '<div class="c-cert-wrap open" role="dialog" aria-modal="true"><div class="c-cert"><div class="c-cert-in">' +
+        '<h2>Not assigned yet</h2><p>This training opens once your admin assigns it to you. You will get a notification when it does.</p></div>' +
+        '<div class="c-cert-actions"><a class="c-btn primary" href="' + (SCApp.rootUrl ? SCApp.rootUrl('paths.html') : '../paths.html') + '">Back to Paths</a></div></div></div>');
+    }
+
     window.addEventListener('scroll', reveal, { passive: true });
     window.addEventListener('resize', reveal);
     document.addEventListener('toggle', function () { setTimeout(reveal, 50); }, true);
@@ -408,6 +433,7 @@
   window.SCCourse = {
     init: init, pass: pass, fail: fail, paint: paint, go: go,
     get state() { return C.state; },
+    get id() { return C.opts && C.opts.id; },
     reset: function () { localStorage.removeItem(C.key); location.reload(); }
   };
 })();

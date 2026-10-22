@@ -94,6 +94,25 @@
 .acc-badge small{font-size:12px;color:var(--v-muted)}
 .acc-badge:not(.on){opacity:.7}
 @media(max-width:640px){.acc-course{grid-template-columns:64px 1fr}.acc-course i{height:52px}.acc-course .act{grid-column:1/-1;justify-content:flex-start}}
+/* general progress (from the database) */
+.pg-card{background:#fff;border:1px solid var(--line,#e3eaf1);border-radius:20px;padding:22px 24px}
+.pg-top{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center}
+.pg-ring{--p:0;width:120px;height:120px;border-radius:50%;background:conic-gradient(#17c3d4 calc(var(--p)*1%),#e6edf3 0);display:grid;place-items:center}
+.pg-ring div{width:96px;height:96px;border-radius:50%;background:#fff;display:grid;place-items:center;text-align:center}
+.pg-ring b{display:block;font:900 26px "Helvetica Neue",Arial,sans-serif;color:#0a2647;line-height:1}
+.pg-ring span{font-size:12px;color:#5b6b7e;font-weight:700}
+.pg-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pg-cat{border:1px solid var(--line,#e3eaf1);border-radius:14px;padding:12px 14px}
+.pg-cat b{display:block;color:#0a2647;font-size:15px}
+.pg-cat small{color:#5b6b7e;font-size:12.5px}
+.pg-bar{height:7px;border-radius:99px;background:#e8eef4;overflow:hidden;margin-top:8px}
+.pg-bar i{display:block;height:100%;background:#17c3d4}
+.pg-items{margin-top:18px;display:grid;gap:8px}
+.pg-item{display:grid;grid-template-columns:110px 1fr 160px 52px;gap:12px;align-items:center;font-size:14.5px;color:#33465c}
+.pg-item em{font-style:normal;font-size:12px;font-weight:800;color:#0fa6b6}
+.pg-item .done{color:#1f9e5a;font-weight:800}
+.pg-note{font-size:13px;color:#5b6b7e;margin-top:12px}
+@media (max-width:720px){.pg-top{grid-template-columns:1fr}.pg-cats{grid-template-columns:1fr}.pg-item{grid-template-columns:1fr 60px}.pg-item em,.pg-item .pg-bar{display:none}}
 </style>
 </head>
 <body>
@@ -132,6 +151,11 @@
     <a class="btn v-cyan" id="accContinueBtn" href="#">Resume</a>
   </div>
 
+  <div class="section" id="progress">
+    <h2>My progress</h2>
+    <div class="pg-card" id="pgCard"><p class="muted small">Loading your progress…</p></div>
+  </div>
+
   <div class="section">
     <h2>My trainings</h2>
     <div class="acc-courses" id="accCourses"></div>
@@ -147,8 +171,8 @@
     <div class="card" id="modeBreakdown"><p class="muted small">Complete a simulation, quiz, MLS drill or email practice to see it here.</p></div>
   </div>
 
-  <div class="section">
-    <h2>Supervisor feedback</h2>
+  <div class="section" id="feedback">
+    <h2>Coach feedback</h2>
     <div id="feedbackList"><p class="muted small">No graded emails yet. Submit one from your simulation's email steps.</p></div>
   </div>
 </div>
@@ -186,13 +210,40 @@
     </div>
   </div>
 </footer>
-<script src="assets/js/app-core.js?v=20260917"></script>
-<script src="assets/js/courses.js?v=20261016b"></script>
-<script src="assets/js/site.js?v=20260925"></script>
+<script src="assets/js/app-core.js?v=20261021c"></script>
+<script src="assets/js/courses.js?v=20261021"></script>
+<script src="assets/js/site.js?v=20261021"></script>
 <script>
 (function(){
   var me = SCApp.requireAuth();
   if(!me) return;
+
+  /* general progress: the Introduction, the trainings and the simulations this
+     person has, each counting the same (views progress_summary and progress_items) */
+  SCDB.ready.then(function(){
+    return Promise.all([
+      SCDB.client.from('progress_summary').select('category,items,completed_items,percent,last_activity_at').eq('user_id', me.id),
+      SCDB.client.from('progress_items').select('category,title,percent,completed').eq('user_id', me.id)
+    ]);
+  }).then(function(r){
+    var el = document.getElementById('pgCard');
+    if(r[0].error || r[1].error){ el.innerHTML = '<p class="muted small">Your progress could not load. Refresh the page to try again.</p>'; return; }
+    var sum = r[0].data, all = sum.filter(function(x){ return !x.category; })[0] || {items:0, completed_items:0, percent:0};
+    var LABEL = {introduction:'Introduction', training:'Trainings', simulation:'Simulations'};
+    var cats = ['introduction','training','simulation'].map(function(c){
+      var x = sum.filter(function(y){ return y.category === c; })[0];
+      return '<div class="pg-cat"><b>'+LABEL[c]+'</b><small>'+(x ? x.completed_items+' of '+x.items+' complete' : 'Nothing assigned yet')+'</small>'+
+        '<div class="pg-bar"><i style="width:'+(x ? x.percent : 0)+'%"></i></div></div>';
+    }).join('');
+    var items = r[1].data.slice().sort(function(a,b){ return ['introduction','training','simulation'].indexOf(a.category) - ['introduction','training','simulation'].indexOf(b.category) || a.title.localeCompare(b.title); });
+    el.innerHTML = '<div class="pg-top"><div class="pg-ring" style="--p:'+all.percent+'"><div><div><b>'+all.percent+'%</b><span>overall</span></div></div></div>'+
+      '<div><p style="margin:0 0 10px;color:#33465c">'+all.completed_items+' of '+all.items+' items complete.</p><div class="pg-cats">'+cats+'</div></div></div>'+
+      '<div class="pg-items">'+items.map(function(i){
+        return '<div class="pg-item"><em>'+LABEL[i.category]+'</em><span>'+i.title+'</span><div class="pg-bar"><i style="width:'+i.percent+'%"></i></div>'+
+          (i.completed ? '<span class="done">&#10003;</span>' : '<span>'+i.percent+'%</span>') + '</div>';
+      }).join('')+'</div>'+
+      '<p class="pg-note">Your progress counts the Introduction, the trainings assigned to you and the simulations you have access to. Test drives do not count.</p>';
+  });
 
   if(me.assignedRole) SCApp.syncLegacyProgress(me.id, me.assignedRole);
 
@@ -216,7 +267,7 @@
   }).join('');
 
   var badges = [];
-  badges.push({ t: 'AI Introduction', s: 'Introduction complete', on: SCApp.isIntroDone(me) });
+  badges.push({ t: 'AI Introduction', s: 'Trainings and simulations unlocked', on: SCApp.isIntroDone(me) });
   var sop = C.get('sop'), sp = C.progress(sop, me.id);
   ['Module 1 · Understand SOPs', 'Module 2 · Build an SOP', 'Module 3 · Practice and assessment'].forEach(function (m) {
     badges.push({ t: m.replace(/^Module \d+ · /, ''), s: 'SOP Foundations', on: sp.modulesDone.indexOf(m) > -1 });

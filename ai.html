@@ -430,7 +430,12 @@
     body.course .c-stage > .ai-divider { display: none; }
     body.course .lesson > .h-eyebrow { display: none; }
     .intro-lock { max-width: 820px; margin: 24px auto 0; padding: 0 32px; }
-  </style>
+  
+/* data safety lesson */
+.concept-card.ds-never{background:#fdf4f2;border-color:#f1c9c0}
+.concept-card.ds-never .lbl{color:#8f3020}
+.concept-card ul,.ai-article ul.ds-ask{margin:8px 0 4px;padding-left:20px;display:grid;gap:6px}
+</style>
 </head>
 <body data-page="fundamentals">
 
@@ -445,7 +450,7 @@
 <main class="c-stage" id="stage" tabindex="-1">
 
   <div class="intro-lock" id="intro-lock" hidden>
-    <div class="intro-lock-box"><span aria-hidden="true">&#128274;</span><span><b>Simulations unlock after the Introduction.</b> Finish all five lessons and their checkpoints. The training paths are open anytime.</span></div>
+    <div class="intro-lock-box"><span aria-hidden="true">&#128274;</span><span><b>Trainings and simulations unlock after the Introduction.</b> Finish all six lessons and their checkpoints, including how to keep client data safe with AI.</span></div>
   </div>
 
   <!-- ========== WHAT IS AI ========== -->
@@ -529,6 +534,89 @@
         <button class="choice" data-choice="a"><span class="key">A</span>AI</button>
         <button class="choice" data-choice="b"><span class="key">B</span>Automation</button>
         <button class="choice" data-choice="c"><span class="key">C</span>A Large Language Model</button>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+    </div>
+  </div>
+  </section>
+
+  <div class="ai-divider"></div>
+
+  <!-- ========== DATA SAFETY (required for everyone) ========== -->
+  <section class="section-intro lesson" id="data-safety" data-mod="AI Introduction" data-title="Keep client data safe" data-goals="What never goes into an AI tool|Anonymize before you paste|What to do if something slips">
+    <h2 class="disp">Keep Client Data Safe With AI</h2>
+
+    <div class="ai-article">
+      <p>Everything you type into ChatGPT, Claude, Manus or any other AI tool is sent to that company's servers. Depending on the account and its settings, it can be stored, reviewed by people, or used to train future models. Once you send it, you cannot take it back.</p>
+      <p>Treat every prompt like an email to an outside company. Our clients trust us with their contacts, their deals and their money, and that trust is part of the job.</p>
+
+      <div class="concept-card ds-never">
+        <div class="lbl">Never put into an AI tool</div>
+        <ul>
+          <li><strong>Passwords, API keys, access codes</strong> and two-factor codes, for any system.</li>
+          <li><strong>Bank and card numbers, Social Security numbers, IDs</strong> and tax information.</li>
+          <li><strong>A client's database</strong>: CRM exports, lead or contact lists, spreadsheets of people. Only with the client's <strong>written authorization</strong> and a tool the company has approved.</li>
+          <li><strong>Signed contracts, offers, closing statements</strong> and negotiation strategy, unless the client authorized it.</li>
+          <li><strong>Medical, legal or financial details</strong> about a person.</li>
+          <li><strong>Confidential company information</strong>: pricing, payroll, internal reports, credentials.</li>
+        </ul>
+      </div>
+
+      <h3>Before you paste anything, ask yourself</h3>
+      <ul class="ds-ask">
+        <li>Does this include a person's name, phone, email, address or account?</li>
+        <li>Would the client be surprised to see it in an AI tool?</li>
+        <li>Do I have the client's written authorization for this data?</li>
+        <li>Am I using the company-approved account, not a personal free one?</li>
+      </ul>
+      <p>If any answer worries you, stop and ask your coach before you send it.</p>
+
+      <h3>How to work safely</h3>
+      <ul class="ds-ask">
+        <li><strong>Anonymize.</strong> Replace names and details with placeholders: <em>[Client A]</em>, <em>[property address]</em>, <em>[closing date]</em>.</li>
+        <li><strong>Share only what the task needs.</strong> To write a follow-up email, the AI needs the situation, not the client's file.</li>
+        <li><strong>Summarize instead of uploading.</strong> Describe the data in totals and patterns rather than pasting the rows.</li>
+        <li><strong>Use approved business accounts</strong> with data training turned off. Never use a personal account for client work.</li>
+        <li><strong>Check the output</strong> before it reaches a client: AI can invent facts.</li>
+      </ul>
+
+      <div class="concept-card cyan">
+        <div class="lbl">Example</div>
+        <p><strong>Instead of</strong> pasting a CRM export with 2,000 leads, write: <em>"I have 2,000 leads from the last 90 days. 40% came from Zillow, 25% from open houses, and 60% haven't been contacted in two weeks. Draft a follow-up plan by source."</em> You get the same help without exposing a single client.</p>
+      </div>
+
+      <h3>If something slips</h3>
+      <p>Tell your coach or supervisor right away, delete the conversation, and note what was shared so the company can act. A mistake reported quickly can be contained; a hidden one cannot.</p>
+    </div>
+
+  <div class="checkpoint">
+    <div class="cp-head"><span class="cp-badge">&#10003;</span><div><h3>Checkpoint</h3><p>Three questions on protecting client data.</p></div><span class="cp-state"></span></div>
+    <div class="cp-body">
+      <div class="task gate" data-type="choice" data-answer="c" data-ok="Correct. A client's database only goes into an AI tool with their written authorization and a company-approved account; until then, work with totals and patterns.">
+        <p class="task-q"><small>Question 1</small>An agent asks you to analyze a client's full CRM export, 2,000 leads with names, phones and emails, in ChatGPT. What do you do?</p>
+        <button class="choice" data-choice="a"><span class="key">A</span>Upload it: the agent asked for it.</button>
+        <button class="choice" data-choice="b"><span class="key">B</span>Upload it from your personal account so it stays separate from work.</button>
+        <button class="choice" data-choice="c"><span class="key">C</span>Get the client's written authorization and use the company-approved account; until then, work with anonymized totals.</button>
+        <button class="choice" data-choice="d"><span class="key">D</span>Upload half of it to keep the risk low.</button>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+      <div class="task gate" data-type="match" data-ok="Correct. Generic content is fine, personal details get anonymized first, client files need written authorization, and credentials never go in.">
+        <p class="task-q"><small>Question 2</small>What can go into an AI tool? Choose for each one.</p>
+        <div class="match" data-options="OK to use|Anonymize first|Only with written authorization|Never">
+          <div class="match-row" data-answer="Never"><span>Your password or an API key</span></div>
+          <div class="match-row" data-answer="Anonymize first"><span>A lead's name, phone and email, to draft a follow-up</span></div>
+          <div class="match-row" data-answer="OK to use"><span>A generic email template with no client details</span></div>
+          <div class="match-row" data-answer="Only with written authorization"><span>A client's signed purchase contract</span></div>
+          <div class="match-row" data-answer="Only with written authorization"><span>A client's full contact database</span></div>
+        </div>
+        <div class="c-actions"><button class="c-btn ghost" data-check>Check answers</button></div>
+        <p class="fb" aria-live="polite"></p>
+      </div>
+      <div class="task gate" data-type="choice" data-answer="b" data-ok="Correct. Report it right away and delete the conversation; a mistake reported quickly can be contained.">
+        <p class="task-q"><small>Question 3</small>You realize you pasted a client's bank details into Claude by mistake. What now?</p>
+        <button class="choice" data-choice="a"><span class="key">A</span>Delete the chat and say nothing.</button>
+        <button class="choice" data-choice="b"><span class="key">B</span>Tell your coach right away, delete the conversation and note what was shared.</button>
+        <button class="choice" data-choice="c"><span class="key">C</span>Ask Claude to forget it.</button>
         <p class="fb" aria-live="polite"></p>
       </div>
     </div>
@@ -1354,8 +1442,8 @@
     <div class="orb orb-1" aria-hidden="true"></div>
     <div class="orb orb-2" aria-hidden="true"></div>
     <div class="ai-complete-inner">
-      <h3 class="disp" id="intro-done-title">Foundation complete.</h3>
-      <p id="intro-done-text">Step 1 is done. Next on your path: study your role in a training path, or jump into a simulation.</p>
+      <h3 class="disp" id="intro-done-title">Foundation complete. Your trainings and the simulations are open.</h3>
+      <p id="intro-done-text">Step 1 is done. Next on your path: study your role in a training path, then practice in the simulations.</p>
       <div class="ai-complete-btns">
         <a class="btn v-cyan" href="index.html#simulations">Go to Simulations</a>
         <a class="btn v-ghost" href="index.html">Go to Home</a>
@@ -1366,14 +1454,14 @@
 
 </main>
 
-<script src="assets/js/app-core.js?v=20260917"></script>
+<script src="assets/js/app-core.js?v=20261021c"></script>
 <script>SCApp.requireAuth();</script>
-<script src="assets/js/course.js?v=20261016d"></script>
+<script src="assets/js/course.js?v=20261021"></script>
 <script>
   (function () {
     var done = document.getElementById('introDone');
     if (SCApp.isIntroDone()) done.hidden = false;
-    /* the Introduction is optional now, so the old lock notice never shows */
+    if (new URLSearchParams(location.search).get('locked') && !SCApp.isIntroDone()) document.getElementById('intro-lock').hidden = false;
     SCCourse.init({
       id: 'intro', title: 'AI Introduction', kick: 'Start here', certificate: false,
       onComplete: function () {

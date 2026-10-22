@@ -3,11 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Log In · Skill Cloud Academy</title>
+<title>Sign in · Skill Cloud Academy</title>
 <link rel="stylesheet" href="assets/css/styles.css">
 <style>
-.auth-fresh{display:block;margin-top:10px;padding:0;border:0;background:none;font:inherit;font-size:13px;font-weight:800;color:var(--v-cyan-d,#0fa6b6);cursor:pointer}
-.auth-fresh:hover{color:var(--v-navy,#0a2647)}
+.auth-tabs{display:flex;gap:6px;background:#f1f5f9;border-radius:999px;padding:4px;margin:4px 0 18px}
+.auth-tabs button{flex:1;border:0;background:none;border-radius:999px;padding:9px 12px;font:inherit;font-weight:800;font-size:14px;color:#5b6b7e;cursor:pointer}
+.auth-tabs button.on{background:#fff;color:#0a2647;box-shadow:0 2px 8px rgba(10,38,71,.08)}
+.auth-msg{display:none;border-radius:12px;padding:10px 14px;font-size:14px;margin-bottom:14px}
+.auth-msg.show{display:block}
+.auth-msg.bad{background:#fdf1ee;color:#8f3020}
+.auth-msg.good{background:#eefaf3;color:#1c6e41}
+.auth-link{display:inline-block;margin-top:12px;padding:0;border:0;background:none;font:inherit;font-size:13.5px;font-weight:700;color:#0fa6b6;cursor:pointer}
+.auth-link:hover{color:#0a2647}
+.auth-hint{font-size:12.5px;color:#5b6b7e;margin-top:6px}
+.auth-submit[disabled]{opacity:.6;cursor:wait}
+[hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -18,83 +28,116 @@
 
 <div class="auth-wrap">
   <div class="auth-card">
-    <h1>Sign in</h1>
-    <p class="sub">Use the account your team gave you. The Academy picks up wherever you are.</p>
+    <h1 id="authTitle">Sign in</h1>
+    <p class="sub" id="authSub">Use the account your team gave you. The Academy picks up wherever you left off, on any device.</p>
 
-    <div class="auth-err" id="authErr">That email or password doesn't match an account.</div>
+    <div class="auth-tabs" role="tablist">
+      <button type="button" class="on" data-mode="signin" role="tab" aria-selected="true">Sign in</button>
+      <button type="button" data-mode="signup" role="tab" aria-selected="false">Create account</button>
+    </div>
 
-    <form id="loginForm">
+    <div class="auth-msg" id="authMsg" role="alert"></div>
+
+    <form id="authForm" novalidate>
+      <div class="auth-field" id="nameField" hidden>
+        <label for="name">Full name</label>
+        <input type="text" id="name" autocomplete="name" placeholder="Your name and last name">
+      </div>
       <div class="auth-field">
         <label for="email">Email</label>
-        <input type="email" id="email" autocomplete="username" placeholder="you@demo" required>
+        <input type="email" id="email" autocomplete="username" placeholder="you@company.com" required>
       </div>
-      <div class="auth-field">
+      <div class="auth-field" id="passField">
         <label for="password">Password</label>
-        <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" required>
+        <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" required minlength="6">
+        <p class="auth-hint" id="passHint" hidden>At least 6 characters.</p>
       </div>
-      <button type="submit" class="btn v-cyan auth-submit">Log In</button>
+      <button type="submit" class="btn v-cyan auth-submit" id="authSubmit">Sign in</button>
     </form>
-
-    <div class="auth-demo">
-      <b>Demo accounts</b><br>
-      Associate: maria@demo / demo123 (Transaction Coordinator)<br>
-      Associate: jose@demo / demo123 (Listing Coordinator)<br>
-      Admin: admin@demo / admin123
-      <button type="button" class="auth-fresh" id="freshBtn">Try it as a brand new associate &rarr;</button>
-    </div>
+    <button type="button" class="auth-link" id="forgotBtn">Forgot your password?</button>
   </div>
 </div>
 
-<script src="assets/js/app-core.js?v=20260917"></script>
+<script src="assets/js/app-core.js?v=20261021c"></script>
 <script>
 (function(){
   var params = new URLSearchParams(location.search);
   var next = params.get('next');
+  var mode = 'signin';
+  var $ = function(id){ return document.getElementById(id); };
 
-  /* demo: a clean associate with no progress, to see the first visit exactly as a new hire does.
-     login.html?new=1 does it in one step. */
-  function startFresh(){
-    var users = JSON.parse(localStorage.getItem('scc_users') || '[]');
-    var n = users.filter(function(u){ return /^new\d+@demo$/.test(u.email); }).length + 1;
-    var email = 'new' + n + '@demo';
-    users.push({ id: 'new_' + Date.now().toString(36), name: 'Daniela Rojas', email: email, password: 'demo123',
-      role: 'user', assignedRole: 'tc', avatar: 'D' });
-    localStorage.setItem('scc_users', JSON.stringify(users));
-    SCApp.login(email, 'demo123');
-    window.location.href = 'index.html';
+  function msg(text, kind){ var m = $('authMsg'); m.textContent = text || ''; m.className = 'auth-msg' + (text ? ' show ' + (kind || 'bad') : ''); }
+  function setMode(m){
+    mode = m;
+    document.querySelectorAll('.auth-tabs button').forEach(function(b){ var on = b.dataset.mode === m; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+    var up = m === 'signup', reset = m === 'reset', recover = m === 'recover';
+    document.querySelector('.auth-tabs').hidden = reset || recover;
+    $('nameField').hidden = !up;
+    $('email').parentNode.hidden = recover;
+    $('passField').hidden = reset;
+    $('passHint').hidden = !(up || recover);
+    $('forgotBtn').hidden = m !== 'signin';
+    $('password').autocomplete = up || recover ? 'new-password' : 'current-password';
+    $('authTitle').textContent = up ? 'Create your account' : reset ? 'Reset your password' : recover ? 'Choose a new password' : 'Sign in';
+    $('authSub').textContent = up ? 'Use your work email. Your progress will follow you on any device.'
+      : reset ? 'We will email you a link to choose a new password.'
+      : recover ? 'Type the new password for your account.'
+      : 'Use the account your team gave you. The Academy picks up wherever you left off, on any device.';
+    $('authSubmit').textContent = up ? 'Create account' : reset ? 'Send the link' : recover ? 'Save the new password' : 'Sign in';
+    msg('');
   }
-  document.getElementById('freshBtn').addEventListener('click', startFresh);
-  if(params.has('new')){ startFresh(); return; }
+  document.querySelectorAll('.auth-tabs button').forEach(function(b){ b.onclick = function(){ setMode(b.dataset.mode); }; });
+  $('forgotBtn').onclick = function(){ setMode('reset'); };
 
-  // already logged in? go straight where they belong
-  var existing = SCApp.currentUser();
-  if(existing){
-    redirectFor(existing);
+  function home(user){
+    if(user && user.role === 'admin') return 'admin.html';
+    if(user && user.role === 'coach') return 'coach.html';
+    if(next) return next;
+    var last = user && SCApp.getLastPage(user.id);
+    return last || 'index.html';   /* a first sign in lands on the guided home */
+  }
+  function busy(on){ $('authSubmit').disabled = on; }
+  function readable(e){
+    var t = (e && e.message) || 'Something went wrong. Try again.';
+    if(/invalid login credentials/i.test(t)) return 'That email or password does not match an account.';
+    if(/already registered|already been registered/i.test(t)) return 'That email already has an account. Sign in instead.';
+    if(/password should be at least/i.test(t)) return 'Your password needs at least 6 characters.';
+    if(/rate limit/i.test(t)) return 'Too many attempts. Wait a minute and try again.';
+    return t;
   }
 
-  document.getElementById('loginForm').addEventListener('submit', function(e){
+  $('authForm').addEventListener('submit', function(e){
     e.preventDefault();
-    var email = document.getElementById('email').value;
-    var pass = document.getElementById('password').value;
-    var user = SCApp.login(email, pass);
-    var err = document.getElementById('authErr');
-    if(!user){
-      err.classList.add('show');
-      return;
-    }
-    err.classList.remove('show');
-    redirectFor(user);
+    var email = $('email').value.trim(), pass = $('password').value, name = $('name').value.trim();
+    if(mode !== 'recover' && !email){ msg('Type your email.'); return; }
+    if((mode === 'signin' || mode === 'signup' || mode === 'recover') && pass.length < 6){ msg('Your password needs at least 6 characters.'); return; }
+    if(mode === 'signup' && !name){ msg('Type your full name.'); return; }
+    busy(true); msg('');
+    SCDB.ready.then(function(){
+      if(mode === 'signin') return SCDB.signIn(email, pass).then(function(u){ location.href = home(u); });
+      if(mode === 'signup') return SCDB.signUp(name, email, pass).then(function(u){
+        if(u) { location.href = home(u); return; }
+        msg('Check your email to confirm your account, then sign in.', 'good'); setMode('signin');
+      });
+      if(mode === 'reset') return SCDB.resetPassword(email).then(function(r){
+        if(r && r.error) throw r.error;
+        msg('If that email has an account, a reset link is on its way.', 'good');
+      });
+      if(mode === 'recover') return SCDB.client.auth.updateUser({ password: pass }).then(function(r){
+        if(r.error) throw r.error;
+        return SCDB.refreshProfile().then(function(u){ msg('Your password was updated.', 'good'); setTimeout(function(){ location.href = home(u); }, 900); });
+      });
+    }).catch(function(err){ msg(readable(err)); }).then(function(){ busy(false); });
   });
 
-  function redirectFor(user){
-    if(user.role === 'admin'){
-      window.location.href = 'admin.html';
-      return;
-    }
-    if(next){ window.location.href = next; return; }
-    var last = SCApp.getLastPage(user.id);
-    window.location.href = last || 'index.html'; /* a first sign in lands on the guided home */
+  /* arriving from the reset email */
+  if(params.has('reset')){
+    SCDB.client.auth.onAuthStateChange(function(ev){ if(ev === 'PASSWORD_RECOVERY') setMode('recover'); });
+    setMode('recover');
+    return;
   }
+  /* already signed in: go straight where they belong */
+  SCDB.ready.then(function(u){ if(u) location.href = home(u); });
 })();
 </script>
 </body>

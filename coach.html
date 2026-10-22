@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coach · Skill Cloud Academy</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+<link rel="stylesheet" href="assets/css/staff.css?v=20261021e">
+</head>
+<body>
+<nav class="nav" id="nav"><div class="nav-inner">
+  <a class="brand" href="index.html"><img src="assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+  <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+  <div class="menu">
+    <a class="navlink" href="index.html">Home</a>
+    <a class="navlink" href="ai.html">Introduction</a>
+    <a class="navlink" href="paths.html">Paths</a>
+    <a class="navlink" href="index.html#simulations">Simulations</a>
+  </div>
+  <span class="spacer"></span>
+  <a class="pill" href="index.html#simulations">Start Practicing</a>
+  <a class="user-chip" href="coach.html" aria-label="My panel"><span class="av">A</span><span class="uc-label">Account</span></a>
+</div></nav>
+
+<header class="st-hero">
+  <div class="in">
+    <div class="st-who-row">
+      <div><h1>Coach panel</h1><p id="stHello"></p></div>
+      <button class="logout-btn" type="button">Log Out</button>
+    </div>
+    <p style="margin-top:8px">The associates assigned to you: their progress, the emails waiting for your grade, and the trainings and simulations you give them.</p>
+    <div class="st-tabs" role="tablist"><button data-tab="progress" role="tab">Progress</button><button data-tab="emails" role="tab">Emails</button><button data-tab="assign" role="tab">Assign</button></div>
+  </div>
+</header>
+
+<main class="st-wrap">
+  <section class="st-panel" data-tab="progress" id="tabProgress"></section><section class="st-panel" data-tab="emails" id="tabEmails" hidden></section><section class="st-panel" data-tab="assign" id="tabAssign" hidden></section>
+</main>
+<div class="st-toast" id="stToast" role="status"></div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="cols">
+      <div>
+        <h4>Skill Cloud Academy</h4>
+        <p class="desc">Hands on training for new Skill Cloud associates. The bridge between the classroom and your first real day.</p>
+      </div>
+      <div>
+        <h4>Practice</h4>
+        <a class="fl" href="index.html#simulations">Go to Simulations</a>
+        <a class="fl" href="index.html#how-it-works">How It Works</a>
+      </div>
+      <div>
+        <h4>Simulations</h4>
+        <a class="fl" href="roles/transaction-coordinator.html">Transaction Coordinator</a>
+        <a class="fl" href="roles/listing-coordinator.html">Listing Coordinator</a>
+        <a class="fl" href="roles/property-manager.html">Property Manager</a>
+        <a class="fl" href="roles/lead-manager.html">Lead Manager</a>
+        <a class="fl" href="roles/cfo-bookkeeper.html">CFO / Bookkeeper</a>
+      </div>
+      <div>
+        <h4>Program</h4>
+        <a class="fl" href="#">Skill Cloud Executive Associates</a>
+        <a class="fl" href="#">2026 Edition &middot; Claude AI</a>
+        <a class="fl" href="#">Markets: TX &middot; CA &middot; VA &middot; NY</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/app-core.js?v=20261021c"></script>
+<script src="assets/js/site.js?v=20261021"></script>
+<script src="assets/js/staff.js?v=20261021e"></script>
+<script>SCStaff.init({ mode: 'coach' });</script>
+</body>
+</html>

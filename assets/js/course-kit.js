@@ -28,7 +28,10 @@
       }
       if (drafts[pid] != null && choices[drafts[pid]]) pick(choices[drafts[pid]]);
       choices.forEach(function (b, i) {
-        b.addEventListener('click', function () { pick(b); drafts[pid] = i; persist(); });
+        b.addEventListener('click', function () {
+          pick(b); drafts[pid] = i; persist();
+          if (window.SCDB && window.SCCourse && lesson) SCDB.pollAnswer(SCCourse.id || store, lesson.id, 0, i);
+        });
       });
     });
 
@@ -39,7 +42,10 @@
       ta.addEventListener('input', function () {
         drafts[id] = ta.value;
         clearTimeout(timer);
-        timer = setTimeout(function () { persist(); if (box) box.classList.toggle('saved', !!ta.value.trim()); }, 400);
+        timer = setTimeout(function () {
+          persist(); if (box) box.classList.toggle('saved', !!ta.value.trim());
+          if (window.SCDB) SCDB.draft(id, ta.value);
+        }, 400);
       });
     });
   }

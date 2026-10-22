@@ -13,7 +13,7 @@
     {
       id: 'intro', title: 'AI Introduction', href: 'ai.html', kind: 'Start here',
       desc: 'What Claude, ChatGPT and Manus are, how each one works, and when to use which.',
-      image: 'assets/img/va/sop/m2-build.jpg', lessons: 5, modules: 1, store: 'sc_course_intro__', track: 'intro'
+      image: 'assets/img/va/sop/m2-build.jpg', lessons: 6, modules: 1, store: 'sc_course_intro__', track: 'intro'
     },
     {
       id: 'sop', title: 'SOP Foundations', href: 'va/sop-foundations.html', kind: 'VA training',
@@ -53,6 +53,8 @@
       desc: 'The brand, the design tools and the marketing playbook.' }
   ];
 
+  function has(c) { return !window.SCApp || !SCApp.hasCourse || SCApp.hasCourse(c.id); }
+
   function progress(course, userId) {
     var raw = course.progress ? course.progress(userId) : read(course.store + userId, {});
     var done = typeof raw.done === 'number' ? raw.done : (raw.done || []).length;
@@ -70,7 +72,9 @@
     list: COURSES,
     get: function (id) { return COURSES.filter(function (c) { return c.id === id; })[0]; },
     tracks: TRACKS,
-    byTrack: function (t) { return COURSES.filter(function (c) { return c.track === t; }); },
+    /* only the trainings this person has: open ones plus what an admin assigned */
+    byTrack: function (t) { return COURSES.filter(function (c) { return c.track === t && has(c); }); },
+    mine: function () { return COURSES.filter(has); },
     progress: progress
   };
 })();

@@ -1759,7 +1759,10 @@ const save=()=>{try{
   localStorage.setItem('mt3_done',JSON.stringify(done));
   localStorage.setItem('mt3_scores',JSON.stringify(scores));
   localStorage.setItem('mt3_idx',idx);
-}catch(e){}};
+}catch(e){}
+  /* the database layer sends new lessons (and the completion) to Supabase */
+  if(window.SCDB) SCDB.courseState('marketing',{done:done,completedAt:done.length>=L.length?Date.now():null});
+};
 
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const modOf=id=>MODS.find(m=>m.id===id);
@@ -2011,6 +2014,7 @@ function ans(oi){
   if(qs.marks[qs.i]!==null)return;
   const ok=oi===q.a;
   qs.marks[qs.i]=ok;
+  if(window.SCDB) SCDB.attempt('marketing','mt-'+(idx+1),qs.i,ok,{choice:oi});
   const opts=$$('#quizArea .qopt');
   opts.forEach((b,i)=>{b.disabled=true;if(i===q.a)b.classList.add('ok');});
   if(!ok)opts[oi].classList.add('no');
@@ -2117,7 +2121,7 @@ applySide();
 render();
 booted=true;
 </script>
-<script src="assets/js/app-core.js?v=20260917"></script>
+<script src="assets/js/app-core.js?v=20261021c"></script>
 <script>SCApp.requireAuth();</script>
 </body>
 </html>

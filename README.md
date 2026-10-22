@@ -5,9 +5,10 @@ trabajo real de su puesto (transaction coordination, listings, leasing, lead man
 operaciones, contabilidad) sobre casos reales anonimizados, y un supervisor califica lo
 que entrega.
 
-Es un sitio **100% estático**: HTML, CSS y JavaScript sin build step, sin framework y sin
-backend. Todo el estado (usuarios, sesión, progreso, entregas) vive en `localStorage` del
-navegador.
+Static HTML, CSS and JavaScript with no build step and no framework. Accounts, progress,
+submissions, assignments and notifications live in **Supabase** (Postgres + Auth); the
+browser keeps a local cache so pages stay fast and work for a moment offline. The schema,
+the migrations and the roles are documented in [supabase/README.md](supabase/README.md).
 
 ---
 
@@ -23,13 +24,23 @@ py -m http.server 5799
 Luego abre http://localhost:5799. Ese mismo comando está configurado en
 [.claude/launch.json](.claude/launch.json) bajo el nombre `static-site`.
 
-### Cuentas de prueba
+### Accounts and roles
 
-Se crean solas la primera vez que cargas el sitio (ver `seed()` en
-[assets/js/app-core.js](assets/js/app-core.js)):
+There are no demo accounts. People sign up on `login.html` with an email and a password
+(no confirmation email) and start as **associates**. An admin changes roles in
+`admin.html`:
 
-| Email        | Contraseña | Rol           | Puesto asignado         |
-| ------------ | ---------- | ------------- | ----------------------- |
+| Role      | Panel          | Can                                                                 |
+| --------- | -------------- | ------------------------------------------------------------------- |
+| associate | `account.html` | Take the Introduction, then the trainings and simulations they have |
+| coach     | `coach.html`   | See their team's progress, grade their emails, assign them trainings and simulations |
+| admin     | `admin.html`   | Everything: roles, coach teams, assignments, open simulations, announcements |
+
+The Introduction is required before any training or simulation. Open trainings and open
+simulations are for everyone; closed ones are assigned per associate (Assign tab), and the
+associate gets a notification. The Permissions tab builds each coach's team.
+
+------------ | ---------- | ------------- | ----------------------- |
 | `maria@demo` | `demo123`  | Asociado      | Transaction Coordinator |
 | `jose@demo`  | `demo123`  | Asociado      | Listing Coordinator     |
 | `admin@demo` | `admin123` | Supervisor    | (todos)                 |
@@ -72,9 +83,10 @@ enlaces. Si agregas una página nueva, va en la raíz.
 | Archivo                     | Qué es                                                        |
 | --------------------------- | ------------------------------------------------------------- |
 | `index.html`                | Home. Visitante: qué es, cómo funciona y un botón para entrar. Con sesión: Home guiado con los 3 pasos y una bienvenida la primera vez |
-| `login.html`                | Login simulado                                                 |
+| `login.html`                | Sign in, create an account, reset the password (Supabase Auth) |
 | `account.html`              | Panel del asociado: cursos, logros, certificados y puntajes   |
-| `admin.html`                | Panel del supervisor: avance del equipo y calificación         |
+| `admin.html`                | Admin panel: progress, grading, assignments, roles, coach teams, simulations, announcements |
+| `coach.html`                | Coach panel: their team's progress, grading and assignments   |
 | `ai.html`                   | AI Introduction (curso, desbloquea las Simulations)            |
 | `paths.html`                | Training paths: los trainings de todos los departamentos en una página, con filtro por departamento |
 | `va.html`, `marketing.html` | Solo redirigen a `paths.html#va` y `paths.html#marketing`, para no romper enlaces viejos |
@@ -152,8 +164,10 @@ Nota: `blog-post-with-claude.html` existe pero todavía no está enlazada desde
 
 El núcleo. Expone todo en `window.SCApp`. Cubre cuatro cosas:
 
-1. **Auth simulada.** `login()`, `logout()`, `currentUser()`, `requireAuth()`. La sesión es
-   una llave de `localStorage`, no hay servidor.
+1. **Auth.** `signIn()`, `logout()`, `currentUser()`, `requireAuth()`, backed by Supabase
+   Auth through `assets/js/sc-db.js` (`window.SCDB`). `sc-db.js` pulls the person's data on
+   sign in into the local cache and pushes every change through an outbox, so pages keep
+   calling the same synchronous `SCApp` functions.
    Las rutas a `login.html`, `account.html` y `admin.html` se resuelven contra la raíz del
    sitio, que se calcula a partir del `src` del propio `app-core.js` (ver `ROOT` y
    `rootUrl()`). Por eso una página funciona a cualquier profundidad sin registrarse en
@@ -167,8 +181,8 @@ El núcleo. Expone todo en `window.SCApp`. Cubre cuatro cosas:
 4. **Navegación.** `wireNav()` arma el chip de usuario y los botones de logout en toda
    página que cargue este archivo.
 
-El archivo está escrito para que un backend real pueda reemplazar las funciones de
-almacenamiento sin tocar ninguna página.
+`assets/js/staff.js` drives `admin.html` and `coach.html` and talks to Supabase
+directly; row level security decides what each person can read and change.
 
 ### Home guiado
 
@@ -186,11 +200,9 @@ la clase `only-out`, y las solo para asociados, `only-in`. Un enlace como
 `index.html#sim-pm` abre el carrusel en ese rol (`tc`, `pm`, `listing`, `lead`, `ops`,
 `cfo`).
 
-Para ver el sitio como un asociado recién llegado, abre `login.html?new=1` (o el botón
-"Try it as a brand new associate" del login): crea una cuenta de demo sin ningún
-progreso y entra directo al Home guiado, con la bienvenida de la primera visita. Una
-cuenta de administrador no sirve para esto, porque para el sitio un admin ya terminó la
-Introducción.
+To see the site as a brand new associate, create a new account on `login.html`: it
+starts with no progress and lands on the guided Home with the first visit welcome. Admin
+and coach accounts skip the Introduction, so they do not show this.
 
 ### Pantalla de inicio de las simulaciones
 
@@ -405,8 +417,7 @@ Windows y Mac.
 
 Lo que todavía no existe y conviene saber antes de tocar el proyecto:
 
-- No hay backend. Si dos personas usan el sitio en máquinas distintas, no comparten nada.
-- Las contraseñas están en texto plano en el seed. Es intencional para la demo, pero no
-  puede pasar a producción así.
+- The database runs on Supabase for testing; the plan is to move it to the team's NAS
+  (self-hosted Supabase in Docker). See [supabase/README.md](supabase/README.md).
 - No hay tests ni build step.
 - `archive/` tiene rutas rotas, como se explica arriba.
