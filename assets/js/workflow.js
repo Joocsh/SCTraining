@@ -525,7 +525,7 @@ function simRenderCards() {
             </button>
             <div class="wf-card-guarantee">
               <span class="wf-guarantee-icon">&#10004;</span>
-              <span>Authentic client emails, Zipforms drafting &amp; escrow audit trail</span>
+              <span>${sc.guarantee || 'Authentic client emails, Zipforms drafting &amp; escrow audit trail'}</span>
             </div>
           </div>
         </div>

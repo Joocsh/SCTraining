@@ -1981,7 +1981,7 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
         <div class="sim-pick-hero">
           <div class="sim-hero-eyebrow">Real-World Case Simulation</div>
           <h2 class="sim-hero-title" id="sim-hero-title">California Real Estate Case File</h2>
-          <p class="sim-hero-lead">Each case is a real, closed SkillCloud transaction: review authentic client emails, prepare California statutory disclosures, and coordinate critical contract milestones.</p>
+          <p class="sim-hero-lead">Each case is a real, closed SkillCloud transaction: review authentic client emails, prepare the disclosures each state requires, and coordinate critical contract milestones.</p>
         </div>
         <div class="lc-sc-grid" id="sim-cards"></div>
       </div>
@@ -2057,8 +2057,8 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
 <script>SCApp.requireIntro();</script>
 <script src="../assets/js/rein-va-features.js"></script>
 <script src="../assets/js/rein-va-form.js"></script>
-<script src="../assets/js/workflow.js?v=20261001c"></script>
-<script src="../assets/js/tc-va-case.js"></script>
+<script src="../assets/js/workflow.js?v=20261023"></script>
+<script src="../assets/js/tc-va-case.js?v=20261023c"></script>
 <script src="../assets/js/tc-ca-new-case.js?v=20261001c"></script>
 <script src="../assets/js/tc-ca-seller-case.js?v=20261001d"></script>
 <script>
@@ -4898,7 +4898,7 @@ Your Option Period gives you the unrestricted right to terminate for any reason 
 
     if (caseName) {
       caseName.innerHTML = isWfActive
-        ? '<span class="tc-title-main">California TC Simulator</span> <span class="tc-title-dot">&middot;</span> <span class="tc-title-prop">' + ((typeof wfActiveScenario !== 'undefined' && wfActiveScenario && wfActiveScenario.headerProp) || '') + '</span>'
+        ? '<span class="tc-title-main">' + ((typeof wfActiveScenario !== 'undefined' && wfActiveScenario && wfActiveScenario.headerTitle) || 'California TC Simulator') + '</span> <span class="tc-title-dot">&middot;</span> <span class="tc-title-prop">' + ((typeof wfActiveScenario !== 'undefined' && wfActiveScenario && wfActiveScenario.headerProp) || '') + '</span>'
         : '<span class="tc-title-main">Case Simulator</span> <span class="tc-title-dot">&middot;</span> <span class="tc-title-prop">Choose a Market</span>';
     }
     if (resetBtn) resetBtn.style.display = isWfActive ? 'inline-flex' : 'none';
