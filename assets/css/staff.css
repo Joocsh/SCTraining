@@ -333,7 +333,8 @@ button.tm-kpi{cursor:pointer}button.tm-kpi:hover{border-color:#bfe9ee}
 .lb-podium.warn .lb-medal{background:#d2452f}
 .lb-table td{vertical-align:middle}
 .lb-rank{font-weight:900;color:#0a2647;width:40px;text-align:center}
-.lb-metric{display:grid;grid-template-columns:110px auto;gap:10px;align-items:center;font-size:13px;color:#33465c;min-width:200px}
+.lb-metric{display:grid;grid-template-columns:90px auto;gap:10px;align-items:center;font-size:13px;color:#33465c;min-width:170px}
+.lb-scroll{overflow-x:auto;border-radius:16px}.lb-scroll .lb-table{min-width:760px}
 .lb-metric.warn .st-bar i{background:#d2452f}
 .lb-table tr.lb-warn td{background:#fffaf0}
 .lb-note{margin-top:12px;font-size:12.5px}
@@ -356,7 +357,9 @@ button.tm-kpi{cursor:pointer}button.tm-kpi:hover{border-color:#bfe9ee}
   .pf-card{border:1px solid #cfd9e3;box-shadow:none;margin-bottom:10px}
   .pf-fold>button .st-chev{display:none}
   .pf-grid{grid-template-columns:1fr 1fr}
+  #pfPrint .pf-card-h a,#pfPrint .st-plink{pointer-events:none}#pfPrint .pf-card-h a{display:none}
   .pr-foot{margin-top:20px;color:#8a99ab;font-size:10.5px;border-top:1px solid #cfd9e3;padding-top:8px}
   body.print-board .st-hero,body.print-board .set-nav,body.print-board .lb-controls,body.print-board .lb-acts{display:none!important}
   body.print-board .set-wrap{display:block;padding:0}
+  .lb-scroll{overflow:visible}.lb-scroll .lb-table{min-width:0}
 }

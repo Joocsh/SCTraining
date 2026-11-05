@@ -176,7 +176,7 @@
     { k: 'trainings', t: 'Trainings completed', v: function (r) { return r.trainings_done; }, f: function (v, r) { return v + ' of ' + r.trainings; } },
     { k: 'lessons', t: 'Lessons done', v: function (r) { return r.lessons_done; }, f: function (v) { return String(v); } },
     { k: 'first', t: 'First try accuracy', v: function (r) { return r.first_try; }, f: function (v) { return v + '%'; }, max: 100 },
-    { k: 'misses', t: 'Most misses', v: function (r) { return r.wrong_tries; }, f: function (v, r) { return plural(v, 'wrong try').replace('trys', 'tries') + ' · ' + r.missed_first + ' missed on the first try'; }, warn: true },
+    { k: 'misses', t: 'Most misses', v: function (r) { return r.wrong_tries; }, f: function (v) { return plural(v, 'wrong try').replace('trys', 'tries'); }, warn: true },
     { k: 'sims', t: 'Simulations', v: function (r) { return r.sims ? r.sims_avg : null; }, f: function (v) { return v + '%'; }, max: 100 },
     { k: 'email', t: 'Email grade', v: function (r) { return r.email_avg == null ? null : +r.email_avg; }, f: function (v) { return v + ' / 5'; }, max: 5 }
   ];
@@ -237,18 +237,18 @@
               return '<a class="lb-place p' + (i + 1) + '" href="profile.html?id=' + x.user_id + '"><span class="lb-medal">' + (i + 1) + '</span>' + avatar({ id: x.user_id, full_name: x.full_name }, 'big') +
                 '<b>' + esc(x.full_name) + '</b><span class="lb-val">' + val(x) + '</span>' + statusChip(x.st) + '</a>';
             }).join('') + '</div></div>' : '') +
-          '<table class="st-table lb-table"><thead><tr><th>#</th><th>Associate</th><th>Status</th><th>' + esc(m.t) + '</th><th>Progress</th><th>Trainings</th><th>First try</th><th>Misses</th><th>Last activity</th></tr></thead><tbody>' +
+          '<div class="lb-scroll"><table class="st-table lb-table"><thead><tr><th>#</th><th>Associate</th><th>Status</th><th>' + esc(m.t) + '</th>' + (m.k === 'overall' ? '' : '<th>Progress</th>') + '<th>Trainings</th><th>First try</th><th>Misses</th><th>Last activity</th></tr></thead><tbody>' +
           list.map(function (x, i) {
             var pct = x._v == null ? 0 : Math.round(100 * x._v / top);
             return '<tr' + (m.warn && i < 3 && x._v ? ' class="lb-warn"' : '') + '><td class="lb-rank">' + (x._v == null ? '&#8212;' : i + 1) + '</td>' +
               '<td><div class="up-who">' + avatar({ id: x.user_id, full_name: x.full_name }) + '<span class="tm-who"><b>' + profileLink(x.user_id, x.full_name) + '</b><small>' + esc(x.coaches ? 'Coach: ' + x.coaches : 'No coach') + '</small></span></div></td>' +
               '<td>' + statusChip(x.st) + '</td>' +
               '<td><div class="lb-metric' + (m.warn ? ' warn' : '') + '">' + bar(pct) + '<span>' + val(x) + '</span></div></td>' +
-              '<td><b>' + x.overall + '%</b></td><td>' + x.trainings_done + '/' + x.trainings + '</td>' +
+              (m.k === 'overall' ? '' : '<td><b>' + x.overall + '%</b></td>') + '<td>' + x.trainings_done + '/' + x.trainings + '</td>' +
               '<td>' + (x.first_try == null ? '<span class="st-muted">&#8212;</span>' : x.first_try + '%') + '</td>' +
               '<td>' + x.missed_first + '</td>' +
               '<td>' + (x.last_activity_at ? day(x.last_activity_at) : '<span class="st-muted">None</span>') + '</td></tr>';
-          }).join('') + '</tbody></table>' +
+          }).join('') + '</tbody></table></div>' +
           '<p class="st-muted lb-note">Active: activity or a sign in during the last 7 days. Idle: 8 to 30 days. Inactive: more than 30 days, or never started. Misses counts wrong tries on checkpoints; the first try column is the share answered right at once.</p>';
         board.list = list; board.m = m;
       }
