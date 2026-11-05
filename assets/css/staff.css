@@ -439,3 +439,11 @@ button.tm-kpi{cursor:pointer}button.tm-kpi:hover{border-color:#bfe9ee}
 @media (max-width:700px){.as-nums{grid-template-columns:1fr 1fr 1fr;gap:8px}.as-nums div{padding:12px}.as-nums b{font-size:24px}.as-nums span{font-size:12.5px}
   .lb-pod{grid-template-columns:1fr}.lb-row{grid-template-columns:28px 32px minmax(0,1fr)}.lb-row .lb-metric{grid-column:3}.lb-acts{margin-left:0}}
 @media print{body.print-board .lb-head{display:none!important}}
+/* My profile */
+.pf-kick{margin:0 0 14px;color:#9fd8df;font-weight:800;font-size:13px;letter-spacing:.6px;text-transform:uppercase}
+.pf-items li.pf-link{display:block}
+.pf-items li.pf-link a{display:grid;grid-template-columns:96px minmax(0,1fr) 120px 44px;gap:4px 12px;align-items:center;text-decoration:none;color:inherit;border-radius:12px;padding:6px 8px;margin:-6px -8px}
+.pf-items li.pf-link a:hover{background:#f4f8fb}
+.pf-items li.pf-link small{grid-column:2/-1;color:#8a99ab;font-size:12px;margin-top:-4px}
+.pf-items li.pf-link a:hover small{color:#0fa6b6}
+@media (max-width:900px){.pf-items li.pf-link a{grid-template-columns:minmax(0,1fr) 44px}.pf-items li.pf-link em,.pf-items li.pf-link .st-bar{display:none}.pf-items li.pf-link small{grid-column:1/-1}}

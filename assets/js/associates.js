@@ -19,7 +19,7 @@
 
   SCDB.ready.then(function (p) {
     if (!p) { location.href = SCApp.loginUrl('associates.html'); return; }
-    if (p.role !== 'admin' && p.role !== 'coach') { location.href = 'account.html'; return; }
+    if (p.role !== 'admin' && p.role !== 'coach') { location.href = 'profile.html'; return; }
     var S = SCStaff.settings(p.role, p);
     var TABS = { team: S.sections.team, board: S.sections.board, emails: S.sections.emails, insights: S.sections.insights };
     $('#asHello').textContent = p.role === 'admin'

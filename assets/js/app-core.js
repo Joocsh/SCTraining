@@ -64,7 +64,7 @@
     if(window.SCDB || window.__scdbLoading) return;
     window.__scdbLoading = true;
     var lib = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
-    var db = ROOT + 'assets/js/sc-db.js?v=20261105';
+    var db = ROOT + 'assets/js/sc-db.js?v=20261105b';
     /* the simulation pages also keep each person's place in a case */
     var resume = /\/roles\/[^/]+\.html$/.test(location.pathname) ? '<script src="'+ROOT+'assets/js/sim-resume.js?v=20261022b"><\/script>' : '';
     if(document.readyState === 'loading'){
@@ -146,11 +146,11 @@
       return null;
     }
     if(opts.adminOnly && u.role !== 'admin'){
-      window.location.href = rootUrl(u.role==='coach' ? 'settings.html' : 'account.html');
+      window.location.href = rootUrl(u.role==='coach' ? 'associates.html' : 'profile.html');
       return null;
     }
     if(opts.staffOnly && !isStaff(u)){
-      window.location.href = rootUrl('account.html');
+      window.location.href = rootUrl('profile.html');
       return null;
     }
     setLastPage(u.id, here());
@@ -373,7 +373,7 @@
       document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && wrap.classList.contains('open')){ wrap.classList.remove('open'); chip.setAttribute('aria-expanded', 'false'); chip.focus(); } });
     }
     var old = wrap.querySelector('.uc-menu'); if(old) old.remove();
-    var items = [['account.html', 'My profile'], ['settings.html', 'Settings']];
+    var items = [['profile.html', 'My profile'], ['settings.html', 'Settings']];
     var here_ = location.pathname.split('/').pop() || 'index.html';
     var menu = document.createElement('div');
     menu.className = 'uc-menu'; menu.setAttribute('role', 'menu');
@@ -393,7 +393,7 @@
     document.querySelectorAll('.nav .menu').forEach(function(menu){
       if(menu.querySelector('[data-nav="associates"]')) return;
       var a = document.createElement('a');
-      a.className = 'navlink' + (here_ === 'associates.html' || here_ === 'profile.html' ? ' active' : '');
+      a.className = 'navlink' + (here_ === 'associates.html' || (here_ === 'profile.html' && /[?&]id=/.test(location.search)) ? ' active' : '');
       a.setAttribute('data-nav', 'associates');
       a.href = rootUrl('associates.html');
       a.textContent = 'Associates';
@@ -409,7 +409,7 @@
       if(u){
         if(av) av.textContent = (u.avatar||u.name.charAt(0)).toUpperCase();
         if(label) label.textContent = u.role==='admin' ? 'Admin' : u.role==='coach' ? 'Coach' : u.name.split(' ')[0];
-        chip.href = rootUrl('account.html');
+        chip.href = rootUrl('profile.html');
         accountMenu(chip, u);
       } else {
         if(av) av.textContent='?';

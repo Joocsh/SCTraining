@@ -1,6 +1,8 @@
 /* ══════════════════════════════════════════════════════════
-   Associate profile (profile.html?id=<user id>), for coaches and admins.
-   Everything about one person in one place, read live from Supabase:
+   Profile (profile.html). Everyone opens their own as "My profile"
+   (no id, or their own id); coaches open the associates on their team and
+   admins anyone (profile.html?id=<user id>). Everything in one place, read
+   live from Supabase:
      Overview       progress, key numbers, what they have, recent activity
      Trainings      every lesson with the day it was finished, certificates
      Simulations    practice mode scores, graded emails, the case in progress
@@ -42,16 +44,19 @@
   var ROLE = { associate: 'Associate', coach: 'Coach', admin: 'Admin' };
 
   var id = new URLSearchParams(location.search).get('id');
-  var me = SCApp.requireAuth({ staffOnly: true });
+  var me = SCApp.requireAuth();
   if (!me) return;
+  var self = !id || id === me.id;    /* My profile */
+  if (!id) id = me.id;
+  var staff = me.role === 'admin' || me.role === 'coach';
+  if (!self && !staff) { location.replace('profile.html'); return; }
 
   SCDB.ready.then(function (p) {
     if (!p) { location.href = SCApp.loginUrl('profile.html' + location.search); return; }
     var sb = SCDB.client;
-    if (!id) return notFound();
     var eq = function (q) { return q.eq('user_id', id); };
     return Promise.all([
-      sb.rpc('people_directory'),                                                                   // 0
+      self ? myAccount(sb) : sb.rpc('people_directory'),                                            // 0
       eq(sb.from('progress_summary').select('category,items,completed_items,percent,last_activity_at')), // 1
       eq(sb.from('progress_items').select('category,item_id,title,percent,completed,last_activity_at')), // 2
       eq(sb.from('lesson_completions').select('lesson_id,completed_at')),                           // 3
@@ -84,6 +89,22 @@
     });
   }).catch(function (e) { $('#pfMain').innerHTML = '<p class="st-empty">Could not load: ' + esc(e.message) + '</p>'; });
 
+  /* your own account details: people_directory() is for staff, so My
+     profile reads the profile, the session and your coaches directly */
+  function myAccount(sb) {
+    var s = (SCDB.client.auth && SCDB.client.auth.getSession) ? SCDB.client.auth.getSession() : Promise.resolve({ data: {} });
+    return Promise.all([
+      sb.from('profiles').select('id,full_name,app_role,created_at').eq('id', me.id).single(),
+      sb.from('coach_assignments').select('coach:profiles!coach_id(full_name)').eq('associate_id', me.id),
+      s
+    ]).then(function (r) {
+      var pr = check(r[0]), user = (r[2] && r[2].data && r[2].data.session && r[2].data.session.user) || {};
+      var coaches = (check(r[1]) || []).map(function (x) { return x.coach && x.coach.full_name; }).filter(Boolean);
+      return { data: [{ id: pr.id, full_name: pr.full_name, app_role: pr.app_role, created_at: pr.created_at, email: user.email || me.email,
+        last_sign_in_at: user.last_sign_in_at || null, banned_until: null, coaches: coaches.join(', ') || null }], error: null };
+    });
+  }
+
   function notFound() {
     $('#pfHead').innerHTML = '<a class="pf-back" href="associates.html">&larr; Back to Associates</a><h1>Profile not available</h1>';
     $('#pfMain').innerHTML = '<p class="st-empty">' + (me.role === 'coach' ? 'You can only open the associates on your team.' : 'This person does not exist.') + '</p>';
@@ -115,8 +136,17 @@
     var lastAct = (timeline(D).filter(function (e) { return e.k !== 'in'; })[0] || {}).at;
     var st = statusOf(lastAct, p.last_sign_in_at, p.banned_until);
     D.status = st;
-    document.title = p.full_name + ' · Skill Cloud Academy';
-    $('#pfHead').innerHTML = '<a class="pf-back" href="associates.html">&larr; Back to Associates</a>' +
+    document.title = (self ? 'My profile' : p.full_name) + ' · Skill Cloud Academy';
+    D.self = self;
+    var resume = self && SCApp.getLastPage ? SCApp.getLastPage(me.id) : null;
+    if (resume && /profile\.html|login\.html|settings\.html|associates\.html/.test(resume)) resume = null;
+    var actions = self
+      ? (resume ? '<a class="pf-btn" href="' + esc(SCApp.rootUrl ? SCApp.rootUrl(resume) : resume) + '">Continue where you left off &rarr;</a>' : '<a class="pf-btn" href="paths.html">Go to my trainings &rarr;</a>') +
+        '<button type="button" class="pf-btn ghost" id="pfPrintBtn">Print my report</button>'
+      : '<a class="pf-btn" href="settings.html?open=' + p.id + '#assign">Assign trainings and simulations</a>' +
+        '<a class="pf-btn ghost" href="associates.html#emails">Emails to grade</a>' +
+        '<button type="button" class="pf-btn ghost" id="pfPrintBtn">Print report</button>';
+    $('#pfHead').innerHTML = (self ? '<p class="pf-kick">My profile</p>' : '<a class="pf-back" href="associates.html">&larr; Back to Associates</a>') +
       '<div class="pf-id"><span class="tm-av big pf-av" style="--h:' + hue(p.id) + '">' + initials(p.full_name) + '</span>' +
       '<div class="pf-who"><h1>' + esc(p.full_name) + '</h1><p>' + esc(p.email) + '</p>' +
       '<div class="pf-tags"><span class="pf-tag">' + ROLE[p.app_role] + '</span>' +
@@ -125,9 +155,7 @@
         '<span class="pf-tag">Joined ' + day(p.created_at) + '</span>' +
         '<span class="pf-tag">' + (p.last_sign_in_at ? 'Last sign in ' + when(p.last_sign_in_at) : 'Never signed in') + '</span></div></div>' +
       '<div class="pf-ring" style="--p:' + all.percent + '"><b>' + all.percent + '%</b><span>overall</span></div></div>' +
-      '<div class="pf-actions"><a class="pf-btn" href="settings.html?open=' + p.id + '#assign">Assign trainings and simulations</a>' +
-        '<a class="pf-btn ghost" href="associates.html#emails">Emails to grade</a>' +
-        '<button type="button" class="pf-btn ghost" id="pfPrintBtn">Print report</button></div>' +
+      '<div class="pf-actions">' + actions + '</div>' +
       '<div class="st-tabs pf-tabs" role="tablist">' + [['overview', 'Overview'], ['trainings', 'Trainings'], ['sims', 'Simulations'], ['emails', 'Emails'], ['checks', 'Checkpoints'], ['written', 'Written work'], ['activity', 'Activity']]
         .map(function (t) { return '<button type="button" role="tab" data-t="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>';
     var TABS = { overview: overview, trainings: trainings, sims: sims, emails: emails, checks: checks, written: written, activity: activity };
@@ -185,11 +213,16 @@
         kpi(avgEmail == null ? '&#8212;' : avgEmail + '/5', 'Email grade, average' + (pending ? ' · ' + pending + ' to grade' : ''), pending ? 'warn' : '') +
         kpi(ft == null ? '&#8212;' : ft + '%', 'Checkpoints right on the first try', ft != null && ft < 60 ? 'warn' : '') +
       '</div>' +
-      '<div class="pf-grid"><section class="pf-card"><div class="pf-card-h"><h2>What they have</h2><span>' + plural(D.items.length, 'item') + '</span></div>' +
+      '<div class="pf-grid"><section class="pf-card"><div class="pf-card-h"><h2>' + (D.self ? 'What you have' : 'What they have') + '</h2><span>' + plural(D.items.length, 'item') + '</span></div>' +
         (D.items.length ? '<ul class="pf-items">' + D.items.map(function (i) {
-          return '<li><em>' + (i.category === 'simulation' ? 'Simulation' : i.category === 'introduction' ? 'Introduction' : 'Training') + '</em><b>' + esc(i.title) + '</b>' + bar(i.percent) +
-            '<span class="pf-pct">' + (i.completed ? '&#10003;' : i.percent + '%') + '</span><small>' + (i.last_activity_at ? when(i.last_activity_at) : 'Not started') + '</small></li>';
-        }).join('') + '</ul>' : '<p class="st-muted">Nothing assigned yet besides the Introduction.</p>') + '</section>' +
+          /* on My profile every item opens its training or simulation */
+          var page = i.category === 'simulation' ? (D.role[i.item_id] || {}).page_path : (D.course[i.item_id] || {}).page_path;
+          var tag = D.self && page ? 'a' : 'li', href = D.self && page ? ' href="' + esc(SCApp.rootUrl ? SCApp.rootUrl(page) : page) + '"' : '';
+          var inner = '<em>' + (i.category === 'simulation' ? 'Simulation' : i.category === 'introduction' ? 'Introduction' : 'Training') + '</em><b>' + esc(i.title) + '</b>' + bar(i.percent) +
+            '<span class="pf-pct">' + (i.completed ? '&#10003;' : i.percent + '%') + '</span><small>' + (i.last_activity_at ? when(i.last_activity_at) : 'Not started') +
+            (D.self && page ? ' · ' + (i.completed ? 'Review' : i.percent ? 'Continue' : 'Start') + ' &rarr;' : '') + '</small>';
+          return tag === 'a' ? '<li class="pf-link"><a' + href + '>' + inner + '</a></li>' : '<li>' + inner + '</li>';
+        }).join('') + '</ul>' : '<p class="st-muted">' + (D.self ? 'Your coach assigns your trainings and simulations. You get a notification for each one.' : 'Nothing assigned yet besides the Introduction.') + '</p>') + '</section>' +
       '<section class="pf-card"><div class="pf-card-h"><h2>Recent activity</h2><a href="#activity" data-go="activity">See all</a></div>' + timelineHtml(tl) + '</section></div>';
   }
   function kpi(v, l, cls) { return '<div class="tm-kpi' + (cls ? ' ' + cls : '') + '"><b>' + v + '</b><span>' + l + '</span></div>'; }
@@ -268,7 +301,7 @@
           return '<tr><td>' + esc(D.course[c] ? D.course[c].title : 'Other') + '</td><td>' + list.length + '</td><td><div class="st-cell">' + bar(ft) + '<span>' + ft + '%</span></div></td><td>' + (tries / list.length).toFixed(1) + '</td></tr>';
         }).join('') + '</tbody></table></section>' +
       '<section class="pf-card"><div class="pf-card-h"><h2>Not right on the first try</h2><span>' + missed.length + '</span></div>' +
-        (missed.length ? '<p class="st-muted">Good topics to go over together.</p><ul class="pf-missed">' + missed.map(function (s) {
+        (missed.length ? '<p class="st-muted">' + (D.self ? 'Good topics to review again.' : 'Good topics to go over together.') + '</p><ul class="pf-missed">' + missed.map(function (s) {
           var l = D.lesson[s.q.lesson_id], c = l && D.course[l.course];
           return '<li><b>' + esc(s.q.prompt) + '</b><small>' + esc(c ? c.title : '') + (l ? ' · ' + esc(l.title) : '') + ' · ' + plural(s.tries, 'try') .replace('trys', 'tries') + (s.right ? ', then right' : ', not right yet') + '</small></li>';
         }).join('') + '</ul>' : '<p class="st-muted">Every question was right on the first try.</p>') + '</section>';

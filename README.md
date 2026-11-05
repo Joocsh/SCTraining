@@ -38,7 +38,7 @@ Settings waits for "Save changes":
 
 | Role      | Panel          | Can                                                                 |
 | --------- | -------------- | ------------------------------------------------------------------- |
-| associate | `account.html` | Take the Introduction, then the trainings and simulations they have |
+| associate | `account.html`              | Only redirects to My profile (`profile.html`), so old links keep working |
 | coach     | `associates.html`, `settings.html` | Their team's progress, leaderboard, emails to grade and insights; each associate's full profile (`profile.html`); members and assignments in Settings |
 | admin     | `associates.html`, `settings.html` | Everything: every associate's progress, the leaderboard, emails and insights; users, roles, coach teams, assignments, open simulations and announcements in Settings |
 
@@ -107,7 +107,7 @@ enlaces. Si agregas una página nueva, va en la raíz.
 | `associates.html`           | Associates (in the nav for coaches and admins): Overview with team numbers, who needs attention and a card per associate; Leaderboard; Emails to grade; Question insights. Coaches see their team, admins everyone |
 | `settings.html`             | Settings: account and password for everyone. Coaches: Members and Assign. Admins: Users, Coach teams, Assign, Simulations, Announcements |
 | `admin.html`, `coach.html`  | Only redirect to `settings.html`, so old links keep working |
-| `profile.html?id=`          | Full profile of one person for coaches (their team) and admins (everyone): progress, every lesson, simulations and the case in progress, emails with grades, checkpoints missed on the first try, written work and the activity timeline |
+| `profile.html`              | My profile for everyone (`profile.html`), and with `?id=` the full profile of one person for coaches (their team) and admins (everyone): progress, every lesson, simulations and the case in progress, emails with grades, checkpoints missed on the first try, written work and the activity timeline |
 | `ai.html`                   | AI Introduction (curso, desbloquea las Simulations)            |
 | `paths.html`                | Training paths: los trainings de todos los departamentos en una página, con filtro por departamento |
 | `va.html`, `marketing.html` | Solo redirigen a `paths.html#va` y `paths.html#marketing`, para no romper enlaces viejos |
