@@ -32,13 +32,13 @@ through the `create-user` Edge Function (`supabase/functions/create-user`). A co
 associate joins that coach's team; an admin picks the role and, for an associate, the
 coach. The creator hands over the email and a temporary password, and the person changes
 it in Settings. The account menu (the chip in the nav) keeps learning and the technical side
-apart: My profile (`account.html`) for learning, Settings for everything else (the account
+apart: My profile (`profile.html`) for learning, Settings for everything else (the account
 and, for coaches and admins, their people and the Academy, all in one place). Assigning and editing in the panels and in
 Settings waits for "Save changes":
 
 | Role      | Panel          | Can                                                                 |
 | --------- | -------------- | ------------------------------------------------------------------- |
-| associate | `account.html`              | Only redirects to My profile (`profile.html`), so old links keep working |
+| associate | `profile.html` | Take the Introduction, then the trainings and simulations they have; My profile shows all their progress |
 | coach     | `associates.html`, `settings.html` | Their team's progress, leaderboard, emails to grade and insights; each associate's full profile (`profile.html`); members and assignments in Settings |
 | admin     | `associates.html`, `settings.html` | Everything: every associate's progress, the leaderboard, emails and insights; users, roles, coach teams, assignments, open simulations and announcements in Settings |
 
@@ -102,7 +102,7 @@ enlaces. Si agregas una página nueva, va en la raíz.
 | --------------------------- | ------------------------------------------------------------- |
 | `index.html`                | Home. Visitante: qué es, cómo funciona y un botón para entrar. Con sesión: Home guiado con los 3 pasos y una bienvenida la primera vez |
 | `login.html`                | Sign in, create an account, reset the password (Supabase Auth) |
-| `account.html`              | Panel del asociado: cursos, logros, certificados y puntajes   |
+| `account.html`              | Only redirects to My profile (`profile.html`), so old links keep working |
 | `admin.html`                | Admin panel: progress, insights, grading, assignments, simulations, announcements |
 | `associates.html`           | Associates (in the nav for coaches and admins): Overview with team numbers, who needs attention and a card per associate; Leaderboard; Emails to grade; Question insights. Coaches see their team, admins everyone |
 | `settings.html`             | Settings: account and password for everyone. Coaches: Members and Assign. Admins: Users, Coach teams, Assign, Simulations, Announcements |
