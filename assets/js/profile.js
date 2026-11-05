@@ -4,6 +4,8 @@
    admins anyone (profile.html?id=<user id>). Everything in one place, read
    live from Supabase:
      Overview       progress, key numbers, what they have, recent activity
+     Achievements   certificates (one per completed training, printable)
+                    and medals, earned or still to earn
      Trainings      every lesson with the day it was finished, certificates
      Simulations    practice mode scores, graded emails, the case in progress
      Emails         each simulation email with its grade and feedback
@@ -152,13 +154,14 @@
       '<div class="pf-tags"><span class="pf-tag">' + ROLE[p.app_role] + '</span>' +
         (p.coaches ? '<span class="pf-tag">Coach: ' + esc(p.coaches) + '</span>' : (p.app_role === 'associate' ? '<span class="pf-tag warn">No coach</span>' : '')) +
         '<span class="lb-st lb-st-' + st.k + '">' + st.t + '</span>' +
+        '<a class="pf-tag pf-ach-tag" href="#achieve" data-go="achieve">&#9733; ' + plural(earned(D), 'medal') + ' &middot; ' + plural(D.cc.length, 'certificate') + '</a>' +
         '<span class="pf-tag">Joined ' + day(p.created_at) + '</span>' +
         '<span class="pf-tag">' + (p.last_sign_in_at ? 'Last sign in ' + when(p.last_sign_in_at) : 'Never signed in') + '</span></div></div>' +
       '<div class="pf-ring" style="--p:' + all.percent + '"><b>' + all.percent + '%</b><span>overall</span></div></div>' +
       '<div class="pf-actions">' + actions + '</div>' +
-      '<div class="st-tabs pf-tabs" role="tablist">' + [['overview', 'Overview'], ['trainings', 'Trainings'], ['sims', 'Simulations'], ['emails', 'Emails'], ['checks', 'Checkpoints'], ['written', 'Written work'], ['activity', 'Activity']]
+      '<div class="st-tabs pf-tabs" role="tablist">' + [['overview', 'Overview'], ['achieve', 'Achievements'], ['trainings', 'Trainings'], ['sims', 'Simulations'], ['emails', 'Emails'], ['checks', 'Checkpoints'], ['written', 'Written work'], ['activity', 'Activity']]
         .map(function (t) { return '<button type="button" role="tab" data-t="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>';
-    var TABS = { overview: overview, trainings: trainings, sims: sims, emails: emails, checks: checks, written: written, activity: activity };
+    var TABS = { overview: overview, achieve: achievements, trainings: trainings, sims: sims, emails: emails, checks: checks, written: written, activity: activity };
     function show(t) {
       if (!TABS[t]) t = 'overview';
       $$('.pf-tabs button').forEach(function (b) { var on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
@@ -168,7 +171,12 @@
     }
     $$('.pf-tabs button').forEach(function (b) { b.onclick = function () { show(b.dataset.t); }; });
     $('#pfPrintBtn').onclick = function () { printReport(D, TABS); };
-    $('#pfMain').addEventListener('click', function (e) { var go = e.target.closest('[data-go]'); if (go) { e.preventDefault(); show(go.dataset.go); window.scrollTo(0, 0); } });
+    function onGo(e) { var go = e.target.closest('[data-go]'); if (go) { e.preventDefault(); show(go.dataset.go); } }
+    $('#pfMain').addEventListener('click', function (e) {
+      onGo(e);
+      var cert = e.target.closest('[data-cert]'); if (cert) showCert(D, cert.dataset.cert);
+    });
+    $('#pfHead').addEventListener('click', onGo);
     show(location.hash.slice(1));
   }
   /* The printable report: every section in one document, folds open,
@@ -182,7 +190,7 @@
         '<p>' + esc(p.email) + ' · ' + ROLE[p.app_role] + (p.coaches ? ' · Coach: ' + esc(p.coaches) : '') + ' · Joined ' + day(p.created_at) + '</p>' +
         '<p>Status: <b>' + D.status.t + '</b> · ' + (p.last_sign_in_at ? 'Last sign in ' + day(p.last_sign_in_at) : 'Never signed in') + '</p></div>' +
         '<div class="pr-score"><b>' + all.percent + '%</b><span>overall · ' + all.completed_items + ' of ' + all.items + ' items</span></div></div>' +
-      [['overview', 'Overview'], ['trainings', 'Trainings'], ['sims', 'Simulations'], ['emails', 'Emails'], ['checks', 'Checkpoints'], ['written', 'Written work'], ['activity', 'Activity']]
+      [['overview', 'Overview'], ['achieve', 'Achievements'], ['trainings', 'Trainings'], ['sims', 'Simulations'], ['emails', 'Emails'], ['checks', 'Checkpoints'], ['written', 'Written work'], ['activity', 'Activity']]
         .map(function (t) { return '<section class="pr-sec"><h2>' + t[1] + '</h2>' + TABS[t[0]](D) + '</section>'; }).join('') +
       '<p class="pr-foot">Printed ' + new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) + (me2 ? ' by ' + esc(me2.name) : '') + '. Internal use only.</p>';
     $$('.pf-fold', out).forEach(function (f) { f.classList.add('open'); });
@@ -325,6 +333,61 @@
         return '<div class="pf-answer"><b>' + esc(x.label) + '</b><div class="st-email">' + esc(x.body) + '</div><small>' + day(x.at) + '</small></div>';
       }).join('') + '</section>';
     }).join('');
+  }
+
+  /* ─────────── Achievements: certificates and medals ─────────── */
+  function medals(D) {
+    var trainings = D.items.filter(function (i) { return i.category === 'training'; });
+    var simsL = D.items.filter(function (i) { return i.category === 'simulation'; });
+    var intro = D.items.filter(function (i) { return i.category === 'introduction'; })[0];
+    var qs = Object.keys(D.byQ).map(function (k) { return D.byQ[k]; }), ft = firstTry(qs);
+    var days = {}; D.lc.forEach(function (x) { days[String(x.completed_at).slice(0, 10)] = 1; });
+    return [
+      { g: 'AI', t: 'Foundation', s: 'Finished the AI Introduction', how: 'Finish the AI Introduction', on: !!(intro && intro.completed) },
+      { g: '1', t: 'First training', s: 'Completed a whole training', how: 'Complete one training', on: trainings.some(function (i) { return i.completed; }) },
+      { g: 'ALL', t: 'All trainings', s: 'Completed every assigned training', how: 'Complete every training you have', on: trainings.length > 0 && trainings.every(function (i) { return i.completed; }) },
+      { g: 'SIM', t: 'First case', s: 'Practiced a simulation', how: 'Practice any simulation', on: D.scores.length > 0 || D.sessions.length > 0 || D.emails.length > 0 },
+      { g: '100', t: 'Case master', s: 'Reached 100% in a simulation', how: 'Reach 100% in one simulation', on: simsL.some(function (i) { return i.completed; }) },
+      { g: 'A+', t: 'Great email', s: 'A simulation email graded 4 or 5', how: 'Get a 4 or 5 on a simulation email', on: D.emails.some(function (e) { var gr = g(e); return gr && gr.score >= 4; }) },
+      { g: '90', t: 'Sharp', s: '90% right on the first try, 20+ questions', how: 'Answer 20 checkpoint questions, 90% right on the first try', on: qs.length >= 20 && ft >= 90 },
+      { g: '5d', t: 'Steady learner', s: 'Learned on 5 different days', how: 'Learn on 5 different days', on: Object.keys(days).length >= 5 }
+    ];
+  }
+  function earned(D) { return medals(D).filter(function (m) { return m.on; }).length; }
+  function achievements(D) {
+    var who = D.self ? 'you' : esc(String(D.p.full_name).split(' ')[0]);
+    var certs = D.cc.slice().sort(function (a, b) { return Date.parse(b.completed_at) - Date.parse(a.completed_at); });
+    var list = medals(D), got = list.filter(function (m) { return m.on; }).length;
+    return '<section class="pf-card"><div class="pf-card-h"><h2>Certificates</h2><span>' + certs.length + '</span></div>' +
+        (certs.length ? '<div class="pf-certs">' + certs.map(function (x) {
+          var c = D.course[x.course_id] || { title: 'Training' };
+          return '<div class="pf-certc"><span class="pf-cert-ico">&#9733;</span><div><b>' + esc(c.title) + '</b><small>Completed ' + day(x.completed_at) + '</small></div>' +
+            '<button type="button" class="pf-btn" data-cert="' + x.course_id + '">View certificate</button></div>';
+        }).join('') + '</div>' : '<p class="st-muted">' + (D.self ? 'Finish a training to earn its certificate. It shows up here, ready to print.' : 'No certificates yet. Each finished training adds one here.') + '</p>') + '</section>' +
+      '<section class="pf-card"><div class="pf-card-h"><h2>Medals</h2><span>' + got + ' of ' + list.length + '</span></div>' +
+        '<div class="pf-medals">' + list.map(function (m) {
+          return '<div class="pf-medal' + (m.on ? ' on' : '') + '"><span class="pf-medal-ico">' + m.g + '</span><b>' + m.t + '</b><small>' + (m.on ? m.s : 'To earn: ' + m.how.charAt(0).toLowerCase() + m.how.slice(1)) + '</small></div>';
+        }).join('') + '</div>' +
+        (got < list.length ? '<p class="st-muted pf-medal-note">Grey medals are still to earn. ' + (D.self ? 'Keep going.' : 'They show what ' + who + ' can work on next.') + '</p>' : '') + '</section>';
+  }
+  /* the certificate, the same words as at the end of each training, printable */
+  function showCert(D, courseId) {
+    var x = D.cc.filter(function (c) { return String(c.course_id) === String(courseId); })[0];
+    if (!x) return;
+    var c = D.course[x.course_id] || { title: 'Training' };
+    var wrap = document.getElementById('pfCert');
+    if (!wrap) { wrap = document.createElement('div'); wrap.id = 'pfCert'; wrap.className = 'pf-cert-wrap'; document.body.appendChild(wrap); }
+    wrap.innerHTML = '<div class="pf-cert" role="dialog" aria-modal="true" aria-label="Certificate"><div class="pf-cert-in">' +
+        '<img src="assets/img/skillcloud-navlogo.png" alt="Skill Cloud" class="pf-cert-logo">' +
+        '<small>SkillCloud Academy &middot; Certificate of completion</small><h2>Well done</h2><p>This certifies that</p>' +
+        '<div class="pf-cert-name">' + esc(D.p.full_name) + '</div><p>completed the training</p><div class="pf-cert-course">' + esc(c.title) + '</div>' +
+        '<div class="pf-cert-date">Completed on ' + new Date(x.completed_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) + '</div></div>' +
+      '<div class="pf-cert-acts"><button type="button" class="pf-btn" id="pfCertPrint">Print or save as PDF</button><button type="button" class="pf-btn ghost dark" id="pfCertClose">Close</button></div></div>';
+    wrap.classList.add('open');
+    function close() { wrap.classList.remove('open'); }
+    document.getElementById('pfCertClose').onclick = close;
+    wrap.onclick = function (e) { if (e.target === wrap) close(); };
+    document.getElementById('pfCertPrint').onclick = function () { document.body.classList.add('print-cert'); window.print(); document.body.classList.remove('print-cert'); };
   }
 
   /* ─────────── Activity ─────────── */
