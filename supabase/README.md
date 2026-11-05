@@ -25,6 +25,7 @@ on the team's NAS later.
 | `migrations/0016_must_change_password.sql` | `profiles.must_change_password`: on when an admin or a coach creates an account or sets someone's password; the site asks the person to choose their own first. A trigger on `auth.users` turns it off when the password really changes |
 | `migrations/0017_coaches_take_intro.sql` | Coaches finish the Introduction like associates; only admins are not held by it |
 | `migrations/0018_consistent_trainings.sql` | Every training has the same shape: Start, numbered modules, Finish. The Introduction gets three modules plus welcome and finish lessons; SOP's recap becomes Finish; Marketing (now on the shared course player) gets a Start and a Finish. Lesson order is unchanged |
+| `migrations/0019_team_leaderboard.sql` | `team_leaderboard()`: one row per associate the caller may see (coach: their team; admin: everyone) with progress, trainings and lessons done, simulations, first try accuracy, misses, emails and last activity, for the Leaderboard in Settings |
 
 Run them in order in the SQL editor (or with `psql`) on an empty project.
 

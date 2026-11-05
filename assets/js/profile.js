@@ -30,6 +30,14 @@
   function initials(n) { var w = String(n || '?').trim().split(/\s+/); return esc(((w[0] || '?').charAt(0) + (w.length > 1 ? w[w.length - 1].charAt(0) : '')).toUpperCase()); }
   function hue(id) { var h = 0; for (var i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 360; return h; }
   function check(r) { if (r && r.error) throw r.error; return r ? r.data : null; }
+  /* the same activity status as the Leaderboard */
+  function statusOf(lastActivity, lastSignIn, bannedUntil) {
+    if (bannedUntil && Date.parse(bannedUntil) > Date.now()) return { k: 'off', t: 'Deactivated' };
+    var last = Math.max(lastActivity ? Date.parse(lastActivity) : 0, lastSignIn ? Date.parse(lastSignIn) : 0);
+    if (!last) return { k: 'none', t: 'Inactive' };
+    var days = (Date.now() - last) / 864e5;
+    return days <= 7 ? { k: 'on', t: 'Active' } : days <= 30 ? { k: 'idle', t: 'Idle' } : { k: 'none', t: 'Inactive' };
+  }
   var MODE = { sim: 'Case simulator', mls: 'MLS practice', prompt: 'AI prompts', quiz: 'Quiz', email: 'Emails' };
   var ROLE = { associate: 'Associate', coach: 'Coach', admin: 'Admin' };
 
@@ -104,18 +112,22 @@
   function render(D) {
     var p = D.p, all = D.sum.filter(function (x) { return !x.category; })[0] || { percent: 0, items: 0, completed_items: 0 };
     var off = p.banned_until && Date.parse(p.banned_until) > Date.now();
+    var lastAct = (timeline(D).filter(function (e) { return e.k !== 'in'; })[0] || {}).at;
+    var st = statusOf(lastAct, p.last_sign_in_at, p.banned_until);
+    D.status = st;
     document.title = p.full_name + ' · Skill Cloud Academy';
     $('#pfHead').innerHTML = '<a class="pf-back" href="settings.html#progress">&larr; Back to Progress</a>' +
       '<div class="pf-id"><span class="tm-av big pf-av" style="--h:' + hue(p.id) + '">' + initials(p.full_name) + '</span>' +
       '<div class="pf-who"><h1>' + esc(p.full_name) + '</h1><p>' + esc(p.email) + '</p>' +
       '<div class="pf-tags"><span class="pf-tag">' + ROLE[p.app_role] + '</span>' +
         (p.coaches ? '<span class="pf-tag">Coach: ' + esc(p.coaches) + '</span>' : (p.app_role === 'associate' ? '<span class="pf-tag warn">No coach</span>' : '')) +
-        (off ? '<span class="pf-tag warn">Deactivated</span>' : '') +
+        '<span class="lb-st lb-st-' + st.k + '">' + st.t + '</span>' +
         '<span class="pf-tag">Joined ' + day(p.created_at) + '</span>' +
         '<span class="pf-tag">' + (p.last_sign_in_at ? 'Last sign in ' + when(p.last_sign_in_at) : 'Never signed in') + '</span></div></div>' +
       '<div class="pf-ring" style="--p:' + all.percent + '"><b>' + all.percent + '%</b><span>overall</span></div></div>' +
       '<div class="pf-actions"><a class="pf-btn" href="settings.html?open=' + p.id + '#assign">Assign trainings and simulations</a>' +
-        '<a class="pf-btn ghost" href="settings.html#emails">Emails to grade</a></div>' +
+        '<a class="pf-btn ghost" href="settings.html#emails">Emails to grade</a>' +
+        '<button type="button" class="pf-btn ghost" id="pfPrintBtn">Print report</button></div>' +
       '<div class="st-tabs pf-tabs" role="tablist">' + [['overview', 'Overview'], ['trainings', 'Trainings'], ['sims', 'Simulations'], ['emails', 'Emails'], ['checks', 'Checkpoints'], ['written', 'Written work'], ['activity', 'Activity']]
         .map(function (t) { return '<button type="button" role="tab" data-t="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>';
     var TABS = { overview: overview, trainings: trainings, sims: sims, emails: emails, checks: checks, written: written, activity: activity };
@@ -127,8 +139,26 @@
       try { history.replaceState(null, '', location.pathname + location.search + '#' + t); } catch (e) {}
     }
     $$('.pf-tabs button').forEach(function (b) { b.onclick = function () { show(b.dataset.t); }; });
+    $('#pfPrintBtn').onclick = function () { printReport(D, TABS); };
     $('#pfMain').addEventListener('click', function (e) { var go = e.target.closest('[data-go]'); if (go) { e.preventDefault(); show(go.dataset.go); window.scrollTo(0, 0); } });
     show(location.hash.slice(1));
+  }
+  /* The printable report: every section in one document, folds open,
+     without the navigation. Also saves as a PDF from the print dialog. */
+  function printReport(D, TABS) {
+    var p = D.p, all = D.sum.filter(function (x) { return !x.category; })[0] || { percent: 0, items: 0, completed_items: 0 };
+    var me2 = SCApp.currentUser();
+    var out = document.getElementById('pfPrint');
+    if (!out) { out = document.createElement('div'); out.id = 'pfPrint'; document.body.appendChild(out); }
+    out.innerHTML = '<div class="pr-head"><div><p class="pr-kick">Skill Cloud Academy · Associate report</p><h1>' + esc(p.full_name) + '</h1>' +
+        '<p>' + esc(p.email) + ' · ' + ROLE[p.app_role] + (p.coaches ? ' · Coach: ' + esc(p.coaches) : '') + ' · Joined ' + day(p.created_at) + '</p>' +
+        '<p>Status: <b>' + D.status.t + '</b> · ' + (p.last_sign_in_at ? 'Last sign in ' + day(p.last_sign_in_at) : 'Never signed in') + '</p></div>' +
+        '<div class="pr-score"><b>' + all.percent + '%</b><span>overall · ' + all.completed_items + ' of ' + all.items + ' items</span></div></div>' +
+      [['overview', 'Overview'], ['trainings', 'Trainings'], ['sims', 'Simulations'], ['emails', 'Emails'], ['checks', 'Checkpoints'], ['written', 'Written work'], ['activity', 'Activity']]
+        .map(function (t) { return '<section class="pr-sec"><h2>' + t[1] + '</h2>' + TABS[t[0]](D) + '</section>'; }).join('') +
+      '<p class="pr-foot">Printed ' + new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) + (me2 ? ' by ' + esc(me2.name) : '') + '. Internal use only.</p>';
+    $$('.pf-fold', out).forEach(function (f) { f.classList.add('open'); });
+    window.print();
   }
   function bind() {
     $$('.pf-fold > button').forEach(function (b) { b.onclick = function () { b.parentNode.classList.toggle('open'); b.setAttribute('aria-expanded', b.parentNode.classList.contains('open')); }; });

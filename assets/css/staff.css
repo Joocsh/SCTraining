@@ -310,3 +310,53 @@ button.tm-kpi{cursor:pointer}button.tm-kpi:hover{border-color:#bfe9ee}
 .pf-answer{margin-bottom:14px}.pf-answer b{display:block;color:#0a2647;font-size:14px;margin-bottom:6px}.pf-answer small{color:#8a99ab;font-size:12px}
 @media (max-width:900px){.pf-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.pf-grid{grid-template-columns:1fr}.pf-fold>button{grid-template-columns:minmax(0,1fr) 48px 14px}.pf-fold>button .st-bar{display:none}
   .pf-items li{grid-template-columns:minmax(0,1fr) 44px}.pf-items em,.pf-items .st-bar{display:none}.pf-items small{grid-column:1/-1}}
+/* activity status */
+.lb-st{display:inline-block;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:800;white-space:nowrap;vertical-align:middle}
+.lb-st-on{background:#e3f7ea;color:#1c6e41}.lb-st-idle{background:#fff1d1;color:#8a5a00}.lb-st-none{background:#eef2f6;color:#5b6b7e}.lb-st-off{background:#fde8e4;color:#8f3020}
+.st-table .nm .lb-st{margin-left:6px}
+.pf-tags .lb-st{padding:4px 11px;font-size:12.5px}
+/* Leaderboard */
+.lb-acts{display:flex;gap:10px;align-items:center}.lb-acts .st-btn{margin:0}
+.lb-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+.lb-controls{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.lb-by{flex-wrap:wrap;margin:0}.lb-by button:disabled{opacity:.4;cursor:default}
+.lb-filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.lb-filters .tm-sel{max-width:340px}.lb-stat{margin:0}
+.lb-podium{background:#fff;border:1px solid #e3eaf1;border-radius:18px;padding:16px 18px;margin-bottom:16px}
+.lb-podium.warn{background:#fffaf0;border-color:#f6dfaa}
+.lb-pod-t{margin:0 0 12px;font-size:12.5px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:#8a99ab}
+.lb-pod{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.lb-place{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:16px 10px;border-radius:16px;background:#f8fafc;text-decoration:none;color:inherit;border:1px solid transparent}
+.lb-place:hover{border-color:#bfe9ee}
+.lb-place b{color:#0a2647;font-size:15px}.lb-val{color:#33465c;font-size:13.5px;font-weight:700}
+.lb-medal{position:absolute;top:10px;left:12px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:13px;color:#fff}
+.p1 .lb-medal{background:#e3a72f}.p2 .lb-medal{background:#9aa9b8}.p3 .lb-medal{background:#c47a45}
+.lb-podium.warn .lb-medal{background:#d2452f}
+.lb-table td{vertical-align:middle}
+.lb-rank{font-weight:900;color:#0a2647;width:40px;text-align:center}
+.lb-metric{display:grid;grid-template-columns:110px auto;gap:10px;align-items:center;font-size:13px;color:#33465c;min-width:200px}
+.lb-metric.warn .st-bar i{background:#d2452f}
+.lb-table tr.lb-warn td{background:#fffaf0}
+.lb-note{margin-top:12px;font-size:12.5px}
+@media (max-width:900px){.lb-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.lb-pod{grid-template-columns:1fr}}
+/* printing: the associate report, and the leaderboard */
+#pfPrint{display:none}
+@media print{
+  @page{margin:14mm}
+  body{background:#fff!important}
+  .nav,.h-foot,.st-toast,.sc-bell,.uc-menu{display:none!important}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body:has(#pfPrint:not(:empty)) .pf-hero,body:has(#pfPrint:not(:empty)) #pfMain{display:none!important}
+  #pfPrint{display:block;color:#0a2647;font-size:12px}
+  .pr-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;border-bottom:2px solid #0a2647;padding-bottom:12px;margin-bottom:16px}
+  .pr-head h1{margin:2px 0 4px;font-size:24px}.pr-head p{margin:2px 0;color:#33465c}
+  .pr-kick{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#0fa6b6!important}
+  .pr-score{text-align:right}.pr-score b{display:block;font-size:30px;line-height:1}.pr-score span{color:#5b6b7e;font-size:11px}
+  .pr-sec{break-inside:auto;margin-bottom:18px}.pr-sec>h2{font-size:16px;border-bottom:1px solid #cfd9e3;padding-bottom:4px;margin:18px 0 10px;break-after:avoid}
+  .pf-card,.pf-mod,.st-table tr,.pf-tl li,.pf-answer{break-inside:avoid}
+  .pf-card{border:1px solid #cfd9e3;box-shadow:none;margin-bottom:10px}
+  .pf-fold>button .st-chev{display:none}
+  .pf-grid{grid-template-columns:1fr 1fr}
+  .pr-foot{margin-top:20px;color:#8a99ab;font-size:10.5px;border-top:1px solid #cfd9e3;padding-top:8px}
+  body.print-board .st-hero,body.print-board .set-nav,body.print-board .lb-controls,body.print-board .lb-acts{display:none!important}
+  body.print-board .set-wrap{display:block;padding:0}
+}

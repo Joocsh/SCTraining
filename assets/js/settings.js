@@ -1,8 +1,8 @@
 /* ══════════════════════════════════════════════════════════
    Settings (settings.html): everything apart from learning (My profile).
      Account, Password   everyone
-     My team             coaches: Members, Assign, Progress, Emails, Insights
-     People, Learning,   admins: Users, Coach teams, Assign, Progress,
+     My team             coaches: Members, Assign, Progress, Leaderboard, Emails, Insights
+     People, Learning,   admins: Users, Coach teams, Assign, Progress, Leaderboard,
      Academy             Emails, Insights, Simulations, Announcements
    The staff sections come from staff.js (SCStaff.settings).
    ══════════════════════════════════════════════════════════ */

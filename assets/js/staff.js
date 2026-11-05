@@ -11,6 +11,8 @@
      Assign         trainings and simulations per associate
      Progress       general progress of each associate, item by item;
                     admins download it as a CSV report
+     Leaderboard    who is ahead, who misses more, who has finished more,
+                    and who is active (team_leaderboard())
      Emails         the inbox to grade (coaches grade their associates)
      Insights       how each checkpoint question does (first try, attempts)
      Simulations    admins: open a simulation to everyone (closed by default)
@@ -39,6 +41,16 @@
     clearTimeout(toast.t); toast.t = setTimeout(function () { el.className = 'st-toast'; }, undo ? 6000 : 2600);
   }
   function check(r) { if (r && r.error) throw r.error; return r ? r.data : null; }
+  /* Activity status: active in the last 7 days, idle up to 30, inactive after
+     that or never started; a deactivated account says so. */
+  function statusOf(lastActivity, lastSignIn, bannedUntil) {
+    if (bannedUntil && Date.parse(bannedUntil) > Date.now()) return { k: 'off', t: 'Deactivated' };
+    var last = Math.max(lastActivity ? Date.parse(lastActivity) : 0, lastSignIn ? Date.parse(lastSignIn) : 0);
+    if (!last) return { k: 'none', t: 'Inactive' };
+    var days = (Date.now() - last) / 864e5;
+    return days <= 7 ? { k: 'on', t: 'Active' } : days <= 30 ? { k: 'idle', t: 'Idle' } : { k: 'none', t: 'Inactive' };
+  }
+  function statusChip(s) { return '<span class="lb-st lb-st-' + s.k + '">' + s.t + '</span>'; }
   /* the full profile of a person (profile.html): everything about their progress */
   function profileLink(id, name) { return '<a class="st-plink" href="profile.html?id=' + id + '">' + esc(name) + '</a>'; }
 
@@ -92,7 +104,7 @@
         '<table class="st-table"><thead><tr><th>Associate</th><th>Overall</th><th>Introduction</th><th>Trainings</th><th>Simulations</th><th>Last activity</th></tr></thead><tbody>' +
         people.map(function (p) {
           var all = sum.filter(function (s) { return s.user_id === p.id && !s.category; })[0] || { percent: 0 };
-          return '<tr class="st-row" data-uid="' + p.id + '"><td class="nm">' + profileLink(p.id, p.full_name) + '</td><td><b class="st-pct">' + all.percent + '%</b></td>' +
+          return '<tr class="st-row" data-uid="' + p.id + '"><td class="nm">' + profileLink(p.id, p.full_name) + ' ' + statusChip(statusOf(all.last_activity_at)) + '</td><td><b class="st-pct">' + all.percent + '%</b></td>' +
             '<td>' + cell(p.id, 'introduction') + '</td><td>' + cell(p.id, 'training') + '</td><td>' + cell(p.id, 'simulation') + '</td>' +
             '<td>' + (all.last_activity_at ? day(all.last_activity_at) : '<span class="st-muted">No activity</span>') + '</td></tr>' +
             '<tr class="st-detail" data-for="' + p.id + '" hidden><td colspan="6"></td></tr>';
@@ -153,6 +165,108 @@
       toast('Report downloaded.');
     }).catch(function (e) { toast(e.message, true); })
       .then(function () { btn.disabled = false; btn.textContent = 'Download report (CSV)'; });
+  }
+
+  /* ─────────── Leaderboard ───────────
+     One row per associate from team_leaderboard(), ranked by the metric the
+     person picks. "Training" narrows it to the people doing one training or
+     simulation. Coaches see their team, admins everyone. */
+  var BOARD = [
+    { k: 'overall', t: 'Progress', v: function (r) { return r.overall; }, f: function (v) { return v + '%'; }, max: 100 },
+    { k: 'trainings', t: 'Trainings completed', v: function (r) { return r.trainings_done; }, f: function (v, r) { return v + ' of ' + r.trainings; } },
+    { k: 'lessons', t: 'Lessons done', v: function (r) { return r.lessons_done; }, f: function (v) { return String(v); } },
+    { k: 'first', t: 'First try accuracy', v: function (r) { return r.first_try; }, f: function (v) { return v + '%'; }, max: 100 },
+    { k: 'misses', t: 'Most misses', v: function (r) { return r.wrong_tries; }, f: function (v, r) { return plural(v, 'wrong try').replace('trys', 'tries') + ' · ' + r.missed_first + ' missed on the first try'; }, warn: true },
+    { k: 'sims', t: 'Simulations', v: function (r) { return r.sims ? r.sims_avg : null; }, f: function (v) { return v + '%'; }, max: 100 },
+    { k: 'email', t: 'Email grade', v: function (r) { return r.email_avg == null ? null : +r.email_avg; }, f: function (v) { return v + ' / 5'; }, max: 5 }
+  ];
+  var board = { by: 'overall', scope: '', status: 'all' };
+  function renderBoard() {
+    var box = $('#tabBoard');
+    box.innerHTML = '<p class="st-muted">Loading…</p>';
+    return Promise.all([sb.rpc('team_leaderboard'), sb.from('progress_items').select('user_id,category,item_id,title,percent,completed')]).then(function (r) {
+      var rows = check(r[0]), items = check(r[1]);
+      rows.forEach(function (x) { x.st = statusOf(x.last_activity_at, x.last_sign_in_at, x.banned_until); });
+      if (!rows.length) { box.innerHTML = '<p class="st-empty">' + (mode === 'coach' ? 'Your team is empty. Add associates in Members.' : 'No associates yet.') + '</p>'; return; }
+      var scopes = {}; items.forEach(function (i) { scopes[i.category + ':' + i.item_id] = (i.category === 'simulation' ? 'Simulation · ' : i.category === 'introduction' ? '' : 'Training · ') + i.title; });
+      var active = rows.filter(function (x) { return x.st.k === 'on'; }).length;
+      var avg = Math.round(rows.reduce(function (t, x) { return t + x.overall; }, 0) / rows.length);
+      var q = rows.reduce(function (t, x) { return t + x.questions; }, 0), ok = rows.reduce(function (t, x) { return t + (x.questions - x.missed_first); }, 0);
+      box.innerHTML = '<div class="st-bar-top lb-head"><div><h2 class="tm-title">Leaderboard</h2><p class="st-muted">' + (mode === 'coach' ? 'Your team' : 'Every associate') + ', compared live. Pick what to rank by, or one training to compare the people doing it.</p></div>' +
+          '<div class="lb-acts"><button type="button" class="tm-ghost" id="lbPrint">Print</button>' + (mode === 'admin' ? '<button type="button" class="st-btn st-dl" id="lbCsv">Download CSV</button>' : '') + '</div></div>' +
+        '<div class="tm-kpis lb-kpis">' +
+          '<div class="tm-kpi"><b>' + rows.length + '</b><span>Associates</span></div>' +
+          '<div class="tm-kpi' + (active < rows.length ? ' warn' : ' ok') + '"><b>' + active + '</b><span>Active this week</span></div>' +
+          '<div class="tm-kpi"><b>' + avg + '%</b><span>Average progress</span></div>' +
+          '<div class="tm-kpi"><b>' + (q ? Math.round(100 * ok / q) + '%' : '&#8212;') + '</b><span>Right on the first try, team</span></div></div>' +
+        '<div class="lb-controls"><div class="st-seg lb-by" id="lbBy">' + BOARD.map(function (m) { return '<button type="button" data-k="' + m.k + '">' + m.t + '</button>'; }).join('') + '</div>' +
+          '<div class="lb-filters"><select class="tm-sel" id="lbScope" aria-label="Training"><option value="">All trainings and simulations</option>' +
+            Object.keys(scopes).sort(function (a, b) { return scopes[a].localeCompare(scopes[b]); }).map(function (k) { return '<option value="' + k + '">' + esc(scopes[k]) + '</option>'; }).join('') + '</select>' +
+          '<div class="st-seg lb-stat" id="lbStatus">' + [['all', 'All'], ['on', 'Active'], ['idle', 'Idle'], ['none', 'Inactive']].map(function (s) { return '<button type="button" data-s="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div></div></div>' +
+        '<div id="lbBody"></div>';
+      function draw() {
+        $$('#lbBy button').forEach(function (b) { b.classList.toggle('on', b.dataset.k === board.by); b.disabled = !!board.scope; });
+        $$('#lbStatus button').forEach(function (b) { b.classList.toggle('on', b.dataset.s === board.status); });
+        $('#lbScope').value = board.scope;
+        var m, list;
+        if (board.scope) {
+          /* one training or simulation: the people doing it, by their progress in it */
+          var parts = board.scope.split(':');
+          m = { k: 'scope', t: 'Progress in ' + scopes[board.scope], f: function (v, x) { return x._done ? 'Completed' : v + '%'; }, max: 100 };
+          list = rows.map(function (x) {
+            var it = items.filter(function (i) { return i.user_id === x.user_id && i.category === parts[0] && String(i.item_id) === parts[1]; })[0];
+            if (!it) return null;
+            var y = Object.create(x); y._v = it.percent; y._done = it.completed; return y;
+          }).filter(Boolean);
+        } else {
+          m = BOARD.filter(function (b) { return b.k === board.by; })[0];
+          list = rows.map(function (x) { var y = Object.create(x); y._v = m.v(x); return y; });
+        }
+        if (board.status !== 'all') list = list.filter(function (x) { return x.st.k === board.status; });
+        list.sort(function (a, b) {
+          if (a._v == null && b._v == null) return 0; if (a._v == null) return 1; if (b._v == null) return -1;
+          return (b._v - a._v) || (b.overall - a.overall);
+        });
+        var top = m.max || Math.max.apply(null, list.map(function (x) { return x._v || 0; }).concat([1]));
+        function val(x) { return x._v == null ? '<span class="st-muted">No data yet</span>' : m.f(x._v, x); }
+        var ranked = list.filter(function (x) { return x._v != null; });
+        var podium = ranked.slice(0, 3);
+        $('#lbBody').innerHTML = !list.length ? '<p class="st-empty">Nobody matches these filters.</p>' :
+          (podium.length && !(m.k === 'misses' && !podium[0]._v) ? '<div class="lb-podium' + (m.warn ? ' warn' : '') + '"><p class="lb-pod-t">' + (m.warn ? 'Most misses: worth a review together' : 'Top ' + podium.length + ' · ' + esc(m.t)) + '</p><div class="lb-pod">' +
+            podium.map(function (x, i) {
+              return '<a class="lb-place p' + (i + 1) + '" href="profile.html?id=' + x.user_id + '"><span class="lb-medal">' + (i + 1) + '</span>' + avatar({ id: x.user_id, full_name: x.full_name }, 'big') +
+                '<b>' + esc(x.full_name) + '</b><span class="lb-val">' + val(x) + '</span>' + statusChip(x.st) + '</a>';
+            }).join('') + '</div></div>' : '') +
+          '<table class="st-table lb-table"><thead><tr><th>#</th><th>Associate</th><th>Status</th><th>' + esc(m.t) + '</th><th>Progress</th><th>Trainings</th><th>First try</th><th>Misses</th><th>Last activity</th></tr></thead><tbody>' +
+          list.map(function (x, i) {
+            var pct = x._v == null ? 0 : Math.round(100 * x._v / top);
+            return '<tr' + (m.warn && i < 3 && x._v ? ' class="lb-warn"' : '') + '><td class="lb-rank">' + (x._v == null ? '&#8212;' : i + 1) + '</td>' +
+              '<td><div class="up-who">' + avatar({ id: x.user_id, full_name: x.full_name }) + '<span class="tm-who"><b>' + profileLink(x.user_id, x.full_name) + '</b><small>' + esc(x.coaches ? 'Coach: ' + x.coaches : 'No coach') + '</small></span></div></td>' +
+              '<td>' + statusChip(x.st) + '</td>' +
+              '<td><div class="lb-metric' + (m.warn ? ' warn' : '') + '">' + bar(pct) + '<span>' + val(x) + '</span></div></td>' +
+              '<td><b>' + x.overall + '%</b></td><td>' + x.trainings_done + '/' + x.trainings + '</td>' +
+              '<td>' + (x.first_try == null ? '<span class="st-muted">&#8212;</span>' : x.first_try + '%') + '</td>' +
+              '<td>' + x.missed_first + '</td>' +
+              '<td>' + (x.last_activity_at ? day(x.last_activity_at) : '<span class="st-muted">None</span>') + '</td></tr>';
+          }).join('') + '</tbody></table>' +
+          '<p class="st-muted lb-note">Active: activity or a sign in during the last 7 days. Idle: 8 to 30 days. Inactive: more than 30 days, or never started. Misses counts wrong tries on checkpoints; the first try column is the share answered right at once.</p>';
+        board.list = list; board.m = m;
+      }
+      $('#lbBy').onclick = function (e) { var b = e.target.closest('button'); if (b && !b.disabled) { board.by = b.dataset.k; draw(); } };
+      $('#lbStatus').onclick = function (e) { var b = e.target.closest('button'); if (b) { board.status = b.dataset.s; draw(); } };
+      $('#lbScope').onchange = function () { board.scope = this.value; draw(); };
+      $('#lbPrint').onclick = function () { document.body.classList.add('print-board'); window.print(); document.body.classList.remove('print-board'); };
+      if ($('#lbCsv')) $('#lbCsv').onclick = function () {
+        var out = [['Rank', 'Associate', 'Email', 'Coach', 'Status', board.m.t, 'Progress %', 'Trainings completed', 'Trainings', 'Lessons done', 'Simulations %', 'First try %', 'Missed on the first try', 'Wrong tries', 'Emails sent', 'Email grade', 'Last activity', 'Last sign in']];
+        board.list.forEach(function (x, i) {
+          out.push([x._v == null ? '' : i + 1, x.full_name, x.email, x.coaches || '', x.st.t, x._v == null ? '' : x._v, x.overall, x.trainings_done, x.trainings, x.lessons_done,
+            x.sims_avg == null ? '' : x.sims_avg, x.first_try == null ? '' : x.first_try, x.missed_first, x.wrong_tries, x.emails_sent, x.email_avg == null ? '' : x.email_avg,
+            isoDay(x.last_activity_at), isoDay(x.last_sign_in_at)]);
+        });
+        saveCsv(out, 'skillcloud-leaderboard-' + isoDay(Date.now()) + '.csv');
+      };
+      draw();
+    }).catch(function (e) { box.innerHTML = '<p class="st-empty">Could not load: ' + esc(e.message) + '</p>'; });
   }
 
   /* ─────────── Insights: checkpoint questions ─────────── */
@@ -815,7 +929,7 @@
   function settings(m, profile) {
     mode = m; me = profile; sb = SCDB.client;
     openAfter = new URLSearchParams(location.search).get('open');
-    var all = { users: renderPeople, assign: renderAssign, progress: renderProgress, emails: renderEmails, insights: renderInsights };
+    var all = { users: renderPeople, assign: renderAssign, progress: renderProgress, board: renderBoard, emails: renderEmails, insights: renderInsights };
     if (m === 'admin') { all.teams = renderPermissions; all.sims = renderSims; all.announce = renderAnnounce; }
     return { sections: all, leaveOk: leaveOk };
   }
