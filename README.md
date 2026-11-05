@@ -104,7 +104,8 @@ enlaces. Si agregas una página nueva, va en la raíz.
 | `login.html`                | Sign in, create an account, reset the password (Supabase Auth) |
 | `account.html`              | Panel del asociado: cursos, logros, certificados y puntajes   |
 | `admin.html`                | Admin panel: progress, insights, grading, assignments, simulations, announcements |
-| `settings.html`             | Settings: account and password for everyone; Users (coaches: their team; admins: everyone) and Coach teams for admins |
+| `associates.html`           | Associates (in the nav for coaches and admins): Overview with team numbers, who needs attention and a card per associate; Leaderboard; Emails to grade; Question insights. Coaches see their team, admins everyone |
+| `settings.html`             | Settings: account and password for everyone. Coaches: Members and Assign. Admins: Users, Coach teams, Assign, Simulations, Announcements |
 | `admin.html`, `coach.html`  | Only redirect to `settings.html`, so old links keep working |
 | `profile.html?id=`          | Full profile of one person for coaches (their team) and admins (everyone): progress, every lesson, simulations and the case in progress, emails with grades, checkpoints missed on the first try, written work and the activity timeline |
 | `ai.html`                   | AI Introduction (curso, desbloquea las Simulations)            |
