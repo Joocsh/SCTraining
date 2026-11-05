@@ -170,9 +170,10 @@
   }
 
   /* ─────────── Associates · Overview ───────────
-     Team numbers, who needs attention, and one card per associate that
-     opens their full profile. */
-  var team2 = { q: '', status: 'all', sort: 'progress' };
+     Kept simple on purpose: three numbers, a short list of who needs
+     attention, and one card per associate. Every detail lives in the
+     associate's profile, one click away. */
+  var team2 = { q: '', status: 'all' };
   function waitingByUser() {
     return sb.from('email_submissions').select('id,user_id,grade:email_grades(submission_id)').then(function (r) {
       var by = {};
@@ -186,7 +187,7 @@
   function ago(t) {
     if (!t) return 'No activity yet';
     var days = Math.floor((Date.now() - Date.parse(t)) / 864e5);
-    return days < 1 ? 'Active today' : days === 1 ? 'Active yesterday' : 'Last active ' + days + ' days ago';
+    return days < 1 ? 'Active today' : days === 1 ? 'Active yesterday' : 'Active ' + days + ' days ago';
   }
   function renderTeam() {
     var box = $('#tabTeam');
@@ -202,116 +203,78 @@
       rows.forEach(function (x) { x.st = statusOf(x.last_activity_at, x.last_sign_in_at, x.banned_until); x.waiting = waiting[x.user_id] || 0; });
       var n = rows.length, active = rows.filter(function (x) { return x.st.k === 'on'; }).length;
       var avg = Math.round(rows.reduce(function (t, x) { return t + x.overall; }, 0) / n);
-      var tDone = rows.reduce(function (t, x) { return t + x.trainings_done; }, 0), tAll = rows.reduce(function (t, x) { return t + x.trainings; }, 0);
-      var q = rows.reduce(function (t, x) { return t + x.questions; }, 0), ok = rows.reduce(function (t, x) { return t + (x.questions - x.missed_first); }, 0);
       var toGrade = rows.reduce(function (t, x) { return t + x.waiting; }, 0);
 
-      /* who needs attention: quiet for a while, struggling, not started, emails waiting */
-      var quiet = rows.filter(function (x) { return x.st.k === 'idle' || x.st.k === 'none'; });
-      var struggling = rows.filter(function (x) { return x.questions >= 5 && x.first_try != null && x.first_try < 60; }).sort(function (a, b) { return a.first_try - b.first_try; });
-      var notStarted = rows.filter(function (x) { return !x.lessons_done && !x.questions; });
-      function who(list, why) {
-        return list.slice(0, 4).map(function (x) {
-          return '<a class="as-att-p" href="profile.html?id=' + x.user_id + '">' + avatar({ id: x.user_id, full_name: x.full_name }) + '<span><b>' + esc(x.full_name) + '</b><small>' + why(x) + '</small></span></a>';
-        }).join('') + (list.length > 4 ? '<p class="as-more">and ' + (list.length - 4) + ' more</p>' : '');
-      }
+      /* one list, most urgent first, five lines at most */
       var att = [];
-      if (toGrade) att.push('<div class="as-att warn"><h3>' + plural(toGrade, 'email') + ' waiting for a grade</h3><p>The associates see their grade and feedback as soon as you save it.</p><a class="st-btn" href="#emails">Grade them</a></div>');
-      if (quiet.length) att.push('<div class="as-att"><h3>Not active lately</h3>' + who(quiet, function (x) { return x.st.t + ' · ' + ago(x.last_activity_at || x.last_sign_in_at).replace('Last active ', ''); }) + '</div>');
-      if (struggling.length) att.push('<div class="as-att"><h3>Missing many checkpoints</h3>' + who(struggling, function (x) { return x.first_try + '% right on the first try'; }) + '</div>');
-      if (notStarted.length) att.push('<div class="as-att"><h3>Has not started</h3>' + who(notStarted, function (x) { return 'Joined ' + day(x.created_at); }) + '</div>');
+      if (toGrade) att.push('<a class="as-row as-row-mail" href="#emails"><span class="as-ico">&#9993;</span><span><b>' + plural(toGrade, 'email') + (toGrade === 1 ? ' is' : ' are') + ' waiting for your grade</b></span><span class="as-go">Grade &rarr;</span></a>');
+      rows.filter(function (x) { return x.st.k === 'none' || x.st.k === 'idle'; })
+        .sort(function (x, y) { return (Date.parse(x.last_activity_at || 0) || 0) - (Date.parse(y.last_activity_at || 0) || 0); })
+        .forEach(function (x) { att.push(person(x, !x.lessons_done && !x.questions ? 'Has not started yet' : 'No activity in ' + Math.floor((Date.now() - Date.parse(x.last_activity_at || x.last_sign_in_at)) / 864e5) + ' days')); });
+      rows.filter(function (x) { return x.st.k === 'on' && x.questions >= 5 && x.first_try != null && x.first_try < 60; })
+        .forEach(function (x) { att.push(person(x, 'Missing many checkpoints')); });
+      function person(x, why) {
+        return '<a class="as-row" href="profile.html?id=' + x.user_id + '">' + avatar({ id: x.user_id, full_name: x.full_name }) + '<span><b>' + esc(x.full_name) + '</b><small>' + why + '</small></span><span class="as-go">&rarr;</span></a>';
+      }
+      var more = att.length - 5;
 
-      box.innerHTML = '<div class="tm-kpis as-kpis">' +
-          '<div class="tm-kpi"><b>' + n + '</b><span>Associates</span></div>' +
-          '<div class="tm-kpi' + (active === n ? ' ok' : '') + '"><b>' + active + '<small>/' + n + '</small></b><span>Active this week</span></div>' +
-          '<div class="tm-kpi"><b>' + avg + '%</b><span>Average progress</span></div>' +
-          '<div class="tm-kpi"><b>' + tDone + '<small>/' + tAll + '</small></b><span>Trainings completed</span></div>' +
-          '<div class="tm-kpi"><b>' + (q ? Math.round(100 * ok / q) + '%' : '&#8212;') + '</b><span>Right on the first try</span></div>' +
-          '<a class="tm-kpi' + (toGrade ? ' warn' : '') + '" href="#emails"><b>' + toGrade + '</b><span>Emails to grade</span></a></div>' +
-        (att.length ? '<section class="as-attn"><h2 class="as-h2">Needs your attention</h2><div class="as-att-grid">' + att.join('') + '</div></section>' :
-          '<section class="as-attn"><div class="as-allgood">&#10003; Everyone is active and on track. Nothing needs your attention right now.</div></section>') +
-        '<section><div class="as-bar"><h2 class="as-h2">' + (mode === 'coach' ? 'Your associates' : 'All associates') + ' <span>' + n + '</span></h2>' +
-          '<div class="as-tools"><input class="tm-search" id="asQ" type="search" placeholder="Search by name or email" aria-label="Search associates" value="' + esc(team2.q) + '">' +
-          '<div class="st-seg" id="asSt">' + [['all', 'All'], ['on', 'Active'], ['idle', 'Idle'], ['none', 'Inactive']].map(function (s) { return '<button type="button" data-s="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>' +
-          '<label class="as-sort">Sort by <select class="tm-sel" id="asSort">' + [['progress', 'Progress'], ['activity', 'Last activity'], ['first', 'First try accuracy'], ['misses', 'Most misses'], ['name', 'Name']]
-            .map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === team2.sort ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label></div></div>' +
+      box.innerHTML = '<div class="as-nums">' +
+          '<div><b>' + n + '</b><span>' + (n === 1 ? 'associate' : 'associates') + '</span></div>' +
+          '<div><b>' + active + '</b><span>active this week</span></div>' +
+          '<div><b>' + avg + '%</b><span>average progress</span></div></div>' +
+        '<section class="as-attn"><h2 class="as-h2">Needs your attention</h2>' +
+          (att.length ? '<div class="as-list">' + att.slice(0, 5).join('') + '</div>' + (more > 0 ? '<p class="as-more">and ' + more + ' more in the cards below</p>' : '')
+            : '<div class="as-allgood">&#10003; All good. Everyone is active and on track.</div>') + '</section>' +
+        '<section><div class="as-bar"><h2 class="as-h2">' + (mode === 'coach' ? 'Your associates' : 'All associates') + '</h2>' +
+          '<div class="as-tools"><input class="tm-search" id="asQ" type="search" placeholder="Search a name" aria-label="Search associates" value="' + esc(team2.q) + '">' +
+          '<div class="st-seg" id="asSt">' + [['all', 'All'], ['on', 'Active'], ['idle', 'Idle'], ['none', 'Inactive']].map(function (s2) { return '<button type="button" data-s="' + s2[0] + '">' + s2[1] + '</button>'; }).join('') + '</div></div></div>' +
           '<div class="as-grid" id="asGrid"></div></section>';
 
       function cards() {
         var q2 = team2.q.toLowerCase();
         var list = rows.filter(function (x) {
           return (team2.status === 'all' || x.st.k === team2.status) && (!q2 || (x.full_name + ' ' + x.email).toLowerCase().indexOf(q2) > -1);
-        });
-        var by = {
-          progress: function (a, b) { return b.overall - a.overall; },
-          activity: function (a, b) { return (Date.parse(b.last_activity_at || 0) || 0) - (Date.parse(a.last_activity_at || 0) || 0); },
-          first: function (a, b) { return (b.first_try == null ? -1 : b.first_try) - (a.first_try == null ? -1 : a.first_try); },
-          misses: function (a, b) { return b.wrong_tries - a.wrong_tries; },
-          name: function (a, b) { return String(a.full_name).localeCompare(String(b.full_name)); }
-        }[team2.sort];
-        list.sort(function (a, b) { return by(a, b) || String(a.full_name).localeCompare(String(b.full_name)); });
-        $$('#asSt button').forEach(function (b) { b.classList.toggle('on', b.dataset.s === team2.status); });
+        }).sort(function (x, y) { return (y.overall - x.overall) || String(x.full_name).localeCompare(String(y.full_name)); });
+        $$('#asSt button').forEach(function (bt) { bt.classList.toggle('on', bt.dataset.s === team2.status); });
         $('#asGrid').innerHTML = list.length ? list.map(function (x) {
           return '<a class="as-card" href="profile.html?id=' + x.user_id + '">' +
-            '<div class="as-top">' + avatar({ id: x.user_id, full_name: x.full_name }) + '<span class="as-who"><b>' + esc(x.full_name) + '</b><small>' + esc(x.coaches ? 'Coach: ' + x.coaches : 'No coach yet') + '</small></span>' + statusChip(x.st) + '</div>' +
-            '<div class="as-mid"><div class="as-ring" style="--p:' + x.overall + '"><b>' + x.overall + '%</b><span>overall</span></div>' +
-              '<dl class="as-stats">' +
-                '<div><dt>Trainings</dt><dd>' + x.trainings_done + '<small>/' + x.trainings + '</small></dd></div>' +
-                '<div><dt>Lessons done</dt><dd>' + x.lessons_done + '</dd></div>' +
-                '<div><dt>First try</dt><dd' + (x.first_try != null && x.first_try < 60 ? ' class="low"' : '') + '>' + (x.first_try == null ? '&#8212;' : x.first_try + '%') + '</dd></div>' +
-                '<div><dt>Simulations</dt><dd>' + (x.sims ? (x.sims_avg || 0) + '%' : '&#8212;') + '</dd></div>' +
-              '</dl></div>' +
-            (x.waiting ? '<p class="as-wait">' + plural(x.waiting, 'email') + ' waiting for a grade</p>' : '') +
-            '<div class="as-foot"><span>' + ago(x.last_activity_at) + '</span><span class="as-go">View profile &rarr;</span></div></a>';
-        }).join('') : '<p class="st-empty as-none">Nobody matches. Try another search or status.</p>';
+            '<div class="as-top">' + avatar({ id: x.user_id, full_name: x.full_name }) + '<span class="as-who"><b>' + esc(x.full_name) + '</b></span>' + statusChip(x.st) + '</div>' +
+            '<div class="as-prog"><div class="st-bar"><i style="width:' + x.overall + '%"></i></div><b>' + x.overall + '%</b></div>' +
+            '<p class="as-sum">' + (x.trainings ? x.trainings_done + ' of ' + plural(x.trainings, 'training') + ' done' : 'No trainings assigned yet') + ' &middot; ' + ago(x.last_activity_at) + '</p>' +
+            (x.waiting ? '<p class="as-wait">' + plural(x.waiting, 'email') + ' to grade</p>' : '') + '</a>';
+        }).join('') : '<p class="st-empty as-none">Nobody matches.</p>';
       }
       $('#asQ').oninput = function () { team2.q = this.value; cards(); };
-      $('#asSt').onclick = function (e) { var b = e.target.closest('button'); if (b) { team2.status = b.dataset.s; cards(); } };
-      $('#asSort').onchange = function () { team2.sort = this.value; cards(); };
+      $('#asSt').onclick = function (e) { var bt = e.target.closest('button'); if (bt) { team2.status = bt.dataset.s; cards(); } };
       cards();
     }).catch(function (e) { box.innerHTML = '<p class="st-empty">Could not load: ' + esc(e.message) + '</p>'; });
   }
 
   /* ─────────── Leaderboard ───────────
-     One row per associate from team_leaderboard(), ranked by the metric the
-     person picks. "Training" narrows it to the people doing one training or
-     simulation. Coaches see their team, admins everyone. */
+     Four ways to compare, one training at a time if wanted, a podium and
+     a short table. */
   var BOARD = [
     { k: 'overall', t: 'Progress', v: function (r) { return r.overall; }, f: function (v) { return v + '%'; }, max: 100 },
     { k: 'trainings', t: 'Trainings completed', v: function (r) { return r.trainings_done; }, f: function (v, r) { return v + ' of ' + r.trainings; } },
-    { k: 'lessons', t: 'Lessons done', v: function (r) { return r.lessons_done; }, f: function (v) { return String(v); } },
-    { k: 'first', t: 'First try accuracy', v: function (r) { return r.first_try; }, f: function (v) { return v + '%'; }, max: 100 },
-    { k: 'misses', t: 'Most misses', v: function (r) { return r.wrong_tries; }, f: function (v) { return plural(v, 'wrong try').replace('trys', 'tries'); }, warn: true },
-    { k: 'sims', t: 'Simulations', v: function (r) { return r.sims ? r.sims_avg : null; }, f: function (v) { return v + '%'; }, max: 100 },
-    { k: 'email', t: 'Email grade', v: function (r) { return r.email_avg == null ? null : +r.email_avg; }, f: function (v) { return v + ' / 5'; }, max: 5 }
+    { k: 'first', t: 'Right on the first try', v: function (r) { return r.first_try; }, f: function (v) { return v + '%'; }, max: 100 },
+    { k: 'misses', t: 'Most mistakes', v: function (r) { return r.wrong_tries; }, f: function (v) { return plural(v, 'mistake'); }, warn: true }
   ];
-  var board = { by: 'overall', scope: '', status: 'all' };
+  var board = { by: 'overall', scope: '' };
   function renderBoard() {
     var box = $('#tabBoard');
     box.innerHTML = '<p class="st-muted">Loading…</p>';
     return Promise.all([sb.rpc('team_leaderboard'), sb.from('progress_items').select('user_id,category,item_id,title,percent,completed')]).then(function (r) {
       var rows = check(r[0]), items = check(r[1]);
       rows.forEach(function (x) { x.st = statusOf(x.last_activity_at, x.last_sign_in_at, x.banned_until); });
-      if (!rows.length) { box.innerHTML = '<p class="st-empty">' + (mode === 'coach' ? 'Your team is empty. Add associates in Members.' : 'No associates yet.') + '</p>'; return; }
-      var scopes = {}; items.forEach(function (i) { scopes[i.category + ':' + i.item_id] = (i.category === 'simulation' ? 'Simulation · ' : i.category === 'introduction' ? '' : 'Training · ') + i.title; });
-      var active = rows.filter(function (x) { return x.st.k === 'on'; }).length;
-      var avg = Math.round(rows.reduce(function (t, x) { return t + x.overall; }, 0) / rows.length);
-      var q = rows.reduce(function (t, x) { return t + x.questions; }, 0), ok = rows.reduce(function (t, x) { return t + (x.questions - x.missed_first); }, 0);
-      box.innerHTML = '<div class="st-bar-top lb-head"><div><h2 class="tm-title">Leaderboard</h2><p class="st-muted">' + (mode === 'coach' ? 'Your team' : 'Every associate') + ', compared live. Pick what to rank by, or one training to compare the people doing it.</p></div>' +
-          '<div class="lb-acts"><button type="button" class="tm-ghost" id="lbPrint">Print</button>' + (mode === 'admin' ? '<button type="button" class="st-btn st-dl" id="lbCsv">Download CSV</button>' : '') + '</div></div>' +
-        '<div class="tm-kpis lb-kpis">' +
-          '<div class="tm-kpi"><b>' + rows.length + '</b><span>Associates</span></div>' +
-          '<div class="tm-kpi' + (active < rows.length ? ' warn' : ' ok') + '"><b>' + active + '</b><span>Active this week</span></div>' +
-          '<div class="tm-kpi"><b>' + avg + '%</b><span>Average progress</span></div>' +
-          '<div class="tm-kpi"><b>' + (q ? Math.round(100 * ok / q) + '%' : '&#8212;') + '</b><span>Right on the first try, team</span></div></div>' +
-        '<div class="lb-controls"><div class="st-seg lb-by" id="lbBy">' + BOARD.map(function (m) { return '<button type="button" data-k="' + m.k + '">' + m.t + '</button>'; }).join('') + '</div>' +
-          '<div class="lb-filters"><select class="tm-sel" id="lbScope" aria-label="Training"><option value="">All trainings and simulations</option>' +
-            Object.keys(scopes).sort(function (a, b) { return scopes[a].localeCompare(scopes[b]); }).map(function (k) { return '<option value="' + k + '">' + esc(scopes[k]) + '</option>'; }).join('') + '</select>' +
-          '<div class="st-seg lb-stat" id="lbStatus">' + [['all', 'All'], ['on', 'Active'], ['idle', 'Idle'], ['none', 'Inactive']].map(function (s) { return '<button type="button" data-s="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div></div></div>' +
+      if (!rows.length) { box.innerHTML = '<p class="st-empty">' + (mode === 'coach' ? 'Your team is empty. Add associates in Settings, under Members.' : 'No associates yet.') + '</p>'; return; }
+      var scopes = {}; items.forEach(function (i) { scopes[i.category + ':' + i.item_id] = i.title; });
+      box.innerHTML = '<div class="lb-head"><div class="st-seg lb-by" id="lbBy">' + BOARD.map(function (m) { return '<button type="button" data-k="' + m.k + '">' + m.t + '</button>'; }).join('') + '</div>' +
+          '<select class="tm-sel" id="lbScope" aria-label="Compare in"><option value="">In all trainings</option>' +
+            Object.keys(scopes).sort(function (x, y) { return scopes[x].localeCompare(scopes[y]); }).map(function (k) { return '<option value="' + k + '">In ' + esc(scopes[k]) + '</option>'; }).join('') + '</select>' +
+          '<span class="lb-acts"><button type="button" class="st-link" id="lbPrint">Print</button>' + (mode === 'admin' ? '<button type="button" class="st-link" id="lbCsv">Download CSV</button>' : '') + '</span></div>' +
         '<div id="lbBody"></div>';
       function draw() {
-        $$('#lbBy button').forEach(function (b) { b.classList.toggle('on', b.dataset.k === board.by); b.disabled = !!board.scope; });
-        $$('#lbStatus button').forEach(function (b) { b.classList.toggle('on', b.dataset.s === board.status); });
+        $$('#lbBy button').forEach(function (bt) { bt.classList.toggle('on', bt.dataset.k === board.by); bt.disabled = !!board.scope; });
         $('#lbScope').value = board.scope;
         var m, list;
         if (board.scope) {
@@ -324,45 +287,34 @@
             var y = Object.create(x); y._v = it.percent; y._done = it.completed; return y;
           }).filter(Boolean);
         } else {
-          m = BOARD.filter(function (b) { return b.k === board.by; })[0];
+          m = BOARD.filter(function (bd) { return bd.k === board.by; })[0];
           list = rows.map(function (x) { var y = Object.create(x); y._v = m.v(x); return y; });
         }
-        if (board.status !== 'all') list = list.filter(function (x) { return x.st.k === board.status; });
-        list.sort(function (a, b) {
-          if (a._v == null && b._v == null) return 0; if (a._v == null) return 1; if (b._v == null) return -1;
-          return (b._v - a._v) || (b.overall - a.overall);
+        list.sort(function (x, y) {
+          if (x._v == null && y._v == null) return 0; if (x._v == null) return 1; if (y._v == null) return -1;
+          return (y._v - x._v) || (y.overall - x.overall);
         });
         var top = m.max || Math.max.apply(null, list.map(function (x) { return x._v || 0; }).concat([1]));
         function val(x) { return x._v == null ? '<span class="st-muted">No data yet</span>' : m.f(x._v, x); }
-        var ranked = list.filter(function (x) { return x._v != null; });
-        var podium = ranked.slice(0, 3);
-        $('#lbBody').innerHTML = !list.length ? '<p class="st-empty">Nobody matches these filters.</p>' :
-          (podium.length && !(m.k === 'misses' && !podium[0]._v) ? '<div class="lb-podium' + (m.warn ? ' warn' : '') + '"><p class="lb-pod-t">' + (m.warn ? 'Most misses: worth a review together' : 'Top ' + podium.length + ' · ' + esc(m.t)) + '</p><div class="lb-pod">' +
-            podium.map(function (x, i) {
+        var podium = list.filter(function (x) { return x._v; }).slice(0, 3);
+        $('#lbBody').innerHTML = !list.length ? '<p class="st-empty">Nobody is doing this one yet.</p>' :
+          (podium.length ? '<div class="lb-pod' + (m.warn ? ' warn' : '') + '">' + podium.map(function (x, i) {
               return '<a class="lb-place p' + (i + 1) + '" href="profile.html?id=' + x.user_id + '"><span class="lb-medal">' + (i + 1) + '</span>' + avatar({ id: x.user_id, full_name: x.full_name }, 'big') +
-                '<b>' + esc(x.full_name) + '</b><span class="lb-val">' + val(x) + '</span>' + statusChip(x.st) + '</a>';
-            }).join('') + '</div></div>' : '') +
-          '<div class="lb-scroll"><table class="st-table lb-table"><thead><tr><th>#</th><th>Associate</th><th>Status</th><th>' + esc(m.t) + '</th>' + (m.k === 'overall' ? '' : '<th>Progress</th>') + '<th>Trainings</th><th>First try</th><th>Misses</th><th>Last activity</th></tr></thead><tbody>' +
-          list.map(function (x, i) {
+                '<b>' + esc(x.full_name) + '</b><span class="lb-val">' + val(x) + '</span></a>';
+            }).join('') + '</div>' + (m.warn ? '<p class="lb-hint">The people with the most mistakes are a good place to start a review.</p>' : '') : '') +
+          '<div class="lb-list">' + list.map(function (x, i) {
             var pct = x._v == null ? 0 : Math.round(100 * x._v / top);
-            return '<tr' + (m.warn && i < 3 && x._v ? ' class="lb-warn"' : '') + '><td class="lb-rank">' + (x._v == null ? '&#8212;' : i + 1) + '</td>' +
-              '<td><div class="up-who">' + avatar({ id: x.user_id, full_name: x.full_name }) + '<span class="tm-who"><b>' + profileLink(x.user_id, x.full_name) + '</b><small>' + esc(x.coaches ? 'Coach: ' + x.coaches : 'No coach') + '</small></span></div></td>' +
-              '<td>' + statusChip(x.st) + '</td>' +
-              '<td><div class="lb-metric' + (m.warn ? ' warn' : '') + '">' + bar(pct) + '<span>' + val(x) + '</span></div></td>' +
-              (m.k === 'overall' ? '' : '<td><b>' + x.overall + '%</b></td>') + '<td>' + x.trainings_done + '/' + x.trainings + '</td>' +
-              '<td>' + (x.first_try == null ? '<span class="st-muted">&#8212;</span>' : x.first_try + '%') + '</td>' +
-              '<td>' + x.missed_first + '</td>' +
-              '<td>' + (x.last_activity_at ? day(x.last_activity_at) : '<span class="st-muted">None</span>') + '</td></tr>';
-          }).join('') + '</tbody></table></div>' +
-          '<p class="st-muted lb-note">Active: activity or a sign in during the last 7 days. Idle: 8 to 30 days. Inactive: more than 30 days, or never started. Misses counts wrong tries on checkpoints; the first try column is the share answered right at once.</p>';
+            return '<a class="lb-row" href="profile.html?id=' + x.user_id + '"><span class="lb-rank">' + (x._v == null ? '&#8212;' : i + 1) + '</span>' +
+              avatar({ id: x.user_id, full_name: x.full_name }) + '<span class="lb-who"><b>' + esc(x.full_name) + '</b>' + statusChip(x.st) + '</span>' +
+              '<span class="lb-metric' + (m.warn ? ' warn' : '') + '">' + bar(pct) + '<span>' + val(x) + '</span></span></a>';
+          }).join('') + '</div>';
         board.list = list; board.m = m;
       }
-      $('#lbBy').onclick = function (e) { var b = e.target.closest('button'); if (b && !b.disabled) { board.by = b.dataset.k; draw(); } };
-      $('#lbStatus').onclick = function (e) { var b = e.target.closest('button'); if (b) { board.status = b.dataset.s; draw(); } };
+      $('#lbBy').onclick = function (e) { var bt = e.target.closest('button'); if (bt && !bt.disabled) { board.by = bt.dataset.k; draw(); } };
       $('#lbScope').onchange = function () { board.scope = this.value; draw(); };
       $('#lbPrint').onclick = function () { document.body.classList.add('print-board'); window.print(); document.body.classList.remove('print-board'); };
       if ($('#lbCsv')) $('#lbCsv').onclick = function () {
-        var out = [['Rank', 'Associate', 'Email', 'Coach', 'Status', board.m.t, 'Progress %', 'Trainings completed', 'Trainings', 'Lessons done', 'Simulations %', 'First try %', 'Missed on the first try', 'Wrong tries', 'Emails sent', 'Email grade', 'Last activity', 'Last sign in']];
+        var out = [['Rank', 'Associate', 'Email', 'Coach', 'Status', board.m.t, 'Progress %', 'Trainings completed', 'Trainings', 'Lessons done', 'Simulations %', 'First try %', 'Missed on the first try', 'Mistakes', 'Emails sent', 'Email grade', 'Last activity', 'Last sign in']];
         board.list.forEach(function (x, i) {
           out.push([x._v == null ? '' : i + 1, x.full_name, x.email, x.coaches || '', x.st.t, x._v == null ? '' : x._v, x.overall, x.trainings_done, x.trainings, x.lessons_done,
             x.sims_avg == null ? '' : x.sims_avg, x.first_try == null ? '' : x.first_try, x.missed_first, x.wrong_tries, x.emails_sent, x.email_avg == null ? '' : x.email_avg,
