@@ -374,7 +374,7 @@
       case 'reminder': {
         var what = n.course ? n.course.title : (n.sim ? n.sim.title : '');
         if (n.person) {
-          return { t: n.person.full_name + ' has not finished ' + what, s: n.message || '', href: root('settings.html#progress') };
+          return { t: n.person.full_name + ' has not finished ' + what, s: n.message || '', href: root('associates.html') };
         }
         return { t: 'Keep going: ' + what, s: n.message || '', href: n.course ? root(n.course.page_path) : (n.sim ? root(n.sim.page_path) : null) };
       }

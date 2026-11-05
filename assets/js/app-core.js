@@ -64,7 +64,7 @@
     if(window.SCDB || window.__scdbLoading) return;
     window.__scdbLoading = true;
     var lib = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
-    var db = ROOT + 'assets/js/sc-db.js?v=20261022g';
+    var db = ROOT + 'assets/js/sc-db.js?v=20261105';
     /* the simulation pages also keep each person's place in a case */
     var resume = /\/roles\/[^/]+\.html$/.test(location.pathname) ? '<script src="'+ROOT+'assets/js/sim-resume.js?v=20261022b"><\/script>' : '';
     if(document.readyState === 'loading'){
@@ -386,8 +386,23 @@
       logout().then(go, go);
     };
   }
+  /* coaches and admins get Associates in the nav: their team's progress */
+  function staffNav(u){
+    if(!u || !isStaff(u)) return;
+    var here_ = location.pathname.split('/').pop();
+    document.querySelectorAll('.nav .menu').forEach(function(menu){
+      if(menu.querySelector('[data-nav="associates"]')) return;
+      var a = document.createElement('a');
+      a.className = 'navlink' + (here_ === 'associates.html' || here_ === 'profile.html' ? ' active' : '');
+      a.setAttribute('data-nav', 'associates');
+      a.href = rootUrl('associates.html');
+      a.textContent = 'Associates';
+      menu.appendChild(a);
+    });
+  }
   function wireNav(){
     var u = currentUser();
+    staffNav(u);
     document.querySelectorAll('.user-chip').forEach(function(chip){
       var av = chip.querySelector('.av');
       var label = chip.querySelector('.uc-label');

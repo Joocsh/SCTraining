@@ -1,6 +1,8 @@
 /* ══════════════════════════════════════════════════════════
-   Staff sections of Settings (settings.html). Coaches and admins have one
-   place: their account, their people and the Academy, side by side.
+   Staff sections. Associates (associates.html, in the nav) shows how the
+   team is doing: Overview, Leaderboard, Emails to grade, Question insights.
+   Settings (settings.html) keeps accounts, coach teams, assignments,
+   simulations and announcements.
    Everything comes from Supabase; row level security decides what each
    person sees (a coach: the associates on their team; an admin: all).
      Users          admins: every account (role, main simulation, password,
@@ -165,6 +167,109 @@
       toast('Report downloaded.');
     }).catch(function (e) { toast(e.message, true); })
       .then(function () { btn.disabled = false; btn.textContent = 'Download report (CSV)'; });
+  }
+
+  /* ─────────── Associates · Overview ───────────
+     Team numbers, who needs attention, and one card per associate that
+     opens their full profile. */
+  var team2 = { q: '', status: 'all', sort: 'progress' };
+  function waitingByUser() {
+    return sb.from('email_submissions').select('id,user_id,grade:email_grades(submission_id)').then(function (r) {
+      var by = {};
+      check(r).forEach(function (s) {
+        var g = Array.isArray(s.grade) ? s.grade[0] : s.grade;
+        if (!g && s.user_id !== me.id) by[s.user_id] = (by[s.user_id] || 0) + 1;
+      });
+      return by;
+    });
+  }
+  function ago(t) {
+    if (!t) return 'No activity yet';
+    var days = Math.floor((Date.now() - Date.parse(t)) / 864e5);
+    return days < 1 ? 'Active today' : days === 1 ? 'Active yesterday' : 'Last active ' + days + ' days ago';
+  }
+  function renderTeam() {
+    var box = $('#tabTeam');
+    box.innerHTML = '<p class="st-muted">Loading…</p>';
+    return Promise.all([sb.rpc('team_leaderboard'), waitingByUser()]).then(function (r) {
+      var rows = check(r[0]), waiting = r[1];
+      if (!rows.length) {
+        box.innerHTML = '<div class="tm-empty st-card"><h3>' + (mode === 'coach' ? 'Your team is empty' : 'No associates yet') + '</h3>' +
+          '<p>' + (mode === 'coach' ? 'Add associates in Settings, under Members. They join your team and show up here.' : 'Add associates in Settings, under Users.') + '</p>' +
+          '<a class="st-btn" href="settings.html#users">Open Settings</a></div>';
+        return;
+      }
+      rows.forEach(function (x) { x.st = statusOf(x.last_activity_at, x.last_sign_in_at, x.banned_until); x.waiting = waiting[x.user_id] || 0; });
+      var n = rows.length, active = rows.filter(function (x) { return x.st.k === 'on'; }).length;
+      var avg = Math.round(rows.reduce(function (t, x) { return t + x.overall; }, 0) / n);
+      var tDone = rows.reduce(function (t, x) { return t + x.trainings_done; }, 0), tAll = rows.reduce(function (t, x) { return t + x.trainings; }, 0);
+      var q = rows.reduce(function (t, x) { return t + x.questions; }, 0), ok = rows.reduce(function (t, x) { return t + (x.questions - x.missed_first); }, 0);
+      var toGrade = rows.reduce(function (t, x) { return t + x.waiting; }, 0);
+
+      /* who needs attention: quiet for a while, struggling, not started, emails waiting */
+      var quiet = rows.filter(function (x) { return x.st.k === 'idle' || x.st.k === 'none'; });
+      var struggling = rows.filter(function (x) { return x.questions >= 5 && x.first_try != null && x.first_try < 60; }).sort(function (a, b) { return a.first_try - b.first_try; });
+      var notStarted = rows.filter(function (x) { return !x.lessons_done && !x.questions; });
+      function who(list, why) {
+        return list.slice(0, 4).map(function (x) {
+          return '<a class="as-att-p" href="profile.html?id=' + x.user_id + '">' + avatar({ id: x.user_id, full_name: x.full_name }) + '<span><b>' + esc(x.full_name) + '</b><small>' + why(x) + '</small></span></a>';
+        }).join('') + (list.length > 4 ? '<p class="as-more">and ' + (list.length - 4) + ' more</p>' : '');
+      }
+      var att = [];
+      if (toGrade) att.push('<div class="as-att warn"><h3>' + plural(toGrade, 'email') + ' waiting for a grade</h3><p>The associates see their grade and feedback as soon as you save it.</p><a class="st-btn" href="#emails">Grade them</a></div>');
+      if (quiet.length) att.push('<div class="as-att"><h3>Not active lately</h3>' + who(quiet, function (x) { return x.st.t + ' · ' + ago(x.last_activity_at || x.last_sign_in_at).replace('Last active ', ''); }) + '</div>');
+      if (struggling.length) att.push('<div class="as-att"><h3>Missing many checkpoints</h3>' + who(struggling, function (x) { return x.first_try + '% right on the first try'; }) + '</div>');
+      if (notStarted.length) att.push('<div class="as-att"><h3>Has not started</h3>' + who(notStarted, function (x) { return 'Joined ' + day(x.created_at); }) + '</div>');
+
+      box.innerHTML = '<div class="tm-kpis as-kpis">' +
+          '<div class="tm-kpi"><b>' + n + '</b><span>Associates</span></div>' +
+          '<div class="tm-kpi' + (active === n ? ' ok' : '') + '"><b>' + active + '<small>/' + n + '</small></b><span>Active this week</span></div>' +
+          '<div class="tm-kpi"><b>' + avg + '%</b><span>Average progress</span></div>' +
+          '<div class="tm-kpi"><b>' + tDone + '<small>/' + tAll + '</small></b><span>Trainings completed</span></div>' +
+          '<div class="tm-kpi"><b>' + (q ? Math.round(100 * ok / q) + '%' : '&#8212;') + '</b><span>Right on the first try</span></div>' +
+          '<a class="tm-kpi' + (toGrade ? ' warn' : '') + '" href="#emails"><b>' + toGrade + '</b><span>Emails to grade</span></a></div>' +
+        (att.length ? '<section class="as-attn"><h2 class="as-h2">Needs your attention</h2><div class="as-att-grid">' + att.join('') + '</div></section>' :
+          '<section class="as-attn"><div class="as-allgood">&#10003; Everyone is active and on track. Nothing needs your attention right now.</div></section>') +
+        '<section><div class="as-bar"><h2 class="as-h2">' + (mode === 'coach' ? 'Your associates' : 'All associates') + ' <span>' + n + '</span></h2>' +
+          '<div class="as-tools"><input class="tm-search" id="asQ" type="search" placeholder="Search by name or email" aria-label="Search associates" value="' + esc(team2.q) + '">' +
+          '<div class="st-seg" id="asSt">' + [['all', 'All'], ['on', 'Active'], ['idle', 'Idle'], ['none', 'Inactive']].map(function (s) { return '<button type="button" data-s="' + s[0] + '">' + s[1] + '</button>'; }).join('') + '</div>' +
+          '<label class="as-sort">Sort by <select class="tm-sel" id="asSort">' + [['progress', 'Progress'], ['activity', 'Last activity'], ['first', 'First try accuracy'], ['misses', 'Most misses'], ['name', 'Name']]
+            .map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === team2.sort ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></label></div></div>' +
+          '<div class="as-grid" id="asGrid"></div></section>';
+
+      function cards() {
+        var q2 = team2.q.toLowerCase();
+        var list = rows.filter(function (x) {
+          return (team2.status === 'all' || x.st.k === team2.status) && (!q2 || (x.full_name + ' ' + x.email).toLowerCase().indexOf(q2) > -1);
+        });
+        var by = {
+          progress: function (a, b) { return b.overall - a.overall; },
+          activity: function (a, b) { return (Date.parse(b.last_activity_at || 0) || 0) - (Date.parse(a.last_activity_at || 0) || 0); },
+          first: function (a, b) { return (b.first_try == null ? -1 : b.first_try) - (a.first_try == null ? -1 : a.first_try); },
+          misses: function (a, b) { return b.wrong_tries - a.wrong_tries; },
+          name: function (a, b) { return String(a.full_name).localeCompare(String(b.full_name)); }
+        }[team2.sort];
+        list.sort(function (a, b) { return by(a, b) || String(a.full_name).localeCompare(String(b.full_name)); });
+        $$('#asSt button').forEach(function (b) { b.classList.toggle('on', b.dataset.s === team2.status); });
+        $('#asGrid').innerHTML = list.length ? list.map(function (x) {
+          return '<a class="as-card" href="profile.html?id=' + x.user_id + '">' +
+            '<div class="as-top">' + avatar({ id: x.user_id, full_name: x.full_name }) + '<span class="as-who"><b>' + esc(x.full_name) + '</b><small>' + esc(x.coaches ? 'Coach: ' + x.coaches : 'No coach yet') + '</small></span>' + statusChip(x.st) + '</div>' +
+            '<div class="as-mid"><div class="as-ring" style="--p:' + x.overall + '"><b>' + x.overall + '%</b><span>overall</span></div>' +
+              '<dl class="as-stats">' +
+                '<div><dt>Trainings</dt><dd>' + x.trainings_done + '<small>/' + x.trainings + '</small></dd></div>' +
+                '<div><dt>Lessons done</dt><dd>' + x.lessons_done + '</dd></div>' +
+                '<div><dt>First try</dt><dd' + (x.first_try != null && x.first_try < 60 ? ' class="low"' : '') + '>' + (x.first_try == null ? '&#8212;' : x.first_try + '%') + '</dd></div>' +
+                '<div><dt>Simulations</dt><dd>' + (x.sims ? (x.sims_avg || 0) + '%' : '&#8212;') + '</dd></div>' +
+              '</dl></div>' +
+            (x.waiting ? '<p class="as-wait">' + plural(x.waiting, 'email') + ' waiting for a grade</p>' : '') +
+            '<div class="as-foot"><span>' + ago(x.last_activity_at) + '</span><span class="as-go">View profile &rarr;</span></div></a>';
+        }).join('') : '<p class="st-empty as-none">Nobody matches. Try another search or status.</p>';
+      }
+      $('#asQ').oninput = function () { team2.q = this.value; cards(); };
+      $('#asSt').onclick = function (e) { var b = e.target.closest('button'); if (b) { team2.status = b.dataset.s; cards(); } };
+      $('#asSort').onchange = function () { team2.sort = this.value; cards(); };
+      cards();
+    }).catch(function (e) { box.innerHTML = '<p class="st-empty">Could not load: ' + esc(e.message) + '</p>'; });
   }
 
   /* ─────────── Leaderboard ───────────
@@ -929,9 +1034,12 @@
   function settings(m, profile) {
     mode = m; me = profile; sb = SCDB.client;
     openAfter = new URLSearchParams(location.search).get('open');
-    var all = { users: renderPeople, assign: renderAssign, progress: renderProgress, board: renderBoard, emails: renderEmails, insights: renderInsights };
+    var all = { users: renderPeople, assign: renderAssign, progress: renderProgress, team: renderTeam, board: renderBoard, emails: renderEmails, insights: renderInsights };
     if (m === 'admin') { all.teams = renderPermissions; all.sims = renderSims; all.announce = renderAnnounce; }
-    return { sections: all, leaveOk: leaveOk };
+    return {
+      sections: all, leaveOk: leaveOk,
+      emailsWaiting: function () { return waitingByUser().then(function (by) { return Object.keys(by).reduce(function (t, k) { return t + by[k]; }, 0); }).catch(function () { return 0; }); }
+    };
   }
   window.SCStaff = { settings: settings };
 })();

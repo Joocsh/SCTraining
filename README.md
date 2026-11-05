@@ -39,8 +39,8 @@ Settings waits for "Save changes":
 | Role      | Panel          | Can                                                                 |
 | --------- | -------------- | ------------------------------------------------------------------- |
 | associate | `account.html` | Take the Introduction, then the trainings and simulations they have |
-| coach     | `settings.html` | Their team (Members, Assign, Progress, Emails to grade, Insights) and each associate's full profile (`profile.html`) |
-| admin     | `settings.html` | Everything: users and roles, coach teams, assignments, progress, emails, insights, open simulations, announcements, every profile |
+| coach     | `associates.html`, `settings.html` | Their team's progress, leaderboard, emails to grade and insights; each associate's full profile (`profile.html`); members and assignments in Settings |
+| admin     | `associates.html`, `settings.html` | Everything: every associate's progress, the leaderboard, emails and insights; users, roles, coach teams, assignments, open simulations and announcements in Settings |
 
 The Introduction is required before any training or simulation. Nobody starts with
 trainings or simulations: an admin, or the associate's coach, assigns them in the Assign
@@ -201,7 +201,7 @@ El núcleo. Expone todo en `window.SCApp`. Cubre cuatro cosas:
 4. **Navegación.** `wireNav()` arma el chip de usuario y los botones de logout en toda
    página que cargue este archivo.
 
-`assets/js/staff.js` drives the staff sections of `settings.html`, `assets/js/profile.js`
+`assets/js/staff.js` drives the staff sections of `associates.html` and `settings.html`, `assets/js/profile.js`
 drives `profile.html`, and both talk to Supabase directly; row level security decides what each person can read and change.
 
 ### Home guiado

@@ -1,8 +1,11 @@
 /* ══════════════════════════════════════════════════════════
    Settings (settings.html): everything apart from learning (My profile).
      Account, Password   everyone
-     My team             coaches: Members, Assign, Progress, Leaderboard, Emails, Insights
-     People, Learning,   admins: Users, Coach teams, Assign, Progress, Leaderboard,
+     My team             coaches: Members, Assign
+     People, Academy     admins: Users, Coach teams, Assign, Simulations,
+                         Announcements
+   Progress, the Leaderboard, emails to grade and insights live in
+   Associates (associates.html), in the nav. Old links to them land there.
      Academy             Emails, Insights, Simulations, Announcements
    The staff sections come from staff.js (SCStaff.settings).
    ══════════════════════════════════════════════════════════ */
@@ -16,6 +19,8 @@
     clearTimeout(toast.t); toast.t = setTimeout(function () { el.className = 'st-toast'; }, 2600);
   }
   var ROLE = { associate: 'Associate', coach: 'Coach', admin: 'Admin' };
+  /* sections that moved to Associates (associates.html) */
+  var MOVED = { progress: 'team', team: 'team', board: 'board', emails: 'emails', insights: 'insights' };
 
   var me = SCApp.requireAuth();
   if (!me) return;
@@ -92,16 +97,18 @@
     var staff = p.role === 'admin' || p.role === 'coach';
     var S = staff ? SCStaff.settings(p.role, p) : null;
     var SECTIONS = { account: account, password: password };
-    if (S) Object.keys(S.sections).forEach(function (k) { SECTIONS[k] = S.sections[k]; });
+    if (S) Object.keys(S.sections).forEach(function (k) { if (!MOVED[k]) SECTIONS[k] = S.sections[k]; });
+    $$('[data-staff]').forEach(function (el) { el.hidden = !staff; });
     $$('.set-nav [data-for]').forEach(function (el) { el.hidden = el.dataset.for !== p.role; });
     $$('.set-nav [data-sec]').forEach(function (a) { a.hidden = !SECTIONS[a.dataset.sec]; });
     if (p.role === 'coach') $('.set-nav [data-sec="users"]').textContent = 'Members';
-    $('#setHello').textContent = p.role === 'admin' ? 'Your account, the people and the Academy, in one place.'
-      : p.role === 'coach' ? 'Your account and your team in one place: members, assignments, progress and emails.'
+    $('#setHello').textContent = p.role === 'admin' ? 'Your account, the accounts, coach teams, assignments and the Academy.'
+      : p.role === 'coach' ? 'Your account, your team\'s accounts and what each associate is assigned.'
       : 'Your account and your password.';
-    var start = staff ? 'progress' : 'account';
+    var start = 'account';
     var current = null;
     function go(sec) {
+      if (staff && MOVED[sec]) { location.replace('associates.html#' + MOVED[sec]); return; }
       if (!SECTIONS[sec]) sec = start;
       if (sec === current) return;
       if (S && current && !S.leaveOk()) { history.replaceState(null, '', '#' + current); return; }

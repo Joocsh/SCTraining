@@ -8,9 +8,10 @@
 <script>
   (function () {
     var h = location.hash.slice(1), map = { people: 'users', perms: 'teams' };
-    location.replace('settings.html' + location.search + '#' + (map[h] || h || 'progress'));
+    var associates = { progress: 1, emails: 1, insights: 1, '': 1 };
+    location.replace(associates[h] ? 'associates.html' + (h && h !== 'progress' ? '#' + h : '') : 'settings.html' + location.search + '#' + (map[h] || h));
   })();
 </script>
 </head>
-<body><p><a href="settings.html#progress">Go to Settings</a></p></body>
+<body><p><a href="associates.html">Go to Associates</a></p></body>
 </html>

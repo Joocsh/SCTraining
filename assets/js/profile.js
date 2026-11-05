@@ -85,7 +85,7 @@
   }).catch(function (e) { $('#pfMain').innerHTML = '<p class="st-empty">Could not load: ' + esc(e.message) + '</p>'; });
 
   function notFound() {
-    $('#pfHead').innerHTML = '<a class="pf-back" href="settings.html#progress">&larr; Back to Progress</a><h1>Profile not available</h1>';
+    $('#pfHead').innerHTML = '<a class="pf-back" href="associates.html">&larr; Back to Associates</a><h1>Profile not available</h1>';
     $('#pfMain').innerHTML = '<p class="st-empty">' + (me.role === 'coach' ? 'You can only open the associates on your team.' : 'This person does not exist.') + '</p>';
   }
 
@@ -116,7 +116,7 @@
     var st = statusOf(lastAct, p.last_sign_in_at, p.banned_until);
     D.status = st;
     document.title = p.full_name + ' · Skill Cloud Academy';
-    $('#pfHead').innerHTML = '<a class="pf-back" href="settings.html#progress">&larr; Back to Progress</a>' +
+    $('#pfHead').innerHTML = '<a class="pf-back" href="associates.html">&larr; Back to Associates</a>' +
       '<div class="pf-id"><span class="tm-av big pf-av" style="--h:' + hue(p.id) + '">' + initials(p.full_name) + '</span>' +
       '<div class="pf-who"><h1>' + esc(p.full_name) + '</h1><p>' + esc(p.email) + '</p>' +
       '<div class="pf-tags"><span class="pf-tag">' + ROLE[p.app_role] + '</span>' +
@@ -126,7 +126,7 @@
         '<span class="pf-tag">' + (p.last_sign_in_at ? 'Last sign in ' + when(p.last_sign_in_at) : 'Never signed in') + '</span></div></div>' +
       '<div class="pf-ring" style="--p:' + all.percent + '"><b>' + all.percent + '%</b><span>overall</span></div></div>' +
       '<div class="pf-actions"><a class="pf-btn" href="settings.html?open=' + p.id + '#assign">Assign trainings and simulations</a>' +
-        '<a class="pf-btn ghost" href="settings.html#emails">Emails to grade</a>' +
+        '<a class="pf-btn ghost" href="associates.html#emails">Emails to grade</a>' +
         '<button type="button" class="pf-btn ghost" id="pfPrintBtn">Print report</button></div>' +
       '<div class="st-tabs pf-tabs" role="tablist">' + [['overview', 'Overview'], ['trainings', 'Trainings'], ['sims', 'Simulations'], ['emails', 'Emails'], ['checks', 'Checkpoints'], ['written', 'Written work'], ['activity', 'Activity']]
         .map(function (t) { return '<button type="button" role="tab" data-t="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>';
@@ -247,7 +247,7 @@
     return D.emails.map(function (e) {
       var gr = g(e), role = e.scenario ? D.role[e.scenario.role_id] : null;
       return '<section class="pf-card pf-mail"><div class="pf-card-h"><h2>' + esc(e.scenario ? e.scenario.prompt : 'Email') + '</h2>' +
-          (gr ? '<span class="pf-grade">' + gr.score + '/' + (e.scenario ? e.scenario.max_score : 5) + '</span>' : '<a class="pf-tag warn" href="settings.html#emails">To grade</a>') + '</div>' +
+          (gr ? '<span class="pf-grade">' + gr.score + '/' + (e.scenario ? e.scenario.max_score : 5) + '</span>' : '<a class="pf-tag warn" href="associates.html#emails">To grade</a>') + '</div>' +
         '<p class="st-muted">' + (role ? esc(role.title) + ' · ' : '') + 'sent ' + day(e.submitted_at) + '</p>' +
         '<div class="st-email">' + esc(e.body) + '</div>' +
         (gr ? '<div class="st-fb"><b>Feedback from ' + esc(gr.grader ? gr.grader.full_name : 'the coach') + ', ' + day(gr.graded_at) + '</b><p>' + esc(gr.feedback || 'No comment.') + '</p></div>' : '') +

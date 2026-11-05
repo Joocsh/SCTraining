@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Associates · Skill Cloud Academy</title>
+<link rel="stylesheet" href="assets/css/styles.css?v=20261023">
+<link rel="stylesheet" href="assets/css/staff.css?v=20261105d">
+</head>
+<body class="fill">
+<nav class="nav" id="nav"><div class="nav-inner">
+  <a class="brand" href="index.html"><img src="assets/img/skillcloud-navlogo.png" alt="Skill Cloud Staffing"></a>
+  <button class="hamb" onclick="toggleMenu()">&#9776;</button>
+  <div class="menu">
+    <a class="navlink" href="index.html">Home</a>
+    <a class="navlink" href="ai.html">Introduction</a>
+    <a class="navlink" href="paths.html">Paths</a>
+    <a class="navlink" href="index.html#simulations">Simulations</a>
+  </div>
+  <span class="spacer"></span>
+  <a class="pill" href="index.html#simulations">Start Practicing</a>
+  <a class="user-chip" href="account.html" aria-label="My account"><span class="av">A</span><span class="uc-label">Account</span></a>
+</div></nav>
+
+<header class="st-hero as-hero">
+  <div class="in">
+    <h1>Associates</h1>
+    <p id="asHello">Progress, activity and what needs your attention.</p>
+    <div class="st-tabs" role="tablist">
+      <button type="button" role="tab" data-t="team">Overview</button>
+      <button type="button" role="tab" data-t="board">Leaderboard</button>
+      <button type="button" role="tab" data-t="emails">Emails to grade <span class="as-badge" id="asEmailBadge" hidden></span></button>
+      <button type="button" role="tab" data-t="insights">Question insights</button>
+    </div>
+  </div>
+</header>
+
+<main class="st-wrap">
+  <section class="as-panel" data-t="team" id="tabTeam"></section>
+  <section class="as-panel" data-t="board" id="tabBoard" hidden></section>
+  <section class="as-panel" data-t="emails" id="tabEmails" hidden></section>
+  <section class="as-panel" data-t="insights" id="tabInsights" hidden></section>
+</main>
+<div class="st-toast" id="stToast" role="status"></div>
+
+<footer class="h-foot">
+  <div class="inner">
+    <div class="bottom">
+      <span>&copy; 2026 Skill Cloud Academy. Internal use for associates.</span>
+      <span>Powered by Claude AI</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/js/app-core.js?v=20261105"></script>
+<script src="assets/js/site.js?v=20261021"></script>
+<script src="assets/js/staff.js?v=20261105c"></script>
+<script src="assets/js/associates.js?v=20261105"></script>
+</body>
+</html>
