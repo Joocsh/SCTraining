@@ -1,0 +1,203 @@
+/* QuickBooks Online test drive: Home and Feed (prefix qbh-). */
+.qb-page-home{padding:18px 28px 30px;background:#fff}
+.qbh{max-width:1320px;margin:0 auto}
+.qbh-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin:6px 0 18px}
+.qbh-greet{font-size:28px;font-weight:700;letter-spacing:-.3px;text-align:center}
+.qbh-top-r{display:flex;justify-content:flex-end;gap:6px}
+.qbh-tool{display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:6px 10px;border-radius:6px;font-size:14px;color:#393a3d}
+.qbh-tool:hover{background:#f2f3f5}
+.qbh-tool .qb-ic{width:18px;height:18px}
+.qbh-tool.on{background:#e7f1fb;color:#055393}
+
+/* app chips */
+.qbh-apps{position:relative;display:flex;align-items:center;margin:0 0 22px}
+.qbh-apps-track{display:flex;gap:10px;overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none;padding:2px 2px 4px;flex:1;min-width:0}
+.qbh-apps-track::-webkit-scrollbar{display:none}
+.qbh-app{flex:none;display:inline-flex;align-items:center;gap:10px;border:1px solid #d4d7dc;background:#fff;border-radius:999px;padding:5px 18px 5px 5px;font-size:14px;font-weight:600;color:#393a3d;white-space:nowrap;transition:box-shadow .12s,border-color .12s}
+.qbh-app:hover{border-color:#8d9096;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.qbh-app .qb-appic svg{width:62%;height:62%}
+.qbh-prem{width:15px;height:15px;margin-left:5px;color:#6b6c72;vertical-align:-3px}
+.qbh-scroll{flex:none;width:36px;height:36px;border-radius:50%;border:1px solid #d4d7dc;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.1);color:#393a3d;z-index:1}
+.qbh-scroll:hover{background:#f2f3f5}
+.qbh-scroll[hidden]{display:none}
+.qbh-scroll-l{margin-right:8px}
+.qbh-scroll-r{margin-left:8px}
+
+/* create actions */
+.qbh-create{margin:0 0 26px}
+.qbh-create h2,.qbh-glance-head h2{font-size:17px;font-weight:700;margin:0 0 12px}
+.qbh-pills{display:flex;flex-wrap:wrap;gap:10px}
+.qbh-pill{border:1px solid #8d9096;background:#fff;border-radius:999px;padding:8px 18px;font-size:14px;font-weight:600;color:#393a3d}
+.qbh-pill:hover{background:#f2f3f5}
+.qbh-pill-all{border-color:transparent;color:#0077c5}
+.qbh-pill-all:hover{background:#eaf3fd}
+
+/* glance grid */
+.qbh-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:start}
+.qbh-card{background:#fff;border:1px solid #dcdfe3;border-radius:12px;padding:18px 20px 14px;box-shadow:0 1px 2px rgba(0,0,0,.04);display:flex;flex-direction:column;min-width:0}
+.qbh-w-funnel,.qbh-w-cash{grid-column:span 2}
+.qbh-card-head{display:flex;align-items:center;gap:6px;min-height:30px;margin-bottom:4px}
+.qbh-card-head h3{font-size:12.5px;font-weight:700;letter-spacing:.4px;color:#393a3d}
+.qbh-card-head .qb-icon-btn .qb-ic{width:18px;height:18px}
+.qbh-rsel .qb-select select{height:30px;font-size:13px;border-color:#babec5;padding-right:28px}
+.qbh-rsel .qb-select-caret{top:6px;width:16px;height:16px}
+.qbh-sub{font-size:13px;color:#6b6c72;margin:2px 0 4px;display:flex;align-items:center;gap:6px}
+.qbh-dotsep{width:3px;height:3px;border-radius:50%;background:#8d9096;display:inline-block}
+.qbh-big{font-size:30px;font-weight:700;letter-spacing:-.4px;line-height:1.15}
+.qbh-big-lbl{font-size:13px;color:#6b6c72;margin-bottom:12px}
+.qbh-bigrow{display:flex;align-items:center;gap:10px}
+.qbh-badge{font-size:12px;font-weight:700;background:#eceef1;border-radius:10px;padding:2px 8px;color:#393a3d}
+.qbh-trend{display:flex;align-items:center;gap:4px;font-size:13px;margin:4px 0 14px;color:#393a3d}
+.qbh-trend .qb-ic{width:15px;height:15px}
+.qbh-trend.is-up .qb-ic,.qbh-trend.is-good .qb-ic{color:#108000}
+.qbh-trend.is-down .qb-ic,.qbh-trend.is-bad .qb-ic{color:#d52b1e}
+.qbh-card-foot{margin-top:auto;padding-top:12px;border-top:1px solid #eceef1;display:flex;gap:16px}
+.qbh-caret-link{display:inline-flex;align-items:center;gap:3px}
+.qbh-caret-link .qb-ic{width:15px;height:15px}
+
+/* bank accounts */
+.qbh-bank-list{display:flex;flex-direction:column;margin-bottom:6px}
+.qbh-bank-row{display:flex;gap:10px;padding:12px 0;border-top:1px solid #eceef1}
+.qbh-bank-name{display:flex;gap:10px;flex:1;min-width:0}
+.qbh-bank-name b{display:block;font-size:14px;margin-bottom:3px}
+.qbh-bank-ic{width:30px;height:30px;border-radius:50%;background:#eceef1;display:inline-flex;align-items:center;justify-content:center;flex:none;color:#393a3d}
+.qbh-bank-ic .qb-ic{width:16px;height:16px}
+.qbh-review{font-size:13px}
+.qbh-uptodate{display:inline-flex;align-items:center;gap:3px;font-size:12.5px;color:#108000}
+.qbh-uptodate .qb-ic{width:14px;height:14px}
+.qbh-bank-nums{text-align:right;font-size:12.5px;color:#6b6c72;display:flex;flex-direction:column;gap:3px}
+.qbh-bank-nums div{display:flex;justify-content:flex-end;gap:8px}
+.qbh-bank-nums b{color:#393a3d;font-size:13.5px;min-width:86px}
+.qbh-updated{font-size:11.5px;color:#8d9096}
+
+/* funnel */
+.qbh-funnel{display:flex;align-items:stretch;gap:4px;margin:10px 0 6px}
+.qbh-fstart{flex:1.25;min-width:0;border:1px dashed #babec5;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.qbh-fstart b{font-size:14px}
+.qbh-fstart p{margin:0 0 6px;font-size:12.5px;color:#6b6c72}
+.qbh-fstart .qb-btn{height:32px;font-size:13px}
+.qbh-fstart-ic{width:32px;height:32px;border-radius:50%;background:#e7f6e5;color:#108000;display:flex;align-items:center;justify-content:center}
+.qbh-fstart-ic .qb-ic{width:18px;height:18px}
+.qbh-fchev{display:flex;align-items:center;color:#8d9096}
+.qbh-fchev .qb-ic{width:18px;height:18px}
+.qbh-fstage{flex:1;min-width:0;border:1px solid #dcdfe3;border-radius:10px;background:#fff;text-align:left;padding:0 14px 14px;overflow:hidden;display:flex;flex-direction:column}
+.qbh-fstage:hover{box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.qbh-fstage>i{display:block;height:6px;margin:0 -14px 14px;background:#2ca01c}
+.qbh-f-np>i{background:#9fdc8f}
+.qbh-f-pd>i{background:#53b700}
+.qbh-f-dp>i{background:#108000}
+.qbh-famt{font-size:21px;font-weight:700;white-space:nowrap}
+.qbh-flbl{font-size:13.5px;font-weight:600;margin-top:2px}
+.qbh-fsub{font-size:12.5px;color:#6b6c72;margin-top:2px}
+
+/* profit & loss */
+.qbh-plrow{margin:0 0 14px}
+.qbh-plrow-top{display:flex;align-items:baseline;gap:8px;font-size:13px;margin-bottom:6px}
+.qbh-plrow-top b{font-size:16px}
+.qbh-plbar{height:22px;background:#f4f5f8;border-radius:4px;display:flex;overflow:hidden}
+.qbh-plbar i{display:block;height:100%}
+.qbh-c-inc{background:#53b700}
+.qbh-c-exp{background:#00a6a4}
+.qbh-hatch.qbh-c-inc-h{background:repeating-linear-gradient(135deg,#53b700 0 2px,#e7f6e5 2px 6px)}
+.qbh-hatch.qbh-c-exp-h{background:repeating-linear-gradient(135deg,#00a6a4 0 2px,#e0f5f4 2px 6px)}
+
+/* expenses */
+.qbh-exp-body{display:flex;align-items:center;gap:18px;margin-bottom:8px}
+.qbh-donut{flex:none;transform:rotate(0)}
+.qbh-legend{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.qbh-leg-row{display:flex;align-items:center;gap:8px;font-size:13px}
+.qbh-leg-row>i{width:10px;height:10px;border-radius:2px;flex:none}
+.qbh-leg-name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qbh-leg-row b{font-weight:600;white-space:nowrap}
+.qbh-leg-ch{display:inline-flex;align-items:center;gap:1px;font-size:12px;min-width:52px;justify-content:flex-end;color:#6b6c72}
+.qbh-leg-ch .qb-ic{width:13px;height:13px}
+.qbh-leg-ch.is-up .qb-ic{color:#d52b1e}
+.qbh-leg-ch.is-down .qb-ic{color:#108000}
+
+/* cash flow */
+.qbh-range-lbl{font-size:13px;color:#6b6c72;margin-right:4px}
+.qbh-cash-top{display:flex;align-items:flex-start;gap:10px;margin-top:4px}
+.qbh-seg button{font-size:13px;padding:5px 12px}
+.qbh-inout-tot{display:flex;gap:18px;font-size:13px;margin-bottom:6px}
+.qbh-inout-tot span{display:inline-flex;align-items:center;gap:6px}
+.qbh-cash-chart{min-height:120px}
+.qbh-cash-svg{width:100%;height:auto;display:block;overflow:visible}
+.qbh-cash-svg .qbh-gl{stroke:#eceef1;stroke-width:1}
+.qbh-cash-svg .qbh-zero{stroke:#babec5;stroke-width:1}
+.qbh-cash-svg .qbh-today{stroke:#393a3d;stroke-width:1;stroke-dasharray:3 3}
+.qbh-cash-svg .qbh-line{fill:none;stroke:#00a6a4;stroke-width:2.2;vector-effect:non-scaling-stroke}
+.qbh-cash-svg .qbh-line.is-proj{stroke-dasharray:5 4}
+.qbh-cash-svg .qbh-pt{fill:#fff;stroke:#00a6a4;stroke-width:1.6;vector-effect:non-scaling-stroke}
+.qbh-cash-svg .qbh-pt.is-today{fill:#00a6a4}
+.qbh-cash-svg .qbh-ylbl,.qbh-cash-svg .qbh-xlbl{font-size:10.5px;fill:#6b6c72;font-family:var(--qb-font)}
+.qbh-cash-svg .qbh-bin{fill:#53b700}
+.qbh-cash-svg .qbh-bout{fill:#0077c5}
+.qbh-cash-svg .qbh-bin.is-proj,.qbh-cash-svg .qbh-bout.is-proj{fill-opacity:.4}
+.qbh-cash-key{display:flex;gap:16px;font-size:12px;color:#6b6c72;margin-top:6px}
+.qbh-cash-key span{display:inline-flex;align-items:center;gap:6px}
+.qbh-key-act,.qbh-key-proj,.qbh-key-in,.qbh-key-out{display:inline-block;width:14px;height:10px;border-radius:2px}
+.qbh-key-act{background:#00a6a4}
+.qbh-key-proj{background:repeating-linear-gradient(135deg,#9fd6cb 0 2px,#e6f4f1 2px 5px);border:1px dashed #00a6a4}
+.qbh-key-in{background:#53b700}
+.qbh-key-out{background:#0077c5}
+
+.qbh-none{grid-column:1/-1;padding:30px;text-align:center;color:#6b6c72;border:1px dashed #d4d7dc;border-radius:12px}
+.qbh-activity{display:flex;justify-content:center;margin:26px 0 10px}
+.qbh-foot{text-align:center;font-size:12px;color:#6b6c72;padding:16px 0 6px}
+.qbh-foot span{color:#0077c5}
+
+/* privacy */
+.qbh-m{transition:filter .15s}
+.qbh-priv .qbh-m,.qbh-priv .qbh-m-svg,.qbh-priv .qbh-cash-svg,.qbh-priv .qbh-donut,.qbh-priv .qbh-plbar{filter:blur(7px)}
+.qbh-priv .qbh-m{user-select:none}
+
+/* customize drawer */
+.qbh-cz{display:flex;flex-direction:column;margin-top:12px}
+.qbh-cz-row{display:flex;align-items:center;gap:8px;padding:10px 6px;border-bottom:1px solid #e3e5e8;background:#fff}
+.qbh-cz-row.is-drag{opacity:.5;background:#f4f5f8}
+.qbh-cz-drag{color:#8d9096;cursor:grab;display:flex}
+.qbh-cz-name{font-weight:600}
+.qbh-cz .qb-icon-btn:disabled{opacity:.3;cursor:default}
+.qbh-cz .qb-toggle{margin-left:10px}
+
+/* feed */
+.qb-page-business-feed{background:#f4f5f8}
+.qbh-feed{max-width:760px;margin:0 auto}
+.qbh-feed-head{display:flex;align-items:center;gap:10px;margin:6px 0 4px}
+.qbh-feed-head h1{font-size:28px;font-weight:700;letter-spacing:-.3px}
+.qbh-feed-lead{margin:0 0 18px}
+.qbh-stream{display:flex;flex-direction:column;gap:14px}
+.qbh-fcard{position:relative;display:flex;gap:14px;background:#fff;border:1px solid #dcdfe3;border-radius:12px;padding:18px 44px 18px 18px;box-shadow:0 1px 2px rgba(0,0,0,.04);border-left:5px solid #0077c5}
+.qbh-fc-warn{border-left-color:#ff8000}
+.qbh-fc-ok{border-left-color:#2ca01c}
+.qbh-fc-tip{border-left-color:#7457c8}
+.qbh-fc-ic{width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:#eaf3fd;color:#0077c5}
+.qbh-fc-warn .qbh-fc-ic{background:#fff1e3;color:#c45d00}
+.qbh-fc-ok .qbh-fc-ic{background:#e7f6e5;color:#108000}
+.qbh-fc-tip .qbh-fc-ic{background:#efebfa;color:#5b3fb0}
+.qbh-fc-body{flex:1;min-width:0}
+.qbh-fc-kick{font-size:11.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:#6b6c72;margin-bottom:3px}
+.qbh-fc-body h3{font-size:16px;margin-bottom:4px}
+.qbh-fc-body p{margin:0 0 12px;font-size:13.5px;color:#393a3d;line-height:1.45}
+.qbh-fc-acts{display:flex;gap:8px;flex-wrap:wrap}
+.qbh-fc-x{position:absolute;top:10px;right:10px}
+.qbh-fc-x .qb-ic{width:17px;height:17px}
+.qbh-feed-empty{text-align:center;padding:40px 20px;background:#fff;border-radius:12px;border:1px solid #dcdfe3}
+.qbh-feed-empty svg{width:160px}
+.qbh-feed-empty h3{margin:10px 0 4px}
+
+@media (max-width:1180px){
+  .qbh-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:820px){
+  .qb-page-home{padding:14px 16px 24px}
+  .qbh-top{grid-template-columns:1fr;gap:8px}
+  .qbh-top>span:first-child{display:none}
+  .qbh-top-r{justify-content:center}
+  .qbh-grid{grid-template-columns:minmax(0,1fr)}
+  .qbh-w-funnel,.qbh-w-cash{grid-column:auto}
+  .qbh-funnel{flex-direction:column}
+  .qbh-fchev{transform:rotate(90deg);justify-content:center}
+  .qbh-exp-body{flex-direction:column;align-items:stretch}
+  .qbh-donut{align-self:center}
+}

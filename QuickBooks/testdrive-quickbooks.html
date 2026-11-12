@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuickBooks Online Test Drive · SkillCloud Academy</title>
+<link rel="stylesheet" href="../assets/css/topbar.css">
+<link rel="stylesheet" href="qbo.css?v=20261112">
+<link rel="stylesheet" href="qbo-home.css?v=20261112">
+<link rel="stylesheet" href="qbo-accounting.css?v=20261112">
+<link rel="stylesheet" href="qbo-sales.css?v=20261112">
+<link rel="stylesheet" href="qbo-expenses.css?v=20261112">
+<link rel="stylesheet" href="qbo-forms.css?v=20261112">
+<link rel="stylesheet" href="qbo-reports.css?v=20261112">
+<link rel="stylesheet" href="qbo-more.css?v=20261112">
+</head>
+<body class="qb-body">
+
+<!-- Shared Test Drive strip (SkillCloud chrome, not part of QuickBooks). -->
+<header class="scbar">
+  <a class="scbar-back" href="../index.html#test-drive"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 3.5 5 8l4.5 4.5"/></svg><span>Test Drive</span></a>
+  <span class="scbar-id"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg><span class="scbar-name">SkillCloud</span></span>
+  <span class="scbar-sep">/</span>
+  <span class="scbar-ctx">QuickBooks Online<em>Test drive</em></span>
+  <div class="scbar-right">
+    <span class="scbar-safe"><i></i>Practice sandbox<span>&middot; changes reset when you reload</span></span>
+  </div>
+</header>
+
+<div class="qb-shell" id="qbShell">
+  <nav class="qb-rail" id="qbRail" aria-label="Main"></nav>
+  <div class="qb-col">
+    <header class="qb-top" id="qbTop"></header>
+    <div class="qb-work">
+      <aside class="qb-nav" id="qbNav" aria-label="Apps"></aside>
+      <main class="qb-main" id="qbMain"></main>
+    </div>
+  </div>
+</div>
+<div id="qbLayer"></div>
+<div class="qb-toasts" id="qbToasts" role="status" aria-live="polite"></div>
+
+<script src="qbo-data.js?v=20261112"></script>
+<script src="qbo-core.js?v=20261112"></script>
+<script src="qbo-home.js?v=20261112"></script>
+<script src="qbo-accounting.js?v=20261112"></script>
+<script src="qbo-sales.js?v=20261112"></script>
+<script src="qbo-expenses.js?v=20261112"></script>
+<script src="qbo-forms.js?v=20261112"></script>
+<script src="qbo-reports.js?v=20261112"></script>
+<script src="qbo-more.js?v=20261112"></script>
+<script>QB.boot();</script>
+</body>
+</html>
